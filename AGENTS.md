@@ -4,12 +4,34 @@ Guidance for human and AI contributors working in this repository.
 
 ## 1. Purpose
 
-Paperclip is a control plane for AI-agent companies.
-The current implementation target is V1 and is defined in `doc/SPEC-implementation.md`.
+This checkout is currently being used to build **DearMe**: a personal brand
+growth team product implemented as a thin product layer over the inherited
+Paperclip operator control plane.
+
+Paperclip remains the kernel: auth, companies, agents, issues, routines,
+approvals, documents, activity logs, finance events, adapters, plugins, and
+execution workspaces. DearMe owns the customer-facing product semantics: Brand
+OS, voice profile, Voice Gate, personal-brand outputs, Work Ready, batch
+decisions, paid-beta access, and weekly Dear me reports.
+
+For Paperclip-kernel work, the V1 implementation target is still defined in
+`doc/SPEC-implementation.md`. For DearMe product work, the current execution
+source of truth is `docs/dearme/README.md`.
 
 ## 2. Read This First
 
-Before making changes, read in this order:
+For DearMe product or rebrand work, read in this order:
+
+1. `docs/dearme/README.md`
+2. `docs/dearme/INTEGRATED-ARCHITECTURE.md`
+3. `docs/dearme/WORKTREE-INTEGRATION-PLAN.md`
+4. `docs/dearme/PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`
+5. `docs/dearme/POLSIA-NAIVE-REUSE-PLAN.md`
+6. `docs/dearme/LINDY-ASSISTANT-REUSE-PLAN.md`
+7. `docs/dearme/REBRAND-AND-PROVENANCE.md`
+8. `docs/dearme/BUILD-STATE.md`
+
+For Paperclip-kernel work, read in this order:
 
 1. `doc/GOAL.md`
 2. `doc/PRODUCT.md`
@@ -30,6 +52,8 @@ Before making changes, read in this order:
 - `packages/adapter-utils/`: shared adapter utilities
 - `packages/plugins/`: plugin system packages
 - `doc/`: operational and product docs
+- `docs/dearme/`: DearMe product, positioning, reuse, provenance, integration,
+  and build-state docs
 
 ## 4. Dev Setup (Auto DB)
 
@@ -78,10 +102,17 @@ If you change schema/API behavior, update all impacted layers:
 - Budget hard-stop auto-pause behavior
 - Activity logging for mutating actions
 
-4. Do not replace strategic docs wholesale unless asked.
+4. Preserve DearMe product invariants on customer-facing paths.
+- Team visible, machinery hidden
+- Private work by default
+- Public/send/deploy/spend/sensitive actions require approval
+- Do not expose adapter IDs, provider names, model-provider setup, Paperclip,
+  OK Partner, setup-payload, or raw control-plane language to paid-beta users
+
+5. Do not replace strategic docs wholesale unless asked.
 Prefer additive updates. Keep `doc/SPEC.md` and `doc/SPEC-implementation.md` aligned.
 
-5. Keep repo plan docs dated and centralized.
+6. Keep repo plan docs dated and centralized.
 When you are creating a plan file in the repository itself, new plan documents belong in `doc/plans/` and should use `YYYY-MM-DD-slug.md` filenames. This does not replace Paperclip issue planning: if a Paperclip issue asks for a plan, update the issue `plan` document per the `paperclip` skill instead of creating a repo markdown file.
 
 ## 6. Database Change Workflow

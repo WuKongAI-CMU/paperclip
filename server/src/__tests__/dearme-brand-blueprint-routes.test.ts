@@ -1,0 +1,737 @@
+import express from "express";
+import request from "supertest";
+import { describeDearMePaidBetaEntitlement } from "@paperclipai/shared";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mockDearMeBrandBlueprintService = vi.hoisted(() => ({
+  preview: vi.fn(),
+  previewFirstCycle: vi.fn(),
+  createApplyRequest: vi.fn(),
+}));
+
+const mockDearMePaidBetaAccessService = vi.hoisted(() => ({
+  getAccess: vi.fn(),
+  recordPayment: vi.fn(),
+}));
+
+const mockDearMeOutputHandoffService = vi.hoisted(() => ({
+  listOutputs: vi.fn(),
+  reviewOutput: vi.fn(),
+}));
+
+const mockDearMeWorkbenchService = vi.hoisted(() => ({
+  getWorkbench: vi.fn(),
+}));
+
+const mockLogActivity = vi.hoisted(() => vi.fn());
+const mockQueueIssueAssignmentWakeup = vi.hoisted(() => vi.fn());
+
+function registerModuleMocks() {
+  vi.doMock("../services/index.js", () => ({
+    dearmeBrandBlueprintService: () => mockDearMeBrandBlueprintService,
+    dearmeOutputHandoffService: () => mockDearMeOutputHandoffService,
+    dearmePaidBetaAccessService: () => mockDearMePaidBetaAccessService,
+    dearmeWorkbenchService: () => mockDearMeWorkbenchService,
+    logActivity: mockLogActivity,
+  }));
+  vi.doMock("../services/heartbeat.js", () => ({
+    heartbeatService: () => ({ wakeup: vi.fn() }),
+  }));
+  vi.doMock("../services/issue-assignment-wakeup.js", () => ({
+    queueIssueAssignmentWakeup: mockQueueIssueAssignmentWakeup,
+  }));
+}
+
+async function createApp(actorOverrides: Record<string, unknown> = {}) {
+  const [{ errorHandler }, { dearmeRoutes }] = await Promise.all([
+    import("../middleware/index.js"),
+    import("../routes/dearme.js"),
+  ]);
+  const app = express();
+  app.use(express.json());
+  app.use((req, _res, next) => {
+    (req as any).actor = {
+      type: "board",
+      userId: "user-1",
+      companyIds: ["company-1"],
+      source: "session",
+      isInstanceAdmin: false,
+      ...actorOverrides,
+    };
+    next();
+  });
+  app.use("/api/dearme", dearmeRoutes({} as any));
+  app.use(errorHandler);
+  return app;
+}
+
+function makeVoiceGateResult() {
+  return {
+    status: "needs_voice_review",
+    score: 88,
+    summary: "Needs voice review. The draft stays private until the user approves what represents them.",
+    approvalGate: "publish_social",
+    checks: [
+      {
+        kind: "voice_samples",
+        label: "Voice samples",
+        status: "warn",
+        summary: "Voice review needs at least two samples before tone should be trusted.",
+        evidence: ["0 samples"],
+        recommendation: "Add one or two real writing samples before approving public language.",
+      },
+      {
+        kind: "forbidden_phrases",
+        label: "Banned phrasing",
+        status: "pass",
+        summary: "No banned phrasing was found.",
+        evidence: [],
+        recommendation: "Keep the direct language and review the substance before approval.",
+      },
+      {
+        kind: "generic_launch_copy",
+        label: "Generic launch copy",
+        status: "pass",
+        summary: "No generic launch copy was found.",
+        evidence: [],
+        recommendation: "Keep the hook grounded in the user's work and audience.",
+      },
+      {
+        kind: "proof_claim",
+        label: "Proof claim",
+        status: "pass",
+        summary: "A proof point is attached to the draft.",
+        evidence: ["shipped local runtime"],
+        recommendation: "Check that the proof is accurate before approving the public move.",
+      },
+      {
+        kind: "channel_length",
+        label: "Channel length",
+        status: "pass",
+        summary: "Draft length is 120 characters for linkedin.",
+        evidence: ["warn 1800", "block 3000"],
+        recommendation: "Length is within the first-pass range for review.",
+      },
+    ],
+    blockedActions: ["Publish social posts"],
+  };
+}
+
+function makePreviewResult() {
+  return {
+    companyId: "company-1",
+    status: "preview",
+    blueprint: {
+      version: 1,
+      brand: { displayName: "Peter" },
+    },
+    summary: {
+      title: "Create Brand OS for Peter",
+      summary: "DearMe will prepare the first Brand OS.",
+      recommendedAction: "Approve after review.",
+      nextActionOnApproval: "Prepare private drafts.",
+      teamMemberCount: 7,
+      cycleCount: 4,
+      riskGateCount: 8,
+    },
+    executionPlan: {
+      operations: [],
+      riskGates: [],
+      creates: {
+        teamMembers: 7,
+        cycles: 4,
+        assets: 6,
+        memorySeeds: 4,
+      },
+    },
+    voiceGate: makeVoiceGateResult(),
+    warnings: [],
+  };
+}
+
+function makeFirstCycleResult() {
+  return {
+    companyId: "company-1",
+    status: "first_cycle_preview",
+    prompt: "What do you want to become known for?",
+    positioning: "Known for practical AI products",
+    voiceProfile: {
+      title: "Draft Voice Profile",
+      status: "needs_samples",
+      sampleCount: 0,
+      guidance: "Start with clear, proof-first drafts.",
+      draftTone: ["Clear and plain", "Proof-first", "Held for voice review"],
+      ownerRole: "voice_editor",
+      approvalGate: "sensitive_material",
+    },
+    starterPosts: [
+      {
+        id: "starter-post-positioning",
+        channel: "linkedin",
+        title: "Starter post: point of view",
+        hook: "What Peter wants to become known for.",
+        body: "A private draft.",
+        proofUsed: "The first verified work example",
+        ownerRole: "content_producer",
+        approvalGate: "publish_social",
+      },
+      {
+        id: "starter-post-proof",
+        channel: "x",
+        title: "Starter post: proof of work",
+        hook: "The proof behind this positioning.",
+        body: "A private draft.",
+        proofUsed: "The first verified work example",
+        ownerRole: "content_producer",
+        approvalGate: "publish_social",
+      },
+      {
+        id: "starter-post-opening",
+        channel: "newsletter",
+        title: "Starter post: useful opening",
+        hook: "A useful opening.",
+        body: "A private draft.",
+        proofUsed: "The first verified work example",
+        ownerRole: "content_producer",
+        approvalGate: "publish_social",
+      },
+    ],
+    opportunityLead: {
+      title: "First opportunity lead",
+      target: "Founders",
+      whyRelevant: "Founders care about the first goal.",
+      outreachAngle: "Lead with proof.",
+      draftMessage: "Private outreach draft.",
+      ownerRole: "opportunity_scout",
+      approvalGate: "send_email",
+    },
+    portfolioProofCard: {
+      title: "Portfolio proof card",
+      proofSource: "The first verified work example",
+      proposedCopy: "Private proof card copy.",
+      placement: "Homepage proof section",
+      ownerRole: "portfolio_builder",
+      approvalGate: "deploy_public_site",
+    },
+    growthPlan: {
+      title: "First growth plan",
+      summary: "Start with one positioning decision.",
+      priorities: ["Approve positioning", "Review starter posts", "Decide on outreach"],
+      nextActions: ["Check tone", "Prepare posts", "Keep outreach private"],
+      ownerRole: "chief_of_staff",
+      approvalGate: "public_claim",
+    },
+    voiceGate: makeVoiceGateResult(),
+    approvalBoundary: {
+      label: "Approval-gated by default",
+      summary: "Nothing publishes, sends, spends, or changes public pages without approval.",
+      blockedActions: ["Publish social posts", "Send outreach messages", "Deploy public page changes"],
+    },
+    warnings: [],
+  };
+}
+
+function makePaidBetaStatus(status: "trial" | "active") {
+  const active = status === "active";
+  return {
+    companyId: "company-1",
+    status,
+    lifetimePaidCents: active ? 25_000 : 0,
+    refundedCents: 0,
+    netPaidCents: active ? 25_000 : 0,
+    remainingCreditCents: active ? 25_000 : 0,
+    eventCount: active ? 1 : 0,
+    latestPaymentAt: active ? "2026-05-07T14:00:00.000Z" : null,
+    latestPaymentDescription: active ? "Founding beta payment" : null,
+    latestExternalInvoiceId: active ? "manual-invoice-1" : null,
+    entitlement: describeDearMePaidBetaEntitlement(status),
+  };
+}
+
+describe("DearMe brand blueprint routes", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.doUnmock("../routes/dearme.js");
+    vi.doUnmock("../routes/authz.js");
+    vi.doUnmock("../middleware/index.js");
+    registerModuleMocks();
+    vi.clearAllMocks();
+    mockDearMeBrandBlueprintService.preview.mockReset();
+    mockDearMeBrandBlueprintService.previewFirstCycle.mockReset();
+    mockDearMeBrandBlueprintService.createApplyRequest.mockReset();
+    mockDearMePaidBetaAccessService.getAccess.mockReset();
+    mockDearMePaidBetaAccessService.recordPayment.mockReset();
+    mockDearMeOutputHandoffService.listOutputs.mockReset();
+    mockDearMeOutputHandoffService.reviewOutput.mockReset();
+    mockDearMeWorkbenchService.getWorkbench.mockReset();
+    mockQueueIssueAssignmentWakeup.mockReset();
+    mockLogActivity.mockReset();
+    mockLogActivity.mockResolvedValue(undefined);
+  });
+
+  it("returns the DearMe team workbench for a caller with company access", async () => {
+    mockDearMeWorkbenchService.getWorkbench.mockResolvedValue({
+      companyId: "company-1",
+      headline: "Dear me, your team has decisions ready",
+      summary: "7 team members are assigned to your brand loop. 1 item ready. 1 decision needed. 1 lane in motion.",
+      team: [
+        {
+          role: "chief_of_staff",
+          name: "Chief of Staff",
+          status: "Standing by",
+          currentFocus: "Coordinating today's brand growth plan and the next decisions.",
+          lastActiveAt: "2026-05-07T14:00:00.000Z",
+        },
+      ],
+      activeWork: [],
+      workReady: [
+        {
+          id: "issue-1:content_drafts",
+          title: "Content drafts",
+          summary: "Private posts prepared for review.",
+          status: "ready_for_review",
+          ownerRole: "content_producer",
+          outputKind: "content_drafts",
+          issueId: "issue-1",
+          issueIdentifier: "PET-1",
+          updatedAt: "2026-05-07T14:00:00.000Z",
+        },
+      ],
+      decisionsNeeded: [
+        {
+          id: "output:issue-1:content_drafts",
+          kind: "review_output",
+          title: "Review Content drafts",
+          summary: "Your team prepared this private artifact. Approve the next move only if it represents you.",
+          riskGate: "publish_social",
+          status: "needed",
+          outputKind: "content_drafts",
+          approvalId: null,
+          issueId: "issue-1",
+          issueIdentifier: "PET-1",
+          updatedAt: "2026-05-07T14:00:00.000Z",
+        },
+      ],
+      batchDecisions: [
+        {
+          id: "batch:publish_social",
+          title: "Review content batch",
+          summary: "1 item is ready. DearMe prepared the work; approval still controls the external move.",
+          actionLabel: "Review posts",
+          action: "review_posts",
+          riskGate: "publish_social",
+          itemCount: 1,
+          decisionIds: ["output:issue-1:content_drafts"],
+          issueIds: ["issue-1"],
+          approvalIds: [],
+          updatedAt: "2026-05-07T14:00:00.000Z",
+        },
+      ],
+      recentProgress: [],
+      report: null,
+      outputs: [],
+    });
+
+    const res = await request(await createApp())
+      .get("/api/dearme/companies/company-1/workbench");
+
+    expect(res.status).toBe(200);
+    expect(res.body.headline).toContain("team");
+    expect(res.body.team[0].role).toBe("chief_of_staff");
+    expect(res.body.batchDecisions[0].actionLabel).toBe("Review posts");
+    expect(mockDearMeWorkbenchService.getWorkbench).toHaveBeenCalledWith("company-1");
+    expect(mockLogActivity).not.toHaveBeenCalled();
+  });
+
+  it("rejects DearMe workbench reads outside the caller scope", async () => {
+    const res = await request(await createApp({ companyIds: ["company-2"] }))
+      .get("/api/dearme/companies/company-1/workbench");
+
+    expect(res.status).toBe(403);
+    expect(mockDearMeWorkbenchService.getWorkbench).not.toHaveBeenCalled();
+  });
+
+  it("returns generated output handoffs for a caller with company access", async () => {
+    mockDearMeOutputHandoffService.listOutputs.mockResolvedValue({
+      companyId: "company-1",
+      outputs: [
+        {
+          id: "issue-1:weekly_report",
+          companyId: "company-1",
+          kind: "weekly_report",
+          title: "Dear me report",
+          summary: "Private weekly report.",
+          status: "ready_for_review",
+          isReviewable: true,
+          issueId: "issue-1",
+          issueIdentifier: "PET-7",
+          issueTitle: "DearMe Draft: Draft weekly Dear me report",
+          updatedAt: "2026-05-07T14:00:00.000Z",
+          documents: [],
+          workProducts: [],
+          latestUpdate: null,
+          details: [],
+        },
+      ],
+    });
+
+    const res = await request(await createApp())
+      .get("/api/dearme/companies/company-1/outputs");
+
+    expect(res.status).toBe(200);
+    expect(res.body.outputs[0].kind).toBe("weekly_report");
+    expect(mockDearMeOutputHandoffService.listOutputs).toHaveBeenCalledWith("company-1");
+    expect(mockLogActivity).not.toHaveBeenCalled();
+  });
+
+  it("records a DearMe output review and hides wake internals", async () => {
+    const output = {
+      id: "issue-1:weekly_report",
+      companyId: "company-1",
+      kind: "weekly_report",
+      title: "Dear me report",
+      summary: "Private weekly report.",
+      status: "complete",
+      isReviewable: true,
+      issueId: "issue-1",
+      issueIdentifier: "PET-7",
+      issueTitle: "DearMe Draft: Draft weekly Dear me report",
+      updatedAt: "2026-05-07T14:00:00.000Z",
+      documents: [],
+      workProducts: [],
+      latestUpdate: null,
+      details: [],
+    };
+    mockDearMeOutputHandoffService.reviewOutput.mockResolvedValue({
+      companyId: "company-1",
+      outputId: "issue-1:weekly_report",
+      action: "approve",
+      status: "recorded",
+      comment: {
+        id: "comment-1",
+        bodyPreview: "DearMe decision: approved this prepared work.",
+        createdAt: "2026-05-07T14:00:00.000Z",
+      },
+      output,
+      wakeIssue: null,
+    });
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/outputs/issue-1%3Aweekly_report/reviews")
+      .send({ action: "approve", decisionNote: "This represents me." });
+
+    expect(res.status).toBe(200);
+    expect(res.body.action).toBe("approve");
+    expect(res.body.wakeIssue).toBeUndefined();
+    expect(mockDearMeOutputHandoffService.reviewOutput).toHaveBeenCalledWith(
+      "company-1",
+      "issue-1:weekly_report",
+      expect.objectContaining({ action: "approve", decisionNote: "This represents me." }),
+      expect.objectContaining({ actorType: "user", actorId: "user-1", agentId: null }),
+    );
+    expect(mockQueueIssueAssignmentWakeup).not.toHaveBeenCalled();
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: "dearme.output_approved",
+        entityType: "issue_comment",
+        entityId: "comment-1",
+      }),
+    );
+  });
+
+  it("rejects generated output handoffs outside the caller scope", async () => {
+    const res = await request(await createApp({ companyIds: ["company-2"] }))
+      .get("/api/dearme/companies/company-1/outputs");
+
+    expect(res.status).toBe(403);
+    expect(mockDearMeOutputHandoffService.listOutputs).not.toHaveBeenCalled();
+  });
+
+  it("returns paid beta access status for a caller with company access", async () => {
+    mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("trial"));
+
+    const res = await request(await createApp())
+      .get("/api/dearme/companies/company-1/paid-beta/access");
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("trial");
+    expect(mockDearMePaidBetaAccessService.getAccess).toHaveBeenCalledWith("company-1");
+  });
+
+  it("records a manual paid beta payment and logs the finance event", async () => {
+    mockDearMePaidBetaAccessService.recordPayment.mockResolvedValue({
+      event: {
+        id: "finance-event-1",
+        amountCents: 25_000,
+        currency: "USD",
+      },
+      access: makePaidBetaStatus("active"),
+    });
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/paid-beta/access-events")
+      .send({
+        amountCents: 25_000,
+        currency: "usd",
+        description: "Founding beta payment",
+        externalInvoiceId: "manual-invoice-1",
+        occurredAt: "2026-05-07T14:00:00.000Z",
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.access.status).toBe("active");
+    expect(mockDearMePaidBetaAccessService.recordPayment).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        amountCents: 25_000,
+        currency: "USD",
+        description: "Founding beta payment",
+      }),
+    );
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        companyId: "company-1",
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.paid_beta_payment_recorded",
+        entityType: "finance_event",
+        entityId: "finance-event-1",
+        details: expect.objectContaining({
+          amountCents: 25_000,
+          currency: "USD",
+          status: "active",
+          netPaidCents: 25_000,
+        }),
+      }),
+    );
+  });
+
+  it("requires board access before recording paid beta payments", async () => {
+    const res = await request(await createApp({
+      type: "agent",
+      companyId: "company-1",
+      agentId: "agent-1",
+    }))
+      .post("/api/dearme/companies/company-1/paid-beta/access-events")
+      .send({
+        amountCents: 25_000,
+        currency: "USD",
+      });
+
+    expect(res.status).toBe(403);
+    expect(mockDearMePaidBetaAccessService.recordPayment).not.toHaveBeenCalled();
+  });
+
+  it("returns a read-only preview for a caller with company access", async () => {
+    const previewResult = makePreviewResult();
+    mockDearMeBrandBlueprintService.preview.mockReturnValue(previewResult);
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/brand-blueprints/preview")
+      .send({
+        brand: {
+          displayName: "Peter",
+          goals: ["Build visible proof"],
+          audiences: ["founders"],
+          proofPoints: ["shipped local runtime"],
+          offers: [],
+          voiceSamples: [],
+          preferredChannels: ["linkedin"],
+          constraints: [],
+        },
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.summary.title).toBe("Create Brand OS for Peter");
+    expect(res.body.voiceGate.status).toBe("needs_voice_review");
+    expect(mockDearMeBrandBlueprintService.preview).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        brand: expect.objectContaining({
+          displayName: "Peter",
+          cadence: "weekly",
+          budgetMonthlyCents: 25_000,
+        }),
+      }),
+    );
+    expect(mockDearMeBrandBlueprintService.createApplyRequest).not.toHaveBeenCalled();
+  });
+
+  it("returns a 90-second first cycle preview for a caller with company access", async () => {
+    mockDearMeBrandBlueprintService.previewFirstCycle.mockReturnValue(makeFirstCycleResult());
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/first-cycle/preview")
+      .send({
+        brand: {
+          displayName: "Peter",
+          positioning: "Known for practical AI products",
+          goals: ["Build visible proof"],
+          audiences: ["founders"],
+          proofPoints: ["shipped local runtime"],
+          offers: [],
+          voiceSamples: [],
+          preferredChannels: ["linkedin"],
+          constraints: [],
+        },
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.prompt).toBe("What do you want to become known for?");
+    expect(res.body.starterPosts).toHaveLength(3);
+    expect(res.body.opportunityLead.approvalGate).toBe("send_email");
+    expect(res.body.voiceGate.approvalGate).toBe("publish_social");
+    expect(mockDearMeBrandBlueprintService.previewFirstCycle).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        brand: expect.objectContaining({
+          displayName: "Peter",
+          positioning: "Known for practical AI products",
+          cadence: "weekly",
+          budgetMonthlyCents: 25_000,
+        }),
+      }),
+    );
+    expect(mockLogActivity).not.toHaveBeenCalled();
+  });
+
+  it("rejects first cycle previews outside the caller scope", async () => {
+    const res = await request(await createApp({ companyIds: ["company-2"] }))
+      .post("/api/dearme/companies/company-1/first-cycle/preview")
+      .send({
+        brand: {
+          displayName: "Peter",
+          positioning: "Known for practical AI products",
+          goals: [],
+          audiences: [],
+          proofPoints: [],
+          offers: [],
+          voiceSamples: [],
+          preferredChannels: [],
+          constraints: [],
+        },
+      });
+
+    expect(res.status).toBe(403);
+    expect(mockDearMeBrandBlueprintService.previewFirstCycle).not.toHaveBeenCalled();
+  });
+
+  it("creates an approval-gated apply request and logs the request", async () => {
+    const applyResult = {
+      ...makePreviewResult(),
+      status: "apply_request",
+      approval: {
+        id: "approval-1",
+        companyId: "company-1",
+        type: "dearme_brand_blueprint_apply",
+        status: "pending",
+        payload: {},
+      },
+    };
+    mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("active"));
+    mockDearMeBrandBlueprintService.createApplyRequest.mockResolvedValue(applyResult);
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/brand-blueprints/apply-requests")
+      .send({
+        brand: {
+          displayName: "Peter",
+          goals: ["Build visible proof"],
+          audiences: ["founders"],
+          proofPoints: ["shipped local runtime"],
+          offers: [],
+          voiceSamples: [],
+          preferredChannels: ["linkedin"],
+          constraints: [],
+        },
+        approvalNote: "Use private drafts only first.",
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.approval.id).toBe("approval-1");
+    expect(mockDearMeBrandBlueprintService.createApplyRequest).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({ approvalNote: "Use private drafts only first." }),
+      expect.objectContaining({
+        actorType: "user",
+        actorId: "user-1",
+        agentId: null,
+      }),
+    );
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        companyId: "company-1",
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.brand_blueprint_apply_requested",
+        entityType: "approval",
+        entityId: "approval-1",
+      }),
+    );
+  });
+
+  it("keeps Brand OS apply requests locked during trial preview", async () => {
+    mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("trial"));
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/brand-blueprints/apply-requests")
+      .send({
+        brand: {
+          displayName: "Peter",
+          goals: ["Build visible proof"],
+          audiences: ["founders"],
+          proofPoints: ["shipped local runtime"],
+          offers: [],
+          voiceSamples: [],
+          preferredChannels: ["linkedin"],
+          constraints: [],
+        },
+        approvalNote: "Use private drafts only first.",
+      });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe("Add a paid beta credit purchase to unlock the private Brand OS work loop.");
+    expect(mockDearMeBrandBlueprintService.createApplyRequest).not.toHaveBeenCalled();
+    expect(mockLogActivity).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ action: "dearme.brand_blueprint_apply_requested" }),
+    );
+  });
+
+  it("rejects companies outside the caller scope", async () => {
+    const res = await request(await createApp({ companyIds: ["company-2"] }))
+      .post("/api/dearme/companies/company-1/brand-blueprints/preview")
+      .send({
+        brand: {
+          displayName: "Peter",
+          goals: [],
+          audiences: [],
+          proofPoints: [],
+          offers: [],
+          voiceSamples: [],
+          preferredChannels: [],
+          constraints: [],
+        },
+      });
+
+    expect(res.status).toBe(403);
+    expect(mockDearMeBrandBlueprintService.preview).not.toHaveBeenCalled();
+  });
+
+  it("rejects legacy setup payload request bodies", async () => {
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/brand-blueprints/apply-requests")
+      .send({
+        setup_payload: {
+          company: { name: "Legacy" },
+        },
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Validation error");
+    expect(mockDearMeBrandBlueprintService.createApplyRequest).not.toHaveBeenCalled();
+  });
+});

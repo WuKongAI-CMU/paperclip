@@ -6,6 +6,7 @@ import {
   DollarSign,
   History,
   Search,
+  Sparkles,
   SquarePen,
   Network,
   Boxes,
@@ -80,6 +81,7 @@ export function Sidebar() {
             <span className="truncate">New Issue</span>
           </button>
           <SidebarNavItem to="/dashboard" label="Dashboard" icon={LayoutDashboard} liveCount={liveRunCount} />
+          <SidebarNavItem to="/dearme" label="DearMe" icon={Sparkles} />
           <SidebarNavItem
             to="/inbox"
             label="Inbox"

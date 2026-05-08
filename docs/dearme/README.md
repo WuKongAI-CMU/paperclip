@@ -1,112 +1,210 @@
 # DearMe
 
-> Autonomous personal-brand workforce. Polsia architecture forked for solo experts.
+> Your personal brand growth team. A private AI team that turns one person's
+> work, voice, proof, and relationships into content, opportunities, portfolio
+> updates, outreach, and Dear me reports.
 
-**Status:** Day 1 scaffold. ~9 migrations. Express monolith. Stub routes.
+**Current architecture lock:** [`INTEGRATED-ARCHITECTURE.md`](INTEGRATED-ARCHITECTURE.md)
+
+**Product surface summary:** [`PRODUCT-ARCHITECTURE.md`](PRODUCT-ARCHITECTURE.md)
+
+**Current positioning, roadmap, and code architecture plan:** [`PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`](PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md)
+
+**Current dirty-tree integration plan:** [`WORKTREE-INTEGRATION-PLAN.md`](WORKTREE-INTEGRATION-PLAN.md)
+
+**Marketing packaging guide:** [`POLSIA-MARKETING-PACKAGING-GUIDE.md`](POLSIA-MARKETING-PACKAGING-GUIDE.md)
+
+**Polsia / Naive reuse contract:** [`POLSIA-NAIVE-REUSE-PLAN.md`](POLSIA-NAIVE-REUSE-PLAN.md)
+
+**Agency Agents role-library reference:** [`AGENCY-AGENTS-REFERENCE.md`](AGENCY-AGENTS-REFERENCE.md)
+
+**Lindy / internal assistant baseline reuse plan:** [`LINDY-ASSISTANT-REUSE-PLAN.md`](LINDY-ASSISTANT-REUSE-PLAN.md)
+
+**Rebrand / provenance (required for competitor-informed work):** [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md)
+
+**Status:** Product architecture locked. DearMe is the product north star.
+Implementation should reuse Paperclip/Naive primitives, adapt Polsia's
+automation choreography, and reshape OK Partner-derived source material only
+when it makes DearMe easier to use.
+
+**Current consolidation:** `INTEGRATED-ARCHITECTURE.md` is the current product
+and technical architecture lock. `PRODUCT-ARCHITECTURE.md` is the product-surface
+summary. `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md` is the execution plan.
+`WORKTREE-INTEGRATION-PLAN.md` governs the current dirty-tree integration queue.
+Older comparison, architecture, and backlog files remain useful research/source
+material, but they do not override the current product lock or the
+rebrand/provenance rules.
 
 ## What this is
 
-A 1:1 fork of Polsia (`polsia.com`, $7.92M ARR, 89,572 companies as of 2026-05) — same
-architecture, different positioning:
+DearMe gives one person a small AI growth team that turns their work,
+experience, ideas, offer, side projects, and proof into public-facing assets and
+opportunities.
 
-- **Polsia:** "I help you build a company" → autonomous SaaS workforce.
-- **DearMe:** "I help you grow your personal brand" → autonomous content + outreach +
-  portfolio site for solo experts (consultants / coaches / course creators / freelancers).
+The product treats the person as a brand and a one-person company. Their
+reputation is the distribution layer; their consulting, career, creator, founder,
+or side-business goal is the operating target.
 
-The recon archive that drove this design is at `~/Desktop/polsia-recon-2026-05-05/`
-(15 spec docs + real source code from 5 customer instances + 22 authenticated API responses).
+It is not a journal, companion app, generic writing assistant, or agent admin
+console. It should feel like a managed growth team:
 
-## Architecture (verbatim from Polsia)
+- **Chief of Staff** keeps the user-facing conversation simple.
+- **Brand Strategist** maintains positioning, audience, offer, and narrative.
+- **Voice Editor** keeps output sounding like the user.
+- **Content Producer** creates and repurposes posts, articles, newsletters, and scripts.
+- **Opportunity Scout** finds clients, jobs, collaborations, podcasts, and communities.
+- **Portfolio Builder** maintains the personal site, bio, case studies, and media kit.
+- **Growth Analyst** writes weekly reports and recommends the next cycle.
 
-- Single Express + Postgres service (Render). No microservices.
-- pg-session for auth (no Redis dependency).
-- pgvector ivfflat for memory + voice embeddings.
-- Dual-protocol AI proxy:
-  - `/ai/openai/v1` — OpenAI-compatible (gemini-2.0-flash-lite for 99% of calls)
-  - `/api/proxy/ai` — Anthropic-compatible (sonnet/opus for complexity 4-10)
-- node-cron for scheduling (no BullMQ).
-- Async agent execution: `setImmediate()` + return 202 + client polls.
-- 11 platform agents (10 Polsia + new Brand Site Builder; we drop Meta Ads V1).
-- 9 active MCP servers (verified from production debug; spec lists 22 but only 9 see real use).
+The Polsia-shaped comparison:
 
-## Repo layout
+- **Polsia:** "I help you build and run a company."
+- **DearMe:** "I help you operate the marketing and opportunities around one person."
+
+The local research archives that informed this design are listed at the bottom
+of this file. Treat them as private source material for product judgment, not as
+public provenance or copy-ready implementation material.
+
+## Canonical reading order
+
+1. [`INTEGRATED-ARCHITECTURE.md`](INTEGRATED-ARCHITECTURE.md)
+   - current integrated architecture across DearMe, Lindy baseline, Polsia, Naive/Paperclip, and OK Partner-derived mechanics.
+2. [`WORKTREE-INTEGRATION-PLAN.md`](WORKTREE-INTEGRATION-PLAN.md)
+   - current dirty-tree integration plan, preservation policy, and next safe implementation slice.
+3. [`PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`](PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md)
+   - current product positioning, roadmap, P0 acceptance, and code architecture.
+4. [`POLSIA-MARKETING-PACKAGING-GUIDE.md`](POLSIA-MARKETING-PACKAGING-GUIDE.md)
+   - product packaging rule: sell a personal brand growth team, not AI features.
+5. [`POLSIA-NAIVE-REUSE-PLAN.md`](POLSIA-NAIVE-REUSE-PLAN.md)
+   - reuse contract: Polsia choreography plus Naive/Paperclip control plane.
+6. [`LINDY-ASSISTANT-REUSE-PLAN.md`](LINDY-ASSISTANT-REUSE-PLAN.md)
+   - frontend/workflow reuse plan for work stream, action cards, knowledge UI, hidden action graphs, router, and executor patterns.
+7. [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md)
+   - governance for competitor-informed work, donor-source language, and assets.
+8. [`BUILD-STATE.md`](BUILD-STATE.md)
+   - current slice inventory and verification history.
+9. [`AGENCY-AGENTS-REFERENCE.md`](AGENCY-AGENTS-REFERENCE.md)
+   - optional OSS role-library reference for DearMe team-member definitions and
+     deliverable standards.
+
+Historical docs such as `V4-ARCHITECTURE.md`, `COMPARISON-FINAL.md`, and
+`POLSIA-VS-DEARME*.md` are superseded when they recommend clone/verbatim-copy
+postures, public donor narratives, or product surfaces that conflict with the
+current docs above.
+
+## Architecture
+
+DearMe should reuse the proven substrate instead of rebuilding it, but OK Partner
+is not a product architecture that must be preserved:
+
+- Maximum-reuse rule: copy Naive/Paperclip control-plane primitives and Polsia
+  operating choreography wherever they fit; add DearMe-only code only for Brand
+  OS, voice, personal-brand templates, opportunities, portfolio semantics, and
+  reports.
+- OK Partner-derived operator core: identity, execution, deliverables, memory,
+  approvals, secrets, credits, channel actions, and generated sites.
+- DearMe-first rule: rename, merge, delete, or rewrite OK Partner routes, tables,
+  contracts, and screens when the OK Partner shape makes DearMe worse.
+- Paperclip control plane: auth, workspaces, agents, issues, routines, live
+  events, work products, cost events, budgets, adapters, plugins.
+- Naive-style onboarding/provisioning: `brand_blueprint` as the DearMe version
+  of `setup_payload`, adapted from the OK Partner setup-blueprint flow where it
+  is still useful.
+- Polsia-style choreography: Chief of Staff chat, high-automation cycles, live
+  progress, deliverables, reports, cost attribution, and background execution.
+- DearMe overlay: Brand OS, voice profile, voice gate, content pipeline,
+  opportunity pipeline, portfolio site state, and growth reports.
+
+See [`INTEGRATED-ARCHITECTURE.md`](INTEGRATED-ARCHITECTURE.md) for the current
+cross-donor architecture lock, [`WORKTREE-INTEGRATION-PLAN.md`](WORKTREE-INTEGRATION-PLAN.md)
+for the current dirty-tree integration queue, [`PRODUCT-ARCHITECTURE.md`](PRODUCT-ARCHITECTURE.md)
+for the product surface summary, [`PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`](PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md)
+for the current positioning, feature roadmap, and code-architecture execution
+plan, [`POLSIA-NAIVE-REUSE-PLAN.md`](POLSIA-NAIVE-REUSE-PLAN.md) for the
+implementation-level reuse contract, [`LINDY-ASSISTANT-REUSE-PLAN.md`](LINDY-ASSISTANT-REUSE-PLAN.md)
+for frontend/workflow reuse candidates, and [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md)
+for the governance layer that wins over older max-reuse notes.
+
+## Current repo layout
+
+DearMe should be implemented as the first product on the Paperclip fork already
+present in this repo. OK Partner code and contracts are source material, not a
+boundary to protect:
 
 ```
-server.js           Express monolith entry
-migrate.js          Idempotent migration runner
-migrations/         001-009: users/brands/agents/voice/tasks/cycles/memory/opp/subs
-lib/
-  db.js             Postgres pool
-  ai.js             Dual-protocol AI client + cost ledger
-  auth.js           bcrypt + session middleware
-routes/             20 route modules (auth.js real, others stubbed)
-services/           cycle-scheduler.js + memory-curator.js (cron handlers)
-mcp-servers/        9 MCP server implementations (TODO Day 2-5)
-agents/             agent runtime + 11 prompt templates (TODO Day 3)
-prompts/            Master system prompt + per-agent prompts
-skills/             8 starter SKILL.md (copy from Polsia recon)
-public/             SPA (React 19 + Vite, TODO Day 6+)
-test/
+server/             Express API and orchestration services
+ui/                 React + Vite board UI
+packages/db/        Drizzle schema and migrations
+packages/shared/    shared types, validators, API constants
+packages/adapters/  local / remote / gateway agent adapters
+packages/plugins/   plugin SDK and example plugins
+docs/dearme/        DearMe product, architecture, and backlog docs
+skills/             Paperclip workflow skills
 ```
 
-## Differentiation from Polsia (5% delta)
+DearMe-first product code should focus on:
+
+- voice profile plugin
+- brand blueprint schema and validator, adapted from or replacing OK Partner
+  setup blueprint
+- DearMe archetype templates
+- Chief of Staff / specialist prompts
+- product shell copy and navigation
+- content / opportunity / portfolio work-product views
+- channel connectors and batch decision UX
+
+## Differentiation from Polsia
 
 | | Polsia | DearMe |
 |---|---|---|
-| Customer | "founder with idea" | "expert with audience but stuck on distribution" |
-| Output | company SaaS app | personal portfolio site (6 pages) |
+| Customer | "founder with idea" | "person whose public presence creates opportunity" |
+| Output | company SaaS app | personal brand assets and growth opportunities |
 | Voice | shared dark-humor template | **client's own voice** (cloned from 100 real posts) |
-| CRM | leads → meeting → customer | opportunities (speaking/podcast/consulting/collab) |
-| Twitter | shared @polsia | client's own OAuth + shared @brandinpublic flywheel |
-| Stripe Connect | 20% take rate (V1) | **0%** (V2 sliding scale only on paid newsletter/consulting) |
+| CRM | leads -> meeting -> customer | opportunities: clients, jobs, podcasts, collaborations |
+| Channels | platform-owned execution rails | customer-owned OAuth and batch-approved actions |
+| Site | company app / landing page | personal site, portfolio, bio, case studies, /now |
 
 ## Run locally
 
+Use the Paperclip development path from the root `AGENTS.md`:
+
 ```bash
-cp .env.example .env
-# edit .env — set DATABASE_URL (Neon), OPENAI_API_KEY, etc.
-npm install
-npm run migrate
-npm run dev
-# → http://localhost:3000/health
+pnpm install
+pnpm dev
 ```
 
-## Day 1 checklist
+This starts the API and UI through the Paperclip dev server, normally at
+`http://localhost:3100` unless the port is already occupied.
 
-- [x] Repo init + git
-- [x] package.json + .env.example + .gitignore
-- [x] Migrations 001-009 (users/brands/agents/voice/tasks/cycles/memory/opp/subs)
-- [x] migrate.js (idempotent runner)
-- [x] server.js skeleton with all 20 route mounts
-- [x] lib/db.js + lib/ai.js (dual protocol) + lib/auth.js
-- [x] routes/auth.js (real signup/login/logout/me)
-- [x] 20 route stubs return 501
-- [x] services/cycle-scheduler.js + services/memory-curator.js stubs
-- [x] render.yaml
-- [x] README
+## Build order
 
-## Day 2 priorities
+P0 should be built in this order:
 
-- routes/brands.js — CRUD
-- routes/onboarding.js — 8-step flow + Twitter/LinkedIn voice ingest
-- routes/conversations.js + SSE stream — real-time chat with Manager (ex-CEO) agent
-- mcp-servers/{tasks,reports,memory,dashboard,send_reply}.js — 5 core MCP
-- agents/runtime.js — Claude Agent SDK wrapper that spawns workspace per execution
-- prompts/manager.md, brand-site-builder.md, twitter.md, cold-outreach.md, research.md
-
-## Day 3-7
-
-- Brand Site Builder runBuildCycle() — port foundros pattern (340 LOC reference)
-- Voice profile ingest + match scoring (the moat differentiator)
-- Stripe + Postmark + Twitter integration
-- /live public dashboard SSE
-- Frontend SPA (Vite + React 19 + Tailwind)
-- Onboarding video + landing page
+1. DearMe-first operator core extraction: setup blueprint, deliverables, memory,
+   channel actions, approvals, credits, and provider jobs from OK Partner where
+   useful.
+2. Brand blueprint schema and onboarding output.
+3. Voice profile plugin: extract, score, regenerate, history.
+4. DearMe archetype templates and first-cycle task generation.
+5. Chief of Staff chat copy and hidden specialist routing.
+6. Content pipeline, opportunity pipeline, and portfolio work products.
+7. Live progress and weekly "Dear me" growth report.
+8. Batch decision gates for publish, send, deploy, and spend.
+9. Credits, budget display, and plan/usage surface.
 
 ## Recon source
 
-All design decisions trace back to:
-- `~/Desktop/polsia-recon-2026-05-05/final-summary/` — 15 spec docs
-- `~/Desktop/polsia-recon-2026-05-05/expanded/` — 65MB extracted artifacts
-- `polsia-archive/instances/` — real source from 5 customer instances
-- `polsia-archive/agent-prompts/12-agents-individual/` — verbatim system prompts
+Private source material used for product and architecture judgment:
+
+- `~/Desktop/polsia-recon-2026-05-05/final-summary/` - Polsia product and
+  operating-model research summaries
+- `~/Desktop/polsia-recon-2026-05-05/expanded/` - private Polsia research
+  archive for offline reference
+- `~/naive-research-2026-05-05/` - Paperclip/Naive architecture and replication
+  notes
+- `https://github.com/msitarzewski/agency-agents.git` snapshot
+  `783f6a72bfd7f3135700ac273c619d92821b419a` - MIT role-library reference for
+  internal DearMe team member definitions and deliverable standards
+- `~/OK Partner/docs/SHARED-OPERATOR-CORE.md` - shared-core product decision
+- `~/OK Partner/docs/SETUP-BLUEPRINT.md` - setup-blueprint contract to adapt
+- local Paperclip fork source in this repo

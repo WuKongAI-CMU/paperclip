@@ -124,6 +124,7 @@ describe("Sidebar", () => {
     await flushReact();
 
     expect(container.textContent).not.toContain("Workspaces");
+    expect(container.textContent).toContain("DearMe");
 
     await act(async () => {
       root.unmount();

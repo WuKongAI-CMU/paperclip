@@ -1,0 +1,524 @@
+import { randomUUID } from "node:crypto";
+import { eq, sql } from "drizzle-orm";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  agents,
+  companies,
+  createDb,
+  documents,
+  issueComments,
+  issueDocuments,
+  issues,
+  issueWorkProducts,
+} from "@paperclipai/db";
+import { ISSUE_CONTINUATION_SUMMARY_DOCUMENT_KEY } from "@paperclipai/shared";
+import {
+  getEmbeddedPostgresTestSupport,
+  startEmbeddedPostgresTestDatabase,
+} from "./helpers/embedded-postgres.js";
+import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "../services/dearme-brand-blueprint-apply.js";
+import { dearmeOutputHandoffService } from "../services/dearme-output-handoff.js";
+
+const embeddedPostgresSupport = await getEmbeddedPostgresTestSupport();
+const describeEmbeddedPostgres = embeddedPostgresSupport.supported ? describe : describe.skip;
+
+if (!embeddedPostgresSupport.supported) {
+  console.warn(
+    `Skipping embedded Postgres DearMe output handoff tests on this host: ${embeddedPostgresSupport.reason ?? "unsupported environment"}`,
+  );
+}
+
+function issuePrefix(id: string) {
+  return `OH${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+}
+
+describeEmbeddedPostgres("DearMe output handoff service", () => {
+  let db!: ReturnType<typeof createDb>;
+  let tempDb: Awaited<ReturnType<typeof startEmbeddedPostgresTestDatabase>> | null = null;
+
+  beforeAll(async () => {
+    tempDb = await startEmbeddedPostgresTestDatabase("paperclip-dearme-output-handoff-");
+    db = createDb(tempDb.connectionString);
+  }, 30_000);
+
+  afterEach(async () => {
+    await db.execute(sql.raw(`TRUNCATE TABLE "companies" CASCADE`));
+  });
+
+  afterAll(async () => {
+    await tempDb?.cleanup();
+  });
+
+  async function seedCompany() {
+    const companyId = randomUUID();
+    await db.insert(companies).values({
+      id: companyId,
+      name: "DearMe Beta",
+      issuePrefix: issuePrefix(companyId),
+      requireBoardApprovalForNewAgents: false,
+    });
+    return companyId;
+  }
+
+  async function seedAgent(companyId: string) {
+    const agentId = randomUUID();
+    await db.insert(agents).values({
+      id: agentId,
+      companyId,
+      name: "DearMe Analyst",
+      role: "growth_analyst",
+      adapterType: "process",
+      adapterConfig: {},
+      runtimeConfig: {},
+      permissions: {},
+    });
+    return agentId;
+  }
+
+  async function seedIssue(input: {
+    companyId: string;
+    title: string;
+    identifier: string;
+    originKind?: string;
+    originFingerprint: string;
+    status: string;
+    assigneeAgentId?: string | null;
+    updatedAt: Date;
+    hiddenAt?: Date | null;
+  }) {
+    const issueId = randomUUID();
+    await db.insert(issues).values({
+      id: issueId,
+      companyId: input.companyId,
+      title: input.title,
+      status: input.status,
+      identifier: input.identifier,
+      originKind: input.originKind ?? DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
+      originFingerprint: input.originFingerprint,
+      assigneeAgentId: input.assigneeAgentId ?? null,
+      hiddenAt: input.hiddenAt ?? null,
+      updatedAt: input.updatedAt,
+    });
+    return issueId;
+  }
+
+  async function attachDocument(input: {
+    companyId: string;
+    issueId: string;
+    key: string;
+    title: string;
+    body: string;
+    updatedAt: Date;
+  }) {
+    const documentId = randomUUID();
+    await db.insert(documents).values({
+      id: documentId,
+      companyId: input.companyId,
+      title: input.title,
+      format: "markdown",
+      latestBody: input.body,
+      latestRevisionNumber: 2,
+      updatedAt: input.updatedAt,
+    });
+    await db.insert(issueDocuments).values({
+      companyId: input.companyId,
+      issueId: input.issueId,
+      documentId,
+      key: input.key,
+      updatedAt: input.updatedAt,
+    });
+    return documentId;
+  }
+
+  it("returns customer-visible DearMe outputs and strips system/provider internals", async () => {
+    const companyId = await seedCompany();
+    const agentId = await seedAgent(companyId);
+    const brandIssueId = await seedIssue({
+      companyId,
+      title: "DearMe: Review Brand OS for Peter",
+      identifier: "DME-1",
+      originFingerprint: "brand-os-review",
+      status: "done",
+      updatedAt: new Date("2026-05-07T14:00:00.000Z"),
+    });
+    const contentIssueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft first content batch",
+      identifier: "DME-2",
+      originFingerprint: "operation-draft_content_batch",
+      status: "in_review",
+      updatedAt: new Date("2026-05-07T15:00:00.000Z"),
+    });
+    const opportunityIssueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft opportunity list",
+      identifier: "DME-3",
+      originFingerprint: "operation-draft_opportunity_list",
+      status: "in_review",
+      updatedAt: new Date("2026-05-07T15:20:00.000Z"),
+    });
+    const portfolioIssueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Prepare portfolio update",
+      identifier: "DME-4",
+      originFingerprint: "operation-prepare_portfolio_update",
+      status: "in_review",
+      updatedAt: new Date("2026-05-07T15:30:00.000Z"),
+    });
+    const reportIssueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft weekly Dear me report",
+      identifier: "DME-5",
+      originFingerprint: "operation-schedule_weekly_report",
+      status: "done",
+      updatedAt: new Date("2026-05-07T15:40:00.000Z"),
+    });
+    await seedIssue({
+      companyId,
+      title: "DearMe Draft: Hidden old report",
+      identifier: "DME-6",
+      originFingerprint: "operation-schedule_weekly_report",
+      status: "done",
+      updatedAt: new Date("2026-05-07T13:00:00.000Z"),
+      hiddenAt: new Date("2026-05-07T13:30:00.000Z"),
+    });
+    await seedIssue({
+      companyId,
+      title: "Manual customer issue",
+      identifier: "DME-7",
+      originKind: "manual",
+      originFingerprint: "operation-draft_opportunity_list",
+      status: "done",
+      updatedAt: new Date("2026-05-07T12:00:00.000Z"),
+    });
+
+    await attachDocument({
+      companyId,
+      issueId: brandIssueId,
+      key: "brand-os",
+      title: "Brand OS",
+      body: [
+        "# Brand OS",
+        "## Positioning",
+        "Practical AI operator for local-first products.",
+        "## Goals",
+        "Build visible proof.",
+        "## Proof Points",
+        "Shipped a local agent runtime.",
+      ].join("\n\n"),
+      updatedAt: new Date("2026-05-07T14:01:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: brandIssueId,
+      key: "approval-gates",
+      title: "Approval Gates",
+      body: "Approval boundaries: no public claims without review.",
+      updatedAt: new Date("2026-05-07T14:01:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: brandIssueId,
+      key: "voice-profile",
+      title: "Voice profile",
+      body: "# Voice profile\n\n## Guidance\nShort, direct, evidence-first notes.\n## Boundary\nCheck voice before any public copy.",
+      updatedAt: new Date("2026-05-07T14:02:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: brandIssueId,
+      key: ISSUE_CONTINUATION_SUMMARY_DOCUMENT_KEY,
+      title: "Continuation summary",
+      body: "Internal continuation state should not appear.",
+      updatedAt: new Date("2026-05-07T14:03:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: contentIssueId,
+      key: "starter-posts",
+      title: "Starter posts",
+      body: [
+        "Channel: LinkedIn",
+        "Audience: founders evaluating local AI workflows",
+        "Hook: Your personal brand should show proof while you keep building.",
+        "Draft body: A short proof-backed post about shipping local AI products.",
+        "Proof used: shipped a local agent runtime",
+        "Approval gate: publish social posts",
+      ].join("\n"),
+      updatedAt: new Date("2026-05-07T15:01:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: opportunityIssueId,
+      key: "opportunity-list",
+      title: "Opportunity list",
+      body: [
+        "Target: host of a practical AI operators podcast",
+        "Why relevant: their audience buys local-first AI workflow tools",
+        "Relevance score: 8/10",
+        "Outreach angle: offer a teardown of a real local-agent workflow",
+        "Draft message: I can share concrete operator notes from a shipped local AI product.",
+      ].join("\n"),
+      updatedAt: new Date("2026-05-07T15:21:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: portfolioIssueId,
+      key: "portfolio-update",
+      title: "Portfolio update",
+      body: [
+        "Page section: proof cards",
+        "Proof source: local-agent runtime launch notes",
+        "Proposed copy: Built a local-first AI operating layer with approval gates.",
+        "Deploy gate: public site update requires approval.",
+      ].join("\n"),
+      updatedAt: new Date("2026-05-07T15:31:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: reportIssueId,
+      key: "dear-me-report",
+      title: "Dear me report",
+      body: [
+        "Work Completed: refreshed positioning and drafted private outputs.",
+        "Decisions Needed: approve the content batch and opportunity outreach.",
+        "Next bets: turn proof cards into one portfolio update.",
+        "Report reference: week of May 7.",
+      ].join("\n"),
+      updatedAt: new Date("2026-05-07T15:41:00.000Z"),
+    });
+    await db.insert(issueWorkProducts).values({
+      id: randomUUID(),
+      companyId,
+      issueId: contentIssueId,
+      type: "draft",
+      provider: "codex-local",
+      title: "Content draft batch",
+      url: null,
+      status: "ready",
+      reviewState: "pending",
+      summary: "Three private posts prepared for review.",
+      updatedAt: new Date("2026-05-07T15:05:00.000Z"),
+    });
+    await db.insert(issueComments).values({
+      id: randomUUID(),
+      companyId,
+      issueId: contentIssueId,
+      authorAgentId: agentId,
+      body: "Prepared a private content batch with three concrete drafts.",
+      createdAt: new Date("2026-05-07T15:10:00.000Z"),
+      updatedAt: new Date("2026-05-07T15:10:00.000Z"),
+    });
+
+    const result = await dearmeOutputHandoffService(db).listOutputs(companyId);
+
+    expect(result.outputs.map((output) => output.kind)).toEqual([
+      "brand_os",
+      "voice_profile",
+      "content_drafts",
+      "opportunity_drafts",
+      "portfolio_update",
+      "weekly_report",
+    ]);
+    const brandOutput = result.outputs.find((output) => output.kind === "brand_os")!;
+    const voiceOutput = result.outputs.find((output) => output.kind === "voice_profile")!;
+    const contentOutput = result.outputs.find((output) => output.kind === "content_drafts")!;
+    const opportunityOutput = result.outputs.find((output) => output.kind === "opportunity_drafts")!;
+    const portfolioOutput = result.outputs.find((output) => output.kind === "portfolio_update")!;
+    const reportOutput = result.outputs.find((output) => output.kind === "weekly_report")!;
+
+    expect(brandOutput.status).toBe("complete");
+    expect(brandOutput.documents.map((document) => document.key)).toEqual(["brand-os", "approval-gates"]);
+    expect(brandOutput.documents[0]?.bodyPreview).toContain("Practical AI operator");
+    expect(brandOutput.details).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: "positioning",
+        label: "Positioning",
+        value: "Practical AI operator for local first products.",
+      }),
+      expect.objectContaining({
+        kind: "proof_used",
+        value: "Shipped a local agent runtime.",
+      }),
+      expect.objectContaining({
+        kind: "approval_gate",
+        label: "Approval boundary",
+        value: "no public claims without review.",
+      }),
+    ]));
+    expect(voiceOutput.documents.map((document) => document.key)).toEqual(["voice-profile"]);
+    expect(voiceOutput.details).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "voice_guidance", value: expect.stringContaining("Short, direct") }),
+    ]));
+    expect(contentOutput.status).toBe("ready_for_review");
+    expect(contentOutput.isReviewable).toBe(true);
+    expect(contentOutput.latestUpdate?.bodyPreview).toContain("Prepared a private content batch");
+    expect(contentOutput.details).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "channel", value: "LinkedIn" }),
+      expect.objectContaining({ kind: "hook", value: expect.stringContaining("personal brand") }),
+      expect.objectContaining({ kind: "approval_gate", value: expect.stringContaining("publish social") }),
+    ]));
+    expect(contentOutput.workProducts[0]).toEqual(
+      expect.objectContaining({
+        title: "Content draft batch",
+        summary: "Three private posts prepared for review.",
+      }),
+    );
+    expect(contentOutput.workProducts[0]).not.toHaveProperty("provider");
+    expect(opportunityOutput.details).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "target", value: expect.stringContaining("podcast") }),
+      expect.objectContaining({ kind: "outreach_angle", value: expect.stringContaining("teardown") }),
+      expect.objectContaining({ kind: "draft_message", value: expect.stringContaining("operator notes") }),
+    ]));
+    expect(portfolioOutput.details).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "page_section", value: "proof cards" }),
+      expect.objectContaining({ kind: "proposed_copy", value: expect.stringContaining("approval gates") }),
+      expect.objectContaining({ kind: "deploy_gate", value: expect.stringContaining("approval") }),
+    ]));
+    expect(reportOutput.details).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "completed_work", value: expect.stringContaining("refreshed positioning") }),
+      expect.objectContaining({ kind: "decisions_needed", value: expect.stringContaining("approve the content") }),
+      expect.objectContaining({ kind: "next_bets", value: expect.stringContaining("proof cards") }),
+    ]));
+    const serialized = JSON.stringify(result).toLowerCase();
+    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw"]) {
+      expect(serialized).not.toContain(hiddenTerm);
+    }
+
+    const allIssueRows = await db.select().from(issues).where(eq(issues.companyId, companyId));
+    expect(allIssueRows).toHaveLength(7);
+  });
+
+  it("records an output approval on the existing issue and prepared work", async () => {
+    const companyId = await seedCompany();
+    const agentId = await seedAgent(companyId);
+    const issueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft first content batch",
+      identifier: "DME-8",
+      originFingerprint: "operation-draft_content_batch",
+      status: "in_review",
+      assigneeAgentId: agentId,
+      updatedAt: new Date("2026-05-07T16:00:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId,
+      key: "starter-posts",
+      title: "Starter posts",
+      body: "Draft body: Three proof-backed starter posts.\nApproval gate: publish social posts",
+      updatedAt: new Date("2026-05-07T16:01:00.000Z"),
+    });
+    const workProductId = randomUUID();
+    await db.insert(issueWorkProducts).values({
+      id: workProductId,
+      companyId,
+      issueId,
+      type: "draft",
+      provider: "codex-local",
+      title: "Content draft batch",
+      url: null,
+      status: "ready",
+      reviewState: "pending",
+      summary: "Three private posts prepared for review.",
+      updatedAt: new Date("2026-05-07T16:02:00.000Z"),
+    });
+
+    const result = await dearmeOutputHandoffService(db).reviewOutput(
+      companyId,
+      `${issueId}:content_drafts`,
+      { action: "approve", decisionNote: "This sounds like me." },
+      { actorType: "user", actorId: "user-1", agentId: null, runId: null },
+    );
+
+    expect(result.status).toBe("recorded");
+    expect(result.action).toBe("approve");
+    expect(result.output.status).toBe("complete");
+    expect(result.wakeIssue).toBeNull();
+    expect(result.comment.bodyPreview).toContain("approved");
+
+    const [issueRow] = await db
+      .select({ status: issues.status, completedAt: issues.completedAt })
+      .from(issues)
+      .where(eq(issues.id, issueId));
+    expect(issueRow?.status).toBe("done");
+    expect(issueRow?.completedAt).toBeInstanceOf(Date);
+
+    const [workProductRow] = await db
+      .select({ reviewState: issueWorkProducts.reviewState })
+      .from(issueWorkProducts)
+      .where(eq(issueWorkProducts.id, workProductId));
+    expect(workProductRow?.reviewState).toBe("approved");
+
+    const serialized = JSON.stringify(result).toLowerCase();
+    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw"]) {
+      expect(serialized).not.toContain(hiddenTerm);
+    }
+  });
+
+  it("queues regeneration on the existing assignee without exposing wake internals", async () => {
+    const companyId = await seedCompany();
+    const agentId = await seedAgent(companyId);
+    const issueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft weekly Dear me report",
+      identifier: "DME-9",
+      originFingerprint: "operation-schedule_weekly_report",
+      status: "in_review",
+      assigneeAgentId: agentId,
+      updatedAt: new Date("2026-05-07T17:00:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId,
+      key: "dear-me-report",
+      title: "Dear me report",
+      body: "Completed work: prepared the first report.\nNext bets: improve proof cards.",
+      updatedAt: new Date("2026-05-07T17:01:00.000Z"),
+    });
+    const workProductId = randomUUID();
+    await db.insert(issueWorkProducts).values({
+      id: workProductId,
+      companyId,
+      issueId,
+      type: "draft",
+      provider: "codex-local",
+      title: "Weekly Dear me report",
+      url: null,
+      status: "ready",
+      reviewState: "pending",
+      summary: "Private weekly report prepared for review.",
+      updatedAt: new Date("2026-05-07T17:02:00.000Z"),
+    });
+
+    const result = await dearmeOutputHandoffService(db).reviewOutput(
+      companyId,
+      `${issueId}:weekly_report`,
+      { action: "regenerate", decisionNote: null },
+      { actorType: "user", actorId: "user-1", agentId: null, runId: null },
+    );
+
+    expect(result.status).toBe("queued");
+    expect(result.action).toBe("regenerate");
+    expect(result.wakeIssue).toEqual({ id: issueId, assigneeAgentId: agentId, status: "todo" });
+    expect(result.comment.bodyPreview).toContain("regenerate");
+
+    const [issueRow] = await db
+      .select({ status: issues.status, completedAt: issues.completedAt })
+      .from(issues)
+      .where(eq(issues.id, issueId));
+    expect(issueRow?.status).toBe("todo");
+    expect(issueRow?.completedAt).toBeNull();
+
+    const [workProductRow] = await db
+      .select({ reviewState: issueWorkProducts.reviewState })
+      .from(issueWorkProducts)
+      .where(eq(issueWorkProducts.id, workProductId));
+    expect(workProductRow?.reviewState).toBe("changes_requested");
+
+    const serialized = JSON.stringify(result).toLowerCase();
+    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw"]) {
+      expect(serialized).not.toContain(hiddenTerm);
+    }
+  });
+});

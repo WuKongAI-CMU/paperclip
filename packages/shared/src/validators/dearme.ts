@@ -1,0 +1,1347 @@
+import { z } from "zod";
+
+export const DEARME_BRAND_BLUEPRINT_VERSION = 1;
+
+export const DEARME_BRAND_CHANNELS = [
+  "linkedin",
+  "x",
+  "newsletter",
+  "blog",
+  "portfolio",
+  "email",
+  "community",
+  "website",
+] as const;
+
+export const DEARME_BRAND_CADENCES = ["daily", "weekly", "biweekly"] as const;
+
+export const DEARME_TEAM_ROLES = [
+  "chief_of_staff",
+  "brand_strategist",
+  "voice_editor",
+  "content_producer",
+  "opportunity_scout",
+  "portfolio_builder",
+  "growth_analyst",
+] as const;
+
+export const DEARME_RISK_GATES = [
+  "publish_social",
+  "send_email",
+  "deploy_public_site",
+  "spend_money",
+  "public_claim",
+  "sensitive_material",
+  "connect_channel",
+  "destructive_change",
+] as const;
+
+export const DEARME_BRAND_BLUEPRINT_OPERATION_ORDER = [
+  "create_brand_os",
+  "create_growth_team",
+  "seed_voice_profile",
+  "start_weekly_growth_cycle",
+  "draft_content_batch",
+  "draft_opportunity_list",
+  "prepare_portfolio_update",
+  "schedule_weekly_report",
+] as const;
+
+export const DEARME_PAID_BETA_BILLER = "dearme_paid_beta";
+export const DEARME_PAID_BETA_MIN_PAYMENT_CENTS = 100;
+export const DEARME_PAID_BETA_ENTITLEMENT_STATES = ["trial_preview", "paid_beta_active"] as const;
+export const DEARME_OUTPUT_KINDS = [
+  "brand_os",
+  "voice_profile",
+  "content_drafts",
+  "opportunity_drafts",
+  "portfolio_update",
+  "weekly_report",
+] as const;
+export const DEARME_OUTPUT_STATUSES = [
+  "queued",
+  "working",
+  "ready_for_review",
+  "complete",
+  "blocked",
+  "cancelled",
+] as const;
+export const DEARME_OUTPUT_REVIEW_ACTIONS = [
+  "approve",
+  "request_changes",
+  "regenerate",
+] as const;
+export const DEARME_OUTPUT_REVIEW_RESULT_STATUSES = [
+  "recorded",
+  "queued",
+] as const;
+export const DEARME_OUTPUT_DETAIL_KINDS = [
+  "positioning",
+  "voice_guidance",
+  "channel",
+  "audience",
+  "hook",
+  "draft_body",
+  "proof_used",
+  "approval_gate",
+  "target",
+  "why_relevant",
+  "relevance_score",
+  "outreach_angle",
+  "draft_message",
+  "page_section",
+  "proof_source",
+  "proposed_copy",
+  "deploy_gate",
+  "completed_work",
+  "decisions_needed",
+  "next_bets",
+  "report_reference",
+] as const;
+export const DEARME_WORKBENCH_DECISION_KINDS = [
+  "approve_brand_os",
+  "review_output",
+  "approve_action",
+] as const;
+export const DEARME_WORKBENCH_BATCH_ACTIONS = [
+  "review_work",
+  "review_posts",
+  "review_outreach",
+  "review_site_updates",
+  "review_sensitive_items",
+  "approve_claims",
+] as const;
+export const DEARME_WORKBENCH_PROGRESS_KINDS = [
+  "paid_beta",
+  "brand_os_requested",
+  "brand_os_applied",
+  "team_progress",
+] as const;
+export const DEARME_WORKBENCH_STREAM_STATUSES = [
+  "working",
+  "ready_for_review",
+  "complete",
+  "blocked",
+  "cancelled",
+  "decision_needed",
+  "recorded",
+] as const;
+export const DEARME_VOICE_GATE_CHECK_KINDS = [
+  "voice_samples",
+  "forbidden_phrases",
+  "generic_launch_copy",
+  "proof_claim",
+  "channel_length",
+] as const;
+export const DEARME_VOICE_GATE_CHECK_STATUSES = ["pass", "warn", "block"] as const;
+export const DEARME_VOICE_GATE_STATUSES = [
+  "ready_for_review",
+  "needs_voice_review",
+  "blocked_before_public",
+] as const;
+export const DEARME_VOICE_GATE_ARTIFACT_KINDS = [
+  "brand_positioning",
+  "content_draft",
+  "opportunity_outreach",
+  "portfolio_copy",
+  "weekly_report",
+] as const;
+
+const shortTextSchema = z.string().trim().min(1).max(240);
+const mediumTextSchema = z.string().trim().min(1).max(1_000);
+const longTextSchema = z.string().trim().min(1).max(4_000);
+
+function optionalText(maxLength: number) {
+  return z.preprocess(
+    (value) => (typeof value === "string" && value.trim().length === 0 ? undefined : value),
+    z.string().trim().min(1).max(maxLength).optional(),
+  );
+}
+
+function textList(maxItems: number, maxLength: number) {
+  return z.array(z.string().trim().min(1).max(maxLength)).max(maxItems).default([]);
+}
+
+function uniqueStrings(values: string[]) {
+  const seen = new Set<string>();
+  return values.filter((value) => {
+    const key = value.toLocaleLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+export const dearMeBrandBlueprintSeedSchema = z.object({
+  displayName: optionalText(120),
+  positioning: optionalText(1_000),
+  goals: textList(8, 240),
+  audiences: textList(8, 240),
+  proofPoints: textList(16, 1_000),
+  offers: textList(8, 240),
+  voiceSamples: textList(8, 4_000),
+  preferredChannels: z.array(z.enum(DEARME_BRAND_CHANNELS)).max(8).default([]),
+  constraints: textList(10, 500),
+  cadence: z.enum(DEARME_BRAND_CADENCES).default("weekly"),
+  budgetMonthlyCents: z.number().int().min(0).max(500_000).default(25_000),
+  autoDraftEnabled: z.boolean().default(true),
+}).strict();
+
+const dearMeTeamMemberSchema = z.object({
+  role: z.enum(DEARME_TEAM_ROLES),
+  name: shortTextSchema,
+  mission: mediumTextSchema,
+  approvalBoundary: mediumTextSchema,
+}).strict();
+
+const dearMeRiskGateSchema = z.object({
+  kind: z.enum(DEARME_RISK_GATES),
+  label: shortTextSchema,
+  mode: z.literal("approval_required"),
+  reason: mediumTextSchema,
+}).strict();
+
+const dearMeBlueprintCycleSchema = z.object({
+  id: shortTextSchema,
+  title: shortTextSchema,
+  cadence: z.enum(DEARME_BRAND_CADENCES),
+  ownerRole: z.enum(DEARME_TEAM_ROLES),
+  deliverables: z.array(shortTextSchema).min(1).max(8),
+}).strict();
+
+const dearMeBlueprintAssetSchema = z.object({
+  id: shortTextSchema,
+  title: shortTextSchema,
+  kind: z.enum([
+    "brand_os",
+    "voice_profile",
+    "content_pipeline",
+    "opportunity_pipeline",
+    "portfolio_draft",
+    "weekly_report",
+  ]),
+  ownerRole: z.enum(DEARME_TEAM_ROLES),
+}).strict();
+
+const dearMeMemorySeedSchema = z.object({
+  kind: z.enum(["identity", "goal", "audience", "proof", "offer", "voice", "constraint"]),
+  label: shortTextSchema,
+  value: longTextSchema,
+}).strict();
+
+export const dearMeBrandBlueprintSchema = z.object({
+  version: z.literal(DEARME_BRAND_BLUEPRINT_VERSION),
+  brand: z.object({
+    displayName: shortTextSchema,
+    positioning: mediumTextSchema,
+    goals: z.array(shortTextSchema).min(1).max(8),
+    audiences: z.array(shortTextSchema).min(1).max(8),
+    proofPoints: z.array(mediumTextSchema).max(16),
+    offers: z.array(shortTextSchema).max(8),
+    preferredChannels: z.array(z.enum(DEARME_BRAND_CHANNELS)).max(8),
+    constraints: z.array(mediumTextSchema).max(10),
+  }).strict(),
+  voiceProfile: z.object({
+    status: z.enum(["needs_samples", "ready_for_gate"]),
+    sampleCount: z.number().int().min(0),
+    guidance: mediumTextSchema,
+  }).strict(),
+  contentPillars: z.array(shortTextSchema).min(3).max(6),
+  team: z.array(dearMeTeamMemberSchema).min(1).max(10),
+  cycles: z.array(dearMeBlueprintCycleSchema).min(1).max(8),
+  assets: z.array(dearMeBlueprintAssetSchema).min(1).max(8),
+  gates: z.array(dearMeRiskGateSchema).min(1).max(DEARME_RISK_GATES.length),
+  memorySeeds: z.array(dearMeMemorySeedSchema).min(1).max(40),
+  budgetPolicy: z.object({
+    monthlyCents: z.number().int().min(0).max(500_000),
+    warnPercent: z.number().int().min(1).max(100),
+    hardStopEnabled: z.boolean(),
+  }).strict(),
+}).strict();
+
+export const dearMeBrandBlueprintPreviewSchema = z.object({
+  brand: dearMeBrandBlueprintSeedSchema,
+}).strict();
+
+export const dearMeBrandBlueprintApplyRequestSchema = dearMeBrandBlueprintPreviewSchema.extend({
+  approvalNote: optionalText(1_000).nullable(),
+}).strict();
+
+export const dearMeBrandBlueprintExecutionPlanSchema = z.object({
+  operations: z.array(z.object({
+    id: z.enum(DEARME_BRAND_BLUEPRINT_OPERATION_ORDER),
+    title: shortTextSchema,
+    description: mediumTextSchema,
+    ownerRole: z.enum(DEARME_TEAM_ROLES),
+    approvalGate: z.enum(DEARME_RISK_GATES).nullable(),
+  }).strict()).length(DEARME_BRAND_BLUEPRINT_OPERATION_ORDER.length),
+  riskGates: z.array(dearMeRiskGateSchema),
+  creates: z.object({
+    teamMembers: z.number().int().min(0),
+    cycles: z.number().int().min(0),
+    assets: z.number().int().min(0),
+    memorySeeds: z.number().int().min(0),
+  }).strict(),
+}).strict();
+
+export const dearMeBrandBlueprintApplyPayloadSchema = z.object({
+  title: shortTextSchema,
+  summary: mediumTextSchema,
+  recommendedAction: mediumTextSchema,
+  nextActionOnApproval: mediumTextSchema,
+  risks: z.array(mediumTextSchema).max(32),
+  approvalNote: optionalText(1_000).nullable(),
+  autoDraftEnabled: z.boolean().default(true),
+  brandBlueprint: dearMeBrandBlueprintSchema,
+  executionPlan: dearMeBrandBlueprintExecutionPlanSchema,
+}).strict();
+
+export const dearMeBrandBlueprintSummarySchema = z.object({
+  title: shortTextSchema,
+  summary: mediumTextSchema,
+  recommendedAction: mediumTextSchema,
+  nextActionOnApproval: mediumTextSchema,
+  teamMemberCount: z.number().int().min(0),
+  cycleCount: z.number().int().min(0),
+  riskGateCount: z.number().int().min(0),
+}).strict();
+
+export const dearMeFirstCyclePreviewSchema = z.object({
+  brand: dearMeBrandBlueprintSeedSchema,
+}).strict();
+
+const dearMeVoiceGateArtifactSchema = z.object({
+  kind: z.enum(DEARME_VOICE_GATE_ARTIFACT_KINDS),
+  channel: z.enum(DEARME_BRAND_CHANNELS).nullable().default(null),
+  title: optionalText(240),
+  text: z.string().trim().min(1).max(8_000),
+  proofUsed: optionalText(1_000),
+}).strict();
+
+export const dearMeVoiceGateEvaluationSchema = z.object({
+  brand: dearMeBrandBlueprintSeedSchema,
+  artifact: dearMeVoiceGateArtifactSchema,
+}).strict();
+
+const dearMeVoiceGateCheckSchema = z.object({
+  kind: z.enum(DEARME_VOICE_GATE_CHECK_KINDS),
+  label: shortTextSchema,
+  status: z.enum(DEARME_VOICE_GATE_CHECK_STATUSES),
+  summary: mediumTextSchema,
+  evidence: z.array(shortTextSchema).max(6),
+  recommendation: mediumTextSchema,
+}).strict();
+
+export const dearMeVoiceGateResultSchema = z.object({
+  status: z.enum(DEARME_VOICE_GATE_STATUSES),
+  score: z.number().int().min(0).max(100),
+  summary: mediumTextSchema,
+  approvalGate: z.enum(DEARME_RISK_GATES),
+  checks: z.array(dearMeVoiceGateCheckSchema).length(DEARME_VOICE_GATE_CHECK_KINDS.length),
+  blockedActions: z.array(shortTextSchema).min(1).max(8),
+}).strict();
+
+const dearMeFirstCycleVoiceProfileSchema = z.object({
+  title: shortTextSchema,
+  status: z.enum(["needs_samples", "ready_for_gate"]),
+  sampleCount: z.number().int().min(0),
+  guidance: mediumTextSchema,
+  draftTone: z.array(shortTextSchema).min(3).max(5),
+  ownerRole: z.literal("voice_editor"),
+  approvalGate: z.literal("sensitive_material"),
+}).strict();
+
+const dearMeFirstCycleStarterPostSchema = z.object({
+  id: shortTextSchema,
+  channel: z.enum(DEARME_BRAND_CHANNELS),
+  title: shortTextSchema,
+  hook: mediumTextSchema,
+  body: mediumTextSchema,
+  proofUsed: mediumTextSchema,
+  ownerRole: z.literal("content_producer"),
+  approvalGate: z.literal("publish_social"),
+}).strict();
+
+const dearMeFirstCycleOpportunityLeadSchema = z.object({
+  title: shortTextSchema,
+  target: shortTextSchema,
+  whyRelevant: mediumTextSchema,
+  outreachAngle: mediumTextSchema,
+  draftMessage: mediumTextSchema,
+  ownerRole: z.literal("opportunity_scout"),
+  approvalGate: z.literal("send_email"),
+}).strict();
+
+const dearMeFirstCyclePortfolioProofCardSchema = z.object({
+  title: shortTextSchema,
+  proofSource: mediumTextSchema,
+  proposedCopy: mediumTextSchema,
+  placement: shortTextSchema,
+  ownerRole: z.literal("portfolio_builder"),
+  approvalGate: z.literal("deploy_public_site"),
+}).strict();
+
+const dearMeFirstCycleGrowthPlanSchema = z.object({
+  title: shortTextSchema,
+  summary: mediumTextSchema,
+  priorities: z.array(shortTextSchema).min(3).max(5),
+  nextActions: z.array(shortTextSchema).min(3).max(6),
+  ownerRole: z.literal("chief_of_staff"),
+  approvalGate: z.literal("public_claim"),
+}).strict();
+
+export const dearMeFirstCyclePreviewResponseSchema = z.object({
+  companyId: z.string().min(1),
+  status: z.literal("first_cycle_preview"),
+  prompt: z.literal("What do you want to become known for?"),
+  positioning: mediumTextSchema,
+  voiceProfile: dearMeFirstCycleVoiceProfileSchema,
+  starterPosts: z.array(dearMeFirstCycleStarterPostSchema).length(3),
+  opportunityLead: dearMeFirstCycleOpportunityLeadSchema,
+  portfolioProofCard: dearMeFirstCyclePortfolioProofCardSchema,
+  growthPlan: dearMeFirstCycleGrowthPlanSchema,
+  voiceGate: dearMeVoiceGateResultSchema,
+  approvalBoundary: z.object({
+    label: shortTextSchema,
+    summary: mediumTextSchema,
+    blockedActions: z.array(shortTextSchema).min(3).max(8),
+  }).strict(),
+  warnings: z.array(mediumTextSchema).max(8),
+}).strict();
+
+const dearMePaidBetaEntitlementSchema = z.object({
+  state: z.enum(DEARME_PAID_BETA_ENTITLEMENT_STATES),
+  label: shortTextSchema,
+  summary: mediumTextSchema,
+  canPreviewBrandOs: z.boolean(),
+  canRequestBrandOsApproval: z.boolean(),
+  canStartPrivateWork: z.boolean(),
+  nextActionLabel: shortTextSchema,
+  nextActionDescription: mediumTextSchema,
+}).strict();
+
+export const dearMePaidBetaStatusSchema = z.object({
+  companyId: z.string().min(1),
+  status: z.enum(["trial", "active"]),
+  lifetimePaidCents: z.number().int().nonnegative(),
+  refundedCents: z.number().int().nonnegative(),
+  netPaidCents: z.number().int().nonnegative(),
+  remainingCreditCents: z.number().int().nonnegative(),
+  eventCount: z.number().int().nonnegative(),
+  latestPaymentAt: z.string().datetime().nullable(),
+  latestPaymentDescription: z.string().nullable(),
+  latestExternalInvoiceId: z.string().nullable(),
+  entitlement: dearMePaidBetaEntitlementSchema,
+}).strict();
+
+export const dearMePaidBetaRecordSchema = z.object({
+  amountCents: z.number().int().min(DEARME_PAID_BETA_MIN_PAYMENT_CENTS).max(100_000_000),
+  currency: z.string().trim().regex(/^[A-Za-z]{3}$/).default("USD"),
+  description: optionalText(500).nullable().optional(),
+  externalInvoiceId: optionalText(200).nullable().optional(),
+  occurredAt: z.string().datetime().optional(),
+}).strict().transform((value) => ({
+  ...value,
+  currency: value.currency.toUpperCase(),
+  description: value.description ?? null,
+  externalInvoiceId: value.externalInvoiceId ?? null,
+}));
+
+export const dearMeOutputDocumentSchema = z.object({
+  id: z.string().min(1),
+  key: z.string().min(1),
+  title: z.string().nullable(),
+  format: z.string().min(1),
+  revisionNumber: z.number().int().min(1),
+  bodyPreview: z.string(),
+  updatedAt: z.string().datetime(),
+}).strict();
+
+export const dearMeOutputStatusSchema = z.enum(DEARME_OUTPUT_STATUSES);
+
+export const dearMeOutputWorkProductSchema = z.object({
+  id: z.string().min(1),
+  type: z.string().min(1),
+  title: z.string().min(1),
+  url: z.string().nullable(),
+  status: z.string().min(1),
+  reviewState: z.string().min(1),
+  summary: z.string().nullable(),
+  updatedAt: z.string().datetime(),
+}).strict();
+
+export const dearMeOutputUpdateSchema = z.object({
+  id: z.string().min(1),
+  bodyPreview: z.string(),
+  createdAt: z.string().datetime(),
+}).strict();
+
+export const dearMeOutputDetailSchema = z.object({
+  kind: z.enum(DEARME_OUTPUT_DETAIL_KINDS),
+  label: shortTextSchema,
+  value: z.string().trim().min(1).max(1_500),
+  source: z.enum(["document", "prepared_work", "progress", "derived"]),
+}).strict();
+
+export const dearMeOutputItemSchema = z.object({
+  id: z.string().min(1),
+  companyId: z.string().min(1),
+  kind: z.enum(DEARME_OUTPUT_KINDS),
+  title: z.string().min(1),
+  summary: z.string().min(1),
+  status: dearMeOutputStatusSchema,
+  isReviewable: z.boolean(),
+  issueId: z.string().min(1),
+  issueIdentifier: z.string().nullable(),
+  issueTitle: z.string().min(1),
+  updatedAt: z.string().datetime(),
+  documents: z.array(dearMeOutputDocumentSchema),
+  workProducts: z.array(dearMeOutputWorkProductSchema),
+  latestUpdate: dearMeOutputUpdateSchema.nullable(),
+  details: z.array(dearMeOutputDetailSchema).max(12),
+}).strict();
+
+export const dearMeOutputsResponseSchema = z.object({
+  companyId: z.string().min(1),
+  outputs: z.array(dearMeOutputItemSchema),
+}).strict();
+
+export const dearMeOutputReviewRequestSchema = z.object({
+  action: z.enum(DEARME_OUTPUT_REVIEW_ACTIONS),
+  decisionNote: optionalText(1_000).nullable().optional(),
+}).strict().transform((value) => ({
+  ...value,
+  decisionNote: value.decisionNote ?? null,
+}));
+
+export const dearMeOutputReviewResultSchema = z.object({
+  companyId: z.string().min(1),
+  outputId: z.string().min(1),
+  action: z.enum(DEARME_OUTPUT_REVIEW_ACTIONS),
+  status: z.enum(DEARME_OUTPUT_REVIEW_RESULT_STATUSES),
+  comment: dearMeOutputUpdateSchema,
+  output: dearMeOutputItemSchema,
+}).strict();
+
+export const dearMeWorkbenchTeamMemberSchema = z.object({
+  role: z.enum(DEARME_TEAM_ROLES),
+  name: shortTextSchema,
+  status: shortTextSchema,
+  currentFocus: mediumTextSchema,
+  lastActiveAt: z.string().datetime().nullable(),
+}).strict();
+
+export const dearMeWorkbenchWorkItemSchema = z.object({
+  id: z.string().min(1),
+  title: shortTextSchema,
+  summary: mediumTextSchema,
+  status: dearMeOutputStatusSchema,
+  ownerRole: z.enum(DEARME_TEAM_ROLES),
+  outputKind: z.enum(DEARME_OUTPUT_KINDS).nullable(),
+  issueId: z.string().min(1).nullable(),
+  issueIdentifier: z.string().nullable(),
+  updatedAt: z.string().datetime(),
+}).strict();
+
+export const dearMeWorkbenchDecisionSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(DEARME_WORKBENCH_DECISION_KINDS),
+  title: shortTextSchema,
+  summary: mediumTextSchema,
+  riskGate: z.enum(DEARME_RISK_GATES).nullable(),
+  status: z.enum(["needed", "pending"]),
+  outputKind: z.enum(DEARME_OUTPUT_KINDS).nullable(),
+  approvalId: z.string().min(1).nullable(),
+  issueId: z.string().min(1).nullable(),
+  issueIdentifier: z.string().nullable(),
+  updatedAt: z.string().datetime(),
+}).strict();
+
+export const dearMeWorkbenchBatchDecisionSchema = z.object({
+  id: z.string().min(1),
+  title: shortTextSchema,
+  summary: mediumTextSchema,
+  actionLabel: shortTextSchema,
+  action: z.enum(DEARME_WORKBENCH_BATCH_ACTIONS),
+  riskGate: z.enum(DEARME_RISK_GATES).nullable(),
+  itemCount: z.number().int().min(1).max(25),
+  decisionIds: z.array(z.string().min(1)).min(1).max(25),
+  issueIds: z.array(z.string().min(1)).max(25),
+  approvalIds: z.array(z.string().min(1)).max(25),
+  updatedAt: z.string().datetime(),
+}).strict();
+
+export const dearMeWorkbenchProgressItemSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(DEARME_WORKBENCH_PROGRESS_KINDS),
+  title: shortTextSchema,
+  summary: mediumTextSchema,
+  createdAt: z.string().datetime(),
+}).strict();
+
+export const dearMeWorkbenchStreamItemSchema = z.object({
+  id: z.string().min(1),
+  role: z.enum(DEARME_TEAM_ROLES),
+  title: shortTextSchema,
+  summary: mediumTextSchema,
+  artifact: shortTextSchema,
+  status: z.enum(DEARME_WORKBENCH_STREAM_STATUSES),
+  needsApproval: z.boolean(),
+  relatedOutputId: z.string().min(1).nullable(),
+  issueId: z.string().min(1).nullable(),
+  issueIdentifier: z.string().nullable(),
+  createdAt: z.string().datetime(),
+}).strict();
+
+export const dearMeWorkbenchReportSchema = z.object({
+  title: shortTextSchema,
+  summary: mediumTextSchema,
+  status: dearMeOutputStatusSchema,
+  outputId: z.string().min(1),
+  issueId: z.string().min(1),
+  issueIdentifier: z.string().nullable(),
+  bodyPreview: z.string(),
+  updatedAt: z.string().datetime(),
+}).strict();
+
+export const dearMeWorkbenchResponseSchema = z.object({
+  companyId: z.string().min(1),
+  headline: shortTextSchema,
+  summary: mediumTextSchema,
+  team: z.array(dearMeWorkbenchTeamMemberSchema),
+  activeWork: z.array(dearMeWorkbenchWorkItemSchema),
+  workReady: z.array(dearMeWorkbenchWorkItemSchema),
+  decisionsNeeded: z.array(dearMeWorkbenchDecisionSchema),
+  batchDecisions: z.array(dearMeWorkbenchBatchDecisionSchema).max(8),
+  recentProgress: z.array(dearMeWorkbenchProgressItemSchema),
+  workStream: z.array(dearMeWorkbenchStreamItemSchema).max(20),
+  report: dearMeWorkbenchReportSchema.nullable(),
+  outputs: z.array(dearMeOutputItemSchema),
+}).strict();
+
+export type DearMeBrandBlueprintSeed = z.infer<typeof dearMeBrandBlueprintSeedSchema>;
+export type DearMeBrandBlueprintPreview = z.infer<typeof dearMeBrandBlueprintPreviewSchema>;
+export type DearMeBrandBlueprintApplyRequest = z.infer<typeof dearMeBrandBlueprintApplyRequestSchema>;
+export type DearMeBrandBlueprintApplyPayload = z.infer<typeof dearMeBrandBlueprintApplyPayloadSchema>;
+export type DearMeBrandBlueprint = z.infer<typeof dearMeBrandBlueprintSchema>;
+export type DearMeBrandBlueprintExecutionPlan = z.infer<typeof dearMeBrandBlueprintExecutionPlanSchema>;
+export type DearMeBrandBlueprintSummary = z.infer<typeof dearMeBrandBlueprintSummarySchema>;
+export type DearMeFirstCyclePreview = z.infer<typeof dearMeFirstCyclePreviewSchema>;
+export type DearMeFirstCyclePreviewResponse = z.infer<typeof dearMeFirstCyclePreviewResponseSchema>;
+export type DearMeVoiceGateEvaluation = z.infer<typeof dearMeVoiceGateEvaluationSchema>;
+export type DearMeVoiceGateResult = z.infer<typeof dearMeVoiceGateResultSchema>;
+export type DearMeOutputDetail = z.infer<typeof dearMeOutputDetailSchema>;
+export type DearMeOutputDocument = z.infer<typeof dearMeOutputDocumentSchema>;
+export type DearMeOutputItem = z.infer<typeof dearMeOutputItemSchema>;
+export type DearMeOutputKind = z.infer<typeof dearMeOutputItemSchema>["kind"];
+export type DearMeOutputReviewAction = z.infer<typeof dearMeOutputReviewRequestSchema>["action"];
+export type DearMeOutputReviewRequest = z.infer<typeof dearMeOutputReviewRequestSchema>;
+export type DearMeOutputReviewResult = z.infer<typeof dearMeOutputReviewResultSchema>;
+export type DearMeOutputStatus = z.infer<typeof dearMeOutputItemSchema>["status"];
+export type DearMeOutputUpdate = z.infer<typeof dearMeOutputUpdateSchema>;
+export type DearMeOutputWorkProduct = z.infer<typeof dearMeOutputWorkProductSchema>;
+export type DearMeOutputsResponse = z.infer<typeof dearMeOutputsResponseSchema>;
+export type DearMePaidBetaEntitlement = z.infer<typeof dearMePaidBetaEntitlementSchema>;
+export type DearMePaidBetaRecord = z.infer<typeof dearMePaidBetaRecordSchema>;
+export type DearMePaidBetaStatus = z.infer<typeof dearMePaidBetaStatusSchema>;
+export type DearMeWorkbenchBatchDecision = z.infer<typeof dearMeWorkbenchBatchDecisionSchema>;
+export type DearMeWorkbenchDecision = z.infer<typeof dearMeWorkbenchDecisionSchema>;
+export type DearMeWorkbenchProgressItem = z.infer<typeof dearMeWorkbenchProgressItemSchema>;
+export type DearMeWorkbenchReport = z.infer<typeof dearMeWorkbenchReportSchema>;
+export type DearMeWorkbenchResponse = z.infer<typeof dearMeWorkbenchResponseSchema>;
+export type DearMeWorkbenchStreamItem = z.infer<typeof dearMeWorkbenchStreamItemSchema>;
+export type DearMeWorkbenchTeamMember = z.infer<typeof dearMeWorkbenchTeamMemberSchema>;
+export type DearMeWorkbenchWorkItem = z.infer<typeof dearMeWorkbenchWorkItemSchema>;
+
+export function describeDearMePaidBetaEntitlement(
+  status: DearMePaidBetaStatus["status"],
+): DearMePaidBetaEntitlement {
+  if (status === "active") {
+    return dearMePaidBetaEntitlementSchema.parse({
+      state: "paid_beta_active",
+      label: "Paid beta active",
+      summary: "Paid beta is active. DearMe can start the private Brand OS work loop after approval.",
+      canPreviewBrandOs: true,
+      canRequestBrandOsApproval: true,
+      canStartPrivateWork: true,
+      nextActionLabel: "Request Brand OS approval",
+      nextActionDescription: "Approve Brand OS to create the growth team, cycles, and private first outputs.",
+    });
+  }
+
+  return dearMePaidBetaEntitlementSchema.parse({
+    state: "trial_preview",
+    label: "Trial preview",
+    summary: "Preview Brand OS for free. Record paid beta access before starting private DearMe work.",
+    canPreviewBrandOs: true,
+    canRequestBrandOsApproval: false,
+    canStartPrivateWork: false,
+    nextActionLabel: "Record paid beta payment",
+    nextActionDescription: "Add a paid beta credit purchase to unlock the private Brand OS work loop.",
+  });
+}
+
+const defaultGoals = [
+  "Build a clear public point of view",
+  "Turn proof of work into consistent content",
+  "Create useful opportunities from existing relationships",
+];
+
+const defaultAudiences = [
+  "People who should understand the work",
+  "Potential collaborators, customers, or supporters",
+];
+
+const defaultContentPillars = [
+  "Point of view",
+  "Proof from real work",
+  "Useful lessons",
+  "Offers and opportunities",
+];
+
+const teamTemplate: DearMeBrandBlueprint["team"] = [
+  {
+    role: "chief_of_staff",
+    name: "Chief of Staff",
+    mission: "Turn goals into weekly plans, live progress, and approval decisions.",
+    approvalBoundary: "Can plan and draft automatically; must ask before risky external actions.",
+  },
+  {
+    role: "brand_strategist",
+    name: "Brand Strategist",
+    mission: "Shape positioning, audiences, proof points, and weekly growth themes.",
+    approvalBoundary: "Can recommend strategy changes; must ask before public claims.",
+  },
+  {
+    role: "voice_editor",
+    name: "Voice Editor",
+    mission: "Learn the user's voice and keep drafts consistent with the voice profile.",
+    approvalBoundary: "Can edit private drafts; must ask before publishing or sending.",
+  },
+  {
+    role: "content_producer",
+    name: "Content Producer",
+    mission: "Create content drafts from proof, ideas, and weekly priorities.",
+    approvalBoundary: "Can draft and queue content; must ask before public posting.",
+  },
+  {
+    role: "opportunity_scout",
+    name: "Opportunity Scout",
+    mission: "Find relevant opportunities and prepare outreach drafts.",
+    approvalBoundary: "Can research and draft outreach; must ask before sending messages.",
+  },
+  {
+    role: "portfolio_builder",
+    name: "Portfolio Builder",
+    mission: "Turn proof into portfolio, case study, and site updates.",
+    approvalBoundary: "Can draft site changes; must ask before deploying public pages.",
+  },
+  {
+    role: "growth_analyst",
+    name: "Growth Analyst",
+    mission: "Summarize progress, gaps, and next week's growth bets.",
+    approvalBoundary: "Can analyze and report; must ask before spending money or changing channels.",
+  },
+];
+
+const riskGateTemplate: DearMeBrandBlueprint["gates"] = [
+  {
+    kind: "publish_social",
+    label: "Publish social post",
+    mode: "approval_required",
+    reason: "Public posts carry personal reputation risk.",
+  },
+  {
+    kind: "send_email",
+    label: "Send email or direct message",
+    mode: "approval_required",
+    reason: "Outbound messages affect relationships and cannot be silently sent.",
+  },
+  {
+    kind: "deploy_public_site",
+    label: "Deploy public site update",
+    mode: "approval_required",
+    reason: "Public portfolio changes should be reviewed before going live.",
+  },
+  {
+    kind: "spend_money",
+    label: "Spend money",
+    mode: "approval_required",
+    reason: "Paid actions require explicit user approval.",
+  },
+  {
+    kind: "public_claim",
+    label: "Make public claim",
+    mode: "approval_required",
+    reason: "Claims about results, credentials, and customers must be verified.",
+  },
+  {
+    kind: "sensitive_material",
+    label: "Use sensitive material",
+    mode: "approval_required",
+    reason: "Personal, private, or relationship-sensitive material needs review.",
+  },
+  {
+    kind: "connect_channel",
+    label: "Change channel connection",
+    mode: "approval_required",
+    reason: "External channel access should never change silently.",
+  },
+  {
+    kind: "destructive_change",
+    label: "Delete or replace existing work",
+    mode: "approval_required",
+    reason: "Destructive changes need explicit confirmation.",
+  },
+];
+
+function buildContentPillars(seed: DearMeBrandBlueprintSeed) {
+  return uniqueStrings([
+    ...(seed.goals.length > 0 ? seed.goals.slice(0, 2) : []),
+    ...(seed.offers.length > 0 ? ["Offers and opportunities"] : []),
+    ...(seed.proofPoints.length > 0 ? ["Proof from real work"] : []),
+    ...defaultContentPillars,
+  ]).slice(0, 6);
+}
+
+function buildMemorySeeds(seed: DearMeBrandBlueprintSeed, displayName: string, positioning: string) {
+  return [
+    { kind: "identity" as const, label: "Display name", value: displayName },
+    { kind: "identity" as const, label: "Positioning", value: positioning },
+    ...seed.goals.map((value) => ({ kind: "goal" as const, label: "Goal", value })),
+    ...seed.audiences.map((value) => ({ kind: "audience" as const, label: "Audience", value })),
+    ...seed.proofPoints.map((value) => ({ kind: "proof" as const, label: "Proof point", value })),
+    ...seed.offers.map((value) => ({ kind: "offer" as const, label: "Offer", value })),
+    ...seed.voiceSamples.map((value) => ({ kind: "voice" as const, label: "Voice sample", value })),
+    ...seed.constraints.map((value) => ({ kind: "constraint" as const, label: "Constraint", value })),
+  ].slice(0, 40);
+}
+
+const firstCyclePostChannelFallbacks = ["linkedin", "x", "newsletter"] as const;
+const firstCycleSocialChannels = new Set<DearMeBrandBlueprintSeed["preferredChannels"][number]>([
+  "linkedin",
+  "x",
+  "newsletter",
+  "blog",
+  "community",
+]);
+const voiceGateForbiddenPhrases = [
+  "as an ai",
+  "i cannot",
+  "unlock your potential",
+  "leverage synergies",
+  "seamless",
+  "revolutionary",
+] as const;
+const voiceGateGenericPhrases = [
+  "excited to announce",
+  "thrilled to share",
+  "game changer",
+  "game-changing",
+  "new era",
+  "revolutionize",
+  "transform your",
+  "one-stop shop",
+  "all-in-one",
+] as const;
+const voiceGateChannelLengthLimits: Partial<
+  Record<DearMeBrandBlueprintSeed["preferredChannels"][number], { warn: number; block: number }>
+> = {
+  x: { warn: 240, block: 280 },
+  linkedin: { warn: 1_800, block: 3_000 },
+  newsletter: { warn: 3_500, block: 6_000 },
+  blog: { warn: 5_000, block: 8_000 },
+  portfolio: { warn: 700, block: 1_200 },
+  email: { warn: 1_200, block: 2_500 },
+  community: { warn: 1_200, block: 2_500 },
+  website: { warn: 700, block: 1_200 },
+};
+
+function clampText(value: string, maxLength: number) {
+  const trimmed = value.trim();
+  if (trimmed.length <= maxLength) return trimmed;
+  return `${trimmed.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
+}
+
+function firstPresent(values: string[], fallback: string, maxLength: number) {
+  return clampText(values.find((value) => value.trim().length > 0) ?? fallback, maxLength);
+}
+
+function starterPostChannels(channels: DearMeBrandBlueprintSeed["preferredChannels"]) {
+  const preferred = channels.filter((channel) => firstCycleSocialChannels.has(channel));
+  return uniqueStrings([...preferred, ...firstCyclePostChannelFallbacks]).slice(0, 3) as [
+    DearMeBrandBlueprintSeed["preferredChannels"][number],
+    DearMeBrandBlueprintSeed["preferredChannels"][number],
+    DearMeBrandBlueprintSeed["preferredChannels"][number],
+  ];
+}
+
+function findVoiceGatePhraseHits(text: string, phrases: readonly string[]) {
+  const lowerText = text.toLocaleLowerCase();
+  return phrases
+    .filter((phrase) => lowerText.includes(phrase))
+    .map((phrase) => clampText(phrase, 120))
+    .slice(0, 6);
+}
+
+function voiceGateApprovalGate(kind: DearMeVoiceGateEvaluation["artifact"]["kind"]): DearMeVoiceGateResult["approvalGate"] {
+  switch (kind) {
+    case "content_draft":
+      return "publish_social";
+    case "opportunity_outreach":
+      return "send_email";
+    case "portfolio_copy":
+      return "deploy_public_site";
+    case "weekly_report":
+      return "sensitive_material";
+    case "brand_positioning":
+    default:
+      return "public_claim";
+  }
+}
+
+function voiceGateBlockedAction(gate: DearMeVoiceGateResult["approvalGate"]) {
+  switch (gate) {
+    case "publish_social":
+      return "Publish social posts";
+    case "send_email":
+      return "Send outreach messages";
+    case "deploy_public_site":
+      return "Deploy public page changes";
+    case "spend_money":
+      return "Spend money";
+    case "sensitive_material":
+      return "Use sensitive material";
+    case "connect_channel":
+      return "Change channel connections";
+    case "destructive_change":
+      return "Delete or replace existing work";
+    case "public_claim":
+    default:
+      return "Make public claims";
+  }
+}
+
+export function evaluateDearMeVoiceGate(input: DearMeVoiceGateEvaluation): DearMeVoiceGateResult {
+  const parsed = dearMeVoiceGateEvaluationSchema.parse(input);
+  const { artifact, brand } = parsed;
+  const combinedText = [artifact.title, artifact.text, artifact.proofUsed].filter(Boolean).join("\n");
+  const proofSource = artifact.proofUsed ?? brand.proofPoints[0] ?? null;
+  const forbiddenHits = findVoiceGatePhraseHits(combinedText, voiceGateForbiddenPhrases);
+  const genericHits = findVoiceGatePhraseHits(combinedText, voiceGateGenericPhrases);
+  const lengthLimits = artifact.channel ? voiceGateChannelLengthLimits[artifact.channel] : null;
+  const length = artifact.text.length;
+  const sampleCount = brand.voiceSamples.length;
+  const approvalGate = voiceGateApprovalGate(artifact.kind);
+
+  const checks: DearMeVoiceGateResult["checks"] = [
+    {
+      kind: "voice_samples",
+      label: "Voice samples",
+      status: sampleCount >= 2 ? "pass" : "warn",
+      summary:
+        sampleCount >= 2
+          ? "At least two voice samples are available for tone review."
+          : "Voice review needs at least two samples before tone should be trusted.",
+      evidence: [`${sampleCount} sample${sampleCount === 1 ? "" : "s"}`],
+      recommendation:
+        sampleCount >= 2
+          ? "Keep the current samples attached to the private review flow."
+          : "Add one or two real writing samples before approving public language.",
+    },
+    {
+      kind: "forbidden_phrases",
+      label: "Banned phrasing",
+      status: forbiddenHits.length > 0 ? "block" : "pass",
+      summary:
+        forbiddenHits.length > 0
+          ? "The draft contains phrases that make the writing feel generic or non-human."
+          : "No banned phrasing was found.",
+      evidence: forbiddenHits,
+      recommendation:
+        forbiddenHits.length > 0
+          ? "Remove these phrases and replace them with concrete, first-person language."
+          : "Keep the direct language and review the substance before approval.",
+    },
+    {
+      kind: "generic_launch_copy",
+      label: "Generic launch copy",
+      status: genericHits.length > 0 ? "warn" : "pass",
+      summary:
+        genericHits.length > 0
+          ? "The draft uses launch copy that can make the post feel interchangeable."
+          : "No generic launch copy was found.",
+      evidence: genericHits,
+      recommendation:
+        genericHits.length > 0
+          ? "Rewrite the hook around the actual work, proof, or lesson."
+          : "Keep the hook grounded in the user's work and audience.",
+    },
+    {
+      kind: "proof_claim",
+      label: "Proof claim",
+      status: proofSource ? "pass" : "block",
+      summary: proofSource
+        ? "A proof point is attached to the draft."
+        : "Public claims need a real proof point before approval.",
+      evidence: proofSource ? [clampText(proofSource, 220)] : [],
+      recommendation: proofSource
+        ? "Check that the proof is accurate before approving the public move."
+        : "Add a shipped work example, outcome, credential, or concrete receipt before public use.",
+    },
+    {
+      kind: "channel_length",
+      label: "Channel length",
+      status:
+        lengthLimits && length > lengthLimits.block
+          ? "block"
+          : lengthLimits && length > lengthLimits.warn
+            ? "warn"
+            : "pass",
+      summary: lengthLimits
+        ? `Draft length is ${length} characters for ${artifact.channel ?? "the selected channel"}.`
+        : `Draft length is ${length} characters.`,
+      evidence: lengthLimits ? [`warn ${lengthLimits.warn}`, `block ${lengthLimits.block}`] : [],
+      recommendation:
+        lengthLimits && length > lengthLimits.block
+          ? "Shorten before review so the final draft fits the selected channel."
+          : lengthLimits && length > lengthLimits.warn
+            ? "Tighten the draft before approval if it needs to stay skimmable."
+            : "Length is within the first-pass range for review.",
+    },
+  ];
+
+  const blockCount = checks.filter((check) => check.status === "block").length;
+  const warnCount = checks.filter((check) => check.status === "warn").length;
+  const status: DearMeVoiceGateResult["status"] =
+    blockCount > 0 ? "blocked_before_public" : warnCount > 0 ? "needs_voice_review" : "ready_for_review";
+  const blockedActions = uniqueStrings([
+    voiceGateBlockedAction(approvalGate),
+    ...(blockCount > 0 ? ["Use draft publicly before fixing blocked checks"] : []),
+  ]);
+
+  return dearMeVoiceGateResultSchema.parse({
+    status,
+    score: Math.max(0, 100 - blockCount * 30 - warnCount * 12),
+    summary:
+      status === "blocked_before_public"
+        ? "Blocked before public use. Fix the blocked checks, then review again before approval."
+        : status === "needs_voice_review"
+          ? "Needs voice review. The draft stays private until the user approves what represents them."
+          : "Ready for review. Approval is still required before any public move.",
+    approvalGate,
+    checks,
+    blockedActions,
+  });
+}
+
+export function createDearMeBrandBlueprint(input: DearMeBrandBlueprintSeed): DearMeBrandBlueprint {
+  const seed = dearMeBrandBlueprintSeedSchema.parse(input);
+  const displayName = seed.displayName ?? "Personal brand";
+  const positioning =
+    seed.positioning ?? "A clear personal brand built from verified work, proof, ideas, and useful offers.";
+  const goals = seed.goals.length > 0 ? seed.goals : defaultGoals;
+  const audiences = seed.audiences.length > 0 ? seed.audiences : defaultAudiences;
+  const proofPoints = seed.proofPoints;
+  const offers = seed.offers;
+  const preferredChannels = seed.preferredChannels;
+  const constraints = seed.constraints;
+  const voiceReady = seed.voiceSamples.length >= 2;
+
+  return dearMeBrandBlueprintSchema.parse({
+    version: DEARME_BRAND_BLUEPRINT_VERSION,
+    brand: {
+      displayName,
+      positioning,
+      goals,
+      audiences,
+      proofPoints,
+      offers,
+      preferredChannels,
+      constraints,
+    },
+    voiceProfile: {
+      status: voiceReady ? "ready_for_gate" : "needs_samples",
+      sampleCount: seed.voiceSamples.length,
+      guidance: voiceReady
+        ? "Use the supplied samples to draft in the user's voice, then hold public output for approval."
+        : "Collect at least two voice samples before treating draft tone as reliable.",
+    },
+    contentPillars: buildContentPillars(seed),
+    team: teamTemplate,
+    cycles: [
+      {
+        id: "weekly_growth_plan",
+        title: "Weekly growth plan",
+        cadence: seed.cadence,
+        ownerRole: "chief_of_staff",
+        deliverables: ["Priorities", "content batch", "opportunity list", "approval queue"],
+      },
+      {
+        id: "content_pipeline",
+        title: "Content pipeline",
+        cadence: seed.cadence,
+        ownerRole: "content_producer",
+        deliverables: ["drafts", "voice edits", "approval-ready posts"],
+      },
+      {
+        id: "portfolio_refresh",
+        title: "Portfolio refresh",
+        cadence: "weekly",
+        ownerRole: "portfolio_builder",
+        deliverables: ["proof updates", "case study notes", "site draft"],
+      },
+      {
+        id: "dear_me_report",
+        title: "Dear me report",
+        cadence: "weekly",
+        ownerRole: "growth_analyst",
+        deliverables: ["progress summary", "learning loop", "next bets"],
+      },
+    ],
+    assets: [
+      { id: "brand_os", title: "Brand OS", kind: "brand_os", ownerRole: "brand_strategist" },
+      { id: "voice_profile", title: "Voice profile", kind: "voice_profile", ownerRole: "voice_editor" },
+      { id: "content_pipeline", title: "Content pipeline", kind: "content_pipeline", ownerRole: "content_producer" },
+      { id: "opportunity_pipeline", title: "Opportunity pipeline", kind: "opportunity_pipeline", ownerRole: "opportunity_scout" },
+      { id: "portfolio_draft", title: "Portfolio draft", kind: "portfolio_draft", ownerRole: "portfolio_builder" },
+      { id: "weekly_report", title: "Dear me report", kind: "weekly_report", ownerRole: "growth_analyst" },
+    ],
+    gates: riskGateTemplate,
+    memorySeeds: buildMemorySeeds(seed, displayName, positioning),
+    budgetPolicy: {
+      monthlyCents: seed.budgetMonthlyCents,
+      warnPercent: 80,
+      hardStopEnabled: true,
+    },
+  });
+}
+
+export function summarizeDearMeBrandBlueprint(
+  blueprint: DearMeBrandBlueprint,
+): DearMeBrandBlueprintSummary {
+  return dearMeBrandBlueprintSummarySchema.parse({
+    title: `Create Brand OS for ${blueprint.brand.displayName}`,
+    summary: `DearMe will create a ${blueprint.team.length}-member personal brand growth team, seed Brand OS memory, start ${blueprint.cycles.length} recurring cycles, and hold risky external actions for approval.`,
+    recommendedAction: "Approve this only after the goals, audience, channels, budget, and approval gates match the user's intent.",
+    nextActionOnApproval: "DearMe will prepare the Brand OS, voice profile, content pipeline, opportunity pipeline, portfolio draft, and weekly Dear me report.",
+    teamMemberCount: blueprint.team.length,
+    cycleCount: blueprint.cycles.length,
+    riskGateCount: blueprint.gates.length,
+  });
+}
+
+export function buildDearMeBrandBlueprintExecutionPlan(
+  blueprint: DearMeBrandBlueprint,
+): DearMeBrandBlueprintExecutionPlan {
+  return dearMeBrandBlueprintExecutionPlanSchema.parse({
+    operations: [
+      {
+        id: "create_brand_os",
+        title: "Create Brand OS memory",
+        description: "Persist identity, positioning, goals, audience, proof, offers, constraints, and voice samples.",
+        ownerRole: "brand_strategist",
+        approvalGate: null,
+      },
+      {
+        id: "create_growth_team",
+        title: "Create growth team",
+        description: "Create the DearMe team roles that own planning, voice, content, opportunities, portfolio, and reporting.",
+        ownerRole: "chief_of_staff",
+        approvalGate: null,
+      },
+      {
+        id: "seed_voice_profile",
+        title: "Seed voice profile",
+        description: "Turn provided samples into a draft voice profile and keep public output gated.",
+        ownerRole: "voice_editor",
+        approvalGate: "sensitive_material",
+      },
+      {
+        id: "start_weekly_growth_cycle",
+        title: "Start weekly growth cycle",
+        description: "Create the recurring weekly plan and live progress loop.",
+        ownerRole: "chief_of_staff",
+        approvalGate: null,
+      },
+      {
+        id: "draft_content_batch",
+        title: "Draft first content batch",
+        description: "Prepare the first approval-ready drafts from goals, proof, offers, and voice samples.",
+        ownerRole: "content_producer",
+        approvalGate: "publish_social",
+      },
+      {
+        id: "draft_opportunity_list",
+        title: "Draft opportunity list",
+        description: "Prepare relevant opportunity and outreach drafts without sending anything.",
+        ownerRole: "opportunity_scout",
+        approvalGate: "send_email",
+      },
+      {
+        id: "prepare_portfolio_update",
+        title: "Prepare portfolio update",
+        description: "Draft portfolio and proof updates without deploying them publicly.",
+        ownerRole: "portfolio_builder",
+        approvalGate: "deploy_public_site",
+      },
+      {
+        id: "schedule_weekly_report",
+        title: "Draft weekly Dear me report",
+        description: "Draft the private weekly report that summarizes work done, decisions needed, and next bets.",
+        ownerRole: "growth_analyst",
+        approvalGate: null,
+      },
+    ],
+    riskGates: blueprint.gates,
+    creates: {
+      teamMembers: blueprint.team.length,
+      cycles: blueprint.cycles.length,
+      assets: blueprint.assets.length,
+      memorySeeds: blueprint.memorySeeds.length,
+    },
+  });
+}
+
+export function collectDearMeBrandBlueprintWarnings(blueprint: DearMeBrandBlueprint): string[] {
+  const warnings: string[] = [];
+  if (blueprint.voiceProfile.status === "needs_samples") {
+    warnings.push("Voice profile needs at least two samples before tone should be trusted.");
+  }
+  if (blueprint.brand.preferredChannels.length === 0) {
+    warnings.push("No preferred channels were selected; DearMe will draft privately until channels are chosen.");
+  }
+  if (blueprint.brand.proofPoints.length === 0) {
+    warnings.push("No proof points were supplied; the first cycle should collect proof before public claims.");
+  }
+  return warnings;
+}
+
+export function createDearMeFirstCyclePreview(
+  companyId: string,
+  input: DearMeFirstCyclePreview,
+): DearMeFirstCyclePreviewResponse {
+  const preview = dearMeFirstCyclePreviewSchema.parse(input);
+  const blueprint = createDearMeBrandBlueprint(preview.brand);
+  const channels = starterPostChannels(blueprint.brand.preferredChannels);
+  const displayName = clampText(blueprint.brand.displayName, 120);
+  const positioning = clampText(blueprint.brand.positioning, 500);
+  const primaryGoal = firstPresent(blueprint.brand.goals, defaultGoals[0]!, 160);
+  const primaryAudience = firstPresent(blueprint.brand.audiences, defaultAudiences[0]!, 160);
+  const primaryProof = firstPresent(blueprint.brand.proofPoints, "The first verified work example", 220);
+  const primaryOffer = firstPresent(blueprint.brand.offers, "a useful next conversation", 160);
+  const warnings = collectDearMeBrandBlueprintWarnings(blueprint);
+  const suppliedProof = blueprint.brand.proofPoints[0];
+  const starterPosts: DearMeFirstCyclePreviewResponse["starterPosts"] = [
+    {
+      id: "starter-post-positioning",
+      channel: channels[0],
+      title: "Starter post: point of view",
+      hook: `What ${displayName} wants to become known for: ${positioning}`,
+      body: `A private draft that states the point of view, names ${primaryAudience}, and explains why ${primaryGoal} matters now.`,
+      proofUsed: primaryProof,
+      ownerRole: "content_producer",
+      approvalGate: "publish_social",
+    },
+    {
+      id: "starter-post-proof",
+      channel: channels[1],
+      title: "Starter post: proof of work",
+      hook: `The proof behind this positioning: ${primaryProof}`,
+      body: `A private draft that turns the proof into a useful lesson and connects it back to the promise: ${positioning}.`,
+      proofUsed: primaryProof,
+      ownerRole: "content_producer",
+      approvalGate: "publish_social",
+    },
+    {
+      id: "starter-post-opening",
+      channel: channels[2],
+      title: "Starter post: useful opening",
+      hook: `A useful opening for ${primaryAudience}`,
+      body: `A private draft that invites the right people into ${primaryOffer} without sounding like a generic pitch.`,
+      proofUsed: primaryProof,
+      ownerRole: "content_producer",
+      approvalGate: "publish_social",
+    },
+  ];
+  const voiceGate = evaluateDearMeVoiceGate({
+    brand: preview.brand,
+    artifact: {
+      kind: "content_draft",
+      channel: starterPosts[0].channel,
+      title: "First starter post batch",
+      text: starterPosts.map((post) => `${post.hook}\n${post.body}`).join("\n\n"),
+      ...(suppliedProof ? { proofUsed: suppliedProof } : {}),
+    },
+  });
+
+  return dearMeFirstCyclePreviewResponseSchema.parse({
+    companyId,
+    status: "first_cycle_preview",
+    prompt: "What do you want to become known for?",
+    positioning,
+    voiceProfile: {
+      title: "Draft Voice Profile",
+      status: blueprint.voiceProfile.status,
+      sampleCount: blueprint.voiceProfile.sampleCount,
+      guidance:
+        blueprint.voiceProfile.status === "ready_for_gate"
+          ? "Use the supplied samples to keep the first drafts direct, specific, and approval-ready."
+          : "Start with clear, proof-first drafts and keep tone finalization gated until more samples are available.",
+      draftTone:
+        blueprint.voiceProfile.status === "ready_for_gate"
+          ? ["Direct and specific", "Proof-backed", "Concrete next steps"]
+          : ["Clear and plain", "Proof-first", "Held for voice review"],
+      ownerRole: "voice_editor",
+      approvalGate: "sensitive_material",
+    },
+    starterPosts,
+    opportunityLead: {
+      title: "First opportunity lead",
+      target: primaryAudience,
+      whyRelevant: `${primaryAudience} is the first group likely to care about ${primaryGoal}.`,
+      outreachAngle: `Lead with ${primaryProof}, then offer ${primaryOffer}.`,
+      draftMessage: `I am building around this point of view: ${positioning}. If useful, I can share what worked from ${primaryProof} and see whether ${primaryOffer} fits your current priorities.`,
+      ownerRole: "opportunity_scout",
+      approvalGate: "send_email",
+    },
+    portfolioProofCard: {
+      title: "Portfolio proof card",
+      proofSource: primaryProof,
+      proposedCopy: `${displayName} helps ${primaryAudience} through ${positioning}. Proof: ${primaryProof}.`,
+      placement: "Homepage proof section",
+      ownerRole: "portfolio_builder",
+      approvalGate: "deploy_public_site",
+    },
+    growthPlan: {
+      title: "First growth plan",
+      summary: "Start with one positioning decision, three private drafts, one opportunity lead, and one proof card before any public move.",
+      priorities: [
+        "Approve the positioning before it becomes public language",
+        "Review starter posts for voice and proof accuracy",
+        "Decide whether the first opportunity is worth outreach",
+      ],
+      nextActions: [
+        "Voice Editor checks tone against the current samples",
+        "Content Producer prepares the three starter posts for review",
+        "Opportunity Scout keeps the outreach message private until approval",
+        "Portfolio Builder prepares the proof card without publishing it",
+      ],
+      ownerRole: "chief_of_staff",
+      approvalGate: "public_claim",
+    },
+    voiceGate,
+    approvalBoundary: {
+      label: "Approval-gated by default",
+      summary: "Your team prepares the moves. Nothing publishes, sends, spends, or changes public pages without approval.",
+      blockedActions: [
+        "Publish social posts",
+        "Send outreach messages",
+        "Deploy public page changes",
+        "Spend money",
+        "Use sensitive material",
+      ],
+    },
+    warnings,
+  });
+}

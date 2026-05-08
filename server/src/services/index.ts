@@ -1,4 +1,13 @@
 export { companyService } from "./companies.js";
+export {
+  DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
+  dearmeBrandBlueprintApplyService,
+  type DearMeBrandBlueprintApplyArtifacts,
+} from "./dearme-brand-blueprint-apply.js";
+export { dearmeBrandBlueprintService } from "./dearme-brand-blueprints.js";
+export { dearmeOutputHandoffService } from "./dearme-output-handoff.js";
+export { dearmePaidBetaAccessService, summarizeDearMePaidBetaAccess } from "./dearme-paid-beta-access.js";
+export { dearmeWorkbenchService } from "./dearme-workbench.js";
 export { feedbackService } from "./feedback.js";
 export { companySkillService } from "./company-skills.js";
 export { agentService, deduplicateAgentName } from "./agents.js";

@@ -1,0 +1,344 @@
+import { randomUUID } from "node:crypto";
+import { sql } from "drizzle-orm";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  activityLog,
+  agents,
+  approvals,
+  companies,
+  createDb,
+  documents,
+  issueComments,
+  issueDocuments,
+  issues,
+  issueWorkProducts,
+} from "@paperclipai/db";
+import {
+  getEmbeddedPostgresTestSupport,
+  startEmbeddedPostgresTestDatabase,
+} from "./helpers/embedded-postgres.js";
+import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "../services/dearme-brand-blueprint-apply.js";
+import { dearmeWorkbenchService } from "../services/dearme-workbench.js";
+
+const embeddedPostgresSupport = await getEmbeddedPostgresTestSupport();
+const describeEmbeddedPostgres = embeddedPostgresSupport.supported ? describe : describe.skip;
+
+if (!embeddedPostgresSupport.supported) {
+  console.warn(
+    `Skipping embedded Postgres DearMe workbench tests on this host: ${embeddedPostgresSupport.reason ?? "unsupported environment"}`,
+  );
+}
+
+function issuePrefix(id: string) {
+  return `WB${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+}
+
+describeEmbeddedPostgres("DearMe workbench service", () => {
+  let db!: ReturnType<typeof createDb>;
+  let tempDb: Awaited<ReturnType<typeof startEmbeddedPostgresTestDatabase>> | null = null;
+
+  beforeAll(async () => {
+    tempDb = await startEmbeddedPostgresTestDatabase("paperclip-dearme-workbench-");
+    db = createDb(tempDb.connectionString);
+  }, 30_000);
+
+  afterEach(async () => {
+    await db.execute(sql.raw(`TRUNCATE TABLE "companies" CASCADE`));
+  });
+
+  afterAll(async () => {
+    await tempDb?.cleanup();
+  });
+
+  async function seedCompany() {
+    const companyId = randomUUID();
+    await db.insert(companies).values({
+      id: companyId,
+      name: "DearMe Beta",
+      issuePrefix: issuePrefix(companyId),
+      requireBoardApprovalForNewAgents: false,
+    });
+    return companyId;
+  }
+
+  async function seedDearMeAgent(input: {
+    companyId: string;
+    name: string;
+    role: string;
+    updatedAt: Date;
+  }) {
+    const agentId = randomUUID();
+    await db.insert(agents).values({
+      id: agentId,
+      companyId: input.companyId,
+      name: input.name,
+      role: input.role,
+      title: input.name,
+      status: "idle",
+      adapterType: "codex_local",
+      adapterConfig: { provider: "codex-local" },
+      runtimeConfig: {},
+      permissions: {},
+      metadata: {
+        source: DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
+        dearmeRole: input.role,
+      },
+      updatedAt: input.updatedAt,
+    });
+    return agentId;
+  }
+
+  async function seedIssue(input: {
+    companyId: string;
+    title: string;
+    identifier: string;
+    originFingerprint: string;
+    status: string;
+    updatedAt: Date;
+    assigneeAgentId?: string | null;
+  }) {
+    const issueId = randomUUID();
+    await db.insert(issues).values({
+      id: issueId,
+      companyId: input.companyId,
+      title: input.title,
+      status: input.status,
+      identifier: input.identifier,
+      originKind: DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
+      originFingerprint: input.originFingerprint,
+      updatedAt: input.updatedAt,
+      assigneeAgentId: input.assigneeAgentId ?? null,
+    });
+    return issueId;
+  }
+
+  async function attachDocument(input: {
+    companyId: string;
+    issueId: string;
+    key: string;
+    title: string;
+    body: string;
+    updatedAt: Date;
+  }) {
+    const documentId = randomUUID();
+    await db.insert(documents).values({
+      id: documentId,
+      companyId: input.companyId,
+      title: input.title,
+      format: "markdown",
+      latestBody: input.body,
+      latestRevisionNumber: 1,
+      updatedAt: input.updatedAt,
+    });
+    await db.insert(issueDocuments).values({
+      companyId: input.companyId,
+      issueId: input.issueId,
+      documentId,
+      key: input.key,
+      updatedAt: input.updatedAt,
+    });
+  }
+
+  it("projects the team, ready work, decisions, report, and progress without runtime internals", async () => {
+    const companyId = await seedCompany();
+    const chiefOfStaffId = await seedDearMeAgent({
+      companyId,
+      name: "DearMe Chief of Staff",
+      role: "chief_of_staff",
+      updatedAt: new Date("2026-05-07T13:00:00.000Z"),
+    });
+    await seedDearMeAgent({
+      companyId,
+      name: "DearMe Content Producer",
+      role: "content_producer",
+      updatedAt: new Date("2026-05-07T13:05:00.000Z"),
+    });
+
+    const brandIssueId = await seedIssue({
+      companyId,
+      title: "DearMe: Review Brand OS for Peter",
+      identifier: "WB-1",
+      originFingerprint: "brand-os-review",
+      status: "done",
+      updatedAt: new Date("2026-05-07T14:00:00.000Z"),
+      assigneeAgentId: chiefOfStaffId,
+    });
+    const contentIssueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft first content batch",
+      identifier: "WB-2",
+      originFingerprint: "operation-draft_content_batch",
+      status: "in_review",
+      updatedAt: new Date("2026-05-07T15:00:00.000Z"),
+      assigneeAgentId: chiefOfStaffId,
+    });
+    await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft opportunity list",
+      identifier: "WB-3",
+      originFingerprint: "operation-draft_opportunity_list",
+      status: "todo",
+      updatedAt: new Date("2026-05-07T15:20:00.000Z"),
+      assigneeAgentId: chiefOfStaffId,
+    });
+    const reportIssueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft weekly Dear me report",
+      identifier: "WB-4",
+      originFingerprint: "operation-schedule_weekly_report",
+      status: "done",
+      updatedAt: new Date("2026-05-07T16:00:00.000Z"),
+      assigneeAgentId: chiefOfStaffId,
+    });
+
+    await attachDocument({
+      companyId,
+      issueId: brandIssueId,
+      key: "brand-os",
+      title: "Brand OS",
+      body: "# Brand OS\n\nPositioning and proof are ready.",
+      updatedAt: new Date("2026-05-07T14:05:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: brandIssueId,
+      key: "voice-profile",
+      title: "Voice Profile",
+      body: "# Voice Profile\n\nDirect, proof-backed, and concise.",
+      updatedAt: new Date("2026-05-07T14:06:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: reportIssueId,
+      key: "dear-me-report",
+      title: "Dear me report",
+      body: "# Dear me report\n\nWork ready: three posts and one proof-card update.",
+      updatedAt: new Date("2026-05-07T16:05:00.000Z"),
+    });
+    await db.insert(issueWorkProducts).values({
+      id: randomUUID(),
+      companyId,
+      issueId: contentIssueId,
+      type: "draft",
+      provider: "codex-local",
+      title: "Content draft batch",
+      url: null,
+      status: "ready",
+      reviewState: "pending",
+      summary: "Three proof-backed posts prepared for review.",
+      updatedAt: new Date("2026-05-07T15:05:00.000Z"),
+    });
+    await db.insert(issueComments).values({
+      id: randomUUID(),
+      companyId,
+      issueId: contentIssueId,
+      authorAgentId: chiefOfStaffId,
+      body: "Prepared three private posts and held publishing for approval.",
+      createdAt: new Date("2026-05-07T15:10:00.000Z"),
+      updatedAt: new Date("2026-05-07T15:10:00.000Z"),
+    });
+    await db.insert(approvals).values([
+      {
+        id: randomUUID(),
+        companyId,
+        type: "dearme_brand_blueprint_apply",
+        status: "pending",
+        payload: {
+          title: "Create Brand OS for Peter",
+          summary: "DearMe will create the first private growth team.",
+        },
+        requestedByUserId: "user-1",
+        updatedAt: new Date("2026-05-07T16:20:00.000Z"),
+      },
+      {
+        id: randomUUID(),
+        companyId,
+        type: "dearme_brand_blueprint_apply",
+        status: "approved",
+        payload: {
+          title: "Old Brand OS approval",
+          summary: "This handled approval should not stay in the decision queue.",
+        },
+        requestedByUserId: "user-1",
+        updatedAt: new Date("2026-05-07T16:40:00.000Z"),
+      },
+    ]);
+    await db.insert(activityLog).values([
+      {
+        id: randomUUID(),
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.brand_blueprint_applied",
+        entityType: "approval",
+        entityId: "approval-1",
+        createdAt: new Date("2026-05-07T16:25:00.000Z"),
+      },
+      {
+        id: randomUUID(),
+        companyId,
+        actorType: "system",
+        actorId: "dearme",
+        action: "paperclip.internal_event",
+        entityType: "issue",
+        entityId: "issue-1",
+        createdAt: new Date("2026-05-07T16:30:00.000Z"),
+      },
+    ]);
+
+    const result = await dearmeWorkbenchService(db).getWorkbench(companyId);
+
+    expect(result.headline).toBe("Dear me, your team has decisions ready");
+    expect(result.team.map((member) => member.name)).toEqual([
+      "Chief of Staff",
+      "Content Producer",
+    ]);
+    expect(result.team[0]).toEqual(expect.objectContaining({
+      role: "chief_of_staff",
+      status: "Standing by",
+    }));
+    expect(result.activeWork.map((item) => item.outputKind)).toContain("opportunity_drafts");
+    expect(result.workReady.map((item) => item.outputKind)).toEqual(
+      expect.arrayContaining(["brand_os", "voice_profile", "content_drafts", "weekly_report"]),
+    );
+    expect(result.decisionsNeeded).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: "approve_brand_os", approvalId: expect.any(String) }),
+        expect.objectContaining({ kind: "review_output", outputKind: "content_drafts", riskGate: "publish_social" }),
+      ]),
+    );
+    expect(result.batchDecisions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Review content batch",
+          actionLabel: "Review posts",
+          riskGate: "publish_social",
+          issueIds: [contentIssueId],
+        }),
+        expect.objectContaining({
+          title: "Review prepared work",
+          actionLabel: "Review work",
+          approvalIds: [expect.any(String)],
+        }),
+      ]),
+    );
+    expect(result.decisionsNeeded.map((decision) => decision.title)).not.toContain("Old Brand OS approval");
+    expect(result.report).toEqual(expect.objectContaining({
+      title: "Dear me report",
+      bodyPreview: expect.stringContaining("Work ready"),
+    }));
+    expect(result.recentProgress).toEqual([
+      expect.objectContaining({
+        kind: "brand_os_applied",
+        title: "Growth team created",
+      }),
+    ]);
+
+    const customerPathJson = JSON.stringify(result);
+    expect(customerPathJson).not.toContain("codex-local");
+    expect(customerPathJson).not.toContain("adapterType");
+    expect(customerPathJson).not.toContain("provider");
+    expect(customerPathJson).not.toContain("setup_payload");
+    expect(customerPathJson).not.toContain("Paperclip");
+  });
+});

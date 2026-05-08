@@ -1,0 +1,756 @@
+import { and, asc, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import type { Db } from "@paperclipai/db";
+import { documents, issueComments, issueDocuments, issues, issueWorkProducts } from "@paperclipai/db";
+import {
+  DEARME_OUTPUT_KINDS,
+  dearMeOutputReviewResultSchema,
+  dearMeOutputsResponseSchema,
+  isSystemIssueDocumentKey,
+  type DearMeOutputDetail,
+  type DearMeOutputDocument,
+  type DearMeOutputItem,
+  type DearMeOutputKind,
+  type DearMeOutputReviewAction,
+  type DearMeOutputReviewRequest,
+  type DearMeOutputReviewResult,
+  type DearMeOutputStatus,
+  type DearMeOutputUpdate,
+  type DearMeOutputWorkProduct,
+} from "@paperclipai/shared";
+import { notFound } from "../errors.js";
+import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "./dearme-brand-blueprint-apply.js";
+
+type DearMeIssueRow = {
+  id: string;
+  companyId: string;
+  title: string;
+  status: string;
+  identifier: string | null;
+  originFingerprint: string;
+  assigneeAgentId: string | null;
+  updatedAt: Date;
+};
+
+type DearMeOutputReviewActor = {
+  actorType: "user" | "agent";
+  actorId: string;
+  agentId: string | null;
+  runId: string | null;
+};
+
+type DearMeOutputReviewServiceResult = DearMeOutputReviewResult & {
+  wakeIssue: { id: string; assigneeAgentId: string | null; status: string } | null;
+};
+
+type OutputDescriptor = {
+  kind: DearMeOutputKind;
+  title: string;
+  summary: string;
+  order: number;
+  documentKeys?: readonly string[];
+};
+
+type OutputDetailText = {
+  value: string;
+  source: DearMeOutputDetail["source"];
+};
+
+const BRAND_OS_FINGERPRINT = "brand-os-review";
+const VOICE_OPERATION_FINGERPRINT = "operation-seed_voice_profile";
+const outputKindSet = new Set<string>(DEARME_OUTPUT_KINDS);
+
+const OPERATION_DESCRIPTORS: Record<string, OutputDescriptor> = {
+  "operation-draft_content_batch": {
+    kind: "content_drafts",
+    title: "Content drafts",
+    summary: "Private posts, essays, and newsletter drafts prepared for review.",
+    order: 30,
+  },
+  "operation-draft_opportunity_list": {
+    kind: "opportunity_drafts",
+    title: "Opportunity drafts",
+    summary: "Relevant opportunities and outreach drafts prepared without sending.",
+    order: 40,
+  },
+  "operation-prepare_portfolio_update": {
+    kind: "portfolio_update",
+    title: "Portfolio updates",
+    summary: "Proof, case-study, and site-update drafts held for approval.",
+    order: 50,
+  },
+  "operation-schedule_weekly_report": {
+    kind: "weekly_report",
+    title: "Dear me report",
+    summary: "The private weekly report with completed work, decisions, and next bets.",
+    order: 60,
+  },
+};
+
+const BRAND_OS_DESCRIPTOR: OutputDescriptor = {
+  kind: "brand_os",
+  title: "Brand OS",
+  summary: "Private positioning, goals, proof, offers, and approval boundaries.",
+  order: 10,
+  documentKeys: ["brand-os", "approval-gates"],
+};
+
+const VOICE_DESCRIPTOR: OutputDescriptor = {
+  kind: "voice_profile",
+  title: "Voice profile",
+  summary: "Voice guidance and samples used to keep drafts aligned before publication approval.",
+  order: 20,
+  documentKeys: ["voice-profile"],
+};
+
+const DETAIL_EXTRACTION_LABELS = [
+  "Positioning",
+  "Known for",
+  "Goals",
+  "Audiences",
+  "Proof Points",
+  "Offers",
+  "Content Pillars",
+  "Voice guidance",
+  "Guidance",
+  "Voice",
+  "Status",
+  "Sample count",
+  "Voice Samples",
+  "Boundary",
+  "Channel",
+  "Audience",
+  "Hook",
+  "Draft body",
+  "Draft",
+  "Body",
+  "Proof used",
+  "Proof",
+  "Approval gate",
+  "Approval boundaries",
+  "Boundaries",
+  "Target",
+  "Contact",
+  "Opportunity",
+  "Why relevant",
+  "Relevance",
+  "Relevance score",
+  "Score",
+  "Outreach angle",
+  "Angle",
+  "Draft message",
+  "Message",
+  "Page section",
+  "Section",
+  "Page",
+  "Proof source",
+  "Proposed copy",
+  "Copy",
+  "Recommendation",
+  "Completed work",
+  "Work Completed",
+  "Drafts and Assets Ready for Review",
+  "Decisions needed",
+  "Next bets",
+  "Next bet",
+  "Outcomes and Signals",
+  "Budget",
+  "Report reference",
+] as const;
+
+function toIso(value: Date) {
+  return value.toISOString();
+}
+
+function plainPreview(value: string | null | undefined, maxLength = 700) {
+  if (!value) return "";
+  const compact = value
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/[#>*_`[\]()!-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (compact.length <= maxLength) return compact;
+  return `${compact.slice(0, maxLength - 3).trimEnd()}...`;
+}
+
+function customerStatus(issueStatus: string, hasProducedArtifact: boolean): DearMeOutputStatus {
+  if (issueStatus === "cancelled") return "cancelled";
+  if (issueStatus === "blocked") return "blocked";
+  if (issueStatus === "done") return "complete";
+  if (issueStatus === "in_review" || hasProducedArtifact) return "ready_for_review";
+  if (issueStatus === "todo" || issueStatus === "in_progress") return "working";
+  return "queued";
+}
+
+function groupPayloadByIssue<T>(rows: Array<{ issueId: string; payload: T }>) {
+  const grouped = new Map<string, T[]>();
+  for (const row of rows) {
+    const group = grouped.get(row.issueId) ?? [];
+    group.push(row.payload);
+    grouped.set(row.issueId, group);
+  }
+  return grouped;
+}
+
+function latestUpdateByIssue(rows: Array<DearMeOutputUpdate & { issueId: string }>) {
+  const grouped = new Map<string, DearMeOutputUpdate>();
+  for (const row of rows) {
+    if (!grouped.has(row.issueId)) {
+      grouped.set(row.issueId, {
+        id: row.id,
+        bodyPreview: row.bodyPreview,
+        createdAt: row.createdAt,
+      });
+    }
+  }
+  return grouped;
+}
+
+function filterDocuments(
+  documentsForIssue: DearMeOutputDocument[],
+  descriptor: OutputDescriptor,
+) {
+  if (!descriptor.documentKeys) return documentsForIssue;
+  const allowed = new Set(descriptor.documentKeys);
+  const order = new Map(descriptor.documentKeys.map((key, index) => [key, index]));
+  return documentsForIssue
+    .filter((document) => allowed.has(document.key))
+    .sort((a, b) => (order.get(a.key) ?? 999) - (order.get(b.key) ?? 999));
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function extractLabeledValue(value: string, labels: readonly string[]) {
+  const stops = DETAIL_EXTRACTION_LABELS.map(escapeRegExp).join("|");
+  const keys = labels.map(escapeRegExp).join("|");
+  const colonMatch = value.match(
+    new RegExp(`(?:^|\\s)(?:${keys})\\s*:\\s*(.*?)(?=\\s(?:${stops})\\s*:|$)`, "i"),
+  );
+  if (colonMatch?.[1]) return plainPreview(colonMatch[1], 1_500);
+  const headingMatch = value.match(
+    new RegExp(`(?:^|\\s)(?:${keys})\\s+(.*?)(?=\\s(?:${stops})(?:\\s|:)|$)`),
+  );
+  return plainPreview(headingMatch?.[1], 1_500);
+}
+
+function outputTextSegments(input: {
+  documents: DearMeOutputDocument[];
+  workProducts: DearMeOutputWorkProduct[];
+  latestUpdate: DearMeOutputUpdate | null;
+}) {
+  const segments: OutputDetailText[] = [];
+  for (const document of input.documents) {
+    if (document.bodyPreview.trim().length > 0) {
+      segments.push({ value: document.bodyPreview, source: "document" });
+    }
+  }
+  for (const workProduct of input.workProducts) {
+    const summary = plainPreview(workProduct.summary);
+    if (summary) {
+      segments.push({ value: summary, source: "prepared_work" });
+    }
+  }
+  if (input.latestUpdate?.bodyPreview.trim()) {
+    segments.push({ value: input.latestUpdate.bodyPreview, source: "progress" });
+  }
+  return segments;
+}
+
+function primaryOutputText(input: {
+  documents: DearMeOutputDocument[];
+  workProducts: DearMeOutputWorkProduct[];
+  latestUpdate: DearMeOutputUpdate | null;
+}) {
+  return outputTextSegments(input)[0] ?? null;
+}
+
+function extractOutputText(
+  input: {
+    documents: DearMeOutputDocument[];
+    workProducts: DearMeOutputWorkProduct[];
+    latestUpdate: DearMeOutputUpdate | null;
+  },
+  labels: readonly string[],
+) {
+  for (const segment of outputTextSegments(input)) {
+    const value = extractLabeledValue(segment.value, labels);
+    if (value) {
+      return { value, source: segment.source } satisfies OutputDetailText;
+    }
+  }
+  return null;
+}
+
+function firstSentenceText(text: OutputDetailText | null) {
+  if (!text) return null;
+  const value = plainPreview(text.value, 260);
+  if (!value) return null;
+  const match = value.match(/^(.{1,260}?)(?:[.!?](?:\s|$)|$)/);
+  return {
+    value: plainPreview(match?.[1] ?? value, 260),
+    source: text.source,
+  } satisfies OutputDetailText;
+}
+
+function derivedText(value: string) {
+  return { value, source: "derived" } satisfies OutputDetailText;
+}
+
+function addOutputDetail(
+  details: DearMeOutputDetail[],
+  kind: DearMeOutputDetail["kind"],
+  label: string,
+  text: OutputDetailText | null,
+) {
+  const value = plainPreview(text?.value, 1_500);
+  if (!value || details.some((detail) => detail.kind === kind)) return;
+  details.push({
+    kind,
+    label,
+    value,
+    source: text?.source ?? "derived",
+  });
+}
+
+function buildOutputDetails(input: {
+  descriptor: OutputDescriptor;
+  documents: DearMeOutputDocument[];
+  workProducts: DearMeOutputWorkProduct[];
+  latestUpdate: DearMeOutputUpdate | null;
+}) {
+  const details: DearMeOutputDetail[] = [];
+  const primary = primaryOutputText(input);
+
+  switch (input.descriptor.kind) {
+    case "brand_os":
+      addOutputDetail(details, "positioning", "Positioning", extractOutputText(input, ["Positioning", "Known for"]) ?? primary);
+      addOutputDetail(details, "proof_used", "Proof", extractOutputText(input, ["Proof Points", "Proof", "Proof used"]));
+      addOutputDetail(details, "approval_gate", "Approval boundary", extractOutputText(input, ["Approval boundaries", "Boundaries", "Approval gate"]) ?? derivedText("Use these boundaries before public claims, outreach, or site updates."));
+      break;
+    case "voice_profile":
+      addOutputDetail(details, "voice_guidance", "Voice guidance", extractOutputText(input, ["Voice guidance", "Guidance"]) ?? primary);
+      addOutputDetail(details, "approval_gate", "Approval gate", extractOutputText(input, ["Approval gate"]) ?? derivedText("Use this profile before any public copy represents you."));
+      break;
+    case "content_drafts":
+      addOutputDetail(details, "channel", "Channel", extractOutputText(input, ["Channel"]));
+      addOutputDetail(details, "audience", "Audience", extractOutputText(input, ["Audience"]));
+      addOutputDetail(details, "hook", "Hook", extractOutputText(input, ["Hook"]) ?? firstSentenceText(primary));
+      addOutputDetail(details, "draft_body", "Draft body", extractOutputText(input, ["Draft body", "Draft", "Body"]) ?? primary);
+      addOutputDetail(details, "proof_used", "Proof used", extractOutputText(input, ["Proof used", "Proof"]));
+      addOutputDetail(details, "approval_gate", "Approval gate", extractOutputText(input, ["Approval gate"]) ?? derivedText("You approve before any post is published."));
+      break;
+    case "opportunity_drafts":
+      addOutputDetail(details, "target", "Target", extractOutputText(input, ["Target", "Contact", "Opportunity"]) ?? primary);
+      addOutputDetail(details, "why_relevant", "Why relevant", extractOutputText(input, ["Why relevant", "Relevance"]) ?? firstSentenceText(primary));
+      addOutputDetail(details, "relevance_score", "Relevance score", extractOutputText(input, ["Relevance score", "Score"]));
+      addOutputDetail(details, "outreach_angle", "Outreach angle", extractOutputText(input, ["Outreach angle", "Angle"]));
+      addOutputDetail(details, "draft_message", "Draft message", extractOutputText(input, ["Draft message", "Message"]));
+      addOutputDetail(details, "approval_gate", "Approval gate", extractOutputText(input, ["Approval gate"]) ?? derivedText("You approve before any outreach is sent."));
+      break;
+    case "portfolio_update":
+      addOutputDetail(details, "page_section", "Page or section", extractOutputText(input, ["Page section", "Section", "Page"]));
+      addOutputDetail(details, "proof_source", "Proof source", extractOutputText(input, ["Proof source", "Proof"]));
+      addOutputDetail(details, "proposed_copy", "Proposed copy", extractOutputText(input, ["Proposed copy", "Copy", "Recommendation"]) ?? primary);
+      addOutputDetail(details, "deploy_gate", "Deploy gate", extractOutputText(input, ["Deploy gate", "Approval gate"]) ?? derivedText("You approve before any public site update goes live."));
+      break;
+    case "weekly_report":
+      addOutputDetail(details, "completed_work", "Completed work", extractOutputText(input, ["Completed work", "Work Completed"]) ?? primary);
+      addOutputDetail(details, "decisions_needed", "Decisions needed", extractOutputText(input, ["Decisions needed"]) ?? derivedText("Review the Work Ready queue before DearMe prepares the next moves."));
+      addOutputDetail(details, "next_bets", "Next bets", extractOutputText(input, ["Next bets", "Next bet"]) ?? firstSentenceText(primary));
+      addOutputDetail(details, "report_reference", "Report reference", extractOutputText(input, ["Report reference"]) ?? derivedText(input.documents[0]?.title ?? input.descriptor.title));
+      break;
+  }
+
+  return details.slice(0, 12);
+}
+
+function buildOutputItem(input: {
+  issue: DearMeIssueRow;
+  descriptor: OutputDescriptor;
+  documents: DearMeOutputDocument[];
+  workProducts: DearMeOutputWorkProduct[];
+  latestUpdate: DearMeOutputUpdate | null;
+}) {
+  const hasProducedArtifact =
+    input.documents.length > 0 ||
+    input.workProducts.length > 0 ||
+    !!input.latestUpdate;
+  const status = customerStatus(input.issue.status, hasProducedArtifact);
+
+  return {
+    id: `${input.issue.id}:${input.descriptor.kind}`,
+    companyId: input.issue.companyId,
+    kind: input.descriptor.kind,
+    title: input.descriptor.title,
+    summary: input.descriptor.summary,
+    status,
+    isReviewable: status === "ready_for_review" || status === "complete",
+    issueId: input.issue.id,
+    issueIdentifier: input.issue.identifier,
+    issueTitle: input.issue.title,
+    updatedAt: toIso(input.issue.updatedAt),
+    documents: input.documents,
+    workProducts: input.workProducts,
+    latestUpdate: input.latestUpdate,
+    details: buildOutputDetails({
+      descriptor: input.descriptor,
+      documents: input.documents,
+      workProducts: input.workProducts,
+      latestUpdate: input.latestUpdate,
+    }),
+  } satisfies DearMeOutputItem;
+}
+
+function buildOutputItems(input: {
+  issues: DearMeIssueRow[];
+  documentsByIssue: Map<string, DearMeOutputDocument[]>;
+  workProductsByIssue: Map<string, DearMeOutputWorkProduct[]>;
+  latestUpdateByIssue: Map<string, DearMeOutputUpdate>;
+}) {
+  const byFingerprint = new Map(input.issues.map((issue) => [issue.originFingerprint, issue]));
+  const items: Array<DearMeOutputItem & { order: number }> = [];
+
+  const brandOsIssue = byFingerprint.get(BRAND_OS_FINGERPRINT);
+  if (brandOsIssue) {
+    for (const descriptor of [BRAND_OS_DESCRIPTOR, VOICE_DESCRIPTOR]) {
+      const documentsForIssue = filterDocuments(
+        input.documentsByIssue.get(brandOsIssue.id) ?? [],
+        descriptor,
+      );
+      items.push({
+        ...buildOutputItem({
+          issue: brandOsIssue,
+          descriptor,
+          documents: documentsForIssue,
+          workProducts: input.workProductsByIssue.get(brandOsIssue.id) ?? [],
+          latestUpdate: input.latestUpdateByIssue.get(brandOsIssue.id) ?? null,
+        }),
+        order: descriptor.order,
+      });
+    }
+  } else {
+    const voiceIssue = byFingerprint.get(VOICE_OPERATION_FINGERPRINT);
+    if (voiceIssue) {
+      items.push({
+        ...buildOutputItem({
+          issue: voiceIssue,
+          descriptor: VOICE_DESCRIPTOR,
+          documents: input.documentsByIssue.get(voiceIssue.id) ?? [],
+          workProducts: input.workProductsByIssue.get(voiceIssue.id) ?? [],
+          latestUpdate: input.latestUpdateByIssue.get(voiceIssue.id) ?? null,
+        }),
+        order: VOICE_DESCRIPTOR.order,
+      });
+    }
+  }
+
+  for (const [fingerprint, descriptor] of Object.entries(OPERATION_DESCRIPTORS)) {
+    const issue = byFingerprint.get(fingerprint);
+    if (!issue) continue;
+    items.push({
+      ...buildOutputItem({
+        issue,
+        descriptor,
+        documents: input.documentsByIssue.get(issue.id) ?? [],
+        workProducts: input.workProductsByIssue.get(issue.id) ?? [],
+        latestUpdate: input.latestUpdateByIssue.get(issue.id) ?? null,
+      }),
+      order: descriptor.order,
+    });
+  }
+
+  return items
+    .sort((a, b) => a.order - b.order || b.updatedAt.localeCompare(a.updatedAt))
+    .map(({ order: _order, ...item }) => item);
+}
+
+function parseOutputId(outputId: string) {
+  const separatorIndex = outputId.lastIndexOf(":");
+  if (separatorIndex <= 0 || separatorIndex === outputId.length - 1) {
+    throw notFound("DearMe output not found");
+  }
+  const issueId = outputId.slice(0, separatorIndex);
+  const kind = outputId.slice(separatorIndex + 1);
+  if (!outputKindSet.has(kind)) {
+    throw notFound("DearMe output not found");
+  }
+  return { issueId, kind: kind as DearMeOutputKind };
+}
+
+function outputDecisionCopy(action: DearMeOutputReviewAction, decisionNote: string | null | undefined) {
+  const note = decisionNote?.trim();
+  if (action === "approve") {
+    return [
+      "DearMe decision: approved this prepared work.",
+      note || "This represents me.",
+    ].join("\n\n");
+  }
+  if (action === "request_changes") {
+    return [
+      "DearMe decision: requested changes before this represents me.",
+      note || "Please revise this before review.",
+    ].join("\n\n");
+  }
+  return [
+    "DearMe decision: regenerate this prepared work before review.",
+    note || "Please prepare a new version for review.",
+  ].join("\n\n");
+}
+
+export function dearmeOutputHandoffService(db: Db) {
+  const service = {
+    listOutputs: async (companyId: string) => {
+      const issueRows = await db
+        .select({
+          id: issues.id,
+          companyId: issues.companyId,
+          title: issues.title,
+          status: issues.status,
+          identifier: issues.identifier,
+          originFingerprint: issues.originFingerprint,
+          assigneeAgentId: issues.assigneeAgentId,
+          updatedAt: issues.updatedAt,
+        })
+        .from(issues)
+        .where(and(
+          eq(issues.companyId, companyId),
+          eq(issues.originKind, DEARME_BRAND_BLUEPRINT_ORIGIN_KIND),
+          isNull(issues.hiddenAt),
+        ))
+        .orderBy(desc(issues.updatedAt))
+        .limit(50);
+
+      if (issueRows.length === 0) {
+        return dearMeOutputsResponseSchema.parse({ companyId, outputs: [] });
+      }
+
+      const issueIds = issueRows.map((issue) => issue.id);
+      const [documentRows, workProductRows, commentRows] = await Promise.all([
+        db
+          .select({
+            id: documents.id,
+            issueId: issueDocuments.issueId,
+            key: issueDocuments.key,
+            title: documents.title,
+            format: documents.format,
+            revisionNumber: documents.latestRevisionNumber,
+            body: documents.latestBody,
+            updatedAt: documents.updatedAt,
+          })
+          .from(issueDocuments)
+          .innerJoin(documents, eq(issueDocuments.documentId, documents.id))
+          .where(and(
+            eq(issueDocuments.companyId, companyId),
+            inArray(issueDocuments.issueId, issueIds),
+          ))
+          .orderBy(asc(issueDocuments.key), desc(documents.updatedAt)),
+        db
+          .select({
+            id: issueWorkProducts.id,
+            issueId: issueWorkProducts.issueId,
+            type: issueWorkProducts.type,
+            title: issueWorkProducts.title,
+            url: issueWorkProducts.url,
+            status: issueWorkProducts.status,
+            reviewState: issueWorkProducts.reviewState,
+            summary: issueWorkProducts.summary,
+            updatedAt: issueWorkProducts.updatedAt,
+          })
+          .from(issueWorkProducts)
+          .where(and(
+            eq(issueWorkProducts.companyId, companyId),
+            inArray(issueWorkProducts.issueId, issueIds),
+          ))
+          .orderBy(desc(issueWorkProducts.updatedAt)),
+        db
+          .select({
+            id: issueComments.id,
+            issueId: issueComments.issueId,
+            body: issueComments.body,
+            createdAt: issueComments.createdAt,
+          })
+          .from(issueComments)
+          .where(and(
+            eq(issueComments.companyId, companyId),
+            inArray(issueComments.issueId, issueIds),
+            isNotNull(issueComments.authorAgentId),
+          ))
+          .orderBy(desc(issueComments.createdAt)),
+      ]);
+
+      const documentsByIssue = groupPayloadByIssue(
+        documentRows
+          .filter((document) => !isSystemIssueDocumentKey(document.key))
+          .map((document) => ({
+            issueId: document.issueId,
+            payload: {
+              id: document.id,
+              key: document.key,
+              title: document.title,
+              format: document.format,
+              revisionNumber: document.revisionNumber,
+              bodyPreview: plainPreview(document.body),
+              updatedAt: toIso(document.updatedAt),
+            },
+          })),
+      );
+      const workProductsByIssue = groupPayloadByIssue(
+        workProductRows.map((workProduct) => ({
+          issueId: workProduct.issueId,
+          payload: {
+            id: workProduct.id,
+            type: workProduct.type,
+            title: workProduct.title,
+            url: workProduct.url,
+            status: workProduct.status,
+            reviewState: workProduct.reviewState,
+            summary: workProduct.summary,
+            updatedAt: toIso(workProduct.updatedAt),
+          },
+        })),
+      );
+      const updatesByIssue = latestUpdateByIssue(
+        commentRows.map((comment) => ({
+          id: comment.id,
+          issueId: comment.issueId,
+          bodyPreview: plainPreview(comment.body),
+          createdAt: toIso(comment.createdAt),
+        })),
+      );
+
+      return dearMeOutputsResponseSchema.parse({
+        companyId,
+        outputs: buildOutputItems({
+          issues: issueRows,
+          documentsByIssue,
+          workProductsByIssue,
+          latestUpdateByIssue: updatesByIssue,
+        }),
+      });
+    },
+
+    reviewOutput: async (
+      companyId: string,
+      outputId: string,
+      request: DearMeOutputReviewRequest,
+      actor: DearMeOutputReviewActor,
+    ): Promise<DearMeOutputReviewServiceResult> => {
+      const { issueId, kind } = parseOutputId(outputId);
+      const outputs = await service.listOutputs(companyId);
+      const output = outputs.outputs.find((item) =>
+        item.id === outputId &&
+        item.issueId === issueId &&
+        item.kind === kind
+      );
+      if (!output) {
+        throw notFound("DearMe output not found");
+      }
+
+      const [issue] = await db
+        .select({
+          id: issues.id,
+          status: issues.status,
+          assigneeAgentId: issues.assigneeAgentId,
+        })
+        .from(issues)
+        .where(and(
+          eq(issues.id, issueId),
+          eq(issues.companyId, companyId),
+          eq(issues.originKind, DEARME_BRAND_BLUEPRINT_ORIGIN_KIND),
+          isNull(issues.hiddenAt),
+        ))
+        .limit(1);
+      if (!issue) {
+        throw notFound("DearMe output not found");
+      }
+
+      const now = new Date();
+      const body = outputDecisionCopy(request.action, request.decisionNote);
+      const [comment] = await db
+        .insert(issueComments)
+        .values({
+          companyId,
+          issueId,
+          authorAgentId: actor.actorType === "agent" ? actor.agentId : null,
+          authorUserId: actor.actorType === "user" ? actor.actorId : null,
+          createdByRunId: actor.runId ?? null,
+          body,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning({
+          id: issueComments.id,
+          body: issueComments.body,
+          createdAt: issueComments.createdAt,
+        });
+
+      if (!comment) {
+        throw new Error("Failed to record DearMe output decision");
+      }
+
+      await db
+        .update(issues)
+        .set(request.action === "approve"
+          ? {
+              status: "done",
+              completedAt: now,
+              cancelledAt: null,
+              updatedAt: now,
+            }
+          : {
+              status: "todo",
+              completedAt: null,
+              cancelledAt: null,
+              updatedAt: now,
+            })
+        .where(and(
+          eq(issues.id, issueId),
+          eq(issues.companyId, companyId),
+        ));
+
+      await db
+        .update(issueWorkProducts)
+        .set({
+          reviewState: request.action === "approve" ? "approved" : "changes_requested",
+          updatedAt: now,
+        })
+        .where(and(
+          eq(issueWorkProducts.companyId, companyId),
+          eq(issueWorkProducts.issueId, issueId),
+        ));
+
+      const refreshed = await service.listOutputs(companyId);
+      const updatedOutput = refreshed.outputs.find((item) =>
+        item.id === outputId &&
+        item.issueId === issueId &&
+        item.kind === kind
+      ) ?? output;
+      const parsed = dearMeOutputReviewResultSchema.parse({
+        companyId,
+        outputId,
+        action: request.action,
+        status: request.action === "approve" ? "recorded" : "queued",
+        comment: {
+          id: comment.id,
+          bodyPreview: plainPreview(comment.body),
+          createdAt: toIso(comment.createdAt),
+        },
+        output: updatedOutput,
+      });
+
+      return {
+        ...parsed,
+        wakeIssue: request.action === "approve"
+          ? null
+          : {
+              id: issue.id,
+              assigneeAgentId: issue.assigneeAgentId,
+              status: "todo",
+            },
+      };
+    },
+  };
+
+  return service;
+}
