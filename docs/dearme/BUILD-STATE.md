@@ -2,6 +2,48 @@
 
 Date: 2026-05-09
 
+## DM-117 Normalized Retry Continue Entrypoint - 2026-05-09
+
+Implementation slice:
+
+- Added a DearMe review-entry intent to the existing `/dearme?view=decisions`
+  route so review, continue, retry, direction, blocked, and progress states all
+  land in the same customer-safe focus surface.
+- Reused the Naive/Paperclip-backed DearMe output handoff service through a
+  thin DearMe `/continue` wrapper: continue revision, another pass, and new
+  direction intents normalize back into the existing review action, paid-beta
+  guardrail, wakeup, and activity path.
+- No new runtime control, database table, worker lane, or execution primitive
+  was introduced.
+- Adapted Polsia's visible-motion lesson by making Work Ready, Live Team Feed,
+  and Private Work cards open the next useful decision state directly instead
+  of sending the user to raw task machinery.
+- Adapted the internal assistant baseline's retry/continue/action-needed
+  grammar into DearMe-owned labels and focus guidance: continue revision, track
+  next pass, give new direction, and add clearer direction.
+- Added focused-output guidance for revision, regeneration, and not-useful
+  states so the user understands what their team needs next before spending
+  another attempt.
+- Kept all risky actions behind the existing approval/review mutations.
+
+Verification:
+
+- Focused shared/server/API/UI coverage passed:
+  `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts ui/src/api/dearme.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/components/dearme/DearMeActionCard.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 5 files, 74 tests.
+- `pnpm -r typecheck` passed.
+- `pnpm build` passed. Vite still reports the existing
+  `MarkdownEditor.tsx` dynamic/static import warning plus chunk-size warnings.
+- `git diff --check` passed.
+- Hidden-substrate language scan on the touched DearMe UI files returned only
+  the benign opportunity-copy word `jobs`, not runtime job controls or
+  provider/substrate language.
+
+Next:
+
+- Use routine/cost lineage as DearMe-safe progress context without exposing
+  runtime or provider mechanics.
+
 ## DM-116 Action Card State Variants - 2026-05-09
 
 Implementation slice:

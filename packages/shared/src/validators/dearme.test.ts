@@ -12,6 +12,7 @@ import {
   dearMeFirstCyclePreviewSchema,
   dearMeMemoryUpdateResultSchema,
   dearMeMemoryUpdateSchema,
+  dearMeOutputContinuationRequestSchema,
   dearMeOutputReviewRequestSchema,
   dearMeOutputReviewResultSchema,
   dearMeOutputsResponseSchema,
@@ -33,7 +34,7 @@ function reviewLoop(overrides: Partial<DearMeOutputReviewLoop> = {}): DearMeOutp
     lastAction: null,
     lastDecisionAt: null,
     lastDecisionNotePreview: null,
-    nextStep: "Review it, then approve, request changes, regenerate, or mark it not useful.",
+    nextStep: "Review it, then approve, request changes, ask for another pass, or choose a new direction.",
     reviewHandoff: null,
     ...overrides,
   };
@@ -489,6 +490,15 @@ describe("DearMe brand blueprint contract", () => {
       decisionNote: "",
     });
     expect(request).toEqual({ action: "regenerate", decisionNote: null });
+
+    const continuation = dearMeOutputContinuationRequestSchema.parse({
+      intent: "prepare_another_pass",
+      decisionNote: "  Make it sharper before review.  ",
+    });
+    expect(continuation).toEqual({
+      intent: "prepare_another_pass",
+      decisionNote: "Make it sharper before review.",
+    });
 
     const output = dearMeOutputsResponseSchema.parse({
       companyId: "company-1",

@@ -44,6 +44,10 @@ Already implemented:
 - DM-106 through DM-109 added visible review-loop state, feedback handoff,
   cycle-aware team progress, and actionable live-feed review buttons without
   adding a parallel runtime.
+- DM-111 through DM-117 moved the main work cards onto a shared DearMe action
+  primitive and added a normalized retry/continue/direction entrypoint that
+  reuses the existing focused review route plus a thin DearMe `/continue`
+  wrapper over the existing output handoff/review/wakeup path.
 - Polsia's key product lesson is now represented in the product shell: the user
   sees a team moving through a growth cycle and can open the prepared decision
   directly from the work stream.
@@ -56,9 +60,8 @@ Still not maximized:
   Decisions Needed, Work Ready, Private Work, and Voice & Memory source
   `DearMeActionCard` surfaces; DM-116 adds shared paused, retry, blocked, and
   decision-needed attention grammar to the same primitive and wires current
-  review-loop/status projections into the main work cards.
-- The normalized retry/continue entrypoint still needs to become DearMe-safe
-  product behavior rather than a raw execution control.
+  review-loop/status projections into the main work cards; DM-117 adds the
+  normalized retry/continue/direction entrypoint on top of the same surface.
 - Voice & Memory still needs richer source import and management before it can
   feel like a durable Brand OS, not just generated text.
 

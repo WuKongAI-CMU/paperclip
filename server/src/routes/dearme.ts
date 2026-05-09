@@ -9,12 +9,15 @@ import {
   dearMeFirstCyclePreviewSchema,
   dearMeMemoryUpdateResultSchema,
   dearMeMemoryUpdateSchema,
+  dearMeOutputContinuationRequestSchema,
   dearMeOutputReviewRequestSchema,
   dearMePaidBetaRecordSchema,
   type DearMeChiefOfStaffMessage,
   type DearMeChiefOfStaffMessageIntent,
   type DearMeMemoryUpdate,
+  type DearMeOutputContinuationIntent,
   type DearMeOutputReviewAction,
+  type DearMeOutputReviewRequest,
 } from "@paperclipai/shared";
 import { validate } from "../middleware/validate.js";
 import {
@@ -74,6 +77,24 @@ function startsDearMePrivateCycle(action: DearMeOutputReviewAction) {
   return action !== "approve";
 }
 
+function dearMeOutputReviewActionForContinuation(
+  intent: DearMeOutputContinuationIntent,
+): Exclude<DearMeOutputReviewAction, "approve"> {
+  if (intent === "continue_revision") return "request_changes";
+  if (intent === "prepare_another_pass") return "regenerate";
+  return "not_useful";
+}
+
+function defaultDearMeContinuationNote(intent: DearMeOutputContinuationIntent) {
+  if (intent === "continue_revision") {
+    return "Continue with these changes and prepare the next private version.";
+  }
+  if (intent === "prepare_another_pass") {
+    return "Prepare another private pass for review.";
+  }
+  return "Use this feedback to choose a clearer direction before the next private version.";
+}
+
 function dearMeOutputWakeReason(action: DearMeOutputReviewAction) {
   if (action === "regenerate") return "dearme_output_regeneration_requested";
   if (action === "not_useful") return "dearme_output_marked_not_useful";
@@ -97,6 +118,65 @@ export function dearmeRoutes(db: Db) {
   const paidBetaAccess = dearmePaidBetaAccessService(db);
   const workbench = dearmeWorkbenchService(db);
   const heartbeat = heartbeatService(db);
+
+  async function recordDearMeOutputReview(input: {
+    companyId: string;
+    outputId: string;
+    request: DearMeOutputReviewRequest;
+    actor: ReturnType<typeof getActorInfo>;
+    mutation: "dearme.output_review" | "dearme.output_continue";
+    contextSource: "dearme.output_review" | "dearme.output_continue";
+    continuationIntent?: DearMeOutputContinuationIntent;
+  }) {
+    if (startsDearMePrivateCycle(input.request.action)) {
+      const access = await paidBetaAccess.getAccess(input.companyId);
+      const privateCycleBlocker = describeDearMePrivateCycleBlocker(access);
+      if (privateCycleBlocker) {
+        throw forbidden(privateCycleBlocker);
+      }
+    }
+
+    const result = await outputHandoff.reviewOutput(
+      input.companyId,
+      input.outputId,
+      input.request,
+      input.actor,
+    );
+
+    if (result.wakeIssue) {
+      void queueIssueAssignmentWakeup({
+        heartbeat,
+        issue: result.wakeIssue,
+        reason: dearMeOutputWakeReason(result.action),
+        mutation: input.mutation,
+        contextSource: input.contextSource,
+        requestedByActorType: input.actor.actorType,
+        requestedByActorId: input.actor.actorId,
+      });
+    }
+
+    await logActivity(db, {
+      companyId: input.companyId,
+      actorType: input.actor.actorType,
+      actorId: input.actor.actorId,
+      agentId: input.actor.agentId,
+      runId: input.actor.runId,
+      action: dearMeOutputActivityAction(result.action),
+      entityType: "issue_comment",
+      entityId: result.comment.id,
+      details: {
+        outputId: result.outputId,
+        outputKind: result.output.kind,
+        issueId: result.output.issueId,
+        issueIdentifier: result.output.issueIdentifier,
+        status: result.status,
+        reviewAction: result.action,
+        continuationIntent: input.continuationIntent ?? null,
+      },
+    });
+
+    return result;
+  }
 
   router.get(
     "/companies/:companyId/workbench",
@@ -125,44 +205,42 @@ export function dearmeRoutes(db: Db) {
       assertCompanyAccess(req, companyId);
       assertBoard(req);
       const actor = getActorInfo(req);
-      if (startsDearMePrivateCycle(req.body.action)) {
-        const access = await paidBetaAccess.getAccess(companyId);
-        const privateCycleBlocker = describeDearMePrivateCycleBlocker(access);
-        if (privateCycleBlocker) {
-          throw forbidden(privateCycleBlocker);
-        }
-      }
-      const result = await outputHandoff.reviewOutput(companyId, outputId, req.body, actor);
-
-      if (result.wakeIssue) {
-        void queueIssueAssignmentWakeup({
-          heartbeat,
-          issue: result.wakeIssue,
-          reason: dearMeOutputWakeReason(result.action),
-          mutation: "dearme.output_review",
-          contextSource: "dearme.output_review",
-          requestedByActorType: actor.actorType,
-          requestedByActorId: actor.actorId,
-        });
-      }
-
-      await logActivity(db, {
+      const result = await recordDearMeOutputReview({
         companyId,
-        actorType: actor.actorType,
-        actorId: actor.actorId,
-        agentId: actor.agentId,
-        runId: actor.runId,
-        action: dearMeOutputActivityAction(result.action),
-        entityType: "issue_comment",
-        entityId: result.comment.id,
-        details: {
-          outputId: result.outputId,
-          outputKind: result.output.kind,
-          issueId: result.output.issueId,
-          issueIdentifier: result.output.issueIdentifier,
-          status: result.status,
-          reviewAction: result.action,
-        },
+        outputId,
+        request: req.body,
+        actor,
+        mutation: "dearme.output_review",
+        contextSource: "dearme.output_review",
+      });
+
+      const { wakeIssue: _wakeIssue, ...responseBody } = result;
+      res.status(responseBody.status === "queued" ? 202 : 200).json(responseBody);
+    },
+  );
+
+  router.post(
+    "/companies/:companyId/outputs/:outputId/continue",
+    validate(dearMeOutputContinuationRequestSchema),
+    async (req, res) => {
+      const companyId = req.params.companyId as string;
+      const outputId = req.params.outputId as string;
+      assertCompanyAccess(req, companyId);
+      assertBoard(req);
+      const actor = getActorInfo(req);
+      const action = dearMeOutputReviewActionForContinuation(req.body.intent);
+      const request: DearMeOutputReviewRequest = {
+        action,
+        decisionNote: req.body.decisionNote ?? defaultDearMeContinuationNote(req.body.intent),
+      };
+      const result = await recordDearMeOutputReview({
+        companyId,
+        outputId,
+        request,
+        actor,
+        mutation: "dearme.output_continue",
+        contextSource: "dearme.output_continue",
+        continuationIntent: req.body.intent,
       });
 
       const { wakeIssue: _wakeIssue, ...responseBody } = result;

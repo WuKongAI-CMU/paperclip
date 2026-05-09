@@ -31,6 +31,12 @@ This is the important split:
 - Build a DearMe-original customer UI shell because neither Polsia UI nor the
   currently exposed Paperclip shell is the right premium personal-brand product.
 
+Current implementation note, 2026-05-09: DM-117 keeps this split intact. The
+normalized retry/continue/direction entrypoint lives in the DearMe web shell,
+routes to the existing focused decision surface, and uses a thin DearMe
+`/continue` wrapper over the existing output handoff, review, wakeup, activity,
+and paid-beta guardrail path instead of creating a second execution surface.
+
 ## Architecture Diagram
 
 ```text
@@ -169,7 +175,8 @@ Remaining gaps:
   and status data into the main work cards;
 - action-needed, paused, retry, continue, and blocked states now have a
   customer-safe card grammar where existing web projections expose that state,
-  but still need a normalized retry/continue entrypoint;
+  and DM-117 adds the normalized retry/continue/direction entrypoint through
+  the same focused decision surface;
 - routine telemetry and cost lineage are still thinly projected into the
   customer work stream;
 - Voice & Memory source ingestion has not yet adopted the Lindy knowledge-base
@@ -354,9 +361,10 @@ grammar. DM-113 moves Work Ready onto the same primitive, and DM-114 moves
 Private Work output cards onto it. DM-115 moves Voice & Memory source cards
 onto it. DM-116 adds decision-needed, paused, retry, and blocked attention
 variants to that same primitive and wires the current Work Ready, Decisions
-Needed, Live Feed, and Private Work projections to it; the remaining work is to
-add the normalized retry/continue action path and then move deeper review
-variants onto the shared card.
+Needed, Live Feed, and Private Work projections to it. DM-117 adds the
+normalized retry/continue/direction action path through the DearMe `/continue`
+wrapper over the existing output handoff path; the remaining work is to move
+deeper review variants onto the shared card.
 
 Fresh read-only donor sweep:
 

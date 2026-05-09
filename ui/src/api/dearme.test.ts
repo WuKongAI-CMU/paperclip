@@ -48,6 +48,20 @@ describe("dearmeApi", () => {
     );
   });
 
+  it("posts output continuation through the DearMe company endpoint", async () => {
+    const payload = {
+      intent: "prepare_another_pass" as const,
+      decisionNote: "Make it sharper before review.",
+    };
+
+    await dearmeApi.continueOutput("company-1", "issue-1:weekly_report", payload);
+
+    expect(mockApi.post).toHaveBeenCalledWith(
+      "/dearme/companies/company-1/outputs/issue-1%3Aweekly_report/continue",
+      payload,
+    );
+  });
+
   it("gets the team workbench through the DearMe company endpoint", async () => {
     await dearmeApi.getWorkbench("company-1");
 

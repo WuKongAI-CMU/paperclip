@@ -14,6 +14,7 @@ import {
   type DearMeMemoryUpdate,
   type DearMeMemoryUpdateKind,
   type DearMeMemoryUpdateResult,
+  type DearMeOutputContinuationIntent,
   type DearMeOutputItem,
   type DearMeOutputReviewAction,
   type DearMeOutputReviewLoop,
@@ -207,15 +208,28 @@ const CHIEF_OF_STAFF_CYCLE_CONTROLS: Array<{
 
 const DEFAULT_CHIEF_OF_STAFF_INTENT: DearMeChiefOfStaffMessageIntent = "plan_next";
 
+type DearMeReviewEntryIntent = "review" | "continue" | "retry" | "direction" | "blocked" | "progress";
+
+const DEARME_REVIEW_ENTRY_INTENTS = new Set<DearMeReviewEntryIntent>([
+  "review",
+  "continue",
+  "retry",
+  "direction",
+  "blocked",
+  "progress",
+]);
+
 function buildDearMeDecisionRoute(params: {
   approvalId?: string;
   issueReference?: string;
   outputId?: string;
+  intent?: DearMeReviewEntryIntent | null;
 }): string {
   const search = new URLSearchParams({ view: "decisions" });
   if (params.approvalId) search.set("approval", params.approvalId);
   if (params.issueReference) search.set("issue", params.issueReference);
   if (params.outputId) search.set("output", params.outputId);
+  if (params.intent && params.intent !== "review") search.set("intent", params.intent);
   return `/dearme?${search.toString()}`;
 }
 
@@ -223,6 +237,7 @@ interface DearMeDecisionFocus {
   approvalId: string | null;
   issueReference: string | null;
   outputId: string | null;
+  intent: DearMeReviewEntryIntent | null;
 }
 
 type DearMeApprovalReviewAction = "approve" | "reject" | "request_revision";
@@ -247,9 +262,15 @@ function parseDearMeDecisionFocus(search: string): DearMeDecisionFocus | null {
     approvalId: params.get("approval"),
     issueReference: params.get("issue"),
     outputId: params.get("output"),
+    intent: parseDearMeReviewEntryIntent(params.get("intent")),
   };
   if (!focus.approvalId && !focus.issueReference && !focus.outputId) return null;
   return focus;
+}
+
+function parseDearMeReviewEntryIntent(value: string | null): DearMeReviewEntryIntent | null {
+  if (!value || !DEARME_REVIEW_ENTRY_INTENTS.has(value as DearMeReviewEntryIntent)) return null;
+  return value as DearMeReviewEntryIntent;
 }
 
 function defaultDearMeDecisionNote(action: DearMeApprovalReviewAction) {
@@ -261,7 +282,17 @@ function defaultDearMeDecisionNote(action: DearMeApprovalReviewAction) {
 function defaultDearMeOutputReviewNote(action: DearMeOutputReviewAction) {
   if (action === "approve") return "Approved from DearMe. This prepared work represents me.";
   if (action === "request_changes") return "Please revise this from DearMe before review.";
-  return "Please prepare a new version of this DearMe work for review.";
+  if (action === "regenerate") return "Please prepare another private pass of this DearMe work for review.";
+  return "Please use a clearer direction before preparing the next private version.";
+}
+
+function outputContinuationIntentForAction(
+  action: DearMeOutputReviewAction,
+): DearMeOutputContinuationIntent | null {
+  if (action === "request_changes") return "continue_revision";
+  if (action === "regenerate") return "prepare_another_pass";
+  if (action === "not_useful") return "choose_new_direction";
+  return null;
 }
 
 function FieldLabel({ htmlFor, label, hint }: { htmlFor: string; label: string; hint?: string }) {
@@ -447,7 +478,7 @@ const REVIEW_LOOP_STATE_LABELS: Record<DearMeOutputReviewLoop["state"], string> 
   fresh: "Preparing privately",
   needs_user_review: "Needs your review",
   revision_requested: "Changes requested",
-  regeneration_requested: "Regeneration available",
+  regeneration_requested: "Next pass in motion",
   not_useful: "New direction needed",
   approved: "Approved",
   retry_limit_reached: "Needs clearer direction",
@@ -508,6 +539,99 @@ function reviewLoopAttention(loop: DearMeOutputReviewLoop | null | undefined): D
   }
 }
 
+function reviewLoopEntryIntent(loop: DearMeOutputReviewLoop | null | undefined): DearMeReviewEntryIntent | null {
+  if (!loop) return null;
+
+  switch (loop.state) {
+    case "needs_user_review":
+      return "review";
+    case "revision_requested":
+      return "continue";
+    case "regeneration_requested":
+      return "retry";
+    case "not_useful":
+      return "direction";
+    case "retry_limit_reached":
+      return "blocked";
+    case "fresh":
+      return "progress";
+    case "approved":
+      return null;
+  }
+}
+
+function reviewLoopRouteIntent(loop: DearMeOutputReviewLoop | null | undefined): DearMeReviewEntryIntent | null {
+  const intent = reviewLoopEntryIntent(loop);
+  return intent && intent !== "review" ? intent : null;
+}
+
+function reviewLoopActionLabel(loop: DearMeOutputReviewLoop | null | undefined): string | null {
+  const intent = reviewLoopEntryIntent(loop);
+  if (!intent) return null;
+
+  switch (intent) {
+    case "review":
+      return "Review prepared work";
+    case "continue":
+      return "Continue revision";
+    case "retry":
+      return "Track next pass";
+    case "direction":
+      return "Give new direction";
+    case "blocked":
+      return "Add clearer direction";
+    case "progress":
+      return "See progress";
+  }
+}
+
+function reviewEntryGuidance(
+  intent: DearMeReviewEntryIntent | null | undefined,
+  loop: DearMeOutputReviewLoop,
+) {
+  const resolvedIntent = intent ?? reviewLoopEntryIntent(loop);
+  if (!resolvedIntent) return null;
+
+  switch (resolvedIntent) {
+    case "review":
+      return {
+        label: "Decision ready",
+        title: "Review prepared work",
+        body: "Choose whether this represents you, needs changes, needs another pass, or should stop.",
+      };
+    case "continue":
+      return {
+        label: "Continue revision",
+        title: "Your team is already revising",
+        body: "Your team already has your change request. Add one sharper note if needed, then let DearMe prepare the next private version.",
+      };
+    case "retry":
+      return {
+        label: "Next pass in motion",
+        title: "DearMe is taking another pass",
+        body: "Your team is taking another pass. Use the note box only if the next version needs stronger direction.",
+      };
+    case "direction":
+      return {
+        label: "New direction needed",
+        title: "Give clearer direction",
+        body: "Give one clear instruction so DearMe does not keep trying the wrong angle.",
+      };
+    case "blocked":
+      return {
+        label: "Clearer direction needed",
+        title: "Pause and redirect the team",
+        body: "Add one specific instruction before spending another attempt on this prepared work.",
+      };
+    case "progress":
+      return {
+        label: "Private work in motion",
+        title: "Track the next prepared version",
+        body: "DearMe is still preparing this privately. Come back here when the team brings it to review.",
+      };
+  }
+}
+
 function outputActionAttention(
   status: DearMeOutputStatus,
   loop: DearMeOutputReviewLoop | null | undefined,
@@ -519,7 +643,7 @@ function outputActionAttention(
     return {
       kind: "decision_needed",
       label: "Ready for your review",
-      detail: loop?.nextStep ?? "Open it, then approve, request changes, regenerate, or mark it not useful.",
+      detail: loop?.nextStep ?? "Open it, then approve, request changes, ask for another pass, or choose a new direction.",
     };
   }
   if (status === "blocked") {
@@ -661,7 +785,7 @@ const OUTPUT_KIND_LABELS: Record<DearMeOutputItem["kind"], string> = {
 const OUTPUT_KIND_VALUE_LABELS: Record<DearMeOutputItem["kind"], string> = {
   brand_os: "Keeps the team aligned on positioning, voice, proof, channels, and approval boundaries.",
   voice_profile: "Protects the user's tone before private drafts become public-facing work.",
-  content_drafts: "Turns proof and point of view into material the user can approve, revise, or regenerate.",
+  content_drafts: "Turns proof and point of view into material the user can approve, revise, or send back for another pass.",
   opportunity_drafts: "Turns relationships and market openings into prepared next moves.",
   portfolio_update: "Converts shipped work into proof that can strengthen the user's public surface.",
   weekly_report: "Shows what changed, what needs a decision, and what the team should try next.",
@@ -787,7 +911,7 @@ function actionGraphNextMove(node: DearMeActionGraphNode) {
     case "work_item":
       return "The team keeps preparing this privately until it becomes reviewable.";
     case "artifact":
-      return "Open the prepared work, then approve, request changes, regenerate, or mark it not useful.";
+      return "Open the prepared work, then approve, request changes, ask for another pass, or choose a new direction.";
     case "decision":
       return "This waits for your call before it can represent you publicly or externally.";
     case "memory_signal":
@@ -1216,7 +1340,7 @@ function streamItemIssueTarget(item: DearMeWorkbenchStreamItem) {
 
 function liveFeedActionLabel(item: DearMeWorkbenchStreamItem) {
   if (item.approvalId || item.needsApproval) return "Review now";
-  if (item.relatedOutputId) return "Open prepared work";
+  if (item.relatedOutputId) return reviewLoopActionLabel(item.reviewLoop) ?? "Open prepared work";
   if (streamItemIssueTarget(item)) {
     return item.kind === "cycle_brief" ? "Open private work" : "Open work";
   }
@@ -1277,7 +1401,7 @@ function FocusedDecisionPanel({
   workItem: DearMeWorkbenchWorkItem | null;
   onOpenDecision: (decision: DearMeWorkbenchDecision) => void;
   onOpenBatch: (batch: DearMeWorkbenchBatchDecision) => void;
-  onOpenWorkItem: (item: DearMeWorkbenchWorkItem) => void;
+  onOpenWorkItem: (item: DearMeWorkbenchWorkItem, intent?: DearMeReviewEntryIntent | null) => void;
   onReviewApproval: (
     approvalId: string,
     action: DearMeApprovalReviewAction,
@@ -1460,8 +1584,13 @@ function FocusedDecisionPanel({
         <ReviewHandoffCard loop={workItem.reviewLoop} className="mt-4" />
         <div className="mt-4 flex items-center justify-between gap-3">
           <span className="text-xs text-muted-foreground">Prepared by {roleLabel(workItem.ownerRole)}</span>
-          <Button type="button" size="sm" variant="outline" onClick={() => onOpenWorkItem(workItem)}>
-            Review prepared work
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => onOpenWorkItem(workItem, reviewLoopRouteIntent(workItem.reviewLoop))}
+          >
+            {reviewLoopActionLabel(workItem.reviewLoop) ?? "Review prepared work"}
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
@@ -1484,15 +1613,18 @@ function FocusedDecisionPanel({
 
 function FocusedOutputPanel({
   output,
+  entryIntent,
   reviewState,
   onReviewOutput,
 }: {
   output: DearMeOutputItem;
+  entryIntent?: DearMeReviewEntryIntent | null;
   reviewState: DearMeOutputReviewState;
   onReviewOutput: (outputId: string, action: DearMeOutputReviewAction, decisionNote: string) => void;
 }) {
   const preview = outputPreview(output);
   const details = output.details.slice(0, 4);
+  const entryGuidance = reviewEntryGuidance(entryIntent, output.reviewLoop);
   const [decisionNote, setDecisionNote] = useState("");
   const isReviewingOutput = reviewState.isPending && reviewState.outputId === output.id;
   const canReview = output.isReviewable && !isReviewingOutput;
@@ -1544,6 +1676,16 @@ function FocusedOutputPanel({
       <ReviewLoopNextStep loop={output.reviewLoop} className="mt-4" />
       <ReviewHandoffCard loop={output.reviewLoop} className="mt-4" />
 
+      {entryGuidance ? (
+        <div className="mt-4 rounded-md border border-border bg-background/80 p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline">{entryGuidance.label}</Badge>
+            <p className="text-sm font-medium">{entryGuidance.title}</p>
+          </div>
+          <p className="mt-2 text-sm text-foreground/85">{entryGuidance.body}</p>
+        </div>
+      ) : null}
+
       <div className="mt-4 rounded-md border border-border bg-background/80 p-3">
         <FieldLabel
           htmlFor="dearme-focused-output-note"
@@ -1593,7 +1735,7 @@ function FocusedOutputPanel({
             disabled={!canReview}
           >
             <RefreshCw className={cn("h-4 w-4", pendingAction === "regenerate" ? "animate-spin" : "")} />
-            Regenerate
+            Prepare another pass
           </Button>
           <Button
             type="button"
@@ -1607,7 +1749,7 @@ function FocusedOutputPanel({
             ) : (
               <XCircle className="h-4 w-4" />
             )}
-            Not useful
+            Choose new direction
           </Button>
         </div>
       </div>
@@ -1622,16 +1764,24 @@ function FocusedOutputPanel({
   );
 }
 
-function workReadyActionLabel(status: DearMeOutputStatus) {
+function workReadyActionLabel(status: DearMeOutputStatus, loop?: DearMeOutputReviewLoop | null) {
+  const loopLabel = reviewLoopActionLabel(loop);
+  if (loopLabel) return loopLabel;
   if (status === "ready_for_review") return "Review prepared work";
   if (status === "blocked") return "See what needs attention";
   if (status === "working") return "See progress";
   return "Open work";
 }
 
+function privateWorkActionLabel(output: DearMeOutputItem) {
+  const loopLabel = reviewLoopActionLabel(output.reviewLoop);
+  if (loopLabel) return loopLabel === "Review prepared work" && output.isReviewable ? "Review" : loopLabel;
+  return output.isReviewable ? "Review" : "Open";
+}
+
 function workReadyNextStepLabel(status: DearMeOutputStatus) {
   if (status === "ready_for_review") {
-    return "Open it, then approve, request changes, regenerate, or mark it not useful.";
+    return "Open it, then approve, request changes, ask for another pass, or choose a new direction.";
   }
   if (status === "complete") return "Use it as proof or keep it in your private history.";
   if (status === "blocked") return "Review what is blocking the team before more private work continues.";
@@ -1690,7 +1840,7 @@ function WorkReadyPanel({
   onOpenWorkItem,
 }: {
   items: DearMeWorkbenchWorkItem[];
-  onOpenWorkItem: (item: DearMeWorkbenchWorkItem) => void;
+  onOpenWorkItem: (item: DearMeWorkbenchWorkItem, intent?: DearMeReviewEntryIntent | null) => void;
 }) {
   return (
     <DearMePanel aria-label="Work ready">
@@ -1713,6 +1863,7 @@ function WorkReadyPanel({
           {items.map((item) => {
             const outputKind = item.outputKind ?? "brand_os";
             const issueReference = workItemTarget(item);
+            const routeIntent = reviewLoopRouteIntent(item.reviewLoop);
             return (
               <DearMeActionCard
                 key={item.id}
@@ -1742,8 +1893,8 @@ function WorkReadyPanel({
                 footer={`Updated ${shortDate(item.updatedAt)}`}
                 action={
                   {
-                    label: workReadyActionLabel(item.status),
-                    onClick: () => onOpenWorkItem(item),
+                    label: workReadyActionLabel(item.status, item.reviewLoop),
+                    onClick: () => onOpenWorkItem(item, routeIntent),
                     disabled: !issueReference,
                     variant: item.status === "ready_for_review" ? "default" : "outline",
                   }
@@ -1791,7 +1942,7 @@ function DecisionsNeededPanel({
         icon={ShieldCheck}
         eyebrow="Decisions needed"
         title="High-leverage calls"
-        description="Approve, request changes, reject, or regenerate the moves that would represent you."
+        description="Approve, request changes, reject, or ask for another private pass on the moves that would represent you."
         trailing={
           batches.length + decisions.length > 0 ? (
             <Badge variant="secondary">{batches.length + decisions.length} waiting</Badge>
@@ -1843,7 +1994,7 @@ function DecisionsNeededPanel({
                 </div>
                 <div className="rounded-md border border-border bg-background/80 p-3">
                   <p className="text-xs font-medium text-muted-foreground">Choices</p>
-                  <p className="mt-1 text-sm">Approve, request changes, or regenerate privately.</p>
+                  <p className="mt-1 text-sm">Approve, request changes, or ask for another private pass.</p>
                 </div>
                 <div className="rounded-md border border-border bg-background/80 p-3">
                   <p className="text-xs font-medium text-muted-foreground">After your call</p>
@@ -2228,7 +2379,11 @@ function LiveTeamFeedPanel({
   liveStream: DearMeWorkbenchStreamItem[];
   onOpenApproval: (approvalId: string) => void;
   onOpenIssue: (issueReference: string) => void;
-  onOpenWorkItem: (issueReference: string, outputId: string) => void;
+  onOpenWorkItem: (
+    issueReference: string,
+    outputId: string,
+    intent?: DearMeReviewEntryIntent | null,
+  ) => void;
 }) {
   if (liveStream.length === 0) return null;
 
@@ -2298,7 +2453,7 @@ function LiveTeamFeedPanel({
                           return;
                         }
                         if (issueReference && item.relatedOutputId) {
-                          onOpenWorkItem(issueReference, item.relatedOutputId);
+                          onOpenWorkItem(issueReference, item.relatedOutputId, reviewLoopRouteIntent(item.reviewLoop));
                           return;
                         }
                         if (issueReference) onOpenIssue(issueReference);
@@ -2753,7 +2908,11 @@ function TeamWorkbenchPanel({
   decisionFocus: DearMeDecisionFocus | null;
   onOpenApproval: (approvalId: string) => void;
   onOpenIssue: (issueReference: string) => void;
-  onOpenWorkItem: (issueReference: string, outputId: string) => void;
+  onOpenWorkItem: (
+    issueReference: string,
+    outputId: string,
+    intent?: DearMeReviewEntryIntent | null,
+  ) => void;
   onReviewApproval: (
     approvalId: string,
     action: DearMeApprovalReviewAction,
@@ -2852,9 +3011,9 @@ function TeamWorkbenchPanel({
     if (issueId) onOpenIssue(issueId);
   }
 
-  function openWorkItem(item: DearMeWorkbenchWorkItem) {
+  function openWorkItem(item: DearMeWorkbenchWorkItem, intent?: DearMeReviewEntryIntent | null) {
     const issueReference = workItemTarget(item);
-    if (issueReference) onOpenWorkItem(issueReference, item.id);
+    if (issueReference) onOpenWorkItem(issueReference, item.id, intent);
   }
 
   return (
@@ -3220,7 +3379,7 @@ function PrivateWorkPanel({
 }: {
   companyId: string;
   decisionFocus: DearMeDecisionFocus | null;
-  onOpenOutput: (output: DearMeOutputItem) => void;
+  onOpenOutput: (output: DearMeOutputItem, intent?: DearMeReviewEntryIntent | null) => void;
   outputReviewState: DearMeOutputReviewState;
   onReviewOutput: (outputId: string, action: DearMeOutputReviewAction, decisionNote: string) => void;
 }) {
@@ -3272,6 +3431,7 @@ function PrivateWorkPanel({
           {focusedOutput ? (
             <FocusedOutputPanel
               output={focusedOutput}
+              entryIntent={decisionFocus?.intent ?? null}
               reviewState={outputReviewState}
               onReviewOutput={onReviewOutput}
             />
@@ -3280,6 +3440,7 @@ function PrivateWorkPanel({
             {outputs.map((output) => {
               const preview = outputPreview(output);
               const details = output.details.slice(0, 3);
+              const routeIntent = reviewLoopRouteIntent(output.reviewLoop);
               const footer = `Updated ${shortDate(output.updatedAt)}${
                 output.documents.length > 0
                   ? ` / ${output.documents.length} private reference${output.documents.length === 1 ? "" : "s"}`
@@ -3312,9 +3473,9 @@ function PrivateWorkPanel({
                   ]}
                   footer={footer}
                   action={{
-                    label: output.isReviewable ? "Review" : "Open",
-                    onClick: () => onOpenOutput(output),
-                    variant: output.isReviewable ? "default" : "outline",
+                    label: privateWorkActionLabel(output),
+                    onClick: () => onOpenOutput(output, routeIntent),
+                    variant: output.isReviewable || routeIntent ? "default" : "outline",
                   }}
                 >
                   {preview ? (
@@ -3516,6 +3677,13 @@ export function DearMeOnboarding() {
     }) => {
       const decisionNote = input.decisionNote.trim() || defaultDearMeOutputReviewNote(input.action);
       if (!selectedCompanyId) throw new Error("Select a company first.");
+      const continuationIntent = outputContinuationIntentForAction(input.action);
+      if (continuationIntent) {
+        return dearmeApi.continueOutput(selectedCompanyId, input.outputId, {
+          intent: continuationIntent,
+          decisionNote,
+        });
+      }
       return dearmeApi.reviewOutput(selectedCompanyId, input.outputId, {
         action: input.action,
         decisionNote,
@@ -3586,11 +3754,12 @@ export function DearMeOnboarding() {
     applyRequestMutation.mutate();
   }
 
-  function handleOpenOutput(output: DearMeOutputItem) {
+  function handleOpenOutput(output: DearMeOutputItem, intent?: DearMeReviewEntryIntent | null) {
     navigate(
       buildDearMeDecisionRoute({
         issueReference: output.issueIdentifier ?? output.issueId,
         outputId: output.id,
+        intent,
       }),
     );
   }
@@ -3599,8 +3768,12 @@ export function DearMeOnboarding() {
     navigate(buildDearMeDecisionRoute({ issueReference }));
   }
 
-  function handleOpenWorkbenchWorkItem(issueReference: string, outputId: string) {
-    navigate(buildDearMeDecisionRoute({ issueReference, outputId }));
+  function handleOpenWorkbenchWorkItem(
+    issueReference: string,
+    outputId: string,
+    intent?: DearMeReviewEntryIntent | null,
+  ) {
+    navigate(buildDearMeDecisionRoute({ issueReference, outputId, intent }));
   }
 
   function handleOpenApproval(approvalId: string) {

@@ -28,6 +28,7 @@ const mockDearmeApi = vi.hoisted(() => ({
   previewBrandBlueprint: vi.fn(),
   createBrandBlueprintApplyRequest: vi.fn(),
   reviewOutput: vi.fn(),
+  continueOutput: vi.fn(),
 }));
 
 const mockApprovalsApi = vi.hoisted(() => ({
@@ -182,7 +183,7 @@ function paidBetaStatus(status: "trial" | "active") {
 function reviewLoopFixture(
   state: DearMeOutputReviewLoop["state"] = "fresh",
   nextStep = state === "needs_user_review"
-    ? "Review it, then approve, request changes, regenerate, or mark it not useful."
+    ? "Review it, then approve, request changes, ask for another pass, or choose a new direction."
     : "Your team is preparing this privately.",
   overrides: Partial<DearMeOutputReviewLoop> = {},
 ): DearMeOutputReviewLoop {
@@ -360,7 +361,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         needsApproval: true,
         sourceLabel: "Prepared output",
         costImpact: null,
-        nextAction: "Review it, then approve, request changes, regenerate, or mark it not useful.",
+        nextAction: "Review it, then approve, request changes, ask for another pass, or choose a new direction.",
         relatedOutputId: "issue-2:content_drafts",
         issueId: "issue-2",
         issueIdentifier: "PET-8",
@@ -743,6 +744,12 @@ function buttonByText(container: HTMLElement, text: string) {
   ) as HTMLButtonElement | undefined;
 }
 
+function surfaceByLabel(container: HTMLElement, label: string) {
+  const surface = container.querySelector(`[aria-label="${label}"]`);
+  expect(surface).not.toBeNull();
+  return surface as HTMLElement;
+}
+
 describe("DearMeOnboarding", () => {
   let container: HTMLDivElement;
 
@@ -800,6 +807,30 @@ describe("DearMeOnboarding", () => {
       comment: {
         id: "comment-2",
         bodyPreview: "DearMe decision: regenerate this prepared work before review.",
+        createdAt: "2026-05-07T14:05:00.000Z",
+      },
+      output: {
+        ...outputsResponse().outputs[0],
+        reviewLoop: reviewLoopFixture(
+          "regeneration_requested",
+          "Your team has your direction and should prepare another version.",
+          {
+            attemptCount: 1,
+            lastAction: "regenerate",
+            lastDecisionAt: "2026-05-07T14:05:00.000Z",
+            lastDecisionNotePreview: "Make it sharper before review.",
+          },
+        ),
+      },
+    });
+    mockDearmeApi.continueOutput.mockResolvedValue({
+      companyId: "company-1",
+      outputId: "issue-1:weekly_report",
+      action: "regenerate",
+      status: "queued",
+      comment: {
+        id: "comment-2",
+        bodyPreview: "DearMe decision: prepare another private pass before review.",
         createdAt: "2026-05-07T14:05:00.000Z",
       },
       output: {
@@ -896,7 +927,9 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Your next step");
     expect(container.textContent).toContain("Review pass 0/3");
     expect(container.textContent).toContain("Needs your review");
-    expect(container.textContent).toContain("Open it, then approve, request changes, regenerate, or mark it not useful.");
+    expect(container.textContent).toContain(
+      "Open it, then approve, request changes, ask for another pass, or choose a new direction.",
+    );
     expect(
       container.querySelectorAll(
         '[aria-label="Work ready"] [data-dearme-surface="action-card"]',
@@ -1488,6 +1521,51 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("opens a requested revision through the DearMe continue entrypoint", async () => {
+    const response = workbenchResponse();
+    response.workReady[0] = {
+      ...response.workReady[0]!,
+      reviewLoop: reviewLoopFixture(
+        "revision_requested",
+        "Your team has your note and should prepare a revised version.",
+        {
+          attemptCount: 1,
+          lastAction: "request_changes",
+          lastDecisionAt: "2026-05-07T14:05:00.000Z",
+          lastDecisionNotePreview: "Make the proof more concrete.",
+        },
+      ),
+    };
+    mockDearmeApi.getWorkbench.mockResolvedValue(response);
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Continue revision");
+
+    await act(async () => {
+      buttonByText(container, "Continue revision")?.click();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/dearme?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report&intent=continue",
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("opens live feed output decisions in the DearMe review surface", async () => {
     const root = createRoot(container);
     const queryClient = new QueryClient({
@@ -1754,7 +1832,7 @@ describe("DearMeOnboarding", () => {
 
     expect(container.textContent).toContain("Review content batch");
     expect(container.textContent).toContain("Waiting on you");
-    expect(container.textContent).toContain("Approve, request changes, or regenerate privately.");
+    expect(container.textContent).toContain("Approve, request changes, or ask for another private pass.");
     expect(container.textContent).not.toContain("No high-leverage decision is waiting right now");
 
     await act(async () => {
@@ -1786,6 +1864,52 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Review pass 0/3");
     expect(container.textContent).toContain("Needs your review");
     expect(container.textContent).toContain("1 private reference prepared");
+    expect(container.textContent).not.toContain("/issues/");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("explains new direction entrypoint for not-useful prepared work", async () => {
+    mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report&intent=direction";
+    mockDearmeApi.getOutputs.mockResolvedValue({
+      companyId: "company-1",
+      outputs: [
+        {
+          ...outputsResponse().outputs[0],
+          reviewLoop: reviewLoopFixture(
+            "not_useful",
+            "Your team should avoid this angle and try a different route next.",
+            {
+              attemptCount: 1,
+              lastAction: "not_useful",
+              lastDecisionAt: "2026-05-07T14:05:00.000Z",
+              lastDecisionNotePreview: "This angle is not useful for the audience.",
+            },
+          ),
+        },
+      ],
+    });
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain(
+      "Give one clear instruction so DearMe does not keep trying the wrong angle.",
+    );
+    expect(container.textContent).toContain("Give new direction");
+    expect(container.querySelector('[data-dearme-action-attention="paused"]')).not.toBeNull();
     expect(container.textContent).not.toContain("/issues/");
 
     await act(async () => {
@@ -1846,7 +1970,7 @@ describe("DearMeOnboarding", () => {
     });
   });
 
-  it("requests regeneration from focused private output without exposing issue route", async () => {
+  it("requests another private pass from focused private output without exposing issue route", async () => {
     mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
     mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse());
     const root = createRoot(container);
@@ -1864,21 +1988,26 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     expect(container.textContent).toContain("What should your team do next?");
+    const focusedWork = surfaceByLabel(container, "Focused work");
+    const prepareAnotherPassButton = buttonByText(focusedWork, "Prepare another pass");
+    expect(prepareAnotherPassButton).toBeDefined();
+    expect(prepareAnotherPassButton?.disabled).toBe(false);
 
     await act(async () => {
       setTextareaValue(
         container.querySelector("#dearme-focused-output-note") as HTMLTextAreaElement,
         "Make it sharper before review.",
       );
-      buttonByText(container, "Regenerate")?.click();
+      prepareAnotherPassButton?.click();
     });
     await flushReact();
 
-    expect(mockDearmeApi.reviewOutput).toHaveBeenCalledWith(
+    expect(mockDearmeApi.continueOutput).toHaveBeenCalledWith(
       "company-1",
       "issue-1:weekly_report",
-      { action: "regenerate", decisionNote: "Make it sharper before review." },
+      { intent: "prepare_another_pass", decisionNote: "Make it sharper before review." },
     );
+    expect(mockDearmeApi.reviewOutput).not.toHaveBeenCalled();
     expect(container.textContent).not.toContain("/issues/");
 
     await act(async () => {
@@ -1886,7 +2015,7 @@ describe("DearMeOnboarding", () => {
     });
   });
 
-  it("lets users mark prepared work as not useful from the focused output", async () => {
+  it("lets users choose a new direction from the focused output", async () => {
     mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
     mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse());
     const root = createRoot(container);
@@ -1903,19 +2032,24 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
+    const focusedWork = surfaceByLabel(container, "Focused work");
+    const chooseNewDirectionButton = buttonByText(focusedWork, "Choose new direction");
+    expect(chooseNewDirectionButton).toBeDefined();
+    expect(chooseNewDirectionButton?.disabled).toBe(false);
+
     await act(async () => {
       setTextareaValue(
         container.querySelector("#dearme-focused-output-note") as HTMLTextAreaElement,
         "This angle is not useful for the audience.",
       );
-      buttonByText(container, "Not useful")?.click();
+      chooseNewDirectionButton?.click();
     });
     await flushReact();
 
-    expect(mockDearmeApi.reviewOutput).toHaveBeenCalledWith(
+    expect(mockDearmeApi.continueOutput).toHaveBeenCalledWith(
       "company-1",
       "issue-1:weekly_report",
-      { action: "not_useful", decisionNote: "This angle is not useful for the audience." },
+      { intent: "choose_new_direction", decisionNote: "This angle is not useful for the audience." },
     );
 
     await act(async () => {

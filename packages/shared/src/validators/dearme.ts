@@ -73,6 +73,11 @@ export const DEARME_OUTPUT_REVIEW_ACTIONS = [
   "regenerate",
   "not_useful",
 ] as const;
+export const DEARME_OUTPUT_CONTINUATION_INTENTS = [
+  "continue_revision",
+  "prepare_another_pass",
+  "choose_new_direction",
+] as const;
 export const DEARME_OUTPUT_REVIEW_LOOP_STATES = [
   "fresh",
   "needs_user_review",
@@ -639,6 +644,14 @@ export const dearMeOutputReviewRequestSchema = z.object({
   decisionNote: value.decisionNote ?? null,
 }));
 
+export const dearMeOutputContinuationRequestSchema = z.object({
+  intent: z.enum(DEARME_OUTPUT_CONTINUATION_INTENTS),
+  decisionNote: optionalText(1_000).nullable().optional(),
+}).strict().transform((value) => ({
+  ...value,
+  decisionNote: value.decisionNote ?? null,
+}));
+
 export const dearMeOutputReviewResultSchema = z.object({
   companyId: z.string().min(1),
   outputId: z.string().min(1),
@@ -846,6 +859,8 @@ export type DearMeOutputDetail = z.infer<typeof dearMeOutputDetailSchema>;
 export type DearMeOutputDocument = z.infer<typeof dearMeOutputDocumentSchema>;
 export type DearMeOutputItem = z.infer<typeof dearMeOutputItemSchema>;
 export type DearMeOutputKind = z.infer<typeof dearMeOutputItemSchema>["kind"];
+export type DearMeOutputContinuationIntent = z.infer<typeof dearMeOutputContinuationRequestSchema>["intent"];
+export type DearMeOutputContinuationRequest = z.infer<typeof dearMeOutputContinuationRequestSchema>;
 export type DearMeOutputReviewAction = z.infer<typeof dearMeOutputReviewRequestSchema>["action"];
 export type DearMeOutputReviewLoop = z.infer<typeof dearMeOutputReviewLoopSchema>;
 export type DearMeOutputReviewRequest = z.infer<typeof dearMeOutputReviewRequestSchema>;

@@ -46,22 +46,26 @@ Already adapted:
 - DM-116 added product-safe decision-needed, paused, retry, and blocked
   attention variants to that primitive and wired existing review-loop/status
   data into the main work cards.
+- DM-117 added the normalized retry/continue/direction entrypoint on the
+  DearMe-owned action-card path, reusing the existing focused review surface
+  and a thin DearMe `/continue` wrapper over the existing output handoff path
+  instead of importing workflow-builder controls.
 
 Still missing:
 
 - a Voice & Memory source-management surface based on the knowledge-base
   modal/tile pattern;
-- one normalized retry/continue entrypoint that maps DearMe run or review state
-  into a customer-safe action.
+- richer source import and management actions that keep knowledge UI useful
+  without turning DearMe into a generic workflow builder.
 
 Next direct reuse target:
 
 ```text
-Add a normalized retry/continue entrypoint on the DearMe-owned ActionCard path.
+Add a Voice & Memory source-management surface on the DearMe-owned ActionCard path.
 
-Use the internal baseline ActionCard, paused-action-needed, retry, and knowledge
-source patterns as source material. Do not port the whole Relay/GraphQL
-transcript app, no-code editor, marketplace, donor copy, or donor visual brand.
+Use the internal baseline knowledge source, ActionCard, and action-needed
+patterns as source material. Do not port the whole Relay/GraphQL transcript
+app, no-code editor, marketplace, donor copy, or donor visual brand.
 ```
 
 ## Local Archive

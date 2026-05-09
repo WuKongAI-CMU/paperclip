@@ -11,6 +11,7 @@ import type {
   DearMeFirstCyclePreviewResponse,
   DearMeMemoryUpdate,
   DearMeMemoryUpdateResult,
+  DearMeOutputContinuationRequest,
   DearMeOutputsResponse,
   DearMeOutputReviewRequest,
   DearMeOutputReviewResult,
@@ -59,6 +60,11 @@ export const dearmeApi = {
   reviewOutput: (companyId: string, outputId: string, data: DearMeOutputReviewRequest) =>
     api.post<DearMeOutputReviewResult>(
       `/dearme/companies/${companyId}/outputs/${encodeURIComponent(outputId)}/reviews`,
+      data,
+    ),
+  continueOutput: (companyId: string, outputId: string, data: DearMeOutputContinuationRequest) =>
+    api.post<DearMeOutputReviewResult>(
+      `/dearme/companies/${companyId}/outputs/${encodeURIComponent(outputId)}/continue`,
       data,
     ),
   recordMemoryUpdate: (companyId: string, data: DearMeMemoryUpdate) =>

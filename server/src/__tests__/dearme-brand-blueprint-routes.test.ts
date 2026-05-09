@@ -789,6 +789,71 @@ describe("DearMe brand blueprint routes", () => {
     );
   });
 
+  it("normalizes DearMe continuation intent before waking the private team", async () => {
+    const output = {
+      id: "issue-1:weekly_report",
+      companyId: "company-1",
+      kind: "weekly_report",
+      title: "Dear me report",
+      summary: "Private weekly report.",
+      status: "ready_for_review",
+      isReviewable: true,
+      issueId: "issue-1",
+      issueIdentifier: "PET-7",
+      issueTitle: "DearMe Draft: Draft weekly Dear me report",
+      updatedAt: "2026-05-07T14:00:00.000Z",
+      documents: [],
+      workProducts: [],
+      latestUpdate: null,
+      details: [],
+    };
+    mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("active"));
+    mockDearMeOutputHandoffService.reviewOutput.mockResolvedValue({
+      companyId: "company-1",
+      outputId: "issue-1:weekly_report",
+      action: "regenerate",
+      status: "queued",
+      comment: {
+        id: "comment-3",
+        bodyPreview: "DearMe decision: prepare another private pass before review.",
+        createdAt: "2026-05-07T14:00:00.000Z",
+      },
+      output,
+      wakeIssue: { id: "issue-1", assigneeAgentId: "agent-1", status: "todo" },
+    });
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/outputs/issue-1%3Aweekly_report/continue")
+      .send({ intent: "prepare_another_pass", decisionNote: "Try a sharper angle." });
+
+    expect(res.status).toBe(202);
+    expect(res.body.action).toBe("regenerate");
+    expect(res.body.wakeIssue).toBeUndefined();
+    expect(mockDearMeOutputHandoffService.reviewOutput).toHaveBeenCalledWith(
+      "company-1",
+      "issue-1:weekly_report",
+      expect.objectContaining({ action: "regenerate", decisionNote: "Try a sharper angle." }),
+      expect.objectContaining({ actorType: "user", actorId: "user-1", agentId: null }),
+    );
+    expect(mockQueueIssueAssignmentWakeup).toHaveBeenCalledWith(expect.objectContaining({
+      issue: { id: "issue-1", assigneeAgentId: "agent-1", status: "todo" },
+      reason: "dearme_output_regeneration_requested",
+      mutation: "dearme.output_continue",
+      contextSource: "dearme.output_continue",
+    }));
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: "dearme.output_regeneration_requested",
+        details: expect.objectContaining({
+          outputId: "issue-1:weekly_report",
+          reviewAction: "regenerate",
+          continuationIntent: "prepare_another_pass",
+        }),
+      }),
+    );
+  });
+
   it("blocks output regeneration cycles when paid-beta spend reaches the guardrail", async () => {
     mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("active", "hard_stop"));
 
