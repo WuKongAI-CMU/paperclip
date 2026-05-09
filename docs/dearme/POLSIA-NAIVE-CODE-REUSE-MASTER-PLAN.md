@@ -141,11 +141,23 @@ Plugin reuse map:
 
 ### Sprint 0 - Make the foundation executable
 
-1. DM-S01: fix company mass assignment before paid beta.
+1. DM-S01: fix company mass assignment before paid beta. (✅ done)
 2. DM-142: configure DearMe cycle routine.
 3. DM-146: verify execution-workspace skill mounting.
 4. DM-154: configure CEO/direct and worker/remote role templates.
 5. Keep `REBRAND-AND-PROVENANCE.md` aligned with reuse docs.
+
+#### Sprint 0 seed corpus (landed 2026-05-09)
+
+The new package `@paperclipai/dearme-agent-prompts`
+(`packages/plugins/dearme-agent-prompts/`) holds the typed seed material
+that Sprint 1 / 2 / 3 / 4 plugins import rather than re-deriving. Concrete
+files are listed in `REUSE-IMPLEMENTATION-LEDGER.md` under "Physical Port
+Manifest". Schema slice for DM-141 (`packages/db/src/schema/opportunities.ts`)
+is also in place; the migration is generated when DM-141 implementation
+work begins. None of this contains donor brand names, customer-specific
+examples, or substrate language; all rules are restated for the
+personal-brand growth-team domain.
 
 ### Sprint 1 - Aha moment
 

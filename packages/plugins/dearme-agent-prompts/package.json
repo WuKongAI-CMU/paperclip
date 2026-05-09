@@ -1,0 +1,36 @@
+{
+  "name": "@paperclipai/dearme-agent-prompts",
+  "version": "0.1.0",
+  "description": "Personal-brand domain-adapted agent prompts, state machines, and outbound templates for DearMe role plugins. Lineage: distilled from DearMe internal product research into the personal-brand growth-team domain.",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./state-machines": {
+      "types": "./dist/state-machines/index.d.ts",
+      "import": "./dist/state-machines/index.js"
+    },
+    "./prompts": {
+      "types": "./dist/prompts/index.d.ts",
+      "import": "./dist/prompts/index.js"
+    },
+    "./templates": {
+      "types": "./dist/templates/index.d.ts",
+      "import": "./dist/templates/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
+  }
+}

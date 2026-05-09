@@ -435,6 +435,56 @@ Source of truth: `POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`. Do not branch
 ticket numbers from anywhere else. Ordering follows the sprint plan in that
 doc.
 
+### Physical Port Manifest — Sprint 0 seed corpus (landed 2026-05-09)
+
+To unblock DM-138 / DM-139 / DM-140 / DM-141 / DM-145 / DM-148 without
+forcing each ticket to re-derive Polsia/Naive mechanics, the seed corpus
+is now physically present in the repo. Ticket implementations should
+`import` from these locations rather than restating the rules in a new
+plugin's prompt or service code.
+
+Package: `packages/plugins/dearme-agent-prompts/` (`@paperclipai/dearme-agent-prompts`)
+
+State machines (typed constants, drop-in for plugin services):
+
+| File | Used by ticket | What it defines |
+|---|---|---|
+| `state-machines/opportunity-state.ts` | DM-141 | 8-state opportunity lifecycle + forward-only transition guard + `OPPORTUNITY_KINDS` |
+| `state-machines/meta-ads.ts` | DM-148 | 5-state ad error machine + 4-tier performance rules + `AD_LEARNING_PHASE_DAYS` |
+| `state-machines/budget-tier.ts` | DM-148 | 3 daily-budget tiers (`starter`/`growth`/`scale`) + `pickBudgetTier()` |
+| `state-machines/mood-face-library.ts` | DM-138/DM-139 | 16-face curated mood library + `getMoodFace()` |
+| `state-machines/model-routing.ts` | DM-143/DM-145 | complexity 1-10 → fast/balanced/deep model rows + `pickModelForComplexity()` |
+| `state-machines/sse-events.ts` | DM-138/DM-139/DM-140 | 7 SSE event-type names, dashboard action subtypes, `MoodUpdatePayload` |
+
+Prompts (string seeds; plugins extend rather than rewrite):
+
+| File | Used by ticket | What it captures |
+|---|---|---|
+| `prompts/chief-of-staff.ts` | DM-139 | 4-step monitor→review→queue→report loop + Dear-me letter format + 200-word cap + emergency pause intent |
+| `prompts/content-producer.ts` | DM-140 | Voice Gate (match_score ≥ 0.7), forbidden openers, attribution-link rule, channel rate caps |
+| `prompts/opportunity-hunter.ts` | DM-141 | 4-step daily workflow, 5-day follow-up cadence, voice rules, send caps (2/day/kind) |
+
+Templates (renderable seeds for outbound and ad creative):
+
+| File | Used by ticket | What it provides |
+|---|---|---|
+| `templates/sora-ugc-video.ts` | DM-148 | UGC selfie video prompt template + `renderSoraUgcVideoPrompt()` |
+| `templates/outbound-5-touch.ts` | DM-156 / DM-141 | 5-touch sequence (day 1/3/6/10/14), per-touch intent + don't list |
+
+Schema slice landed for DM-141:
+
+| File | Migration | Notes |
+|---|---|---|
+| `packages/db/src/schema/opportunities.ts` | not yet generated (DM-141 owns) | Drizzle table + types + indexes (`company_state`, `company_kind`, unique `company_contact_email`) |
+
+All 13 unit tests for state-machine + prompt + template invariants pass
+under `pnpm --filter @paperclipai/dearme-agent-prompts exec vitest run`.
+
+Lineage and compliance posture documented in the package README and
+governed by `REBRAND-AND-PROVENANCE.md`.
+
+
+
 ### Sprint 0 - Foundation executable
 
 | Ticket | Slice | Donor mechanism | Path | Status |
