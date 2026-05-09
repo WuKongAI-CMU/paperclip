@@ -37,19 +37,24 @@ Verification:
 
 - `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
   passed: 1 file, 34 tests.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx ui/src/components/DearMeSidebar.test.tsx ui/src/components/Layout.test.tsx --maxWorkers=1`
+  passed: 3 files, 48 tests.
 - `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm -r typecheck` passed.
 - `git diff --check` passed.
 - Customer-surface hidden-term scan over the touched DearMe onboarding file
   returned no matches.
-- Playwright mobile `390x844` on `/dearme?view=decisions` passed with no
-  horizontal overflow, no framework overlay, and empty console error/warn
-  logs.
-- Playwright mobile `390x844` on a live focused approval decision passed with
-  focused-surface bottom padding, an `approval-review` mobile action group,
-  full-width phone buttons, no horizontal overflow, no framework overlay, and
+- Browser/Playwright mobile `390x844` and desktop `1440x1000` on a live focused
+  approval decision passed with focused-surface bottom padding, an
+  `approval-review` action group, phone-first button classes, no horizontal
+  overflow, no framework overlay, no customer-visible donor/runtime terms, and
   empty console error/warn logs.
-- Screenshot evidence: `/tmp/dearme-dm133-mobile-decisions-after.png` and
-  `/tmp/dearme-dm133-mobile-review-now-after.png`.
+- Screenshot evidence: `/tmp/dearme-dm133-mobile-approval-review.png` and
+  `/tmp/dearme-dm133-desktop-approval-review.png`.
+- Prepared-work focused controls are covered by component tests. The current
+  local runtime dataset has no `workReady` outputs, so the browser pass could
+  not honestly exercise a live `prepared-work-review` detail without mutating
+  seed data.
 
 Next:
 
