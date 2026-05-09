@@ -6,7 +6,11 @@ import {
   CHIEF_OF_STAFF_PROMPT,
   CHIEF_OF_STAFF_ROLE,
   CONTENT_PRODUCER_PROMPT,
+  DEARME_CYCLE_STAGE_IDS,
   DEARME_ROLE_SEEDS,
+  DEARME_SIX_HOUR_CYCLE_CRON,
+  DEARME_SIX_HOUR_CYCLE_STAGES,
+  DEARME_SIX_HOUR_GROWTH_ROUTINE,
   MODEL_ROUTING_TABLE,
   MOOD_FACE_LIBRARY,
   OPPORTUNITY_HUNTER_PROMPT,
@@ -19,6 +23,7 @@ import {
   getRoleSeed,
   pickBudgetTier,
   pickModelForComplexity,
+  renderDearMeSixHourCycleIssue,
   renderSoraUgcVideoPrompt,
 } from "./index.js";
 
@@ -145,5 +150,60 @@ describe("dearme-agent-prompts package", () => {
     expect(OUTBOUND_5_TOUCH.map((t) => t.dayOffset)).toEqual([
       1, 3, 6, 10, 14,
     ]);
+  });
+
+  it("six-hour growth routine uses the inherited routine contract shape", () => {
+    expect(DEARME_SIX_HOUR_GROWTH_ROUTINE).toMatchObject({
+      routineKey: "dearme.growth-cycle.six-hour",
+      assigneeRef: { resourceKind: "agent", resourceKey: "chief-of-staff" },
+      status: "active",
+      priority: "high",
+      concurrencyPolicy: "coalesce_if_active",
+      catchUpPolicy: "skip_missed",
+      issueTemplate: { surfaceVisibility: "default" },
+    });
+    expect(DEARME_SIX_HOUR_GROWTH_ROUTINE.triggers).toEqual([
+      {
+        kind: "schedule",
+        label: "Every six hours",
+        enabled: true,
+        cronExpression: DEARME_SIX_HOUR_CYCLE_CRON,
+        timezone: "America/New_York",
+      },
+    ]);
+  });
+
+  it("six-hour cycle stages match the customer-visible work loop", () => {
+    expect(DEARME_CYCLE_STAGE_IDS).toEqual([
+      "plan",
+      "work",
+      "review",
+      "learn",
+      "report",
+    ]);
+    expect(DEARME_SIX_HOUR_CYCLE_STAGES.map((stage) => stage.ownerRole)).toEqual([
+      "chief-of-staff",
+      "content-producer",
+      "chief-of-staff",
+      "growth-analyst",
+      "chief-of-staff",
+    ]);
+  });
+
+  it("six-hour cycle issue renderer produces private customer-safe instructions", () => {
+    const rendered = renderDearMeSixHourCycleIssue({
+      brandName: "Peter",
+      dayNumber: 3,
+      focus: "Turn yesterday's proof into a LinkedIn draft and outreach shortlist.",
+      recentSignals: ["Two voice samples are ready.", "Budget is 42% used."],
+      budgetStatus: "warn",
+    });
+
+    expect(rendered).toContain("Run the six-hour DearMe growth cycle for Peter.");
+    expect(rendered).toContain("Budget status: warning");
+    expect(rendered).toContain("Turn yesterday's proof");
+    expect(rendered).toContain("Do not publish, send, deploy, spend");
+    expect(rendered).toContain('short "Dear me" report under 200 words');
+    expect(rendered).not.toMatch(/Polsia|Naive|Paperclip|adapter|runtime/i);
   });
 });

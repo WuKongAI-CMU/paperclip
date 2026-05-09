@@ -39,7 +39,8 @@ and donor-product placeholders do not appear here.
 ```
 src/
   state-machines/
-    opportunity-state.ts        // 6-state opportunity lifecycle
+    opportunity-state.ts        // 8-state opportunity lifecycle
+    dearme-cycle.ts             // 6-hour growth-cycle routine seed
     meta-ads.ts                 // 5-state error machine + 4-tier perf table
     budget-tier.ts              // 3-tier daily-budget creator throttle
     mood-face-library.ts        // expr-* face slug library for mood SSE

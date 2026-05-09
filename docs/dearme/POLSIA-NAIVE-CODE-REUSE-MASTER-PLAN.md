@@ -159,6 +159,12 @@ work begins. None of this contains donor brand names, customer-specific
 examples, or substrate language; all rules are restated for the
 personal-brand growth-team domain.
 
+DM-142 now has an executable seed contract in
+`packages/plugins/dearme-agent-prompts/src/state-machines/dearme-cycle.ts`:
+the six-hour growth-cycle managed routine declaration, customer-safe cycle
+issue renderer, and tests are in place. The next DM-142 slice is runtime
+provisioning through the existing routines service.
+
 ### Sprint 1 - Aha moment
 
 1. DM-138: first-run personal proof sequence.
