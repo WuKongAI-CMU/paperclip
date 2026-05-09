@@ -2,6 +2,60 @@
 
 Date: 2026-05-09
 
+## DM-127 Voice & Memory Source Detail Drawer - 2026-05-09
+
+Implementation slice:
+
+- Added a selected source detail surface to `Voice & Memory` for pending source
+  review items.
+- Kept the current `sourceReviewQueue` projection and memory form as the only
+  implementation path: no new backend route, table, crawler, importer, or
+  workflow runtime.
+- `Review source` from Decisions and `Prepare fact` from Voice & Memory now
+  select the source, highlight the card, prefill the reviewed fact form, and
+  open the detail surface.
+- The detail surface lets the user edit in the existing form, save the reviewed
+  fact, close the detail, or mark the source not useful through the existing
+  source-retire path.
+- Extended the DearMe onboarding UI tests from 30 to 31 tests to cover selected
+  detail, save-from-detail, and dismiss behavior.
+
+Donor reuse:
+
+- Lindy `KnowledgeBaseEditor.tsx` supplied the source-list-plus-configure
+  pattern.
+- Lindy `ResizableSlideOutPanel.tsx` supplied the focused detail-panel shape,
+  adapted as an inline DearMe detail surface rather than importing Lindy UI.
+- Naive/Paperclip continues to supply the hidden memory substrate, update path,
+  archive path, and workbench projection.
+- Polsia continues to supply the product choreography: source review stays a
+  small high-leverage user call inside the growth cycle.
+
+Rejected:
+
+- Rejected adding a source-review backend, crawler/import worker, new database
+  table, or second memory runtime.
+- Rejected copying Lindy Relay/GraphQL shell or Lindy brand language.
+- Rejected leaving source review as a broad panel jump after the user chooses a
+  specific source.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 1 file, 31 tests.
+- `pnpm -r typecheck` passed across the workspace.
+- `pnpm build` passed with the existing Vite dynamic/static import and chunk
+  size warnings only.
+- `git diff --check` passed.
+- Customer-surface hidden-term scan over DearMe onboarding UI/shared paths
+  found no substrate terms.
+
+Next:
+
+- Run `DM-128`: Focused Decision Review Drawer, reusing Lindy action-card,
+  pending-approval modal, and slide-out panel patterns for Work Ready and
+  Decisions Needed.
+
 ## DM-126 Reuse Architecture Ledger - 2026-05-09
 
 Implementation slice:
@@ -27,8 +81,8 @@ Donor reuse:
   issues, routines, approvals, documents, work products, activity, cost events,
   and future app/site provisioning options.
 - Lindy is now explicitly queued as the next interaction-pattern donor for
-  Voice & Memory source detail, focused review drawers, action cards, and
-  reliability/circuit-breaker ideas.
+  focused review drawers, action cards, and reliability/circuit-breaker ideas;
+  the first Voice & Memory source detail reuse slice landed in DM-127.
 - Littlebird remains a later web-shell polish donor after the current detail
   interactions are useful.
 - Symphony remains a development factory pattern, not the DearMe product
@@ -52,9 +106,9 @@ Verification:
 
 Next:
 
-- Run `DM-127`: Voice & Memory Source Detail Drawer, reusing Lindy
-  KnowledgeBase/source-management and slide-out panel patterns on top of the
-  existing DearMe source-review queue.
+- DM-127 has landed. Run `DM-128`: Focused Decision Review Drawer, reusing
+  Lindy pending-action and slide-out panel patterns for prepared work and
+  decisions.
 
 ## DM-125 Direct Source Review Focus - 2026-05-09
 

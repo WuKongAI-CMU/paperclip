@@ -206,17 +206,20 @@ has already absorbed the DM-102 through DM-125 product spine. Workers must read:
 
 Current bounded worker tickets:
 
-1. `DM-127`: Voice & Memory Source Detail Drawer.
-2. `DM-128`: Focused Decision Review Drawer.
-3. `DM-129`: Automation Reliability And Cost Policy.
-4. `DM-130`: Web Shell Polish From Lindy And Littlebird.
+1. `DM-128`: Focused Decision Review Drawer.
+2. `DM-129`: Automation Reliability And Cost Policy.
+3. `DM-130`: Web Shell Polish From Lindy And Littlebird.
+
+Recently completed:
+
+- `DM-127`: Voice & Memory Source Detail Drawer.
 
 Do not restart stale DM-001, DM-103, or DM-104 briefs unless the coordinator
 explicitly reopens them. They are now product history, not the active queue.
 
 ## Immediate Next Step
 
-Start with `DM-127` in an isolated worker branch/worktree from the latest
+Start with `DM-128` in an isolated worker branch/worktree from the latest
 integrated DearMe branch. Keep this Goal thread as the coordinator; use Symphony
 or Symphony-like workers only for bounded tickets with explicit donor grounding,
 write scope, protected scope, acceptance, and verification.

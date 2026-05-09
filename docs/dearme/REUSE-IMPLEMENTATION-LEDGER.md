@@ -58,18 +58,18 @@ The right reuse split is:
 
 | DearMe area | Current implementation evidence | Donor reuse status | Next gap |
 | --- | --- | --- | --- |
-| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. Lindy and Littlebird remain visual/polish donors rather than wholesale imports. | Premium web polish pass after next Voice & Memory detail slice. |
+| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. Lindy and Littlebird remain visual/polish donors rather than wholesale imports. | Premium web polish pass after focused source and decision review behavior is usable. |
 | Brand OS / `brand_blueprint` | `packages/shared/src/validators/dearme.ts`; `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/routes/dearme.ts` | Naive `setup_payload` pattern has been adapted into a typed DearMe contract and approval-gated apply flow. | Keep extending this contract only when P0 surfaces need it. |
 | Workbench projection | `server/src/services/dearme-workbench.ts`; `server/src/__tests__/dearme-workbench.test.ts` | Naive/Paperclip tables remain the substrate for team, work, decisions, progress, reports, and memory projections. | Do not add a second runtime; enrich read models first. |
 | Action graph and work stream | `docs/dearme/ACTION-GRAPH-ARCHITECTURE.md`; `packages/shared/src/validators/dearme.ts`; `ui/src/components/dearme/DearMeActionCard.tsx` | Polsia cycle/report choreography plus Lindy action-card grammar are already converging into customer-safe work cards. | Add richer detail panels instead of more tabs. |
 | Output review and decisions | `ui/src/pages/DearMeOnboarding.tsx`; `server/src/services/dearme-output-handoff.ts`; `server/src/__tests__/dearme-output-handoff.test.ts` | Lindy pending-action shape and Polsia "small number of high-leverage calls" are reused in Work Ready / Decisions Needed. | DM-128 should improve the focused decision drawer using Lindy panel/modal patterns. |
-| Voice & Memory source review | `server/src/services/dearme-workbench.ts`; `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/pages/DearMeOnboarding.test.tsx` | Lindy KnowledgeBase/source-management pattern is partially adapted: raw sources become review cards, and approved facts become normal memory updates. | DM-127 should add a source detail drawer and source management actions without adding a backend runtime. |
+| Voice & Memory source review | `server/src/services/dearme-workbench.ts`; `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/pages/DearMeOnboarding.test.tsx` | Lindy KnowledgeBase/source-management and slide-out detail patterns are now adapted: private sources become review cards, selected sources open a detail surface, reviewed facts save through the existing memory path, and not-useful sources use the existing retire path. | Watch whether reviewers need richer source history after repeated use; do not add backend shape until the current detail surface proves insufficient. |
 | Weekly report and rituals | `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/services/dearme-workbench.ts` | Polsia report/cycle ritual is adapted into DearMe weekly report and daily team work language. | Add better report explanation and provenance after source drawer exists. |
 | Cost and reliability | Current workbench/cycle projections; Naive cost-event docs; Lindy router/executor evidence | Partially reused. DearMe has cost/progress projection, but not a dedicated model router or circuit breaker policy yet. | DM-129 should adapt Lindy router/executor plus Naive cost attribution into a DearMe automation reliability policy before code. |
 | Generated portfolio/site | Existing brand blueprint and optional generated asset layer docs | Naive app/site provisioning remains optional P1/P2, not P0. Polsia personal-brand fork recommends Brand Site Builder, but DearMe first needs review-quality content and proof. | Start only after content/voice/opportunity loop is credible. |
 | Development factory | `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` | Symphony-style worker queue is useful for bounded tickets after coordinator updates the queue. | Workers must use this ledger and `BUILD-STATE.md` before selecting old tickets. |
 
-## Current Worker Queue
+## Recently Completed
 
 ### DM-127: Voice & Memory Source Detail Drawer
 
@@ -94,13 +94,19 @@ Protected scope:
 - No new backend route, crawler, importer, database table, or workflow runtime.
 - No Relay/GraphQL/Lindy brand import.
 
-Acceptance:
+Completed:
 
-- `Review source` opens or focuses a selected source detail surface.
-- The user can prepare, edit, accept, or dismiss a memory fact from that source.
-- Existing source-review queue suppression still works after a reviewed fact is
-  saved.
-- Customer UI remains DearMe language only.
+- `Review source` and `Prepare fact` both select the source, prefill the
+  reviewed fact form, and open a source detail surface.
+- The detail surface lets the user edit in the existing form, save the reviewed
+  fact, close the detail, or mark the source not useful through the existing
+  retire path.
+- No new backend route, crawler, importer, database table, or workflow runtime
+  was added.
+- Focused DearMe onboarding tests cover the selected detail, save, and dismiss
+  paths.
+
+## Current Worker Queue
 
 ### DM-128: Focused Decision Review Drawer
 
@@ -183,6 +189,5 @@ Acceptance:
 ## Not Complete Yet
 
 DearMe is not release-ready just because these reuse decisions are documented.
-The next meaningful product gain is DM-127, because it converts current
-source-review plumbing into a more Lindy-grade Voice & Memory surface without
-creating a new backend system.
+The next meaningful product gain is DM-128, because prepared work and decisions
+still need the same focused review treatment that source review now has.

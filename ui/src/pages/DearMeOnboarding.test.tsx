@@ -1796,6 +1796,11 @@ describe("DearMeOnboarding", () => {
       buttonByText(container, "Prepare fact")?.click();
     });
 
+    const sourceDetail = surfaceByLabel(container, "Source review detail");
+    expect(sourceDetail.textContent).toContain("Source detail");
+    expect(sourceDetail.textContent).toContain("Shipped proof");
+    expect(sourceDetail.textContent).toContain("Shipped a working local product.");
+
     expect((container.querySelector("#dearme-memory-kind") as HTMLSelectElement).value).toBe("proof_point");
     expect((container.querySelector("#dearme-memory-title") as HTMLInputElement).value).toBe("Shipped proof");
     expect((container.querySelector("#dearme-memory-source") as HTMLInputElement).value).toBe("Build log");
@@ -1804,7 +1809,7 @@ describe("DearMeOnboarding", () => {
     );
 
     await act(async () => {
-      buttonByText(container, "Add to Voice & Memory")?.click();
+      buttonByText(sourceDetail, "Save reviewed fact")?.click();
     });
     await flushReact();
 
@@ -1818,6 +1823,47 @@ describe("DearMeOnboarding", () => {
         sourceLabel: "Build log",
       }),
     );
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("dismisses source review items from the detail drawer without adding a fact", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Prepare fact")?.click();
+    });
+
+    const sourceDetail = surfaceByLabel(container, "Source review detail");
+
+    await act(async () => {
+      buttonByText(sourceDetail, "Not useful")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.archiveMemorySource).toHaveBeenCalledWith("company-1", "memory-2");
+    expect(mockDearmeApi.recordMemoryUpdate).not.toHaveBeenCalled();
+    expect(container.querySelector('[aria-label="Source review detail"]')).toBeNull();
+    expect((container.querySelector("#dearme-memory-body") as HTMLTextAreaElement).value).toBe("");
     expectNoHiddenProductTerms(container.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
       HIDDEN_PRODUCT_TERMS.bridgeName,
@@ -2361,6 +2407,7 @@ describe("DearMeOnboarding", () => {
 
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
     expect(container.querySelector('[data-dearme-source-review-focus="true"]')?.textContent).toContain("Shipped proof");
+    expect(surfaceByLabel(container, "Source review detail").textContent).toContain("Shipped proof");
     expect((container.querySelector("#dearme-memory-kind") as HTMLSelectElement).value).toBe("proof_point");
     expect((container.querySelector("#dearme-memory-title") as HTMLInputElement).value).toBe("Shipped proof");
     expect((container.querySelector("#dearme-memory-source") as HTMLInputElement).value).toBe("Build log");

@@ -1934,8 +1934,80 @@ type DearMeSourceReviewFocus = {
   requestId: number;
 };
 
+const DEARME_MEMORY_FORM_ID = "dearme-memory-form";
+
 function sourceReviewCardDomId(id: string) {
   return `dearme-source-review-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
+function SourceReviewDetailPanel({
+  item,
+  isPending,
+  onEdit,
+  onDismiss,
+  onClose,
+}: {
+  item: DearMeSourceReviewItem;
+  isPending: boolean;
+  onEdit: () => void;
+  onDismiss: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <aside
+      aria-label="Source review detail"
+      className="rounded-md border border-primary/30 bg-background p-4 shadow-sm lg:sticky lg:top-4"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium uppercase text-muted-foreground">Source detail</p>
+          <h3 className="mt-1 text-base font-semibold leading-snug">{item.sourceTitle}</h3>
+        </div>
+        <Button type="button" size="sm" variant="ghost" onClick={onClose}>
+          Close
+        </Button>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Badge variant="outline">{MEMORY_SOURCE_INPUT_MODE_LABELS[item.sourceInputMode]}</Badge>
+        <Badge variant="outline">{MEMORY_KIND_LABELS[item.proposedKind]}</Badge>
+        {item.sourceLabel ? (
+          <Badge variant="outline">{sourceLabelForChip(item.sourceLabel)}</Badge>
+        ) : null}
+        <Badge variant="outline">{shortDate(item.createdAt)}</Badge>
+      </div>
+
+      <div className="mt-4 rounded-md border border-border bg-muted/20 p-3">
+        <p className="text-xs font-medium text-muted-foreground">What DearMe found</p>
+        <p className="mt-1 text-sm text-foreground/85">{item.summary}</p>
+      </div>
+
+      <div className="mt-3 grid gap-3">
+        <div className="rounded-md border border-border bg-background/80 p-3">
+          <p className="text-xs font-medium text-muted-foreground">Prepared fact</p>
+          <p className="mt-1 text-sm font-medium">{item.proposedTitle}</p>
+          <p className="mt-2 text-sm text-foreground/85">{item.proposedBody}</p>
+        </div>
+        <div className="rounded-md border border-border bg-background/80 p-3">
+          <p className="text-xs font-medium text-muted-foreground">Your call</p>
+          <p className="mt-1 text-sm text-foreground/85">{item.nextAction}</p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+        <Button type="submit" form={DEARME_MEMORY_FORM_ID} disabled={isPending}>
+          {isPending ? "Saving..." : "Save reviewed fact"}
+        </Button>
+        <Button type="button" variant="outline" onClick={onEdit}>
+          Edit in form
+        </Button>
+        <Button type="button" variant="ghost" disabled={isPending} onClick={onDismiss}>
+          <XCircle className="h-4 w-4" />
+          Not useful
+        </Button>
+      </div>
+    </aside>
+  );
 }
 
 function TeamSummaryPanel({
@@ -2737,9 +2809,14 @@ function VoiceMemoryPanel({
   const [sourceLabel, setSourceLabel] = useState("");
   const [body, setBody] = useState("");
   const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
+  const [selectedSourceReviewId, setSelectedSourceReviewId] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const voiceProfile = memory.voiceProfile;
   const sourcePlan = memory.sourcePlan;
+  const selectedSourceReview = useMemo(
+    () => memory.sourceReviewQueue.find((item) => item.id === selectedSourceReviewId) ?? null,
+    [memory.sourceReviewQueue, selectedSourceReviewId],
+  );
   const selectedGuide =
     MEMORY_SOURCE_GUIDES.find((guide) => guide.id === sourceGuideId) ?? DEFAULT_MEMORY_SOURCE_GUIDE;
   const sourceLabelText =
@@ -2778,8 +2855,18 @@ function VoiceMemoryPanel({
       : memory.proofCount;
   const handledSourceReviewFocusRequest = useRef<number | null>(null);
 
+  function resetMemoryDraft() {
+    setEditingMemoryId(null);
+    setSourceInputMode("paste");
+    setTitle("");
+    setSourceLabel("");
+    setBody("");
+    setLocalError(null);
+  }
+
   const handleSourceReviewSelect = useCallback((item: DearMeWorkbenchMemory["sourceReviewQueue"][number]) => {
     const matchingGuide = memorySourceGuideForKind(item.proposedKind);
+    setSelectedSourceReviewId(item.id);
     setEditingMemoryId(null);
     setSourceGuideId(matchingGuide.id);
     setKind(item.proposedKind);
@@ -2789,6 +2876,12 @@ function VoiceMemoryPanel({
     setBody(item.proposedBody);
     setLocalError(null);
   }, []);
+
+  useEffect(() => {
+    if (!selectedSourceReviewId) return;
+    if (selectedSourceReview) return;
+    setSelectedSourceReviewId(null);
+  }, [selectedSourceReview, selectedSourceReviewId]);
 
   useEffect(() => {
     if (!sourceReviewFocus) return;
@@ -2836,11 +2929,8 @@ function VoiceMemoryPanel({
     } else {
       onAdd(update);
     }
-    setEditingMemoryId(null);
-    setSourceInputMode("paste");
-    setTitle("");
-    setSourceLabel("");
-    setBody("");
+    setSelectedSourceReviewId(null);
+    resetMemoryDraft();
   }
 
   function handleGuideSelect(guide: (typeof MEMORY_SOURCE_GUIDES)[number]) {
@@ -2863,12 +2953,7 @@ function VoiceMemoryPanel({
   }
 
   function handleCancelRevise() {
-    setEditingMemoryId(null);
-    setSourceInputMode("paste");
-    setTitle("");
-    setSourceLabel("");
-    setBody("");
-    setLocalError(null);
+    resetMemoryDraft();
   }
 
   function handleRetireSource(item: DearMeMemoryUpdateItem) {
@@ -2876,6 +2961,20 @@ function VoiceMemoryPanel({
       handleCancelRevise();
     }
     onArchive(item.id);
+  }
+
+  function handleDismissSourceReview(item: DearMeSourceReviewItem) {
+    setSelectedSourceReviewId(null);
+    resetMemoryDraft();
+    onArchive(item.sourceMemoryId);
+  }
+
+  function handleScrollToMemoryForm() {
+    if (typeof document === "undefined") return;
+    const target = document.getElementById(DEARME_MEMORY_FORM_ID);
+    if (target && typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }
 
   function handleKindChange(nextKind: DearMeMemoryUpdateKind) {
@@ -2997,47 +3096,71 @@ function VoiceMemoryPanel({
             </div>
             <Badge variant="outline">{memory.sourceReviewQueue.length} to review</Badge>
           </div>
-          <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {memory.sourceReviewQueue.map((item) => {
-              const focused = sourceReviewFocus?.id === item.id;
-              return (
-                <div
-                  key={item.id}
-                  id={sourceReviewCardDomId(item.id)}
-                  className={cn(
-                    "rounded-md transition-shadow",
-                    focused ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : undefined,
-                  )}
-                  data-dearme-source-review-focus={focused ? "true" : undefined}
-                >
-                  <DearMeActionCard
-                    aria-label="Voice & Memory source review"
-                    eyebrow={MEMORY_SOURCE_INPUT_MODE_LABELS[item.sourceInputMode]}
-                    title={item.sourceTitle}
-                    summary={item.summary}
-                    chips={[
-                      { label: MEMORY_KIND_LABELS[item.proposedKind], variant: "outline" },
-                      ...(item.sourceLabel
-                        ? [{ label: sourceLabelForChip(item.sourceLabel), variant: "outline" as const }]
-                        : []),
-                      { label: shortDate(item.createdAt), variant: "outline" },
-                    ]}
-                    calloutLabel="Prepare next"
-                    callout={item.nextAction}
-                    action={{
-                      label: "Prepare fact",
-                      ariaLabel: `Prepare fact from ${item.sourceTitle}`,
-                      onClick: () => handleSourceReviewSelect(item),
-                    }}
-                  />
-                </div>
-              );
-            })}
+          <div
+            className={cn(
+              "mt-3 grid gap-3",
+              selectedSourceReview ? "lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.65fr)]" : undefined,
+            )}
+          >
+            <div
+              className={cn(
+                "grid gap-3 md:grid-cols-2 xl:grid-cols-3",
+                selectedSourceReview ? "md:grid-cols-1 xl:grid-cols-2" : undefined,
+              )}
+            >
+              {memory.sourceReviewQueue.map((item) => {
+                const focused = sourceReviewFocus?.id === item.id;
+                const selected = selectedSourceReviewId === item.id;
+                return (
+                  <div
+                    key={item.id}
+                    id={sourceReviewCardDomId(item.id)}
+                    className={cn(
+                      "rounded-md transition-shadow",
+                      focused || selected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : undefined,
+                    )}
+                    data-dearme-source-review-focus={focused ? "true" : undefined}
+                    data-dearme-source-review-selected={selected ? "true" : undefined}
+                  >
+                    <DearMeActionCard
+                      aria-label="Voice & Memory source review"
+                      eyebrow={MEMORY_SOURCE_INPUT_MODE_LABELS[item.sourceInputMode]}
+                      title={item.sourceTitle}
+                      summary={item.summary}
+                      chips={[
+                        { label: MEMORY_KIND_LABELS[item.proposedKind], variant: "outline" },
+                        ...(item.sourceLabel
+                          ? [{ label: sourceLabelForChip(item.sourceLabel), variant: "outline" as const }]
+                          : []),
+                        { label: shortDate(item.createdAt), variant: "outline" },
+                      ]}
+                      calloutLabel="Prepare next"
+                      callout={item.nextAction}
+                      action={{
+                        label: "Prepare fact",
+                        ariaLabel: `Prepare fact from ${item.sourceTitle}`,
+                        onClick: () => handleSourceReviewSelect(item),
+                        variant: selected ? "default" : "outline",
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            {selectedSourceReview ? (
+              <SourceReviewDetailPanel
+                item={selectedSourceReview}
+                isPending={isPending}
+                onEdit={handleScrollToMemoryForm}
+                onDismiss={() => handleDismissSourceReview(selectedSourceReview)}
+                onClose={() => setSelectedSourceReviewId(null)}
+              />
+            ) : null}
           </div>
         </div>
       ) : null}
 
-      <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
+      <form id={DEARME_MEMORY_FORM_ID} className="mt-5 grid gap-4" onSubmit={handleSubmit}>
         <div>
           <FieldLabel htmlFor="dearme-memory-source-guide" label="Source guide" />
           {editingMemoryId ? (
