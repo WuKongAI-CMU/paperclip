@@ -720,6 +720,7 @@ describe("DearMe brand blueprint contract", () => {
           relatedOutputId: null,
           issueId: null,
           issueIdentifier: null,
+          approvalId: "approval-1",
           createdAt: "2026-05-07T14:00:00.000Z",
           reviewLoop: null,
         },

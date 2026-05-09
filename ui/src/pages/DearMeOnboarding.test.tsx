@@ -10,6 +10,8 @@ import {
   describeDearMePaidBetaEntitlement,
   evaluateDearMeVoiceGate,
   summarizeDearMeBrandBlueprint,
+  type DearMeWorkbenchResponse,
+  type DearMeWorkbenchStreamItem,
   type DearMeOutputReviewLoop,
 } from "@paperclipai/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -177,7 +179,7 @@ function reviewLoopFixture(
   };
 }
 
-function workbenchResponse() {
+function workbenchResponse(): DearMeWorkbenchResponse {
   return {
     companyId: "company-1",
     headline: "Dear me, your team has decisions ready",
@@ -341,6 +343,7 @@ function workbenchResponse() {
         relatedOutputId: "issue-2:content_drafts",
         issueId: "issue-2",
         issueIdentifier: "PET-8",
+        approvalId: null,
         createdAt: "2026-05-07T14:00:00.000Z",
         reviewLoop: reviewLoopFixture("needs_user_review"),
       },
@@ -360,6 +363,7 @@ function workbenchResponse() {
         relatedOutputId: "issue-3:opportunity_drafts",
         issueId: "issue-3",
         issueIdentifier: "PET-9",
+        approvalId: null,
         createdAt: "2026-05-07T14:00:00.000Z",
         reviewLoop: reviewLoopFixture(),
       },
@@ -379,6 +383,7 @@ function workbenchResponse() {
         relatedOutputId: null,
         issueId: null,
         issueIdentifier: null,
+        approvalId: null,
         createdAt: "2026-05-07T14:00:00.000Z",
         reviewLoop: null,
       },
@@ -604,6 +609,7 @@ function workbenchResponseWithChiefBrief() {
         relatedOutputId: null,
         issueId: "issue-chief-1",
         issueIdentifier: "PET-22",
+        approvalId: null,
         createdAt: chiefUpdatedAt,
         reviewLoop: reviewLoopFixture(),
       },
@@ -1408,6 +1414,87 @@ describe("DearMeOnboarding", () => {
     expect(mockNavigate).toHaveBeenCalledWith(
       "/dearme?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report",
     );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("opens live feed output decisions in the DearMe review surface", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const reviewButton = buttonByText(container, "Review now");
+    expect(reviewButton).toBeTruthy();
+
+    await act(async () => {
+      reviewButton?.click();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/dearme?view=decisions&issue=PET-8&output=issue-2%3Acontent_drafts",
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("opens live feed approval decisions in the DearMe approval surface", async () => {
+    const response = workbenchResponse();
+    const approvalFeedItem: DearMeWorkbenchStreamItem = {
+      ...response.workStream[0]!,
+      id: "decision:approval:approval-ready",
+      role: "brand_strategist",
+      title: "Your call: Approve Brand OS for Peter Studio",
+      summary: "Review the first growth-team plan before private work starts.",
+      artifact: "Brand OS",
+      sourceLabel: "Approval queue",
+      nextAction: "Approve Brand OS only if the first cycle and approval boundaries match your brand.",
+      relatedOutputId: null,
+      issueId: null,
+      issueIdentifier: null,
+      approvalId: "approval-ready",
+      reviewLoop: null,
+    };
+    response.workStream = [
+      approvalFeedItem,
+      ...response.workStream.slice(1),
+    ];
+    mockDearmeApi.getWorkbench.mockResolvedValue(response);
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const reviewButton = buttonByText(container, "Review now");
+    expect(reviewButton).toBeTruthy();
+
+    await act(async () => {
+      reviewButton?.click();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=decisions&approval=approval-ready");
 
     await act(async () => {
       root.unmount();

@@ -1095,6 +1095,19 @@ function workItemTarget(item: DearMeWorkbenchWorkItem) {
   return item.issueIdentifier ?? item.issueId;
 }
 
+function streamItemIssueTarget(item: DearMeWorkbenchStreamItem) {
+  return item.issueIdentifier ?? item.issueId;
+}
+
+function liveFeedActionLabel(item: DearMeWorkbenchStreamItem) {
+  if (item.approvalId || item.needsApproval) return "Review now";
+  if (item.relatedOutputId) return "Open prepared work";
+  if (streamItemIssueTarget(item)) {
+    return item.kind === "cycle_brief" ? "Open private work" : "Open work";
+  }
+  return null;
+}
+
 function matchesIssueReference(
   item: { issueId?: string | null; issueIdentifier?: string | null },
   issueReference: string | null,
@@ -2070,8 +2083,14 @@ function TeamAtWorkPanel({
 
 function LiveTeamFeedPanel({
   liveStream,
+  onOpenApproval,
+  onOpenIssue,
+  onOpenWorkItem,
 }: {
   liveStream: DearMeWorkbenchStreamItem[];
+  onOpenApproval: (approvalId: string) => void;
+  onOpenIssue: (issueReference: string) => void;
+  onOpenWorkItem: (issueReference: string, outputId: string) => void;
 }) {
   if (liveStream.length === 0) return null;
 
@@ -2084,40 +2103,67 @@ function LiveTeamFeedPanel({
         trailing={<Badge variant="outline">While you were away</Badge>}
       />
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {liveStream.map((item, index) => (
-          <DearMeWorkbenchCard
-            key={`${item.id}:${item.role}:${item.createdAt}:${index}`}
-            eyebrow={
-              <span className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline">{WORKSTREAM_STAGE_LABELS[item.cycleStage]}</Badge>
-                <span>{roleLabel(item.role)}</span>
-              </span>
-            }
-            title={item.title}
-            description={item.summary}
-            badge={
-              <div className="flex shrink-0 flex-col items-end gap-2">
-                <Badge variant="outline">{WORKSTREAM_KIND_LABELS[item.kind]}</Badge>
-                <Badge variant={item.needsApproval ? "secondary" : "outline"}>
-                  {WORKSTREAM_STATUS_LABELS[item.status]}
-                </Badge>
-                {item.reviewLoop ? <ReviewLoopBadges loop={item.reviewLoop} /> : null}
+        {liveStream.map((item, index) => {
+          const issueReference = streamItemIssueTarget(item);
+          const canOpen = Boolean(item.approvalId || issueReference);
+          const actionLabel = canOpen ? liveFeedActionLabel(item) : null;
+          return (
+            <DearMeWorkbenchCard
+              key={`${item.id}:${item.role}:${item.createdAt}:${index}`}
+              eyebrow={
+                <span className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline">{WORKSTREAM_STAGE_LABELS[item.cycleStage]}</Badge>
+                  <span>{roleLabel(item.role)}</span>
+                </span>
+              }
+              title={item.title}
+              description={item.summary}
+              badge={
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <Badge variant="outline">{WORKSTREAM_KIND_LABELS[item.kind]}</Badge>
+                  <Badge variant={item.needsApproval ? "secondary" : "outline"}>
+                    {WORKSTREAM_STATUS_LABELS[item.status]}
+                  </Badge>
+                  {item.reviewLoop ? <ReviewLoopBadges loop={item.reviewLoop} /> : null}
+                </div>
+              }
+              action={actionLabel ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={item.needsApproval ? "default" : "outline"}
+                  aria-label={`${actionLabel}: ${item.title}`}
+                  onClick={() => {
+                    if (item.approvalId) {
+                      onOpenApproval(item.approvalId);
+                      return;
+                    }
+                    if (issueReference && item.relatedOutputId) {
+                      onOpenWorkItem(issueReference, item.relatedOutputId);
+                      return;
+                    }
+                    if (issueReference) onOpenIssue(issueReference);
+                  }}
+                >
+                  {actionLabel}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : null}
+            >
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <Badge variant="outline">{item.artifact}</Badge>
+                <Badge variant="outline">{item.sourceLabel}</Badge>
+                {item.needsApproval ? <Badge variant="default">Decision ready</Badge> : null}
+                {item.costImpact ? <Badge variant="secondary">{item.costImpact}</Badge> : null}
+                <span>{shortDate(item.createdAt)}</span>
               </div>
-            }
-          >
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant="outline">{item.artifact}</Badge>
-              <Badge variant="outline">{item.sourceLabel}</Badge>
-              {item.needsApproval ? <Badge variant="default">Decision ready</Badge> : null}
-              {item.costImpact ? <Badge variant="secondary">{item.costImpact}</Badge> : null}
-              <span>{shortDate(item.createdAt)}</span>
-            </div>
-            <div className="mt-3 rounded-md border border-border bg-background/80 p-3">
-              <p className="text-xs font-medium uppercase text-muted-foreground">Next action</p>
-              <p className="mt-1 text-sm text-foreground/85">{item.nextAction}</p>
-            </div>
-          </DearMeWorkbenchCard>
-        ))}
+              <div className="mt-3 rounded-md border border-border bg-background/80 p-3">
+                <p className="text-xs font-medium uppercase text-muted-foreground">Next action</p>
+                <p className="mt-1 text-sm text-foreground/85">{item.nextAction}</p>
+              </div>
+            </DearMeWorkbenchCard>
+          );
+        })}
       </div>
     </DearMePanel>
   );
@@ -2713,7 +2759,12 @@ function TeamWorkbenchPanel({
 
       <DearMeCockpitGrid variant="primary">
         <TeamAtWorkPanel team={workbench.team} />
-        <LiveTeamFeedPanel liveStream={liveStream} />
+        <LiveTeamFeedPanel
+          liveStream={liveStream}
+          onOpenApproval={onOpenApproval}
+          onOpenIssue={onOpenIssue}
+          onOpenWorkItem={onOpenWorkItem}
+        />
       </DearMeCockpitGrid>
     </section>
   );

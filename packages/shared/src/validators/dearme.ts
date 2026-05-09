@@ -722,6 +722,7 @@ export const dearMeWorkbenchStreamItemSchema = z.object({
   relatedOutputId: z.string().min(1).nullable(),
   issueId: z.string().min(1).nullable(),
   issueIdentifier: z.string().nullable(),
+  approvalId: z.string().min(1).nullable(),
   createdAt: z.string().datetime(),
   reviewLoop: dearMeOutputReviewLoopSchema.nullable(),
 }).strict();

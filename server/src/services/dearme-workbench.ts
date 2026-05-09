@@ -399,6 +399,7 @@ function streamItemFromWork(item: DearMeWorkbenchWorkItem): DearMeWorkbenchStrea
     relatedOutputId: item.outputKind ? item.id : null,
     issueId: item.issueId,
     issueIdentifier: item.issueIdentifier,
+    approvalId: null,
     createdAt: item.updatedAt,
     reviewLoop: item.reviewLoop,
   };
@@ -423,6 +424,7 @@ function streamItemFromDecision(decision: DearMeWorkbenchDecision): DearMeWorkbe
     relatedOutputId: decision.outputKind ? decision.id.replace(/^output:/, "") : null,
     issueId: decision.issueId,
     issueIdentifier: decision.issueIdentifier,
+    approvalId: decision.approvalId,
     createdAt: decision.updatedAt,
     reviewLoop: decision.reviewLoop,
   };
@@ -446,6 +448,7 @@ function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbe
       relatedOutputId: null,
       issueId: null,
       issueIdentifier: null,
+      approvalId: null,
       createdAt: item.createdAt,
       reviewLoop: null,
     };
@@ -467,6 +470,7 @@ function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbe
     relatedOutputId: null,
     issueId: null,
     issueIdentifier: null,
+    approvalId: null,
     createdAt: item.createdAt,
     reviewLoop: null,
   };

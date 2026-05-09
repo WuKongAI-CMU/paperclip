@@ -2,6 +2,36 @@
 
 Date: 2026-05-09
 
+## DM-109 Actionable Live Feed - 2026-05-09
+
+Implementation slice:
+
+- Made DearMe's live team feed directly actionable: a user can now open a
+  feed item's corresponding DearMe review surface instead of hunting through
+  the decisions or prepared-work panels.
+- Reused the existing Naive/Paperclip substrate: stream items now carry the
+  existing approval id, issue reference, and prepared-output id. This slice
+  adds no new table, queue, worker, runtime, dependency, or external
+  connector.
+- Preserved Polsia's visible-autonomy lesson by keeping the live feed as the
+  product proof surface: the user sees the team working, then moves straight
+  from an action-needed card to the review decision.
+- Adapted Lindy-style action-card behavior by giving feed cards a concise
+  action button (`Review now`, `Open prepared work`, or `Open private work`)
+  that lands in the focused inspector/review state already owned by DearMe.
+- Kept the customer surface clean: buttons route to DearMe review views, not
+  raw issues, approval admin pages, adapters, providers, Paperclip/OpenClaw,
+  or runtime internals.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 4 files, 61 tests.
+- `pnpm -r typecheck` passed.
+- `git diff --check` passed.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|model-provider|setup-payload|control-plane|raw issue" ui/src/pages/DearMeOnboarding.tsx server/src/services/dearme-workbench.ts packages/shared/src/validators/dearme.ts`
+  returned no matches.
+
 ## DM-108 Cycle Timeline Feed - 2026-05-09
 
 Implementation slice:
