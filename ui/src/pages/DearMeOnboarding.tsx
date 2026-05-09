@@ -30,6 +30,7 @@ import {
   type DearMeWorkbenchMemory,
   type DearMeWorkbenchReport,
   type DearMeWorkbenchResponse,
+  type DearMeWorkbenchRunLedgerEntry,
   type DearMeWorkbenchStreamItem,
   type DearMeWorkbenchTeamMember,
   type DearMeWorkbenchWorkItem,
@@ -889,6 +890,44 @@ function titleizeStatus(value: string) {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+const RUN_LEDGER_KIND_ORDER: DearMeWorkbenchRunLedgerEntry["kind"][] = [
+  "tried",
+  "prepared",
+  "learned",
+  "needs_decision",
+];
+
+const RUN_LEDGER_KIND_LABELS: Record<DearMeWorkbenchRunLedgerEntry["kind"], string> = {
+  tried: "Tried",
+  prepared: "Prepared",
+  learned: "Learned",
+  needs_decision: "Needs your call",
+};
+
+const RUN_LEDGER_KIND_DESCRIPTIONS: Record<DearMeWorkbenchRunLedgerEntry["kind"], string> = {
+  tried: "Private moves the team attempted or advanced in this cycle.",
+  prepared: "Drafts, letters, proof, or reports ready enough to explain.",
+  learned: "Voice, proof, and memory signals the next pass can use.",
+  needs_decision: "Important calls waiting before anything represents you.",
+};
+
+const RUN_LEDGER_KIND_ICONS: Record<DearMeWorkbenchRunLedgerEntry["kind"], LucideIcon> = {
+  tried: Workflow,
+  prepared: FileText,
+  learned: Sparkles,
+  needs_decision: ShieldCheck,
+};
+
+function runLedgerKindVariant(kind: DearMeWorkbenchRunLedgerEntry["kind"]) {
+  if (kind === "needs_decision") return "secondary" as const;
+  if (kind === "prepared") return "default" as const;
+  return "outline" as const;
+}
+
+function runLedgerBucketMarker(kind: DearMeWorkbenchRunLedgerEntry["kind"]) {
+  return kind === "needs_decision" ? "needs_call" : kind;
 }
 
 function selectActionGraphCards(graph: DearMeActionGraph) {
@@ -2978,6 +3017,104 @@ function OperatingLoopPanel({
   );
 }
 
+function BrandTeamRunLedgerPanel({ entries }: { entries: DearMeWorkbenchRunLedgerEntry[] }) {
+  const visibleEntries = entries.slice(0, 8);
+  const countsByKind = RUN_LEDGER_KIND_ORDER.reduce((counts, kind) => {
+    counts[kind] = entries.filter((entry) => entry.kind === kind).length;
+    return counts;
+  }, {} as Record<DearMeWorkbenchRunLedgerEntry["kind"], number>);
+
+  return (
+    <DearMePanel aria-label="Brand team run ledger">
+      <DearMeWorkbenchSectionHeader
+        icon={Gauge}
+        eyebrow="Brand team run ledger"
+        title="What your team moved while you were away."
+        description="A compact record of what the brand team tried, prepared, learned, and now needs from you."
+        trailing={<Badge variant="outline">{pluralizeCount(entries.length, "entry")}</Badge>}
+      />
+
+      <DearMeEvidenceGrid className="mt-4 md:grid-cols-2 xl:grid-cols-4">
+        {RUN_LEDGER_KIND_ORDER.map((kind) => {
+          const Icon = RUN_LEDGER_KIND_ICONS[kind];
+
+          return (
+            <div key={kind} className="h-full" data-dearme-run-ledger-bucket={runLedgerBucketMarker(kind)}>
+              <DearMeWorkbenchCard
+                key={kind}
+                className="h-full p-4"
+                eyebrow={<Badge variant="outline">{pluralizeCount(countsByKind[kind], "entry")}</Badge>}
+                title={RUN_LEDGER_KIND_LABELS[kind]}
+                description={RUN_LEDGER_KIND_DESCRIPTIONS[kind]}
+                badge={
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                }
+              />
+            </div>
+          );
+        })}
+      </DearMeEvidenceGrid>
+
+      {visibleEntries.length > 0 ? (
+        <div className="mt-4 grid gap-3 lg:grid-cols-2" data-dearme-run-ledger="brand-team">
+          {visibleEntries.map((entry) => {
+            const Icon = RUN_LEDGER_KIND_ICONS[entry.kind];
+
+            return (
+              <DearMeWorkbenchCard
+                key={entry.id}
+                className="p-4"
+                eyebrow={
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Badge variant={runLedgerKindVariant(entry.kind)}>
+                      {RUN_LEDGER_KIND_LABELS[entry.kind]}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">{shortDate(entry.createdAt)}</span>
+                  </span>
+                }
+                title={entry.title}
+                description={entry.summary}
+                badge={
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                }
+                footer={
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">{roleLabel(entry.role)}</Badge>
+                    <Badge variant="outline">{WORKSTREAM_STATUS_LABELS[entry.status]}</Badge>
+                    {entry.needsApproval ? <Badge variant="secondary">Waiting on you</Badge> : null}
+                  </div>
+                }
+              >
+                <div className="grid gap-3 sm:grid-cols-2" data-dearme-run-ledger-entry={entry.kind}>
+                  <div className="rounded-md border border-border bg-background/80 p-3">
+                    <p className="text-xs font-medium uppercase text-muted-foreground">Evidence</p>
+                    <p className="mt-1 text-sm text-foreground">{entry.evidenceLabel}</p>
+                  </div>
+                  <div className="rounded-md border border-border bg-background/80 p-3">
+                    <p className="text-xs font-medium uppercase text-muted-foreground">Next</p>
+                    <p className="mt-1 text-sm text-foreground">{entry.nextAction}</p>
+                  </div>
+                </div>
+              </DearMeWorkbenchCard>
+            );
+          })}
+        </div>
+      ) : (
+        <DearMeEmptyState
+          className="mt-4"
+          icon={Workflow}
+          title="The run ledger starts after private work begins"
+          description="Start the first cycle to see what the team tried, prepared, learned, and needs from you."
+        />
+      )}
+    </DearMePanel>
+  );
+}
+
 function DearMeLetterPanel({
   report,
   onOpenIssue,
@@ -4062,6 +4199,9 @@ function TeamWorkbenchPanel({
   const batches = workbench.batchDecisions.slice(0, 3);
   const sourceReviews = workbench.memory.sourceReviewQueue.slice(0, 3);
   const liveStream = workbench.workStream.slice(0, 6);
+  const visibleRunLedger = memoryArchiveMutation.data
+    ? workbench.runLedger.filter((entry) => entry.id !== `ledger:memory:${memoryArchiveMutation.data.memoryId}`)
+    : workbench.runLedger;
   const focusedDecision = decisionFocus
     ? workbench.decisionsNeeded.find((decision) => matchesDecisionFocus(decision, decisionFocus)) ?? null
     : null;
@@ -4132,6 +4272,8 @@ function TeamWorkbenchPanel({
       <TeamSummaryPanel workbench={workbench} paidBetaActive={paidBetaActive} />
 
       <TeamOperatingPolicyPanel workbench={workbench} paidBetaActive={paidBetaActive} />
+
+      <BrandTeamRunLedgerPanel entries={visibleRunLedger} />
 
       <OperatingLoopPanel workbench={workbench} paidBetaActive={paidBetaActive} />
 

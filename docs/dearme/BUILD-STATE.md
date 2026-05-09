@@ -2,6 +2,64 @@
 
 Date: 2026-05-09
 
+## DM-134 Brand Team Run Ledger - 2026-05-09
+
+Implementation slice:
+
+- Added a customer-safe `Brand Team Run Ledger` panel to the DearMe workbench.
+- The ledger shows what the brand team tried, prepared, learned, and needs
+  from the user.
+- Added a typed shared `runLedger` read model to the DearMe workbench contract.
+- Derived every ledger entry on the server from the existing `workStream`, with
+  latest Voice & Memory as a fallback when no learned item is already present.
+- Kept backend routes, database tables, runtime services, action graph
+  contracts, and provider integrations unchanged.
+
+Donor reuse:
+
+- Polsia supplies the visible team-motion rhythm: the user should see what
+  happened while they were away.
+- Naive/Paperclip supplies the hidden substrate: the ledger reads existing
+  workbench, progress, memory, decision, and report data instead of adding a
+  second runtime.
+- Lindy supplies the action-card/review-surface grammar: compact cards, visible
+  status, and customer-readable next calls.
+- Littlebird supplies the mobile discipline: compact buckets that wrap without
+  creating a separate phone UI.
+
+Rejected:
+
+- Rejected adding a new backend ledger table before proving the projection
+  shape from existing data.
+- Rejected importing donor UI wholesale; the DearMe shell already owns the
+  customer-facing design language.
+- Rejected exposing raw runtime events or donor names in the customer path.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1` passed: 4 files, 77 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm -r typecheck` passed.
+- `git diff --check` passed.
+- Customer-surface hidden-term scan over `ui/src/pages/DearMeOnboarding.tsx`,
+  `packages/shared/src/validators/dearme.ts`, and
+  `server/src/services/dearme-workbench.ts` returned no matches.
+- Browser-plugin check on `http://127.0.0.1:3100/dearme` passed with one
+  `Brand team run ledger`, one run-ledger grid, all four buckets, and 6 ledger
+  entries visible.
+- Playwright desktop `1440x1000` and mobile `390x844` passed on
+  `/DEAA/dearme`: all ledger copy and bucket markers visible, no horizontal
+  overflow, no framework overlay, no app console error/warn logs, and no
+  customer-visible donor/runtime terms.
+- Screenshot evidence: `/tmp/dearme-dm134-desktop-run-ledger.png` and
+  `/tmp/dearme-dm134-mobile-run-ledger.png`.
+
+Next:
+
+- Commit and fast-forward merge the DM-134 branch back to `dearme`.
+- Continue with DM-135: first-run sample team proof, so a new user sees a
+  credible team output before connecting real channels.
+
 ## DM-133 Mobile Decision Detail Polish - 2026-05-09
 
 Implementation slice:

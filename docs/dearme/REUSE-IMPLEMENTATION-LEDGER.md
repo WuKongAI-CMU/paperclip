@@ -80,10 +80,10 @@ Working rule:
 
 | DearMe area | Current implementation evidence | Donor reuse status | Next gap |
 | --- | --- | --- | --- |
-| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. DM-130 adapts Polsia's "work happened while I was away" choreography, Lindy's two-rail home composition, and Littlebird's focused step/task-row discipline into the first workbench surface. DM-131 browser-polished the focus grid so the live desktop/mobile shell keeps the current work card compact and readable. DM-132 adds a DearMe-specific mobile nav so the phone shell routes users to Home, Decisions, Work Ready, Voice, and More without showing generic workspace destinations. DM-133 makes focused decision actions mobile-safe. | Add a Brand Team Run Ledger before expanding more shell surfaces. |
+| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. DM-130 adapts Polsia's "work happened while I was away" choreography, Lindy's two-rail home composition, and Littlebird's focused step/task-row discipline into the first workbench surface. DM-131 browser-polished the focus grid so the live desktop/mobile shell keeps the current work card compact and readable. DM-132 adds a DearMe-specific mobile nav so the phone shell routes users to Home, Decisions, Work Ready, Voice, and More without showing generic workspace destinations. DM-133 makes focused decision actions mobile-safe. DM-134 adds a Brand Team Run Ledger so the first product surface records what the team tried, prepared, learned, and needs from the user. | Next shell work should polish first-run onboarding and sample-mode proof, not create a new runtime UI. |
 | Brand OS / `brand_blueprint` | `packages/shared/src/validators/dearme.ts`; `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/routes/dearme.ts` | Naive `setup_payload` pattern has been adapted into a typed DearMe contract and approval-gated apply flow. | Keep extending this contract only when P0 surfaces need it. |
 | Workbench projection | `server/src/services/dearme-workbench.ts`; `server/src/__tests__/dearme-workbench.test.ts` | Naive/Paperclip tables remain the substrate for team, work, decisions, progress, reports, and memory projections. | Do not add a second runtime; enrich read models first. |
-| Action graph and work stream | `docs/dearme/ACTION-GRAPH-ARCHITECTURE.md`; `packages/shared/src/validators/dearme.ts`; `ui/src/components/dearme/DearMeActionCard.tsx` | Polsia cycle/report choreography plus Lindy action-card grammar are already converging into customer-safe work cards. DM-133 makes focused decision/detail actions mobile-safe without changing the hidden approval/output-review substrate. | Add a Brand Team Run Ledger instead of more tabs. |
+| Action graph and work stream | `docs/dearme/ACTION-GRAPH-ARCHITECTURE.md`; `packages/shared/src/validators/dearme.ts`; `ui/src/components/dearme/DearMeActionCard.tsx` | Polsia cycle/report choreography plus Lindy action-card grammar are already converging into customer-safe work cards. DM-133 makes focused decision/detail actions mobile-safe without changing the hidden approval/output-review substrate. DM-134 adds a typed `runLedger` read model derived from the existing workbench stream, with latest memory as a fallback, without adding another event table. | Use the ledger as the customer-facing progress spine before adding notification or report surfaces. |
 | Output review and decisions | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/pages/DearMeOnboarding.test.tsx`; `server/src/services/dearme-output-handoff.ts`; `server/src/__tests__/dearme-output-handoff.test.ts` | Lindy pending-action shape and Polsia "small number of high-leverage calls" are reused in Work Ready / Decisions Needed. DM-128 now lets focused prepared work be approved, revised, regenerated, or redirected inside the DearMe decision surface while Naive/Paperclip remains the hidden output review substrate. | DM-129 added policy cues; watch whether repeated review loops need richer server-owned failure history after real usage. |
 | Voice & Memory source review | `server/src/services/dearme-workbench.ts`; `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/pages/DearMeOnboarding.test.tsx` | Lindy KnowledgeBase/source-management and slide-out detail patterns are now adapted: private sources become review cards, selected sources open a detail surface, reviewed facts save through the existing memory path, and not-useful sources use the existing retire path. | Watch whether reviewers need richer source history after repeated use; do not add backend shape until the current detail surface proves insufficient. |
 | Weekly report and rituals | `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/services/dearme-workbench.ts` | Polsia report/cycle ritual is adapted into DearMe weekly report and daily team work language. | Add better report explanation and provenance after source drawer exists. |
@@ -92,6 +92,28 @@ Working rule:
 | Development factory | `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` | Symphony-style worker queue is useful for bounded tickets after coordinator updates the queue. | Workers must use this ledger and `BUILD-STATE.md` before selecting old tickets. |
 
 ## Recently Completed
+
+### DM-134: Brand Team Run Ledger
+
+Goal: turn Polsia-style live progress into a DearMe-safe record of what the
+team tried, prepared, learned, and needs from the user.
+
+Donor grounding:
+
+- Polsia live work stream and "work happened while I was away" packaging.
+- Naive/Paperclip workbench projection as the hidden source of truth.
+- Lindy action-card grammar and review-first status surfaces.
+- Littlebird compact mobile shell discipline.
+
+Completed:
+
+- Added a customer-safe `Brand Team Run Ledger` panel to the workbench.
+- The ledger has Tried, Prepared, Learned, and Needs your call buckets.
+- Added a shared `runLedger` workbench contract and server-side projection.
+- Entries are derived from the existing workbench stream, with latest Voice &
+  Memory as a learned fallback when the stream does not already include one.
+- No backend route, database table, worker, donor dependency, or raw runtime
+  surface was added.
 
 ### DM-133: Mobile Decision Detail Polish
 
@@ -282,26 +304,27 @@ Completed:
 
 ## Current Worker Queue
 
-### DM-134: Brand Team Run Ledger
+### DM-135: First-Run Sample Team Proof
 
-Goal: turn Polsia-style live progress into a DearMe-safe record of what the
-team tried, prepared, learned, and needs from the user.
+Goal: make a new visitor understand DearMe before connecting real channels by
+showing a polished sample brand-team cycle and proof outputs.
 
 Donor grounding:
 
-- Polsia live work stream, report rhythm, and visible team motion.
-- Naive/Paperclip activity, issue, routine, approval, and cost truth.
+- Polsia 90-second wow and public proof loop.
+- Naive/Paperclip sample workbench seed paths, if available.
+- Lindy polished empty/sample states.
 - DearMe personal-brand semantics for content, opportunity, portfolio, voice,
   and weekly letter progress.
 
 Acceptance:
 
-- The ledger tells the user what the team tried, prepared, learned, and needs
-  next without exposing raw runtime events.
-- Entries can be derived from existing workbench projections before adding a
-  new backend table.
+- A user can see useful sample content, opportunity, proof, and report work
+  without connecting accounts or exposing private data.
+- The sample state clearly stays a demo/sample, not fake production activity.
 - No customer-facing donor/runtime terms appear in the DearMe paid-beta path.
-- The ledger supports the weekly letter and future notification surfaces.
+- The sample path supports future onboarding conversion and founder dogfood
+  screenshots.
 
 ## Coordination Rules
 
@@ -318,7 +341,7 @@ Acceptance:
 ## Not Complete Yet
 
 DearMe is not release-ready just because these reuse decisions are documented.
-The next meaningful product gain is DM-134, because the mobile navigation and
-focused decision details are now product-safe, but the user still needs a
-durable Brand Team Run Ledger that turns backend work into a clear record of
-team progress and next asks.
+The next meaningful product gain is DM-135, because the mobile navigation,
+focused decision details, and Brand Team Run Ledger are now product-safe, but
+new visitors still need a polished sample proof path before connecting real
+accounts or private sources.

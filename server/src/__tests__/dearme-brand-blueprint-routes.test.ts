@@ -439,6 +439,24 @@ describe("DearMe brand blueprint routes", () => {
           reviewLoop: null,
         },
       ],
+      runLedger: [
+        {
+          id: "ledger:decision:output:issue-1:content_drafts",
+          kind: "needs_decision",
+          role: "content_producer",
+          title: "Your call: Review Content drafts",
+          summary: "Your team prepared this private artifact. Approve the next move only if it represents you.",
+          evidenceLabel: "Prepared output / Content drafts",
+          status: "decision_needed",
+          needsApproval: true,
+          nextAction: "Review it, then approve, request changes, regenerate, or mark it not useful.",
+          relatedOutputId: "issue-1:content_drafts",
+          issueId: "issue-1",
+          issueIdentifier: "PET-1",
+          approvalId: null,
+          createdAt: "2026-05-07T14:00:00.000Z",
+        },
+      ],
       report: null,
       outputs: [],
     });
@@ -451,6 +469,7 @@ describe("DearMe brand blueprint routes", () => {
     expect(res.body.team[0].role).toBe("chief_of_staff");
     expect(res.body.batchDecisions[0].actionLabel).toBe("Review posts");
     expect(res.body.workStream[0].artifact).toBe("Content drafts");
+    expect(res.body.runLedger[0].kind).toBe("needs_decision");
     expect(mockDearMeWorkbenchService.getWorkbench).toHaveBeenCalledWith("company-1");
     expect(mockLogActivity).not.toHaveBeenCalled();
   });

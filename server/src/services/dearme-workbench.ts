@@ -25,6 +25,7 @@ import {
   type DearMeWorkbenchMemory,
   type DearMeWorkbenchProgressItem,
   type DearMeWorkbenchReport,
+  type DearMeWorkbenchRunLedgerEntry,
   type DearMeWorkbenchStreamItem,
   type DearMeWorkbenchTeamMember,
   type DearMeWorkbenchVoiceProfile,
@@ -38,6 +39,7 @@ type DearMeRiskGate = DearMeWorkbenchDecision["riskGate"];
 type DearMeBatchAction = DearMeWorkbenchBatchDecision["action"];
 type DearMeBatchKey = NonNullable<DearMeRiskGate> | "review";
 type DearMeReportDigest = Pick<DearMeWorkbenchReport, "accomplished" | "decisions" | "learnings" | "nextBets">;
+type DearMeRunLedgerKind = DearMeWorkbenchRunLedgerEntry["kind"];
 type DearMeWorkbenchMemorySourcePlan = DearMeWorkbenchMemory["sourcePlan"];
 type DearMeWorkbenchMemorySourceRequirement = DearMeWorkbenchMemorySourcePlan["required"][number];
 type DearMeWorkbenchMemorySourceReviewItem = DearMeWorkbenchMemory["sourceReviewQueue"][number];
@@ -899,6 +901,84 @@ function buildWorkStream(input: {
     .slice(0, 20);
 }
 
+function runLedgerKindForStreamItem(item: DearMeWorkbenchStreamItem): DearMeRunLedgerKind {
+  if (item.kind === "memory_recorded" || item.cycleStage === "learn") return "learned";
+  if (item.kind === "report_ready" || item.status === "ready_for_review" || item.status === "complete") {
+    return "prepared";
+  }
+  if (item.needsApproval || item.kind === "decision_needed") return "needs_decision";
+  return "tried";
+}
+
+function runLedgerEvidenceLabel(item: DearMeWorkbenchStreamItem) {
+  const labels = [item.sourceLabel, item.artifact].filter(Boolean);
+  const base = Array.from(new Set(labels)).join(" / ") || "Team signal";
+  return previewText(item.costImpact ? `${base}: ${item.costImpact}` : base, 220);
+}
+
+function runLedgerEntryFromStream(item: DearMeWorkbenchStreamItem): DearMeWorkbenchRunLedgerEntry {
+  return {
+    id: `ledger:${item.id}`,
+    kind: runLedgerKindForStreamItem(item),
+    role: item.role,
+    title: item.title,
+    summary: item.summary,
+    evidenceLabel: runLedgerEvidenceLabel(item),
+    status: item.status,
+    needsApproval: item.needsApproval,
+    nextAction: item.nextAction,
+    relatedOutputId: item.relatedOutputId,
+    issueId: item.issueId,
+    issueIdentifier: item.issueIdentifier,
+    approvalId: item.approvalId,
+    createdAt: item.createdAt,
+  };
+}
+
+function runLedgerEntryFromMemory(item: DearMeMemoryUpdateItem): DearMeWorkbenchRunLedgerEntry {
+  return {
+    id: `ledger:memory:${item.id}`,
+    kind: "learned",
+    role: "voice_editor",
+    title: item.title ?? `${MEMORY_KIND_LABELS[item.kind]} saved`,
+    summary: item.bodyPreview,
+    evidenceLabel: previewText(item.sourceLabel ?? MEMORY_KIND_LABELS[item.kind], 220),
+    status: "recorded",
+    needsApproval: false,
+    nextAction: "Use this Voice & Memory signal to make the next private cycle more accurate.",
+    relatedOutputId: null,
+    issueId: null,
+    issueIdentifier: null,
+    approvalId: null,
+    createdAt: item.createdAt,
+  };
+}
+
+function buildRunLedger(input: {
+  workStream: DearMeWorkbenchStreamItem[];
+  memory: DearMeWorkbenchMemory;
+}): DearMeWorkbenchRunLedgerEntry[] {
+  const entries = input.workStream.map(runLedgerEntryFromStream);
+
+  if (!entries.some((entry) => entry.kind === "learned")) {
+    const latestMemory = input.memory.latest[0] ?? null;
+    if (latestMemory) {
+      entries.push(runLedgerEntryFromMemory(latestMemory));
+    }
+  }
+
+  const seen = new Set<string>();
+  return entries
+    .filter((entry) => {
+      const key = entry.relatedOutputId ?? entry.approvalId ?? entry.issueId ?? entry.id;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 12);
+}
+
 function latestTimestamp(values: Array<string | null | undefined>) {
   return values
     .filter((value): value is string => Boolean(value))
@@ -1677,6 +1757,7 @@ export function dearmeWorkbenchService(db: Db) {
         decisionsNeeded,
         recentProgress,
       });
+      const runLedger = buildRunLedger({ workStream, memory });
       const actionGraph = buildActionGraph({
         team,
         activeWork,
@@ -1710,6 +1791,7 @@ export function dearmeWorkbenchService(db: Db) {
         batchDecisions,
         recentProgress,
         workStream,
+        runLedger,
         memory,
         report,
         actionGraph,

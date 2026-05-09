@@ -150,6 +150,12 @@ export const DEARME_WORKBENCH_STREAM_STATUSES = [
   "decision_needed",
   "recorded",
 ] as const;
+export const DEARME_WORKBENCH_RUN_LEDGER_KINDS = [
+  "tried",
+  "prepared",
+  "learned",
+  "needs_decision",
+] as const;
 export const DEARME_WORKBENCH_STREAM_KINDS = [
   "cycle_brief",
   "work_in_motion",
@@ -791,6 +797,23 @@ export const dearMeWorkbenchStreamItemSchema = z.object({
   reviewLoop: dearMeOutputReviewLoopSchema.nullable(),
 }).strict();
 
+export const dearMeWorkbenchRunLedgerEntrySchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(DEARME_WORKBENCH_RUN_LEDGER_KINDS),
+  role: z.enum(DEARME_TEAM_ROLES),
+  title: shortTextSchema,
+  summary: mediumTextSchema,
+  evidenceLabel: shortTextSchema,
+  status: z.enum(DEARME_WORKBENCH_STREAM_STATUSES),
+  needsApproval: z.boolean(),
+  nextAction: mediumTextSchema,
+  relatedOutputId: z.string().min(1).nullable(),
+  issueId: z.string().min(1).nullable(),
+  issueIdentifier: z.string().nullable(),
+  approvalId: z.string().min(1).nullable(),
+  createdAt: z.string().datetime(),
+}).strict();
+
 export const dearMeMemoryUpdateItemSchema = z.object({
   id: z.string().min(1),
   kind: z.enum(DEARME_MEMORY_UPDATE_KINDS),
@@ -928,6 +951,7 @@ export const dearMeWorkbenchResponseSchema = z.object({
   batchDecisions: z.array(dearMeWorkbenchBatchDecisionSchema).max(8),
   recentProgress: z.array(dearMeWorkbenchProgressItemSchema),
   workStream: z.array(dearMeWorkbenchStreamItemSchema).max(20),
+  runLedger: z.array(dearMeWorkbenchRunLedgerEntrySchema).max(12),
   memory: dearMeWorkbenchMemorySchema,
   report: dearMeWorkbenchReportSchema.nullable(),
   actionGraph: dearMeActionGraphSchema,
@@ -981,6 +1005,7 @@ export type DearMeWorkbenchDecision = z.infer<typeof dearMeWorkbenchDecisionSche
 export type DearMeWorkbenchProgressItem = z.infer<typeof dearMeWorkbenchProgressItemSchema>;
 export type DearMeWorkbenchReport = z.infer<typeof dearMeWorkbenchReportSchema>;
 export type DearMeWorkbenchMemory = z.infer<typeof dearMeWorkbenchMemorySchema>;
+export type DearMeWorkbenchRunLedgerEntry = z.infer<typeof dearMeWorkbenchRunLedgerEntrySchema>;
 export type DearMeWorkbenchVoiceProfile = z.infer<typeof dearMeWorkbenchVoiceProfileSchema>;
 export type DearMeWorkbenchResponse = z.infer<typeof dearMeWorkbenchResponseSchema>;
 export type DearMeWorkbenchStreamItem = z.infer<typeof dearMeWorkbenchStreamItemSchema>;

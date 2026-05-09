@@ -826,6 +826,40 @@ describe("DearMe brand blueprint contract", () => {
           reviewLoop: null,
         },
       ],
+      runLedger: [
+        {
+          id: "ledger:decision:approval:approval-1",
+          kind: "needs_decision",
+          role: "brand_strategist",
+          title: "Your call: Approve Brand OS for Peter",
+          summary: "Review the first growth-team plan before private work starts.",
+          evidenceLabel: "Approval queue / Brand OS",
+          status: "decision_needed",
+          needsApproval: true,
+          nextAction: "Approve Brand OS only if the first cycle and approval boundaries match how you want to be represented.",
+          relatedOutputId: null,
+          issueId: null,
+          issueIdentifier: null,
+          approvalId: "approval-1",
+          createdAt: "2026-05-07T14:00:00.000Z",
+        },
+        {
+          id: "ledger:memory:memory-1",
+          kind: "learned",
+          role: "voice_editor",
+          title: "Operator note",
+          summary: "Short, direct writing sample.",
+          evidenceLabel: "Manual note",
+          status: "recorded",
+          needsApproval: false,
+          nextAction: "Use this Voice & Memory signal to make the next private cycle more accurate.",
+          relatedOutputId: null,
+          issueId: null,
+          issueIdentifier: null,
+          approvalId: null,
+          createdAt: "2026-05-07T14:00:00.000Z",
+        },
+      ],
       report: {
         title: "Dear me report",
         summary: "The private weekly report.",
@@ -914,6 +948,13 @@ describe("DearMe brand blueprint contract", () => {
       needsApproval: true,
       sourceLabel: "Approval queue",
       nextAction: expect.stringContaining("Approve Brand OS"),
+    }));
+    expect(response.runLedger.map((entry) => entry.kind)).toEqual(
+      expect.arrayContaining(["needs_decision", "learned"]),
+    );
+    expect(response.runLedger[0]).toEqual(expect.objectContaining({
+      evidenceLabel: "Approval queue / Brand OS",
+      needsApproval: true,
     }));
     expect(response.actionGraph.nodes.map((node) => node.kind)).toEqual(
       expect.arrayContaining(["cycle", "decision"]),

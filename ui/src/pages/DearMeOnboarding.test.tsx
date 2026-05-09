@@ -557,6 +557,72 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         reviewLoop: null,
       },
     ],
+    runLedger: [
+      {
+        id: "ledger:decision:output:issue-2:content_drafts",
+        kind: "needs_decision",
+        role: "content_producer",
+        title: "Your call: Review Starter posts",
+        summary: "Three posts are ready for voice review.",
+        evidenceLabel: "Prepared output / Content drafts",
+        status: "decision_needed",
+        needsApproval: true,
+        nextAction: "Review it, then approve, request changes, ask for another pass, or choose a new direction.",
+        relatedOutputId: "issue-2:content_drafts",
+        issueId: "issue-2",
+        issueIdentifier: "PET-8",
+        approvalId: null,
+        createdAt: "2026-05-07T14:00:00.000Z",
+      },
+      {
+        id: "ledger:work:issue-3:opportunity_drafts",
+        kind: "tried",
+        role: "opportunity_scout",
+        title: "Opportunity Scout is working on Opportunity leads",
+        summary: "Warm collaboration and customer leads are being prepared.",
+        evidenceLabel: "Prepared output / Opportunity leads",
+        status: "working",
+        needsApproval: false,
+        nextAction: "Your team is preparing this privately.",
+        relatedOutputId: "issue-3:opportunity_drafts",
+        issueId: "issue-3",
+        issueIdentifier: "PET-9",
+        approvalId: null,
+        createdAt: "2026-05-07T14:00:00.000Z",
+      },
+      {
+        id: "ledger:progress:activity-1",
+        kind: "prepared",
+        role: "chief_of_staff",
+        title: "Growth team created",
+        summary: "DearMe created the team, cycles, and first private work lanes.",
+        evidenceLabel: "Brand OS / Growth team: Work stays inside paid-beta guardrails",
+        status: "recorded",
+        needsApproval: false,
+        nextAction: "Start or steer the first private growth cycle from the Chief of Staff.",
+        relatedOutputId: null,
+        issueId: null,
+        issueIdentifier: null,
+        approvalId: null,
+        createdAt: "2026-05-07T14:00:00.000Z",
+      },
+      {
+        id: "ledger:memory:voice-sample",
+        kind: "learned",
+        role: "voice_editor",
+        title: "Voice memory updated",
+        summary: "Voice Editor learned from one new sample before preparing public-facing drafts.",
+        evidenceLabel: "Voice & Memory / Voice & Memory",
+        status: "recorded",
+        needsApproval: false,
+        nextAction: "Use this Voice & Memory signal to make the next private cycle more accurate.",
+        relatedOutputId: null,
+        issueId: null,
+        issueIdentifier: null,
+        approvalId: null,
+        createdAt: "2026-05-07T14:00:00.000Z",
+      },
+    ],
     report: {
       title: "Dear me report",
       summary: "The private weekly report with completed work, decisions, and next bets.",
@@ -791,6 +857,25 @@ function workbenchResponseWithChiefBrief() {
       },
       ...response.workStream,
     ],
+    runLedger: [
+      {
+        id: "ledger:work:issue-chief-1",
+        kind: "tried",
+        role: "chief_of_staff",
+        title: "Chief of Staff is turning your brief into private work",
+        summary: chiefSummary,
+        evidenceLabel: "Chief of Staff brief / Cycle brief",
+        status: "working",
+        needsApproval: false,
+        nextAction: "Your team is preparing this privately.",
+        relatedOutputId: null,
+        issueId: "issue-chief-1",
+        issueIdentifier: "PET-22",
+        approvalId: null,
+        createdAt: chiefUpdatedAt,
+      },
+      ...response.runLedger,
+    ],
     actionGraph: {
       ...response.actionGraph,
       nodes: [
@@ -919,9 +1004,29 @@ function buttonByText(container: HTMLElement, text: string) {
 }
 
 function surfaceByLabel(container: HTMLElement, label: string) {
-  const surface = container.querySelector(`[aria-label="${label}"]`);
-  expect(surface).not.toBeNull();
+  const surface =
+    [...container.querySelectorAll<HTMLElement>("[aria-label]")].find(
+      (node) => node.getAttribute("aria-label") === label,
+    ) ?? null;
+  if (!surface) {
+    const availableLabels = [...container.querySelectorAll("[aria-label]")]
+      .map((node) => node.getAttribute("aria-label"))
+      .filter(Boolean)
+      .join(", ");
+    throw new Error(`Expected surface "${label}" to exist. Available labels: ${availableLabels}`);
+  }
   return surface as HTMLElement;
+}
+
+function expectSurfacesInOrder(container: HTMLElement, labels: string[]) {
+  const surfaces = labels.map((label) => surfaceByLabel(container, label));
+
+  surfaces.slice(0, -1).forEach((surface, index) => {
+    const nextSurface = surfaces[index + 1];
+    expect(
+      Boolean(surface.compareDocumentPosition(nextSurface) & Node.DOCUMENT_POSITION_FOLLOWING),
+    ).toBe(true);
+  });
 }
 
 function focusedCardsInSurface(container: HTMLElement, label: string) {
@@ -1121,7 +1226,6 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     expect(mockDearmeApi.getWorkbench).toHaveBeenCalledWith("company-1");
-    const pageText = container.textContent ?? "";
     expect(container.textContent).toContain("Brand OS");
     expect(container.textContent).toContain("Your personal brand growth team");
     expect(container.textContent).toContain("Work ready / Decisions needed");
@@ -1142,6 +1246,29 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Spend is visible");
     expect(container.textContent).toContain("Public posts, outbound messages, site changes, new spend");
     expect(container.textContent).toContain("Private spend appears as plain checkpoints and monthly guardrails");
+    expect(container.textContent).toContain("Brand team run ledger");
+    expect(container.textContent).toContain("What your team moved while you were away.");
+    expect(container.textContent).toContain(
+      "A compact record of what the brand team tried, prepared, learned, and now needs from you.",
+    );
+    expect(container.textContent).toContain("Tried");
+    expect(container.textContent).toContain("Prepared");
+    expect(container.textContent).toContain("Learned");
+    expect(container.textContent).toContain("Needs your call");
+    expect(container.textContent).toContain("Evidence");
+    expect(container.textContent).toContain("Next");
+    expect(container.textContent).toContain("Waiting on you");
+    expect(container.textContent).toContain("Voice memory updated");
+    expect(container.querySelector('[aria-label="Brand team run ledger"]')).not.toBeNull();
+    expect(container.querySelector('[data-dearme-run-ledger="brand-team"]')).not.toBeNull();
+    expect(container.querySelector('[data-dearme-run-ledger-bucket="tried"]')).not.toBeNull();
+    expect(container.querySelector('[data-dearme-run-ledger-bucket="prepared"]')).not.toBeNull();
+    expect(container.querySelector('[data-dearme-run-ledger-bucket="learned"]')).not.toBeNull();
+    expect(container.querySelector('[data-dearme-run-ledger-bucket="needs_call"]')).not.toBeNull();
+    expect(container.querySelector('[data-dearme-run-ledger-entry="tried"]')).not.toBeNull();
+    expect(container.querySelector('[data-dearme-run-ledger-entry="prepared"]')).not.toBeNull();
+    expect(container.querySelector('[data-dearme-run-ledger-entry="learned"]')).not.toBeNull();
+    expect(container.querySelector('[data-dearme-run-ledger-entry="needs_decision"]')).not.toBeNull();
     expect(container.textContent).toContain("Growth cycle");
     expect(container.textContent).toContain("Plan, work, review, then learn.");
     expect(container.textContent).toContain("Chief of Staff sets the cycle");
@@ -1187,27 +1314,17 @@ describe("DearMeOnboarding", () => {
         '[aria-label="Work ready"] [data-dearme-action-attention="decision_needed"]',
       ),
     ).not.toBeNull();
-    expect(pageText.indexOf("Today's operating focus")).toBeLessThan(
-      pageText.indexOf("Dear me, your team has decisions ready"),
-    );
-    expect(pageText.indexOf("Dear me, your team has decisions ready")).toBeLessThan(
-      pageText.indexOf("Team operating policy"),
-    );
-    expect(pageText.indexOf("Team operating policy")).toBeLessThan(
-      pageText.indexOf("Growth cycle"),
-    );
-    expect(pageText.indexOf("Growth cycle")).toBeLessThan(
-      pageText.indexOf("Prepared work waiting for review"),
-    );
-    expect(pageText.indexOf("Prepared work waiting for review")).toBeLessThan(
-      pageText.indexOf("High-leverage calls"),
-    );
-    expect(pageText.indexOf("High-leverage calls")).toBeLessThan(
-      pageText.indexOf("Private progress letter"),
-    );
-    expect(pageText.indexOf("Private progress letter")).toBeLessThan(
-      pageText.indexOf("Voice & Memory"),
-    );
+    expectSurfacesInOrder(container, [
+      "Today's brand team focus",
+      "Your brand team today",
+      "Team operating policy",
+      "Brand team run ledger",
+      "Growth cycle plan",
+      "Work ready",
+      "Decisions needed",
+      "Dear me letter",
+      "Voice & Memory",
+    ]);
     expect(container.textContent).toContain("Approve Brand OS for Peter Studio");
     expect(container.textContent).toContain("Batch decisions");
     expect(container.textContent).toContain("Review content batch");

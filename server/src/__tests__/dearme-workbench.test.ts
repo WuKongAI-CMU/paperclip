@@ -680,6 +680,37 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         }),
       ]),
     );
+    expect(result.runLedger).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "needs_decision",
+          role: "content_producer",
+          evidenceLabel: "Prepared output / Content drafts",
+          status: "decision_needed",
+          needsApproval: true,
+          issueId: contentIssueId,
+        }),
+        expect.objectContaining({
+          kind: "prepared",
+          role: "growth_analyst",
+          evidenceLabel: expect.stringContaining("Dear me report"),
+          relatedOutputId: `${reportIssueId}:weekly_report`,
+        }),
+        expect.objectContaining({
+          kind: "learned",
+          role: "voice_editor",
+          evidenceLabel: expect.stringContaining("Voice"),
+          status: "recorded",
+        }),
+        expect.objectContaining({
+          kind: "tried",
+          role: "opportunity_scout",
+          status: "working",
+          needsApproval: false,
+        }),
+      ]),
+    );
+    expect(result.runLedger.length).toBeLessThanOrEqual(12);
     expect(result.actionGraph.cycleNodeId).toBe("cycle:weekly-growth-loop");
     expect(result.actionGraph.nodes).toEqual(
       expect.arrayContaining([
