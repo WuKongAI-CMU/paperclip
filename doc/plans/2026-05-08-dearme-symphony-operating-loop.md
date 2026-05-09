@@ -206,11 +206,14 @@ has already absorbed the DM-102 through DM-125 product spine. Workers must read:
 
 Current bounded worker tickets:
 
-1. `DM-129`: Automation Reliability And Cost Policy.
-2. `DM-130`: Web Shell Polish From Lindy And Littlebird.
+1. `DM-130`: Web Shell Polish From Lindy And Littlebird.
+2. Future `DM-129A`: Backend Automation Policy Projection, only if the current
+   client-side policy panel needs server-owned facts that the workbench cannot
+   derive.
 
 Recently completed:
 
+- `DM-129`: Automation Reliability And Cost Policy.
 - `DM-128`: Focused Decision Review Drawer.
 - `DM-127`: Voice & Memory Source Detail Drawer.
 
@@ -219,7 +222,7 @@ explicitly reopens them. They are now product history, not the active queue.
 
 ## Immediate Next Step
 
-Start with `DM-129` in an isolated worker branch/worktree from the latest
+Start with `DM-130` in an isolated worker branch/worktree from the latest
 integrated DearMe branch. Keep this Goal thread as the coordinator; use Symphony
 or Symphony-like workers only for bounded tickets with explicit donor grounding,
 write scope, protected scope, acceptance, and verification.

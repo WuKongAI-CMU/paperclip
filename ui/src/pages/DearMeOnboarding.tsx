@@ -2187,6 +2187,125 @@ function TeamSummaryPanel({
   );
 }
 
+function TeamOperatingPolicyPanel({
+  workbench,
+  paidBetaActive,
+}: {
+  workbench: DearMeWorkbenchResponse;
+  paidBetaActive: boolean;
+}) {
+  const decisionCount =
+    workbench.decisionsNeeded.length +
+    workbench.batchDecisions.length +
+    workbench.memory.sourceReviewQueue.length;
+  const reviewLoops = [
+    ...workbench.workReady.map((item) => item.reviewLoop),
+    ...workbench.activeWork.map((item) => item.reviewLoop),
+    ...workbench.decisionsNeeded.map((item) => item.reviewLoop),
+    ...workbench.workStream.map((item) => item.reviewLoop),
+  ].filter((loop): loop is DearMeOutputReviewLoop => Boolean(loop));
+  const staleLoopCount = reviewLoops.filter(
+    (loop) => loop.state === "retry_limit_reached" || loop.attemptCount >= loop.maxAttempts,
+  ).length;
+  const maxAttempts = reviewLoops.reduce((largest, loop) => Math.max(largest, loop.maxAttempts), 3);
+  const spendCheckpointCount = workbench.recentProgress.filter(
+    (item) => item.kind === "spend_checkpoint",
+  ).length;
+  const policyLabel = !paidBetaActive
+    ? "Private work locked"
+    : decisionCount > 0
+      ? "Waiting on your call"
+      : staleLoopCount > 0
+        ? "Needs clearer direction"
+        : "Private work can continue";
+  const policyTitle = !paidBetaActive
+    ? "Private work starts after paid beta access is active."
+    : decisionCount > 0
+      ? "Private work can continue, but external moves wait for you."
+      : staleLoopCount > 0
+        ? "The team stops stale loops and asks for better direction."
+        : "The team can keep preparing private work inside your guardrails.";
+  const rules: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    summary: string;
+    signal: string;
+    variant: "default" | "secondary" | "outline" | "destructive";
+  }> = [
+    {
+      key: "private-work",
+      icon: Workflow,
+      label: "Can work privately",
+      summary: paidBetaActive
+        ? "Drafts, lead research, proof packaging, and memory updates can move forward without changing your public surface."
+        : "Paid beta access unlocks private preparation before the team starts new cycles.",
+      signal: paidBetaActive ? "Allowed" : "Locked",
+      variant: paidBetaActive ? "default" : "secondary",
+    },
+    {
+      key: "ask-first",
+      icon: ShieldCheck,
+      label: "Must ask first",
+      summary:
+        "Public posts, outbound messages, site changes, new spend, sensitive claims, and identity changes wait for your decision.",
+      signal: decisionCount > 0 ? pluralizeCount(decisionCount, "call") : "Gate clear",
+      variant: decisionCount > 0 ? "secondary" : "outline",
+    },
+    {
+      key: "stale-loops",
+      icon: RefreshCw,
+      label: "Stops stale loops",
+      summary: staleLoopCount > 0
+        ? "A prepared path has reached its limit, so DearMe needs your direction before spending more effort there."
+        : "If a path repeats without better proof, DearMe brings it back for a decision instead of burning attempts.",
+      signal: staleLoopCount > 0 ? pluralizeCount(staleLoopCount, "loop") : `${maxAttempts}-pass limit`,
+      variant: staleLoopCount > 0 ? "secondary" : "outline",
+    },
+    {
+      key: "spend-clarity",
+      icon: CircleDollarSign,
+      label: "Spend is visible",
+      summary:
+        "Private spend appears as plain checkpoints and monthly guardrails; billing details stay backstage.",
+      signal: spendCheckpointCount > 0 ? pluralizeCount(spendCheckpointCount, "checkpoint") : "No spend yet",
+      variant: spendCheckpointCount > 0 ? "secondary" : "outline",
+    },
+  ];
+
+  return (
+    <DearMePanel aria-label="Team operating policy">
+      <DearMeWorkbenchSectionHeader
+        icon={ShieldCheck}
+        eyebrow="Team operating policy"
+        title={policyTitle}
+        description="DearMe keeps useful private work moving, asks before anything that represents or spends for you, and stops work that needs a clearer call."
+        trailing={<Badge variant={paidBetaActive ? "default" : "secondary"}>{policyLabel}</Badge>}
+      />
+
+      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {rules.map((rule) => {
+          const Icon = rule.icon;
+          return (
+            <DearMeWorkbenchCard
+              key={rule.key}
+              className="p-4"
+              eyebrow={<Badge variant={rule.variant}>{rule.signal}</Badge>}
+              title={rule.label}
+              description={rule.summary}
+              badge={
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground">
+                  <Icon className="h-5 w-5" />
+                </div>
+              }
+            />
+          );
+        })}
+      </div>
+    </DearMePanel>
+  );
+}
+
 function WorkReadyPanel({
   items,
   decisionFocus,
@@ -3865,6 +3984,8 @@ function TeamWorkbenchPanel({
       ) : null}
 
       <TeamSummaryPanel workbench={workbench} paidBetaActive={paidBetaActive} />
+
+      <TeamOperatingPolicyPanel workbench={workbench} paidBetaActive={paidBetaActive} />
 
       <OperatingLoopPanel workbench={workbench} paidBetaActive={paidBetaActive} />
 

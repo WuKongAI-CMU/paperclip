@@ -62,14 +62,40 @@ The right reuse split is:
 | Brand OS / `brand_blueprint` | `packages/shared/src/validators/dearme.ts`; `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/routes/dearme.ts` | Naive `setup_payload` pattern has been adapted into a typed DearMe contract and approval-gated apply flow. | Keep extending this contract only when P0 surfaces need it. |
 | Workbench projection | `server/src/services/dearme-workbench.ts`; `server/src/__tests__/dearme-workbench.test.ts` | Naive/Paperclip tables remain the substrate for team, work, decisions, progress, reports, and memory projections. | Do not add a second runtime; enrich read models first. |
 | Action graph and work stream | `docs/dearme/ACTION-GRAPH-ARCHITECTURE.md`; `packages/shared/src/validators/dearme.ts`; `ui/src/components/dearme/DearMeActionCard.tsx` | Polsia cycle/report choreography plus Lindy action-card grammar are already converging into customer-safe work cards. | Add richer detail panels instead of more tabs. |
-| Output review and decisions | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/pages/DearMeOnboarding.test.tsx`; `server/src/services/dearme-output-handoff.ts`; `server/src/__tests__/dearme-output-handoff.test.ts` | Lindy pending-action shape and Polsia "small number of high-leverage calls" are reused in Work Ready / Decisions Needed. DM-128 now lets focused prepared work be approved, revised, regenerated, or redirected inside the DearMe decision surface while Naive/Paperclip remains the hidden output review substrate. | Watch whether repeated review loops need richer history or policy cues; start DM-129 before adding more autonomous execution. |
+| Output review and decisions | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/pages/DearMeOnboarding.test.tsx`; `server/src/services/dearme-output-handoff.ts`; `server/src/__tests__/dearme-output-handoff.test.ts` | Lindy pending-action shape and Polsia "small number of high-leverage calls" are reused in Work Ready / Decisions Needed. DM-128 now lets focused prepared work be approved, revised, regenerated, or redirected inside the DearMe decision surface while Naive/Paperclip remains the hidden output review substrate. | DM-129 added policy cues; watch whether repeated review loops need richer server-owned failure history after real usage. |
 | Voice & Memory source review | `server/src/services/dearme-workbench.ts`; `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/pages/DearMeOnboarding.test.tsx` | Lindy KnowledgeBase/source-management and slide-out detail patterns are now adapted: private sources become review cards, selected sources open a detail surface, reviewed facts save through the existing memory path, and not-useful sources use the existing retire path. | Watch whether reviewers need richer source history after repeated use; do not add backend shape until the current detail surface proves insufficient. |
 | Weekly report and rituals | `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/services/dearme-workbench.ts` | Polsia report/cycle ritual is adapted into DearMe weekly report and daily team work language. | Add better report explanation and provenance after source drawer exists. |
-| Cost and reliability | Current workbench/cycle projections; Naive cost-event docs; Lindy router/executor evidence | Partially reused. DearMe has cost/progress projection, but not a dedicated model router or circuit breaker policy yet. | DM-129 should adapt Lindy router/executor plus Naive cost attribution into a DearMe automation reliability policy before code. |
+| Cost and reliability | `docs/dearme/AUTOMATION-RELIABILITY-COST-POLICY.md`; `ui/src/pages/DearMeOnboarding.tsx`; current workbench/cycle projections; Naive cost-event docs; Lindy router/executor evidence | DM-129 adapts Polsia task/subscription attribution, Naive pre-invocation budget rails, and Lindy routing/circuit-breaker behavior into a DearMe policy plus a customer-safe workbench panel. | Add backend policy facts only when future autonomous jobs need state that cannot be derived from the current workbench and paid-beta status. |
 | Generated portfolio/site | Existing brand blueprint and optional generated asset layer docs | Naive app/site provisioning remains optional P1/P2, not P0. Polsia personal-brand fork recommends Brand Site Builder, but DearMe first needs review-quality content and proof. | Start only after content/voice/opportunity loop is credible. |
 | Development factory | `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` | Symphony-style worker queue is useful for bounded tickets after coordinator updates the queue. | Workers must use this ledger and `BUILD-STATE.md` before selecting old tickets. |
 
 ## Recently Completed
+
+### DM-129: Automation Reliability And Cost Policy
+
+Goal: define and surface the rules for when DearMe can keep private work
+moving, when it must ask, when it must stop trying, and how spend is shown.
+
+Donor grounding:
+
+- Polsia `task`/subscription attribution, async 202 execution, and repeated
+  build-cycle pattern.
+- Naive/Paperclip cost events, pre-invocation budget blocks, work/run/document
+  review state, and CEO/worker split as hidden architecture.
+- Lindy `router.py` and `executor.py` for rule-based effort routing,
+  max-turn budgets, consecutive-failure circuit breaking, and recovery
+  learning.
+
+Completed:
+
+- Added `docs/dearme/AUTOMATION-RELIABILITY-COST-POLICY.md` as the accepted
+  DM-129 policy.
+- Added a DearMe-native `Team operating policy` workbench panel that derives
+  from existing workbench, review-loop, spend checkpoint, and paid-beta state.
+- The customer surface now explains private run permission, ask-first gates,
+  stale-loop stops, and spend visibility without exposing donor/runtime terms.
+- No backend route, database table, model-routing service, budget-service
+  rewrite, or donor service transplant was added.
 
 ### DM-128: Focused Decision Review Drawer
 
@@ -131,32 +157,6 @@ Completed:
 
 ## Current Worker Queue
 
-### DM-129: Automation Reliability And Cost Policy
-
-Goal: turn Lindy/Naive cost and reliability primitives into a DearMe policy and
-small implementation plan before adding more autonomous jobs.
-
-Donor grounding:
-
-- Lindy `router.py` for cheap/expensive model routing.
-- Lindy `executor.py` for consecutive-failure circuit breaker and learning
-  after recovery.
-- Naive architecture docs for cost events, budget rails, CEO/worker split, and
-  prompt-cache economics.
-- Polsia source dive for `task`/subscription cost attribution and async 202
-  execution.
-
-Expected write scope:
-
-- Docs first under `docs/dearme/`.
-- Code only in a follow-up ticket after the policy is accepted by the repo
-  architecture.
-
-Acceptance:
-
-- Defines when DearMe can auto-run, when it must ask, when it must stop
-  retrying, and how cost attribution is shown to users.
-
 ### DM-130: Web Shell Polish From Lindy And Littlebird
 
 Goal: improve the customer web shell after source/decision detail behavior is
@@ -188,6 +188,8 @@ Acceptance:
 ## Not Complete Yet
 
 DearMe is not release-ready just because these reuse decisions are documented.
-The next meaningful product gain is DM-129, because prepared-work review now
-has a DearMe-native surface and the next risk is how autonomous work retries,
-spends, pauses, and explains cost before it scales.
+The next meaningful product gain is DM-130, because source review, focused
+decisions, and the initial operating policy now have DearMe-native surfaces.
+The next pass should make the web shell feel more premium and coherent by
+borrowing Lindy/Littlebird interaction polish without exposing donor/runtime
+language.

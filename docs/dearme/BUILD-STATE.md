@@ -2,6 +2,57 @@
 
 Date: 2026-05-09
 
+## DM-129 Automation Reliability And Cost Policy - 2026-05-09
+
+Implementation slice:
+
+- Added `docs/dearme/AUTOMATION-RELIABILITY-COST-POLICY.md` as the accepted
+  policy for can-run, ask-first, stop-trying, and spend-display behavior.
+- Added a customer-facing `Team operating policy` panel to the DearMe
+  workbench.
+- The panel derives its state from existing paid-beta access, workbench
+  decisions, review-loop attempts, and spend checkpoints rather than adding a
+  new backend contract.
+- Kept backend routes, database tables, budget services, model routing, and
+  runtime services unchanged for this slice.
+
+Donor reuse:
+
+- Polsia supplies the pattern for async customer-visible execution and
+  task/subscription-level cost attribution.
+- Naive/Paperclip supplies the hidden pre-invocation budget block, cost-event
+  ledger, and work/run/document review substrate.
+- Lindy supplies the policy shape for effort routing, max-turn discipline,
+  consecutive-failure circuit breaking, and recovery learning.
+
+Rejected:
+
+- Rejected importing Polsia scheduling code or relying on in-process timers as
+  DearMe's reliability boundary.
+- Rejected copying Naive/Paperclip admin language, raw cost ledger details, or
+  provider/model controls into the DearMe customer surface.
+- Rejected transplanting Lindy's Python executor or adding a new backend model
+  router before the product policy was visible and test-covered.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 1 file, 34 tests.
+- `pnpm -r typecheck` passed across the workspace.
+- `pnpm build` passed with the existing Vite dynamic/static import and chunk
+  size warnings only.
+- `git diff --check` passed.
+- Customer-surface hidden-term scan over touched DearMe UI/shared paths found
+  no new substrate terms after filtering code-only package/test identifiers.
+- `pnpm check:tokens` remains blocked by existing historical tracked
+  documentation/test hits outside this slice.
+
+Next:
+
+- Run `DM-130`: Web Shell Polish From Lindy And Littlebird, now that source
+  detail, focused decisions, and team operating policy are visible in the
+  workbench.
+
 ## DM-128 Focused Decision Review Drawer - 2026-05-09
 
 Implementation slice:

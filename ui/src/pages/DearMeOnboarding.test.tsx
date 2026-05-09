@@ -1109,6 +1109,14 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Work ready / Decisions needed");
     expect(container.textContent).toContain("Your brand team today");
     expect(container.textContent).toContain("Dear me, your team has decisions ready");
+    expect(container.textContent).toContain("Team operating policy");
+    expect(container.textContent).toContain("Private work can continue, but external moves wait for you.");
+    expect(container.textContent).toContain("Can work privately");
+    expect(container.textContent).toContain("Must ask first");
+    expect(container.textContent).toContain("Stops stale loops");
+    expect(container.textContent).toContain("Spend is visible");
+    expect(container.textContent).toContain("Public posts, outbound messages, site changes, new spend");
+    expect(container.textContent).toContain("Private spend appears as plain checkpoints and monthly guardrails");
     expect(container.textContent).toContain("Growth cycle");
     expect(container.textContent).toContain("Plan, work, review, then learn.");
     expect(container.textContent).toContain("Chief of Staff sets the cycle");
@@ -1155,6 +1163,9 @@ describe("DearMeOnboarding", () => {
       ),
     ).not.toBeNull();
     expect(pageText.indexOf("Dear me, your team has decisions ready")).toBeLessThan(
+      pageText.indexOf("Team operating policy"),
+    );
+    expect(pageText.indexOf("Team operating policy")).toBeLessThan(
       pageText.indexOf("Growth cycle"),
     );
     expect(pageText.indexOf("Growth cycle")).toBeLessThan(
