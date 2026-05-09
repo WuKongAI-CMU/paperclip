@@ -10,6 +10,7 @@ import {
   describeDearMePaidBetaEntitlement,
   evaluateDearMeVoiceGate,
   summarizeDearMeBrandBlueprint,
+  type DearMeOutputReviewLoop,
 } from "@paperclipai/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DearMeOnboarding } from "./DearMeOnboarding";
@@ -155,6 +156,26 @@ function paidBetaStatus(status: "trial" | "active") {
   };
 }
 
+function reviewLoopFixture(
+  state: DearMeOutputReviewLoop["state"] = "fresh",
+  nextStep = state === "needs_user_review"
+    ? "Review it, then approve, request changes, regenerate, or mark it not useful."
+    : "Your team is preparing this privately.",
+  overrides: Partial<DearMeOutputReviewLoop> = {},
+): DearMeOutputReviewLoop {
+  return {
+    state,
+    attemptCount: 0,
+    maxAttempts: 3,
+    isRetriable: true,
+    lastAction: null,
+    lastDecisionAt: null,
+    lastDecisionNotePreview: null,
+    nextStep,
+    ...overrides,
+  };
+}
+
 function workbenchResponse() {
   return {
     companyId: "company-1",
@@ -187,6 +208,7 @@ function workbenchResponse() {
         issueId: "issue-3",
         issueIdentifier: "PET-9",
         updatedAt: "2026-05-07T14:00:00.000Z",
+        reviewLoop: reviewLoopFixture(),
       },
     ],
     workReady: [
@@ -200,6 +222,7 @@ function workbenchResponse() {
         issueId: "issue-1",
         issueIdentifier: "PET-7",
         updatedAt: "2026-05-07T14:00:00.000Z",
+        reviewLoop: reviewLoopFixture("needs_user_review"),
       },
       {
         id: "issue-2:content_drafts",
@@ -211,6 +234,7 @@ function workbenchResponse() {
         issueId: "issue-2",
         issueIdentifier: "PET-8",
         updatedAt: "2026-05-07T14:00:00.000Z",
+        reviewLoop: reviewLoopFixture("needs_user_review"),
       },
     ],
     decisionsNeeded: [
@@ -226,6 +250,7 @@ function workbenchResponse() {
         issueId: null,
         issueIdentifier: null,
         updatedAt: "2026-05-07T14:00:00.000Z",
+        reviewLoop: null,
       },
     ],
     batchDecisions: [
@@ -311,6 +336,7 @@ function workbenchResponse() {
         issueId: "issue-2",
         issueIdentifier: "PET-8",
         createdAt: "2026-05-07T14:00:00.000Z",
+        reviewLoop: reviewLoopFixture("needs_user_review"),
       },
       {
         id: "work:issue-3:opportunity_drafts",
@@ -324,6 +350,7 @@ function workbenchResponse() {
         issueId: "issue-3",
         issueIdentifier: "PET-9",
         createdAt: "2026-05-07T14:00:00.000Z",
+        reviewLoop: reviewLoopFixture(),
       },
       {
         id: "progress:activity-1",
@@ -337,6 +364,7 @@ function workbenchResponse() {
         issueId: null,
         issueIdentifier: null,
         createdAt: "2026-05-07T14:00:00.000Z",
+        reviewLoop: null,
       },
     ],
     report: {
@@ -500,6 +528,99 @@ function workbenchResponse() {
   };
 }
 
+function workbenchResponseWithChiefBrief() {
+  const response = workbenchResponse();
+  const chiefUpdatedAt = "2026-05-07T16:30:00.000Z";
+  const chiefSummary =
+    "Chief of Staff accepted this private brief and is turning it into the next reviewable move. Public moves still wait for approval.";
+  const roleNodes = [
+    ["role:chief_of_staff", "Chief of Staff", "Coordinating today's brand growth plan and the next decisions."],
+    ["role:brand_strategist", "Brand Strategist", "Keeping positioning, audience, proof, and offers aligned."],
+    ["role:voice_editor", "Voice Editor", "Checking that private drafts sound like the user before review."],
+    ["role:opportunity_scout", "Opportunity Scout", "Looking for relevant leads, collaborations, and outreach angles."],
+    ["role:portfolio_builder", "Portfolio Builder", "Preparing portfolio and proof-card updates for review."],
+    ["role:growth_analyst", "Growth Analyst", "Summarizing progress, signals, decisions, and next bets."],
+  ].map(([id, label, summary]) => ({
+    id,
+    kind: "role",
+    label,
+    summary,
+    role: id.replace("role:", ""),
+    status: "Working",
+    source: "team",
+    relatedOutputId: null,
+    issueId: null,
+    approvalId: null,
+    updatedAt: chiefUpdatedAt,
+  }));
+
+  return {
+    ...response,
+    activeWork: [
+      {
+        id: "issue-chief-1",
+        title: "Chief of Staff brief: Plan next moves - Launch positioning changed",
+        summary: chiefSummary,
+        status: "queued",
+        ownerRole: "chief_of_staff",
+        outputKind: null,
+        issueId: "issue-chief-1",
+        issueIdentifier: "PET-22",
+        updatedAt: chiefUpdatedAt,
+        reviewLoop: reviewLoopFixture(),
+      },
+      ...response.activeWork,
+    ],
+    workStream: [
+      {
+        id: "work:issue-chief-1",
+        role: "chief_of_staff",
+        title: "Chief of Staff is turning your brief into private work",
+        summary: chiefSummary,
+        artifact: "Cycle brief",
+        status: "working",
+        needsApproval: false,
+        relatedOutputId: null,
+        issueId: "issue-chief-1",
+        issueIdentifier: "PET-22",
+        createdAt: chiefUpdatedAt,
+        reviewLoop: reviewLoopFixture(),
+      },
+      ...response.workStream,
+    ],
+    actionGraph: {
+      ...response.actionGraph,
+      nodes: [
+        ...roleNodes,
+        {
+          id: "work:issue-chief-1",
+          kind: "work_item",
+          label: "Chief of Staff brief: Plan next moves - Launch positioning changed",
+          summary: chiefSummary,
+          role: "chief_of_staff",
+          status: "queued",
+          source: "work",
+          relatedOutputId: null,
+          issueId: "issue-chief-1",
+          approvalId: null,
+          updatedAt: chiefUpdatedAt,
+        },
+        ...response.actionGraph.nodes,
+      ],
+      edges: [
+        {
+          id: "owns:role:chief_of_staff->work:issue-chief-1",
+          kind: "owns",
+          fromNodeId: "role:chief_of_staff",
+          toNodeId: "work:issue-chief-1",
+          label: "owns",
+        },
+        ...response.actionGraph.edges,
+      ],
+    },
+  };
+}
+
 function outputsResponse() {
   return {
     companyId: "company-1",
@@ -529,6 +650,7 @@ function outputsResponse() {
         ],
         workProducts: [],
         latestUpdate: null,
+        reviewLoop: reviewLoopFixture("needs_user_review"),
         details: [
           {
             kind: "completed_work",
@@ -632,7 +754,19 @@ describe("DearMeOnboarding", () => {
         bodyPreview: "DearMe decision: regenerate this prepared work before review.",
         createdAt: "2026-05-07T14:05:00.000Z",
       },
-      output: outputsResponse().outputs[0],
+      output: {
+        ...outputsResponse().outputs[0],
+        reviewLoop: reviewLoopFixture(
+          "regeneration_requested",
+          "Your team has your direction and should prepare another version.",
+          {
+            attemptCount: 1,
+            lastAction: "regenerate",
+            lastDecisionAt: "2026-05-07T14:05:00.000Z",
+            lastDecisionNotePreview: "Make it sharper before review.",
+          },
+        ),
+      },
     });
     mockApprovalsApi.approve.mockResolvedValue({
       id: "approval-ready",
@@ -712,6 +846,8 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Prepared work waiting for review");
     expect(container.textContent).toContain("Why it matters");
     expect(container.textContent).toContain("Your next step");
+    expect(container.textContent).toContain("Review loop 0/3");
+    expect(container.textContent).toContain("Needs your review");
     expect(container.textContent).toContain("Open it, then approve, request changes, regenerate, or mark it not useful.");
     expect(pageText.indexOf("Dear me, your team has decisions ready")).toBeLessThan(
       pageText.indexOf("Growth cycle"),
@@ -1094,6 +1230,9 @@ describe("DearMeOnboarding", () => {
 
   it("sends a Chief of Staff brief without exposing the work queue substrate", async () => {
     mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
+    mockDearmeApi.getWorkbench
+      .mockResolvedValueOnce(workbenchResponse())
+      .mockResolvedValueOnce(workbenchResponseWithChiefBrief());
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -1131,6 +1270,12 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Brief sent");
     expect(container.textContent).toContain("will prepare the next private move for review");
     expect(container.textContent).toContain("Open private work");
+    await flushReact();
+    expect(container.textContent).toContain("Chief of Staff is turning your brief into private work");
+    expect(container.textContent).toContain("Cycle brief");
+    expect(container.textContent).toContain("Chief of Staff brief: Plan next moves");
+    expect(container.textContent).not.toContain("dearme_chief_of_staff_message");
+    expect(container.textContent).not.toContain("issue-chief-1");
 
     await act(async () => {
       buttonByText(container, "Open private work")?.click();
@@ -1459,6 +1604,8 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Dear me report");
     expect(container.textContent).toContain("Completed work: refreshed positioning");
     expect(container.textContent).toContain("Review one public claim before publishing");
+    expect(container.textContent).toContain("Review loop 0/3");
+    expect(container.textContent).toContain("Needs your review");
     expect(container.textContent).toContain("1 private reference prepared");
     expect(container.textContent).not.toContain("/issues/");
 

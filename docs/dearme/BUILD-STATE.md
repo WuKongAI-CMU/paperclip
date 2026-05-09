@@ -2,6 +2,42 @@
 
 Date: 2026-05-09
 
+## DM-106 Review Loop State - 2026-05-09
+
+Implementation slice:
+
+- Projected accepted Chief of Staff briefs into the paid-beta workbench as
+  visible active work, work-stream events, and action-graph work nodes.
+- Reused the existing Naive/Paperclip issue substrate by selecting
+  `dearme_chief_of_staff_message` origin issues instead of adding a DearMe-only
+  table, queue, or runtime.
+- Preserved Polsia-style visible autonomy by showing that Chief of Staff has
+  turned the brief into private work, while keeping origin kinds, issue ids, and
+  raw substrate language out of customer text.
+- Added a shared review-loop contract to prepared outputs, workbench work items,
+  decisions, and stream events so the UI can show attempts, current review
+  state, next step, and the last decision note without inventing local UI state.
+- Reused Lindy-style action-card grammar for the review loop badges and
+  next-step surfaces, and reordered the action graph so work and decisions are
+  visible before role background cards.
+- Filtered the raw Chief of Staff message activity out of generic recent
+  progress to avoid duplicate "progress recorded" entries for the same brief.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-output-handoff.test.ts server/src/__tests__/dearme-workbench.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 4 files, 37 tests.
+- `pnpm -r typecheck` passed.
+- `git diff --check` passed.
+- Browser-plugin default in-app backend was unavailable in this Codex session,
+  and the available Chrome backend opened the page but timed out while reading
+  DOM/screenshot evidence. Playwright fallback passed on
+  `http://127.0.0.1:3100/DEAAAAA/dearme` for desktop `1440x920` and mobile
+  `390x844`: page title `Team · DearMe · DearMe`, DearMe / Chief of Staff /
+  Review loop / Team work stream visible, no framework overlay, no console or
+  page errors, and the `Prepare content batch` control updated the Chief brief
+  textarea.
+
 ## Branch Integration Checkpoint - 2026-05-09
 
 Integration slice:

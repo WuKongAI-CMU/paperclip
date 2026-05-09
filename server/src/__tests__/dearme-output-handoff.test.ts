@@ -353,6 +353,13 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     expect(contentOutput.status).toBe("ready_for_review");
     expect(contentOutput.isReviewable).toBe(true);
     expect(contentOutput.latestUpdate?.bodyPreview).toContain("Prepared a private content batch");
+    expect(contentOutput.reviewLoop).toEqual(expect.objectContaining({
+      state: "needs_user_review",
+      attemptCount: 0,
+      maxAttempts: 3,
+      isRetriable: true,
+      lastAction: null,
+    }));
     expect(contentOutput.details).toEqual(expect.arrayContaining([
       expect.objectContaining({ kind: "channel", value: "LinkedIn" }),
       expect.objectContaining({ kind: "hook", value: expect.stringContaining("personal brand") }),
@@ -434,6 +441,14 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     expect(result.status).toBe("recorded");
     expect(result.action).toBe("approve");
     expect(result.output.status).toBe("complete");
+    expect(result.output.reviewLoop).toEqual(expect.objectContaining({
+      state: "approved",
+      attemptCount: 0,
+      maxAttempts: 3,
+      isRetriable: false,
+      lastAction: "approve",
+      lastDecisionNotePreview: "This sounds like me.",
+    }));
     expect(result.wakeIssue).toBeNull();
     expect(result.comment.bodyPreview).toContain("approved");
 
@@ -500,6 +515,16 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
 
     expect(result.status).toBe("queued");
     expect(result.action).toBe("regenerate");
+    expect(result.output.reviewLoop).toEqual(expect.objectContaining({
+      state: "regeneration_requested",
+      attemptCount: 1,
+      maxAttempts: 3,
+      isRetriable: true,
+      lastAction: "regenerate",
+      lastDecisionNotePreview: "Please prepare a new version for review.",
+    }));
+    expect(result.output.reviewLoop.lastDecisionAt).toEqual(expect.any(String));
+    expect(result.output.reviewLoop.nextStep).toContain("another version");
     expect(result.wakeIssue).toEqual({ id: issueId, assigneeAgentId: agentId, status: "todo" });
     expect(result.comment.bodyPreview).toContain("regenerate");
 

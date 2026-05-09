@@ -73,6 +73,15 @@ export const DEARME_OUTPUT_REVIEW_ACTIONS = [
   "regenerate",
   "not_useful",
 ] as const;
+export const DEARME_OUTPUT_REVIEW_LOOP_STATES = [
+  "fresh",
+  "needs_user_review",
+  "revision_requested",
+  "regeneration_requested",
+  "not_useful",
+  "approved",
+  "retry_limit_reached",
+] as const;
 export const DEARME_OUTPUT_REVIEW_RESULT_STATUSES = [
   "recorded",
   "queued",
@@ -556,6 +565,17 @@ export const dearMeOutputUpdateSchema = z.object({
   createdAt: z.string().datetime(),
 }).strict();
 
+export const dearMeOutputReviewLoopSchema = z.object({
+  state: z.enum(DEARME_OUTPUT_REVIEW_LOOP_STATES),
+  attemptCount: z.number().int().min(0).max(99),
+  maxAttempts: z.number().int().min(1).max(10),
+  isRetriable: z.boolean(),
+  lastAction: z.enum(DEARME_OUTPUT_REVIEW_ACTIONS).nullable(),
+  lastDecisionAt: z.string().datetime().nullable(),
+  lastDecisionNotePreview: mediumTextSchema.nullable(),
+  nextStep: mediumTextSchema,
+}).strict();
+
 export const dearMeOutputDetailSchema = z.object({
   kind: z.enum(DEARME_OUTPUT_DETAIL_KINDS),
   label: shortTextSchema,
@@ -578,6 +598,7 @@ export const dearMeOutputItemSchema = z.object({
   documents: z.array(dearMeOutputDocumentSchema),
   workProducts: z.array(dearMeOutputWorkProductSchema),
   latestUpdate: dearMeOutputUpdateSchema.nullable(),
+  reviewLoop: dearMeOutputReviewLoopSchema,
   details: z.array(dearMeOutputDetailSchema).max(12),
 }).strict();
 
@@ -621,6 +642,7 @@ export const dearMeWorkbenchWorkItemSchema = z.object({
   issueId: z.string().min(1).nullable(),
   issueIdentifier: z.string().nullable(),
   updatedAt: z.string().datetime(),
+  reviewLoop: dearMeOutputReviewLoopSchema,
 }).strict();
 
 export const dearMeWorkbenchDecisionSchema = z.object({
@@ -635,6 +657,7 @@ export const dearMeWorkbenchDecisionSchema = z.object({
   issueId: z.string().min(1).nullable(),
   issueIdentifier: z.string().nullable(),
   updatedAt: z.string().datetime(),
+  reviewLoop: dearMeOutputReviewLoopSchema.nullable(),
 }).strict();
 
 export const dearMeWorkbenchBatchDecisionSchema = z.object({
@@ -671,6 +694,7 @@ export const dearMeWorkbenchStreamItemSchema = z.object({
   issueId: z.string().min(1).nullable(),
   issueIdentifier: z.string().nullable(),
   createdAt: z.string().datetime(),
+  reviewLoop: dearMeOutputReviewLoopSchema.nullable(),
 }).strict();
 
 export const dearMeMemoryUpdateItemSchema = z.object({
@@ -793,6 +817,7 @@ export type DearMeOutputDocument = z.infer<typeof dearMeOutputDocumentSchema>;
 export type DearMeOutputItem = z.infer<typeof dearMeOutputItemSchema>;
 export type DearMeOutputKind = z.infer<typeof dearMeOutputItemSchema>["kind"];
 export type DearMeOutputReviewAction = z.infer<typeof dearMeOutputReviewRequestSchema>["action"];
+export type DearMeOutputReviewLoop = z.infer<typeof dearMeOutputReviewLoopSchema>;
 export type DearMeOutputReviewRequest = z.infer<typeof dearMeOutputReviewRequestSchema>;
 export type DearMeOutputReviewResult = z.infer<typeof dearMeOutputReviewResultSchema>;
 export type DearMeOutputStatus = z.infer<typeof dearMeOutputItemSchema>["status"];

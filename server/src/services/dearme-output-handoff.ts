@@ -11,6 +11,7 @@ import {
   type DearMeOutputItem,
   type DearMeOutputKind,
   type DearMeOutputReviewAction,
+  type DearMeOutputReviewLoop,
   type DearMeOutputReviewRequest,
   type DearMeOutputReviewResult,
   type DearMeOutputStatus,
@@ -55,8 +56,14 @@ type OutputDetailText = {
   source: DearMeOutputDetail["source"];
 };
 
+type DearMeReviewComment = {
+  body: string;
+  createdAt: Date;
+};
+
 const BRAND_OS_FINGERPRINT = "brand-os-review";
 const VOICE_OPERATION_FINGERPRINT = "operation-seed_voice_profile";
+const DEARME_OUTPUT_REVIEW_LOOP_MAX_ATTEMPTS = 3;
 const outputKindSet = new Set<string>(DEARME_OUTPUT_KINDS);
 
 const OPERATION_DESCRIPTORS: Record<string, OutputDescriptor> = {
@@ -203,6 +210,93 @@ function latestUpdateByIssue(rows: Array<DearMeOutputUpdate & { issueId: string 
     }
   }
   return grouped;
+}
+
+function parseReviewAction(body: string): DearMeOutputReviewAction | null {
+  const normalized = body.toLowerCase();
+  if (normalized.startsWith("dearme decision: approved this prepared work.")) return "approve";
+  if (normalized.startsWith("dearme decision: requested changes before this represents me.")) return "request_changes";
+  if (normalized.startsWith("dearme decision: regenerate this prepared work before review.")) return "regenerate";
+  if (normalized.startsWith("dearme decision: marked this prepared work as not useful.")) return "not_useful";
+  return null;
+}
+
+function reviewDecisionNotePreview(body: string) {
+  const [, ...parts] = body.split(/\n\n/);
+  return plainPreview(parts.join("\n\n"), 240) || null;
+}
+
+function reviewLoopNextStep(state: DearMeOutputReviewLoop["state"]) {
+  switch (state) {
+    case "fresh":
+      return "Your team is preparing this privately.";
+    case "needs_user_review":
+      return "Review it, then approve, request changes, regenerate, or mark it not useful.";
+    case "revision_requested":
+      return "Your team has your note and should prepare a revised version.";
+    case "regeneration_requested":
+      return "Your team has your direction and should prepare another version.";
+    case "not_useful":
+      return "Your team should avoid this angle and try a different route next.";
+    case "approved":
+      return "Approved work is recorded as something that can represent you.";
+    case "retry_limit_reached":
+      return "Pause regeneration and give a clearer direction before spending another attempt.";
+  }
+}
+
+function buildReviewLoop(input: {
+  status: DearMeOutputStatus;
+  reviewComments: DearMeReviewComment[];
+}): DearMeOutputReviewLoop {
+  const decisions = input.reviewComments
+    .map((comment) => {
+      const action = parseReviewAction(comment.body);
+      if (!action) return null;
+      return {
+        action,
+        createdAt: comment.createdAt,
+        notePreview: reviewDecisionNotePreview(comment.body),
+      };
+    })
+    .filter((decision): decision is {
+      action: DearMeOutputReviewAction;
+      createdAt: Date;
+      notePreview: string | null;
+    } => Boolean(decision))
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  const lastDecision = decisions[0] ?? null;
+  const attemptCount = decisions.filter((decision) => decision.action !== "approve").length;
+  let state: DearMeOutputReviewLoop["state"];
+
+  if (!lastDecision) {
+    state = input.status === "ready_for_review" || input.status === "complete"
+      ? "needs_user_review"
+      : "fresh";
+  } else if (lastDecision.action === "approve") {
+    state = "approved";
+  } else if (attemptCount >= DEARME_OUTPUT_REVIEW_LOOP_MAX_ATTEMPTS) {
+    state = "retry_limit_reached";
+  } else if (lastDecision.action === "request_changes") {
+    state = "revision_requested";
+  } else if (lastDecision.action === "regenerate") {
+    state = "regeneration_requested";
+  } else {
+    state = "not_useful";
+  }
+
+  return {
+    state,
+    attemptCount,
+    maxAttempts: DEARME_OUTPUT_REVIEW_LOOP_MAX_ATTEMPTS,
+    isRetriable: !["blocked", "cancelled"].includes(input.status) &&
+      state !== "approved" &&
+      state !== "retry_limit_reached",
+    lastAction: lastDecision?.action ?? null,
+    lastDecisionAt: lastDecision ? toIso(lastDecision.createdAt) : null,
+    lastDecisionNotePreview: lastDecision?.notePreview ?? null,
+    nextStep: reviewLoopNextStep(state),
+  };
 }
 
 function filterDocuments(
@@ -371,6 +465,7 @@ function buildOutputItem(input: {
   documents: DearMeOutputDocument[];
   workProducts: DearMeOutputWorkProduct[];
   latestUpdate: DearMeOutputUpdate | null;
+  reviewComments: DearMeReviewComment[];
 }) {
   const hasProducedArtifact =
     input.documents.length > 0 ||
@@ -393,6 +488,10 @@ function buildOutputItem(input: {
     documents: input.documents,
     workProducts: input.workProducts,
     latestUpdate: input.latestUpdate,
+    reviewLoop: buildReviewLoop({
+      status,
+      reviewComments: input.reviewComments,
+    }),
     details: buildOutputDetails({
       descriptor: input.descriptor,
       documents: input.documents,
@@ -407,6 +506,7 @@ function buildOutputItems(input: {
   documentsByIssue: Map<string, DearMeOutputDocument[]>;
   workProductsByIssue: Map<string, DearMeOutputWorkProduct[]>;
   latestUpdateByIssue: Map<string, DearMeOutputUpdate>;
+  reviewCommentsByIssue: Map<string, DearMeReviewComment[]>;
 }) {
   const byFingerprint = new Map(input.issues.map((issue) => [issue.originFingerprint, issue]));
   const items: Array<DearMeOutputItem & { order: number }> = [];
@@ -425,6 +525,7 @@ function buildOutputItems(input: {
           documents: documentsForIssue,
           workProducts: input.workProductsByIssue.get(brandOsIssue.id) ?? [],
           latestUpdate: input.latestUpdateByIssue.get(brandOsIssue.id) ?? null,
+          reviewComments: input.reviewCommentsByIssue.get(brandOsIssue.id) ?? [],
         }),
         order: descriptor.order,
       });
@@ -439,6 +540,7 @@ function buildOutputItems(input: {
           documents: input.documentsByIssue.get(voiceIssue.id) ?? [],
           workProducts: input.workProductsByIssue.get(voiceIssue.id) ?? [],
           latestUpdate: input.latestUpdateByIssue.get(voiceIssue.id) ?? null,
+          reviewComments: input.reviewCommentsByIssue.get(voiceIssue.id) ?? [],
         }),
         order: VOICE_DESCRIPTOR.order,
       });
@@ -455,6 +557,7 @@ function buildOutputItems(input: {
         documents: input.documentsByIssue.get(issue.id) ?? [],
         workProducts: input.workProductsByIssue.get(issue.id) ?? [],
         latestUpdate: input.latestUpdateByIssue.get(issue.id) ?? null,
+        reviewComments: input.reviewCommentsByIssue.get(issue.id) ?? [],
       }),
       order: descriptor.order,
     });
@@ -532,7 +635,7 @@ export function dearmeOutputHandoffService(db: Db) {
       }
 
       const issueIds = issueRows.map((issue) => issue.id);
-      const [documentRows, workProductRows, commentRows] = await Promise.all([
+      const [documentRows, workProductRows, commentRows, reviewCommentRows] = await Promise.all([
         db
           .select({
             id: documents.id,
@@ -583,6 +686,18 @@ export function dearmeOutputHandoffService(db: Db) {
             isNotNull(issueComments.authorAgentId),
           ))
           .orderBy(desc(issueComments.createdAt)),
+        db
+          .select({
+            issueId: issueComments.issueId,
+            body: issueComments.body,
+            createdAt: issueComments.createdAt,
+          })
+          .from(issueComments)
+          .where(and(
+            eq(issueComments.companyId, companyId),
+            inArray(issueComments.issueId, issueIds),
+          ))
+          .orderBy(desc(issueComments.createdAt)),
       ]);
 
       const documentsByIssue = groupPayloadByIssue(
@@ -624,6 +739,17 @@ export function dearmeOutputHandoffService(db: Db) {
           createdAt: toIso(comment.createdAt),
         })),
       );
+      const reviewCommentsByIssue = groupPayloadByIssue(
+        reviewCommentRows
+          .filter((comment) => parseReviewAction(comment.body))
+          .map((comment) => ({
+            issueId: comment.issueId,
+            payload: {
+              body: comment.body,
+              createdAt: comment.createdAt,
+            },
+          })),
+      );
 
       return dearMeOutputsResponseSchema.parse({
         companyId,
@@ -632,6 +758,7 @@ export function dearmeOutputHandoffService(db: Db) {
           documentsByIssue,
           workProductsByIssue,
           latestUpdateByIssue: updatesByIssue,
+          reviewCommentsByIssue,
         }),
       });
     },

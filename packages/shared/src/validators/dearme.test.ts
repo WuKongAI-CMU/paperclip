@@ -21,7 +21,22 @@ import {
   describeDearMePaidBetaEntitlement,
   evaluateDearMeVoiceGate,
   summarizeDearMeBrandBlueprint,
+  type DearMeOutputReviewLoop,
 } from "./dearme.js";
+
+function reviewLoop(overrides: Partial<DearMeOutputReviewLoop> = {}): DearMeOutputReviewLoop {
+  return {
+    state: "needs_user_review",
+    attemptCount: 0,
+    maxAttempts: 3,
+    isRetriable: true,
+    lastAction: null,
+    lastDecisionAt: null,
+    lastDecisionNotePreview: null,
+    nextStep: "Review it, then approve, request changes, regenerate, or mark it not useful.",
+    ...overrides,
+  };
+}
 
 describe("DearMe brand blueprint contract", () => {
   it("creates a Brand OS blueprint with team roles, gates, and executable operations", () => {
@@ -403,6 +418,7 @@ describe("DearMe brand blueprint contract", () => {
             bodyPreview: "Prepared the weekly report.",
             createdAt: "2026-05-07T14:00:00.000Z",
           },
+          reviewLoop: reviewLoop(),
           details: [
             {
               kind: "completed_work",
@@ -512,6 +528,14 @@ describe("DearMe brand blueprint contract", () => {
             },
           ],
           latestUpdate: null,
+          reviewLoop: reviewLoop({
+            state: "regeneration_requested",
+            attemptCount: 1,
+            lastAction: "regenerate",
+            lastDecisionAt: "2026-05-07T14:00:00.000Z",
+            lastDecisionNotePreview: "Make it sharper.",
+            nextStep: "Your team has your direction and should prepare another version.",
+          }),
           details: [],
         },
       ],
@@ -576,6 +600,7 @@ describe("DearMe brand blueprint contract", () => {
           issueId: "issue-2",
           issueIdentifier: "PET-8",
           updatedAt: "2026-05-07T14:00:00.000Z",
+          reviewLoop: reviewLoop({ state: "fresh", nextStep: "Your team is preparing this privately." }),
         },
       ],
       workReady: [
@@ -589,6 +614,7 @@ describe("DearMe brand blueprint contract", () => {
           issueId: "issue-1",
           issueIdentifier: "PET-7",
           updatedAt: "2026-05-07T14:00:00.000Z",
+          reviewLoop: reviewLoop(),
         },
       ],
       decisionsNeeded: [
@@ -604,6 +630,7 @@ describe("DearMe brand blueprint contract", () => {
           issueId: null,
           issueIdentifier: null,
           updatedAt: "2026-05-07T14:00:00.000Z",
+          reviewLoop: null,
         },
       ],
       batchDecisions: [
@@ -676,6 +703,7 @@ describe("DearMe brand blueprint contract", () => {
           issueId: null,
           issueIdentifier: null,
           createdAt: "2026-05-07T14:00:00.000Z",
+          reviewLoop: null,
         },
       ],
       report: {

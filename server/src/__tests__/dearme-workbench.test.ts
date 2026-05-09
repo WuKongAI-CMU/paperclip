@@ -20,6 +20,8 @@ import {
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "../services/dearme-brand-blueprint-apply.js";
 import { dearmeWorkbenchService } from "../services/dearme-workbench.js";
 
+const DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND = "dearme_chief_of_staff_message";
+
 const embeddedPostgresSupport = await getEmbeddedPostgresTestSupport();
 const describeEmbeddedPostgres = embeddedPostgresSupport.supported ? describe : describe.skip;
 
@@ -95,6 +97,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     originFingerprint: string;
     status: string;
     updatedAt: Date;
+    originKind?: string;
     assigneeAgentId?: string | null;
   }) {
     const issueId = randomUUID();
@@ -104,7 +107,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
       title: input.title,
       status: input.status,
       identifier: input.identifier,
-      originKind: DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
+      originKind: input.originKind ?? DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
       originFingerprint: input.originFingerprint,
       updatedAt: input.updatedAt,
       assigneeAgentId: input.assigneeAgentId ?? null,
@@ -196,6 +199,16 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
       updatedAt: new Date("2026-05-07T16:00:00.000Z"),
       assigneeAgentId: chiefOfStaffId,
     });
+    const chiefBriefIssueId = await seedIssue({
+      companyId,
+      title: "DearMe: Find opportunities - Find practical opportunities this week",
+      identifier: "WB-5",
+      originKind: DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND,
+      originFingerprint: "chief-brief-1",
+      status: "todo",
+      updatedAt: new Date("2026-05-07T16:30:00.000Z"),
+      assigneeAgentId: chiefOfStaffId,
+    });
 
     await attachDocument({
       companyId,
@@ -275,6 +288,16 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         companyId,
         actorType: "user",
         actorId: "user-1",
+        action: "dearme.chief_of_staff_message",
+        entityType: "issue",
+        entityId: chiefBriefIssueId,
+        createdAt: new Date("2026-05-07T16:45:00.000Z"),
+      },
+      {
+        id: randomUUID(),
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
         action: "dearme.memory_updated",
         entityType: "dearme_memory",
         entityId: "memory-voice-1",
@@ -337,6 +360,23 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
       status: "Standing by",
     }));
     expect(result.activeWork.map((item) => item.outputKind)).toContain("opportunity_drafts");
+    expect(result.activeWork).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: chiefBriefIssueId,
+          title: expect.stringContaining("Chief of Staff brief: Find opportunities"),
+          status: "queued",
+          ownerRole: "chief_of_staff",
+          outputKind: null,
+          issueId: chiefBriefIssueId,
+          issueIdentifier: "WB-5",
+          reviewLoop: expect.objectContaining({
+            state: "fresh",
+            nextStep: expect.stringContaining("Chief of Staff is preparing this privately"),
+          }),
+        }),
+      ]),
+    );
     expect(result.workReady.map((item) => item.outputKind)).toEqual(
       expect.arrayContaining(["brand_os", "voice_profile", "content_drafts", "weekly_report"]),
     );
@@ -378,6 +418,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         }),
       ]),
     );
+    expect(result.recentProgress.map((item) => item.title)).not.toContain("Team progress recorded");
     expect(result.memory).toEqual(expect.objectContaining({
       sourceCount: 2,
       voiceSampleCount: 1,
@@ -400,6 +441,20 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     }));
     expect(result.workStream).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({
+          role: "chief_of_staff",
+          title: "Chief of Staff is turning your brief into private work",
+          artifact: "Cycle brief",
+          status: "working",
+          needsApproval: false,
+          relatedOutputId: null,
+          issueId: chiefBriefIssueId,
+          issueIdentifier: "WB-5",
+          reviewLoop: expect.objectContaining({
+            state: "fresh",
+            nextStep: expect.stringContaining("Chief of Staff is preparing this privately"),
+          }),
+        }),
         expect.objectContaining({
           role: "content_producer",
           artifact: "Content drafts",
@@ -430,6 +485,13 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
       expect.arrayContaining([
         expect.objectContaining({ id: "cycle:weekly-growth-loop", kind: "cycle", status: "decisions_needed" }),
         expect.objectContaining({ kind: "role", role: "content_producer", label: "Content Producer" }),
+        expect.objectContaining({
+          kind: "work_item",
+          role: "chief_of_staff",
+          relatedOutputId: null,
+          issueId: chiefBriefIssueId,
+          label: expect.stringContaining("Chief of Staff brief"),
+        }),
         expect.objectContaining({ kind: "artifact", role: "content_producer", relatedOutputId: `${contentIssueId}:content_drafts` }),
         expect.objectContaining({ kind: "decision", role: "content_producer", issueId: contentIssueId }),
         expect.objectContaining({ kind: "guardrail", label: "Review content batch" }),
@@ -453,5 +515,6 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     expect(customerPathJson).not.toContain("provider");
     expect(customerPathJson).not.toContain("setup_payload");
     expect(customerPathJson).not.toContain("Paperclip");
+    expect(customerPathJson).not.toContain(DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND);
   });
 });

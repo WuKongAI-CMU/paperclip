@@ -1,6 +1,6 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
-import { activityLog, agents, approvals } from "@paperclipai/db";
+import { activityLog, agents, approvals, issues } from "@paperclipai/db";
 import {
   DEARME_MEMORY_UPDATE_KINDS,
   DEARME_TEAM_ROLES,
@@ -33,6 +33,8 @@ type DearMeBatchKey = NonNullable<DearMeRiskGate> | "review";
 const TEAM_ROLE_ORDER = new Map(DEARME_TEAM_ROLES.map((role, index) => [role, index]));
 const MEMORY_KIND_SET = new Set<string>(DEARME_MEMORY_UPDATE_KINDS);
 const DEARME_MEMORY_UPDATED_ACTION = "dearme.memory_updated";
+const DEARME_CHIEF_OF_STAFF_MESSAGE_ACTION = "dearme.chief_of_staff_message";
+const DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND = "dearme_chief_of_staff_message";
 const DEARME_ACTION_GRAPH_CYCLE_NODE_ID = "cycle:weekly-growth-loop";
 const DEARME_ACTION_GRAPH_FALLBACK_UPDATED_AT = "1970-01-01T00:00:00.000Z";
 
@@ -198,6 +200,61 @@ function workItemFromOutput(output: DearMeOutputItem): DearMeWorkbenchWorkItem {
     issueId: output.issueId,
     issueIdentifier: output.issueIdentifier,
     updatedAt: output.updatedAt,
+    reviewLoop: output.reviewLoop,
+  };
+}
+
+function statusFromChiefBriefIssue(status: string): DearMeWorkbenchWorkItem["status"] {
+  if (status === "done") return "complete";
+  if (status === "cancelled") return "cancelled";
+  if (status === "blocked") return "blocked";
+  if (status === "in_review") return "ready_for_review";
+  if (status === "in_progress") return "working";
+  return "queued";
+}
+
+function reviewLoopFromChiefBriefStatus(
+  status: DearMeWorkbenchWorkItem["status"],
+): DearMeWorkbenchWorkItem["reviewLoop"] {
+  const needsReview = status === "ready_for_review" || status === "complete";
+  return {
+    state: needsReview ? "needs_user_review" : "fresh",
+    attemptCount: 0,
+    maxAttempts: 3,
+    isRetriable: !["blocked", "cancelled"].includes(status),
+    lastAction: null,
+    lastDecisionAt: null,
+    lastDecisionNotePreview: null,
+    nextStep: needsReview
+      ? "Review the prepared private move, then approve, request changes, regenerate, or mark it not useful."
+      : "Chief of Staff is preparing this privately before it asks for a public or external move.",
+  };
+}
+
+function titleFromChiefBriefIssue(title: string) {
+  const briefTitle = title.replace(/^DearMe:\s*/i, "").trim() || "Private growth brief";
+  return previewText(`Chief of Staff brief: ${briefTitle}`, 180);
+}
+
+function workItemFromChiefBriefIssue(input: {
+  id: string;
+  title: string;
+  status: string;
+  identifier: string | null;
+  updatedAt: Date;
+}): DearMeWorkbenchWorkItem {
+  const status = statusFromChiefBriefIssue(input.status);
+  return {
+    id: input.id,
+    title: titleFromChiefBriefIssue(input.title),
+    summary: "Chief of Staff accepted this private brief and is turning it into the next reviewable move. Public moves still wait for approval.",
+    status,
+    ownerRole: "chief_of_staff",
+    outputKind: null,
+    issueId: input.id,
+    issueIdentifier: input.identifier,
+    updatedAt: toIso(input.updatedAt),
+    reviewLoop: reviewLoopFromChiefBriefStatus(status),
   };
 }
 
@@ -215,23 +272,31 @@ function artifactForDecision(decision: DearMeWorkbenchDecision) {
 
 function streamItemFromWork(item: DearMeWorkbenchWorkItem): DearMeWorkbenchStreamItem {
   const role = item.ownerRole;
-  const artifact = item.outputKind ? OUTPUT_KIND_ARTIFACT_LABELS[item.outputKind] : "Prepared work";
+  const isChiefBrief = !item.outputKind && role === "chief_of_staff";
+  const artifact = item.outputKind
+    ? OUTPUT_KIND_ARTIFACT_LABELS[item.outputKind]
+    : isChiefBrief
+      ? "Cycle brief"
+      : "Prepared work";
   const isReady = item.status === "ready_for_review";
 
   return {
     id: `work:${item.id}`,
     role,
-    title: isReady
-      ? `${TEAM_ROLE_PUBLIC_LABELS[role]} prepared ${item.title}`
-      : `${TEAM_ROLE_PUBLIC_LABELS[role]} is working on ${item.title}`,
+    title: isChiefBrief
+      ? "Chief of Staff is turning your brief into private work"
+      : isReady
+        ? `${TEAM_ROLE_PUBLIC_LABELS[role]} prepared ${item.title}`
+        : `${TEAM_ROLE_PUBLIC_LABELS[role]} is working on ${item.title}`,
     summary: item.summary,
     artifact,
     status: item.status === "queued" ? "working" : item.status,
     needsApproval: isReady,
-    relatedOutputId: item.id,
+    relatedOutputId: item.outputKind ? item.id : null,
     issueId: item.issueId,
     issueIdentifier: item.issueIdentifier,
     createdAt: item.updatedAt,
+    reviewLoop: item.reviewLoop,
   };
 }
 
@@ -250,6 +315,7 @@ function streamItemFromDecision(decision: DearMeWorkbenchDecision): DearMeWorkbe
     issueId: decision.issueId,
     issueIdentifier: decision.issueIdentifier,
     createdAt: decision.updatedAt,
+    reviewLoop: decision.reviewLoop,
   };
 }
 
@@ -267,6 +333,7 @@ function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbe
       issueId: null,
       issueIdentifier: null,
       createdAt: item.createdAt,
+      reviewLoop: null,
     };
   }
 
@@ -282,6 +349,7 @@ function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbe
     issueId: null,
     issueIdentifier: null,
     createdAt: item.createdAt,
+    reviewLoop: null,
   };
 }
 
@@ -434,7 +502,6 @@ function buildActionGraph(input: {
   const nodes = new Map<string, DearMeActionGraphNode>();
   const edges = new Map<string, DearMeActionGraphEdge>();
   const allWork = [...input.activeWork, ...input.workReady];
-  const workByOutputId = new Map(allWork.map((item) => [item.id, item]));
   const teamByRole = new Map(input.team.map((member) => [member.role, member]));
   const latestUpdatedAt = latestTimestamp([
     ...input.team.map((member) => member.lastActiveAt),
@@ -530,7 +597,7 @@ function buildActionGraph(input: {
       role: item.ownerRole,
       status: item.status,
       source: "work",
-      relatedOutputId: item.id,
+      relatedOutputId: item.outputKind ? item.id : null,
       issueId: item.issueId,
       approvalId: null,
       updatedAt: item.updatedAt,
@@ -701,6 +768,7 @@ function decisionFromOutput(output: DearMeOutputItem): DearMeWorkbenchDecision {
     issueId: output.issueId,
     issueIdentifier: output.issueIdentifier,
     updatedAt: output.updatedAt,
+    reviewLoop: output.reviewLoop,
   };
 }
 
@@ -729,6 +797,7 @@ function decisionFromApproval(input: {
     issueId: null,
     issueIdentifier: null,
     updatedAt: toIso(input.updatedAt),
+    reviewLoop: null,
   };
 }
 
@@ -882,7 +951,7 @@ export function dearmeWorkbenchService(db: Db) {
   return {
     getWorkbench: async (companyId: string) => {
       const outputsResponse = await outputHandoff.listOutputs(companyId);
-      const [agentRows, approvalRows, activityRows, memoryRows] = await Promise.all([
+      const [agentRows, approvalRows, activityRows, memoryRows, chiefBriefRows] = await Promise.all([
         db
           .select({
             name: agents.name,
@@ -927,6 +996,22 @@ export function dearmeWorkbenchService(db: Db) {
           .where(and(eq(activityLog.companyId, companyId), eq(activityLog.action, DEARME_MEMORY_UPDATED_ACTION)))
           .orderBy(desc(activityLog.createdAt))
           .limit(12),
+        db
+          .select({
+            id: issues.id,
+            title: issues.title,
+            status: issues.status,
+            identifier: issues.identifier,
+            updatedAt: issues.updatedAt,
+          })
+          .from(issues)
+          .where(and(
+            eq(issues.companyId, companyId),
+            eq(issues.originKind, DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND),
+            isNull(issues.hiddenAt),
+          ))
+          .orderBy(desc(issues.updatedAt))
+          .limit(12),
       ]);
 
       const teamByRole = new Map<DearMeTeamRole, DearMeWorkbenchTeamMember>();
@@ -955,9 +1040,15 @@ export function dearmeWorkbenchService(db: Db) {
         .sort((a, b) => TEAM_ROLE_ORDER.get(a.role)! - TEAM_ROLE_ORDER.get(b.role)!);
 
       const outputs = outputsResponse.outputs;
-      const activeWork = outputs
+      const activeOutputWork = outputs
         .filter((output) => !output.isReviewable && !["complete", "cancelled"].includes(output.status))
         .map(workItemFromOutput);
+      const chiefBriefWork = chiefBriefRows
+        .map(workItemFromChiefBriefIssue)
+        .filter((item) => !["complete", "cancelled"].includes(item.status));
+      const activeWork = [...chiefBriefWork, ...activeOutputWork]
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+        .slice(0, 20);
       const workReady = outputs
         .filter((output) => output.isReviewable)
         .map(workItemFromOutput);
@@ -979,7 +1070,9 @@ export function dearmeWorkbenchService(db: Db) {
         .slice(0, 12);
       const batchDecisions = buildBatchDecisions(decisionsNeeded);
       const recentProgress = activityRows
-        .filter((activity) => activity.action.startsWith("dearme."))
+        .filter((activity) =>
+          activity.action.startsWith("dearme.") &&
+          activity.action !== DEARME_CHIEF_OF_STAFF_MESSAGE_ACTION)
         .map(progressFromActivity)
         .slice(0, 5);
       const latestMemory = memoryRows

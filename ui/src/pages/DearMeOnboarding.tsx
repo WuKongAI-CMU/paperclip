@@ -16,6 +16,7 @@ import {
   type DearMeMemoryUpdateResult,
   type DearMeOutputItem,
   type DearMeOutputReviewAction,
+  type DearMeOutputReviewLoop,
   type DearMeOutputStatus,
   type DearMePaidBetaStatus,
   type DearMeVoiceGateResult,
@@ -438,6 +439,58 @@ function outputStatusVariant(status: DearMeOutputStatus) {
   return "secondary" as const;
 }
 
+const REVIEW_LOOP_STATE_LABELS: Record<DearMeOutputReviewLoop["state"], string> = {
+  fresh: "Preparing privately",
+  needs_user_review: "Needs your review",
+  revision_requested: "Changes requested",
+  regeneration_requested: "Regeneration available",
+  not_useful: "New direction needed",
+  approved: "Approved",
+  retry_limit_reached: "Needs clearer direction",
+};
+
+function reviewLoopLabel(loop: DearMeOutputReviewLoop) {
+  return `Review loop ${loop.attemptCount}/${loop.maxAttempts}`;
+}
+
+function reviewLoopStateLabel(loop: DearMeOutputReviewLoop) {
+  return REVIEW_LOOP_STATE_LABELS[loop.state];
+}
+
+function reviewLoopVariant(loop: DearMeOutputReviewLoop) {
+  if (loop.state === "approved") return "default" as const;
+  if (loop.state === "retry_limit_reached" || loop.state === "not_useful") return "destructive" as const;
+  if (loop.state === "fresh" || loop.state === "needs_user_review") return "outline" as const;
+  return "secondary" as const;
+}
+
+function ReviewLoopBadges({ loop }: { loop: DearMeOutputReviewLoop }) {
+  return (
+    <>
+      <Badge variant="outline">{reviewLoopLabel(loop)}</Badge>
+      <Badge variant={reviewLoopVariant(loop)}>{reviewLoopStateLabel(loop)}</Badge>
+    </>
+  );
+}
+
+function ReviewLoopNextStep({
+  loop,
+  className,
+}: {
+  loop: DearMeOutputReviewLoop;
+  className?: string;
+}) {
+  return (
+    <div className={cn("rounded-md border border-border bg-background/80 p-3", className)}>
+      <p className="text-xs font-medium text-muted-foreground">Team loop</p>
+      <p className="mt-1 text-sm text-foreground/85">{loop.nextStep}</p>
+      {loop.lastDecisionNotePreview ? (
+        <p className="mt-2 text-xs text-muted-foreground">Last call: {loop.lastDecisionNotePreview}</p>
+      ) : null}
+    </div>
+  );
+}
+
 const VOICE_GATE_STATUS_LABELS: Record<DearMeVoiceGateResult["status"], string> = {
   ready_for_review: "Ready for review",
   needs_voice_review: "Needs voice review",
@@ -508,13 +561,13 @@ const ACTION_GRAPH_KIND_ICONS: Record<DearMeActionGraphNode["kind"], LucideIcon>
 
 const ACTION_GRAPH_KIND_ORDER: Record<DearMeActionGraphNode["kind"], number> = {
   cycle: 0,
-  role: 1,
+  decision: 1,
   work_item: 2,
   artifact: 3,
-  decision: 4,
-  guardrail: 5,
-  memory_signal: 6,
-  report: 7,
+  guardrail: 4,
+  memory_signal: 5,
+  report: 6,
+  role: 7,
 };
 
 function titleizeStatus(value: string) {
@@ -1078,6 +1131,7 @@ function FocusedDecisionPanel({
               <Badge variant={decision.riskGate ? "secondary" : "outline"}>
                 {decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval"}
               </Badge>
+              {decision.reviewLoop ? <ReviewLoopBadges loop={decision.reviewLoop} /> : null}
               <Badge variant="outline">Updated {shortDate(decision.updatedAt)}</Badge>
             </div>
           }
@@ -1091,7 +1145,9 @@ function FocusedDecisionPanel({
           </div>
           <div className="rounded-md border border-border bg-background/80 p-3">
             <p className="text-xs font-medium text-muted-foreground">State</p>
-            <p className="mt-1 text-sm">{decision.status === "pending" ? "Waiting for your call" : "Ready for review"}</p>
+            <p className="mt-1 text-sm">
+              {decision.reviewLoop ? reviewLoopStateLabel(decision.reviewLoop) : decision.status === "pending" ? "Waiting for your call" : "Ready for review"}
+            </p>
           </div>
           <div className="rounded-md border border-border bg-background/80 p-3">
             <p className="text-xs font-medium text-muted-foreground">Trust boundary</p>
@@ -1222,11 +1278,15 @@ function FocusedDecisionPanel({
           title={workItem.title}
           description={workItem.summary}
           trailing={
-            <Badge variant={outputStatusVariant(workItem.status)}>
-              {OUTPUT_STATUS_LABELS[workItem.status]}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={outputStatusVariant(workItem.status)}>
+                {OUTPUT_STATUS_LABELS[workItem.status]}
+              </Badge>
+              <ReviewLoopBadges loop={workItem.reviewLoop} />
+            </div>
           }
         />
+        <ReviewLoopNextStep loop={workItem.reviewLoop} className="mt-4" />
         <div className="mt-4 flex items-center justify-between gap-3">
           <span className="text-xs text-muted-foreground">Prepared by {roleLabel(workItem.ownerRole)}</span>
           <Button type="button" size="sm" variant="outline" onClick={() => onOpenWorkItem(workItem)}>
@@ -1288,6 +1348,7 @@ function FocusedOutputPanel({
             <Badge variant={outputStatusVariant(output.status)}>
               {OUTPUT_STATUS_LABELS[output.status]}
             </Badge>
+            <ReviewLoopBadges loop={output.reviewLoop} />
           </div>
         }
       />
@@ -1308,6 +1369,8 @@ function FocusedOutputPanel({
           ))}
         </DearMeEvidenceGrid>
       ) : null}
+
+      <ReviewLoopNextStep loop={output.reviewLoop} className="mt-4" />
 
       <div className="mt-4 rounded-md border border-border bg-background/80 p-3">
         <FieldLabel
@@ -1476,6 +1539,7 @@ function WorkReadyPanel({
                     <Badge variant={outputStatusVariant(item.status)}>
                       {OUTPUT_STATUS_LABELS[item.status]}
                     </Badge>
+                    <ReviewLoopBadges loop={item.reviewLoop} />
                     <Badge variant="outline">{OUTPUT_KIND_LABELS[outputKind]}</Badge>
                   </div>
                 }
@@ -1504,7 +1568,8 @@ function WorkReadyPanel({
                   </div>
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">Your next step</p>
-                    <p className="mt-1 text-sm text-foreground/85">{workReadyNextStepLabel(item.status)}</p>
+                    <p className="mt-1 text-sm text-foreground/85">{item.reviewLoop.nextStep}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{workReadyNextStepLabel(item.status)}</p>
                   </div>
                 </DearMeEvidenceGrid>
               </DearMeWorkbenchCard>
@@ -1611,9 +1676,12 @@ function DecisionsNeededPanel({
               title={decision.title}
               description={decision.summary}
               badge={
-                <Badge variant={decision.riskGate ? "secondary" : "outline"}>
-                  {decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval"}
-                </Badge>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <Badge variant={decision.riskGate ? "secondary" : "outline"}>
+                    {decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval"}
+                  </Badge>
+                  {decision.reviewLoop ? <ReviewLoopBadges loop={decision.reviewLoop} /> : null}
+                </div>
               }
               footer={`Updated ${shortDate(decision.updatedAt)}`}
               action={
@@ -1641,7 +1709,14 @@ function DecisionsNeededPanel({
                 </div>
                 <div className="rounded-md border border-border bg-background/80 p-3">
                   <p className="text-xs font-medium text-muted-foreground">After your call</p>
-                  <p className="mt-1 text-sm text-foreground/85">{decisionAfterCallLabel(decision.riskGate)}</p>
+                  <p className="mt-1 text-sm text-foreground/85">
+                    {decision.reviewLoop?.nextStep ?? decisionAfterCallLabel(decision.riskGate)}
+                  </p>
+                  {decision.reviewLoop?.lastDecisionNotePreview ? (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Last call: {decision.reviewLoop.lastDecisionNotePreview}
+                    </p>
+                  ) : null}
                 </div>
               </DearMeEvidenceGrid>
             </DearMeWorkbenchCard>
@@ -1957,9 +2032,12 @@ function LiveTeamFeedPanel({
             title={item.title}
             description={item.summary}
             badge={
-              <Badge variant={item.needsApproval ? "secondary" : "outline"}>
-                {WORKSTREAM_STATUS_LABELS[item.status]}
-              </Badge>
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                <Badge variant={item.needsApproval ? "secondary" : "outline"}>
+                  {WORKSTREAM_STATUS_LABELS[item.status]}
+                </Badge>
+                {item.reviewLoop ? <ReviewLoopBadges loop={item.reviewLoop} /> : null}
+              </div>
             }
           >
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -1967,6 +2045,9 @@ function LiveTeamFeedPanel({
               {item.needsApproval ? <Badge variant="default">Decision ready</Badge> : null}
               <span>{shortDate(item.createdAt)}</span>
             </div>
+            {item.reviewLoop ? (
+              <p className="mt-3 text-xs text-muted-foreground">{item.reviewLoop.nextStep}</p>
+            ) : null}
           </DearMeWorkbenchCard>
         ))}
       </div>
@@ -2943,9 +3024,12 @@ function PrivateWorkPanel({
                   title={output.title}
                   description={output.summary}
                   badge={
-                    <Badge variant={outputStatusVariant(output.status)}>
-                      {OUTPUT_STATUS_LABELS[output.status]}
-                    </Badge>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <Badge variant={outputStatusVariant(output.status)}>
+                        {OUTPUT_STATUS_LABELS[output.status]}
+                      </Badge>
+                      <ReviewLoopBadges loop={output.reviewLoop} />
+                    </div>
                   }
                   footer={footer}
                   action={
@@ -2965,6 +3049,10 @@ function PrivateWorkPanel({
                   ) : (
                     <p className="text-sm text-muted-foreground">Waiting for the first private draft.</p>
                   )}
+
+                  <p className="mt-3 rounded-md border border-border bg-background/80 p-2 text-xs text-muted-foreground">
+                    {output.reviewLoop.nextStep}
+                  </p>
 
                   {details.length > 0 ? (
                     <dl className="mt-3 space-y-2 border-t border-border pt-3">
