@@ -55,6 +55,11 @@ result.
 - `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
   passed: 1 file, 34 tests.
 - `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm -r typecheck` passed across the workspace.
+- `pnpm test:run` passed across the workspace after the DM-135 integration.
+- `pnpm build` passed. Vite still reports the existing non-blocking
+  `MarkdownEditor.tsx` mixed dynamic/static import warning and large chunk
+  warnings, but the build completed successfully.
 - `git diff --check` passed.
 - Customer-surface hidden-term scan over `ui/src/pages/DearMeOnboarding.tsx`
   returned no matches.

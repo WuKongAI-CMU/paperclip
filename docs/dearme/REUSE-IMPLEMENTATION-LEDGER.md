@@ -119,6 +119,7 @@ Completed:
 - Added focused UI coverage for the approval boundary.
 - Verified the slice on desktop and mobile browser viewports without
   donor/runtime language leaking into the customer path.
+- After integration, reran full workspace typecheck, test, and build gates.
 
 ### DM-134: Brand Team Run Ledger
 
@@ -331,15 +332,17 @@ Completed:
 
 ## Current Worker Queue
 
-### DM-135: First-Run Sample Team Proof
+### DM-136: Sample/Demo Proof Path
 
-Goal: make a new visitor understand DearMe before connecting real channels by
-showing a polished sample brand-team cycle and proof outputs.
+Goal: make a new visitor understand DearMe before entering personal positioning
+or connecting real channels by showing a polished sample brand-team package and
+proof outputs.
 
 Donor grounding:
 
 - Polsia 90-second wow and public proof loop.
-- Naive/Paperclip sample workbench seed paths, if available.
+- Naive/Paperclip first-cycle preview and sample workbench seed paths, if
+  available.
 - Lindy polished empty/sample states.
 - DearMe personal-brand semantics for content, opportunity, portfolio, voice,
   and weekly letter progress.
@@ -368,7 +371,7 @@ Acceptance:
 ## Not Complete Yet
 
 DearMe is not release-ready just because these reuse decisions are documented.
-The next meaningful product gain is DM-135, because the mobile navigation,
-focused decision details, and Brand Team Run Ledger are now product-safe, but
-new visitors still need a polished sample proof path before connecting real
-accounts or private sources.
+The next meaningful product gain is DM-136, because the first-run generated
+package is now approval-gated and product-safe, but new visitors still need a
+polished sample proof path before entering personal positioning, connecting real
+accounts, or private sources.
