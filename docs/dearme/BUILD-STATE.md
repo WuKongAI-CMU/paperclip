@@ -2,6 +2,61 @@
 
 Date: 2026-05-09
 
+## DM-133 Mobile Decision Detail Polish - 2026-05-09
+
+Implementation slice:
+
+- Made focused decision and prepared-work review controls mobile-first.
+- Added stable mobile action-group markers for approval review and prepared
+  work review controls.
+- Gave focused decision surfaces extra mobile bottom padding so primary review
+  actions do not sit under the DearMe bottom nav.
+- Kept the existing review, approval, continuation, route, API, and desktop
+  behavior unchanged.
+
+Donor reuse:
+
+- Lindy supplies the detail-surface pattern: review actions should stay inside
+  the focused item instead of sending users into a broad dashboard.
+- Littlebird supplies the mobile ergonomics rule: primary actions become full
+  width on phone and compact again on larger screens.
+- Polsia supplies the decision rhythm: keep the user close to the few calls
+  that matter.
+- Naive/Paperclip remains the hidden output-review and approval substrate.
+
+Rejected:
+
+- Rejected adding a second mobile drawer or route; the focused decision surface
+  already owns this flow.
+- Rejected changing backend review contracts or approval semantics for a
+  responsive layout problem.
+- Rejected exposing raw work-state or donor runtime terms in the decision
+  surface.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 1 file, 34 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check` passed.
+- Customer-surface hidden-term scan over the touched DearMe onboarding file
+  returned no matches.
+- Playwright mobile `390x844` on `/dearme?view=decisions` passed with no
+  horizontal overflow, no framework overlay, and empty console error/warn
+  logs.
+- Playwright mobile `390x844` on a live focused approval decision passed with
+  focused-surface bottom padding, an `approval-review` mobile action group,
+  full-width phone buttons, no horizontal overflow, no framework overlay, and
+  empty console error/warn logs.
+- Screenshot evidence: `/tmp/dearme-dm133-mobile-decisions-after.png` and
+  `/tmp/dearme-dm133-mobile-review-now-after.png`.
+
+Next:
+
+- Continue with Brand Team Run Ledger: turn Polsia-style live progress into a
+  DearMe-safe record of what the team tried, prepared, learned, and needs from
+  the user.
+
 ## DM-132 Mobile Shell Navigation Polish - 2026-05-09
 
 Implementation slice:

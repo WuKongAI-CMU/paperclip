@@ -930,6 +930,24 @@ function focusedCardsInSurface(container: HTMLElement, label: string) {
   ] as HTMLElement[];
 }
 
+function expectMobileSafeFocusedDecision(surface: HTMLElement, actionGroupName: string) {
+  expect(surface.className).toContain("pb-24");
+  expect(surface.className).toContain("sm:pb-5");
+
+  const actionGroup = surface.querySelector(
+    `[data-dearme-mobile-action-group="${actionGroupName}"]`,
+  ) as HTMLElement | null;
+  expect(actionGroup).not.toBeNull();
+  expect(actionGroup?.className).toContain("grid");
+
+  const actionButtons = [...(actionGroup?.querySelectorAll("button") ?? [])] as HTMLButtonElement[];
+  expect(actionButtons.length).toBeGreaterThan(1);
+  actionButtons.forEach((button) => {
+    expect(button.className).toContain("w-full");
+    expect(button.className).toContain("sm:w-auto");
+  });
+}
+
 describe("DearMeOnboarding", () => {
   let container: HTMLDivElement;
 
@@ -2091,6 +2109,7 @@ describe("DearMeOnboarding", () => {
     expect(focusedDecision.textContent).toContain("Request changes");
     expect(focusedDecision.textContent).toContain("Prepare another pass");
     expect(focusedDecision.textContent).toContain("Choose new direction");
+    expectMobileSafeFocusedDecision(focusedDecision, "prepared-work-review");
 
     await act(async () => {
       setTextareaValue(
@@ -2135,6 +2154,7 @@ describe("DearMeOnboarding", () => {
     expect(focusedDecision.textContent).toContain("Work focused");
     expect(focusedDecision.textContent).toContain("Dear me report");
     expect(focusedDecision.textContent).toContain("What should your team do next?");
+    expectMobileSafeFocusedDecision(focusedDecision, "prepared-work-review");
     expect(focusedCardsInSurface(container, "Work ready").some((card) =>
       card.textContent?.includes("Dear me report"),
     )).toBe(true);
@@ -2314,6 +2334,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Approve prepared move");
     expect(container.textContent).toContain("Request changes");
     expect(container.textContent).toContain("Reject");
+    expectMobileSafeFocusedDecision(surfaceByLabel(container, "Focused decision"), "approval-review");
     expect(container.textContent).not.toContain("/approvals/");
     expect(focusedCardsInSurface(container, "Decisions needed").some((card) =>
       card.textContent?.includes("Approve Brand OS for Peter Studio"),
@@ -2482,6 +2503,7 @@ describe("DearMeOnboarding", () => {
     expect(focusedDecision.textContent).toContain("Prepare another pass");
     expect(focusedDecision.textContent).toContain("Choose new direction");
     expect(focusedDecision.textContent).toContain("Prepared privately. You choose what ships.");
+    expectMobileSafeFocusedDecision(focusedDecision, "prepared-work-review");
     expect(focusedCardsInSurface(container, "Work ready").some((card) =>
       card.textContent?.includes("Starter posts"),
     )).toBe(true);

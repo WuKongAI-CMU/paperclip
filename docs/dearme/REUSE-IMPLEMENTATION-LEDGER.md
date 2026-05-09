@@ -80,10 +80,10 @@ Working rule:
 
 | DearMe area | Current implementation evidence | Donor reuse status | Next gap |
 | --- | --- | --- | --- |
-| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. DM-130 adapts Polsia's "work happened while I was away" choreography, Lindy's two-rail home composition, and Littlebird's focused step/task-row discipline into the first workbench surface. DM-131 browser-polished the focus grid so the live desktop/mobile shell keeps the current work card compact and readable. DM-132 adds a DearMe-specific mobile nav so the phone shell routes users to Home, Decisions, Work Ready, Voice, and More without showing generic workspace destinations. | Polish focused review/decision drawers on mobile before paid-beta launch. |
+| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. DM-130 adapts Polsia's "work happened while I was away" choreography, Lindy's two-rail home composition, and Littlebird's focused step/task-row discipline into the first workbench surface. DM-131 browser-polished the focus grid so the live desktop/mobile shell keeps the current work card compact and readable. DM-132 adds a DearMe-specific mobile nav so the phone shell routes users to Home, Decisions, Work Ready, Voice, and More without showing generic workspace destinations. DM-133 makes focused decision actions mobile-safe. | Add a Brand Team Run Ledger before expanding more shell surfaces. |
 | Brand OS / `brand_blueprint` | `packages/shared/src/validators/dearme.ts`; `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/routes/dearme.ts` | Naive `setup_payload` pattern has been adapted into a typed DearMe contract and approval-gated apply flow. | Keep extending this contract only when P0 surfaces need it. |
 | Workbench projection | `server/src/services/dearme-workbench.ts`; `server/src/__tests__/dearme-workbench.test.ts` | Naive/Paperclip tables remain the substrate for team, work, decisions, progress, reports, and memory projections. | Do not add a second runtime; enrich read models first. |
-| Action graph and work stream | `docs/dearme/ACTION-GRAPH-ARCHITECTURE.md`; `packages/shared/src/validators/dearme.ts`; `ui/src/components/dearme/DearMeActionCard.tsx` | Polsia cycle/report choreography plus Lindy action-card grammar are already converging into customer-safe work cards. | Add richer detail panels instead of more tabs. |
+| Action graph and work stream | `docs/dearme/ACTION-GRAPH-ARCHITECTURE.md`; `packages/shared/src/validators/dearme.ts`; `ui/src/components/dearme/DearMeActionCard.tsx` | Polsia cycle/report choreography plus Lindy action-card grammar are already converging into customer-safe work cards. DM-133 makes focused decision/detail actions mobile-safe without changing the hidden approval/output-review substrate. | Add a Brand Team Run Ledger instead of more tabs. |
 | Output review and decisions | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/pages/DearMeOnboarding.test.tsx`; `server/src/services/dearme-output-handoff.ts`; `server/src/__tests__/dearme-output-handoff.test.ts` | Lindy pending-action shape and Polsia "small number of high-leverage calls" are reused in Work Ready / Decisions Needed. DM-128 now lets focused prepared work be approved, revised, regenerated, or redirected inside the DearMe decision surface while Naive/Paperclip remains the hidden output review substrate. | DM-129 added policy cues; watch whether repeated review loops need richer server-owned failure history after real usage. |
 | Voice & Memory source review | `server/src/services/dearme-workbench.ts`; `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/pages/DearMeOnboarding.test.tsx` | Lindy KnowledgeBase/source-management and slide-out detail patterns are now adapted: private sources become review cards, selected sources open a detail surface, reviewed facts save through the existing memory path, and not-useful sources use the existing retire path. | Watch whether reviewers need richer source history after repeated use; do not add backend shape until the current detail surface proves insufficient. |
 | Weekly report and rituals | `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/services/dearme-workbench.ts` | Polsia report/cycle ritual is adapted into DearMe weekly report and daily team work language. | Add better report explanation and provenance after source drawer exists. |
@@ -92,6 +92,31 @@ Working rule:
 | Development factory | `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` | Symphony-style worker queue is useful for bounded tickets after coordinator updates the queue. | Workers must use this ledger and `BUILD-STATE.md` before selecting old tickets. |
 
 ## Recently Completed
+
+### DM-133: Mobile Decision Detail Polish
+
+Goal: make focused review/decision details feel production-ready on phone
+after DM-132 made the bottom navigation product-safe.
+
+Donor grounding:
+
+- Lindy detail-surface pattern: review actions stay inside the focused item.
+- Littlebird mobile ergonomics: full-width phone actions and stable bottom
+  spacing.
+- Polsia decision rhythm: keep the user close to the few calls that matter.
+- Naive/Paperclip hidden substrate: existing approval and output-review paths
+  stay unchanged.
+
+Completed:
+
+- Focused decision surfaces now reserve mobile bottom padding above the DearMe
+  bottom nav.
+- Approval-review and prepared-work-review controls now render as stable mobile
+  action groups.
+- Focused decision buttons become full width on phone and compact again on
+  larger screens.
+- Existing review, approval, continuation, route, API, and desktop behavior
+  remain unchanged.
 
 ### DM-132: Mobile Shell Navigation Polish
 
@@ -257,26 +282,26 @@ Completed:
 
 ## Current Worker Queue
 
-### DM-133: Mobile Action Detail And Decision Drawer Polish
+### DM-134: Brand Team Run Ledger
 
-Goal: make focused review/decision details feel production-ready on phone
-after DM-132 made the mobile navigation product-safe.
+Goal: turn Polsia-style live progress into a DearMe-safe record of what the
+team tried, prepared, learned, and needs from the user.
 
 Donor grounding:
 
-- Lindy slide-out/action-detail pattern.
-- Littlebird compact mobile review ergonomics.
-- Polsia high-leverage decision queue rhythm.
-- Naive/Paperclip hidden output-review substrate.
+- Polsia live work stream, report rhythm, and visible team motion.
+- Naive/Paperclip activity, issue, routine, approval, and cost truth.
+- DearMe personal-brand semantics for content, opportunity, portfolio, voice,
+  and weekly letter progress.
 
 Acceptance:
 
-- Mobile browser checks pass for Decisions and Work Ready detail states.
-- Focused review/decision drawers do not collide with the bottom navigation or
-  obscure primary approve/revise/regenerate actions.
+- The ledger tells the user what the team tried, prepared, learned, and needs
+  next without exposing raw runtime events.
+- Entries can be derived from existing workbench projections before adding a
+  new backend table.
 - No customer-facing donor/runtime terms appear in the DearMe paid-beta path.
-- Desktop detail behavior remains unchanged unless a shared shell fix requires
-  it.
+- The ledger supports the weekly letter and future notification surfaces.
 
 ## Coordination Rules
 
@@ -293,7 +318,7 @@ Acceptance:
 ## Not Complete Yet
 
 DearMe is not release-ready just because these reuse decisions are documented.
-The next meaningful product gain is DM-133, because the mobile navigation now
-routes to DearMe-owned surfaces, but focused review/decision drawers still need
-a dedicated small-screen polish pass before the product feels beta-ready on
-phones.
+The next meaningful product gain is DM-134, because the mobile navigation and
+focused decision details are now product-safe, but the user still needs a
+durable Brand Team Run Ledger that turns backend work into a clear record of
+team progress and next asks.

@@ -1477,6 +1477,10 @@ function batchPreparedOutputId(batch: DearMeWorkbenchBatchDecision): string | nu
   return outputDecision ? outputDecision.slice("output:".length) : null;
 }
 
+const FOCUSED_DECISION_SURFACE_CLASSNAME = "scroll-mt-4 pb-24 sm:pb-5";
+const FOCUSED_DECISION_ACTION_GROUP_CLASSNAME = "mt-4 grid gap-2 sm:flex sm:flex-wrap";
+const FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME = "w-full justify-start sm:w-auto";
+
 function FocusedPreparedWorkReviewControls({
   outputId,
   noteId,
@@ -1528,8 +1532,17 @@ function FocusedPreparedWorkReviewControls({
         disabled={!canReview}
         className="mt-3"
       />
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button type="button" size="sm" onClick={() => review("approve")} disabled={!canReview}>
+      <div
+        className={FOCUSED_DECISION_ACTION_GROUP_CLASSNAME}
+        data-dearme-mobile-action-group="prepared-work-review"
+      >
+        <Button
+          type="button"
+          size="sm"
+          className={FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME}
+          onClick={() => review("approve")}
+          disabled={!canReview}
+        >
           {pendingAction === "approve" ? (
             <RefreshCw className="h-4 w-4 animate-spin" />
           ) : (
@@ -1541,6 +1554,7 @@ function FocusedPreparedWorkReviewControls({
           type="button"
           size="sm"
           variant="outline"
+          className={FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME}
           onClick={() => review("request_changes")}
           disabled={!canReview}
         >
@@ -1555,6 +1569,7 @@ function FocusedPreparedWorkReviewControls({
           type="button"
           size="sm"
           variant="outline"
+          className={FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME}
           onClick={() => review("regenerate")}
           disabled={!canReview}
         >
@@ -1565,6 +1580,7 @@ function FocusedPreparedWorkReviewControls({
           type="button"
           size="sm"
           variant="destructive"
+          className={FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME}
           onClick={() => review("not_useful")}
           disabled={!canReview}
         >
@@ -1612,7 +1628,7 @@ function FocusedDecisionPanel({
   if (decision) {
     const isReviewingDecision = reviewState.isPending && reviewState.approvalId === decision.approvalId;
     return (
-      <DearMeFocusSurface aria-label="Focused decision">
+      <DearMeFocusSurface aria-label="Focused decision" className={FOCUSED_DECISION_SURFACE_CLASSNAME}>
         <DearMeWorkbenchSectionHeader
           icon={ShieldCheck}
           eyebrow="Decision focused"
@@ -1657,14 +1673,18 @@ function FocusedDecisionPanel({
               placeholder="Optional note for your team."
               onChange={(event) => setDecisionNote(event.target.value)}
             />
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="mt-4 grid gap-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
               <p className="text-xs text-muted-foreground">
                 Your team prepared the move. These actions update the existing approval gate.
               </p>
-              <div className="flex flex-wrap justify-end gap-2">
+              <div
+                className="grid gap-2 sm:flex sm:flex-wrap sm:justify-end"
+                data-dearme-mobile-action-group="approval-review"
+              >
                 <Button
                   type="button"
                   size="sm"
+                  className={FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME}
                   onClick={() => onReviewApproval(decision.approvalId!, "approve", decisionNote)}
                   disabled={isReviewingDecision}
                 >
@@ -1679,6 +1699,7 @@ function FocusedDecisionPanel({
                   type="button"
                   size="sm"
                   variant="outline"
+                  className={FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME}
                   onClick={() => onReviewApproval(decision.approvalId!, "request_revision", decisionNote)}
                   disabled={isReviewingDecision}
                 >
@@ -1693,6 +1714,7 @@ function FocusedDecisionPanel({
                   type="button"
                   size="sm"
                   variant="destructive"
+                  className={FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME}
                   onClick={() => onReviewApproval(decision.approvalId!, "reject", decisionNote)}
                   disabled={isReviewingDecision}
                 >
@@ -1708,7 +1730,12 @@ function FocusedDecisionPanel({
           </div>
         ) : (
           <div className="mt-4 flex justify-end">
-            <Button type="button" size="sm" onClick={() => onOpenDecision(decision)}>
+            <Button
+              type="button"
+              size="sm"
+              className={FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME}
+              onClick={() => onOpenDecision(decision)}
+            >
               Review in DearMe
               <ArrowRight className="h-4 w-4" />
             </Button>
@@ -1721,7 +1748,7 @@ function FocusedDecisionPanel({
   if (batch) {
     const outputId = batchPreparedOutputId(batch);
     return (
-      <DearMeFocusSurface aria-label="Focused decision">
+      <DearMeFocusSurface aria-label="Focused decision" className={FOCUSED_DECISION_SURFACE_CLASSNAME}>
         <DearMeWorkbenchSectionHeader
           icon={ShieldCheck}
           eyebrow="Decision focused"
@@ -1762,7 +1789,12 @@ function FocusedDecisionPanel({
           />
         ) : (
           <div className="mt-4 flex justify-end">
-            <Button type="button" size="sm" onClick={() => onOpenBatch(batch)}>
+            <Button
+              type="button"
+              size="sm"
+              className={FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME}
+              onClick={() => onOpenBatch(batch)}
+            >
               {batch.actionLabel}
               <ArrowRight className="h-4 w-4" />
             </Button>
@@ -1774,7 +1806,7 @@ function FocusedDecisionPanel({
 
   if (workItem) {
     return (
-      <DearMeFocusSurface aria-label="Focused decision">
+      <DearMeFocusSurface aria-label="Focused decision" className={FOCUSED_DECISION_SURFACE_CLASSNAME}>
         <DearMeWorkbenchSectionHeader
           icon={FileText}
           eyebrow="Work focused"
@@ -1791,12 +1823,13 @@ function FocusedDecisionPanel({
         />
         <ReviewLoopNextStep loop={workItem.reviewLoop} className="mt-4" />
         <ReviewHandoffCard loop={workItem.reviewLoop} className="mt-4" />
-        <div className="mt-4 flex items-center justify-between gap-3">
+        <div className="mt-4 grid gap-3 sm:flex sm:items-center sm:justify-between">
           <span className="text-xs text-muted-foreground">Prepared by {roleLabel(workItem.ownerRole)}</span>
           <Button
             type="button"
             size="sm"
             variant="outline"
+            className={FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME}
             onClick={() => onOpenWorkItem(workItem, reviewLoopRouteIntent(workItem.reviewLoop))}
           >
             {reviewLoopActionLabel(workItem.reviewLoop) ?? "Review prepared work"}
@@ -1817,7 +1850,11 @@ function FocusedDecisionPanel({
   }
 
   return (
-    <DearMeFocusSurface aria-label="Focused decision" tone="empty">
+    <DearMeFocusSurface
+      aria-label="Focused decision"
+      className={FOCUSED_DECISION_SURFACE_CLASSNAME}
+      tone="empty"
+    >
       <div className="flex items-center gap-2 text-sm font-medium">
         <ShieldCheck className="h-4 w-4" />
         Decision focus unavailable
