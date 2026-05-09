@@ -32,7 +32,9 @@
 | 53 | Twitter | 🟡 + voice_profile gate (≥0.7 score required to post) |
 | 54 | Cold Outreach | 🟡 renamed contextually to "Opportunity Hunter"; status enum changed; + voice gate |
 
-**Agent count: 12 Polsia → 12 DearMe (no add, no drop). All prompts forked verbatim with renames.**
+**Historical target:** 12 Polsia roles map to 12 DearMe roles. Current
+implementation rule: rewrite prompts into DearMe role language and keep Polsia
+as choreography reference, not a verbatim prompt source.
 
 ---
 
@@ -47,8 +49,8 @@
 | send_reply | ✅ P0 | ✅ identical |
 | documents | 🟡 P1 | ✅ identical |
 | capabilities | 🟡 P1 | ✅ identical |
-| polsia_infra | ✅ P0 | 🟡 renamed `brand_infra` (13 tools verbatim) |
-| polsia_support | ✅ P0 | 🟡 renamed `brand_support` (2 tools verbatim) |
+| polsia_infra | ✅ P0 | 🟡 historical target only; rebuild on Paperclip/Naive adapter primitives |
+| polsia_support | ✅ P0 | 🟡 historical target only; rebuild on DearMe support semantics |
 | twitter | 🟡 P1 | ✅ identical |
 | meta_ads | 🟡 P1 | ✅ identical (12 tools, 17.5K prompt) |
 | stripe | 🟡 P1 | ✅ identical |
@@ -271,9 +273,14 @@
 
 ## 17. The honest one-line summary
 
-> **DearMe = Polsia + voice profile + letter-to-self framing + 5 string renames.**
+> **Historical pre-pivot slogan:** DearMe = Polsia + voice profile +
+> letter-to-self framing + 5 string renames.
 
-Engineering-wise, DearMe is a Polsia clone with one new MCP server, 4 new tables, and a Reporting agent prompt rewrite. Marketing-wise, DearMe targets individuals (job hunters / solopreneurs / career builders) instead of companies. Architecturally, the divergence is <5%.
+Corrected 2026-05-09 reading: product-shape-wise, DearMe borrows Polsia's
+visible team/cycle/report choreography. Engineering-wise, DearMe is a
+Paperclip/Naive-backed product fork with DearMe-specific Brand OS, voice,
+approval, and reporting projections. Do not use this historical section as a
+code-lineage or proprietary-copying guide.
 
 This is the Polsia recon's best lesson: **don't over-engineer the differentiation.** The product wins with positioning + voice quality, not architecture novelty.
 

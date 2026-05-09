@@ -11,7 +11,9 @@
 > overlap with Polsia is effectively zero. See
 > `CODE-PROVENANCE-FACT-CHECK.md` for hard evidence and numbers.
 
-> Side-by-side audit. Where we copy verbatim, where we diverge, why.
+> Historical side-by-side audit. Treat "identical" below as product-spec
+> similarity from the pre-Paperclip pivot, not permission to copy Polsia source
+> or evidence that the current DearMe code came from Polsia.
 
 Legend: ✅ identical · 🟡 minor change · ⭐ DearMe-only · ❌ DearMe drops
 

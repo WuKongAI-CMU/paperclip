@@ -228,7 +228,7 @@
 | Total backend LOC | unknown (~30-50K) | ~22K (1:1 fork + 4 voice tables) | -30-60% (smaller scope V1) |
 | Database tables | 76 | ~80 | +4 |
 | MCP servers | 22 | 25 | +3 (1 new + 4 renames + 1 dropped twitter-read) |
-| Agent prompts | 12 (own IP) | 12 (forked verbatim from Polsia recon) | 0 net new prompts to write |
+| Agent prompts | 12 (own IP) | 12 DearMe role prompts rewritten from the product choreography target | reuse role structure, not proprietary wording |
 | Onboarding flow | 16 steps | 16 steps | 0 |
 | **Build timeline** | unknown | **6-12 wks (1-3 senior)** | — |
 | **Capital** | unknown | **$80-230K for 6 mo runway** | — |

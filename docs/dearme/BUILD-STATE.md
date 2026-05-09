@@ -2,6 +2,31 @@
 
 Date: 2026-05-09
 
+## Donor Provenance Hardening - 2026-05-09
+
+Current integrated state:
+
+- `dearme` is clean through `b8600eb6`, which added
+  `CODE-PROVENANCE-FACT-CHECK.md` and corrected the canonical interpretation of
+  the Polsia / Naive comparison.
+- The engineering truth is now explicit: DearMe code lineage is
+  Paperclip/Naive, while Polsia remains a product-choreography and packaging
+  reference.
+- Historical Polsia comparison docs now carry top-level warnings, and the most
+  misleading body-level clone/verbatim guidance has been rewritten as
+  historical pre-pivot product-spec material.
+
+Verification:
+
+- Rechecked the local fork note, package name, remotes, branch topology, route
+  count, schema count, server/shared/db LOC count, and local Polsia/Naive
+  research path existence before hardening the docs.
+- `git diff --check` passed for the follow-up doc corrections.
+
+Next:
+
+- Continue with DM-135: first-run sample team proof.
+
 ## Integration Wrap-Up - 2026-05-09
 
 Current integrated state:
