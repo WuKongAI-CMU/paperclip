@@ -24,16 +24,19 @@ When DearMe docs conflict, use this order:
 1. `REBRAND-AND-PROVENANCE.md`
 2. `CODE-PROVENANCE-FACT-CHECK.md` (engineering-evidence addendum to this file)
 3. `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`
-4. `POLSIA-NAIVE-PM-ANALYSIS.md` (PM / product-architect view of donors)
-5. `POLSIA-NAIVE-COMPARISON.md` (architecture-layer comparison of donors)
-6. `POLSIA-NAIVE-REUSE-PLAN.md` (implementation-layer reuse plan)
-7. `POLSIA-MARKETING-PACKAGING-GUIDE.md`
-8. Historical comparison, V3/V4 architecture, and backlog docs
+4. `POLSIA-NAIVE-PM-ANALYSIS.md` (PM / product-architect view of donors, with aggressive product doctrine)
+5. `POLSIA-NAIVE-MECHANISMS-DEEP-DIVE.md` (mechanism-by-mechanism donor reuse notes; use as the engineering reference after applying this provenance layer)
+6. `POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md` (reuse backlog that maps each donor mechanism to a DearMe path, ticket, and verification expectation)
+7. `POLSIA-NAIVE-COMPARISON.md` (architecture-layer comparison of donors)
+8. `POLSIA-NAIVE-REUSE-PLAN.md` (implementation-layer reuse plan, complemented by master plan above)
+9. `POLSIA-MARKETING-PACKAGING-GUIDE.md`
+10. Historical comparison, V3/V4 architecture, and backlog docs
 
-Any older statement that says to copy proprietary prompts/files verbatim, ignore
+Any older statement that says to literal-reuse proprietary prompts/files, ignore
 IP cleanliness, or describe DearMe as a Polsia clone is superseded. The current
-posture is: **adapt choreography and reuse permitted/kernel primitives; ship
-DearMe-original product code, names, assets, and customer-facing language.**
+posture is: **directly integrate permitted/internal/kernel code; port proven
+mechanisms; ship DearMe-original names, assets, prompts, and customer-facing
+language.**
 
 ---
 
