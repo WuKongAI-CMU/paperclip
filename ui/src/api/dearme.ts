@@ -9,6 +9,7 @@ import type {
   DearMeChiefOfStaffMessageResult,
   DearMeFirstCyclePreview,
   DearMeFirstCyclePreviewResponse,
+  DearMeMemoryArchiveResult,
   DearMeMemoryUpdate,
   DearMeMemoryUpdateResult,
   DearMeOutputContinuationRequest,
@@ -71,6 +72,15 @@ export const dearmeApi = {
     api.post<DearMeMemoryUpdateResult>(
       `/dearme/companies/${companyId}/memory-updates`,
       data,
+    ),
+  updateMemorySource: (companyId: string, memoryId: string, data: DearMeMemoryUpdate) =>
+    api.patch<DearMeMemoryUpdateResult>(
+      `/dearme/companies/${companyId}/memory-updates/${encodeURIComponent(memoryId)}`,
+      data,
+    ),
+  archiveMemorySource: (companyId: string, memoryId: string) =>
+    api.delete<DearMeMemoryArchiveResult>(
+      `/dearme/companies/${companyId}/memory-updates/${encodeURIComponent(memoryId)}`,
     ),
   getPaidBetaAccess: (companyId: string) =>
     api.get<DearMePaidBetaStatus>(`/dearme/companies/${companyId}/paid-beta/access`),

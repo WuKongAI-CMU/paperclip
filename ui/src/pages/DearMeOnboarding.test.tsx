@@ -24,6 +24,8 @@ const mockDearmeApi = vi.hoisted(() => ({
   getPaidBetaAccess: vi.fn(),
   sendChiefOfStaffMessage: vi.fn(),
   recordMemoryUpdate: vi.fn(),
+  updateMemorySource: vi.fn(),
+  archiveMemorySource: vi.fn(),
   recordPaidBetaPayment: vi.fn(),
   previewFirstCycle: vi.fn(),
   previewBrandBlueprint: vi.fn(),
@@ -420,6 +422,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
           id: "memory-1",
           kind: "voice_sample",
           title: "Voice note",
+          body: "Short, direct voice note.",
           bodyPreview: "Short, direct voice note.",
           sourceLabel: "Manual note",
           createdAt: "2026-05-07T14:00:00.000Z",
@@ -428,6 +431,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
           id: "memory-2",
           kind: "proof_point",
           title: "Shipped proof",
+          body: "Shipped a working local product.",
           bodyPreview: "Shipped a working local product.",
           sourceLabel: "Build log",
           createdAt: "2026-05-07T13:00:00.000Z",
@@ -910,6 +914,7 @@ describe("DearMeOnboarding", () => {
         id: "memory-3",
         kind: "voice_sample",
         title: "Fresh voice note",
+        body: "Fresh direct voice note from today's work.",
         bodyPreview: "Fresh direct voice note from today's work.",
         sourceLabel: null,
         createdAt: "2026-05-07T14:05:00.000Z",
@@ -919,6 +924,37 @@ describe("DearMeOnboarding", () => {
         updated: 1,
         unchanged: 1,
         memorySources: 3,
+      },
+    });
+    mockDearmeApi.updateMemorySource.mockResolvedValue({
+      companyId: "company-1",
+      status: "recorded",
+      memory: {
+        id: "memory-1",
+        kind: "voice_sample",
+        title: "Voice note",
+        body: "Short, direct revised voice note.",
+        bodyPreview: "Short, direct revised voice note.",
+        sourceLabel: "Manual note",
+        createdAt: "2026-05-07T14:06:00.000Z",
+      },
+      growthCycles: {
+        checked: 2,
+        updated: 1,
+        unchanged: 1,
+        memorySources: 2,
+      },
+    });
+    mockDearmeApi.archiveMemorySource.mockResolvedValue({
+      companyId: "company-1",
+      status: "archived",
+      memoryId: "memory-1",
+      archivedAt: "2026-05-07T14:07:00.000Z",
+      growthCycles: {
+        checked: 2,
+        updated: 1,
+        unchanged: 1,
+        memorySources: 1,
       },
     });
     mockDearmeApi.recordPaidBetaPayment.mockResolvedValue({
@@ -1261,6 +1297,112 @@ describe("DearMeOnboarding", () => {
       }),
     );
     expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=decisions&approval=approval-1");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("revises saved Voice & Memory sources without creating a new source table", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Revise")?.click();
+    });
+
+    expect(container.textContent).toContain("Revising a saved source");
+    expect(
+      (container.querySelector("#dearme-memory-kind") as HTMLSelectElement | null)?.value,
+    ).toBe("voice_sample");
+    expect(
+      (container.querySelector("#dearme-memory-title") as HTMLInputElement | null)?.value,
+    ).toBe("Voice note");
+    expect(
+      (container.querySelector("#dearme-memory-source") as HTMLInputElement | null)?.value,
+    ).toBe("Manual note");
+    expect((container.querySelector("#dearme-memory-body") as HTMLTextAreaElement | null)?.value).toBe(
+      "Short, direct voice note.",
+    );
+
+    await act(async () => {
+      setTextareaValue(
+        container.querySelector("#dearme-memory-body") as HTMLTextAreaElement,
+        "Short, direct revised voice note.",
+      );
+    });
+
+    await act(async () => {
+      buttonByText(container, "Save source")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.updateMemorySource).toHaveBeenCalledWith(
+      "company-1",
+      "memory-1",
+      expect.objectContaining({
+        kind: "voice_sample",
+        title: "Voice note",
+        body: "Short, direct revised voice note.",
+        sourceLabel: "Manual note",
+      }),
+    );
+    expect(mockDearmeApi.recordMemoryUpdate).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("Short, direct revised voice note.");
+    expect(container.textContent).toContain("Just saved");
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("retires saved Voice & Memory sources from the visible memory list", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Voice note");
+
+    await act(async () => {
+      buttonByText(container, "Retire source")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.archiveMemorySource).toHaveBeenCalledWith("company-1", "memory-1");
+    expect(container.textContent).not.toContain("Voice note");
+    expect(container.textContent).toContain("Shipped proof");
+    expect(container.textContent).toContain("Retire source");
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
 
     await act(async () => {
       root.unmount();

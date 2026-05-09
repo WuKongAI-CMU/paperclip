@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockApi = vi.hoisted(() => ({
+  delete: vi.fn(),
   get: vi.fn(),
+  patch: vi.fn(),
   post: vi.fn(),
 }));
 
@@ -28,8 +30,12 @@ describe("dearmeApi", () => {
   beforeEach(() => {
     mockApi.get.mockReset();
     mockApi.get.mockResolvedValue({});
+    mockApi.patch.mockReset();
+    mockApi.patch.mockResolvedValue({});
     mockApi.post.mockReset();
     mockApi.post.mockResolvedValue({});
+    mockApi.delete.mockReset();
+    mockApi.delete.mockResolvedValue({});
   });
 
   it("gets paid beta access status through the DearMe company endpoint", async () => {
@@ -83,6 +89,30 @@ describe("dearmeApi", () => {
     expect(mockApi.post).toHaveBeenCalledWith(
       "/dearme/companies/company-1/memory-updates",
       payload,
+    );
+  });
+
+  it("patches Voice & Memory sources through the DearMe company endpoint", async () => {
+    const payload = {
+      kind: "voice_sample" as const,
+      title: "Revised note",
+      body: "Sharper operator note.",
+      sourceLabel: "Manual note",
+    };
+
+    await dearmeApi.updateMemorySource("company-1", "memory:voice/1", payload);
+
+    expect(mockApi.patch).toHaveBeenCalledWith(
+      "/dearme/companies/company-1/memory-updates/memory%3Avoice%2F1",
+      payload,
+    );
+  });
+
+  it("retires Voice & Memory sources through the DearMe company endpoint", async () => {
+    await dearmeApi.archiveMemorySource("company-1", "memory:voice/1");
+
+    expect(mockApi.delete).toHaveBeenCalledWith(
+      "/dearme/companies/company-1/memory-updates/memory%3Avoice%2F1",
     );
   });
 

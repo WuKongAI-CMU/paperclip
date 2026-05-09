@@ -746,21 +746,32 @@ export const dearMeMemoryUpdateItemSchema = z.object({
   id: z.string().min(1),
   kind: z.enum(DEARME_MEMORY_UPDATE_KINDS),
   title: shortTextSchema.nullable(),
+  body: longTextSchema,
   bodyPreview: mediumTextSchema,
   sourceLabel: shortTextSchema.nullable(),
   createdAt: z.string().datetime(),
+}).strict();
+
+const dearMeMemoryGrowthCyclesSchema = z.object({
+  checked: z.number().int().nonnegative(),
+  updated: z.number().int().nonnegative(),
+  unchanged: z.number().int().nonnegative(),
+  memorySources: z.number().int().nonnegative(),
 }).strict();
 
 export const dearMeMemoryUpdateResultSchema = z.object({
   companyId: z.string().min(1),
   status: z.literal("recorded"),
   memory: dearMeMemoryUpdateItemSchema,
-  growthCycles: z.object({
-    checked: z.number().int().nonnegative(),
-    updated: z.number().int().nonnegative(),
-    unchanged: z.number().int().nonnegative(),
-    memorySources: z.number().int().nonnegative(),
-  }).strict(),
+  growthCycles: dearMeMemoryGrowthCyclesSchema,
+}).strict();
+
+export const dearMeMemoryArchiveResultSchema = z.object({
+  companyId: z.string().min(1),
+  status: z.literal("archived"),
+  memoryId: z.string().min(1),
+  archivedAt: z.string().datetime(),
+  growthCycles: dearMeMemoryGrowthCyclesSchema,
 }).strict();
 
 const dearMeWorkbenchVoiceProfileSchema = z.object({
@@ -876,6 +887,7 @@ export type DearMeMemoryUpdate = z.infer<typeof dearMeMemoryUpdateSchema>;
 export type DearMeMemoryUpdateItem = z.infer<typeof dearMeMemoryUpdateItemSchema>;
 export type DearMeMemoryUpdateKind = z.infer<typeof dearMeMemoryUpdateSchema>["kind"];
 export type DearMeMemoryUpdateResult = z.infer<typeof dearMeMemoryUpdateResultSchema>;
+export type DearMeMemoryArchiveResult = z.infer<typeof dearMeMemoryArchiveResultSchema>;
 export type DearMeOutputDetail = z.infer<typeof dearMeOutputDetailSchema>;
 export type DearMeOutputDocument = z.infer<typeof dearMeOutputDocumentSchema>;
 export type DearMeOutputItem = z.infer<typeof dearMeOutputItemSchema>;

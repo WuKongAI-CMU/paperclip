@@ -589,6 +589,7 @@ describe("DearMe brand blueprint routes", () => {
     expect(res.body.memory).toEqual(expect.objectContaining({
       kind: "voice_sample",
       title: "Operator note",
+      body: "Short, direct note.",
       bodyPreview: "Short, direct note.",
       sourceLabel: "Manual note",
     }));
@@ -613,6 +614,96 @@ describe("DearMe brand blueprint routes", () => {
           body: "Short, direct note.",
           sourceLabel: "Manual note",
         }),
+      }),
+    );
+    expect(mockDearMeMemoryContextService.refreshRoutineMemoryContext).toHaveBeenCalledWith(
+      "company-1",
+      {
+        userId: "user-1",
+        agentId: null,
+        runId: null,
+      },
+    );
+  });
+
+  it("revises a Voice & Memory source through the activity log", async () => {
+    const res = await request(await createApp())
+      .patch("/api/dearme/companies/company-1/memory-updates/memory-voice-1")
+      .send({
+        kind: "voice_sample",
+        title: "Revised operator note",
+        body: "Sharper direct note for future drafts.",
+        sourceLabel: "Manual note",
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("recorded");
+    expect(res.body.memory).toEqual(expect.objectContaining({
+      id: "memory-voice-1",
+      kind: "voice_sample",
+      title: "Revised operator note",
+      body: "Sharper direct note for future drafts.",
+      bodyPreview: "Sharper direct note for future drafts.",
+      sourceLabel: "Manual note",
+    }));
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        companyId: "company-1",
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: "memory-voice-1",
+        details: expect.objectContaining({
+          kind: "voice_sample",
+          title: "Revised operator note",
+          body: "Sharper direct note for future drafts.",
+          sourceLabel: "Manual note",
+          revisionOf: "memory-voice-1",
+        }),
+      }),
+    );
+    expect(mockDearMeMemoryContextService.refreshRoutineMemoryContext).toHaveBeenCalledWith(
+      "company-1",
+      {
+        userId: "user-1",
+        agentId: null,
+        runId: null,
+      },
+    );
+  });
+
+  it("retires a Voice & Memory source through the activity log", async () => {
+    const res = await request(await createApp())
+      .delete("/api/dearme/companies/company-1/memory-updates/memory-voice-1");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      companyId: "company-1",
+      status: "archived",
+      memoryId: "memory-voice-1",
+      archivedAt: expect.any(String),
+      growthCycles: {
+        checked: 2,
+        updated: 1,
+        unchanged: 1,
+        memorySources: 2,
+      },
+    });
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        companyId: "company-1",
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_archived",
+        entityType: "dearme_memory",
+        entityId: "memory-voice-1",
+        details: {
+          memoryId: "memory-voice-1",
+          reason: "user_retired_source",
+        },
       }),
     );
     expect(mockDearMeMemoryContextService.refreshRoutineMemoryContext).toHaveBeenCalledWith(

@@ -62,6 +62,8 @@ type DearMeSpendCheckpointRow = {
 const TEAM_ROLE_ORDER = new Map(DEARME_TEAM_ROLES.map((role, index) => [role, index]));
 const MEMORY_KIND_SET = new Set<string>(DEARME_MEMORY_UPDATE_KINDS);
 const DEARME_MEMORY_UPDATED_ACTION = "dearme.memory_updated";
+const DEARME_MEMORY_ARCHIVED_ACTION = "dearme.memory_archived";
+const DEARME_MEMORY_ACTIONS = [DEARME_MEMORY_UPDATED_ACTION, DEARME_MEMORY_ARCHIVED_ACTION] as const;
 const DEARME_CHIEF_OF_STAFF_MESSAGE_ACTION = "dearme.chief_of_staff_message";
 const DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND = "dearme_chief_of_staff_message";
 const DEARME_ACTION_GRAPH_CYCLE_NODE_ID = "cycle:weekly-growth-loop";
@@ -600,10 +602,50 @@ function memoryFromActivity(input: {
     id: input.entityId || input.id,
     kind: input.details.kind,
     title: optionalStringFromRecord(input.details, "title"),
+    body,
     bodyPreview: previewText(body),
     sourceLabel: optionalStringFromRecord(input.details, "sourceLabel"),
     createdAt: toIso(input.createdAt),
   };
+}
+
+function activeMemoryFromActivityRows(
+  rows: Array<{
+    id: string;
+    action: string;
+    entityId: string | null;
+    details: unknown;
+    createdAt: Date;
+  }>,
+) {
+  const retiredIds = new Set<string>();
+  const seenIds = new Set<string>();
+  const items: DearMeMemoryUpdateItem[] = [];
+
+  for (const row of rows) {
+    const memoryId = row.entityId || row.id;
+    if (row.action === DEARME_MEMORY_ARCHIVED_ACTION) {
+      retiredIds.add(memoryId);
+      continue;
+    }
+    if (row.action !== DEARME_MEMORY_UPDATED_ACTION || retiredIds.has(memoryId) || seenIds.has(memoryId)) {
+      continue;
+    }
+
+    const item = memoryFromActivity({
+      id: row.id,
+      entityId: memoryId,
+      details: row.details,
+      createdAt: row.createdAt,
+    });
+    if (!item) continue;
+
+    seenIds.add(memoryId);
+    items.push(item);
+    if (items.length >= 12) break;
+  }
+
+  return items;
 }
 
 function buildMemorySummary(items: DearMeMemoryUpdateItem[]) {
@@ -1223,6 +1265,16 @@ function progressFromActivity(input: {
     };
   }
 
+  if (input.action === DEARME_MEMORY_ARCHIVED_ACTION) {
+    return {
+      id: input.id,
+      kind: "team_progress",
+      title: "Voice & Memory source retired",
+      summary: "Voice Editor stopped using an outdated source in future private work.",
+      createdAt: toIso(input.createdAt),
+    };
+  }
+
   return {
     id: input.id,
     kind: "team_progress",
@@ -1388,14 +1440,15 @@ export function dearmeWorkbenchService(db: Db) {
         db
           .select({
             id: activityLog.id,
+            action: activityLog.action,
             entityId: activityLog.entityId,
             details: activityLog.details,
             createdAt: activityLog.createdAt,
           })
           .from(activityLog)
-          .where(and(eq(activityLog.companyId, companyId), eq(activityLog.action, DEARME_MEMORY_UPDATED_ACTION)))
+          .where(and(eq(activityLog.companyId, companyId), inArray(activityLog.action, [...DEARME_MEMORY_ACTIONS])))
           .orderBy(desc(activityLog.createdAt))
-          .limit(12),
+          .limit(80),
         db
           .select({
             id: issues.id,
@@ -1530,9 +1583,7 @@ export function dearmeWorkbenchService(db: Db) {
       ]
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
         .slice(0, 5);
-      const latestMemory = memoryRows
-        .map(memoryFromActivity)
-        .filter((item): item is DearMeMemoryUpdateItem => Boolean(item));
+      const latestMemory = activeMemoryFromActivityRows(memoryRows);
       const memory = {
         summary: buildMemorySummary(latestMemory),
         sourceCount: latestMemory.length,

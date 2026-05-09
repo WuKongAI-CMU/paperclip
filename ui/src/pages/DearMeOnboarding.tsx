@@ -11,7 +11,9 @@ import {
   type DearMeChiefOfStaffMessageIntent,
   type DearMeChiefOfStaffMessageResult,
   type DearMeFirstCyclePreviewResponse,
+  type DearMeMemoryArchiveResult,
   type DearMeMemoryUpdate,
+  type DearMeMemoryUpdateItem,
   type DearMeMemoryUpdateKind,
   type DearMeMemoryUpdateResult,
   type DearMeOutputContinuationIntent,
@@ -2559,19 +2561,26 @@ function VoiceMemoryPanel({
   isPending,
   error,
   result,
+  archiveResult,
   onAdd,
+  onUpdate,
+  onArchive,
 }: {
   memory: DearMeWorkbenchMemory;
   isPending: boolean;
   error: string | null;
   result: DearMeMemoryUpdateResult | null;
+  archiveResult: DearMeMemoryArchiveResult | null;
   onAdd: (input: DearMeMemoryUpdate) => void;
+  onUpdate: (memoryId: string, input: DearMeMemoryUpdate) => void;
+  onArchive: (memoryId: string) => void;
 }) {
   const [kind, setKind] = useState<DearMeMemoryUpdateKind>("voice_sample");
   const [sourceGuideId, setSourceGuideId] = useState<MemorySourceGuideId>("writing_sample");
   const [title, setTitle] = useState("");
   const [sourceLabel, setSourceLabel] = useState("");
   const [body, setBody] = useState("");
+  const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const voiceProfile = memory.voiceProfile;
   const sourcePlan = memory.sourcePlan;
@@ -2585,6 +2594,9 @@ function VoiceMemoryPanel({
   const latestMemory = recordedMemory
     ? [recordedMemory, ...memory.latest.filter((item) => item.id !== recordedMemory.id)]
     : memory.latest;
+  const visibleLatestMemory = archiveResult
+    ? latestMemory.filter((item) => item.id !== archiveResult.memoryId)
+    : latestMemory;
   const displayedSourceCount = result
     ? Math.max(memory.sourceCount, result.growthCycles.memorySources)
     : memory.sourceCount;
@@ -2606,12 +2618,18 @@ function VoiceMemoryPanel({
     }
 
     setLocalError(null);
-    onAdd({
+    const update = {
       kind,
       title: title.trim() || selectedGuide.label,
       body: trimmedBody,
       sourceLabel: sourceLabel.trim() || null,
-    });
+    };
+    if (editingMemoryId) {
+      onUpdate(editingMemoryId, update);
+    } else {
+      onAdd(update);
+    }
+    setEditingMemoryId(null);
     setTitle("");
     setSourceLabel("");
     setBody("");
@@ -2621,6 +2639,32 @@ function VoiceMemoryPanel({
     setSourceGuideId(guide.id);
     setKind(guide.kind);
     setLocalError(null);
+  }
+
+  function handleReviseSource(item: DearMeMemoryUpdateItem) {
+    const guide = memorySourceGuideForKind(item.kind);
+    setEditingMemoryId(item.id);
+    setSourceGuideId(guide.id);
+    setKind(item.kind);
+    setTitle(item.title ?? guide.label);
+    setSourceLabel(item.sourceLabel ?? "");
+    setBody(item.body);
+    setLocalError(null);
+  }
+
+  function handleCancelRevise() {
+    setEditingMemoryId(null);
+    setTitle("");
+    setSourceLabel("");
+    setBody("");
+    setLocalError(null);
+  }
+
+  function handleRetireSource(item: DearMeMemoryUpdateItem) {
+    if (editingMemoryId === item.id) {
+      handleCancelRevise();
+    }
+    onArchive(item.id);
   }
 
   function handleKindChange(nextKind: DearMeMemoryUpdateKind) {
@@ -2707,7 +2751,7 @@ function VoiceMemoryPanel({
                 )}
                 onClick={() => handleSourcePlanSelect(requirement.kind)}
               >
-                <span className="flex items-start justify-between gap-2">
+                <span className="flex flex-col items-start gap-2">
                   <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
                     <Icon className="h-4 w-4 shrink-0" />
                     <span className="break-words">{requirement.label}</span>
@@ -2732,9 +2776,17 @@ function VoiceMemoryPanel({
       <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
         <div>
           <FieldLabel htmlFor="dearme-memory-source-guide" label="Source guide" />
+          {editingMemoryId ? (
+            <div className="mt-2 flex flex-col gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+              <span>Revising a saved source. Future private work will use the revised version.</span>
+              <Button type="button" size="sm" variant="outline" onClick={handleCancelRevise}>
+                Cancel revise
+              </Button>
+            </div>
+          ) : null}
           <div
             id="dearme-memory-source-guide"
-            className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4"
+            className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4"
           >
             {MEMORY_SOURCE_GUIDES.map((guide) => {
               const Icon = guide.icon;
@@ -2823,16 +2875,18 @@ function VoiceMemoryPanel({
             ) : null}
             <div className="mt-3 flex justify-end">
               <Button type="submit" disabled={isPending}>
-                {isPending ? "Adding..." : "Add to Voice & Memory"}
+                {isPending
+                  ? editingMemoryId ? "Saving..." : "Adding..."
+                  : editingMemoryId ? "Save source" : "Add to Voice & Memory"}
               </Button>
             </div>
           </div>
         </div>
       </form>
 
-      {latestMemory.length > 0 ? (
+      {visibleLatestMemory.length > 0 ? (
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {latestMemory.slice(0, 6).map((item) => {
+          {visibleLatestMemory.slice(0, 6).map((item) => {
             const justSaved = recordedMemory?.id === item.id;
             const chips = [
               ...(justSaved
@@ -2851,7 +2905,26 @@ function VoiceMemoryPanel({
                 summary={item.bodyPreview}
                 chips={chips}
                 footer={shortDate(item.createdAt)}
-              />
+                action={{
+                  label: "Revise",
+                  ariaLabel: `Revise ${item.title ?? MEMORY_KIND_LABELS[item.kind]}`,
+                  icon: RefreshCw,
+                  onClick: () => handleReviseSource(item),
+                }}
+              >
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={isPending}
+                    onClick={() => handleRetireSource(item)}
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Retire source
+                  </Button>
+                </div>
+              </DearMeActionCard>
             );
           })}
         </div>
@@ -3099,6 +3172,29 @@ function TeamWorkbenchPanel({
       setMemoryError(err instanceof Error ? err.message : "Could not update Voice & Memory.");
     },
   });
+  const memoryUpdateMutation = useMutation({
+    mutationFn: (input: { memoryId: string; update: DearMeMemoryUpdate }) =>
+      dearmeApi.updateMemorySource(companyId, input.memoryId, input.update),
+    onSuccess: () => {
+      setMemoryError(null);
+      queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(companyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
+    },
+    onError: (err) => {
+      setMemoryError(err instanceof Error ? err.message : "Could not revise Voice & Memory.");
+    },
+  });
+  const memoryArchiveMutation = useMutation({
+    mutationFn: (memoryId: string) => dearmeApi.archiveMemorySource(companyId, memoryId),
+    onSuccess: () => {
+      setMemoryError(null);
+      queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(companyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
+    },
+    onError: (err) => {
+      setMemoryError(err instanceof Error ? err.message : "Could not retire the source.");
+    },
+  });
   const workbench = workbenchQuery.data ?? null;
 
   if (workbenchQuery.isLoading) {
@@ -3203,10 +3299,13 @@ function TeamWorkbenchPanel({
         <DearMeLetterPanel report={workbench.report} onOpenIssue={onOpenIssue} />
         <VoiceMemoryPanel
           memory={workbench.memory}
-          isPending={memoryMutation.isPending}
+          isPending={memoryMutation.isPending || memoryUpdateMutation.isPending || memoryArchiveMutation.isPending}
           error={memoryError}
-          result={memoryMutation.data ?? null}
+          result={memoryUpdateMutation.data ?? memoryMutation.data ?? null}
+          archiveResult={memoryArchiveMutation.data ?? null}
           onAdd={(input) => memoryMutation.mutate(input)}
+          onUpdate={(memoryId, input) => memoryUpdateMutation.mutate({ memoryId, update: input })}
+          onArchive={(memoryId) => memoryArchiveMutation.mutate(memoryId)}
         />
       </DearMeCockpitGrid>
 

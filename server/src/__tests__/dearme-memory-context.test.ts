@@ -78,7 +78,7 @@ describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
         actorId: "user-1",
         action: "dearme.memory_updated",
         entityType: "dearme_memory",
-        entityId: randomUUID(),
+        entityId: "memory-voice-1",
         details: {
           kind: "voice_sample",
           title: "Operator note",
@@ -93,7 +93,7 @@ describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
         actorId: "user-1",
         action: "dearme.memory_updated",
         entityType: "dearme_memory",
-        entityId: randomUUID(),
+        entityId: "memory-proof-1",
         details: {
           kind: "proof_point",
           title: "Launch proof",
@@ -212,5 +212,129 @@ describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
     });
     expect(countOccurrences(afterSecondRefresh.description ?? "", "Latest saved Voice & Memory updates:")).toBe(1);
     expect(afterSecondRefresh.latestRevisionNumber).toBe(2);
+
+    await db.insert(activityLog).values({
+      companyId,
+      actorType: "user",
+      actorId: "user-1",
+      action: "dearme.memory_updated",
+      entityType: "dearme_memory",
+      entityId: "memory-voice-1",
+      details: {
+        kind: "voice_sample",
+        title: "Revised operator note",
+        body: "Sharper revised voice source.",
+        sourceLabel: "Manual note",
+        revisionOf: "memory-voice-1",
+      },
+      createdAt: new Date("2026-05-08T14:10:00.000Z"),
+    });
+
+    const revisionRefresh = await dearmeMemoryContextService(db).refreshRoutineMemoryContext(
+      companyId,
+      { userId: "user-1" },
+    );
+    const [afterRevisionRefresh] = await db
+      .select()
+      .from(routines)
+      .where(eq(routines.id, dearmeRoutine.id));
+    const revisedDescription = afterRevisionRefresh.description ?? "";
+
+    expect(revisionRefresh).toEqual({
+      memoryCount: 2,
+      routineCount: 1,
+      updated: 1,
+      skipped: 0,
+    });
+    expect(revisedDescription).toContain(
+      "Voice sample: Revised operator note: Sharper revised voice source. Source: Manual note.",
+    );
+    expect(revisedDescription).not.toContain("Voice sample: Operator note: Short, direct note.");
+  });
+
+  it("removes retired Voice & Memory sources from DearMe routines", async () => {
+    const companyId = await seedCompany();
+    const brandOsIssue = await seedParentIssue(
+      companyId,
+      DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
+      "DearMe: Review Brand OS for Peter",
+    );
+    const routinesSvc = routineService(db);
+
+    const dearmeRoutine = await routinesSvc.create(
+      companyId,
+      {
+        projectId: null,
+        goalId: null,
+        parentIssueId: brandOsIssue.id,
+        title: "DearMe: Weekly growth cycle",
+        description: "Weekly growth cycle for Peter.",
+        assigneeAgentId: null,
+        priority: "medium",
+        status: "active",
+        concurrencyPolicy: "coalesce_if_active",
+        catchUpPolicy: "skip_missed",
+        variables: [],
+      },
+      { userId: "user-1" },
+    );
+
+    await db.insert(activityLog).values({
+      companyId,
+      actorType: "user",
+      actorId: "user-1",
+      action: "dearme.memory_updated",
+      entityType: "dearme_memory",
+      entityId: "memory-retired",
+      details: {
+        kind: "voice_sample",
+        title: "Old voice note",
+        body: "This source should stop guiding private work.",
+        sourceLabel: "Manual note",
+      },
+      createdAt: new Date("2026-05-08T14:00:00.000Z"),
+    });
+
+    await dearmeMemoryContextService(db).refreshRoutineMemoryContext(
+      companyId,
+      { userId: "user-1" },
+    );
+    const [withMemory] = await db
+      .select()
+      .from(routines)
+      .where(eq(routines.id, dearmeRoutine.id));
+    expect(withMemory.description ?? "").toContain("Old voice note");
+
+    await db.insert(activityLog).values({
+      companyId,
+      actorType: "user",
+      actorId: "user-1",
+      action: "dearme.memory_archived",
+      entityType: "dearme_memory",
+      entityId: "memory-retired",
+      details: {
+        memoryId: "memory-retired",
+        reason: "user_retired_source",
+      },
+      createdAt: new Date("2026-05-08T14:05:00.000Z"),
+    });
+
+    const refresh = await dearmeMemoryContextService(db).refreshRoutineMemoryContext(
+      companyId,
+      { userId: "user-1" },
+    );
+    const [withoutMemory] = await db
+      .select()
+      .from(routines)
+      .where(eq(routines.id, dearmeRoutine.id));
+
+    expect(refresh).toEqual({
+      memoryCount: 0,
+      routineCount: 1,
+      updated: 1,
+      skipped: 0,
+    });
+    expect(withoutMemory.description ?? "").not.toContain("Latest saved Voice & Memory updates:");
+    expect(withoutMemory.description ?? "").not.toContain("Old voice note");
   });
 });

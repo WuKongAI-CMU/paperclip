@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
 import { activityLog, issues, routines } from "@paperclipai/db";
 import {
@@ -11,6 +11,8 @@ import { routineService } from "./routines.js";
 type RoutineActor = { agentId?: string | null; userId?: string | null; runId?: string | null };
 
 const DEARME_MEMORY_UPDATED_ACTION = "dearme.memory_updated";
+const DEARME_MEMORY_ARCHIVED_ACTION = "dearme.memory_archived";
+const DEARME_MEMORY_ACTIONS = [DEARME_MEMORY_UPDATED_ACTION, DEARME_MEMORY_ARCHIVED_ACTION] as const;
 const MEMORY_KIND_SET = new Set<string>(DEARME_MEMORY_UPDATE_KINDS);
 const LATEST_MEMORY_HEADING = "Latest saved Voice & Memory updates:";
 const OPERATING_BOUNDARY_HEADING = "Operating boundary:";
@@ -64,6 +66,36 @@ function renderLatestMemoryBlock(memoryRows: Array<{ details: unknown }>) {
   return [LATEST_MEMORY_HEADING, ...lines].join("\n");
 }
 
+function activeMemoryRows(
+  rows: Array<{
+    id: string;
+    action: string;
+    entityId: string | null;
+    details: unknown;
+  }>,
+) {
+  const retiredIds = new Set<string>();
+  const seenIds = new Set<string>();
+  const active: Array<{ details: unknown }> = [];
+
+  for (const row of rows) {
+    const memoryId = row.entityId || row.id;
+    if (row.action === DEARME_MEMORY_ARCHIVED_ACTION) {
+      retiredIds.add(memoryId);
+      continue;
+    }
+    if (row.action !== DEARME_MEMORY_UPDATED_ACTION || retiredIds.has(memoryId) || seenIds.has(memoryId)) {
+      continue;
+    }
+
+    seenIds.add(memoryId);
+    active.push({ details: row.details });
+    if (active.length >= 8) break;
+  }
+
+  return active;
+}
+
 function stripLatestMemoryBlock(description: string) {
   const headingIndex = description.indexOf(LATEST_MEMORY_HEADING);
   if (headingIndex < 0) return description;
@@ -106,11 +138,16 @@ export function dearmeMemoryContextService(db: Db) {
 
   async function loadLatestMemoryRows(companyId: string) {
     return db
-      .select({ details: activityLog.details })
+      .select({
+        id: activityLog.id,
+        action: activityLog.action,
+        entityId: activityLog.entityId,
+        details: activityLog.details,
+      })
       .from(activityLog)
-      .where(and(eq(activityLog.companyId, companyId), eq(activityLog.action, DEARME_MEMORY_UPDATED_ACTION)))
+      .where(and(eq(activityLog.companyId, companyId), inArray(activityLog.action, [...DEARME_MEMORY_ACTIONS])))
       .orderBy(desc(activityLog.createdAt))
-      .limit(8);
+      .limit(80);
   }
 
   async function loadDearMeRoutines(companyId: string) {
@@ -131,19 +168,18 @@ export function dearmeMemoryContextService(db: Db) {
 
   return {
     async refreshRoutineMemoryContext(companyId: string, actor: RoutineActor = {}) {
-      const memoryRows = await loadLatestMemoryRows(companyId);
+      const memoryRows = activeMemoryRows(await loadLatestMemoryRows(companyId));
       const memoryBlock = renderLatestMemoryBlock(memoryRows);
-      if (!memoryBlock) {
-        return { memoryCount: 0, routineCount: 0, updated: 0, skipped: 0 };
-      }
-
       const routineRows = await loadDearMeRoutines(companyId);
       let updated = 0;
       let skipped = 0;
 
       for (const routine of routineRows) {
-        const description = injectLatestMemoryBlock(routine.description, memoryBlock);
-        if (description === routine.description) {
+        const currentDescription = routine.description ?? "";
+        const description = memoryBlock
+          ? injectLatestMemoryBlock(routine.description, memoryBlock)
+          : stripLatestMemoryBlock(currentDescription).trimEnd();
+        if (description === currentDescription) {
           skipped += 1;
           continue;
         }

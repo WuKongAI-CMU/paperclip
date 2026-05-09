@@ -2,6 +2,63 @@
 
 Date: 2026-05-09
 
+## DM-121 Voice & Memory Source Actions - 2026-05-09
+
+Implementation slice:
+
+- Added typed revise and retire actions for saved Voice & Memory sources.
+- Kept Voice & Memory source history on existing company-scoped activity rows
+  instead of adding a new DearMe memory table.
+- Projected only the latest active source revision into the workbench and hid
+  retired sources from the latest-memory cards.
+- Refreshed DearMe routine memory context after every source revision or
+  retirement so future private work uses the active source set.
+- Added UI affordances on the existing DearMe action-card path: `Revise`,
+  `Save source`, `Cancel revise`, and `Retire source`.
+
+Donor reuse:
+
+- Lindy supplies the editable memory/source-card pattern: inspect a source,
+  revise it, save it, or retire it.
+- Naive/Paperclip supplies the durable substrate through `activity_log`,
+  routine context, existing API route/auth patterns, and workbench projection.
+- Polsia supplies the product interpretation: the visible team is learning from
+  the user and improving the next growth cycle, not exposing a technical memory
+  manager.
+
+Rejected:
+
+- Rejected adding a separate DearMe memory table while activity projection is
+  sufficient for source history and active-source filtering.
+- Rejected adding external import/scrape/upload/publish/send/deploy behavior in
+  this slice.
+- Rejected approval-gating private source edits because no public or external
+  action happens.
+- Rejected exposing donor/runtime terms in customer-facing Voice & Memory UI.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-memory-context.test.ts ui/src/api/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 6 files, 82 tests.
+- `pnpm -r typecheck` passed across the workspace.
+- `git diff --check` passed.
+- Customer-surface substrate scan over `ui/src/pages/DearMeOnboarding.tsx`
+  passed with no matches for Paperclip, OpenClaw, OK Partner, provider,
+  adapter, setup payload, control-plane, workflow-builder, GraphQL, Relay, MCP,
+  or agent-runtime language.
+- Rendered `/dearme` at `http://127.0.0.1:3100/DEAA/dearme` with Playwright
+  after the Browser plugin reported `Browser is not available: iab`.
+  Verified page identity, nonblank Source coverage content, no framework error
+  overlay, no console error/warn messages, `Add Boundaries` selecting
+  `constraint`, `Revise` opening the saved source in edit mode, no source-card
+  badge overlap, and no 390px mobile horizontal overflow.
+
+Next:
+
+- Add real source import paths, starting with typed paste/link/import actions
+  that still land as DearMe Voice & Memory sources rather than donor-console
+  or workflow-builder language.
+
 ## DM-120 Voice & Memory Source Coverage - 2026-05-09
 
 Implementation slice:

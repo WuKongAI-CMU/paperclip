@@ -10,6 +10,7 @@ import {
   dearMeBrandBlueprintPreviewSchema,
   dearMeFirstCyclePreviewResponseSchema,
   dearMeFirstCyclePreviewSchema,
+  dearMeMemoryArchiveResultSchema,
   dearMeMemoryUpdateResultSchema,
   dearMeMemoryUpdateSchema,
   dearMeOutputContinuationRequestSchema,
@@ -359,6 +360,7 @@ describe("DearMe brand blueprint contract", () => {
         id: "memory-1",
         kind: "voice_sample",
         title: "Operator note",
+        body: "Short, specific proof.",
         bodyPreview: "Short, specific proof.",
         sourceLabel: "Manual note",
         createdAt: "2026-05-07T14:00:00.000Z",
@@ -370,6 +372,18 @@ describe("DearMe brand blueprint contract", () => {
         memorySources: 2,
       },
     }).memory.kind).toBe("voice_sample");
+    expect(dearMeMemoryArchiveResultSchema.parse({
+      companyId: "company-1",
+      status: "archived",
+      memoryId: "memory-1",
+      archivedAt: "2026-05-07T14:05:00.000Z",
+      growthCycles: {
+        checked: 2,
+        updated: 1,
+        unchanged: 1,
+        memorySources: 1,
+      },
+    }).status).toBe("archived");
     expect(() => dearMeMemoryUpdateSchema.parse({
       kind: "agent_config",
       body: "Expose runtime internals",
@@ -722,6 +736,7 @@ describe("DearMe brand blueprint contract", () => {
             id: "memory-1",
             kind: "voice_sample",
             title: "Operator note",
+            body: "Short, direct writing sample.",
             bodyPreview: "Short, direct writing sample.",
             sourceLabel: "Manual note",
             createdAt: "2026-05-07T14:00:00.000Z",
@@ -730,6 +745,7 @@ describe("DearMe brand blueprint contract", () => {
             id: "memory-2",
             kind: "proof_point",
             title: "Shipped proof",
+            body: "Shipped a working local agent product.",
             bodyPreview: "Shipped a working local agent product.",
             sourceLabel: null,
             createdAt: "2026-05-07T13:00:00.000Z",

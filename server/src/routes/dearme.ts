@@ -7,6 +7,7 @@ import {
   dearMeChiefOfStaffMessageResultSchema,
   dearMeChiefOfStaffMessageSchema,
   dearMeFirstCyclePreviewSchema,
+  dearMeMemoryArchiveResultSchema,
   dearMeMemoryUpdateResultSchema,
   dearMeMemoryUpdateSchema,
   dearMeOutputContinuationRequestSchema,
@@ -41,6 +42,8 @@ function memoryBodyPreview(body: string) {
 }
 
 const CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND = "dearme_chief_of_staff_message";
+const DEARME_MEMORY_UPDATED_ACTION = "dearme.memory_updated";
+const DEARME_MEMORY_ARCHIVED_ACTION = "dearme.memory_archived";
 const CHIEF_OF_STAFF_INTENT_LABELS: Record<DearMeChiefOfStaffMessageIntent, string> = {
   plan_next: "Plan next moves",
   draft_content: "Draft content",
@@ -176,6 +179,40 @@ export function dearmeRoutes(db: Db) {
     });
 
     return result;
+  }
+
+  async function refreshDearMeMemoryCycles(
+    companyId: string,
+    actor: ReturnType<typeof getActorInfo>,
+  ) {
+    const cycleRefresh = await memoryContext.refreshRoutineMemoryContext(companyId, {
+      userId: actor.actorType === "user" ? actor.actorId : null,
+      agentId: actor.agentId,
+      runId: actor.runId,
+    });
+
+    return {
+      checked: cycleRefresh.routineCount,
+      updated: cycleRefresh.updated,
+      unchanged: cycleRefresh.skipped,
+      memorySources: cycleRefresh.memoryCount,
+    };
+  }
+
+  function memoryUpdateResponseItem(input: {
+    memoryId: string;
+    update: DearMeMemoryUpdate;
+    createdAt: string;
+  }) {
+    return {
+      id: input.memoryId,
+      kind: input.update.kind,
+      title: input.update.title,
+      body: input.update.body,
+      bodyPreview: memoryBodyPreview(input.update.body),
+      sourceLabel: input.update.sourceLabel,
+      createdAt: input.createdAt,
+    };
   }
 
   router.get(
@@ -341,7 +378,7 @@ export function dearmeRoutes(db: Db) {
         actorId: actor.actorId,
         agentId: actor.agentId,
         runId: actor.runId,
-        action: "dearme.memory_updated",
+        action: DEARME_MEMORY_UPDATED_ACTION,
         entityType: "dearme_memory",
         entityId: memoryId,
         details: {
@@ -352,29 +389,91 @@ export function dearmeRoutes(db: Db) {
         },
       });
 
-      const cycleRefresh = await memoryContext.refreshRoutineMemoryContext(companyId, {
-        userId: actor.actorType === "user" ? actor.actorId : null,
-        agentId: actor.agentId,
-        runId: actor.runId,
-      });
+      const growthCycles = await refreshDearMeMemoryCycles(companyId, actor);
 
       res.status(201).json(dearMeMemoryUpdateResultSchema.parse({
         companyId,
         status: "recorded",
-        memory: {
-          id: memoryId,
+        memory: memoryUpdateResponseItem({ memoryId, update: input, createdAt }),
+        growthCycles,
+      }));
+    },
+  );
+
+  router.patch(
+    "/companies/:companyId/memory-updates/:memoryId",
+    validate(dearMeMemoryUpdateSchema),
+    async (req, res) => {
+      const companyId = req.params.companyId as string;
+      const memoryId = req.params.memoryId as string;
+      assertCompanyAccess(req, companyId);
+      assertBoard(req);
+      const actor = getActorInfo(req);
+      const input = req.body as DearMeMemoryUpdate;
+      const createdAt = new Date().toISOString();
+
+      await logActivity(db, {
+        companyId,
+        actorType: actor.actorType,
+        actorId: actor.actorId,
+        agentId: actor.agentId,
+        runId: actor.runId,
+        action: DEARME_MEMORY_UPDATED_ACTION,
+        entityType: "dearme_memory",
+        entityId: memoryId,
+        details: {
           kind: input.kind,
           title: input.title,
-          bodyPreview: memoryBodyPreview(input.body),
+          body: input.body,
           sourceLabel: input.sourceLabel,
-          createdAt,
+          revisionOf: memoryId,
         },
-        growthCycles: {
-          checked: cycleRefresh.routineCount,
-          updated: cycleRefresh.updated,
-          unchanged: cycleRefresh.skipped,
-          memorySources: cycleRefresh.memoryCount,
+      });
+
+      const growthCycles = await refreshDearMeMemoryCycles(companyId, actor);
+
+      res.status(200).json(dearMeMemoryUpdateResultSchema.parse({
+        companyId,
+        status: "recorded",
+        memory: memoryUpdateResponseItem({ memoryId, update: input, createdAt }),
+        growthCycles,
+      }));
+    },
+  );
+
+  router.delete(
+    "/companies/:companyId/memory-updates/:memoryId",
+    async (req, res) => {
+      const companyId = req.params.companyId as string;
+      const memoryId = req.params.memoryId as string;
+      assertCompanyAccess(req, companyId);
+      assertBoard(req);
+      const actor = getActorInfo(req);
+      const archivedAt = new Date().toISOString();
+
+      await logActivity(db, {
+        companyId,
+        actorType: actor.actorType,
+        actorId: actor.actorId,
+        agentId: actor.agentId,
+        runId: actor.runId,
+        action: DEARME_MEMORY_ARCHIVED_ACTION,
+        entityType: "dearme_memory",
+        entityId: memoryId,
+        details: {
+          memoryId,
+          reason: "user_retired_source",
         },
+      });
+
+      const growthCycles = await refreshDearMeMemoryCycles(companyId, actor);
+
+      res.status(200).json(dearMeMemoryArchiveResultSchema.parse({
+        companyId,
+        status: "archived",
+        memoryId,
+        archivedAt,
+        growthCycles,
       }));
     },
   );

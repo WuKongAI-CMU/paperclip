@@ -342,6 +342,20 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         companyId,
         actorType: "user",
         actorId: "user-1",
+        action: "dearme.memory_archived",
+        entityType: "dearme_memory",
+        entityId: "memory-retired-1",
+        details: {
+          memoryId: "memory-retired-1",
+          reason: "user_retired_source",
+        },
+        createdAt: new Date("2026-05-07T16:24:00.000Z"),
+      },
+      {
+        id: randomUUID(),
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
         action: "dearme.memory_updated",
         entityType: "dearme_memory",
         entityId: "memory-voice-1",
@@ -360,6 +374,22 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         actorId: "user-1",
         action: "dearme.memory_updated",
         entityType: "dearme_memory",
+        entityId: "memory-retired-1",
+        details: {
+          kind: "goal",
+          title: "Retired goal",
+          body: "This old source should no longer shape the growth cycle.",
+          sourceLabel: "Old note",
+        },
+        createdAt: new Date("2026-05-07T16:23:00.000Z"),
+      },
+      {
+        id: randomUUID(),
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
         entityId: "memory-proof-1",
         details: {
           kind: "proof_point",
@@ -368,6 +398,22 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
           sourceLabel: "Build log",
         },
         createdAt: new Date("2026-05-07T16:33:00.000Z"),
+      },
+      {
+        id: randomUUID(),
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: "memory-voice-1",
+        details: {
+          kind: "voice_sample",
+          title: "Old operator note",
+          body: "An older voice note should not beat the latest revision.",
+          sourceLabel: "Manual note",
+        },
+        createdAt: new Date("2026-05-07T16:20:00.000Z"),
       },
       {
         id: randomUUID(),
@@ -526,10 +572,13 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
           id: "memory-voice-1",
           kind: "voice_sample",
           title: "Operator note",
+          body: "Short, direct writing sample with concrete proof.",
           sourceLabel: "Manual note",
         }),
       ]),
     }));
+    expect(result.memory.latest.map((item) => item.title)).not.toContain("Retired goal");
+    expect(result.memory.latest.map((item) => item.title)).not.toContain("Old operator note");
     expect(result.workStream).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -659,5 +708,96 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     expect(customerPathJson).not.toContain("anthropic");
     expect(customerPathJson).not.toContain("claude-sonnet");
     expect(customerPathJson).not.toContain(DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND);
+  });
+
+  it("projects only active Voice & Memory sources after revisions and retirements", async () => {
+    const companyId = await seedCompany();
+
+    await db.insert(activityLog).values([
+      {
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: "memory-active",
+        details: {
+          kind: "voice_sample",
+          title: "Original voice note",
+          body: "Original voice sample that should be superseded.",
+          sourceLabel: "Manual note",
+        },
+        createdAt: new Date("2026-05-08T14:00:00.000Z"),
+      },
+      {
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: "memory-retired",
+        details: {
+          kind: "proof_point",
+          title: "Old proof",
+          body: "A proof point that should no longer guide private work.",
+          sourceLabel: "Old log",
+        },
+        createdAt: new Date("2026-05-08T14:01:00.000Z"),
+      },
+      {
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_archived",
+        entityType: "dearme_memory",
+        entityId: "memory-retired",
+        details: {
+          memoryId: "memory-retired",
+          reason: "user_retired_source",
+        },
+        createdAt: new Date("2026-05-08T14:03:00.000Z"),
+      },
+      {
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: "memory-active",
+        details: {
+          kind: "voice_sample",
+          title: "Revised voice note",
+          body: "Sharper revised voice sample for future private drafts.",
+          sourceLabel: "Manual note",
+          revisionOf: "memory-active",
+        },
+        createdAt: new Date("2026-05-08T14:04:00.000Z"),
+      },
+    ]);
+
+    const result = await dearmeWorkbenchService(db).getWorkbench(companyId);
+
+    expect(result.memory).toEqual(expect.objectContaining({
+      sourceCount: 1,
+      voiceSampleCount: 1,
+      proofCount: 0,
+      latest: [
+        expect.objectContaining({
+          id: "memory-active",
+          kind: "voice_sample",
+          title: "Revised voice note",
+          body: "Sharper revised voice sample for future private drafts.",
+        }),
+      ],
+    }));
+    expect(result.memory.latest.map((item) => item.id)).not.toContain("memory-retired");
+    expect(result.recentProgress).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "team_progress",
+          title: "Voice & Memory source retired",
+        }),
+      ]),
+    );
   });
 });
