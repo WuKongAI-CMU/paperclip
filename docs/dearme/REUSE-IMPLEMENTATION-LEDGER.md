@@ -525,7 +525,7 @@ UI, not server-side runtime artifacts the user never sees).
 |---|---|---|---|---|
 | DM-S01 | Mass-assignment fix on `PATCH /api/companies/:id` | Naive security finding | `packages/shared/src/validators/company.ts`, `server/src/routes/companies.ts` | ✅ done (schema split + board-only governance route + tests) |
 | DM-142 | Six-hour DearMe cycle routine seed + approval-time provisioning | Polsia cycle every_6_hours | `packages/plugins/dearme-agent-prompts/src/state-machines/dearme-cycle.ts`, `server/src/services/dearme-brand-blueprint-apply.ts` | ✅ done (seed + routine/trigger provisioning + tests) |
-| DM-146 | Mount DearMe build skills into execution workspaces | Polsia per-execution `.claude/skills/` | `server/src/services/execution-workspaces.ts` | pending |
+| DM-146 | Mount DearMe build skills into execution workspaces | Polsia per-execution `.claude/skills/` | `server/src/services/heartbeat.ts`, adapter skill injection services | ✅ done (runtime skills projected into execution-run adapter config + focused test) |
 | DM-154 | Configure CEO/direct + worker/remote role templates with 2h/8h heartbeat | Naive two-tier agent split | adapter templates/config | pending |
 
 ### Sprint 1 - Aha moment

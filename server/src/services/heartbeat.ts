@@ -140,6 +140,7 @@ import {
 import {
   readPaperclipSkillSyncPreference,
   writePaperclipSkillSyncPreference,
+  type PaperclipSkillEntry,
 } from "@paperclipai/adapter-utils/server-utils";
 import { extractSkillMentionIds } from "@paperclipai/shared";
 import { environmentService } from "./environments.js";
@@ -354,6 +355,16 @@ export function applyRunScopedMentionedSkillKeys(
     ...existingPreference.desiredSkills,
     ...normalizedSkillKeys,
   ]);
+}
+
+export function attachRuntimeSkillsToExecutionConfig(
+  config: Record<string, unknown>,
+  runtimeSkillEntries: PaperclipSkillEntry[],
+): Record<string, unknown> {
+  return {
+    ...config,
+    paperclipRuntimeSkills: runtimeSkillEntries,
+  };
 }
 
 export function computeBoundedTransientHeartbeatRetrySchedule(
@@ -6468,10 +6479,10 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
       runScopedMentionedSkillKeys,
     );
     const runtimeSkillEntries = await companySkills.listRuntimeSkillEntries(agent.companyId);
-    let runtimeConfig = {
-      ...effectiveResolvedConfig,
-      paperclipRuntimeSkills: runtimeSkillEntries,
-    };
+    let runtimeConfig = attachRuntimeSkillsToExecutionConfig(
+      effectiveResolvedConfig,
+      runtimeSkillEntries,
+    );
     const workspaceOperationRecorder = workspaceOperationsSvc.createRecorder({
       companyId: agent.companyId,
       heartbeatRunId: run.id,

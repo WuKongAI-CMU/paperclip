@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { buildSkillMentionHref } from "@paperclipai/shared";
 import {
   applyRunScopedMentionedSkillKeys,
+  attachRuntimeSkillsToExecutionConfig,
   extractMentionedSkillIdsFromSources,
   resolveExecutionRunAdapterConfig,
 } from "../services/heartbeat.ts";
@@ -114,5 +115,59 @@ describe("applyRunScopedMentionedSkillKeys", () => {
         desiredSkills: ["paperclipai/paperclip/paperclip"],
       },
     });
+  });
+});
+
+describe("attachRuntimeSkillsToExecutionConfig", () => {
+  it("passes runtime skill mounts to the adapter config without dropping desired sync", () => {
+    const originalConfig = {
+      command: "codex",
+      env: {
+        KEEP: "yes",
+      },
+      paperclipSkillSync: {
+        desiredSkills: [
+          "paperclipai/paperclip/paperclip",
+          "company/company-1/voice-gate",
+        ],
+      },
+    };
+    const runtimeSkillEntries = [
+      {
+        key: "paperclipai/paperclip/paperclip",
+        runtimeName: "paperclip",
+        source: "/skills/paperclip",
+        required: true,
+        requiredReason: "Bundled runtime skills stay available in isolated workspaces.",
+      },
+      {
+        key: "company/company-1/voice-gate",
+        runtimeName: "voice-gate--abcd1234",
+        source: "/skills/voice-gate",
+        required: false,
+        requiredReason: null,
+      },
+    ];
+
+    const updatedConfig = attachRuntimeSkillsToExecutionConfig(
+      originalConfig,
+      runtimeSkillEntries,
+    );
+
+    expect(updatedConfig).toEqual({
+      command: "codex",
+      env: {
+        KEEP: "yes",
+      },
+      paperclipSkillSync: {
+        desiredSkills: [
+          "paperclipai/paperclip/paperclip",
+          "company/company-1/voice-gate",
+        ],
+      },
+      paperclipRuntimeSkills: runtimeSkillEntries,
+    });
+    expect(updatedConfig).not.toBe(originalConfig);
+    expect(originalConfig).not.toHaveProperty("paperclipRuntimeSkills");
   });
 });
