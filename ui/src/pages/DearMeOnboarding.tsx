@@ -119,6 +119,33 @@ const FIELD_HELP = {
   constraints: "Boundaries DearMe must preserve",
 };
 
+const REPORT_DIGEST_SECTIONS: Array<{
+  key: "accomplished" | "decisions" | "learnings" | "nextBets";
+  label: string;
+  helper: string;
+}> = [
+  {
+    key: "accomplished",
+    label: "What changed",
+    helper: "Visible work your team moved forward.",
+  },
+  {
+    key: "decisions",
+    label: "Needs your call",
+    helper: "High-leverage moves waiting on you.",
+  },
+  {
+    key: "learnings",
+    label: "What we learned",
+    helper: "Voice, proof, and preference memory.",
+  },
+  {
+    key: "nextBets",
+    label: "Next bets",
+    helper: "Where the next cycle should push.",
+  },
+];
+
 const CHIEF_OF_STAFF_INTENT_OPTIONS: Array<{
   value: DearMeChiefOfStaffMessageIntent;
   label: string;
@@ -2320,6 +2347,31 @@ function DearMeLetterPanel({
           }
         >
           <p className="line-clamp-3 text-sm text-foreground/80">{report.bodyPreview}</p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {REPORT_DIGEST_SECTIONS.map((section) => {
+              const items = report[section.key];
+
+              return (
+                <section
+                  key={section.key}
+                  className="rounded-lg border border-border/70 bg-background/60 p-3"
+                >
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-semibold text-foreground">{section.label}</h4>
+                    <p className="text-xs text-muted-foreground">{section.helper}</p>
+                  </div>
+                  <ul className="mt-3 space-y-2 text-sm text-foreground/80">
+                    {items.map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-primary" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
+          </div>
         </DearMeWorkbenchCard>
       ) : (
         <DearMeEmptyState

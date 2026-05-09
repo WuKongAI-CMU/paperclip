@@ -790,6 +790,10 @@ export const dearMeWorkbenchReportSchema = z.object({
   issueId: z.string().min(1),
   issueIdentifier: z.string().nullable(),
   bodyPreview: z.string(),
+  accomplished: z.array(mediumTextSchema).max(6),
+  decisions: z.array(mediumTextSchema).max(6),
+  learnings: z.array(mediumTextSchema).max(6),
+  nextBets: z.array(mediumTextSchema).max(6),
   updatedAt: z.string().datetime(),
 }).strict();
 

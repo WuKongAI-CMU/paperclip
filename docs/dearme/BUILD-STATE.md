@@ -2,6 +2,54 @@
 
 Date: 2026-05-09
 
+## DM-119 Weekly Report Evidence Digest - 2026-05-09
+
+Implementation slice:
+
+- Upgraded the weekly Dear me report from a single document preview into a
+  structured private review digest with four customer-facing sections:
+  `What changed`, `Needs your call`, `What we learned`, and `Next bets`.
+- Reused existing Naive/Paperclip-backed workbench inputs instead of adding a
+  report table, new runtime event stream, or separate DearMe job queue:
+  ready work, decisions, memory updates, routine-derived cycle check-ins, and
+  spend checkpoints.
+- Adapted Polsia's cycle review shape into DearMe language: accomplished work,
+  blocked/waiting decisions, learning signals, and tomorrow/next-cycle bets.
+- Kept Lindy's web lesson at the interaction level: compact, scannable,
+  action-card-adjacent sections inside the existing web cockpit rather than a
+  workflow builder, graph editor, or raw agent console.
+- Kept substrate words backstage. The report digest speaks in team/progress
+  language and continues the UI guard against Paperclip, provider, routine, and
+  raw cost-event leakage.
+
+Donor reuse:
+
+- Polsia supplies the product choreography for a visible weekly review loop.
+- Naive/Paperclip supplies the execution truth: work items, approvals,
+  documents, memory activity, routine cadence, and spend lineage.
+- Lindy supplies the web grammar: small evidence blocks that guide the user to
+  the next decision without exposing machinery.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 3 files, 40 tests.
+- `git diff --check` passed.
+- Customer-surface substrate scan over the touched UI/server paths passed; the
+  only matches are internal service/test fixtures and explicit no-leak
+  assertions.
+- `pnpm -r typecheck` passed.
+- `pnpm test:run` passed.
+- `pnpm build` passed with the existing Vite MarkdownEditor dynamic/static
+  import and large-chunk warnings.
+
+Next:
+
+- Move the richer weekly report digest into a more polished visual treatment
+  after the current cockpit surfaces settle.
+- Continue the Lindy knowledge-base reuse pass for Voice & Memory source
+  import/management without exposing workflow-builder machinery.
+
 ## DM-118 Routine And Spend Progress Projection - 2026-05-09
 
 Implementation slice:

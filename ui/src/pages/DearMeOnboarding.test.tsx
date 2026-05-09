@@ -472,6 +472,13 @@ function workbenchResponse(): DearMeWorkbenchResponse {
       issueId: "issue-1",
       issueIdentifier: "PET-7",
       bodyPreview: "Completed work: refreshed positioning and prepared next bets.",
+      accomplished: [
+        "Cycle check-in completed: Weekly content cycle checked in and kept the private growth cycle moving.",
+        "Spend checkpoint recorded: DearMe recorded $2.37 of private team work across 1 checkpoint.",
+      ],
+      decisions: ["Review Starter posts: Three posts are ready for voice review."],
+      learnings: ["Voice sample added: Short, direct voice note."],
+      nextBets: ["Content Producer is moving Content drafts forward."],
       updatedAt: "2026-05-07T14:00:00.000Z",
     },
     actionGraph: {
@@ -1051,6 +1058,14 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Weekly Dear me");
     expect(container.textContent).toContain("Open letter");
     expect(container.textContent).toContain("Completed work: refreshed positioning");
+    expect(container.textContent).toContain("What changed");
+    expect(container.textContent).toContain("Visible work your team moved forward.");
+    expect(container.textContent).toContain("Needs your call");
+    expect(container.textContent).toContain("Review Starter posts: Three posts are ready for voice review.");
+    expect(container.textContent).toContain("What we learned");
+    expect(container.textContent).toContain("Voice sample added: Short, direct voice note.");
+    expect(container.textContent).toContain("Next bets");
+    expect(container.textContent).toContain("Content Producer is moving Content drafts forward.");
     expect(container.textContent).toContain("Voice & Memory");
     expect(container.textContent).toContain("Learning");
     expect(container.textContent).toContain("Draft Voice Profile");

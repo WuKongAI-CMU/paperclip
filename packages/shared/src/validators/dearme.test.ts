@@ -743,6 +743,10 @@ describe("DearMe brand blueprint contract", () => {
         issueId: "issue-1",
         issueIdentifier: "PET-7",
         bodyPreview: "Completed work and decisions needed.",
+        accomplished: ["Cycle check-in completed and prepared the first private work."],
+        decisions: ["Approve Brand OS before any public-facing move starts."],
+        learnings: ["Voice Editor has one direct writing sample to learn from."],
+        nextBets: ["Review the prepared work and sharpen the next audience bet."],
         updatedAt: "2026-05-07T14:00:00.000Z",
       },
       actionGraph: {

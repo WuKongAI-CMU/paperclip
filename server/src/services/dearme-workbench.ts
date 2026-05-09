@@ -37,6 +37,7 @@ type DearMeTeamRole = DearMeWorkbenchTeamMember["role"];
 type DearMeRiskGate = DearMeWorkbenchDecision["riskGate"];
 type DearMeBatchAction = DearMeWorkbenchBatchDecision["action"];
 type DearMeBatchKey = NonNullable<DearMeRiskGate> | "review";
+type DearMeReportDigest = Pick<DearMeWorkbenchReport, "accomplished" | "decisions" | "learnings" | "nextBets">;
 type DearMeStreamKind = DearMeWorkbenchStreamItem["kind"];
 type DearMeCycleStage = DearMeWorkbenchStreamItem["cycleStage"];
 
@@ -628,6 +629,68 @@ function buildMemoryVoiceProfile(items: DearMeMemoryUpdateItem[]): DearMeWorkben
     draftTone: buildDraftTone(voiceSamples),
     nextStep: "Use voice review on prepared posts, outreach, and portfolio copy before approving external moves.",
   };
+}
+
+function digestItems(items: Array<string | null | undefined>, fallback: string) {
+  const cleaned = items
+    .map((item) => item?.replace(/\s+/g, " ").trim())
+    .filter((item): item is string => Boolean(item))
+    .map((item) => previewText(item, 240));
+
+  const unique = Array.from(new Set(cleaned)).slice(0, 6);
+  return unique.length > 0 ? unique : [fallback];
+}
+
+function artifactLabelForWork(item: DearMeWorkbenchWorkItem) {
+  return item.outputKind ? OUTPUT_KIND_ARTIFACT_LABELS[item.outputKind] : "Private growth brief";
+}
+
+function movingLabelForWork(item: DearMeWorkbenchWorkItem) {
+  return item.outputKind ? OUTPUT_KIND_ARTIFACT_LABELS[item.outputKind] : "the next private growth brief";
+}
+
+function buildReportDigest(input: {
+  activeWork: DearMeWorkbenchWorkItem[];
+  workReady: DearMeWorkbenchWorkItem[];
+  decisionsNeeded: DearMeWorkbenchDecision[];
+  recentProgress: DearMeWorkbenchProgressItem[];
+  memory: DearMeWorkbenchMemory;
+}): DearMeReportDigest {
+  const accomplished = digestItems(
+    [
+      ...input.recentProgress.map((item) => `${item.title}: ${item.summary}`),
+      ...input.workReady.map((item) =>
+        `${artifactLabelForWork(item)} is ready for your review: ${item.summary}`),
+    ],
+    "Your team is preparing the first private growth cycle so the weekly letter has real work to close.",
+  );
+  const decisions = digestItems(
+    input.decisionsNeeded.map((decision) => `${decision.title}: ${decision.summary}`),
+    "No public, send, deploy, or spend move needs your call right now.",
+  );
+  const learnings = digestItems(
+    [
+      input.memory.voiceProfile.guidance,
+      ...input.memory.latest.map((item) =>
+        `${MEMORY_KIND_LABELS[item.kind]} added: ${item.bodyPreview}`),
+    ],
+    "Add voice samples, proof, and boundaries so the next cycle can sound more like you.",
+  );
+  const nextBets = digestItems(
+    [
+      ...input.activeWork.map((item) =>
+        `${TEAM_ROLE_PUBLIC_LABELS[item.ownerRole]} is moving ${movingLabelForWork(item)} forward.`),
+      input.workReady.length > 0
+        ? "Review the prepared work and decide what can represent you publicly."
+        : null,
+      input.decisionsNeeded.length > 0
+        ? "Make the waiting high-leverage calls so the team can continue the cycle."
+        : null,
+    ],
+    "Start the next private cycle with one sharper goal, one proof source, and one audience bet.",
+  );
+
+  return { accomplished, decisions, learnings, nextBets };
 }
 
 function buildWorkStream(input: {
@@ -1396,6 +1459,13 @@ export function dearmeWorkbenchService(db: Db) {
         latest: latestMemory,
       };
       const reportOutput = outputs.find((output) => output.kind === "weekly_report") ?? null;
+      const reportDigest = buildReportDigest({
+        activeWork,
+        workReady,
+        decisionsNeeded,
+        recentProgress,
+        memory,
+      });
       const report = reportOutput
         ? {
             title: reportOutput.title,
@@ -1405,6 +1475,7 @@ export function dearmeWorkbenchService(db: Db) {
             issueId: reportOutput.issueId,
             issueIdentifier: reportOutput.issueIdentifier,
             bodyPreview: outputPreview(reportOutput),
+            ...reportDigest,
             updatedAt: reportOutput.updatedAt,
           }
         : null;

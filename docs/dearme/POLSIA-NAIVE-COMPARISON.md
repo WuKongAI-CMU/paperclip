@@ -94,7 +94,10 @@ below the product surface.
 
 ## Current Product Implication
 
-DM-105 exposes **cycle controls**, not runtime controls.
+DM-105 exposes **cycle controls**, not runtime controls. DM-119 extends the
+same donor split into the weekly Dear me report: Polsia supplies the visible
+review rhythm, while Naive/Paperclip supplies the underlying work, approval,
+memory, routine, and spend truth.
 
 The safe product slice is:
 
@@ -102,6 +105,8 @@ The safe product slice is:
 - The Chief of Staff receives a typed brief through the existing DearMe message
   route.
 - The team prepares private reviewable work.
+- The weekly report now summarizes what changed, what needs the user's call,
+  what the team learned, and what the next cycle should push.
 - Existing Work Ready and batch decision gates still own approval.
 - Any future pause/resume surface must be introduced as a real typed lifecycle
   contract before it can look like a hard runtime control.

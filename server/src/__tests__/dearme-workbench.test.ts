@@ -449,6 +449,19 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     expect(result.report).toEqual(expect.objectContaining({
       title: "Dear me report",
       bodyPreview: expect.stringContaining("Work ready"),
+      accomplished: expect.arrayContaining([
+        expect.stringContaining("Cycle check-in completed"),
+        expect.stringContaining("Spend checkpoint recorded"),
+      ]),
+      decisions: expect.arrayContaining([
+        expect.stringContaining("Review Content drafts"),
+      ]),
+      learnings: expect.arrayContaining([
+        expect.stringContaining("Voice sample added"),
+      ]),
+      nextBets: expect.arrayContaining([
+        expect.stringContaining("Opportunity Scout"),
+      ]),
     }));
     expect(result.recentProgress).toEqual(
       expect.arrayContaining([

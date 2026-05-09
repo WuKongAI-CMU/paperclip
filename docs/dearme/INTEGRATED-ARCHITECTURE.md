@@ -180,6 +180,9 @@ Remaining gaps:
 - routine telemetry and cost lineage now project into the customer work stream
   as cycle and spend checkpoint cards; the remaining gap is richer
   budget/reliability controls, not basic visibility;
+- weekly Dear me reports now reuse the same workbench projections as a
+  structured private digest, so Polsia-style cycle review exists without a new
+  DearMe report store or separate runtime path;
 - Voice & Memory source ingestion has not yet adopted the Lindy knowledge-base
   setup pattern;
 - product-copy leakage still needs repeated passes because the same checkout

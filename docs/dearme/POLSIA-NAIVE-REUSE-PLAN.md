@@ -48,6 +48,9 @@ Already implemented:
   primitive and added a normalized retry/continue/direction entrypoint that
   reuses the existing focused review route plus a thin DearMe `/continue`
   wrapper over the existing output handoff/review/wakeup path.
+- DM-118 and DM-119 project routine/spend cadence, ready work, decisions, and
+  Voice & Memory signals into visible DearMe progress and weekly report
+  digests without adding a parallel DearMe runtime or report store.
 - Polsia's key product lesson is now represented in the product shell: the user
   sees a team moving through a growth cycle and can open the prepared decision
   directly from the work stream.
@@ -59,6 +62,9 @@ Still not maximized:
   The deeper budget/credit UI is still not complete, but the live workbench no
   longer needs a parallel DearMe progress table to show routine and spend
   lineage.
+- DM-119 now turns the weekly Dear me report into a Polsia-style review digest
+  backed by those same workbench projections: what changed, what needs the
+  user's call, what the team learned, and what the next cycle should push.
 - Lindy-style reusable action cards have started landing as the live-feed,
   Decisions Needed, Work Ready, Private Work, and Voice & Memory source
   `DearMeActionCard` surfaces; DM-116 adds shared paused, retry, blocked, and
