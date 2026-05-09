@@ -1600,33 +1600,38 @@ function WorkReadyPanel({
             const outputKind = item.outputKind ?? "brand_os";
             const issueReference = workItemTarget(item);
             return (
-              <DearMeWorkbenchCard
+              <DearMeActionCard
                 key={item.id}
                 className="p-4"
                 eyebrow={roleLabel(item.ownerRole)}
                 title={item.title}
-                description={item.summary}
-                badge={
-                  <div className="flex shrink-0 flex-col items-end gap-2">
-                    <Badge variant={outputStatusVariant(item.status)}>
-                      {OUTPUT_STATUS_LABELS[item.status]}
-                    </Badge>
-                    <ReviewLoopBadges loop={item.reviewLoop} />
-                    <Badge variant="outline">{OUTPUT_KIND_LABELS[outputKind]}</Badge>
-                  </div>
-                }
+                summary={item.summary}
+                statusBadges={[
+                  {
+                    label: OUTPUT_STATUS_LABELS[item.status],
+                    variant: outputStatusVariant(item.status),
+                  },
+                  {
+                    label: reviewLoopLabel(item.reviewLoop),
+                    variant: "outline",
+                  },
+                  {
+                    label: reviewLoopStateLabel(item.reviewLoop),
+                    variant: reviewLoopVariant(item.reviewLoop),
+                  },
+                  {
+                    label: OUTPUT_KIND_LABELS[outputKind],
+                    variant: "outline",
+                  },
+                ]}
                 footer={`Updated ${shortDate(item.updatedAt)}`}
                 action={
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={item.status === "ready_for_review" ? "default" : "outline"}
-                    onClick={() => onOpenWorkItem(item)}
-                    disabled={!issueReference}
-                  >
-                    {workReadyActionLabel(item.status)}
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
+                  {
+                    label: workReadyActionLabel(item.status),
+                    onClick: () => onOpenWorkItem(item),
+                    disabled: !issueReference,
+                    variant: item.status === "ready_for_review" ? "default" : "outline",
+                  }
                 }
               >
                 <DearMeEvidenceGrid>
@@ -1645,7 +1650,7 @@ function WorkReadyPanel({
                   </div>
                 </DearMeEvidenceGrid>
                 <ReviewHandoffCard loop={item.reviewLoop} className="mt-3" />
-              </DearMeWorkbenchCard>
+              </DearMeActionCard>
             );
           })}
         </div>

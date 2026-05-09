@@ -2,6 +2,41 @@
 
 Date: 2026-05-09
 
+## DM-113 Work Ready Action Card Reuse - 2026-05-09
+
+Implementation slice:
+
+- Reused `DearMeActionCard` for the Work Ready surface so prepared outputs now
+  share the same customer-facing action card primitive as Live Team Feed and
+  Decisions Needed.
+- Preserved existing Naive/Paperclip-backed routes and state:
+  - `Review prepared work` still opens the prepared output review surface
+    through the existing work item target.
+  - output status, review loop state, output kind, evidence, handoff, and
+    updated-at projections remain the source of truth.
+- Preserved the Polsia product lesson: Work Ready still reads as a short shelf
+  of finished team work waiting for the user's next high-leverage decision.
+- Applied Lindy's reusable action-card grammar without importing Lindy runtime,
+  GraphQL, workflow builder assumptions, or donor copy.
+- Added DOM-level coverage that the Work Ready section now renders
+  `data-dearme-surface="action-card"` cards.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/dearme/DearMeActionCard.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 24 tests.
+- `pnpm -r typecheck` passed.
+- `pnpm build` passed. Vite still reports existing chunk-size/dynamic-import
+  warnings around the broader app bundle, but no build failure.
+- `git diff --check` passed.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|model-provider|setup-payload|setup_payload|control-plane|raw issue" ui/src/pages/DearMeOnboarding.tsx ui/src/components/dearme/DearMeActionCard.tsx ui/src/components/dearme/DearMeActionCard.test.tsx`
+  returned no matches.
+
+Next:
+
+- Reuse `DearMeActionCard` for private output cards and Voice & Memory source
+  cards before adding paused/retry variants.
+
 ## DM-112 Decisions Needed Action Card Reuse - 2026-05-09
 
 Implementation slice:

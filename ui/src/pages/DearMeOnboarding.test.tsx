@@ -876,6 +876,11 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Review pass 0/3");
     expect(container.textContent).toContain("Needs your review");
     expect(container.textContent).toContain("Open it, then approve, request changes, regenerate, or mark it not useful.");
+    expect(
+      container.querySelectorAll(
+        '[aria-label="Work ready"] [data-dearme-surface="action-card"]',
+      ).length,
+    ).toBeGreaterThan(0);
     expect(pageText.indexOf("Dear me, your team has decisions ready")).toBeLessThan(
       pageText.indexOf("Growth cycle"),
     );

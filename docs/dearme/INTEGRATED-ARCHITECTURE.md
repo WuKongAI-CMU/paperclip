@@ -162,8 +162,8 @@ Already true:
 Remaining gaps:
 
 - live feed action-card behavior now goes through
-  `ui/src/components/dearme/DearMeActionCard.tsx`, and Decisions Needed now
-  reuses that same primitive; Work Ready, private output, paused, retry, and
+  `ui/src/components/dearme/DearMeActionCard.tsx`, and Decisions Needed plus
+  Work Ready now reuse that same primitive; private output, paused, retry, and
   Voice & Memory source cards are still the remaining extraction surfaces;
 - action-needed, paused, retry, continue, and blocked states are not yet
   first-class DearMe work-stream blocks;
@@ -347,8 +347,9 @@ Lindy.
 The current bounded architecture target is to keep turning inline live-feed and
 review behavior into a reusable DearMe action-card spine. DM-111 lands the first
 primitive for the live feed, and DM-112 moves Decisions Needed onto the same
-grammar; the remaining work is to move Work Ready, private output, paused/retry,
-and source-management cards onto that same primitive.
+grammar. DM-113 moves Work Ready onto the same primitive; the remaining work is
+to move private output, paused/retry, and source-management cards onto that same
+primitive.
 
 Fresh read-only donor sweep:
 
