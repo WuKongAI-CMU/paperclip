@@ -183,8 +183,9 @@ Remaining gaps:
 - weekly Dear me reports now reuse the same workbench projections as a
   structured private digest, so Polsia-style cycle review exists without a new
   DearMe report store or separate runtime path;
-- Voice & Memory source ingestion has not yet adopted the Lindy knowledge-base
-  setup pattern;
+- Voice & Memory now has a first Lindy-style source coverage plan over existing
+  activity rows; the remaining gap is richer edit/archive/import management,
+  not basic source coverage visibility;
 - product-copy leakage still needs repeated passes because the same checkout
   preserves Paperclip compatibility identifiers below the waterline.
 

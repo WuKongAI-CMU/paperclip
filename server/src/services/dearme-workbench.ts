@@ -38,6 +38,8 @@ type DearMeRiskGate = DearMeWorkbenchDecision["riskGate"];
 type DearMeBatchAction = DearMeWorkbenchBatchDecision["action"];
 type DearMeBatchKey = NonNullable<DearMeRiskGate> | "review";
 type DearMeReportDigest = Pick<DearMeWorkbenchReport, "accomplished" | "decisions" | "learnings" | "nextBets">;
+type DearMeWorkbenchMemorySourcePlan = DearMeWorkbenchMemory["sourcePlan"];
+type DearMeWorkbenchMemorySourceRequirement = DearMeWorkbenchMemorySourcePlan["required"][number];
 type DearMeStreamKind = DearMeWorkbenchStreamItem["kind"];
 type DearMeCycleStage = DearMeWorkbenchStreamItem["cycleStage"];
 
@@ -122,6 +124,48 @@ const MEMORY_KIND_LABELS: Record<DearMeMemoryUpdateKind, string> = {
   relationship: "Relationship",
   preference: "Preference",
 };
+
+const MEMORY_SOURCE_REQUIREMENTS: Array<Pick<
+  DearMeWorkbenchMemorySourceRequirement,
+  "kind" | "label" | "target" | "nextAction"
+>> = [
+  {
+    kind: "voice_sample",
+    label: "Writing samples",
+    target: 2,
+    nextAction: "Add real posts, notes, transcripts, or approved drafts that already sound like the user.",
+  },
+  {
+    kind: "proof_point",
+    label: "Proof points",
+    target: 2,
+    nextAction: "Add shipped work, results, receipts, metrics, or customer proof future drafts can cite.",
+  },
+  {
+    kind: "goal",
+    label: "Goals",
+    target: 1,
+    nextAction: "Add the growth goal this cycle should serve before producing more work.",
+  },
+  {
+    kind: "audience",
+    label: "Audience notes",
+    target: 1,
+    nextAction: "Add who the work should speak to and what that audience cares about.",
+  },
+  {
+    kind: "offer",
+    label: "Offer notes",
+    target: 1,
+    nextAction: "Add what the user can sell, invite, pitch, or ask for.",
+  },
+  {
+    kind: "constraint",
+    label: "Boundaries",
+    target: 1,
+    nextAction: "Add forbidden wording, claim limits, sensitive topics, or positioning corrections.",
+  },
+];
 
 const BATCH_DECISION_COPY: Record<DearMeBatchKey, {
   title: string;
@@ -628,6 +672,45 @@ function buildMemoryVoiceProfile(items: DearMeMemoryUpdateItem[]): DearMeWorkben
     guidance: "Voice Editor has enough samples to use this as a draft voice profile for private work.",
     draftTone: buildDraftTone(voiceSamples),
     nextStep: "Use voice review on prepared posts, outreach, and portfolio copy before approving external moves.",
+  };
+}
+
+function buildMemorySourcePlan(items: DearMeMemoryUpdateItem[]): DearMeWorkbenchMemorySourcePlan {
+  const counts = new Map<DearMeMemoryUpdateKind, number>();
+  for (const item of items) {
+    counts.set(item.kind, (counts.get(item.kind) ?? 0) + 1);
+  }
+
+  const required = MEMORY_SOURCE_REQUIREMENTS.map((requirement) => {
+    const count = counts.get(requirement.kind) ?? 0;
+    const status: DearMeWorkbenchMemorySourceRequirement["status"] =
+      count === 0 ? "missing" : count >= requirement.target ? "ready" : "partial";
+    return {
+      ...requirement,
+      count,
+      status,
+    };
+  });
+  const nextRequirement = required.find((requirement) => requirement.status !== "ready") ?? null;
+  const status: DearMeWorkbenchMemorySourcePlan["status"] =
+    items.length === 0
+      ? "needs_sources"
+      : nextRequirement
+        ? "building"
+        : "ready_for_review";
+
+  let summary = "Voice & Memory has the core coverage needed for stronger private drafts and review-ready public work.";
+  if (status === "needs_sources") {
+    summary = "Start Voice & Memory with real samples, proof, goals, audience, offer, and boundaries before trusting public-facing work.";
+  } else if (nextRequirement) {
+    summary = `Voice & Memory is building coverage. Next: ${nextRequirement.nextAction}`;
+  }
+
+  return {
+    status,
+    summary,
+    nextSourceKind: nextRequirement?.kind ?? null,
+    required,
   };
 }
 
@@ -1456,6 +1539,7 @@ export function dearmeWorkbenchService(db: Db) {
         voiceSampleCount: latestMemory.filter((item) => item.kind === "voice_sample").length,
         proofCount: latestMemory.filter((item) => item.kind === "proof_point").length,
         voiceProfile: buildMemoryVoiceProfile(latestMemory),
+        sourcePlan: buildMemorySourcePlan(latestMemory),
         latest: latestMemory,
       };
       const reportOutput = outputs.find((output) => output.kind === "weekly_report") ?? null;

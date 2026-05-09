@@ -2,6 +2,63 @@
 
 Date: 2026-05-09
 
+## DM-120 Voice & Memory Source Coverage - 2026-05-09
+
+Implementation slice:
+
+- Added a typed `memory.sourcePlan` workbench contract so Voice & Memory now
+  reports which core source categories are missing, partial, or ready.
+- Projected that plan from existing `dearme.memory_updated` activity rows
+  instead of adding a separate memory-source table, connector runner, sync
+  engine, or generic knowledge-base backend.
+- Rendered a Voice & Memory Source coverage section in `/dearme` with coverage tiles for
+  writing samples, proof points, goals, audience notes, offer notes, and
+  boundaries. Clicking a gap selects the matching source type in the existing
+  add form.
+- Kept the latest Voice & Memory cards on the DearMe action-card path and kept
+  customer language focused on source coverage, voice, proof, and public-work
+  safety.
+
+Donor reuse:
+
+- Lindy supplies the source coverage/tile lesson from its knowledge-base setup
+  flow: show what exists, what is missing, and the next setup action.
+- Naive/Paperclip supplies the durable truth through existing company-scoped
+  activity rows; no parallel DearMe memory store was introduced.
+- Polsia remains the product interpretation: source coverage exists so the
+  user's visible growth team can keep learning and producing stronger weekly
+  work.
+
+Rejected:
+
+- Rejected importing a generic knowledge-base modal, crawler, upload/sync
+  state machine, or workflow-builder concepts into the P0 customer surface.
+- Rejected adding a new table before the existing memory activity projection is
+  too lossy to support source coverage.
+- Rejected exposing donor/runtime terms in the UI; this stays Voice & Memory,
+  not a substrate management page.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 3 files, 40 tests.
+- `git diff --check` passed.
+- Customer-surface substrate scan over `ui/src/pages/DearMeOnboarding.tsx`
+  passed with no matches for Paperclip, OpenClaw, OK Partner, provider,
+  adapter, setup payload, control-plane, workflow-builder, GraphQL, Relay, MCP,
+  or agent-runtime language.
+- `pnpm -r typecheck` passed.
+- `pnpm test:run` passed.
+- `pnpm build` passed with the existing Vite MarkdownEditor dynamic/static
+  import and large-chunk warnings.
+
+Next:
+
+- Add richer Voice & Memory source edit/archive/import affordances only where
+  they preserve DearMe language and stay backed by a typed server contract.
+- Consider a polished focused Voice & Memory view once the cockpit-level
+  coverage model proves useful.
+
 ## DM-119 Weekly Report Evidence Digest - 2026-05-09
 
 Implementation slice:

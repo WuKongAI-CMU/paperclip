@@ -1072,6 +1072,21 @@ const MEMORY_SOURCE_GUIDES: Array<{
 ];
 const DEFAULT_MEMORY_SOURCE_GUIDE = MEMORY_SOURCE_GUIDES[0]!;
 
+const MEMORY_SOURCE_PLAN_STATUS_LABELS: Record<DearMeWorkbenchMemory["sourcePlan"]["status"], string> = {
+  needs_sources: "Needs sources",
+  building: "Building",
+  ready_for_review: "Ready for review",
+};
+
+const MEMORY_SOURCE_REQUIREMENT_STATUS_LABELS: Record<
+  DearMeWorkbenchMemory["sourcePlan"]["required"][number]["status"],
+  string
+> = {
+  missing: "Missing",
+  partial: "In progress",
+  ready: "Ready",
+};
+
 const VOICE_PROFILE_STATUS_LABELS: Record<DearMeWorkbenchMemory["voiceProfile"]["status"], string> = {
   needs_samples: "Needs samples",
   learning: "Learning",
@@ -1082,6 +1097,24 @@ function voiceProfileVariant(status: DearMeWorkbenchMemory["voiceProfile"]["stat
   if (status === "ready_for_review") return "default" as const;
   if (status === "learning") return "secondary" as const;
   return "outline" as const;
+}
+
+function memorySourcePlanVariant(status: DearMeWorkbenchMemory["sourcePlan"]["status"]) {
+  if (status === "ready_for_review") return "default" as const;
+  if (status === "building") return "secondary" as const;
+  return "outline" as const;
+}
+
+function memorySourceRequirementVariant(
+  status: DearMeWorkbenchMemory["sourcePlan"]["required"][number]["status"],
+) {
+  if (status === "ready") return "default" as const;
+  if (status === "partial") return "secondary" as const;
+  return "outline" as const;
+}
+
+function memorySourceGuideForKind(kind: DearMeMemoryUpdateKind) {
+  return MEMORY_SOURCE_GUIDES.find((guide) => guide.kind === kind) ?? DEFAULT_MEMORY_SOURCE_GUIDE;
 }
 
 function pluralizeGrowthCycle(count: number) {
@@ -2541,6 +2574,7 @@ function VoiceMemoryPanel({
   const [body, setBody] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const voiceProfile = memory.voiceProfile;
+  const sourcePlan = memory.sourcePlan;
   const selectedGuide =
     MEMORY_SOURCE_GUIDES.find((guide) => guide.id === sourceGuideId) ?? DEFAULT_MEMORY_SOURCE_GUIDE;
   const feedback = memoryUpdateFeedback(result);
@@ -2597,6 +2631,13 @@ function VoiceMemoryPanel({
     }
   }
 
+  function handleSourcePlanSelect(nextKind: DearMeMemoryUpdateKind) {
+    const matchingGuide = memorySourceGuideForKind(nextKind);
+    setSourceGuideId(matchingGuide.id);
+    setKind(nextKind);
+    setLocalError(null);
+  }
+
   return (
     <DearMePanel aria-label="Voice & Memory">
       <DearMeWorkbenchSectionHeader
@@ -2633,6 +2674,58 @@ function VoiceMemoryPanel({
         <div className="grid grid-cols-2 gap-2 text-center lg:grid-cols-1">
           <Metric icon={Gauge} label="Confidence" value={`${voiceProfile.confidence}%`} />
           <Metric icon={Sparkles} label="Samples" value={voiceProfile.sampleCount} />
+        </div>
+      </div>
+
+      <div className="mt-5 border-t border-border pt-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">Source coverage</p>
+            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{sourcePlan.summary}</p>
+          </div>
+          <Badge variant={memorySourcePlanVariant(sourcePlan.status)}>
+            {MEMORY_SOURCE_PLAN_STATUS_LABELS[sourcePlan.status]}
+          </Badge>
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {sourcePlan.required.map((requirement) => {
+            const guide = memorySourceGuideForKind(requirement.kind);
+            const Icon = guide.icon;
+            const selected = kind === requirement.kind;
+            const isNext = sourcePlan.nextSourceKind === requirement.kind && requirement.status !== "ready";
+            return (
+              <button
+                key={requirement.label}
+                type="button"
+                aria-pressed={selected}
+                aria-label={`Add ${requirement.label}`}
+                className={cn(
+                  "min-h-28 rounded-md border px-3 py-3 text-left text-sm transition-colors",
+                  selected
+                    ? "border-primary bg-primary/5 text-foreground"
+                    : "border-border bg-background text-muted-foreground hover:border-primary/60 hover:text-foreground",
+                )}
+                onClick={() => handleSourcePlanSelect(requirement.kind)}
+              >
+                <span className="flex items-start justify-between gap-2">
+                  <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="break-words">{requirement.label}</span>
+                  </span>
+                  <Badge variant={memorySourceRequirementVariant(requirement.status)}>
+                    {MEMORY_SOURCE_REQUIREMENT_STATUS_LABELS[requirement.status]}
+                  </Badge>
+                </span>
+                <span className="mt-2 block text-xs text-muted-foreground">
+                  {requirement.count} of {requirement.target} saved
+                </span>
+                <span className="mt-2 block text-xs leading-5">{requirement.nextAction}</span>
+                {isNext ? (
+                  <span className="mt-2 inline-flex text-xs font-medium text-foreground">Next source</span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       </div>
 

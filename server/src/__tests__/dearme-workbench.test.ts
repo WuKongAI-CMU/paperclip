@@ -495,6 +495,32 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         confidence: 55,
         draftTone: expect.arrayContaining(["Direct", "Evidence-backed"]),
       }),
+      sourcePlan: expect.objectContaining({
+        status: "building",
+        nextSourceKind: "voice_sample",
+        required: expect.arrayContaining([
+          expect.objectContaining({
+            kind: "voice_sample",
+            label: "Writing samples",
+            status: "partial",
+            count: 1,
+            target: 2,
+          }),
+          expect.objectContaining({
+            kind: "proof_point",
+            label: "Proof points",
+            status: "partial",
+            count: 1,
+            target: 2,
+          }),
+          expect.objectContaining({
+            kind: "goal",
+            label: "Goals",
+            status: "missing",
+            count: 0,
+          }),
+        ]),
+      }),
       latest: expect.arrayContaining([
         expect.objectContaining({
           id: "memory-voice-1",

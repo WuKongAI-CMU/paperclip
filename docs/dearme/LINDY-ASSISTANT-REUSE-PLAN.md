@@ -50,18 +50,19 @@ Already adapted:
   DearMe-owned action-card path, reusing the existing focused review surface
   and a thin DearMe `/continue` wrapper over the existing output handoff path
   instead of importing workflow-builder controls.
+- DM-120 adapted the knowledge-source setup lesson into a typed Voice & Memory
+  source coverage plan that shows missing, partial, and ready source categories
+  from existing DearMe memory activity rows.
 
 Still missing:
 
-- a Voice & Memory source-management surface based on the knowledge-base
-  modal/tile pattern;
 - richer source import and management actions that keep knowledge UI useful
   without turning DearMe into a generic workflow builder.
 
 Next direct reuse target:
 
 ```text
-Add a Voice & Memory source-management surface on the DearMe-owned ActionCard path.
+Add richer Voice & Memory source edit/archive/import actions on the DearMe-owned ActionCard path.
 
 Use the internal baseline knowledge source, ActionCard, and action-needed
 patterns as source material. Do not port the whole Relay/GraphQL transcript

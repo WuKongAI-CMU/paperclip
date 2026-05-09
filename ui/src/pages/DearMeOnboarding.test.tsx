@@ -10,6 +10,7 @@ import {
   describeDearMePaidBetaEntitlement,
   evaluateDearMeVoiceGate,
   summarizeDearMeBrandBlueprint,
+  type DearMeMemoryUpdateKind,
   type DearMeWorkbenchResponse,
   type DearMeWorkbenchStreamItem,
   type DearMeOutputReviewLoop,
@@ -201,6 +202,76 @@ function reviewLoopFixture(
   };
 }
 
+function memorySourcePlanFixture(
+  counts: Partial<Record<DearMeMemoryUpdateKind, number>> = {
+    voice_sample: 1,
+    proof_point: 1,
+  },
+): DearMeWorkbenchResponse["memory"]["sourcePlan"] {
+  const requirements: Array<Pick<
+    DearMeWorkbenchResponse["memory"]["sourcePlan"]["required"][number],
+    "kind" | "label" | "target" | "nextAction"
+  >> = [
+    {
+      kind: "voice_sample",
+      label: "Writing samples",
+      target: 2,
+      nextAction: "Add real posts, notes, transcripts, or approved drafts that already sound like the user.",
+    },
+    {
+      kind: "proof_point",
+      label: "Proof points",
+      target: 2,
+      nextAction: "Add shipped work, results, receipts, metrics, or customer proof future drafts can cite.",
+    },
+    {
+      kind: "goal",
+      label: "Goals",
+      target: 1,
+      nextAction: "Add the growth goal this cycle should serve before producing more work.",
+    },
+    {
+      kind: "audience",
+      label: "Audience notes",
+      target: 1,
+      nextAction: "Add who the work should speak to and what that audience cares about.",
+    },
+    {
+      kind: "offer",
+      label: "Offer notes",
+      target: 1,
+      nextAction: "Add what the user can sell, invite, pitch, or ask for.",
+    },
+    {
+      kind: "constraint",
+      label: "Boundaries",
+      target: 1,
+      nextAction: "Add forbidden wording, claim limits, sensitive topics, or positioning corrections.",
+    },
+  ];
+  const required = requirements.map((requirement) => {
+    const count = counts[requirement.kind] ?? 0;
+    const status: DearMeWorkbenchResponse["memory"]["sourcePlan"]["required"][number]["status"] =
+      count === 0 ? "missing" : count >= requirement.target ? "ready" : "partial";
+    return {
+      ...requirement,
+      count,
+      status,
+    };
+  });
+  const nextRequirement = required.find((requirement) => requirement.status !== "ready") ?? null;
+  const hasAnySource = required.some((requirement) => requirement.count > 0);
+
+  return {
+    status: hasAnySource ? (nextRequirement ? "building" : "ready_for_review") : "needs_sources",
+    summary: hasAnySource
+      ? "Voice & Memory is building coverage. Next: add one more real writing sample."
+      : "Start Voice & Memory with real samples, proof, goals, audience, offer, and boundaries before trusting public-facing work.",
+    nextSourceKind: nextRequirement?.kind ?? null,
+    required,
+  };
+}
+
 function workbenchResponse(): DearMeWorkbenchResponse {
   return {
     companyId: "company-1",
@@ -343,6 +414,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         draftTone: ["Proof-first", "Plain language", "Direct", "Evidence-backed"],
         nextStep: "Add one more real sample to make voice review stronger before publishing or sending anything.",
       },
+      sourcePlan: memorySourcePlanFixture(),
       latest: [
         {
           id: "memory-1",
@@ -1072,6 +1144,12 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("55%");
     expect(container.textContent).toContain("Add one more real sample");
     expect(container.textContent).toContain("Manual note");
+    expect(container.textContent).toContain("Source coverage");
+    expect(container.textContent).toContain("Building");
+    expect(container.textContent).toContain("Writing samples");
+    expect(container.textContent).toContain("1 of 2 saved");
+    expect(container.textContent).toContain("Next source");
+    expect(container.textContent).toContain("Boundaries");
     expect(
       container.querySelectorAll(
         '[aria-label="Voice & Memory"] [data-dearme-surface="action-card"]',
@@ -1312,6 +1390,7 @@ describe("DearMeOnboarding", () => {
         guidance: "Voice Editor is ready for the first real sample.",
         nextStep: "Add one real sample so DearMe can protect your tone before public work.",
       },
+      sourcePlan: memorySourcePlanFixture({}),
       latest: [],
     };
     mockDearmeApi.getWorkbench.mockResolvedValue(emptyWorkbench);
@@ -1390,6 +1469,12 @@ describe("DearMeOnboarding", () => {
       );
     });
     await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Boundaries")?.click();
+    });
+
+    expect((container.querySelector("#dearme-memory-kind") as HTMLSelectElement | null)?.value).toBe("constraint");
 
     await act(async () => {
       buttonByText(container, "Forbidden phrase")?.click();

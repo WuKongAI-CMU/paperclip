@@ -773,12 +773,27 @@ const dearMeWorkbenchVoiceProfileSchema = z.object({
   nextStep: mediumTextSchema,
 }).strict();
 
+const dearMeWorkbenchMemorySourcePlanSchema = z.object({
+  status: z.enum(["needs_sources", "building", "ready_for_review"]),
+  summary: mediumTextSchema,
+  nextSourceKind: z.enum(DEARME_MEMORY_UPDATE_KINDS).nullable(),
+  required: z.array(z.object({
+    kind: z.enum(DEARME_MEMORY_UPDATE_KINDS),
+    label: shortTextSchema,
+    status: z.enum(["missing", "partial", "ready"]),
+    count: z.number().int().nonnegative(),
+    target: z.number().int().min(1).max(5),
+    nextAction: mediumTextSchema,
+  }).strict()).min(1).max(8),
+}).strict();
+
 export const dearMeWorkbenchMemorySchema = z.object({
   summary: mediumTextSchema,
   sourceCount: z.number().int().nonnegative(),
   voiceSampleCount: z.number().int().nonnegative(),
   proofCount: z.number().int().nonnegative(),
   voiceProfile: dearMeWorkbenchVoiceProfileSchema,
+  sourcePlan: dearMeWorkbenchMemorySourcePlanSchema,
   latest: z.array(dearMeMemoryUpdateItemSchema).max(12),
 }).strict();
 

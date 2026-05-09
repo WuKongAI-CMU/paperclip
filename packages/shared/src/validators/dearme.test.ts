@@ -694,6 +694,29 @@ describe("DearMe brand blueprint contract", () => {
           draftTone: ["Proof-first", "Plain language", "Direct", "Evidence-backed"],
           nextStep: "Add one more real sample to make voice review stronger before publishing or sending anything.",
         },
+        sourcePlan: {
+          status: "building",
+          summary: "Voice & Memory is building coverage. Next: add one more real writing sample.",
+          nextSourceKind: "voice_sample",
+          required: [
+            {
+              kind: "voice_sample",
+              label: "Writing samples",
+              status: "partial",
+              count: 1,
+              target: 2,
+              nextAction: "Add real posts, notes, transcripts, or approved drafts that already sound like the user.",
+            },
+            {
+              kind: "proof_point",
+              label: "Proof points",
+              status: "partial",
+              count: 1,
+              target: 2,
+              nextAction: "Add shipped work, results, receipts, metrics, or customer proof future drafts can cite.",
+            },
+          ],
+        },
         latest: [
           {
             id: "memory-1",
@@ -803,6 +826,10 @@ describe("DearMe brand blueprint contract", () => {
       sourceCount: 2,
       voiceSampleCount: 1,
       proofCount: 1,
+      sourcePlan: expect.objectContaining({
+        status: "building",
+        nextSourceKind: "voice_sample",
+      }),
     }));
     expect(response.workStream[0]).toEqual(expect.objectContaining({
       kind: "decision_needed",
