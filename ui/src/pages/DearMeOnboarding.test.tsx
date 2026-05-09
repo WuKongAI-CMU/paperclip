@@ -924,6 +924,12 @@ function surfaceByLabel(container: HTMLElement, label: string) {
   return surface as HTMLElement;
 }
 
+function focusedCardsInSurface(container: HTMLElement, label: string) {
+  return [
+    ...surfaceByLabel(container, label).querySelectorAll('[data-dearme-card-focused="true"]'),
+  ] as HTMLElement[];
+}
+
 describe("DearMeOnboarding", () => {
   let container: HTMLDivElement;
 
@@ -2041,6 +2047,103 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("reviews a focused work-ready item without leaving the DearMe decision surface", async () => {
+    mockLocation.search = "?view=decisions&issue=PET-7";
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const focusedDecision = surfaceByLabel(container, "Focused decision");
+    expect(focusedDecision.textContent).toContain("Work focused");
+    expect(focusedDecision.textContent).toContain("Dear me report");
+    expect(focusedDecision.textContent).toContain("Approve this work");
+    expect(focusedDecision.textContent).toContain("Request changes");
+    expect(focusedDecision.textContent).toContain("Prepare another pass");
+    expect(focusedDecision.textContent).toContain("Choose new direction");
+
+    await act(async () => {
+      setTextareaValue(
+        focusedDecision.querySelector("#dearme-focused-work-output-note") as HTMLTextAreaElement,
+        "Make the proof sharper before I approve it.",
+      );
+      buttonByText(focusedDecision, "Request changes")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.continueOutput).toHaveBeenCalledWith(
+      "company-1",
+      "issue-1:weekly_report",
+      { intent: "continue_revision", decisionNote: "Make the proof sharper before I approve it." },
+    );
+    expect(mockDearmeApi.reviewOutput).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining("/issues/"));
+    expect(container.textContent).not.toContain("/issues/");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("reviews a focused work-ready item from the DearMe decision drawer", async () => {
+    mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const focusedDecision = surfaceByLabel(container, "Focused decision");
+    expect(focusedDecision.textContent).toContain("Work focused");
+    expect(focusedDecision.textContent).toContain("Dear me report");
+    expect(focusedDecision.textContent).toContain("What should your team do next?");
+    expect(focusedCardsInSurface(container, "Work ready").some((card) =>
+      card.textContent?.includes("Dear me report"),
+    )).toBe(true);
+
+    await act(async () => {
+      setTextareaValue(
+        focusedDecision.querySelector("#dearme-focused-work-output-note") as HTMLTextAreaElement,
+        "This is ready to represent me.",
+      );
+      buttonByText(focusedDecision, "Approve this work")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.reviewOutput).toHaveBeenCalledWith(
+      "company-1",
+      "issue-1:weekly_report",
+      {
+        action: "approve",
+        decisionNote: "This is ready to represent me.",
+      },
+    );
+    expect(mockDearmeApi.continueOutput).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining("/issues/"));
+    expect(container.textContent).not.toContain("/issues/");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("opens a requested revision through the DearMe continue entrypoint", async () => {
     const response = workbenchResponse();
     response.workReady[0] = {
@@ -2191,6 +2294,9 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Request changes");
     expect(container.textContent).toContain("Reject");
     expect(container.textContent).not.toContain("/approvals/");
+    expect(focusedCardsInSurface(container, "Decisions needed").some((card) =>
+      card.textContent?.includes("Approve Brand OS for Peter Studio"),
+    )).toBe(true);
 
     await act(async () => {
       root.unmount();
@@ -2332,6 +2438,59 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("reviews a focused batch prepared item from the batch decision surface", async () => {
+    mockLocation.search = "?view=decisions&issue=issue-2";
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const focusedDecision = surfaceByLabel(container, "Focused decision");
+    expect(focusedDecision.textContent).toContain("Review content batch");
+    expect(focusedDecision.textContent).toContain("Approve this work");
+    expect(focusedDecision.textContent).toContain("Request changes");
+    expect(focusedDecision.textContent).toContain("Prepare another pass");
+    expect(focusedDecision.textContent).toContain("Choose new direction");
+    expect(focusedDecision.textContent).toContain("Prepared privately. You choose what ships.");
+    expect(focusedCardsInSurface(container, "Work ready").some((card) =>
+      card.textContent?.includes("Starter posts"),
+    )).toBe(true);
+    expect(focusedCardsInSurface(container, "Decisions needed").some((card) =>
+      card.textContent?.includes("Review content batch"),
+    )).toBe(true);
+
+    await act(async () => {
+      setTextareaValue(
+        focusedDecision.querySelector("#dearme-focused-batch-output-note") as HTMLTextAreaElement,
+        "This angle is not useful for the audience.",
+      );
+      buttonByText(focusedDecision, "Choose new direction")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.continueOutput).toHaveBeenCalledWith(
+      "company-1",
+      "issue-2:content_drafts",
+      { intent: "choose_new_direction", decisionNote: "This angle is not useful for the audience." },
+    );
+    expect(mockDearmeApi.reviewOutput).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining("/issues/"));
+    expect(container.textContent).not.toContain("/issues/");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("does not show the empty decision state when batch decisions are waiting", async () => {
     const batchOnlyWorkbench = workbenchResponse();
     batchOnlyWorkbench.decisionsNeeded = [];
@@ -2447,6 +2606,12 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Needs your review");
     expect(container.textContent).toContain("1 private reference prepared");
     expect(container.textContent).not.toContain("/issues/");
+    expect(focusedCardsInSurface(container, "Work ready").some((card) =>
+      card.textContent?.includes("Dear me report"),
+    )).toBe(true);
+    expect(focusedCardsInSurface(container, "Private work ready").some((card) =>
+      card.textContent?.includes("Dear me report"),
+    )).toBe(true);
 
     await act(async () => {
       root.unmount();

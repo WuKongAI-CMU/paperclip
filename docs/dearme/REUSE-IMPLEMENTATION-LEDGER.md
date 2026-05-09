@@ -62,7 +62,7 @@ The right reuse split is:
 | Brand OS / `brand_blueprint` | `packages/shared/src/validators/dearme.ts`; `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/routes/dearme.ts` | Naive `setup_payload` pattern has been adapted into a typed DearMe contract and approval-gated apply flow. | Keep extending this contract only when P0 surfaces need it. |
 | Workbench projection | `server/src/services/dearme-workbench.ts`; `server/src/__tests__/dearme-workbench.test.ts` | Naive/Paperclip tables remain the substrate for team, work, decisions, progress, reports, and memory projections. | Do not add a second runtime; enrich read models first. |
 | Action graph and work stream | `docs/dearme/ACTION-GRAPH-ARCHITECTURE.md`; `packages/shared/src/validators/dearme.ts`; `ui/src/components/dearme/DearMeActionCard.tsx` | Polsia cycle/report choreography plus Lindy action-card grammar are already converging into customer-safe work cards. | Add richer detail panels instead of more tabs. |
-| Output review and decisions | `ui/src/pages/DearMeOnboarding.tsx`; `server/src/services/dearme-output-handoff.ts`; `server/src/__tests__/dearme-output-handoff.test.ts` | Lindy pending-action shape and Polsia "small number of high-leverage calls" are reused in Work Ready / Decisions Needed. | DM-128 should improve the focused decision drawer using Lindy panel/modal patterns. |
+| Output review and decisions | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/pages/DearMeOnboarding.test.tsx`; `server/src/services/dearme-output-handoff.ts`; `server/src/__tests__/dearme-output-handoff.test.ts` | Lindy pending-action shape and Polsia "small number of high-leverage calls" are reused in Work Ready / Decisions Needed. DM-128 now lets focused prepared work be approved, revised, regenerated, or redirected inside the DearMe decision surface while Naive/Paperclip remains the hidden output review substrate. | Watch whether repeated review loops need richer history or policy cues; start DM-129 before adding more autonomous execution. |
 | Voice & Memory source review | `server/src/services/dearme-workbench.ts`; `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/pages/DearMeOnboarding.test.tsx` | Lindy KnowledgeBase/source-management and slide-out detail patterns are now adapted: private sources become review cards, selected sources open a detail surface, reviewed facts save through the existing memory path, and not-useful sources use the existing retire path. | Watch whether reviewers need richer source history after repeated use; do not add backend shape until the current detail surface proves insufficient. |
 | Weekly report and rituals | `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/services/dearme-workbench.ts` | Polsia report/cycle ritual is adapted into DearMe weekly report and daily team work language. | Add better report explanation and provenance after source drawer exists. |
 | Cost and reliability | Current workbench/cycle projections; Naive cost-event docs; Lindy router/executor evidence | Partially reused. DearMe has cost/progress projection, but not a dedicated model router or circuit breaker policy yet. | DM-129 should adapt Lindy router/executor plus Naive cost attribution into a DearMe automation reliability policy before code. |
@@ -70,6 +70,29 @@ The right reuse split is:
 | Development factory | `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` | Symphony-style worker queue is useful for bounded tickets after coordinator updates the queue. | Workers must use this ledger and `BUILD-STATE.md` before selecting old tickets. |
 
 ## Recently Completed
+
+### DM-128: Focused Decision Review Drawer
+
+Goal: make Work Ready and Decisions Needed feel like polished review work, not
+a broad dashboard jump.
+
+Donor grounding:
+
+- Polsia approval-queue choreography for a small number of high-leverage calls.
+- Naive/Paperclip output review and continuation flow as the hidden substrate.
+- Lindy `ActionCard.tsx`, `LindyPendingApprovalModal.tsx`, and
+  `ResizableSlideOutPanel.tsx` as interaction references.
+
+Completed:
+
+- Focused Work Ready and batch decision surfaces now show direct prepared-work
+  review controls.
+- Users can approve, request changes, prepare another pass, or choose a new
+  direction without seeing raw issue or approval routes.
+- Focused work/action cards remain highlighted in Work Ready, Private Work,
+  and Decisions Needed while the detail surface is open.
+- No new backend route, database table, drawer API, Relay/GraphQL shell, or
+  donor-branded UI was added.
 
 ### DM-127: Voice & Memory Source Detail Drawer
 
@@ -107,30 +130,6 @@ Completed:
   paths.
 
 ## Current Worker Queue
-
-### DM-128: Focused Decision Review Drawer
-
-Goal: make Work Ready and Decisions Needed feel like polished review work, not
-a broad dashboard jump.
-
-Donor grounding:
-
-- Lindy `ActionCard.tsx` for status/action grammar.
-- Lindy `LindyPendingApprovalModal.tsx` for compact review modal shape.
-- Lindy `ResizableSlideOutPanel.tsx` for right-side focused detail.
-- Polsia high-leverage approval queue choreography.
-
-Expected write scope:
-
-- `ui/src/pages/DearMeOnboarding.tsx`
-- `ui/src/components/dearme/DearMeActionCard.tsx`
-- Focused UI tests
-
-Acceptance:
-
-- Review, request changes, regenerate, and not-useful actions are visible from
-  the prepared item, not hidden behind a generic panel.
-- Approval boundaries remain clear before publish, send, deploy, or spend.
 
 ### DM-129: Automation Reliability And Cost Policy
 
@@ -189,5 +188,6 @@ Acceptance:
 ## Not Complete Yet
 
 DearMe is not release-ready just because these reuse decisions are documented.
-The next meaningful product gain is DM-128, because prepared work and decisions
-still need the same focused review treatment that source review now has.
+The next meaningful product gain is DM-129, because prepared-work review now
+has a DearMe-native surface and the next risk is how autonomous work retries,
+spends, pauses, and explains cost before it scales.

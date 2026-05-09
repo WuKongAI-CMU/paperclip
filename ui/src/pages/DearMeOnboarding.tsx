@@ -1472,6 +1472,114 @@ function matchesWorkItemFocus(item: DearMeWorkbenchWorkItem, focus: DearMeDecisi
   );
 }
 
+function batchPreparedOutputId(batch: DearMeWorkbenchBatchDecision): string | null {
+  const outputDecision = batch.decisionIds.find((decisionId) => decisionId.startsWith("output:"));
+  return outputDecision ? outputDecision.slice("output:".length) : null;
+}
+
+function FocusedPreparedWorkReviewControls({
+  outputId,
+  noteId,
+  description,
+  disabledReason,
+  isReviewable = true,
+  reviewState,
+  onReviewOutput,
+}: {
+  outputId: string | null;
+  noteId: string;
+  description: string;
+  disabledReason?: string;
+  isReviewable?: boolean;
+  reviewState: DearMeOutputReviewState;
+  onReviewOutput: (outputId: string, action: DearMeOutputReviewAction, decisionNote: string) => void;
+}) {
+  const [decisionNote, setDecisionNote] = useState("");
+  const isReviewingOutput = Boolean(outputId && reviewState.isPending && reviewState.outputId === outputId);
+  const canReview = Boolean(outputId) && isReviewable && !isReviewingOutput;
+  const pendingAction = isReviewingOutput ? reviewState.action : null;
+
+  useEffect(() => {
+    setDecisionNote("");
+  }, [outputId]);
+
+  function review(action: DearMeOutputReviewAction) {
+    if (!outputId) return;
+    onReviewOutput(outputId, action, decisionNote);
+  }
+
+  return (
+    <div className="mt-4 rounded-md border border-border bg-background/80 p-4">
+      <FieldLabel
+        htmlFor={noteId}
+        label="What should your team do next?"
+        hint={canReview ? "Approval gated" : "Waiting"}
+      />
+      <p className="text-xs text-muted-foreground">
+        {canReview ? description : disabledReason ?? "This prepared work is not ready for a decision yet."}
+      </p>
+      <Textarea
+        id={noteId}
+        aria-label="DearMe prepared work review note"
+        rows={3}
+        value={decisionNote}
+        placeholder="Optional note for your team."
+        onChange={(event) => setDecisionNote(event.target.value)}
+        disabled={!canReview}
+        className="mt-3"
+      />
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button type="button" size="sm" onClick={() => review("approve")} disabled={!canReview}>
+          {pendingAction === "approve" ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <CheckCircle2 className="h-4 w-4" />
+          )}
+          Approve this work
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => review("request_changes")}
+          disabled={!canReview}
+        >
+          {pendingAction === "request_changes" ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <XCircle className="h-4 w-4" />
+          )}
+          Request changes
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => review("regenerate")}
+          disabled={!canReview}
+        >
+          <RefreshCw className={cn("h-4 w-4", pendingAction === "regenerate" ? "animate-spin" : "")} />
+          Prepare another pass
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="destructive"
+          onClick={() => review("not_useful")}
+          disabled={!canReview}
+        >
+          {pendingAction === "not_useful" ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <XCircle className="h-4 w-4" />
+          )}
+          Choose new direction
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function FocusedDecisionPanel({
   decision,
   batch,
@@ -1480,7 +1588,9 @@ function FocusedDecisionPanel({
   onOpenBatch,
   onOpenWorkItem,
   onReviewApproval,
+  onReviewOutput,
   reviewState,
+  outputReviewState,
 }: {
   decision: DearMeWorkbenchDecision | null;
   batch: DearMeWorkbenchBatchDecision | null;
@@ -1493,7 +1603,9 @@ function FocusedDecisionPanel({
     action: DearMeApprovalReviewAction,
     decisionNote: string,
   ) => void;
+  onReviewOutput: (outputId: string, action: DearMeOutputReviewAction, decisionNote: string) => void;
   reviewState: DearMeApprovalReviewState;
+  outputReviewState: DearMeOutputReviewState;
 }) {
   const [decisionNote, setDecisionNote] = useState("");
 
@@ -1607,6 +1719,7 @@ function FocusedDecisionPanel({
   }
 
   if (batch) {
+    const outputId = batchPreparedOutputId(batch);
     return (
       <DearMeFocusSurface aria-label="Focused decision">
         <DearMeWorkbenchSectionHeader
@@ -1639,12 +1752,22 @@ function FocusedDecisionPanel({
             <p className="mt-1 text-sm">Prepared privately. You choose what ships.</p>
           </div>
         </DearMeEvidenceGrid>
-        <div className="mt-4 flex justify-end">
-          <Button type="button" size="sm" onClick={() => onOpenBatch(batch)}>
-            {batch.actionLabel}
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </div>
+        {outputId ? (
+          <FocusedPreparedWorkReviewControls
+            outputId={outputId}
+            noteId="dearme-focused-batch-output-note"
+            description="DearMe prepared the work privately. Approve what represents you, send changes back to the team, ask for another private pass, or choose a new direction."
+            reviewState={outputReviewState}
+            onReviewOutput={onReviewOutput}
+          />
+        ) : (
+          <div className="mt-4 flex justify-end">
+            <Button type="button" size="sm" onClick={() => onOpenBatch(batch)}>
+              {batch.actionLabel}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </DearMeFocusSurface>
     );
   }
@@ -1680,6 +1803,15 @@ function FocusedDecisionPanel({
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
+        <FocusedPreparedWorkReviewControls
+          outputId={workItem.id}
+          noteId="dearme-focused-work-output-note"
+          description="Review this prepared item in place. Nothing publishes, sends, deploys, or spends until you approve the move that represents you."
+          disabledReason="This lane is still in private work; DearMe will bring it back when it needs your call."
+          isReviewable={workItem.status === "ready_for_review" || workItem.reviewLoop.state === "needs_user_review"}
+          reviewState={outputReviewState}
+          onReviewOutput={onReviewOutput}
+        />
       </DearMeFocusSurface>
     );
   }
@@ -2057,9 +2189,11 @@ function TeamSummaryPanel({
 
 function WorkReadyPanel({
   items,
+  decisionFocus,
   onOpenWorkItem,
 }: {
   items: DearMeWorkbenchWorkItem[];
+  decisionFocus?: DearMeDecisionFocus | null;
   onOpenWorkItem: (item: DearMeWorkbenchWorkItem, intent?: DearMeReviewEntryIntent | null) => void;
 }) {
   return (
@@ -2084,10 +2218,12 @@ function WorkReadyPanel({
             const outputKind = item.outputKind ?? "brand_os";
             const issueReference = workItemTarget(item);
             const routeIntent = reviewLoopRouteIntent(item.reviewLoop);
+            const focused = decisionFocus ? matchesWorkItemFocus(item, decisionFocus) : false;
             return (
               <DearMeActionCard
                 key={item.id}
                 className="p-4"
+                focused={focused}
                 eyebrow={roleLabel(item.ownerRole)}
                 title={item.title}
                 summary={item.summary}
@@ -2149,6 +2285,7 @@ function DecisionsNeededPanel({
   batches,
   decisions,
   sourceReviews,
+  decisionFocus,
   onOpenBatch,
   onOpenDecision,
   onOpenSourceReview,
@@ -2156,6 +2293,7 @@ function DecisionsNeededPanel({
   batches: DearMeWorkbenchBatchDecision[];
   decisions: DearMeWorkbenchDecision[];
   sourceReviews: DearMeSourceReviewItem[];
+  decisionFocus?: DearMeDecisionFocus | null;
   onOpenBatch: (batch: DearMeWorkbenchBatchDecision) => void;
   onOpenDecision: (decision: DearMeWorkbenchDecision) => void;
   onOpenSourceReview: (sourceReview: DearMeSourceReviewItem) => void;
@@ -2178,57 +2316,61 @@ function DecisionsNeededPanel({
       {batches.length > 0 ? (
         <div className="mt-4 space-y-3">
           <p className="text-xs font-medium text-muted-foreground">Batch decisions</p>
-          {batches.map((batch) => (
-            <DearMeActionCard
-              key={batch.id}
-              className="p-4"
-              title={batch.title}
-              summary={batch.summary}
-              attention={{
-                kind: "decision_needed",
-                label: "Waiting on your decision",
-                detail: `Review ${batch.itemCount} prepared move${batch.itemCount === 1 ? "" : "s"} before anything public or external happens.`,
-              }}
-              statusBadges={[
-                {
-                  label: batch.riskGate ? RISK_GATE_LABELS[batch.riskGate] : "Review",
-                  variant: batch.riskGate ? "secondary" : "outline",
-                },
-              ]}
-              chips={[
-                {
-                  label: `${batch.itemCount} item${batch.itemCount === 1 ? "" : "s"}`,
-                  variant: "outline",
-                },
-              ]}
-              footer={`Updated ${shortDate(batch.updatedAt)}`}
-              action={
-                {
-                  label: batch.actionLabel,
-                  onClick: () => onOpenBatch(batch),
-                  disabled: batch.approvalIds.length === 0 && batch.issueIds.length === 0,
-                  variant: "default",
+          {batches.map((batch) => {
+            const focused = decisionFocus ? matchesBatchFocus(batch, decisionFocus) : false;
+            return (
+              <DearMeActionCard
+                key={batch.id}
+                className="p-4"
+                focused={focused}
+                title={batch.title}
+                summary={batch.summary}
+                attention={{
+                  kind: "decision_needed",
+                  label: "Waiting on your decision",
+                  detail: `Review ${batch.itemCount} prepared move${batch.itemCount === 1 ? "" : "s"} before anything public or external happens.`,
+                }}
+                statusBadges={[
+                  {
+                    label: batch.riskGate ? RISK_GATE_LABELS[batch.riskGate] : "Review",
+                    variant: batch.riskGate ? "secondary" : "outline",
+                  },
+                ]}
+                chips={[
+                  {
+                    label: `${batch.itemCount} item${batch.itemCount === 1 ? "" : "s"}`,
+                    variant: "outline",
+                  },
+                ]}
+                footer={`Updated ${shortDate(batch.updatedAt)}`}
+                action={
+                  {
+                    label: batch.actionLabel,
+                    onClick: () => onOpenBatch(batch),
+                    disabled: batch.approvalIds.length === 0 && batch.issueIds.length === 0,
+                    variant: "default",
+                  }
                 }
-              }
-            >
-              <DearMeEvidenceGrid>
-                <div className="rounded-md border border-border bg-background/80 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Waiting on you</p>
-                  <p className="mt-1 text-sm">
-                    Review {batch.itemCount} prepared move{batch.itemCount === 1 ? "" : "s"}.
-                  </p>
-                </div>
-                <div className="rounded-md border border-border bg-background/80 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Choices</p>
-                  <p className="mt-1 text-sm">Approve, request changes, or ask for another private pass.</p>
-                </div>
-                <div className="rounded-md border border-border bg-background/80 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">After your call</p>
-                  <p className="mt-1 text-sm text-foreground/85">{decisionAfterCallLabel(batch.riskGate)}</p>
-                </div>
-              </DearMeEvidenceGrid>
-            </DearMeActionCard>
-          ))}
+              >
+                <DearMeEvidenceGrid>
+                  <div className="rounded-md border border-border bg-background/80 p-3">
+                    <p className="text-xs font-medium text-muted-foreground">Waiting on you</p>
+                    <p className="mt-1 text-sm">
+                      Review {batch.itemCount} prepared move{batch.itemCount === 1 ? "" : "s"}.
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-border bg-background/80 p-3">
+                    <p className="text-xs font-medium text-muted-foreground">Choices</p>
+                    <p className="mt-1 text-sm">Approve, request changes, or ask for another private pass.</p>
+                  </div>
+                  <div className="rounded-md border border-border bg-background/80 p-3">
+                    <p className="text-xs font-medium text-muted-foreground">After your call</p>
+                    <p className="mt-1 text-sm text-foreground/85">{decisionAfterCallLabel(batch.riskGate)}</p>
+                  </div>
+                </DearMeEvidenceGrid>
+              </DearMeActionCard>
+            );
+          })}
         </div>
       ) : null}
       {sourceReviews.length > 0 ? (
@@ -2301,71 +2443,75 @@ function DecisionsNeededPanel({
           {batches.length > 0 ? (
             <p className="text-xs font-medium text-muted-foreground">Individual decisions</p>
           ) : null}
-          {decisions.map((decision) => (
-            <DearMeActionCard
-              key={decision.id}
-              className="p-4"
-              title={decision.title}
-              summary={decision.summary}
-              attention={decisionActionAttention(decision)}
-              statusBadges={[
-                {
-                  label: decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval",
-                  variant: decision.riskGate ? "secondary" : "outline",
-                },
-                ...(decision.reviewLoop
-                  ? [
-                      { label: reviewLoopLabel(decision.reviewLoop), variant: "outline" as const },
-                      {
-                        label: reviewLoopStateLabel(decision.reviewLoop),
-                        variant: reviewLoopVariant(decision.reviewLoop),
-                      },
-                    ]
-                  : []),
-              ]}
-              chips={[
-                {
-                  label: decision.outputKind
-                    ? OUTPUT_KIND_LABELS[decision.outputKind]
-                    : "Brand OS approval",
-                  variant: "outline",
-                },
-              ]}
-              footer={`Updated ${shortDate(decision.updatedAt)}`}
-              action={
-                {
-                  label: decision.approvalId ? "Approve" : "Review",
-                  onClick: () => onOpenDecision(decision),
-                  disabled: !decision.approvalId && !decision.issueIdentifier && !decision.issueId,
-                  variant: decision.approvalId ? "default" : "outline",
+          {decisions.map((decision) => {
+            const focused = decisionFocus ? matchesDecisionFocus(decision, decisionFocus) : false;
+            return (
+              <DearMeActionCard
+                key={decision.id}
+                className="p-4"
+                focused={focused}
+                title={decision.title}
+                summary={decision.summary}
+                attention={decisionActionAttention(decision)}
+                statusBadges={[
+                  {
+                    label: decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval",
+                    variant: decision.riskGate ? "secondary" : "outline",
+                  },
+                  ...(decision.reviewLoop
+                    ? [
+                        { label: reviewLoopLabel(decision.reviewLoop), variant: "outline" as const },
+                        {
+                          label: reviewLoopStateLabel(decision.reviewLoop),
+                          variant: reviewLoopVariant(decision.reviewLoop),
+                        },
+                      ]
+                    : []),
+                ]}
+                chips={[
+                  {
+                    label: decision.outputKind
+                      ? OUTPUT_KIND_LABELS[decision.outputKind]
+                      : "Brand OS approval",
+                    variant: "outline",
+                  },
+                ]}
+                footer={`Updated ${shortDate(decision.updatedAt)}`}
+                action={
+                  {
+                    label: decision.approvalId ? "Approve" : "Review",
+                    onClick: () => onOpenDecision(decision),
+                    disabled: !decision.approvalId && !decision.issueIdentifier && !decision.issueId,
+                    variant: decision.approvalId ? "default" : "outline",
+                  }
                 }
-              }
-            >
-              <DearMeEvidenceGrid>
-                <div className="rounded-md border border-border bg-background/80 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Prepared artifact</p>
-                  <p className="mt-1 text-sm">
-                    {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Brand OS approval"}
-                  </p>
-                </div>
-                <div className="rounded-md border border-border bg-background/80 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Available choices</p>
-                  <p className="mt-1 text-sm">Approve, request changes, or reject before anything public happens.</p>
-                </div>
-                <div className="rounded-md border border-border bg-background/80 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">After your call</p>
-                  <p className="mt-1 text-sm text-foreground/85">
-                    {decision.reviewLoop?.nextStep ?? decisionAfterCallLabel(decision.riskGate)}
-                  </p>
-                  {decision.reviewLoop?.lastDecisionNotePreview ? (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Last call: {decision.reviewLoop.lastDecisionNotePreview}
+              >
+                <DearMeEvidenceGrid>
+                  <div className="rounded-md border border-border bg-background/80 p-3">
+                    <p className="text-xs font-medium text-muted-foreground">Prepared artifact</p>
+                    <p className="mt-1 text-sm">
+                      {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Brand OS approval"}
                     </p>
-                  ) : null}
-                </div>
-              </DearMeEvidenceGrid>
-            </DearMeActionCard>
-          ))}
+                  </div>
+                  <div className="rounded-md border border-border bg-background/80 p-3">
+                    <p className="text-xs font-medium text-muted-foreground">Available choices</p>
+                    <p className="mt-1 text-sm">Approve, request changes, or reject before anything public happens.</p>
+                  </div>
+                  <div className="rounded-md border border-border bg-background/80 p-3">
+                    <p className="text-xs font-medium text-muted-foreground">After your call</p>
+                    <p className="mt-1 text-sm text-foreground/85">
+                      {decision.reviewLoop?.nextStep ?? decisionAfterCallLabel(decision.riskGate)}
+                    </p>
+                    {decision.reviewLoop?.lastDecisionNotePreview ? (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Last call: {decision.reviewLoop.lastDecisionNotePreview}
+                      </p>
+                    ) : null}
+                  </div>
+                </DearMeEvidenceGrid>
+              </DearMeActionCard>
+            );
+          })}
         </div>
       ) : null}
     </DearMePanel>
@@ -3543,7 +3689,9 @@ function TeamWorkbenchPanel({
   onOpenIssue,
   onOpenWorkItem,
   onReviewApproval,
+  onReviewOutput,
   reviewState,
+  outputReviewState,
 }: {
   companyId: string;
   paidBetaActive: boolean;
@@ -3560,7 +3708,9 @@ function TeamWorkbenchPanel({
     action: DearMeApprovalReviewAction,
     decisionNote: string,
   ) => void;
+  onReviewOutput: (outputId: string, action: DearMeOutputReviewAction, decisionNote: string) => void;
   reviewState: DearMeApprovalReviewState;
+  outputReviewState: DearMeOutputReviewState;
 }) {
   const queryClient = useQueryClient();
   const [memoryError, setMemoryError] = useState<string | null>(null);
@@ -3708,7 +3858,9 @@ function TeamWorkbenchPanel({
           onOpenBatch={openBatch}
           onOpenWorkItem={openWorkItem}
           onReviewApproval={onReviewApproval}
+          onReviewOutput={onReviewOutput}
           reviewState={reviewState}
+          outputReviewState={outputReviewState}
         />
       ) : null}
 
@@ -3726,11 +3878,16 @@ function TeamWorkbenchPanel({
       />
 
       <DearMeCockpitGrid variant="primary">
-        <WorkReadyPanel items={readyItems} onOpenWorkItem={openWorkItem} />
+        <WorkReadyPanel
+          items={readyItems}
+          decisionFocus={decisionFocus}
+          onOpenWorkItem={openWorkItem}
+        />
         <DecisionsNeededPanel
           batches={batches}
           decisions={decisions}
           sourceReviews={sourceReviews}
+          decisionFocus={decisionFocus}
           onOpenBatch={openBatch}
           onOpenDecision={openDecision}
           onOpenSourceReview={openSourceReview}
@@ -4130,6 +4287,7 @@ function PrivateWorkPanel({
               const preview = outputPreview(output);
               const details = output.details.slice(0, 3);
               const routeIntent = reviewLoopRouteIntent(output.reviewLoop);
+              const focused = decisionFocus ? matchesOutputFocus(output, decisionFocus) : false;
               const footer = `Updated ${shortDate(output.updatedAt)}${
                 output.documents.length > 0
                   ? ` / ${output.documents.length} private reference${output.documents.length === 1 ? "" : "s"}`
@@ -4139,6 +4297,7 @@ function PrivateWorkPanel({
                 <DearMeActionCard
                   key={output.id}
                   className="flex min-h-44 flex-col p-4"
+                  focused={focused}
                   title={output.title}
                   summary={output.summary}
                   attention={outputActionAttention(output.status, output.reviewLoop)}
@@ -4558,10 +4717,16 @@ export function DearMeOnboarding() {
         onOpenIssue={handleOpenIssue}
         onOpenWorkItem={handleOpenWorkbenchWorkItem}
         onReviewApproval={handleReviewApproval}
+        onReviewOutput={handleReviewOutput}
         reviewState={{
           approvalId: pendingApprovalReview?.approvalId ?? null,
           action: pendingApprovalReview?.action ?? null,
           isPending: approvalReviewMutation.isPending,
+        }}
+        outputReviewState={{
+          outputId: pendingOutputReview?.outputId ?? null,
+          action: pendingOutputReview?.action ?? null,
+          isPending: outputReviewMutation.isPending,
         }}
       />
 

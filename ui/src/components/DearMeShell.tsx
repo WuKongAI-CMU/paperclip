@@ -224,6 +224,8 @@ type DearMeWorkbenchCardProps = {
   className?: string;
   surface?: "workbench-card" | "action-card";
   tone?: "default" | "empty";
+  focused?: boolean;
+  "aria-current"?: "true";
   "aria-label"?: string;
 };
 
@@ -238,6 +240,8 @@ export function DearMeWorkbenchCard({
   className,
   surface = "workbench-card",
   tone = "default",
+  focused = false,
+  "aria-current": ariaCurrent,
   "aria-label": ariaLabel,
 }: DearMeWorkbenchCardProps) {
   return (
@@ -245,9 +249,12 @@ export function DearMeWorkbenchCard({
       className={cn(
         "rounded-md border px-3 py-3",
         tone === "empty" ? "border-dashed border-border" : "border-border",
+        focused ? "border-primary/50 bg-primary/5 ring-2 ring-primary/70 ring-offset-2 ring-offset-background" : undefined,
         className,
       )}
       aria-label={ariaLabel}
+      aria-current={ariaCurrent}
+      data-dearme-card-focused={focused ? "true" : undefined}
       data-dearme-surface={surface}
     >
       <div className="flex items-start justify-between gap-3">

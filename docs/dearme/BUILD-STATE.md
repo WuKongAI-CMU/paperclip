@@ -2,6 +2,60 @@
 
 Date: 2026-05-09
 
+## DM-128 Focused Decision Review Drawer - 2026-05-09
+
+Implementation slice:
+
+- Added direct prepared-work review controls to the focused DearMe decision
+  surface for Work Ready items and batch prepared work.
+- The focused surface now supports approve, request changes, prepare another
+  private pass, and choose a new direction without sending the user through a
+  broad issue or approval route.
+- Reused the existing DearMe output review and continue path; no new backend
+  route, table, runtime, or drawer-specific API was added.
+- Added focused card state to DearMe workbench/action cards so selected Work
+  Ready, Private Work, and Decisions Needed items stay visually connected to
+  the focused decision surface.
+- Approval-only Brand OS decisions still use the existing approval review gate.
+
+Donor reuse:
+
+- Polsia supplies the product choreography: prepared work becomes a small set
+  of high-leverage user calls instead of an operator dashboard.
+- Naive/Paperclip supplies the hidden substrate: existing output ids, review
+  loop state, continuation intents, and approval boundaries.
+- Lindy supplies the interaction reference: compact action-card grammar,
+  pending-review modal shape, and focused side/detail panel behavior adapted
+  into DearMe-native UI.
+
+Rejected:
+
+- Rejected adding a second decision drawer backend or duplicating output review
+  state.
+- Rejected routing paid-beta users into raw issue, approval, runtime, or donor
+  UI surfaces for prepared work review.
+- Rejected importing Lindy Relay/GraphQL shell or donor brand language.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 1 file, 34 tests.
+- `pnpm -r typecheck` passed across the workspace.
+- `pnpm build` passed with the existing Vite dynamic/static import and chunk
+  size warnings only.
+- `git diff --check` passed.
+- Customer-surface hidden-term scan over touched DearMe UI/shared paths found
+  no new substrate terms after filtering code-only package/test identifiers.
+- `pnpm test:run` was not rerun for this focused UI slice; DM-125 recorded an
+  existing full-suite concurrency timeout around the standalone onboarding
+  file, so this pass used targeted UI tests plus typecheck/build.
+
+Next:
+
+- Run `DM-129`: Automation Reliability And Cost Policy, adapting Lindy
+  router/executor and Naive/Paperclip cost rails into a DearMe policy before
+  adding deeper autonomous execution.
+
 ## DM-127 Voice & Memory Source Detail Drawer - 2026-05-09
 
 Implementation slice:

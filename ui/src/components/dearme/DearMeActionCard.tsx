@@ -60,6 +60,7 @@ export type DearMeActionCardProps = {
   action?: DearMeActionCardAction | null;
   children?: ReactNode;
   className?: string;
+  focused?: boolean;
   "aria-label"?: string;
 };
 
@@ -76,6 +77,7 @@ export function DearMeActionCard({
   action,
   children,
   className,
+  focused = false,
   "aria-label": ariaLabel,
 }: DearMeActionCardProps) {
   const ActionIcon = action?.icon === null ? null : action?.icon ?? ArrowRight;
@@ -105,6 +107,8 @@ export function DearMeActionCard({
         ) : null
       }
       className={className}
+      focused={focused}
+      aria-current={focused ? "true" : undefined}
       surface="action-card"
       aria-label={ariaLabel}
     >
