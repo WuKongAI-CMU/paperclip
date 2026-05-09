@@ -43,9 +43,13 @@ workspace app with inherited bottom navigation.
 ## Verification
 
 - `pnpm exec vitest run ui/src/components/Layout.test.tsx ui/src/components/DearMeSidebar.test.tsx ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 3 files, 48 tests.
 - `pnpm --filter @paperclipai/ui typecheck`
+  passed.
 - `git diff --check`
+  passed.
 - Customer-surface hidden-term scan over touched DearMe shell files.
+  Passed with no matches.
 - Playwright mobile `390x844` on `/dearme`: title
   `Team · DearMe · DearMe`, redirected URL `/DEAA/dearme`, DearMe mobile nav
   count `1`, generic nav count `0`, console error/warn logs empty, More opens

@@ -46,10 +46,15 @@ Verification:
   returned no matches.
 - Playwright mobile `390x844` on `/dearme` passed: title
   `Team · DearMe · DearMe`, redirected URL `/DEAA/dearme`, DearMe mobile nav
-  count `1`, generic nav count `0`, console error/warn logs empty, and More
-  opened the full DearMe menu.
+  count `1`, generic nav count `0`, console error/warn logs empty,
+  `Decisions` navigated to `/DEAA/dearme?view=decisions`, and More opened the
+  full DearMe menu.
 - Playwright desktop `1440x1000` on `/dearme` passed: mobile nav count `0`,
   generic nav count `0`, and console error/warn logs empty.
+- Screenshot evidence: `/tmp/dearme-dm132-mobile-after.png`,
+  `/tmp/dearme-dm132-mobile-decisions-after.png`,
+  `/tmp/dearme-dm132-mobile-menu-after.png`, and
+  `/tmp/dearme-dm132-desktop-after.png`.
 
 Next:
 
