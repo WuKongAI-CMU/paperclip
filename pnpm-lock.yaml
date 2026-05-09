@@ -551,6 +551,9 @@ importers:
       '@paperclipai/db':
         specifier: workspace:*
         version: link:../packages/db
+      '@paperclipai/dearme-agent-prompts':
+        specifier: workspace:*
+        version: link:../packages/plugins/dearme-agent-prompts
       '@paperclipai/plugin-sdk':
         specifier: workspace:*
         version: link:../packages/plugins/sdk

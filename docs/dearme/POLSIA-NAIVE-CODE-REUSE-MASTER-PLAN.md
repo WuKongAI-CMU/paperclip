@@ -142,7 +142,7 @@ Plugin reuse map:
 ### Sprint 0 - Make the foundation executable
 
 1. DM-S01: fix company mass assignment before paid beta. (✅ done)
-2. DM-142: configure DearMe cycle routine.
+2. DM-142: configure DearMe cycle routine. (✅ seed + runtime provisioning done)
 3. DM-146: verify execution-workspace skill mounting.
 4. DM-154: configure CEO/direct and worker/remote role templates.
 5. Keep `REBRAND-AND-PROVENANCE.md` aligned with reuse docs.
@@ -162,8 +162,12 @@ personal-brand growth-team domain.
 DM-142 now has an executable seed contract in
 `packages/plugins/dearme-agent-prompts/src/state-machines/dearme-cycle.ts`:
 the six-hour growth-cycle managed routine declaration, customer-safe cycle
-issue renderer, and tests are in place. The next DM-142 slice is runtime
-provisioning through the existing routines service.
+issue renderer, and tests are in place. Runtime provisioning is also wired in
+`server/src/services/dearme-brand-blueprint-apply.ts`: approved Brand OS
+blueprints create the high-priority six-hour routine, chief-of-staff assignee,
+`0 */6 * * *` trigger, and customer-safe routine description through the
+existing routines service. The next Sprint 0 slice is DM-146 skill mounting in
+execution workspaces.
 
 ### Sprint 1 - Aha moment
 

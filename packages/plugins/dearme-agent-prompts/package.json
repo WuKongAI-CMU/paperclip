@@ -5,22 +5,32 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+    ".": "./src/index.ts",
+    "./state-machines": "./src/state-machines/index.ts",
+    "./prompts": "./src/prompts/index.ts",
+    "./templates": "./src/templates/index.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./state-machines": {
+        "types": "./dist/state-machines/index.d.ts",
+        "import": "./dist/state-machines/index.js"
+      },
+      "./prompts": {
+        "types": "./dist/prompts/index.d.ts",
+        "import": "./dist/prompts/index.js"
+      },
+      "./templates": {
+        "types": "./dist/templates/index.d.ts",
+        "import": "./dist/templates/index.js"
+      }
     },
-    "./state-machines": {
-      "types": "./dist/state-machines/index.d.ts",
-      "import": "./dist/state-machines/index.js"
-    },
-    "./prompts": {
-      "types": "./dist/prompts/index.d.ts",
-      "import": "./dist/prompts/index.js"
-    },
-    "./templates": {
-      "types": "./dist/templates/index.d.ts",
-      "import": "./dist/templates/index.js"
-    }
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
   },
   "scripts": {
     "build": "tsc",

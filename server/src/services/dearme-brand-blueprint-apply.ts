@@ -2,6 +2,11 @@ import type { Db } from "@paperclipai/db";
 import { approvals } from "@paperclipai/db";
 import { DEFAULT_CODEX_LOCAL_MODEL } from "@paperclipai/adapter-codex-local";
 import {
+  DEARME_SIX_HOUR_CYCLE_KEY,
+  DEARME_SIX_HOUR_GROWTH_ROUTINE,
+  renderDearMeSixHourCycleIssue,
+} from "@paperclipai/dearme-agent-prompts";
+import {
   dearMeBrandBlueprintApplyPayloadSchema,
   type DearMeBrandBlueprint,
   type DearMeBrandBlueprintApplyPayload,
@@ -323,6 +328,30 @@ function renderRoutineDescription(cycle: DearMeBrandBlueprint["cycles"][number],
   ].join("\n");
 }
 
+function sixHourCycleRecentSignals(blueprint: DearMeBrandBlueprint) {
+  return [
+    ...blueprint.brand.goals.slice(0, 2).map((goal) => `Goal: ${compactLine(goal, 240)}`),
+    ...blueprint.brand.audiences.slice(0, 2).map((audience) => `Audience: ${compactLine(audience, 240)}`),
+    ...blueprint.brand.proofPoints.slice(0, 2).map((proofPoint) => `Proof: ${compactLine(proofPoint, 240)}`),
+  ];
+}
+
+function renderSixHourGrowthRoutineDescription(payload: DearMeBrandBlueprintApplyPayload) {
+  const { brandBlueprint: blueprint } = payload;
+  const primaryGoal = blueprint.brand.goals[0];
+  return [
+    renderDearMeSixHourCycleIssue({
+      brandName: blueprint.brand.displayName,
+      focus: primaryGoal
+        ? `Advance "${compactLine(primaryGoal, 180)}" with private work ready for review.`
+        : null,
+      recentSignals: sixHourCycleRecentSignals(blueprint),
+      budgetStatus: "inside_budget",
+    }),
+    ...renderVoiceAndMemoryTaskContext(blueprint),
+  ].join("\n");
+}
+
 function renderDraftIssueDescription(
   operation: DearMeBrandBlueprintApplyPayload["executionPlan"]["operations"][number],
   payload: DearMeBrandBlueprintApplyPayload,
@@ -536,6 +565,46 @@ export function dearmeBrandBlueprintApplyService(db: Db) {
         issueId: brandOsIssue.id,
       });
     }
+
+    const sixHourGrowthTrigger = DEARME_SIX_HOUR_GROWTH_ROUTINE.triggers[0];
+    if (!sixHourGrowthTrigger) {
+      throw unprocessable("DearMe six-hour growth routine seed is missing a trigger");
+    }
+
+    const sixHourGrowthRoutine = await routinesSvc.create(
+      approval.companyId,
+      {
+        projectId: null,
+        goalId: null,
+        parentIssueId: brandOsIssue.id,
+        title: DEARME_SIX_HOUR_GROWTH_ROUTINE.title,
+        description: renderSixHourGrowthRoutineDescription(payload),
+        assigneeAgentId: ownerAgentId(agentsByRole, "chief_of_staff"),
+        priority: DEARME_SIX_HOUR_GROWTH_ROUTINE.priority,
+        status: DEARME_SIX_HOUR_GROWTH_ROUTINE.status,
+        concurrencyPolicy: DEARME_SIX_HOUR_GROWTH_ROUTINE.concurrencyPolicy,
+        catchUpPolicy: DEARME_SIX_HOUR_GROWTH_ROUTINE.catchUpPolicy,
+        variables: [],
+      },
+      serviceActor,
+    );
+    const { trigger: createdSixHourGrowthTrigger } = await routinesSvc.createTrigger(
+      sixHourGrowthRoutine.id,
+      {
+        kind: sixHourGrowthTrigger.kind,
+        label: sixHourGrowthTrigger.label,
+        enabled: sixHourGrowthTrigger.enabled,
+        cronExpression: sixHourGrowthTrigger.cronExpression,
+        timezone: sixHourGrowthTrigger.timezone,
+      },
+      serviceActor,
+    );
+    artifacts.routines.push({
+      id: sixHourGrowthRoutine.id,
+      cycleId: DEARME_SIX_HOUR_CYCLE_KEY,
+      title: sixHourGrowthRoutine.title,
+      triggerId: createdSixHourGrowthTrigger.id,
+    });
 
     for (const cycle of blueprint.cycles) {
       const routine = await routinesSvc.create(

@@ -16,6 +16,11 @@ import {
   getEmbeddedPostgresTestSupport,
   startEmbeddedPostgresTestDatabase,
 } from "./helpers/embedded-postgres.js";
+import {
+  DEARME_SIX_HOUR_CYCLE_CRON,
+  DEARME_SIX_HOUR_CYCLE_TIMEZONE,
+  DEARME_SIX_HOUR_GROWTH_ROUTINE,
+} from "@paperclipai/dearme-agent-prompts";
 import { approvalService } from "../services/approvals.js";
 import { DEARME_BRAND_BLUEPRINT_AGENT_ADAPTER_TYPE } from "../services/dearme-brand-blueprint-apply.js";
 import { dearmeBrandBlueprintService } from "../services/dearme-brand-blueprints.js";
@@ -156,10 +161,9 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
       artifacts.agents.every((agent) => (agent.metadata as any).externalActionsRequireApproval === true),
     ).toBe(true);
 
-    expect(artifacts.routines).toHaveLength(4);
-    expect(artifacts.triggers).toHaveLength(4);
+    expect(artifacts.routines).toHaveLength(5);
+    expect(artifacts.triggers).toHaveLength(5);
     expect(artifacts.triggers.every((trigger) => trigger.enabled)).toBe(true);
-    expect(artifacts.triggers.map((trigger) => trigger.cronExpression)).toEqual(Array(4).fill("0 14 * * 1"));
     expect(artifacts.routines.every((routine) => routine.description?.includes("Voice & Memory context:") ?? false))
       .toBe(true);
     expect(artifacts.routines.every((routine) => routine.description?.includes("Direct and precise.") ?? false)).toBe(
@@ -176,6 +180,31 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(artifacts.routines.every((routine) => routine.description?.includes("Operating boundary:") ?? false)).toBe(
       true,
     );
+    const sixHourRoutine = artifacts.routines.find(
+      (routine) => routine.title === DEARME_SIX_HOUR_GROWTH_ROUTINE.title,
+    );
+    expect(sixHourRoutine).toBeTruthy();
+    expect(sixHourRoutine?.priority).toBe("high");
+    expect(sixHourRoutine?.assigneeAgentId).toBeTruthy();
+    expect(sixHourRoutine?.description).toContain("Run the six-hour DearMe growth cycle for Peter.");
+    expect(sixHourRoutine?.description).toContain("- plan:");
+    expect(sixHourRoutine?.description).toContain("- work:");
+    expect(sixHourRoutine?.description).toContain("- review:");
+    expect(sixHourRoutine?.description).toContain("- learn:");
+    expect(sixHourRoutine?.description).toContain("- report:");
+    expect(sixHourRoutine?.description).toContain('short "Dear me" report under 200 words');
+    expect(sixHourRoutine?.description).not.toContain("Paperclip");
+    const sixHourTrigger = artifacts.triggers.find((trigger) => trigger.routineId === sixHourRoutine?.id);
+    expect(sixHourTrigger).toEqual(
+      expect.objectContaining({
+        label: DEARME_SIX_HOUR_GROWTH_ROUTINE.triggers[0]?.label,
+        cronExpression: DEARME_SIX_HOUR_CYCLE_CRON,
+        timezone: DEARME_SIX_HOUR_CYCLE_TIMEZONE,
+      }),
+    );
+    const weeklyTriggers = artifacts.triggers.filter((trigger) => trigger.id !== sixHourTrigger?.id);
+    expect(weeklyTriggers).toHaveLength(4);
+    expect(weeklyTriggers.map((trigger) => trigger.cronExpression)).toEqual(Array(4).fill("0 14 * * 1"));
 
     expect(artifacts.issues).toHaveLength(6);
     expect(
@@ -331,6 +360,9 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(artifacts.activity[0]?.details).toEqual(
       expect.objectContaining({
         agents: expect.arrayContaining([expect.objectContaining({ role: "chief_of_staff" })]),
+        routines: expect.arrayContaining([
+          expect.objectContaining({ title: DEARME_SIX_HOUR_GROWTH_ROUTINE.title }),
+        ]),
         issues: expect.arrayContaining([
           expect.objectContaining({ operationId: "draft_content_batch", status: "todo" }),
           expect.objectContaining({ operationId: "seed_voice_profile", status: "backlog" }),
