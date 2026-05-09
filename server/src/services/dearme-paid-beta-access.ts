@@ -131,6 +131,16 @@ export function summarizeDearMePaidBetaAccess(
   });
 }
 
+export function describeDearMePrivateCycleBlocker(access: DearMePaidBetaStatus) {
+  if (!access.entitlement.canRequestBrandOsApproval) {
+    return access.entitlement.nextActionDescription;
+  }
+  if (access.cycleGuardrail.state === "hard_stop") {
+    return access.cycleGuardrail.summary;
+  }
+  return null;
+}
+
 export function dearmePaidBetaAccessService(db: Db) {
   const finance = financeService(db);
   const costs = costService(db);

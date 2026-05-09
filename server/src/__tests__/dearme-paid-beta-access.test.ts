@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { describeDearMePaidBetaEntitlement } from "@paperclipai/shared";
-import { summarizeDearMePaidBetaAccess } from "../services/dearme-paid-beta-access.js";
+import {
+  describeDearMePrivateCycleBlocker,
+  summarizeDearMePaidBetaAccess,
+} from "../services/dearme-paid-beta-access.js";
 
 type DearMeFinanceEvent = Parameters<typeof summarizeDearMePaidBetaAccess>[1][number];
 
@@ -166,5 +169,53 @@ describe("DearMe paid beta access service", () => {
       decisionRequired: true,
       decisionLabel: "Review monthly spend",
     });
+  });
+
+  it("blocks private cycles during trial preview", () => {
+    const status = summarizeDearMePaidBetaAccess("company-1", []);
+
+    expect(describeDearMePrivateCycleBlocker(status)).toBe(
+      status.entitlement.nextActionDescription,
+    );
+  });
+
+  it("blocks private cycles at the monthly hard-stop", () => {
+    const status = summarizeDearMePaidBetaAccess(
+      "company-1",
+      [
+        financeEvent({
+          direction: "credit",
+          amountCents: 25_000,
+          description: "Founding beta payment",
+        }),
+      ],
+      {
+        spendCents: 25_000,
+        budgetCents: 25_000,
+        utilizationPercent: 100,
+      },
+    );
+
+    expect(describeDearMePrivateCycleBlocker(status)).toBe(status.cycleGuardrail.summary);
+  });
+
+  it("allows private cycles when paid beta access is active and below guardrail", () => {
+    const status = summarizeDearMePaidBetaAccess(
+      "company-1",
+      [
+        financeEvent({
+          direction: "credit",
+          amountCents: 25_000,
+          description: "Founding beta payment",
+        }),
+      ],
+      {
+        spendCents: 5_000,
+        budgetCents: 25_000,
+        utilizationPercent: 20,
+      },
+    );
+
+    expect(describeDearMePrivateCycleBlocker(status)).toBeNull();
   });
 });

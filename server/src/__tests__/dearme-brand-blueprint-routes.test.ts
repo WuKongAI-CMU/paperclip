@@ -246,20 +246,53 @@ function makeFirstCycleResult() {
   };
 }
 
-function makePaidBetaStatus(status: "trial" | "active") {
+function makePaidBetaStatus(
+  status: "trial" | "active",
+  cycleState: "trial_preview" | "ready" | "hard_stop" = status === "trial" ? "trial_preview" : "ready",
+) {
   const active = status === "active";
+  const guardrailReady = cycleState === "ready";
+  const guardrailHardStop = cycleState === "hard_stop";
   return {
     companyId: "company-1",
     status,
     lifetimePaidCents: active ? 25_000 : 0,
     refundedCents: 0,
     netPaidCents: active ? 25_000 : 0,
-    remainingCreditCents: active ? 25_000 : 0,
+    remainingCreditCents: active && !guardrailHardStop ? 25_000 : 0,
     eventCount: active ? 1 : 0,
     latestPaymentAt: active ? "2026-05-07T14:00:00.000Z" : null,
     latestPaymentDescription: active ? "Founding beta payment" : null,
     latestExternalInvoiceId: active ? "manual-invoice-1" : null,
     entitlement: describeDearMePaidBetaEntitlement(status),
+    cycleGuardrail: {
+      state: cycleState,
+      label: guardrailHardStop
+        ? "Review before more spend"
+        : guardrailReady
+          ? "Guardrails ready"
+          : "Trial preview",
+      headline: guardrailHardStop
+        ? "Private cycles pause before more spend"
+        : guardrailReady
+          ? "Private cycles can run within guardrails"
+          : "Private cycles wait for paid beta access",
+      summary: guardrailHardStop
+        ? "DearMe can keep preparing low-risk drafts, but spending cycles should pause until the guardrail is reviewed."
+        : guardrailReady
+          ? "DearMe checks monthly private spend before work runs so prepared moves stay predictable."
+          : "Preview the plan for free. DearMe records paid beta access before it spends budget on private cycles.",
+      spendCents: guardrailHardStop ? 25_000 : 0,
+      budgetCents: active ? 25_000 : 0,
+      utilizationPercent: guardrailHardStop ? 100 : 0,
+      remainingCreditCents: active && !guardrailHardStop ? 25_000 : 0,
+      decisionRequired: !guardrailReady,
+      decisionLabel: guardrailHardStop
+        ? "Review monthly spend"
+        : guardrailReady
+          ? null
+          : "Record paid beta access",
+    },
   };
 }
 
@@ -661,6 +694,7 @@ describe("DearMe brand blueprint routes", () => {
       expect.objectContaining({ action: "approve", decisionNote: "This represents me." }),
       expect.objectContaining({ actorType: "user", actorId: "user-1", agentId: null }),
     );
+    expect(mockDearMePaidBetaAccessService.getAccess).not.toHaveBeenCalled();
     expect(mockQueueIssueAssignmentWakeup).not.toHaveBeenCalled();
     expect(mockLogActivity).toHaveBeenCalledWith(
       expect.anything(),
@@ -669,6 +703,83 @@ describe("DearMe brand blueprint routes", () => {
         entityType: "issue_comment",
         entityId: "comment-1",
       }),
+    );
+  });
+
+  it("queues not-useful output feedback without exposing wake internals", async () => {
+    const output = {
+      id: "issue-1:weekly_report",
+      companyId: "company-1",
+      kind: "weekly_report",
+      title: "Dear me report",
+      summary: "Private weekly report.",
+      status: "ready_for_review",
+      isReviewable: true,
+      issueId: "issue-1",
+      issueIdentifier: "PET-7",
+      issueTitle: "DearMe Draft: Draft weekly Dear me report",
+      updatedAt: "2026-05-07T14:00:00.000Z",
+      documents: [],
+      workProducts: [],
+      latestUpdate: null,
+      details: [],
+    };
+    mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("active"));
+    mockDearMeOutputHandoffService.reviewOutput.mockResolvedValue({
+      companyId: "company-1",
+      outputId: "issue-1:weekly_report",
+      action: "not_useful",
+      status: "queued",
+      comment: {
+        id: "comment-2",
+        bodyPreview: "DearMe decision: marked this prepared work as not useful.",
+        createdAt: "2026-05-07T14:00:00.000Z",
+      },
+      output,
+      wakeIssue: { id: "issue-1", assigneeAgentId: "agent-1", status: "todo" },
+    });
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/outputs/issue-1%3Aweekly_report/reviews")
+      .send({ action: "not_useful", decisionNote: "This does not help." });
+
+    expect(res.status).toBe(202);
+    expect(res.body.action).toBe("not_useful");
+    expect(res.body.wakeIssue).toBeUndefined();
+    expect(mockDearMePaidBetaAccessService.getAccess).toHaveBeenCalledWith("company-1");
+    expect(mockQueueIssueAssignmentWakeup).toHaveBeenCalledWith(expect.objectContaining({
+      issue: { id: "issue-1", assigneeAgentId: "agent-1", status: "todo" },
+      reason: "dearme_output_marked_not_useful",
+      mutation: "dearme.output_review",
+      contextSource: "dearme.output_review",
+    }));
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: "dearme.output_marked_not_useful",
+        entityType: "issue_comment",
+        entityId: "comment-2",
+      }),
+    );
+  });
+
+  it("blocks output regeneration cycles when paid-beta spend reaches the guardrail", async () => {
+    mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("active", "hard_stop"));
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/outputs/issue-1%3Aweekly_report/reviews")
+      .send({ action: "regenerate", decisionNote: "Try a sharper angle." });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe(
+      "DearMe can keep preparing low-risk drafts, but spending cycles should pause until the guardrail is reviewed.",
+    );
+    expect(mockDearMePaidBetaAccessService.getAccess).toHaveBeenCalledWith("company-1");
+    expect(mockDearMeOutputHandoffService.reviewOutput).not.toHaveBeenCalled();
+    expect(mockQueueIssueAssignmentWakeup).not.toHaveBeenCalled();
+    expect(mockLogActivity).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ action: "dearme.output_regeneration_requested" }),
     );
   });
 

@@ -5258,8 +5258,8 @@ Thirty-first verified DearMe slice:
   paid-beta finance events plus `costService.summary(companyId)`.
 - Subtracted current-month private spend from remaining paid-beta credit and exposed
   customer-safe ready, warning, and hard-stop states.
-- Added first enforcement at the Brand OS approval request boundary: if cycle
-- current-month private spend exhausts credit or reaches the guardrail, private
+- Added first enforcement at the Brand OS approval request boundary: if
+  current-month private spend exhausts credit or reaches the guardrail, private
   work pauses with a DearMe-safe message.
 - Updated the DearMe Paid beta panel to show `Cycle guardrail`,
   current-month private spend,
@@ -5273,6 +5273,29 @@ Verification:
 - `pnpm --filter @paperclipai/shared typecheck` passed.
 - `pnpm --filter @paperclipai/server typecheck` passed.
 - `pnpm --filter @paperclipai/ui typecheck` passed.
+
+## DearMe Cycle Guardrail Enforcement - 2026-05-09
+
+Thirty-second verified DearMe slice:
+
+- Extended the DM-100 paid-beta guardrail from Brand OS apply requests to output
+  review actions that start another private cycle.
+- Reused the existing Naive/Paperclip finance, cost summary, output review,
+  activity log, and issue wakeup rails instead of introducing a new DearMe
+  usage ledger or workflow gate.
+- Preserved the Polsia-style high-automation loop: users can still review work
+  and send the team back into motion, but regeneration now respects the same
+  monthly private-spend guardrail.
+- Preserved the Lindy-style action-needed pattern: `approve` remains available
+  for prepared work, while `request_changes`, `regenerate`, and `not_useful`
+  are guarded before they wake more private work.
+- Added a reusable `describeDearMePrivateCycleBlocker(access)` helper so future
+  private-cycle entry points can share the same paid-beta blocker logic.
+
+Verification:
+
+- `pnpm exec vitest server/src/__tests__/dearme-paid-beta-access.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts --run --maxWorkers=1`
+  passed: 2 files, 34 tests.
 
 ## Known Gaps
 

@@ -71,6 +71,7 @@ export const DEARME_OUTPUT_REVIEW_ACTIONS = [
   "approve",
   "request_changes",
   "regenerate",
+  "not_useful",
 ] as const;
 export const DEARME_OUTPUT_REVIEW_RESULT_STATUSES = [
   "recorded",

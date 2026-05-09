@@ -254,6 +254,15 @@ DM-100 integration verification after applying the cycle guardrails slice:
 - server package typecheck: `pnpm --filter @paperclipai/server typecheck` passed
 - UI package typecheck: `pnpm --filter @paperclipai/ui typecheck` passed
 
+DM-101 integration verification after applying the cycle guardrail enforcement
+slice:
+
+- focused paid-beta and DearMe route Vitest coverage for the reusable private
+  cycle blocker, approve passthrough, guarded regeneration, and Brand OS
+  request reuse:
+  `pnpm exec vitest server/src/__tests__/dearme-paid-beta-access.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts --run --maxWorkers=1`
+  passed: 2 files, 34 tests
+
 The current carried-forward base includes the DM-088 visible team workstream UI,
 the DM-089 Voice & Memory ingestion guardrails, the DM-090 guided source cards,
 the DM-091 source-level team impact previews, the DM-092 source-driven Work
@@ -269,13 +278,16 @@ customer workbench and carries Lindy-style memory learning into Voice & Memory,
 using existing Naive/Paperclip workbench and review-learning data. DM-100 reuses
 Paperclip/Naive finance events plus cost summary rails as DearMe cycle
 guardrails, adds customer-safe ready/warning/hard-stop states, and blocks Brand
-OS approval requests when current-month private spend should pause. The
+OS approval requests when current-month private spend should pause. DM-101
+extends the same guardrail to output review actions that wake more private work,
+while keeping approve actions available for prepared outputs. The
 coordinator branch
 was rechecked before the DM-094 fast-forward with focused DearMe tests, full
 workspace typecheck, substrate language scan, and `git diff --check`; DM-095,
 DM-096, DM-097, DM-098, and DM-099 were rechecked with focused onboarding tests, UI
 typecheck, and `git diff --check`; DM-100 adds focused shared/server/UI
-contract tests plus package typechecks. Before release promotion, verify this
+contract tests plus package typechecks. DM-101 adds focused paid-beta and DearMe
+route tests for regeneration guardrail enforcement. Before release promotion, verify this
 coordinator head with the broader package typechecks, workspace-link preflight,
 and release build/test gates.
 

@@ -492,6 +492,12 @@ function outputDecisionCopy(action: DearMeOutputReviewAction, decisionNote: stri
       note || "Please revise this before review.",
     ].join("\n\n");
   }
+  if (action === "not_useful") {
+    return [
+      "DearMe decision: marked this prepared work as not useful.",
+      note || "This does not help right now.",
+    ].join("\n\n");
+  }
   return [
     "DearMe decision: regenerate this prepared work before review.",
     note || "Please prepare a new version for review.",

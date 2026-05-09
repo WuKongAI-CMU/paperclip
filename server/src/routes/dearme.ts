@@ -14,6 +14,7 @@ import {
   type DearMeChiefOfStaffMessage,
   type DearMeChiefOfStaffMessageIntent,
   type DearMeMemoryUpdate,
+  type DearMeOutputReviewAction,
 } from "@paperclipai/shared";
 import { validate } from "../middleware/validate.js";
 import {
@@ -26,6 +27,7 @@ import {
   issueService,
   logActivity,
 } from "../services/index.js";
+import { describeDearMePrivateCycleBlocker } from "../services/dearme-paid-beta-access.js";
 import { forbidden } from "../errors.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { heartbeatService } from "../services/heartbeat.js";
@@ -68,6 +70,23 @@ function renderChiefOfStaffIssueDescription(input: DearMeChiefOfStaffMessage) {
   ].join("\n\n");
 }
 
+function startsDearMePrivateCycle(action: DearMeOutputReviewAction) {
+  return action !== "approve";
+}
+
+function dearMeOutputWakeReason(action: DearMeOutputReviewAction) {
+  if (action === "regenerate") return "dearme_output_regeneration_requested";
+  if (action === "not_useful") return "dearme_output_marked_not_useful";
+  return "dearme_output_changes_requested";
+}
+
+function dearMeOutputActivityAction(action: DearMeOutputReviewAction) {
+  if (action === "approve") return "dearme.output_approved";
+  if (action === "regenerate") return "dearme.output_regeneration_requested";
+  if (action === "not_useful") return "dearme.output_marked_not_useful";
+  return "dearme.output_changes_requested";
+}
+
 export function dearmeRoutes(db: Db) {
   const router = Router();
   const agents = agentService(db);
@@ -106,15 +125,20 @@ export function dearmeRoutes(db: Db) {
       assertCompanyAccess(req, companyId);
       assertBoard(req);
       const actor = getActorInfo(req);
+      if (startsDearMePrivateCycle(req.body.action)) {
+        const access = await paidBetaAccess.getAccess(companyId);
+        const privateCycleBlocker = describeDearMePrivateCycleBlocker(access);
+        if (privateCycleBlocker) {
+          throw forbidden(privateCycleBlocker);
+        }
+      }
       const result = await outputHandoff.reviewOutput(companyId, outputId, req.body, actor);
 
       if (result.wakeIssue) {
         void queueIssueAssignmentWakeup({
           heartbeat,
           issue: result.wakeIssue,
-          reason: result.action === "regenerate"
-            ? "dearme_output_regeneration_requested"
-            : "dearme_output_changes_requested",
+          reason: dearMeOutputWakeReason(result.action),
           mutation: "dearme.output_review",
           contextSource: "dearme.output_review",
           requestedByActorType: actor.actorType,
@@ -122,19 +146,13 @@ export function dearmeRoutes(db: Db) {
         });
       }
 
-      const activityAction = result.action === "approve"
-        ? "dearme.output_approved"
-        : result.action === "regenerate"
-          ? "dearme.output_regeneration_requested"
-          : "dearme.output_changes_requested";
-
       await logActivity(db, {
         companyId,
         actorType: actor.actorType,
         actorId: actor.actorId,
         agentId: actor.agentId,
         runId: actor.runId,
-        action: activityAction,
+        action: dearMeOutputActivityAction(result.action),
         entityType: "issue_comment",
         entityId: result.comment.id,
         details: {
@@ -350,11 +368,9 @@ export function dearmeRoutes(db: Db) {
       assertCompanyAccess(req, companyId);
       const actor = getActorInfo(req);
       const access = await paidBetaAccess.getAccess(companyId);
-      if (!access.entitlement.canRequestBrandOsApproval) {
-        throw forbidden(access.entitlement.nextActionDescription);
-      }
-      if (access.cycleGuardrail.state === "hard_stop") {
-        throw forbidden(access.cycleGuardrail.summary);
+      const privateCycleBlocker = describeDearMePrivateCycleBlocker(access);
+      if (privateCycleBlocker) {
+        throw forbidden(privateCycleBlocker);
       }
       const result = await brandBlueprints.createApplyRequest(companyId, req.body, actor);
 
