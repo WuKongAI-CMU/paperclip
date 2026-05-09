@@ -1103,7 +1103,7 @@ function FocusedOutputPanel({
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
         <span>Updated {shortDate(output.updatedAt)}</span>
         <span>
-          {output.documents.length} doc{output.documents.length === 1 ? "" : "s"} prepared privately
+          {output.documents.length} private reference{output.documents.length === 1 ? "" : "s"} prepared
         </span>
       </div>
     </DearMeFocusSurface>
@@ -1248,7 +1248,7 @@ function DecisionsNeededPanel({
         icon={ShieldCheck}
         eyebrow="Decisions needed"
         title="High-leverage calls"
-        description="Approve, request changes, reject, or regenerate the moves that would represent the user."
+        description="Approve, request changes, reject, or regenerate the moves that would represent you."
         trailing={
           batches.length + decisions.length > 0 ? (
             <Badge variant="secondary">{batches.length + decisions.length} waiting</Badge>
@@ -1700,7 +1700,7 @@ function VoiceMemoryPanel({
             <Input
               id="dearme-memory-title"
               value={title}
-              placeholder="Operator note"
+              placeholder="Voice note"
               onChange={(event) => setTitle(event.target.value)}
             />
           </div>
@@ -1854,7 +1854,7 @@ function ChiefOfStaffComposerPanel({
               value={message}
               onChange={(event) => setMessage(event.target.value)}
               disabled={!paidBetaActive || isPending}
-              placeholder="Tell Chief of Staff what changed, what you want, or what decision you need prepared."
+              placeholder="Tell your Chief of Staff what changed, what you want, or what decision you need prepared."
               className="min-h-28 resize-y"
             />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -2438,7 +2438,7 @@ function PrivateWorkPanel({
               const details = output.details.slice(0, 3);
               const footer = `Updated ${shortDate(output.updatedAt)}${
                 output.documents.length > 0
-                  ? ` / ${output.documents.length} doc${output.documents.length === 1 ? "" : "s"}`
+                  ? ` / ${output.documents.length} private reference${output.documents.length === 1 ? "" : "s"}`
                   : ""
               }`;
               return (

@@ -5326,6 +5326,37 @@ Verification:
 - `pnpm --filter @paperclipai/server typecheck` passed.
 - `pnpm --filter @paperclipai/ui typecheck` passed.
 
+## DearMe Customer Copy Hygiene - 2026-05-09
+
+Thirty-third verified DearMe slice:
+
+- Continued the Polsia/Naive reuse boundary: keep Polsia's customer-visible
+  personal-team choreography, keep the Naive/Paperclip document/output substrate
+  inside the implementation, and do not rename internal compatibility fields for
+  a copy-only pass.
+- Reworded the focused output and private work card reference counts from
+  `doc(s)` to `private reference(s)` so paid-beta users see DearMe work language
+  instead of implementation shorthand.
+- Tightened the Decisions Needed copy from "the user" to "you", and adjusted
+  Voice & Memory / Chief of Staff placeholders so the page speaks to the
+  customer rather than an operator.
+- Updated the DearMe onboarding regression fixture and assertions to keep the
+  customer-surface copy contract aligned with the new wording.
+
+Verification:
+
+- `rg -n "doc\\(s\\)|docs prepared|Operator note|operator note|represent the user|Tell Chief of Staff" ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  returned no matches.
+- `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
+  passed: 1 file, 16 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+
+Not run:
+
+- Full `pnpm test:run`, `pnpm -r typecheck`, and `pnpm build`; this was a
+  narrow UI copy contract slice with focused regression and UI typecheck
+  coverage.
+
 ## Known Gaps
 
 - The `Process adapter missing command` blocker is fixed for newly applied Brand OS approvals, not retroactively for old smoke data.

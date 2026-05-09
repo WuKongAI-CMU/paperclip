@@ -74,7 +74,7 @@ function createPreview() {
     audiences: ["Founders"],
     proofPoints: ["Shipped a working local product"],
     offers: ["Paid beta"],
-    voiceSamples: ["Short, direct operator note.", "Plain language with concrete proof."],
+    voiceSamples: ["Short, direct voice note.", "Plain language with concrete proof."],
     preferredChannels: ["linkedin", "newsletter", "portfolio"],
     constraints: ["Ask before publishing"],
     cadence: "weekly",
@@ -112,7 +112,7 @@ function createFirstCyclePreview() {
       audiences: ["Founders"],
       proofPoints: ["Shipped a working local product"],
       offers: ["Paid beta"],
-      voiceSamples: ["Short, direct operator note.", "Plain language with concrete proof."],
+      voiceSamples: ["Short, direct voice note.", "Plain language with concrete proof."],
       preferredChannels: ["linkedin", "newsletter", "portfolio"],
       constraints: ["Ask before publishing"],
       cadence: "weekly",
@@ -283,8 +283,8 @@ function workbenchResponse() {
         {
           id: "memory-1",
           kind: "voice_sample",
-          title: "Operator note",
-          bodyPreview: "Short, direct operator note.",
+          title: "Voice note",
+          bodyPreview: "Short, direct voice note.",
           sourceLabel: "Manual note",
           createdAt: "2026-05-07T14:00:00.000Z",
         },
@@ -452,8 +452,8 @@ describe("DearMeOnboarding", () => {
       memory: {
         id: "memory-3",
         kind: "voice_sample",
-        title: "Fresh operator note",
-        bodyPreview: "Fresh direct operator note from today's work.",
+        title: "Fresh voice note",
+        bodyPreview: "Fresh direct voice note from today's work.",
         sourceLabel: null,
         createdAt: "2026-05-07T14:05:00.000Z",
       },
@@ -587,11 +587,11 @@ describe("DearMeOnboarding", () => {
     await act(async () => {
       setInputValue(
         container.querySelector("#dearme-memory-title") as HTMLInputElement,
-        "Operator note",
+        "Voice note",
       );
       setTextareaValue(
         container.querySelector("#dearme-memory-body") as HTMLTextAreaElement,
-        "Short, direct operator note.",
+        "Short, direct voice note.",
       );
     });
 
@@ -604,16 +604,16 @@ describe("DearMeOnboarding", () => {
       "company-1",
       expect.objectContaining({
         kind: "voice_sample",
-        title: "Operator note",
-        body: "Short, direct operator note.",
+        title: "Voice note",
+        body: "Short, direct voice note.",
         sourceLabel: null,
       }),
     );
     expect(container.textContent).toContain(
       "Saved. 1 growth cycle refreshed with your latest Voice & Memory.",
     );
-    expect(container.textContent).toContain("Fresh operator note");
-    expect(container.textContent).toContain("Fresh direct operator note from today's work.");
+    expect(container.textContent).toContain("Fresh voice note");
+    expect(container.textContent).toContain("Fresh direct voice note from today's work.");
     expect(container.textContent).toContain("Just saved");
 
     await act(async () => {
@@ -844,7 +844,7 @@ describe("DearMeOnboarding", () => {
       }),
     );
     expect(container.textContent).not.toContain("No Voice & Memory saved yet");
-    expect(container.textContent).toContain("Fresh operator note");
+    expect(container.textContent).toContain("Fresh voice note");
     expect(container.textContent).toContain("Just saved");
 
     await act(async () => {
@@ -1144,7 +1144,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Dear me report");
     expect(container.textContent).toContain("Completed work: refreshed positioning");
     expect(container.textContent).toContain("Review one public claim before publishing");
-    expect(container.textContent).toContain("1 doc prepared privately");
+    expect(container.textContent).toContain("1 private reference prepared");
     expect(container.textContent).not.toContain("/issues/");
 
     await act(async () => {
