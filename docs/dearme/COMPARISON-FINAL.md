@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-05-09.** Predates the runtime-port doctrine. Read [`INDEX.md`](INDEX.md) first; treat this file as historical research only. Current donor analysis lives in `POLSIA-NAIVE-PM-ANALYSIS.md` and `POLSIA-NAIVE-MECHANISMS-DEEP-DIVE.md`.
+
 # Polsia vs DearMe — Final Comparison (v3 + Side Hustle)
 
 > Canonical side-by-side after positioning lock and 5-archetype funnel addition. Supersedes earlier `POLSIA-VS-DEARME.md`.

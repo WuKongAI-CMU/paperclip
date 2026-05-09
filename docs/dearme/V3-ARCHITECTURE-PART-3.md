@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-05-09.** Predates the runtime-port doctrine. Read [`INDEX.md`](INDEX.md) first; treat this file as historical research only.
+
 # DearMe v3 — Architecture Part 3 (archetype journeys, GTM flywheel, build sequence)
 
 > 2026-05-07 consolidation: historical source material only. Current direction

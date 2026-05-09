@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-05-09.** Predates the runtime-port doctrine. Read [`INDEX.md`](INDEX.md) first; treat this file as historical research only.
+
 # Product Spec Part 3 — Screen-by-screen copy + edge cases
 
 > Continues `PRODUCT-SPEC-PART-2.md`. Copy / interactions / edge handling. The rest of what a designer + dev need.

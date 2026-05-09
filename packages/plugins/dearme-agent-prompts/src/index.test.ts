@@ -7,6 +7,7 @@ import {
   CHIEF_OF_STAFF_ROLE,
   CONTENT_PRODUCER_PROMPT,
   DEARME_CYCLE_STAGE_IDS,
+  DEARME_ROLE_REGISTRY,
   DEARME_ROLE_SEEDS,
   DEARME_SIX_HOUR_CYCLE_CRON,
   DEARME_SIX_HOUR_CYCLE_STAGES,
@@ -21,10 +22,14 @@ import {
   canTransitionOpportunity,
   getMoodFace,
   getRoleSeed,
+  getRoleSpec,
+  getRolesByGroup,
+  getShippedRoles,
   pickBudgetTier,
   pickModelForComplexity,
   renderDearMeSixHourCycleIssue,
   renderSoraUgcVideoPrompt,
+  validateRegistry,
 } from "./index.js";
 
 describe("dearme-agent-prompts package", () => {
@@ -231,5 +236,70 @@ describe("dearme-agent-prompts package", () => {
     expect(rendered).toContain("Do not publish, send, deploy, spend");
     expect(rendered).toContain('short "Dear me" report under 200 words');
     expect(rendered).not.toMatch(/Polsia|Naive|Paperclip|adapter|runtime/i);
+  });
+
+  it("DEARME_ROLE_REGISTRY contains the same 12 roles as DEARME_ROLE_SEEDS", () => {
+    expect(DEARME_ROLE_REGISTRY.length).toBe(12);
+    const registryRoles = DEARME_ROLE_REGISTRY.map((spec) => spec.role).sort();
+    const seedRoles = DEARME_ROLE_SEEDS.map((seed) => seed.role).sort();
+    expect(registryRoles).toEqual(seedRoles);
+  });
+
+  it("registry exposes well-formed metadata for every role", () => {
+    const result = validateRegistry();
+    expect(result).toEqual({ ok: true, problems: [] });
+  });
+
+  it("registry pins each prompt to a non-trivial char count", () => {
+    for (const spec of DEARME_ROLE_REGISTRY) {
+      expect(spec.promptSourceChars).toBeGreaterThan(800);
+      expect(spec.promptSourceChars).toBe(spec.prompt.length);
+    }
+  });
+
+  it("getRoleSpec / getRolesByGroup / getShippedRoles work as documented", () => {
+    expect(getRoleSpec(CHIEF_OF_STAFF_ROLE)?.displayName).toBe("Chief of Staff");
+    expect(getRoleSpec("not-a-real-role")).toBeUndefined();
+    expect(getRolesByGroup("growth").map((s) => s.role)).toEqual([
+      "content-producer",
+      "opportunity-hunter",
+      "ads-manager",
+    ]);
+    expect(getRolesByGroup("leadership").map((s) => s.role)).toEqual([
+      "chief-of-staff",
+      "reporting",
+    ]);
+    expect(getShippedRoles().length).toBe(0);
+  });
+
+  it("each role declares only state machines / templates / tools that exist", () => {
+    const validStateMachines = new Set([
+      "opportunity-state",
+      "meta-ads",
+      "budget-tier",
+      "mood-face-library",
+      "model-routing",
+      "sse-events",
+    ]);
+    const validTemplates = new Set(["sora-ugc-video", "outbound-5-touch"]);
+    const validProxyTools = new Set([
+      "create_task",
+      "search_memory",
+      "get_company_documents",
+      "create_report",
+      "web_search",
+      "content_generate",
+    ]);
+    for (const spec of DEARME_ROLE_REGISTRY) {
+      for (const sm of spec.stateMachines) {
+        expect(validStateMachines.has(sm)).toBe(true);
+      }
+      for (const tpl of spec.templates) {
+        expect(validTemplates.has(tpl)).toBe(true);
+      }
+      for (const tool of spec.proxyTools) {
+        expect(validProxyTools.has(tool)).toBe(true);
+      }
+    }
   });
 });

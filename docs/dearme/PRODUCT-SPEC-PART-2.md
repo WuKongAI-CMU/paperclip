@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-05-09.** Predates the runtime-port doctrine. Read [`INDEX.md`](INDEX.md) first; treat this file as historical research only.
+
 # Product Spec Part 2 — 6-page templates × 4 archetypes + public surfaces
 
 > Continues from `PRODUCT-SPEC.md`. Concrete page-by-page content per use case.

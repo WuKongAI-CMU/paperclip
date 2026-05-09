@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-05-09.** Predates the runtime-port doctrine and the typed `DEARME_ROLE_REGISTRY`. Read [`INDEX.md`](INDEX.md) first; treat this file as historical research only. Current backlog lives in [`POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`](POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md) and [`REUSE-IMPLEMENTATION-LEDGER.md`](REUSE-IMPLEMENTATION-LEDGER.md).
+
 # DearMe — Backlog Part 2: Frontend + Infra + Legal + Content + GTM
 
 > Backend backlog in `BACKLOG.md`. This file covers everything that isn't server-side code.

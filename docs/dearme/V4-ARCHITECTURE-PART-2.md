@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-05-09.** Predates the runtime-port doctrine and the typed `DEARME_ROLE_REGISTRY`. Read [`INDEX.md`](INDEX.md) first; treat this file as historical research only. AI-proxy contract now lives in `packages/dearme-ai-proxy/`.
+
 # DearMe v4 — Part 2: schema + MCP + AI proxy + cycle + build sequence
 
 > 2026-05-07 consolidation: historical source material only. Current direction

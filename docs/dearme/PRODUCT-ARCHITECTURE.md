@@ -410,6 +410,48 @@ The compression comes from: state machines, prompts, and proxy contract
 already imported and tested. Each plugin ticket starts at ~70%
 completion instead of 0%.
 
+### 9.4 Role registry (single typed source of truth, added 2026-05-09)
+
+The 12 DearMe roles are not specified in scattered docs or per-plugin
+prompt files. They live in **one** typed export:
+
+```
+packages/plugins/dearme-agent-prompts/src/registry.ts
+  └── DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec>
+```
+
+Each entry pins:
+
+| Field | Meaning |
+|---|---|
+| `role` | canonical slug (e.g. `chief-of-staff`); used as routing tag and plugin id suffix |
+| `displayName` | user-facing name (translated copy) |
+| `prompt` | string ref to verbatim production prompt in `./prompts/` |
+| `promptSourceChars` | computed `prompt.length`; never drifts |
+| `complexityRange` | 1-10 input the AI proxy sees for routine work |
+| `defaultTier` | `fast` / `balanced` / `deep` — the proxy's default pick |
+| `stateMachines` | which `./state-machines/` modules this role's plugin runtime depends on |
+| `templates` | which `./templates/` modules this role uses |
+| `proxyTools` | subset of the 6 proxy `function`s this role may call |
+| `pluginPackage` | `@paperclipai/dearme-<role>` — the plugin npm pkg that owns runtime |
+| `ticket` | `DM-NNN` ticket that owns implementation |
+| `status` | `shipped` / `in-progress` / `planned` |
+| `group` | `leadership` / `growth` / `build` / `ops` / `intelligence` / `interface` for UI clustering |
+| `description` | one-sentence PM copy |
+
+**Rules of the registry:**
+
+1. **Server, plugins, UI all read from the registry.** No service hardcodes a role list. No plugin restates its own prompt. The workbench renders the team by iterating `DEARME_ROLE_REGISTRY` grouped by `group`.
+2. **Adding a role** requires (a) a registry entry, (b) a plugin package under `packages/plugins/dearme-<role>/`, and (c) a ticket. None of those three are optional.
+3. **Changing a prompt** is a runtime-port mechanical-substitution change only (e.g. brand swap). Real divergence requires a ticket and a `_lineage.ts` annotation explaining the deviation.
+4. **`validateRegistry()`** is the runtime guard: 1-10 complexity bounds, valid pkg prefix, valid ticket id, non-empty prompt. Tests assert it returns `{ ok: true }`.
+
+This makes the team **mechanically extensible**: any future "add a role" / "change a tier" / "swap a state machine" is a single-file diff with a typed surface, not a multi-doc reconciliation.
+
+The product surface, ticket assignments, and read-this-first orientation
+all live in [`INDEX.md`](INDEX.md), which derives its team table from
+this registry.
+
 ## 10. Operator Core vs DearMe Product Layer
 
 DearMe should stay thin only where thinness improves speed and quality. If the OK

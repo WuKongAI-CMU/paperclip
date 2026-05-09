@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-05-09.** Predates the runtime-port doctrine. Read [`INDEX.md`](INDEX.md) first; treat this file as historical research only.
+
 # Product Spec v3 Addendum — OPC funnel + side-hustle archetype
 
 > Updates `PRODUCT-SPEC.md` after positioning lock: DearMe = AI marketing dept for OPCs, serving the **full OPC funnel** (Pre-OPC → Side-hustle → Current OPC → Post-OPC).

@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-05-09.** Predates the runtime-port doctrine and the typed `DEARME_ROLE_REGISTRY`. Read [`INDEX.md`](INDEX.md) first; treat this file as historical research only. Current architecture lock is [`PRODUCT-ARCHITECTURE.md`](PRODUCT-ARCHITECTURE.md).
+
 # DearMe — Architecture (v2, 2026-05-06)
 
 > 2026-05-07 consolidation: historical source material only. Current direction

@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-05-09.** Predates the runtime-port doctrine. UI reuse is now governed by the plugin/registry approach in [`INDEX.md`](INDEX.md) and [`PRODUCT-ARCHITECTURE.md`](PRODUCT-ARCHITECTURE.md). Treat this file as historical research only.
+
 # DearMe Web UI Reuse Architecture
 
 Date: 2026-05-08

@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-05-09.** Predates the runtime-port doctrine and the typed `DEARME_ROLE_REGISTRY`. Read [`INDEX.md`](INDEX.md) first; treat this file as historical research only. Current product surface lives in [`PRODUCT-ARCHITECTURE.md`](PRODUCT-ARCHITECTURE.md).
+
 # DearMe — Product Specification (user-facing architecture)
 
 > Companion to `ARCHITECTURE.md` (technical). This doc defines what the user sees, types, reads, and feels — Day 1 → Month 12.

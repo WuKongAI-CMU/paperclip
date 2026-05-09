@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-05-09.** Predates the runtime-port doctrine. Read [`INDEX.md`](INDEX.md) first; treat this file as historical research only.
+
 # DearMe v3 — Architecture Part 2 (technical layer, agency-mapped)
 
 > 2026-05-07 consolidation: historical source material only. Current direction
