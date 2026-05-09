@@ -2,6 +2,48 @@
 
 Date: 2026-05-09
 
+## DM-111 DearMe Action Card Primitive - 2026-05-09
+
+Implementation slice:
+
+- Added a DearMe-owned `DearMeActionCard` component as the first reusable
+  customer-facing action-needed card primitive.
+- Reused Lindy's strongest front-end pattern conceptually: a presentational
+  action card with semantic status badges, compact context chips, a clear
+  next-action callout, and a primary action zone. No Lindy runtime, client,
+  copy, or domain model was imported.
+- Rewired the live team feed to use the new component while preserving the
+  existing review routing contract:
+  - approval-backed feed item -> approval decision surface
+  - prepared output feed item -> prepared-work review surface
+  - private work feed item -> private work surface
+- Marked the extracted card path with `data-dearme-surface="action-card"` so
+  tests and future UI extractions can distinguish it from generic workbench
+  cards.
+- Preserved the Polsia/Naive product split: the feed still sells visible
+  team momentum while routing into the existing issue/approval/output
+  substrate behind the scenes.
+- Added focused component coverage for action rendering and click behavior.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/dearme/DearMeActionCard.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 24 tests.
+- `pnpm -r typecheck` passed.
+- `pnpm build` passed. Vite still reports existing chunk-size/dynamic-import
+  warnings around the broader app bundle, but no build failure.
+- `git diff --check` passed.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|model-provider|setup-payload|setup_payload|control-plane|raw issue" ui/src/pages/DearMeOnboarding.tsx ui/src/components/dearme/DearMeActionCard.tsx ui/src/components/dearme/DearMeActionCard.test.tsx`
+  returned no matches.
+
+Next:
+
+- Reuse `DearMeActionCard` for Work Ready, Decisions Needed, and private
+  output cards where it reduces duplication without disturbing focused review
+  forms.
+- Add retry/regenerate in-flight affordances after the current review routes
+  are stable.
+
 ## DM-110 Donor Reuse Spine - 2026-05-09
 
 Architecture integration slice:

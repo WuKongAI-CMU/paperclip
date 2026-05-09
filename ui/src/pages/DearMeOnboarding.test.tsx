@@ -904,6 +904,11 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Prepared output");
     expect(container.textContent).toContain("Next action");
     expect(container.textContent).toContain("Decision ready");
+    expect(
+      container.querySelectorAll(
+        '[aria-label="Live team feed"] [data-dearme-surface="action-card"]',
+      ).length,
+    ).toBeGreaterThan(0);
     expect(container.textContent).toContain("Weekly Dear me");
     expect(container.textContent).toContain("Open letter");
     expect(container.textContent).toContain("Completed work: refreshed positioning");

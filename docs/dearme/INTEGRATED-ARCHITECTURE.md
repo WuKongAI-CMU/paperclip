@@ -161,9 +161,10 @@ Already true:
 
 Remaining gaps:
 
-- feed/action-card behavior is still mostly inline in
-  `ui/src/pages/DearMeOnboarding.tsx` instead of a reusable DearMe action-card
-  primitive;
+- live feed action-card behavior now goes through
+  `ui/src/components/dearme/DearMeActionCard.tsx`, but Work Ready, Decisions
+  Needed, private output, paused, retry, and Voice & Memory source cards are
+  still the remaining extraction surfaces;
 - action-needed, paused, retry, continue, and blocked states are not yet
   first-class DearMe work-stream blocks;
 - routine telemetry and cost lineage are still thinly projected into the
@@ -343,8 +344,10 @@ Lindy.
 
 ## DM-110 Donor Reuse Spine
 
-The next bounded architecture target is to turn the current inline live-feed and
-review behavior into a reusable DearMe action-card spine.
+The current bounded architecture target is to keep turning inline live-feed and
+review behavior into a reusable DearMe action-card spine. DM-111 lands the first
+primitive for the live feed; the remaining work is to move the other review and
+source-management cards onto that same grammar.
 
 Fresh read-only donor sweep:
 
@@ -381,9 +384,10 @@ Recommended next implementation ticket:
 DM-111 DearMe ActionCard Primitive
 
 Create a reusable DearMe action-card component for live work, action-needed,
-review-ready, private-work, retry, and report-ready states. Replace the inline
-feed card action rendering in DearMeOnboarding with that component first. Do not
-add a new runtime, database table, or workflow editor.
+review-ready, private-work, retry, and report-ready states. The first code pass
+replaces the live feed card action rendering in DearMeOnboarding with that
+component. Continue extracting the other review and source cards before adding a
+new runtime, database table, or workflow editor.
 ```
 
 ## Target Web Information Architecture

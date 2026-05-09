@@ -222,6 +222,7 @@ type DearMeWorkbenchCardProps = {
   action?: ReactNode;
   children?: ReactNode;
   className?: string;
+  surface?: "workbench-card" | "action-card";
   tone?: "default" | "empty";
   "aria-label"?: string;
 };
@@ -235,6 +236,7 @@ export function DearMeWorkbenchCard({
   action,
   children,
   className,
+  surface = "workbench-card",
   tone = "default",
   "aria-label": ariaLabel,
 }: DearMeWorkbenchCardProps) {
@@ -246,7 +248,7 @@ export function DearMeWorkbenchCard({
         className,
       )}
       aria-label={ariaLabel}
-      data-dearme-surface="workbench-card"
+      data-dearme-surface={surface}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">

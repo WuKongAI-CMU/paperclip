@@ -45,6 +45,7 @@ import {
   DearMeWorkbenchCard,
   DearMeWorkbenchSectionHeader,
 } from "../components/DearMeShell";
+import { DearMeActionCard } from "../components/dearme/DearMeActionCard";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
@@ -2108,7 +2109,7 @@ function LiveTeamFeedPanel({
           const canOpen = Boolean(item.approvalId || issueReference);
           const actionLabel = canOpen ? liveFeedActionLabel(item) : null;
           return (
-            <DearMeWorkbenchCard
+            <DearMeActionCard
               key={`${item.id}:${item.role}:${item.createdAt}:${index}`}
               eyebrow={
                 <span className="flex flex-wrap items-center gap-2">
@@ -2117,51 +2118,57 @@ function LiveTeamFeedPanel({
                 </span>
               }
               title={item.title}
-              description={item.summary}
-              badge={
-                <div className="flex shrink-0 flex-col items-end gap-2">
-                  <Badge variant="outline">{WORKSTREAM_KIND_LABELS[item.kind]}</Badge>
-                  <Badge variant={item.needsApproval ? "secondary" : "outline"}>
-                    {WORKSTREAM_STATUS_LABELS[item.status]}
-                  </Badge>
-                  {item.reviewLoop ? <ReviewLoopBadges loop={item.reviewLoop} /> : null}
-                </div>
+              summary={item.summary}
+              statusBadges={[
+                { label: WORKSTREAM_KIND_LABELS[item.kind], variant: "outline" },
+                {
+                  label: WORKSTREAM_STATUS_LABELS[item.status],
+                  variant: item.needsApproval ? "secondary" : "outline",
+                },
+                ...(item.reviewLoop
+                  ? [
+                      { label: reviewLoopLabel(item.reviewLoop), variant: "outline" as const },
+                      {
+                        label: reviewLoopStateLabel(item.reviewLoop),
+                        variant: reviewLoopVariant(item.reviewLoop),
+                      },
+                    ]
+                  : []),
+              ]}
+              chips={[
+                { label: item.artifact, variant: "outline" },
+                { label: item.sourceLabel, variant: "outline" },
+                ...(item.needsApproval
+                  ? [{ label: "Decision ready", variant: "default" as const }]
+                  : []),
+                ...(item.costImpact
+                  ? [{ label: item.costImpact, variant: "secondary" as const }]
+                  : []),
+                { label: shortDate(item.createdAt), variant: "outline" },
+              ]}
+              calloutLabel="Next action"
+              callout={item.nextAction}
+              action={
+                actionLabel
+                  ? {
+                      label: actionLabel,
+                      variant: item.needsApproval ? "default" : "outline",
+                      ariaLabel: `${actionLabel}: ${item.title}`,
+                      onClick: () => {
+                        if (item.approvalId) {
+                          onOpenApproval(item.approvalId);
+                          return;
+                        }
+                        if (issueReference && item.relatedOutputId) {
+                          onOpenWorkItem(issueReference, item.relatedOutputId);
+                          return;
+                        }
+                        if (issueReference) onOpenIssue(issueReference);
+                      },
+                    }
+                  : null
               }
-              action={actionLabel ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={item.needsApproval ? "default" : "outline"}
-                  aria-label={`${actionLabel}: ${item.title}`}
-                  onClick={() => {
-                    if (item.approvalId) {
-                      onOpenApproval(item.approvalId);
-                      return;
-                    }
-                    if (issueReference && item.relatedOutputId) {
-                      onOpenWorkItem(issueReference, item.relatedOutputId);
-                      return;
-                    }
-                    if (issueReference) onOpenIssue(issueReference);
-                  }}
-                >
-                  {actionLabel}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              ) : null}
-            >
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <Badge variant="outline">{item.artifact}</Badge>
-                <Badge variant="outline">{item.sourceLabel}</Badge>
-                {item.needsApproval ? <Badge variant="default">Decision ready</Badge> : null}
-                {item.costImpact ? <Badge variant="secondary">{item.costImpact}</Badge> : null}
-                <span>{shortDate(item.createdAt)}</span>
-              </div>
-              <div className="mt-3 rounded-md border border-border bg-background/80 p-3">
-                <p className="text-xs font-medium uppercase text-muted-foreground">Next action</p>
-                <p className="mt-1 text-sm text-foreground/85">{item.nextAction}</p>
-              </div>
-            </DearMeWorkbenchCard>
+            />
           );
         })}
       </div>
