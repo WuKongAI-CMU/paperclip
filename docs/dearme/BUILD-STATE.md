@@ -2,6 +2,37 @@
 
 Date: 2026-05-09
 
+## Action Graph Projection Bridge - 2026-05-09
+
+Implementation slice:
+
+- Added a shared DearMe `actionGraph` contract to the workbench response so the
+  product can show a customer-safe growth-team graph without exposing raw
+  Paperclip/Naive machinery.
+- Reused Polsia's choreography as the graph vocabulary: growth cycle, visible
+  roles, work lanes, artifacts, decisions, guardrails, memory signals, and
+  weekly reports.
+- Reused Naive/Paperclip substrate rows instead of adding new tables or a new
+  runtime: agents, issues, approvals, output handoffs, memory updates, and
+  report outputs are projected by `server/src/services/dearme-workbench.ts`.
+- Adapted Lindy-style action-card behavior in the customer shell by clarifying
+  Work Ready next steps, batch decision states, and after-approval outcomes.
+- Kept the UI on the existing workbench fields for this slice. The typed graph
+  is now available for the next premium work-stream/action-card UI.
+- Updated `ACTION-GRAPH-ARCHITECTURE.md` and the Symphony-style operating loop
+  so worker tickets reuse Polsia/Naive/Lindy before adding DearMe-only runtime
+  code.
+- Verification:
+  - `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run --maxWorkers=1`
+    passed: 1 file, 14 tests.
+  - `pnpm exec vitest server/src/__tests__/dearme-workbench.test.ts --run --maxWorkers=1`
+    passed: 1 file, 1 test.
+  - `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
+    passed: 1 file, 17 tests.
+  - `pnpm --filter @paperclipai/ui typecheck` passed.
+  - `pnpm --filter @paperclipai/server typecheck` passed.
+  - `git diff --check` passed.
+
 ## Polsia / Naive / Lindy Operating Loop - 2026-05-09
 
 Implementation slice:

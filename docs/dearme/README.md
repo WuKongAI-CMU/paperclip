@@ -20,6 +20,8 @@
 
 **Lindy / internal assistant baseline reuse plan:** [`LINDY-ASSISTANT-REUSE-PLAN.md`](LINDY-ASSISTANT-REUSE-PLAN.md)
 
+**Action graph projection:** [`ACTION-GRAPH-ARCHITECTURE.md`](ACTION-GRAPH-ARCHITECTURE.md)
+
 **Rebrand / provenance (required for competitor-informed work):** [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md)
 
 **Status:** Product architecture locked. DearMe is the product north star.
@@ -79,11 +81,14 @@ public provenance or copy-ready implementation material.
    - reuse contract: Polsia choreography plus Naive/Paperclip control plane.
 6. [`LINDY-ASSISTANT-REUSE-PLAN.md`](LINDY-ASSISTANT-REUSE-PLAN.md)
    - frontend/workflow reuse plan for work stream, action cards, knowledge UI, hidden action graphs, router, and executor patterns.
-7. [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md)
+7. [`ACTION-GRAPH-ARCHITECTURE.md`](ACTION-GRAPH-ARCHITECTURE.md)
+   - current bridge that projects Polsia choreography over Naive/Paperclip rows
+     and prepares a Lindy-style premium work stream without a new runtime.
+8. [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md)
    - governance for competitor-informed work, donor-source language, and assets.
-8. [`BUILD-STATE.md`](BUILD-STATE.md)
+9. [`BUILD-STATE.md`](BUILD-STATE.md)
    - current slice inventory and verification history.
-9. [`AGENCY-AGENTS-REFERENCE.md`](AGENCY-AGENTS-REFERENCE.md)
+10. [`AGENCY-AGENTS-REFERENCE.md`](AGENCY-AGENTS-REFERENCE.md)
    - optional OSS role-library reference for DearMe team-member definitions and
      deliverable standards.
 
@@ -107,6 +112,9 @@ is not a product architecture that must be preserved:
   contracts, and screens when the OK Partner shape makes DearMe worse.
 - Paperclip control plane: auth, workspaces, agents, issues, routines, live
   events, work products, cost events, budgets, adapters, plugins.
+- Action graph projection: expose the current DearMe loop as customer-safe
+  cycle, role, work, artifact, decision, memory, guardrail, and report nodes
+  over existing Naive/Paperclip rows before adding any new runtime or tables.
 - Naive-style onboarding/provisioning: `brand_blueprint` as the DearMe version
   of `setup_payload`, adapted from the OK Partner setup-blueprint flow where it
   is still useful.
@@ -122,7 +130,8 @@ for the product surface summary, [`PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`]
 for the current positioning, feature roadmap, and code-architecture execution
 plan, [`POLSIA-NAIVE-REUSE-PLAN.md`](POLSIA-NAIVE-REUSE-PLAN.md) for the
 implementation-level reuse contract, [`LINDY-ASSISTANT-REUSE-PLAN.md`](LINDY-ASSISTANT-REUSE-PLAN.md)
-for frontend/workflow reuse candidates, and [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md)
+for frontend/workflow reuse candidates, [`ACTION-GRAPH-ARCHITECTURE.md`](ACTION-GRAPH-ARCHITECTURE.md)
+for the current projection bridge, and [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md)
 for the governance layer that wins over older max-reuse notes.
 
 ## Current repo layout

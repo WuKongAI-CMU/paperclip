@@ -128,6 +128,27 @@ export const DEARME_WORKBENCH_STREAM_STATUSES = [
   "decision_needed",
   "recorded",
 ] as const;
+export const DEARME_ACTION_GRAPH_NODE_KINDS = [
+  "cycle",
+  "role",
+  "work_item",
+  "artifact",
+  "decision",
+  "memory_signal",
+  "report",
+  "guardrail",
+] as const;
+export const DEARME_ACTION_GRAPH_EDGE_KINDS = [
+  "plans",
+  "owns",
+  "produces",
+  "requires_decision",
+  "revises",
+  "learns_from",
+  "blocks",
+  "unblocks",
+  "reports",
+] as const;
 export const DEARME_MEMORY_UPDATE_KINDS = [
   "voice_sample",
   "proof_point",
@@ -703,6 +724,35 @@ export const dearMeWorkbenchReportSchema = z.object({
   updatedAt: z.string().datetime(),
 }).strict();
 
+export const dearMeActionGraphNodeSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(DEARME_ACTION_GRAPH_NODE_KINDS),
+  label: shortTextSchema,
+  summary: mediumTextSchema,
+  role: z.enum(DEARME_TEAM_ROLES).nullable(),
+  status: shortTextSchema.nullable(),
+  source: z.enum(["cycle", "team", "work", "artifact", "decision", "memory", "report", "guardrail"]),
+  relatedOutputId: z.string().min(1).nullable(),
+  issueId: z.string().min(1).nullable(),
+  approvalId: z.string().min(1).nullable(),
+  updatedAt: z.string().datetime(),
+}).strict();
+
+export const dearMeActionGraphEdgeSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(DEARME_ACTION_GRAPH_EDGE_KINDS),
+  fromNodeId: z.string().min(1),
+  toNodeId: z.string().min(1),
+  label: shortTextSchema,
+}).strict();
+
+export const dearMeActionGraphSchema = z.object({
+  summary: mediumTextSchema,
+  cycleNodeId: z.string().min(1),
+  nodes: z.array(dearMeActionGraphNodeSchema).max(80),
+  edges: z.array(dearMeActionGraphEdgeSchema).max(160),
+}).strict();
+
 export const dearMeWorkbenchResponseSchema = z.object({
   companyId: z.string().min(1),
   headline: shortTextSchema,
@@ -716,6 +766,7 @@ export const dearMeWorkbenchResponseSchema = z.object({
   workStream: z.array(dearMeWorkbenchStreamItemSchema).max(20),
   memory: dearMeWorkbenchMemorySchema,
   report: dearMeWorkbenchReportSchema.nullable(),
+  actionGraph: dearMeActionGraphSchema,
   outputs: z.array(dearMeOutputItemSchema),
 }).strict();
 
@@ -752,6 +803,9 @@ export type DearMeCycleGuardrail = z.infer<typeof dearMeCycleGuardrailSchema>;
 export type DearMePaidBetaEntitlement = z.infer<typeof dearMePaidBetaEntitlementSchema>;
 export type DearMePaidBetaRecord = z.infer<typeof dearMePaidBetaRecordSchema>;
 export type DearMePaidBetaStatus = z.infer<typeof dearMePaidBetaStatusSchema>;
+export type DearMeActionGraph = z.infer<typeof dearMeActionGraphSchema>;
+export type DearMeActionGraphEdge = z.infer<typeof dearMeActionGraphEdgeSchema>;
+export type DearMeActionGraphNode = z.infer<typeof dearMeActionGraphNodeSchema>;
 export type DearMeWorkbenchBatchDecision = z.infer<typeof dearMeWorkbenchBatchDecisionSchema>;
 export type DearMeWorkbenchDecision = z.infer<typeof dearMeWorkbenchDecisionSchema>;
 export type DearMeWorkbenchProgressItem = z.infer<typeof dearMeWorkbenchProgressItemSchema>;

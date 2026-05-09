@@ -1117,6 +1117,24 @@ function workReadyActionLabel(status: DearMeOutputStatus) {
   return "Open work";
 }
 
+function workReadyNextStepLabel(status: DearMeOutputStatus) {
+  if (status === "ready_for_review") {
+    return "Open it, then approve, request changes, regenerate, or mark it not useful.";
+  }
+  if (status === "complete") return "Use it as proof or keep it in your private history.";
+  if (status === "blocked") return "Review what is blocking the team before more private work continues.";
+  if (status === "working") return "Track the lane; DearMe will bring it back here when it is ready.";
+  if (status === "queued") return "No action yet; the team will prepare this before asking for your call.";
+  return "Open it to see what changed and decide whether DearMe should continue.";
+}
+
+function decisionAfterCallLabel(riskGate?: DearMeWorkbenchDecision["riskGate"] | DearMeWorkbenchBatchDecision["riskGate"]) {
+  if (riskGate) {
+    return "Approved work can move forward; changes go back to the private team before anything external happens.";
+  }
+  return "Your call updates the private loop so the team knows what to use, revise, or stop.";
+}
+
 function TeamSummaryPanel({
   workbench,
   paidBetaActive,
@@ -1212,7 +1230,7 @@ function WorkReadyPanel({
                   </Button>
                 }
               >
-                <DearMeEvidenceGrid columns="two">
+                <DearMeEvidenceGrid>
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">Prepared by</p>
                     <p className="mt-1 text-sm">{roleLabel(item.ownerRole)}</p>
@@ -1220,6 +1238,10 @@ function WorkReadyPanel({
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">Why it matters</p>
                     <p className="mt-1 text-sm text-foreground/85">{OUTPUT_KIND_VALUE_LABELS[outputKind]}</p>
+                  </div>
+                  <div className="rounded-md border border-border bg-background/80 p-3">
+                    <p className="text-xs font-medium text-muted-foreground">Your next step</p>
+                    <p className="mt-1 text-sm text-foreground/85">{workReadyNextStepLabel(item.status)}</p>
                   </div>
                 </DearMeEvidenceGrid>
               </DearMeWorkbenchCard>
@@ -1287,16 +1309,27 @@ function DecisionsNeededPanel({
                 </Button>
               }
             >
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline">Approve</Badge>
-                <Badge variant="outline">Request changes</Badge>
-                <Badge variant="outline">Regenerate if needed</Badge>
-              </div>
+              <DearMeEvidenceGrid>
+                <div className="rounded-md border border-border bg-background/80 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">Waiting on you</p>
+                  <p className="mt-1 text-sm">
+                    Review {batch.itemCount} prepared move{batch.itemCount === 1 ? "" : "s"}.
+                  </p>
+                </div>
+                <div className="rounded-md border border-border bg-background/80 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">Choices</p>
+                  <p className="mt-1 text-sm">Approve, request changes, or regenerate privately.</p>
+                </div>
+                <div className="rounded-md border border-border bg-background/80 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">After your call</p>
+                  <p className="mt-1 text-sm text-foreground/85">{decisionAfterCallLabel(batch.riskGate)}</p>
+                </div>
+              </DearMeEvidenceGrid>
             </DearMeWorkbenchCard>
           ))}
         </div>
       ) : null}
-      {decisions.length === 0 ? (
+      {decisions.length === 0 && batches.length === 0 ? (
         <DearMeEmptyState
           className="mt-4"
           icon={ShieldCheck}
@@ -1332,7 +1365,7 @@ function DecisionsNeededPanel({
                 </Button>
               }
             >
-              <DearMeEvidenceGrid columns="two">
+              <DearMeEvidenceGrid>
                 <div className="rounded-md border border-border bg-background/80 p-3">
                   <p className="text-xs font-medium text-muted-foreground">Prepared artifact</p>
                   <p className="mt-1 text-sm">
@@ -1342,6 +1375,10 @@ function DecisionsNeededPanel({
                 <div className="rounded-md border border-border bg-background/80 p-3">
                   <p className="text-xs font-medium text-muted-foreground">Available choices</p>
                   <p className="mt-1 text-sm">Approve, request changes, or reject before anything public happens.</p>
+                </div>
+                <div className="rounded-md border border-border bg-background/80 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">After your call</p>
+                  <p className="mt-1 text-sm text-foreground/85">{decisionAfterCallLabel(decision.riskGate)}</p>
                 </div>
               </DearMeEvidenceGrid>
             </DearMeWorkbenchCard>
@@ -1362,6 +1399,12 @@ function OperatingLoopPanel({
   const decisionCount = workbench.decisionsNeeded.length + workbench.batchDecisions.length;
   const workCount = workbench.workReady.length + workbench.activeWork.length;
   const latestEvent = workbench.workStream[0] ?? null;
+  const graph = workbench.actionGraph;
+  const graphHighlights = graph.nodes
+    .filter((node) => ["artifact", "decision", "memory_signal", "report"].includes(node.kind))
+    .slice(0, 3);
+  const roleNodeCount = graph.nodes.filter((node) => node.kind === "role").length;
+  const decisionEdgeCount = graph.edges.filter((edge) => edge.kind === "requires_decision").length;
   const loopStages = [
     {
       key: "plan",
@@ -1445,6 +1488,33 @@ function OperatingLoopPanel({
             Nothing publishes, sends, deploys, or spends without your approval.
           </p>
         </div>
+      </div>
+
+      <div className="mt-4 rounded-md border border-border bg-background/80 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Growth map</p>
+            <p className="mt-2 text-sm text-foreground/85">{graph.summary}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline">{pluralizeCount(roleNodeCount, "role")} connected</Badge>
+            <Badge variant={decisionEdgeCount > 0 ? "secondary" : "outline"}>
+              {decisionEdgeCount > 0 ? pluralizeCount(decisionEdgeCount, "decision") : "No decision waiting"}
+            </Badge>
+          </div>
+        </div>
+        {graphHighlights.length > 0 ? (
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {graphHighlights.map((node) => (
+              <div key={node.id} className="rounded-md border border-border bg-muted/15 p-3">
+                <p className="text-xs font-medium text-muted-foreground">{node.role ? roleLabel(node.role) : "DearMe"}</p>
+                <p className="mt-1 text-sm font-medium">{node.label}</p>
+                <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">{node.summary}</p>
+                {node.status ? <Badge className="mt-3" variant="outline">{node.status.replaceAll("_", " ")}</Badge> : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
     </DearMePanel>
   );

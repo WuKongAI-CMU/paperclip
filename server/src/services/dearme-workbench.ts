@@ -5,13 +5,18 @@ import {
   DEARME_MEMORY_UPDATE_KINDS,
   DEARME_TEAM_ROLES,
   dearMeWorkbenchResponseSchema,
+  type DearMeActionGraph,
+  type DearMeActionGraphEdge,
+  type DearMeActionGraphNode,
   type DearMeMemoryUpdateItem,
   type DearMeMemoryUpdateKind,
   type DearMeOutputItem,
   type DearMeOutputKind,
   type DearMeWorkbenchBatchDecision,
   type DearMeWorkbenchDecision,
+  type DearMeWorkbenchMemory,
   type DearMeWorkbenchProgressItem,
+  type DearMeWorkbenchReport,
   type DearMeWorkbenchStreamItem,
   type DearMeWorkbenchTeamMember,
   type DearMeWorkbenchVoiceProfile,
@@ -28,6 +33,8 @@ type DearMeBatchKey = NonNullable<DearMeRiskGate> | "review";
 const TEAM_ROLE_ORDER = new Map(DEARME_TEAM_ROLES.map((role, index) => [role, index]));
 const MEMORY_KIND_SET = new Set<string>(DEARME_MEMORY_UPDATE_KINDS);
 const DEARME_MEMORY_UPDATED_ACTION = "dearme.memory_updated";
+const DEARME_ACTION_GRAPH_CYCLE_NODE_ID = "cycle:weekly-growth-loop";
+const DEARME_ACTION_GRAPH_FALLBACK_UPDATED_AT = "1970-01-01T00:00:00.000Z";
 
 const TEAM_ROLE_FOCUS: Record<DearMeTeamRole, string> = {
   chief_of_staff: "Coordinating today's brand growth plan and the next decisions.",
@@ -395,6 +402,292 @@ function buildWorkStream(input: {
     .slice(0, 20);
 }
 
+function latestTimestamp(values: Array<string | null | undefined>) {
+  return values
+    .filter((value): value is string => Boolean(value))
+    .sort()
+    .at(-1) ?? DEARME_ACTION_GRAPH_FALLBACK_UPDATED_AT;
+}
+
+function graphEdgeId(
+  kind: DearMeActionGraphEdge["kind"],
+  fromNodeId: string,
+  toNodeId: string,
+) {
+  return `${kind}:${fromNodeId}->${toNodeId}`;
+}
+
+function relatedOutputIdForDecision(decision: DearMeWorkbenchDecision) {
+  return decision.outputKind ? decision.id.replace(/^output:/, "") : null;
+}
+
+function buildActionGraph(input: {
+  team: DearMeWorkbenchTeamMember[];
+  activeWork: DearMeWorkbenchWorkItem[];
+  workReady: DearMeWorkbenchWorkItem[];
+  decisionsNeeded: DearMeWorkbenchDecision[];
+  batchDecisions: DearMeWorkbenchBatchDecision[];
+  memory: DearMeWorkbenchMemory;
+  report: DearMeWorkbenchReport | null;
+  outputs: DearMeOutputItem[];
+}): DearMeActionGraph {
+  const nodes = new Map<string, DearMeActionGraphNode>();
+  const edges = new Map<string, DearMeActionGraphEdge>();
+  const allWork = [...input.activeWork, ...input.workReady];
+  const workByOutputId = new Map(allWork.map((item) => [item.id, item]));
+  const teamByRole = new Map(input.team.map((member) => [member.role, member]));
+  const latestUpdatedAt = latestTimestamp([
+    ...input.team.map((member) => member.lastActiveAt),
+    ...allWork.map((item) => item.updatedAt),
+    ...input.decisionsNeeded.map((decision) => decision.updatedAt),
+    ...input.batchDecisions.map((batch) => batch.updatedAt),
+    ...input.memory.latest.map((memory) => memory.createdAt),
+    input.report?.updatedAt,
+    ...input.outputs.map((output) => output.updatedAt),
+  ]);
+  const cycleStatus = input.decisionsNeeded.length > 0
+    ? "decisions_needed"
+    : input.activeWork.length > 0
+      ? "working"
+      : input.workReady.length > 0
+        ? "ready_for_review"
+        : "standing_by";
+
+  function addNode(node: DearMeActionGraphNode) {
+    if (!nodes.has(node.id)) {
+      nodes.set(node.id, node);
+    }
+  }
+
+  function addEdge(edge: Omit<DearMeActionGraphEdge, "id">) {
+    if (!nodes.has(edge.fromNodeId) || !nodes.has(edge.toNodeId)) {
+      return;
+    }
+    const id = graphEdgeId(edge.kind, edge.fromNodeId, edge.toNodeId);
+    if (!edges.has(id)) {
+      edges.set(id, { id, ...edge });
+    }
+  }
+
+  function roleNodeId(role: DearMeTeamRole) {
+    return `role:${role}`;
+  }
+
+  function ensureRoleNode(role: DearMeTeamRole, updatedAt: string) {
+    const member = teamByRole.get(role);
+    addNode({
+      id: roleNodeId(role),
+      kind: "role",
+      label: member?.name ?? TEAM_ROLE_PUBLIC_LABELS[role],
+      summary: member?.currentFocus ?? TEAM_ROLE_FOCUS[role],
+      role,
+      status: member?.status ?? "Assigned",
+      source: "team",
+      relatedOutputId: null,
+      issueId: null,
+      approvalId: null,
+      updatedAt: member?.lastActiveAt ?? updatedAt,
+    });
+  }
+
+  addNode({
+    id: DEARME_ACTION_GRAPH_CYCLE_NODE_ID,
+    kind: "cycle",
+    label: "Weekly growth loop",
+    summary: [
+      "Plan, work, review, learn, and report across",
+      `${input.team.length} roles,`,
+      `${allWork.length} work lanes,`,
+      `and ${input.decisionsNeeded.length} decisions.`,
+    ].join(" "),
+    role: "chief_of_staff",
+    status: cycleStatus,
+    source: "cycle",
+    relatedOutputId: null,
+    issueId: null,
+    approvalId: null,
+    updatedAt: latestUpdatedAt,
+  });
+
+  for (const member of input.team) {
+    ensureRoleNode(member.role, member.lastActiveAt ?? latestUpdatedAt);
+    addEdge({
+      kind: "owns",
+      fromNodeId: DEARME_ACTION_GRAPH_CYCLE_NODE_ID,
+      toNodeId: roleNodeId(member.role),
+      label: "coordinates",
+    });
+  }
+
+  for (const item of allWork) {
+    ensureRoleNode(item.ownerRole, item.updatedAt);
+    const nodeId = `work:${item.id}`;
+    addNode({
+      id: nodeId,
+      kind: "work_item",
+      label: item.title,
+      summary: item.summary,
+      role: item.ownerRole,
+      status: item.status,
+      source: "work",
+      relatedOutputId: item.id,
+      issueId: item.issueId,
+      approvalId: null,
+      updatedAt: item.updatedAt,
+    });
+    addEdge({
+      kind: "owns",
+      fromNodeId: roleNodeId(item.ownerRole),
+      toNodeId: nodeId,
+      label: "owns",
+    });
+  }
+
+  for (const output of input.outputs) {
+    const ownerRole = OUTPUT_OWNER_ROLE[output.kind];
+    ensureRoleNode(ownerRole, output.updatedAt);
+    const nodeId = `artifact:${output.id}`;
+    const workNodeId = `work:${output.id}`;
+    addNode({
+      id: nodeId,
+      kind: "artifact",
+      label: output.title,
+      summary: output.summary,
+      role: ownerRole,
+      status: output.status,
+      source: "artifact",
+      relatedOutputId: output.id,
+      issueId: output.issueId,
+      approvalId: null,
+      updatedAt: output.updatedAt,
+    });
+    addEdge({
+      kind: "produces",
+      fromNodeId: nodes.has(workNodeId) ? workNodeId : roleNodeId(ownerRole),
+      toNodeId: nodeId,
+      label: "produces",
+    });
+  }
+
+  for (const decision of input.decisionsNeeded) {
+    const role = roleForDecision(decision);
+    ensureRoleNode(role, decision.updatedAt);
+    const outputId = relatedOutputIdForDecision(decision);
+    const nodeId = `decision:${decision.id}`;
+    const artifactNodeId = outputId ? `artifact:${outputId}` : null;
+    const workNodeId = outputId ? `work:${outputId}` : null;
+    addNode({
+      id: nodeId,
+      kind: "decision",
+      label: decision.title,
+      summary: decision.summary,
+      role,
+      status: decision.status,
+      source: "decision",
+      relatedOutputId: outputId,
+      issueId: decision.issueId,
+      approvalId: decision.approvalId,
+      updatedAt: decision.updatedAt,
+    });
+    addEdge({
+      kind: "requires_decision",
+      fromNodeId: artifactNodeId && nodes.has(artifactNodeId)
+        ? artifactNodeId
+        : workNodeId && nodes.has(workNodeId)
+          ? workNodeId
+          : DEARME_ACTION_GRAPH_CYCLE_NODE_ID,
+      toNodeId: nodeId,
+      label: "needs your decision",
+    });
+  }
+
+  for (const batch of input.batchDecisions) {
+    const nodeId = `guardrail:${batch.id}`;
+    addNode({
+      id: nodeId,
+      kind: "guardrail",
+      label: batch.title,
+      summary: batch.summary,
+      role: "chief_of_staff",
+      status: "needs review",
+      source: "guardrail",
+      relatedOutputId: null,
+      issueId: null,
+      approvalId: null,
+      updatedAt: batch.updatedAt,
+    });
+    addEdge({
+      kind: "blocks",
+      fromNodeId: DEARME_ACTION_GRAPH_CYCLE_NODE_ID,
+      toNodeId: nodeId,
+      label: "keeps risky moves gated",
+    });
+    for (const decisionId of batch.decisionIds) {
+      const decisionNodeId = `decision:${decisionId}`;
+      addEdge({
+        kind: "blocks",
+        fromNodeId: nodeId,
+        toNodeId: decisionNodeId,
+        label: "collects decision",
+      });
+    }
+  }
+
+  for (const memory of input.memory.latest.slice(0, 8)) {
+    const nodeId = `memory:${memory.id}`;
+    addNode({
+      id: nodeId,
+      kind: "memory_signal",
+      label: memory.title ?? MEMORY_KIND_LABELS[memory.kind],
+      summary: memory.bodyPreview,
+      role: "voice_editor",
+      status: "recorded",
+      source: "memory",
+      relatedOutputId: null,
+      issueId: null,
+      approvalId: null,
+      updatedAt: memory.createdAt,
+    });
+    addEdge({
+      kind: "learns_from",
+      fromNodeId: DEARME_ACTION_GRAPH_CYCLE_NODE_ID,
+      toNodeId: nodeId,
+      label: "learns from",
+    });
+  }
+
+  if (input.report) {
+    const nodeId = `report:${input.report.outputId}`;
+    ensureRoleNode("growth_analyst", input.report.updatedAt);
+    addNode({
+      id: nodeId,
+      kind: "report",
+      label: input.report.title,
+      summary: input.report.summary,
+      role: "growth_analyst",
+      status: input.report.status,
+      source: "report",
+      relatedOutputId: input.report.outputId,
+      issueId: input.report.issueId,
+      approvalId: null,
+      updatedAt: input.report.updatedAt,
+    });
+    addEdge({
+      kind: "reports",
+      fromNodeId: DEARME_ACTION_GRAPH_CYCLE_NODE_ID,
+      toNodeId: nodeId,
+      label: "reports",
+    });
+  }
+
+  return {
+    summary: "DearMe projects the current team loop into a customer-safe graph of roles, work, artifacts, decisions, memory, and reports.",
+    cycleNodeId: DEARME_ACTION_GRAPH_CYCLE_NODE_ID,
+    nodes: Array.from(nodes.values()).slice(0, 80),
+    edges: Array.from(edges.values()).slice(0, 160),
+  };
+}
+
 function decisionFromOutput(output: DearMeOutputItem): DearMeWorkbenchDecision {
   return {
     id: `output:${output.id}`,
@@ -701,11 +994,33 @@ export function dearmeWorkbenchService(db: Db) {
         latest: latestMemory,
       };
       const reportOutput = outputs.find((output) => output.kind === "weekly_report") ?? null;
+      const report = reportOutput
+        ? {
+            title: reportOutput.title,
+            summary: reportOutput.summary,
+            status: reportOutput.status,
+            outputId: reportOutput.id,
+            issueId: reportOutput.issueId,
+            issueIdentifier: reportOutput.issueIdentifier,
+            bodyPreview: outputPreview(reportOutput),
+            updatedAt: reportOutput.updatedAt,
+          }
+        : null;
       const workStream = buildWorkStream({
         activeWork,
         workReady,
         decisionsNeeded,
         recentProgress,
+      });
+      const actionGraph = buildActionGraph({
+        team,
+        activeWork,
+        workReady,
+        decisionsNeeded,
+        batchDecisions,
+        memory,
+        report,
+        outputs,
       });
 
       return dearMeWorkbenchResponseSchema.parse({
@@ -731,18 +1046,8 @@ export function dearmeWorkbenchService(db: Db) {
         recentProgress,
         workStream,
         memory,
-        report: reportOutput
-          ? {
-              title: reportOutput.title,
-              summary: reportOutput.summary,
-              status: reportOutput.status,
-              outputId: reportOutput.id,
-              issueId: reportOutput.issueId,
-              issueIdentifier: reportOutput.issueIdentifier,
-              bodyPreview: outputPreview(reportOutput),
-              updatedAt: reportOutput.updatedAt,
-            }
-          : null,
+        report,
+        actionGraph,
         outputs,
       });
     },

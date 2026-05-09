@@ -688,6 +688,47 @@ describe("DearMe brand blueprint contract", () => {
         bodyPreview: "Completed work and decisions needed.",
         updatedAt: "2026-05-07T14:00:00.000Z",
       },
+      actionGraph: {
+        summary: "DearMe projects the current team loop into a customer-safe graph of roles, work, artifacts, decisions, memory, and reports.",
+        cycleNodeId: "cycle:weekly-growth-loop",
+        nodes: [
+          {
+            id: "cycle:weekly-growth-loop",
+            kind: "cycle",
+            label: "Weekly growth loop",
+            summary: "Plan, work, review, learn, and report across 1 roles, 2 work lanes, and 1 decisions.",
+            role: "chief_of_staff",
+            status: "decisions_needed",
+            source: "cycle",
+            relatedOutputId: null,
+            issueId: null,
+            approvalId: null,
+            updatedAt: "2026-05-07T14:00:00.000Z",
+          },
+          {
+            id: "decision:approval:approval-1",
+            kind: "decision",
+            label: "Approve Brand OS for Peter",
+            summary: "Review the first growth-team plan before private work starts.",
+            role: "brand_strategist",
+            status: "pending",
+            source: "decision",
+            relatedOutputId: null,
+            issueId: null,
+            approvalId: "approval-1",
+            updatedAt: "2026-05-07T14:00:00.000Z",
+          },
+        ],
+        edges: [
+          {
+            id: "requires_decision:cycle:weekly-growth-loop->decision:approval:approval-1",
+            kind: "requires_decision",
+            fromNodeId: "cycle:weekly-growth-loop",
+            toNodeId: "decision:approval:approval-1",
+            label: "needs your decision",
+          },
+        ],
+      },
       outputs: [],
     });
 
@@ -706,6 +747,13 @@ describe("DearMe brand blueprint contract", () => {
       role: "brand_strategist",
       status: "decision_needed",
       needsApproval: true,
+    }));
+    expect(response.actionGraph.nodes.map((node) => node.kind)).toEqual(
+      expect.arrayContaining(["cycle", "decision"]),
+    );
+    expect(response.actionGraph.edges[0]).toEqual(expect.objectContaining({
+      kind: "requires_decision",
+      label: "needs your decision",
     }));
     expect(() =>
       dearMeWorkbenchResponseSchema.parse({

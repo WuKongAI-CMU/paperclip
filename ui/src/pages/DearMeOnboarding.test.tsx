@@ -349,6 +349,60 @@ function workbenchResponse() {
       bodyPreview: "Completed work: refreshed positioning and prepared next bets.",
       updatedAt: "2026-05-07T14:00:00.000Z",
     },
+    actionGraph: {
+      summary: "DearMe projects the current team loop into a customer-safe graph of roles, work, artifacts, decisions, memory, and reports.",
+      cycleNodeId: "cycle:weekly-growth-loop",
+      nodes: [
+        {
+          id: "cycle:weekly-growth-loop",
+          kind: "cycle",
+          label: "Weekly growth loop",
+          summary: "Plan, work, review, learn, and report across 2 roles, 3 work lanes, and 1 decisions.",
+          role: "chief_of_staff",
+          status: "decisions_needed",
+          source: "cycle",
+          relatedOutputId: null,
+          issueId: null,
+          approvalId: null,
+          updatedAt: "2026-05-07T14:00:00.000Z",
+        },
+        {
+          id: "role:content_producer",
+          kind: "role",
+          label: "Content Producer",
+          summary: "Turning proof and point of view into reviewable content drafts.",
+          role: "content_producer",
+          status: "Working",
+          source: "team",
+          relatedOutputId: null,
+          issueId: null,
+          approvalId: null,
+          updatedAt: "2026-05-07T14:00:00.000Z",
+        },
+        {
+          id: "decision:output:issue-2:content_drafts",
+          kind: "decision",
+          label: "Review Starter posts",
+          summary: "Three posts are ready for voice review.",
+          role: "content_producer",
+          status: "needed",
+          source: "decision",
+          relatedOutputId: "issue-2:content_drafts",
+          issueId: "issue-2",
+          approvalId: null,
+          updatedAt: "2026-05-07T14:00:00.000Z",
+        },
+      ],
+      edges: [
+        {
+          id: "requires_decision:cycle:weekly-growth-loop->decision:output:issue-2:content_drafts",
+          kind: "requires_decision",
+          fromNodeId: "cycle:weekly-growth-loop",
+          toNodeId: "decision:output:issue-2:content_drafts",
+          label: "needs your decision",
+        },
+      ],
+    },
     outputs: [],
   };
 }
@@ -541,8 +595,13 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("The team prepares assets");
     expect(container.textContent).toContain("You make the high-leverage calls");
     expect(container.textContent).toContain("Nothing publishes, sends, deploys, or spends without your approval.");
+    expect(container.textContent).toContain("Growth map");
+    expect(container.textContent).toContain("DearMe projects the current team loop");
+    expect(container.textContent).toContain("1 role connected");
     expect(container.textContent).toContain("Prepared work waiting for review");
     expect(container.textContent).toContain("Why it matters");
+    expect(container.textContent).toContain("Your next step");
+    expect(container.textContent).toContain("Open it, then approve, request changes, regenerate, or mark it not useful.");
     expect(pageText.indexOf("Dear me, your team has decisions ready")).toBeLessThan(
       pageText.indexOf("Growth cycle"),
     );
@@ -562,6 +621,9 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Batch decisions");
     expect(container.textContent).toContain("Review content batch");
     expect(container.textContent).toContain("Review posts");
+    expect(container.textContent).toContain("Waiting on you");
+    expect(container.textContent).toContain("After your call");
+    expect(container.textContent).toContain("Approved work can move forward");
     expect(container.textContent).toContain("Live team feed");
     expect(container.textContent).toContain("Your call: Review Starter posts");
     expect(container.textContent).toContain("Decision ready");
@@ -1117,6 +1179,34 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=decisions&issue=issue-2");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("does not show the empty decision state when batch decisions are waiting", async () => {
+    const batchOnlyWorkbench = workbenchResponse();
+    batchOnlyWorkbench.decisionsNeeded = [];
+    mockDearmeApi.getWorkbench.mockResolvedValue(batchOnlyWorkbench);
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Review content batch");
+    expect(container.textContent).toContain("Waiting on you");
+    expect(container.textContent).toContain("Approve, request changes, or regenerate privately.");
+    expect(container.textContent).not.toContain("No high-leverage decision is waiting right now");
 
     await act(async () => {
       root.unmount();

@@ -425,6 +425,27 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         }),
       ]),
     );
+    expect(result.actionGraph.cycleNodeId).toBe("cycle:weekly-growth-loop");
+    expect(result.actionGraph.nodes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "cycle:weekly-growth-loop", kind: "cycle", status: "decisions_needed" }),
+        expect.objectContaining({ kind: "role", role: "content_producer", label: "Content Producer" }),
+        expect.objectContaining({ kind: "artifact", role: "content_producer", relatedOutputId: `${contentIssueId}:content_drafts` }),
+        expect.objectContaining({ kind: "decision", role: "content_producer", issueId: contentIssueId }),
+        expect.objectContaining({ kind: "guardrail", label: "Review content batch" }),
+        expect.objectContaining({ kind: "memory_signal", label: "Operator note", role: "voice_editor" }),
+        expect.objectContaining({ kind: "report", role: "growth_analyst", issueId: reportIssueId }),
+      ]),
+    );
+    expect(result.actionGraph.edges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: "owns", fromNodeId: "cycle:weekly-growth-loop" }),
+        expect.objectContaining({ kind: "produces", toNodeId: `artifact:${contentIssueId}:content_drafts` }),
+        expect.objectContaining({ kind: "requires_decision", label: "needs your decision" }),
+        expect.objectContaining({ kind: "learns_from", toNodeId: "memory:memory-voice-1" }),
+        expect.objectContaining({ kind: "reports", toNodeId: `report:${reportIssueId}:weekly_report` }),
+      ]),
+    );
 
     const customerPathJson = JSON.stringify(result);
     expect(customerPathJson).not.toContain("codex-local");

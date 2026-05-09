@@ -10,13 +10,15 @@ Symphony is treated as an execution factory, not as the product brain. The DearM
 
 ## Starting State
 
-- The active checkout at `/Users/peter/dearme` is a mixed DearMe integration tree on branch `dearme`.
-- The current tree must not be used as an uncontrolled concurrent worker base.
+- The active checkout at `/Users/peter/dearme` is now a recoverable DearMe
+  integration branch: `codex/dearme-baseline-2026-05-08`.
+- The old mixed-tree warning still applies to broad parallel edits: use isolated
+  worker branches/worktrees for new product-code tickets.
 - DearMe source-of-truth docs already identify the next safe product slices:
-  - Output-level review and regeneration actions.
-  - Team Work Stream.
+  - Premium Work Stream rendered from the action graph.
   - Voice and Memory source management.
   - Product-copy leakage cleanup.
+  - Polsia-style cycle controls over the existing workbench.
 
 ## Operating Split
 
@@ -69,6 +71,9 @@ Before assigning product-code tickets to workers:
 Goal: Convert the current mixed DearMe integration tree into a recoverable
 baseline that isolated workers can use.
 
+Current status: integrated. Use the current baseline branch as the product spine
+for follow-on tickets unless a newer reviewed baseline exists.
+
 Worker brief:
 
 - `doc/plans/2026-05-08-dearme-dm-005a-integration-baseline-ticket.md`
@@ -81,6 +86,10 @@ services, UI API, pages, and tests they need.
 ### DM-001: Output Review And Regeneration Actions
 
 Goal: Turn focused private DearMe outputs into actionable review cards.
+
+Current status: integrated enough for the paid-beta workbench path. Follow-on
+work should deepen quality and UX rather than restart this ticket from the old
+blocked state.
 
 Worker brief:
 
@@ -113,6 +122,36 @@ Suggested verification:
 - `pnpm exec vitest server/src/__tests__/dearme-output-handoff.test.ts --run`
 - `pnpm exec vitest ui/src/api/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run`
 - Any existing approval route/service tests touched by the change.
+
+### DM-102: Action Graph Projection Bridge
+
+Goal: Project the DearMe workbench into a typed customer-safe graph of cycle,
+roles, work, artifacts, decisions, guardrails, memory, and reports.
+
+Current status: implemented on the current baseline branch.
+
+Worker brief:
+
+- `doc/plans/2026-05-09-dearme-dm-102-action-graph-bridge.md`
+
+Donor grounding:
+
+- Polsia: cycle/task/report/memory/approval choreography.
+- Naive/Paperclip: agents, issues, approvals, output handoffs, memory updates,
+  and report outputs as the substrate rows.
+- Lindy: action-card, pending-action, transcript/block, and retry/regenerate
+  interaction model.
+
+Guardrail: The graph is a projection, not a new runtime or new database model.
+Do not expose graph or substrate terms to paid-beta users.
+
+### DM-103: Premium Work Stream From Action Graph
+
+Goal: Render `workbench.actionGraph` into a Lindy-style premium customer work
+stream that makes Polsia-style momentum visible.
+
+Guardrail: Team visible, machinery hidden. Do not expose raw graph ids, issue
+ids, approval routes, adapters, providers, or model names.
 
 ### DM-002: Team Work Stream
 
@@ -158,8 +197,8 @@ PR notes:
 
 ## Immediate Next Step
 
-Start with DM-005A in the current checkout state. DM-001 remains the first
-product-code ticket, but it is blocked until a DearMe baseline ref exists that
-isolated workers can safely use. Keep this Goal thread as the coordinator, then
-use Symphony or a Symphony-like Linear queue once the base and ticket template
-are stable.
+Start with `DM-103` in an isolated worker branch/worktree from the current
+baseline, then run `DM-104` for Voice & Memory source management. Keep this Goal
+thread as the coordinator; use Symphony or Symphony-like workers only for
+bounded tickets with explicit donor grounding, write scope, protected scope,
+acceptance, and verification.
