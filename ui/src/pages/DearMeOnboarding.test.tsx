@@ -2345,9 +2345,11 @@ describe("DearMeOnboarding", () => {
       HIDDEN_PRODUCT_TERMS.vendorName,
     ]);
 
-    const voiceMemoryTarget = document.getElementById("dearme-voice-memory") as HTMLElement;
+    const sourceReviewTarget = document.getElementById(
+      "dearme-source-review-source-review-memory-2",
+    ) as HTMLElement;
     const scrollIntoView = vi.fn();
-    Object.defineProperty(voiceMemoryTarget, "scrollIntoView", {
+    Object.defineProperty(sourceReviewTarget, "scrollIntoView", {
       configurable: true,
       value: scrollIntoView,
     });
@@ -2355,8 +2357,16 @@ describe("DearMeOnboarding", () => {
     await act(async () => {
       buttonByText(decisionsSurface, "Review source")?.click();
     });
+    await flushReact();
 
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+    expect(container.querySelector('[data-dearme-source-review-focus="true"]')?.textContent).toContain("Shipped proof");
+    expect((container.querySelector("#dearme-memory-kind") as HTMLSelectElement).value).toBe("proof_point");
+    expect((container.querySelector("#dearme-memory-title") as HTMLInputElement).value).toBe("Shipped proof");
+    expect((container.querySelector("#dearme-memory-source") as HTMLInputElement).value).toBe("Build log");
+    expect((container.querySelector("#dearme-memory-body") as HTMLTextAreaElement).value).toBe(
+      "Shipped a working local product.",
+    );
 
     await act(async () => {
       root.unmount();

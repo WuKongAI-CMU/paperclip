@@ -2,6 +2,56 @@
 
 Date: 2026-05-09
 
+## DM-125 Direct Source Review Focus - 2026-05-09
+
+Implementation slice:
+
+- Changed Decisions `Review source` from a broad panel jump into a direct
+  source-review action.
+- Reused the existing Voice & Memory source-review queue and fact form instead
+  of adding a new API, source-review table, importer, crawler, or agent runtime.
+- Clicking `Review source` now scrolls to the exact pending source card,
+  highlights it, and pre-fills the proposed reviewed fact in the Voice &
+  Memory form.
+- Extended the existing DearMe onboarding UI test so the source-review decision
+  must focus the exact card and prefill kind, title, source label, and body.
+
+Donor reuse:
+
+- Naive/Paperclip continues to supply the hidden workbench and memory substrate.
+- Polsia supplies the product choreography: visible team work becomes a small
+  number of concrete user calls.
+- Lindy supplies the compact action-needed card behavior: the decision opens
+  the prepared item directly.
+
+Rejected:
+
+- Rejected a new route, table, import pipeline, workflow builder, or separate
+  source-review screen.
+- Rejected leaving the user at a broad panel with no selected item.
+- Rejected exposing donor/runtime/provider/adapter language in the customer UI.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx` passed:
+  1 file, 30 tests.
+- `pnpm -r typecheck` passed.
+- `pnpm build` passed with the existing Vite MarkdownEditor dynamic/static
+  import and large-chunk warnings.
+- `git diff --check` passed.
+- Customer-surface substrate scan over `ui/src/pages/DearMeOnboarding.tsx`
+  and `ui/src/components/dearme` passed with no matches for Paperclip,
+  OpenClaw, OK Partner, provider, adapter, setup payload, control-plane,
+  workflow-builder, GraphQL, Relay, MCP, agent-runtime, routine, cost_event,
+  anthropic, or claude language.
+- Manual browser visual smoke was not run in this slice; the behavior is
+  covered by the focused UI test and broader typecheck/build gates.
+
+Next:
+
+- If the source review queue grows beyond a few items, add a filtered source
+  review drawer or selected-card detail view without changing the backend.
+
 ## DM-124 Source Evidence And Source Review Decisions - 2026-05-09
 
 Implementation slice:

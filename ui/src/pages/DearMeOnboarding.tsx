@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DEARME_BRAND_CADENCES,
@@ -1929,6 +1929,14 @@ function decisionAfterCallLabel(riskGate?: DearMeWorkbenchDecision["riskGate"] |
 }
 
 type DearMeSourceReviewItem = DearMeWorkbenchMemory["sourceReviewQueue"][number];
+type DearMeSourceReviewFocus = {
+  id: string;
+  requestId: number;
+};
+
+function sourceReviewCardDomId(id: string) {
+  return `dearme-source-review-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
 
 function TeamSummaryPanel({
   workbench,
@@ -2071,14 +2079,14 @@ function DecisionsNeededPanel({
   sourceReviews,
   onOpenBatch,
   onOpenDecision,
-  onOpenSourceReviews,
+  onOpenSourceReview,
 }: {
   batches: DearMeWorkbenchBatchDecision[];
   decisions: DearMeWorkbenchDecision[];
   sourceReviews: DearMeSourceReviewItem[];
   onOpenBatch: (batch: DearMeWorkbenchBatchDecision) => void;
   onOpenDecision: (decision: DearMeWorkbenchDecision) => void;
-  onOpenSourceReviews: () => void;
+  onOpenSourceReview: (sourceReview: DearMeSourceReviewItem) => void;
 }) {
   const waitingCount = batches.length + decisions.length + sourceReviews.length;
 
@@ -2186,7 +2194,7 @@ function DecisionsNeededPanel({
               action={{
                 label: "Review source",
                 ariaLabel: `Review source ${item.sourceTitle}`,
-                onClick: onOpenSourceReviews,
+                onClick: () => onOpenSourceReview(item),
                 variant: "default",
               }}
             >
@@ -2703,6 +2711,7 @@ function LiveTeamFeedPanel({
 
 function VoiceMemoryPanel({
   memory,
+  sourceReviewFocus,
   isPending,
   error,
   result,
@@ -2712,6 +2721,7 @@ function VoiceMemoryPanel({
   onArchive,
 }: {
   memory: DearMeWorkbenchMemory;
+  sourceReviewFocus: DearMeSourceReviewFocus | null;
   isPending: boolean;
   error: string | null;
   result: DearMeMemoryUpdateResult | null;
@@ -2766,6 +2776,27 @@ function VoiceMemoryPanel({
     recordedMemory && !recordedMemoryAlreadyLoaded && recordedMemory.kind === "proof_point"
       ? memory.proofCount + 1
       : memory.proofCount;
+  const handledSourceReviewFocusRequest = useRef<number | null>(null);
+
+  const handleSourceReviewSelect = useCallback((item: DearMeWorkbenchMemory["sourceReviewQueue"][number]) => {
+    const matchingGuide = memorySourceGuideForKind(item.proposedKind);
+    setEditingMemoryId(null);
+    setSourceGuideId(matchingGuide.id);
+    setKind(item.proposedKind);
+    setSourceInputMode("paste");
+    setTitle(item.proposedTitle);
+    setSourceLabel(item.sourceLabel ?? item.sourceTitle);
+    setBody(item.proposedBody);
+    setLocalError(null);
+  }, []);
+
+  useEffect(() => {
+    if (!sourceReviewFocus) return;
+    if (handledSourceReviewFocusRequest.current === sourceReviewFocus.requestId) return;
+    const item = memory.sourceReviewQueue.find((candidate) => candidate.id === sourceReviewFocus.id);
+    if (item) handleSourceReviewSelect(item);
+    handledSourceReviewFocusRequest.current = sourceReviewFocus.requestId;
+  }, [handleSourceReviewSelect, memory.sourceReviewQueue, sourceReviewFocus]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2861,18 +2892,6 @@ function VoiceMemoryPanel({
     setSourceGuideId(matchingGuide.id);
     setKind(nextKind);
     setSourceInputMode(defaultSourceInputModeForGuide(matchingGuide));
-    setLocalError(null);
-  }
-
-  function handleSourceReviewSelect(item: DearMeWorkbenchMemory["sourceReviewQueue"][number]) {
-    const matchingGuide = memorySourceGuideForKind(item.proposedKind);
-    setEditingMemoryId(null);
-    setSourceGuideId(matchingGuide.id);
-    setKind(item.proposedKind);
-    setSourceInputMode("paste");
-    setTitle(item.proposedTitle);
-    setSourceLabel(item.sourceLabel ?? item.sourceTitle);
-    setBody(item.proposedBody);
     setLocalError(null);
   }
 
@@ -2979,29 +2998,41 @@ function VoiceMemoryPanel({
             <Badge variant="outline">{memory.sourceReviewQueue.length} to review</Badge>
           </div>
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {memory.sourceReviewQueue.map((item) => (
-              <DearMeActionCard
-                key={item.id}
-                aria-label="Voice & Memory source review"
-                eyebrow={MEMORY_SOURCE_INPUT_MODE_LABELS[item.sourceInputMode]}
-                title={item.sourceTitle}
-                summary={item.summary}
-                chips={[
-                  { label: MEMORY_KIND_LABELS[item.proposedKind], variant: "outline" },
-                  ...(item.sourceLabel
-                    ? [{ label: sourceLabelForChip(item.sourceLabel), variant: "outline" as const }]
-                    : []),
-                  { label: shortDate(item.createdAt), variant: "outline" },
-                ]}
-                calloutLabel="Prepare next"
-                callout={item.nextAction}
-                action={{
-                  label: "Prepare fact",
-                  ariaLabel: `Prepare fact from ${item.sourceTitle}`,
-                  onClick: () => handleSourceReviewSelect(item),
-                }}
-              />
-            ))}
+            {memory.sourceReviewQueue.map((item) => {
+              const focused = sourceReviewFocus?.id === item.id;
+              return (
+                <div
+                  key={item.id}
+                  id={sourceReviewCardDomId(item.id)}
+                  className={cn(
+                    "rounded-md transition-shadow",
+                    focused ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : undefined,
+                  )}
+                  data-dearme-source-review-focus={focused ? "true" : undefined}
+                >
+                  <DearMeActionCard
+                    aria-label="Voice & Memory source review"
+                    eyebrow={MEMORY_SOURCE_INPUT_MODE_LABELS[item.sourceInputMode]}
+                    title={item.sourceTitle}
+                    summary={item.summary}
+                    chips={[
+                      { label: MEMORY_KIND_LABELS[item.proposedKind], variant: "outline" },
+                      ...(item.sourceLabel
+                        ? [{ label: sourceLabelForChip(item.sourceLabel), variant: "outline" as const }]
+                        : []),
+                      { label: shortDate(item.createdAt), variant: "outline" },
+                    ]}
+                    calloutLabel="Prepare next"
+                    callout={item.nextAction}
+                    action={{
+                      label: "Prepare fact",
+                      ariaLabel: `Prepare fact from ${item.sourceTitle}`,
+                      onClick: () => handleSourceReviewSelect(item),
+                    }}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : null}
@@ -3412,6 +3443,7 @@ function TeamWorkbenchPanel({
   const [memoryError, setMemoryError] = useState<string | null>(null);
   const [chiefOfStaffError, setChiefOfStaffError] = useState<string | null>(null);
   const [chiefOfStaffResult, setChiefOfStaffResult] = useState<DearMeChiefOfStaffMessageResult | null>(null);
+  const [sourceReviewFocus, setSourceReviewFocus] = useState<DearMeSourceReviewFocus | null>(null);
   const workbenchQuery = useQuery({
     queryKey: queryKeys.dearme.workbench(companyId),
     queryFn: () => dearmeApi.getWorkbench(companyId),
@@ -3528,9 +3560,15 @@ function TeamWorkbenchPanel({
     if (issueReference) onOpenWorkItem(issueReference, item.id, intent);
   }
 
-  function openSourceReviews() {
+  function openSourceReview(item: DearMeSourceReviewItem) {
+    setSourceReviewFocus((current) => ({
+      id: item.id,
+      requestId: (current?.requestId ?? 0) + 1,
+    }));
     if (typeof document === "undefined") return;
-    const target = document.getElementById("dearme-voice-memory");
+    const target =
+      document.getElementById(sourceReviewCardDomId(item.id)) ??
+      document.getElementById("dearme-voice-memory");
     if (target && typeof target.scrollIntoView === "function") {
       target.scrollIntoView({ behavior: "smooth", block: "start" });
     }
@@ -3572,7 +3610,7 @@ function TeamWorkbenchPanel({
           sourceReviews={sourceReviews}
           onOpenBatch={openBatch}
           onOpenDecision={openDecision}
-          onOpenSourceReviews={openSourceReviews}
+          onOpenSourceReview={openSourceReview}
         />
       </DearMeCockpitGrid>
 
@@ -3581,6 +3619,7 @@ function TeamWorkbenchPanel({
         <div id="dearme-voice-memory">
           <VoiceMemoryPanel
             memory={workbench.memory}
+            sourceReviewFocus={sourceReviewFocus}
             isPending={memoryMutation.isPending || memoryUpdateMutation.isPending || memoryArchiveMutation.isPending}
             error={memoryError}
             result={memoryUpdateMutation.data ?? memoryMutation.data ?? null}
