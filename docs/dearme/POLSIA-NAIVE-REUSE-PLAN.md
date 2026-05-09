@@ -53,11 +53,11 @@ Still not maximized:
 - Naive/Paperclip routine telemetry and cost lineage are not yet fully visible
   as DearMe-safe progress context.
 - Lindy-style reusable action cards have started landing as the live-feed,
-  Decisions Needed, Work Ready, and Private Work `DearMeActionCard` surfaces,
-  but paused states, retry, source cards, and deeper review surfaces still need
-  to move onto the shared primitive.
-- Voice & Memory still needs a source-ingestion surface before it can feel like
-  a durable Brand OS, not just generated text.
+  Decisions Needed, Work Ready, Private Work, and Voice & Memory source
+  `DearMeActionCard` surfaces, but paused states, retry, and deeper review
+  surfaces still need to move onto the shared primitive.
+- Voice & Memory still needs richer source import and management before it can
+  feel like a durable Brand OS, not just generated text.
 
 Next reuse priority:
 

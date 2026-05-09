@@ -2412,18 +2412,22 @@ function VoiceMemoryPanel({
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {latestMemory.slice(0, 6).map((item) => {
             const justSaved = recordedMemory?.id === item.id;
+            const chips = [
+              ...(justSaved
+                ? [{ label: "Just saved", variant: "secondary" as const }]
+                : []),
+              ...(item.sourceLabel
+                ? [{ label: item.sourceLabel, variant: "outline" as const }]
+                : []),
+            ];
             return (
-              <DearMeWorkbenchCard
+              <DearMeActionCard
                 key={item.id}
+                aria-label="Voice & Memory source"
                 eyebrow={MEMORY_KIND_LABELS[item.kind]}
                 title={item.title ?? "Untitled memory"}
-                description={item.bodyPreview}
-                badge={
-                  <div className="flex flex-wrap justify-end gap-2">
-                    {justSaved ? <Badge variant="secondary">Just saved</Badge> : null}
-                    {item.sourceLabel ? <Badge variant="outline">{item.sourceLabel}</Badge> : null}
-                  </div>
-                }
+                summary={item.bodyPreview}
+                chips={chips}
                 footer={shortDate(item.createdAt)}
               />
             );

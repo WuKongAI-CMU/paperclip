@@ -2,6 +2,42 @@
 
 Date: 2026-05-09
 
+## DM-115 Voice & Memory Action Card Reuse - 2026-05-09
+
+Implementation slice:
+
+- Reused `DearMeActionCard` for the latest Voice & Memory source cards so
+  saved writing samples, proof points, source links, corrections, audience
+  notes, and offer notes share the same DearMe action-card grammar as Live
+  Team Feed, Decisions Needed, Work Ready, and Private Work.
+- Preserved existing Naive/Paperclip-backed source projection and state:
+  source kind, title, body preview, just-saved/source chips, and created-at
+  timestamp remain the source of truth.
+- Kept Voice & Memory display-only in this slice: no new action, route,
+  mutation, source editing, archive, or runtime path was introduced.
+- Preserved the Polsia product lesson: the user can see useful memory/proof
+  accumulating as part of the team cockpit instead of staring at raw storage.
+- Applied Lindy's reusable source/action card grammar without importing Lindy
+  runtime, GraphQL, workflow-builder assumptions, or donor copy.
+- Added DOM-level coverage that the Voice & Memory section now renders
+  `data-dearme-surface="action-card"` cards.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/dearme/DearMeActionCard.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 24 tests.
+- `pnpm -r typecheck` passed.
+- `pnpm build` passed. Vite still reports existing chunk-size/dynamic-import
+  warnings around the broader app bundle, but no build failure.
+- `git diff --check` passed.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|model-provider|setup-payload|setup_payload|control-plane|raw issue" ui/src/pages/DearMeOnboarding.tsx ui/src/components/dearme/DearMeActionCard.tsx ui/src/components/dearme/DearMeActionCard.test.tsx`
+  returned no matches.
+
+Next:
+
+- Add paused/retry variants to `DearMeActionCard` before creating new review
+  card primitives.
+
 ## DM-114 Private Work Action Card Reuse - 2026-05-09
 
 Implementation slice:

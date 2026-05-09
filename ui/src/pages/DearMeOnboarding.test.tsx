@@ -928,6 +928,11 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("55%");
     expect(container.textContent).toContain("Add one more real sample");
     expect(container.textContent).toContain("Manual note");
+    expect(
+      container.querySelectorAll(
+        '[aria-label="Voice & Memory"] [data-dearme-surface="action-card"]',
+      ).length,
+    ).toBeGreaterThan(0);
     expect(container.textContent).toContain("Voice Editor");
     expect(container.textContent).toContain("Source guide");
     expect(container.textContent).toContain("Writing sample");
