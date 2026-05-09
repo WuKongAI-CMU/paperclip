@@ -31,11 +31,12 @@ This is the important split:
 - Build a DearMe-original customer UI shell because neither Polsia UI nor the
   currently exposed Paperclip shell is the right premium personal-brand product.
 
-Current implementation note, 2026-05-09: DM-118 keeps this split intact. The
-normalized retry/continue/direction entrypoint still lives in the DearMe web
-shell, and routine/cost lineage now comes from the existing Naive/Paperclip
-substrate as DearMe-safe cycle check-ins and spend checkpoints instead of a new
-progress runtime.
+Current implementation note, 2026-05-09: DM-125 keeps this split intact. The
+source-review decision now opens the prepared Voice & Memory item directly,
+while routine/cost lineage and workbench state still come from the existing
+Naive/Paperclip substrate instead of a new progress runtime. The active
+coordinator ledger for Polsia, Naive/Paperclip, Lindy, Littlebird, and
+Symphony-style reuse is `docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`.
 
 ## Architecture Diagram
 

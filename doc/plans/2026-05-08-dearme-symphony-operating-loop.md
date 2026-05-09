@@ -195,10 +195,28 @@ Stop rules:
 PR notes:
 ```
 
+## Current Coordinator Queue - 2026-05-09
+
+The old first-execution queue above is historical. The current integrated branch
+has already absorbed the DM-102 through DM-125 product spine. Workers must read:
+
+- `docs/dearme/BUILD-STATE.md`
+- `docs/dearme/INTEGRATED-ARCHITECTURE.md`
+- `docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+
+Current bounded worker tickets:
+
+1. `DM-127`: Voice & Memory Source Detail Drawer.
+2. `DM-128`: Focused Decision Review Drawer.
+3. `DM-129`: Automation Reliability And Cost Policy.
+4. `DM-130`: Web Shell Polish From Lindy And Littlebird.
+
+Do not restart stale DM-001, DM-103, or DM-104 briefs unless the coordinator
+explicitly reopens them. They are now product history, not the active queue.
+
 ## Immediate Next Step
 
-Start with `DM-103` in an isolated worker branch/worktree from the current
-baseline, then run `DM-104` for Voice & Memory source management. Keep this Goal
-thread as the coordinator; use Symphony or Symphony-like workers only for
-bounded tickets with explicit donor grounding, write scope, protected scope,
-acceptance, and verification.
+Start with `DM-127` in an isolated worker branch/worktree from the latest
+integrated DearMe branch. Keep this Goal thread as the coordinator; use Symphony
+or Symphony-like workers only for bounded tickets with explicit donor grounding,
+write scope, protected scope, acceptance, and verification.

@@ -2,6 +2,60 @@
 
 Date: 2026-05-09
 
+## DM-126 Reuse Architecture Ledger - 2026-05-09
+
+Implementation slice:
+
+- Added `docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md` as the current
+  coordinator artifact for Polsia, Naive/Paperclip, Lindy, Littlebird, and
+  Symphony-style reuse.
+- Updated `docs/dearme/INTEGRATED-ARCHITECTURE.md` so the current architecture
+  points at DM-125 and the reuse ledger instead of the older DM-118 note.
+- Updated `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` so future
+  workers start from the current DM-127 through DM-130 queue instead of stale
+  DM-001/DM-103/DM-104 history.
+- Added `doc/plans/2026-05-09-dearme-dm-126-reuse-architecture-ledger.md` as
+  the ticket receipt.
+- Preserved the existing DM-125 verification-command correction to include the
+  actual `--maxWorkers=1` flag used for the standalone onboarding test.
+
+Donor reuse:
+
+- Polsia remains the source for onboarding compression, visible team momentum,
+  cycle/report choreography, approval rhythm, and personal-brand fork language.
+- Naive/Paperclip remains the hidden substrate for auth, tenancy, agents,
+  issues, routines, approvals, documents, work products, activity, cost events,
+  and future app/site provisioning options.
+- Lindy is now explicitly queued as the next interaction-pattern donor for
+  Voice & Memory source detail, focused review drawers, action cards, and
+  reliability/circuit-breaker ideas.
+- Littlebird remains a later web-shell polish donor after the current detail
+  interactions are useful.
+- Symphony remains a development factory pattern, not the DearMe product
+  runtime.
+
+Rejected:
+
+- Rejected importing a whole donor frontend or runtime before a bounded product
+  slice needs it.
+- Rejected restarting stale early worker tickets that the integrated branch has
+  already absorbed.
+- Rejected treating this docs-only coordination pass as product completion.
+
+Verification:
+
+- `git diff --check` passed.
+- Key donor path existence checks passed for the Polsia, Naive, and Lindy paths
+  cited by the ledger.
+- No product-code tests were run because this slice only updates coordinator
+  docs and preserves an existing verification-command correction.
+
+Next:
+
+- Run `DM-127`: Voice & Memory Source Detail Drawer, reusing Lindy
+  KnowledgeBase/source-management and slide-out panel patterns on top of the
+  existing DearMe source-review queue.
+
 ## DM-125 Direct Source Review Focus - 2026-05-09
 
 Implementation slice:
