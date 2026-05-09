@@ -5448,6 +5448,43 @@ Not run:
   narrow Voice & Memory source-entry slice over an already-rendered workbench
   shell.
 
+## DM-105 Cycle Controls - 2026-05-09
+
+Thirty-fifth verified DearMe slice:
+
+- Reused Polsia's visible cycle ritual by making the next private growth loop
+  selectable from the Chief of Staff composer instead of hiding it behind a
+  blank chat box or agent console.
+- Reused the existing Naive/Paperclip-backed Chief of Staff message route,
+  issue creation, activity log, assignee lookup, and wakeup path. This slice
+  adds no server route, database schema, scheduler, worker, or runtime API.
+- Reused Lindy-style preset action cards and bounded review-loop framing:
+  users pick a prepared private action, DearMe drafts reviewable work, and
+  public moves remain approval-gated.
+- Added five customer-facing controls: Focus the week, Prepare content batch,
+  Scout opportunities, Refresh public proof, and Write weekly letter.
+- Kept the UI customer-safe: the controls do not expose Paperclip, OpenClaw,
+  provider, adapter, issue queue, or setup-payload language, and they do not
+  claim hard pause/resume semantics.
+
+Verification:
+
+- `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
+  passed: 1 file, 19 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check` passed.
+- Playwright smoke on `http://127.0.0.1:3100/DEAA/dearme` passed for desktop
+  `1440x1100` and mobile `390x844`: cycle controls rendered, horizontal
+  overflow was `0`, console/page errors were empty, and the Chief of Staff
+  composer did not expose Paperclip/OpenClaw/provider/adapter/setup_payload
+  language. Screenshots: `/tmp/dearme-dm105-desktop.png` and
+  `/tmp/dearme-dm105-mobile.png`.
+
+Not run:
+
+- Full `pnpm test:run`, `pnpm -r typecheck`, and `pnpm build`; this was a
+  narrow customer-facing UI slice that reuses the existing private-work route.
+
 ## Known Gaps
 
 - The `Process adapter missing command` blocker is fixed for newly applied Brand OS approvals, not retroactively for old smoke data.

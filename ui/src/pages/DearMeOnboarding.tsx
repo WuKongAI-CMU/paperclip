@@ -145,6 +145,61 @@ const CHIEF_OF_STAFF_INTENT_OPTIONS: Array<{
   },
 ];
 
+const CHIEF_OF_STAFF_CYCLE_CONTROLS: Array<{
+  id: string;
+  intent: DearMeChiefOfStaffMessageIntent;
+  label: string;
+  helper: string;
+  message: string;
+  icon: LucideIcon;
+}> = [
+  {
+    id: "focus_week",
+    intent: "plan_next",
+    label: "Focus the week",
+    helper: "Pick the highest-leverage moves.",
+    message:
+      "Focus this week on the highest-leverage personal-brand move. Choose three private work items, explain why they matter, and hold external actions for approval.",
+    icon: Gauge,
+  },
+  {
+    id: "prepare_content_batch",
+    intent: "draft_content",
+    label: "Prepare content batch",
+    helper: "Turn proof into reviewable drafts.",
+    message:
+      "Turn my latest proof and point of view into a small content batch for review. Keep it in my voice and flag anything that needs approval before publishing.",
+    icon: FileText,
+  },
+  {
+    id: "scout_opportunities",
+    intent: "find_opportunities",
+    label: "Scout opportunities",
+    helper: "Find leads and draft outreach.",
+    message:
+      "Find practical opportunities I can act on this week: customers, collaborators, podcasts, jobs, or warm introductions. Prepare outreach drafts but do not send them.",
+    icon: Sparkles,
+  },
+  {
+    id: "refresh_public_proof",
+    intent: "refresh_portfolio",
+    label: "Refresh public proof",
+    helper: "Package recent work privately.",
+    message:
+      "Turn recent work into a portfolio or bio update and a proof card. Keep it private until I approve the public wording.",
+    icon: ShieldCheck,
+  },
+  {
+    id: "write_weekly_letter",
+    intent: "prepare_report",
+    label: "Write weekly letter",
+    helper: "Summarize work and decisions.",
+    message:
+      "Write this week's Dear me report: what changed, what is ready, which decisions matter, and what the team should do next.",
+    icon: MessageSquare,
+  },
+];
+
 const DEFAULT_CHIEF_OF_STAFF_INTENT: DearMeChiefOfStaffMessageIntent = "plan_next";
 
 function buildDearMeDecisionRoute(params: {
@@ -2209,6 +2264,12 @@ function ChiefOfStaffComposerPanel({
     setMessage("");
   }
 
+  function handleCycleControl(control: (typeof CHIEF_OF_STAFF_CYCLE_CONTROLS)[number]) {
+    if (!paidBetaActive || isPending) return;
+    setIntent(control.intent);
+    setMessage(control.message);
+  }
+
   return (
     <DearMePanel className="bg-muted/10" aria-label="Chief of Staff composer">
       <DearMeWorkbenchSectionHeader
@@ -2222,6 +2283,45 @@ function ChiefOfStaffComposerPanel({
           </Badge>
         }
       />
+      <div className="mt-5 rounded-md border border-border bg-background/70 p-3" aria-label="Cycle controls">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Cycle controls</p>
+            <p className="mt-1 text-sm text-foreground/85">
+              Pick the next private loop; your team prepares reviewable moves and waits for approval.
+            </p>
+          </div>
+          <Badge variant="outline">Review loop</Badge>
+        </div>
+        <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+          {CHIEF_OF_STAFF_CYCLE_CONTROLS.map((control) => {
+            const Icon = control.icon;
+            const isSelected = intent === control.intent && message === control.message;
+            return (
+              <Button
+                key={control.label}
+                type="button"
+                variant={isSelected ? "secondary" : "outline"}
+                className="h-auto justify-start px-3 py-3 text-left"
+                disabled={!paidBetaActive || isPending}
+                onClick={() => handleCycleControl(control)}
+              >
+                <span className="flex w-full items-start gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium leading-snug">{control.label}</span>
+                    <span className="mt-1 block whitespace-normal text-xs font-normal leading-snug text-muted-foreground">
+                      {control.helper}
+                    </span>
+                  </span>
+                </span>
+              </Button>
+            );
+          })}
+        </div>
+      </div>
       <form className="mt-5 space-y-3" onSubmit={handleSubmit}>
         <div className="grid gap-3 lg:grid-cols-[16rem_minmax(0,1fr)]">
           <div>

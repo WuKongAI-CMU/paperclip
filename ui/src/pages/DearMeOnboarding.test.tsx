@@ -1144,6 +1144,53 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("turns cycle controls into private Chief of Staff briefs", async () => {
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Cycle controls");
+    expect(container.textContent).toContain("Focus the week");
+    expect(container.textContent).toContain("Scout opportunities");
+    expect(container.textContent).not.toContain("Paperclip");
+    expect(container.textContent).not.toContain("adapter");
+    expect(container.textContent).not.toContain("provider");
+
+    await act(async () => {
+      buttonByText(container, "Scout opportunities")?.click();
+    });
+
+    const textarea = container.querySelector("#dearme-chief-of-staff-message") as HTMLTextAreaElement;
+    expect(textarea.value).toContain("Find practical opportunities");
+    expect(textarea.value).toContain("Prepare outreach drafts but do not send them.");
+
+    await act(async () => {
+      buttonByText(container, "Send to Chief of Staff")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.sendChiefOfStaffMessage).toHaveBeenCalledWith("company-1", {
+      intent: "find_opportunities",
+      message:
+        "Find practical opportunities I can act on this week: customers, collaborators, podcasts, jobs, or warm introductions. Prepare outreach drafts but do not send them.",
+    });
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("opens a team workbench approval decision", async () => {
     const root = createRoot(container);
     const queryClient = new QueryClient({
