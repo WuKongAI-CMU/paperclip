@@ -18,6 +18,9 @@ import {
   type DearMeWorkbenchBatchDecision,
   type DearMeWorkbenchDecision,
   type DearMeWorkbenchMemory,
+  type DearMeWorkbenchReport,
+  type DearMeWorkbenchStreamItem,
+  type DearMeWorkbenchTeamMember,
   type DearMeWorkbenchWorkItem,
 } from "@paperclipai/shared";
 import { useLocation, useNavigate } from "@/lib/router";
@@ -356,6 +359,15 @@ const OUTPUT_KIND_LABELS: Record<DearMeOutputItem["kind"], string> = {
   opportunity_drafts: "Opportunity leads",
   portfolio_update: "Portfolio update",
   weekly_report: "Dear me report",
+};
+
+const OUTPUT_KIND_VALUE_LABELS: Record<DearMeOutputItem["kind"], string> = {
+  brand_os: "Keeps the team aligned on positioning, voice, proof, channels, and approval boundaries.",
+  voice_profile: "Protects the user's tone before private drafts become public-facing work.",
+  content_drafts: "Turns proof and point of view into material the user can approve, revise, or regenerate.",
+  opportunity_drafts: "Turns relationships and market openings into prepared next moves.",
+  portfolio_update: "Converts shipped work into proof that can strengthen the user's public surface.",
+  weekly_report: "Shows what changed, what needs a decision, and what the team should try next.",
 };
 
 const WORKSTREAM_STATUS_LABELS = {
@@ -1048,6 +1060,376 @@ function FocusedOutputPanel({
   );
 }
 
+function workReadyActionLabel(status: DearMeOutputStatus) {
+  if (status === "ready_for_review") return "Review prepared work";
+  if (status === "blocked") return "See what needs attention";
+  if (status === "working") return "See progress";
+  return "Open work";
+}
+
+function TeamSummaryPanel({
+  workbench,
+  paidBetaActive,
+}: {
+  workbench: {
+    headline: string;
+    summary: string;
+    team: DearMeWorkbenchTeamMember[];
+    workReady: DearMeWorkbenchWorkItem[];
+    decisionsNeeded: DearMeWorkbenchDecision[];
+    activeWork: DearMeWorkbenchWorkItem[];
+  };
+  paidBetaActive: boolean;
+}) {
+  return (
+    <DearMePanel aria-label="Your brand team today">
+      <DearMeWorkbenchSectionHeader
+        icon={Users}
+        eyebrow="Your brand team today"
+        title={workbench.headline}
+        description={workbench.summary}
+        trailing={
+          <Badge variant={paidBetaActive ? "default" : "secondary"}>
+            {paidBetaActive ? "Working now" : "Private work locked"}
+          </Badge>
+        }
+      />
+
+      <DearMeMetricStrip className="mt-5">
+        <Metric icon={FileText} label="Work ready" value={workbench.workReady.length} />
+        <Metric icon={ShieldCheck} label="Decisions" value={workbench.decisionsNeeded.length} />
+        <Metric icon={Workflow} label="In motion" value={workbench.activeWork.length} />
+        <Metric icon={Users} label="Team" value={workbench.team.length} />
+      </DearMeMetricStrip>
+    </DearMePanel>
+  );
+}
+
+function WorkReadyPanel({
+  items,
+  onOpenWorkItem,
+}: {
+  items: DearMeWorkbenchWorkItem[];
+  onOpenWorkItem: (item: DearMeWorkbenchWorkItem) => void;
+}) {
+  return (
+    <DearMePanel aria-label="Work ready">
+      <DearMeWorkbenchSectionHeader
+        icon={FileText}
+        eyebrow="Work ready"
+        title="Prepared work waiting for review"
+        description="The strongest finished drafts, proof assets, and reports are first so the next customer action is obvious."
+        trailing={items.length > 0 ? <Badge variant="outline">{items.length} ready</Badge> : null}
+      />
+      {items.length === 0 ? (
+        <DearMeEmptyState
+          className="mt-4"
+          icon={FileText}
+          title="Nothing is ready for review yet"
+          description="The active lanes below show what is moving."
+        />
+      ) : (
+        <div className="mt-4 space-y-3">
+          {items.map((item) => {
+            const outputKind = item.outputKind ?? "brand_os";
+            const issueReference = workItemTarget(item);
+            return (
+              <DearMeWorkbenchCard
+                key={item.id}
+                className="p-4"
+                eyebrow={roleLabel(item.ownerRole)}
+                title={item.title}
+                description={item.summary}
+                badge={
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    <Badge variant={outputStatusVariant(item.status)}>
+                      {OUTPUT_STATUS_LABELS[item.status]}
+                    </Badge>
+                    <Badge variant="outline">{OUTPUT_KIND_LABELS[outputKind]}</Badge>
+                  </div>
+                }
+                footer={`Updated ${shortDate(item.updatedAt)}`}
+                action={
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={item.status === "ready_for_review" ? "default" : "outline"}
+                    onClick={() => onOpenWorkItem(item)}
+                    disabled={!issueReference}
+                  >
+                    {workReadyActionLabel(item.status)}
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                }
+              >
+                <DearMeEvidenceGrid columns="two">
+                  <div className="rounded-md border border-border bg-background/80 p-3">
+                    <p className="text-xs font-medium text-muted-foreground">Prepared by</p>
+                    <p className="mt-1 text-sm">{roleLabel(item.ownerRole)}</p>
+                  </div>
+                  <div className="rounded-md border border-border bg-background/80 p-3">
+                    <p className="text-xs font-medium text-muted-foreground">Why it matters</p>
+                    <p className="mt-1 text-sm text-foreground/85">{OUTPUT_KIND_VALUE_LABELS[outputKind]}</p>
+                  </div>
+                </DearMeEvidenceGrid>
+              </DearMeWorkbenchCard>
+            );
+          })}
+        </div>
+      )}
+    </DearMePanel>
+  );
+}
+
+function DecisionsNeededPanel({
+  batches,
+  decisions,
+  onOpenBatch,
+  onOpenDecision,
+}: {
+  batches: DearMeWorkbenchBatchDecision[];
+  decisions: DearMeWorkbenchDecision[];
+  onOpenBatch: (batch: DearMeWorkbenchBatchDecision) => void;
+  onOpenDecision: (decision: DearMeWorkbenchDecision) => void;
+}) {
+  return (
+    <DearMePanel aria-label="Decisions needed">
+      <DearMeWorkbenchSectionHeader
+        icon={ShieldCheck}
+        eyebrow="Decisions needed"
+        title="High-leverage calls"
+        description="Approve, request changes, reject, or regenerate the moves that would represent the user."
+        trailing={
+          batches.length + decisions.length > 0 ? (
+            <Badge variant="secondary">{batches.length + decisions.length} waiting</Badge>
+          ) : null
+        }
+      />
+      {batches.length > 0 ? (
+        <div className="mt-4 space-y-3">
+          <p className="text-xs font-medium text-muted-foreground">Batch decisions</p>
+          {batches.map((batch) => (
+            <DearMeWorkbenchCard
+              key={batch.id}
+              className="p-4"
+              title={batch.title}
+              description={batch.summary}
+              badge={
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <Badge variant={batch.riskGate ? "secondary" : "outline"}>
+                    {batch.riskGate ? RISK_GATE_LABELS[batch.riskGate] : "Review"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {batch.itemCount} item{batch.itemCount === 1 ? "" : "s"}
+                  </span>
+                </div>
+              }
+              footer={`Updated ${shortDate(batch.updatedAt)}`}
+              action={
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => onOpenBatch(batch)}
+                  disabled={batch.approvalIds.length === 0 && batch.issueIds.length === 0}
+                >
+                  {batch.actionLabel}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              }
+            >
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline">Approve</Badge>
+                <Badge variant="outline">Request changes</Badge>
+                <Badge variant="outline">Regenerate if needed</Badge>
+              </div>
+            </DearMeWorkbenchCard>
+          ))}
+        </div>
+      ) : null}
+      {decisions.length === 0 ? (
+        <DearMeEmptyState
+          className="mt-4"
+          icon={ShieldCheck}
+          title="No high-leverage decision is waiting right now"
+          description="Your team will place prepared public moves here when they need your call."
+        />
+      ) : (
+        <div className="mt-4 space-y-3">
+          {batches.length > 0 ? (
+            <p className="text-xs font-medium text-muted-foreground">Individual decisions</p>
+          ) : null}
+          {decisions.map((decision) => (
+            <DearMeWorkbenchCard
+              key={decision.id}
+              className="p-4"
+              title={decision.title}
+              description={decision.summary}
+              badge={
+                <Badge variant={decision.riskGate ? "secondary" : "outline"}>
+                  {decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval"}
+                </Badge>
+              }
+              footer={`Updated ${shortDate(decision.updatedAt)}`}
+              action={
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => onOpenDecision(decision)}
+                  disabled={!decision.approvalId && !decision.issueIdentifier && !decision.issueId}
+                >
+                  {decision.approvalId ? "Approve" : "Review"}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              }
+            >
+              <DearMeEvidenceGrid columns="two">
+                <div className="rounded-md border border-border bg-background/80 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">Prepared artifact</p>
+                  <p className="mt-1 text-sm">
+                    {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Brand OS approval"}
+                  </p>
+                </div>
+                <div className="rounded-md border border-border bg-background/80 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">Available choices</p>
+                  <p className="mt-1 text-sm">Approve, request changes, or reject before anything public happens.</p>
+                </div>
+              </DearMeEvidenceGrid>
+            </DearMeWorkbenchCard>
+          ))}
+        </div>
+      )}
+    </DearMePanel>
+  );
+}
+
+function DearMeLetterPanel({
+  report,
+  onOpenIssue,
+}: {
+  report: DearMeWorkbenchReport | null;
+  onOpenIssue: (issueReference: string) => void;
+}) {
+  return (
+    <DearMePanel aria-label="Dear me letter">
+      <DearMeWorkbenchSectionHeader
+        icon={FileText}
+        eyebrow="Weekly Dear me"
+        title="Private progress letter"
+        description="A weekly ritual for what changed, what needs a call, and what the team is learning."
+      />
+      {report ? (
+        <DearMeWorkbenchCard
+          className="mt-4"
+          title={report.title}
+          description={report.summary}
+          badge={
+            <Badge variant={outputStatusVariant(report.status)}>
+              {OUTPUT_STATUS_LABELS[report.status]}
+            </Badge>
+          }
+          action={
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onOpenIssue(report.issueIdentifier ?? report.issueId)}
+            >
+              Open letter
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          }
+        >
+          <p className="line-clamp-3 text-sm text-foreground/80">{report.bodyPreview}</p>
+        </DearMeWorkbenchCard>
+      ) : (
+        <DearMeEmptyState
+          className="mt-4"
+          icon={FileText}
+          title="Dear me letter is not ready yet"
+          description="The first Dear me letter appears here after the growth loop starts."
+        />
+      )}
+    </DearMePanel>
+  );
+}
+
+function TeamAtWorkPanel({
+  team,
+}: {
+  team: DearMeWorkbenchTeamMember[];
+}) {
+  const hasTeam = team.length > 0;
+
+  return (
+    <DearMePanel aria-label="Team at work">
+      <DearMeWorkbenchSectionHeader
+        icon={Users}
+        eyebrow="Team at work"
+        description="Role-based progress written in customer-safe language."
+      />
+      <div className="mt-4 grid gap-2 md:grid-cols-2">
+        {hasTeam
+          ? team.map((member, index) => (
+              <DearMeWorkbenchCard
+                key={`${member.role}:${index}`}
+                title={member.name}
+                description={member.currentFocus}
+                badge={<Badge variant="outline">{member.status}</Badge>}
+              />
+            ))
+          : TEAM_WORKSTREAM.slice(0, 4).map((item, index) => (
+              <DearMeWorkbenchCard
+                key={`fallback-team:${item.role}:${index}`}
+                title={item.role}
+                description={item.action}
+                tone="empty"
+              />
+            ))}
+      </div>
+    </DearMePanel>
+  );
+}
+
+function LiveTeamFeedPanel({
+  liveStream,
+}: {
+  liveStream: DearMeWorkbenchStreamItem[];
+}) {
+  if (liveStream.length === 0) return null;
+
+  return (
+    <DearMePanel aria-label="Live team feed">
+      <DearMeWorkbenchSectionHeader
+        icon={Workflow}
+        eyebrow="Live team feed"
+        description="Watch the team turn private work into reviewable moves. The machinery stays backstage."
+        trailing={<Badge variant="outline">While you were away</Badge>}
+      />
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {liveStream.map((item, index) => (
+          <DearMeWorkbenchCard
+            key={`${item.id}:${item.role}:${item.createdAt}:${index}`}
+            eyebrow={roleLabel(item.role)}
+            title={item.title}
+            description={item.summary}
+            badge={
+              <Badge variant={item.needsApproval ? "secondary" : "outline"}>
+                {WORKSTREAM_STATUS_LABELS[item.status]}
+              </Badge>
+            }
+          >
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Badge variant="outline">{item.artifact}</Badge>
+              {item.needsApproval ? <Badge variant="default">Decision ready</Badge> : null}
+              <span>{shortDate(item.createdAt)}</span>
+            </div>
+          </DearMeWorkbenchCard>
+        ))}
+      </div>
+    </DearMePanel>
+  );
+}
+
 function VoiceMemoryPanel({
   memory,
   isPending,
@@ -1258,6 +1640,7 @@ function TeamWorkbenchPanel({
   decisionFocus,
   onOpenApproval,
   onOpenIssue,
+  onOpenWorkItem,
   onReviewApproval,
   reviewState,
 }: {
@@ -1266,6 +1649,7 @@ function TeamWorkbenchPanel({
   decisionFocus: DearMeDecisionFocus | null;
   onOpenApproval: (approvalId: string) => void;
   onOpenIssue: (issueReference: string) => void;
+  onOpenWorkItem: (issueReference: string, outputId: string) => void;
   onReviewApproval: (
     approvalId: string,
     action: DearMeApprovalReviewAction,
@@ -1318,7 +1702,6 @@ function TeamWorkbenchPanel({
   const decisions = workbench.decisionsNeeded.slice(0, 3);
   const batches = workbench.batchDecisions.slice(0, 3);
   const liveStream = workbench.workStream.slice(0, 6);
-  const hasTeam = workbench.team.length > 0;
   const focusedDecision = decisionFocus
     ? workbench.decisionsNeeded.find((decision) => matchesDecisionFocus(decision, decisionFocus)) ?? null
     : null;
@@ -1350,7 +1733,7 @@ function TeamWorkbenchPanel({
 
   function openWorkItem(item: DearMeWorkbenchWorkItem) {
     const issueReference = workItemTarget(item);
-    if (issueReference) onOpenIssue(issueReference);
+    if (issueReference) onOpenWorkItem(issueReference, item.id);
   }
 
   return (
@@ -1368,251 +1751,33 @@ function TeamWorkbenchPanel({
         />
       ) : null}
 
-      <DearMePanel aria-label="My AI team today">
-        <DearMeWorkbenchSectionHeader
-          icon={Users}
-          eyebrow="My AI team today"
-          title={workbench.headline}
-          description={workbench.summary}
-          trailing={
-            <Badge variant={paidBetaActive ? "default" : "secondary"}>
-              {paidBetaActive ? "Working now" : "Private work locked"}
-            </Badge>
-          }
-        />
-
-        <DearMeMetricStrip className="mt-5">
-          <Metric icon={Users} label="Team" value={workbench.team.length} />
-          <Metric icon={FileText} label="Work ready" value={workbench.workReady.length} />
-          <Metric icon={ShieldCheck} label="Decisions" value={workbench.decisionsNeeded.length} />
-          <Metric icon={Workflow} label="In motion" value={workbench.activeWork.length} />
-        </DearMeMetricStrip>
-      </DearMePanel>
-
-      <VoiceMemoryPanel
-        memory={workbench.memory}
-        isPending={memoryMutation.isPending}
-        error={memoryError}
-        result={memoryMutation.data ?? null}
-        onAdd={(input) => memoryMutation.mutate(input)}
-      />
+      <TeamSummaryPanel workbench={workbench} paidBetaActive={paidBetaActive} />
 
       <DearMeCockpitGrid variant="primary">
-        <DearMePanel aria-label="Team at work">
-          <DearMeWorkbenchSectionHeader icon={Users} eyebrow="Team at work" />
-          <div className="mt-4 grid gap-2 md:grid-cols-2">
-            {hasTeam
-              ? workbench.team.map((member, index) => (
-                  <DearMeWorkbenchCard
-                    key={`${member.role}:${index}`}
-                    title={member.name}
-                    description={member.currentFocus}
-                    badge={<Badge variant="outline">{member.status}</Badge>}
-                  />
-                ))
-              : TEAM_WORKSTREAM.slice(0, 4).map((item, index) => (
-                  <DearMeWorkbenchCard
-                    key={`fallback-team:${item.role}:${index}`}
-                    title={item.role}
-                    description={item.action}
-                    tone="empty"
-                  />
-                ))}
-          </div>
-        </DearMePanel>
-
-        <DearMePanel aria-label="Dear me letter">
-          <DearMeWorkbenchSectionHeader
-            icon={FileText}
-            eyebrow="Dear me letter"
-            description="Your team turns progress, decisions, and next bets into a private letter. Approval still controls what represents you publicly."
-          />
-          {workbench.report ? (
-            <DearMeWorkbenchCard
-              className="mt-4"
-              title={workbench.report.title}
-              description={workbench.report.summary}
-              badge={
-                <Badge variant={outputStatusVariant(workbench.report.status)}>
-                  {OUTPUT_STATUS_LABELS[workbench.report.status]}
-                </Badge>
-              }
-              action={
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onOpenIssue(workbench.report!.issueIdentifier ?? workbench.report!.issueId)}
-                >
-                  Open letter
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              }
-            >
-              <p className="line-clamp-3 text-sm text-foreground/80">{workbench.report.bodyPreview}</p>
-            </DearMeWorkbenchCard>
-          ) : (
-            <DearMeEmptyState
-              className="mt-4"
-              icon={FileText}
-              title="Dear me letter is not ready yet"
-              description="The first Dear me letter appears here after the growth loop starts."
-            />
-          )}
-        </DearMePanel>
+        <WorkReadyPanel items={readyItems} onOpenWorkItem={openWorkItem} />
+        <DecisionsNeededPanel
+          batches={batches}
+          decisions={decisions}
+          onOpenBatch={openBatch}
+          onOpenDecision={openDecision}
+        />
       </DearMeCockpitGrid>
 
-      <DearMeCockpitGrid>
-        <DearMePanel aria-label="Decisions needed">
-          <DearMeWorkbenchSectionHeader icon={ShieldCheck} eyebrow="Decisions needed" />
-          {batches.length > 0 ? (
-            <div className="mt-4 space-y-3">
-              <p className="text-xs font-medium text-muted-foreground">Batch decisions</p>
-              {batches.map((batch) => (
-                <DearMeWorkbenchCard
-                  key={batch.id}
-                  className="p-4"
-                  title={batch.title}
-                  description={batch.summary}
-                  badge={
-                    <div className="flex shrink-0 flex-col items-end gap-2">
-                      <Badge variant={batch.riskGate ? "secondary" : "outline"}>
-                        {batch.riskGate ? RISK_GATE_LABELS[batch.riskGate] : "Review"}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {batch.itemCount} item{batch.itemCount === 1 ? "" : "s"}
-                      </span>
-                    </div>
-                  }
-                  footer={`Updated ${shortDate(batch.updatedAt)}`}
-                  action={
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => openBatch(batch)}
-                      disabled={batch.approvalIds.length === 0 && batch.issueIds.length === 0}
-                    >
-                      {batch.actionLabel}
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  }
-                />
-              ))}
-            </div>
-          ) : null}
-          {decisions.length === 0 ? (
-            <DearMeEmptyState
-              className="mt-4"
-              icon={ShieldCheck}
-              title="No high-leverage decision is waiting right now"
-              description="Your team will place prepared public moves here when they need your call."
-            />
-          ) : (
-            <div className="mt-4 space-y-3">
-              {batches.length > 0 ? (
-                <p className="text-xs font-medium text-muted-foreground">Individual decisions</p>
-              ) : null}
-              {decisions.map((decision) => (
-                <DearMeWorkbenchCard
-                  key={decision.id}
-                  className="p-4"
-                  title={decision.title}
-                  description={decision.summary}
-                  badge={
-                    <Badge variant={decision.riskGate ? "secondary" : "outline"}>
-                      {decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval"}
-                    </Badge>
-                  }
-                  footer={`Updated ${shortDate(decision.updatedAt)}`}
-                  action={
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => openDecision(decision)}
-                      disabled={!decision.approvalId && !decision.issueIdentifier && !decision.issueId}
-                    >
-                      {decision.approvalId ? "Approve" : "Review"}
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  }
-                />
-              ))}
-            </div>
-          )}
-        </DearMePanel>
-
-        <DearMePanel aria-label="Work ready">
-          <DearMeWorkbenchSectionHeader icon={FileText} eyebrow="Work ready" />
-          {readyItems.length === 0 ? (
-            <DearMeEmptyState
-              className="mt-4"
-              icon={FileText}
-              title="Nothing is ready for review yet"
-              description="The active lanes below show what is moving."
-            />
-          ) : (
-            <div className="mt-4 space-y-3">
-              {readyItems.map((item) => {
-                const issueReference = workItemTarget(item);
-                return (
-                  <DearMeWorkbenchCard
-                    key={item.id}
-                    className="p-4"
-                    title={item.title}
-                    description={item.summary}
-                    badge={<Badge variant="outline">{OUTPUT_KIND_LABELS[item.outputKind ?? "brand_os"]}</Badge>}
-                    footer={`Prepared by ${roleLabel(item.ownerRole)}`}
-                    action={
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => issueReference && onOpenIssue(issueReference)}
-                        disabled={!issueReference}
-                      >
-                        Open
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    }
-                  />
-                );
-              })}
-            </div>
-          )}
-        </DearMePanel>
+      <DearMeCockpitGrid variant="primary">
+        <DearMeLetterPanel report={workbench.report} onOpenIssue={onOpenIssue} />
+        <VoiceMemoryPanel
+          memory={workbench.memory}
+          isPending={memoryMutation.isPending}
+          error={memoryError}
+          result={memoryMutation.data ?? null}
+          onAdd={(input) => memoryMutation.mutate(input)}
+        />
       </DearMeCockpitGrid>
 
-      {liveStream.length > 0 ? (
-        <DearMePanel aria-label="Live team feed">
-          <DearMeWorkbenchSectionHeader
-            icon={Workflow}
-            eyebrow="Live team feed"
-            description="Watch the team turn private work into reviewable moves. The machinery stays backstage."
-            trailing={<Badge variant="outline">While you were away</Badge>}
-          />
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {liveStream.map((item, index) => (
-              <DearMeWorkbenchCard
-                key={`${item.id}:${item.role}:${item.createdAt}:${index}`}
-                eyebrow={roleLabel(item.role)}
-                title={item.title}
-                description={item.summary}
-                badge={
-                  <Badge variant={item.needsApproval ? "secondary" : "outline"}>
-                    {WORKSTREAM_STATUS_LABELS[item.status]}
-                  </Badge>
-                }
-              >
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="outline">{item.artifact}</Badge>
-                  {item.needsApproval ? <Badge variant="default">Decision ready</Badge> : null}
-                  <span>{shortDate(item.createdAt)}</span>
-                </div>
-              </DearMeWorkbenchCard>
-            ))}
-          </div>
-        </DearMePanel>
-      ) : null}
+      <DearMeCockpitGrid variant="primary">
+        <TeamAtWorkPanel team={workbench.team} />
+        <LiveTeamFeedPanel liveStream={liveStream} />
+      </DearMeCockpitGrid>
     </section>
   );
 }
@@ -2251,6 +2416,10 @@ export function DearMeOnboarding() {
     navigate(buildDearMeDecisionRoute({ issueReference }));
   }
 
+  function handleOpenWorkbenchWorkItem(issueReference: string, outputId: string) {
+    navigate(buildDearMeDecisionRoute({ issueReference, outputId }));
+  }
+
   function handleOpenApproval(approvalId: string) {
     navigate(buildDearMeDecisionRoute({ approvalId }));
   }
@@ -2340,6 +2509,7 @@ export function DearMeOnboarding() {
         decisionFocus={decisionFocus}
         onOpenApproval={handleOpenApproval}
         onOpenIssue={handleOpenIssue}
+        onOpenWorkItem={handleOpenWorkbenchWorkItem}
         onReviewApproval={handleReviewApproval}
         reviewState={{
           approvalId: pendingApprovalReview?.approvalId ?? null,

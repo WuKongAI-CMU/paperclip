@@ -1,31 +1,22 @@
 # DearMe DM-020 Work Ready Cockpit Ticket
 
 Date: 2026-05-08
-Owner: next isolated Codex implementation worker
-Status: ready for implementation in a disposable worktree
+Owner: Codex implementation loop
+Status: implemented on `codex/dearme-baseline-2026-05-08`
 
 ## Current Truth
 
-The shared checkout at `/Users/peter/dearme` is a coordination and reference
-checkout, not a clean implementation base.
+The shared checkout at `/Users/peter/dearme` is now the implementation base for
+DM-020.
 
 - Branch: `codex/dearme-baseline-2026-05-08`
-- Shared checkout head: `6b322408456318c237834a1ef5ceb08447ec7213`
-- Shared checkout state: heavily dirty, with many tracked and untracked DearMe
-  architecture, product, UI, server, and adapter changes
-- Current clean DearMe implementation candidate:
-  `98fa9796c3e879cd89ad74d48c193cd4b035dd94`
-- Candidate commit subject:
-  `Make Voice Memory archiving feel native to DearMe`
+- Implementation base: `9e0a93ba61b6e8d63129bdbf472db815263131cd`
+- Shared checkout state before DM-020: clean except for the DM-020 files changed
+  in this slice
+- Implementation path: `/Users/peter/dearme`
 
-Do not implement DM-020 directly in `/Users/peter/dearme`.
-
-Bootstrap the worker from the clean candidate:
-
-```sh
-git -C /Users/peter/dearme worktree add /tmp/dearme-dm-020-work-ready-cockpit 98fa9796c3e879cd89ad74d48c193cd4b035dd94
-git -C /tmp/dearme-dm-020-work-ready-cockpit switch -c codex/dearme-dm-020-work-ready-cockpit
-```
+The earlier disposable-worktree bootstrap guidance is superseded by the clean
+shared checkout state recorded above.
 
 ## Product Decision
 
@@ -333,9 +324,41 @@ DM-020 is complete when all are true:
 - the slice reuses existing API/read-model data instead of adding backend scope
   without proof
 
+## Implementation Update
+
+DM-020 was implemented by reshaping the existing DearMe workbench read model in
+`ui/src/pages/DearMeOnboarding.tsx` without changing server, shared validators,
+database, migrations, billing, approval services, adapter runtime, or provider
+configuration.
+
+Completed behavior:
+
+- Work Ready now leads the cockpit and opens the focused DearMe decision route
+  with both the target issue and prepared output.
+- Decisions Needed follows as the second dominant surface with approve, request
+  changes, reject, and regenerate-oriented language.
+- Weekly Dear me and Voice and Memory moved into trust/ritual context after the
+  primary action surfaces.
+- Team activity and live feed remain visible, role-based, and customer-safe.
+- The previous "My AI team today" framing was replaced with "Your brand team
+  today" to keep the product language personal-brand native.
+- Tests assert the new page order, route handoff, and customer-facing language.
+
+Verification evidence:
+
+- `pnpm exec vitest ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.test.tsx --run`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --filter @paperclipai/ui build`
+- `git diff --check`
+- DearMe UI copy leak scan for substrate terms returned no matches.
+- Playwright smoke on `http://127.0.0.1:3100/DEAAAAA/dearme` passed at
+  desktop and mobile widths: required cockpit labels were present, the Work
+  Ready -> Decisions -> Weekly Dear me -> Voice/Memory order held, and no
+  substrate terms appeared.
+
 ## Verification Commands
 
-Run from `/tmp/dearme-dm-020-work-ready-cockpit`.
+Run from `/Users/peter/dearme`.
 
 Install if needed:
 

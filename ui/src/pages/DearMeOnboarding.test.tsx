@@ -71,7 +71,7 @@ function createPreview() {
     displayName: "Peter Studio",
     goals: ["Grow owned audience"],
     audiences: ["Founders"],
-    proofPoints: ["Shipped a working local agent product"],
+    proofPoints: ["Shipped a working local product"],
     offers: ["Paid beta"],
     voiceSamples: ["Short, direct operator note.", "Plain language with concrete proof."],
     preferredChannels: ["linkedin", "newsletter", "portfolio"],
@@ -504,11 +504,23 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     expect(mockDearmeApi.getWorkbench).toHaveBeenCalledWith("company-1");
+    const pageText = container.textContent ?? "";
     expect(container.textContent).toContain("Brand OS");
     expect(container.textContent).toContain("Your personal brand growth team");
     expect(container.textContent).toContain("Work ready / Decisions needed");
-    expect(container.textContent).toContain("My AI team today");
+    expect(container.textContent).toContain("Your brand team today");
     expect(container.textContent).toContain("Dear me, your team has decisions ready");
+    expect(container.textContent).toContain("Prepared work waiting for review");
+    expect(container.textContent).toContain("Why it matters");
+    expect(pageText.indexOf("Prepared work waiting for review")).toBeLessThan(
+      pageText.indexOf("High-leverage calls"),
+    );
+    expect(pageText.indexOf("High-leverage calls")).toBeLessThan(
+      pageText.indexOf("Weekly Dear me"),
+    );
+    expect(pageText.indexOf("Weekly Dear me")).toBeLessThan(
+      pageText.indexOf("Voice & Memory"),
+    );
     expect(container.textContent).toContain("Approve Brand OS for Peter Studio");
     expect(container.textContent).toContain("Batch decisions");
     expect(container.textContent).toContain("Review content batch");
@@ -516,7 +528,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Live team feed");
     expect(container.textContent).toContain("Your call: Review Starter posts");
     expect(container.textContent).toContain("Decision ready");
-    expect(container.textContent).toContain("Dear me letter");
+    expect(container.textContent).toContain("Weekly Dear me");
     expect(container.textContent).toContain("Open letter");
     expect(container.textContent).toContain("Completed work: refreshed positioning");
     expect(container.textContent).toContain("Voice & Memory");
@@ -571,7 +583,7 @@ describe("DearMeOnboarding", () => {
       );
       setTextareaValue(
         container.querySelector("#dearme-proof") as HTMLTextAreaElement,
-        "Shipped a working local agent product",
+        "Shipped a working local product",
       );
       setInputValue(
         container.querySelector("#dearme-budget") as HTMLInputElement,
@@ -590,7 +602,7 @@ describe("DearMeOnboarding", () => {
         brand: expect.objectContaining({
           displayName: "Peter Studio",
           goals: ["Grow owned audience"],
-          proofPoints: ["Shipped a working local agent product"],
+          proofPoints: ["Shipped a working local product"],
           budgetMonthlyCents: 25_000,
         }),
       }),
@@ -706,7 +718,7 @@ describe("DearMeOnboarding", () => {
       );
       setTextareaValue(
         container.querySelector("#dearme-proof") as HTMLTextAreaElement,
-        "Shipped a working local agent product",
+        "Shipped a working local product",
       );
     });
 
@@ -817,6 +829,34 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=decisions&approval=approval-ready");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("opens work-ready output with DearMe decision focus", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Review prepared work")?.click();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/dearme?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report",
+    );
 
     await act(async () => {
       root.unmount();
