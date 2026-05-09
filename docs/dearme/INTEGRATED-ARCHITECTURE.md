@@ -31,11 +31,11 @@ This is the important split:
 - Build a DearMe-original customer UI shell because neither Polsia UI nor the
   currently exposed Paperclip shell is the right premium personal-brand product.
 
-Current implementation note, 2026-05-09: DM-117 keeps this split intact. The
-normalized retry/continue/direction entrypoint lives in the DearMe web shell,
-routes to the existing focused decision surface, and uses a thin DearMe
-`/continue` wrapper over the existing output handoff, review, wakeup, activity,
-and paid-beta guardrail path instead of creating a second execution surface.
+Current implementation note, 2026-05-09: DM-118 keeps this split intact. The
+normalized retry/continue/direction entrypoint still lives in the DearMe web
+shell, and routine/cost lineage now comes from the existing Naive/Paperclip
+substrate as DearMe-safe cycle check-ins and spend checkpoints instead of a new
+progress runtime.
 
 ## Architecture Diagram
 
@@ -177,8 +177,9 @@ Remaining gaps:
   customer-safe card grammar where existing web projections expose that state,
   and DM-117 adds the normalized retry/continue/direction entrypoint through
   the same focused decision surface;
-- routine telemetry and cost lineage are still thinly projected into the
-  customer work stream;
+- routine telemetry and cost lineage now project into the customer work stream
+  as cycle and spend checkpoint cards; the remaining gap is richer
+  budget/reliability controls, not basic visibility;
 - Voice & Memory source ingestion has not yet adopted the Lindy knowledge-base
   setup pattern;
 - product-copy leakage still needs repeated passes because the same checkout
@@ -593,8 +594,9 @@ kernel, then parse into DearMe-safe contracts.
 2. Team Work Stream telemetry
    - Adapt Lindy `transcriptV2` and Block concepts into a DearMe work stream.
    - Use product-safe event names and collapse internal trace detail.
-   - Project routine state and cost lineage into the feed when it helps user
-     trust.
+   - DM-118 now projects routine state and cost lineage into the feed as
+     customer-safe cycle and spend checkpoints; continue this pattern for richer
+     reliability, budget, and weekly-report evidence.
 
 3. Voice & Memory
    - Adapt Lindy KnowledgeBase patterns for writing samples, proof, website,

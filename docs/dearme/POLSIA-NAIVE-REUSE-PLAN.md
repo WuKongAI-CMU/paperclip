@@ -54,8 +54,11 @@ Already implemented:
 
 Still not maximized:
 
-- Naive/Paperclip routine telemetry and cost lineage are not yet fully visible
-  as DearMe-safe progress context.
+- DM-118 now projects Naive/Paperclip routine runs and DearMe-agent cost events
+  into DearMe-safe progress context as cycle check-ins and spend checkpoints.
+  The deeper budget/credit UI is still not complete, but the live workbench no
+  longer needs a parallel DearMe progress table to show routine and spend
+  lineage.
 - Lindy-style reusable action cards have started landing as the live-feed,
   Decisions Needed, Work Ready, Private Work, and Voice & Memory source
   `DearMeActionCard` surfaces; DM-116 adds shared paused, retry, blocked, and

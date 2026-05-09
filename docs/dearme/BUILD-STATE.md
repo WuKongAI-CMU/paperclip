@@ -2,6 +2,58 @@
 
 Date: 2026-05-09
 
+## DM-118 Routine And Spend Progress Projection - 2026-05-09
+
+Implementation slice:
+
+- Reused the existing Naive/Paperclip `routine_runs`, `routines`, and
+  `cost_events` substrate instead of adding a DearMe-only progress table or a
+  parallel runtime event stream.
+- Added DearMe-safe `cycle_check_in` and `spend_checkpoint` progress kinds to
+  the shared DearMe validator contract.
+- Projected routine runs into the workbench as customer-facing cycle check-ins,
+  with `Cycle cadence` as the source label and `Cycle check-in` as the artifact.
+- Projected DearMe-agent cost events into a private spend checkpoint, with
+  `Spend guardrail` as the source label and `Spend checkpoint` as the artifact.
+- Filtered spend aggregation to DearMe blueprint-created agents so unrelated
+  company/provider activity does not appear as DearMe team progress.
+- Kept provider names, model names, raw routine terminology, and raw cost-event
+  details backstage; the workbench speaks in DearMe team language.
+- Preserved the existing web/API spine: no new route, UI shell, database table,
+  worker lane, or execution primitive was introduced.
+
+Donor reuse:
+
+- Naive/Paperclip supplies the durable routine and spend lineage.
+- Polsia supplies the product interpretation: visible growth-cycle motion and
+  "my team worked while I was away" proof.
+- Lindy remains the reusable web grammar for action cards and action-needed
+  work-stream states; this slice feeds that grammar with richer substrate
+  progress instead of inventing a separate interaction model.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts`
+  passed: 2 files, 15 tests.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx` passed: 1
+  file, 25 tests.
+- The workbench test now asserts that customer JSON does not leak `routine`,
+  `anthropic`, or `claude-sonnet` while still proving the seeded substrate rows
+  are projected into DearMe progress cards.
+- The DearMe onboarding test now renders the cycle/spend progress cards and
+  keeps those same substrate terms out of visible UI text.
+- `pnpm -r typecheck` passed.
+- `pnpm build` passed. Vite still reports the existing `MarkdownEditor.tsx`
+  dynamic/static import warning plus chunk-size warnings.
+- `git diff --check` passed.
+
+Next:
+
+- Use the same substrate-projection rule for the richer Polsia-style weekly
+  report/progress loop.
+- Move Voice & Memory source import toward the Lindy knowledge-base pattern
+  without exposing workflow-builder machinery.
+
 ## DM-117 Normalized Retry Continue Entrypoint - 2026-05-09
 
 Implementation slice:

@@ -132,6 +132,8 @@ export const DEARME_WORKBENCH_PROGRESS_KINDS = [
   "brand_os_requested",
   "brand_os_applied",
   "team_progress",
+  "cycle_check_in",
+  "spend_checkpoint",
 ] as const;
 export const DEARME_WORKBENCH_STREAM_STATUSES = [
   "working",

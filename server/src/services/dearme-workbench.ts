@@ -1,6 +1,14 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
-import { activityLog, agents, approvals, issues } from "@paperclipai/db";
+import {
+  activityLog,
+  agents,
+  approvals,
+  costEvents,
+  issues,
+  routineRuns,
+  routines,
+} from "@paperclipai/db";
 import {
   DEARME_MEMORY_UPDATE_KINDS,
   DEARME_TEAM_ROLES,
@@ -31,6 +39,22 @@ type DearMeBatchAction = DearMeWorkbenchBatchDecision["action"];
 type DearMeBatchKey = NonNullable<DearMeRiskGate> | "review";
 type DearMeStreamKind = DearMeWorkbenchStreamItem["kind"];
 type DearMeCycleStage = DearMeWorkbenchStreamItem["cycleStage"];
+
+type DearMeRoutineRunRow = {
+  id: string;
+  routineTitle: string;
+  status: string;
+  triggeredAt: Date;
+  completedAt: Date | null;
+  updatedAt: Date;
+  linkedIssueId: string | null;
+};
+
+type DearMeSpendCheckpointRow = {
+  eventCount: number;
+  totalCents: number;
+  latestAt: Date | string | null;
+};
 
 const TEAM_ROLE_ORDER = new Map(DEARME_TEAM_ROLES.map((role, index) => [role, index]));
 const MEMORY_KIND_SET = new Set<string>(DEARME_MEMORY_UPDATE_KINDS);
@@ -173,6 +197,21 @@ function optionalStringFromRecord(record: Record<string, unknown>, key: string) 
 
 function previewText(value: string, maxLength = 700) {
   return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
+}
+
+function moneyFromCents(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(value / 100);
+}
+
+function isoFromDbTimestamp(value: Date | string) {
+  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+}
+
+function cleanCycleTitle(value: string) {
+  return value.replace(/^DearMe:\s*/i, "").trim() || "Growth cycle";
 }
 
 function teamStatus(value: string) {
@@ -337,6 +376,7 @@ function cycleStageForProgress(item: DearMeWorkbenchProgressItem): DearMeCycleSt
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "learn";
   if (item.kind === "brand_os_requested" || item.kind === "brand_os_applied") return "plan";
   if (item.kind === "paid_beta") return "plan";
+  if (item.kind === "spend_checkpoint") return "work";
   return "work";
 }
 
@@ -344,13 +384,29 @@ function sourceLabelForProgress(item: DearMeWorkbenchProgressItem) {
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "Voice & Memory";
   if (item.kind === "brand_os_requested" || item.kind === "brand_os_applied") return "Brand OS";
   if (item.kind === "paid_beta") return "Paid beta access";
+  if (item.kind === "cycle_check_in") return "Cycle cadence";
+  if (item.kind === "spend_checkpoint") return "Spend guardrail";
   return "Team activity";
 }
 
 function costImpactForProgress(item: DearMeWorkbenchProgressItem) {
   if (item.kind === "paid_beta") return "Paid-beta credit recorded";
   if (item.kind === "brand_os_applied") return "Work stays inside paid-beta guardrails";
+  if (item.kind === "spend_checkpoint") return "Private spend recorded";
   return null;
+}
+
+function roleForProgress(item: DearMeWorkbenchProgressItem): DearMeTeamRole {
+  if (item.kind === "brand_os_applied" || item.kind === "cycle_check_in") return "chief_of_staff";
+  if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "voice_editor";
+  return "growth_analyst";
+}
+
+function artifactForProgress(item: DearMeWorkbenchProgressItem) {
+  if (item.kind === "brand_os_applied") return "Growth team";
+  if (item.kind === "cycle_check_in") return "Cycle check-in";
+  if (item.kind === "spend_checkpoint") return "Spend checkpoint";
+  return "Progress";
 }
 
 function nextActionForProgress(item: DearMeWorkbenchProgressItem) {
@@ -365,6 +421,12 @@ function nextActionForProgress(item: DearMeWorkbenchProgressItem) {
   }
   if (item.kind === "paid_beta") {
     return "Use the paid-beta guardrail before starting private work.";
+  }
+  if (item.kind === "cycle_check_in") {
+    return "Open prepared work only when a teammate asks for your call.";
+  }
+  if (item.kind === "spend_checkpoint") {
+    return "No action needed unless a future move asks to spend money.";
   }
   return "Use this signal to decide what the team should prepare next.";
 }
@@ -458,10 +520,10 @@ function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbe
     id: `progress:${item.id}`,
     kind: streamKindForProgress(item),
     cycleStage: cycleStageForProgress(item),
-    role: item.kind === "brand_os_applied" ? "chief_of_staff" : "growth_analyst",
+    role: roleForProgress(item),
     title: item.title,
     summary: item.summary,
-    artifact: item.kind === "brand_os_applied" ? "Growth team" : "Progress",
+    artifact: artifactForProgress(item),
     status: "recorded",
     needsApproval: false,
     sourceLabel: sourceLabelForProgress(item),
@@ -1024,6 +1086,74 @@ function progressFromActivity(input: {
   };
 }
 
+function progressFromRoutineRun(input: DearMeRoutineRunRow): DearMeWorkbenchProgressItem {
+  const title = cleanCycleTitle(input.routineTitle);
+  const createdAt = input.completedAt ?? input.updatedAt ?? input.triggeredAt;
+
+  if (input.status === "completed") {
+    return {
+      id: `cycle:${input.id}`,
+      kind: "cycle_check_in",
+      title: "Cycle check-in completed",
+      summary: `${title} checked in and kept the private growth cycle moving. DearMe will surface only prepared work or decisions that need your call.`,
+      createdAt: toIso(createdAt),
+    };
+  }
+
+  if (input.status === "failed") {
+    return {
+      id: `cycle:${input.id}`,
+      kind: "cycle_check_in",
+      title: "Cycle check-in needs attention",
+      summary: `${title} hit a private execution snag. DearMe will keep public moves gated until the next usable decision is ready.`,
+      createdAt: toIso(createdAt),
+    };
+  }
+
+  if (input.status === "skipped" || input.status === "coalesced") {
+    return {
+      id: `cycle:${input.id}`,
+      kind: "cycle_check_in",
+      title: "Cycle check-in consolidated",
+      summary: `${title} was folded into existing private work so the team does not create duplicate decisions.`,
+      createdAt: toIso(createdAt),
+    };
+  }
+
+  if (input.status === "issue_created") {
+    return {
+      id: `cycle:${input.id}`,
+      kind: "cycle_check_in",
+      title: "Cycle check-in opened work",
+      summary: `${title} opened the next private work lane. It will ask for your approval only when a public, send, deploy, or spend move is ready.`,
+      createdAt: toIso(createdAt),
+    };
+  }
+
+  return {
+    id: `cycle:${input.id}`,
+    kind: "cycle_check_in",
+    title: "Cycle check-in received",
+    summary: `${title} is queued for private team work. No public move happens without approval.`,
+    createdAt: toIso(createdAt),
+  };
+}
+
+function progressFromSpendCheckpoint(input: DearMeSpendCheckpointRow): DearMeWorkbenchProgressItem | null {
+  const eventCount = Number(input.eventCount ?? 0);
+  const totalCents = Number(input.totalCents ?? 0);
+  if (eventCount <= 0 || !input.latestAt) return null;
+  const latestAt = isoFromDbTimestamp(input.latestAt);
+
+  return {
+    id: `spend:${latestAt}`,
+    kind: "spend_checkpoint",
+    title: "Spend checkpoint recorded",
+    summary: `DearMe recorded ${moneyFromCents(totalCents)} of private team work across ${eventCount} checkpoint${eventCount === 1 ? "" : "s"}. Billing details stay backstage; spend-sensitive moves still wait for approval.`,
+    createdAt: latestAt,
+  };
+}
+
 function buildHeadline(input: {
   teamCount: number;
   outputCount: number;
@@ -1077,6 +1207,7 @@ export function dearmeWorkbenchService(db: Db) {
       const [agentRows, approvalRows, activityRows, memoryRows, chiefBriefRows] = await Promise.all([
         db
           .select({
+            id: agents.id,
             name: agents.name,
             role: agents.role,
             status: agents.status,
@@ -1161,6 +1292,50 @@ export function dearmeWorkbenchService(db: Db) {
 
       const team = Array.from(teamByRole.values())
         .sort((a, b) => TEAM_ROLE_ORDER.get(a.role)! - TEAM_ROLE_ORDER.get(b.role)!);
+      const dearMeAgentIds = agentRows
+        .filter((agent) => {
+          const metadata = agent.metadata;
+          return isRecord(metadata) &&
+            metadata.source === DEARME_BRAND_BLUEPRINT_ORIGIN_KIND &&
+            isDearMeRole(metadata.dearmeRole);
+        })
+        .map((agent) => agent.id);
+      const [routineRunRows, spendCheckpointRows] = await Promise.all([
+        db
+          .select({
+            id: routineRuns.id,
+            routineTitle: routines.title,
+            status: routineRuns.status,
+            triggeredAt: routineRuns.triggeredAt,
+            completedAt: routineRuns.completedAt,
+            updatedAt: routineRuns.updatedAt,
+            linkedIssueId: routineRuns.linkedIssueId,
+          })
+          .from(routineRuns)
+          .innerJoin(routines, eq(routineRuns.routineId, routines.id))
+          .innerJoin(issues, eq(routines.parentIssueId, issues.id))
+          .where(and(
+            eq(routineRuns.companyId, companyId),
+            eq(routines.companyId, companyId),
+            eq(issues.companyId, companyId),
+            eq(issues.originKind, DEARME_BRAND_BLUEPRINT_ORIGIN_KIND),
+          ))
+          .orderBy(desc(routineRuns.updatedAt))
+          .limit(5),
+        dearMeAgentIds.length > 0
+          ? db
+              .select({
+                eventCount: sql<number>`count(*)::int`,
+                totalCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int`,
+                latestAt: sql<Date | null>`max(${costEvents.occurredAt})`,
+              })
+              .from(costEvents)
+              .where(and(
+                eq(costEvents.companyId, companyId),
+                inArray(costEvents.agentId, dearMeAgentIds),
+              ))
+          : Promise.resolve([{ eventCount: 0, totalCents: 0, latestAt: null }]),
+      ]);
 
       const outputs = outputsResponse.outputs;
       const activeOutputWork = outputs
@@ -1192,11 +1367,22 @@ export function dearmeWorkbenchService(db: Db) {
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
         .slice(0, 12);
       const batchDecisions = buildBatchDecisions(decisionsNeeded);
-      const recentProgress = activityRows
+      const activityProgress = activityRows
         .filter((activity) =>
           activity.action.startsWith("dearme.") &&
           activity.action !== DEARME_CHIEF_OF_STAFF_MESSAGE_ACTION)
-        .map(progressFromActivity)
+        .map(progressFromActivity);
+      const spendProgress = progressFromSpendCheckpoint(spendCheckpointRows[0] ?? {
+        eventCount: 0,
+        totalCents: 0,
+        latestAt: null,
+      });
+      const recentProgress = [
+        ...activityProgress,
+        ...routineRunRows.map(progressFromRoutineRun),
+        ...(spendProgress ? [spendProgress] : []),
+      ]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
         .slice(0, 5);
       const latestMemory = memoryRows
         .map(memoryFromActivity)

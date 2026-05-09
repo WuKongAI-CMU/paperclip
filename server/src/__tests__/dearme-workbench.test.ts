@@ -6,12 +6,15 @@ import {
   agents,
   approvals,
   companies,
+  costEvents,
   createDb,
   documents,
   issueComments,
   issueDocuments,
   issues,
   issueWorkProducts,
+  routineRuns,
+  routines,
 } from "@paperclipai/db";
 import {
   getEmbeddedPostgresTestSupport,
@@ -256,6 +259,47 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
       createdAt: new Date("2026-05-07T15:10:00.000Z"),
       updatedAt: new Date("2026-05-07T15:10:00.000Z"),
     });
+    const weeklyCycleRoutineId = randomUUID();
+    await db.insert(routines).values({
+      id: weeklyCycleRoutineId,
+      companyId,
+      parentIssueId: brandIssueId,
+      title: "DearMe: Weekly content cycle",
+      description: "Keep the private brand growth cycle moving.",
+      assigneeAgentId: chiefOfStaffId,
+      status: "active",
+      lastTriggeredAt: new Date("2026-05-07T16:50:00.000Z"),
+      lastEnqueuedAt: new Date("2026-05-07T16:51:00.000Z"),
+      createdAt: new Date("2026-05-07T14:20:00.000Z"),
+      updatedAt: new Date("2026-05-07T16:50:00.000Z"),
+    });
+    await db.insert(routineRuns).values({
+      id: randomUUID(),
+      companyId,
+      routineId: weeklyCycleRoutineId,
+      source: "scheduler",
+      status: "completed",
+      triggeredAt: new Date("2026-05-07T16:50:00.000Z"),
+      linkedIssueId: contentIssueId,
+      completedAt: new Date("2026-05-07T16:52:00.000Z"),
+      createdAt: new Date("2026-05-07T16:50:00.000Z"),
+      updatedAt: new Date("2026-05-07T16:52:00.000Z"),
+    });
+    await db.insert(costEvents).values({
+      id: randomUUID(),
+      companyId,
+      agentId: chiefOfStaffId,
+      issueId: contentIssueId,
+      provider: "anthropic",
+      biller: "anthropic",
+      billingType: "llm_tokens",
+      model: "claude-sonnet",
+      inputTokens: 1200,
+      cachedInputTokens: 200,
+      outputTokens: 300,
+      costCents: 237,
+      occurredAt: new Date("2026-05-07T16:53:00.000Z"),
+    });
     await db.insert(approvals).values([
       {
         id: randomUUID(),
@@ -416,6 +460,14 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
           kind: "team_progress",
           title: "Voice & Memory updated",
         }),
+        expect.objectContaining({
+          kind: "cycle_check_in",
+          title: "Cycle check-in completed",
+        }),
+        expect.objectContaining({
+          kind: "spend_checkpoint",
+          title: "Spend checkpoint recorded",
+        }),
       ]),
     );
     expect(result.recentProgress.map((item) => item.title)).not.toContain("Team progress recorded");
@@ -503,6 +555,30 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
           costImpact: null,
           nextAction: expect.stringContaining("next private cycle"),
         }),
+        expect.objectContaining({
+          kind: "progress_recorded",
+          cycleStage: "work",
+          role: "chief_of_staff",
+          title: "Cycle check-in completed",
+          artifact: "Cycle check-in",
+          status: "recorded",
+          needsApproval: false,
+          sourceLabel: "Cycle cadence",
+          costImpact: null,
+          nextAction: expect.stringContaining("prepared work"),
+        }),
+        expect.objectContaining({
+          kind: "progress_recorded",
+          cycleStage: "work",
+          role: "growth_analyst",
+          title: "Spend checkpoint recorded",
+          artifact: "Spend checkpoint",
+          status: "recorded",
+          needsApproval: false,
+          sourceLabel: "Spend guardrail",
+          costImpact: "Private spend recorded",
+          nextAction: expect.stringContaining("spend money"),
+        }),
       ]),
     );
     expect(result.actionGraph.cycleNodeId).toBe("cycle:weekly-growth-loop");
@@ -540,6 +616,9 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     expect(customerPathJson).not.toContain("provider");
     expect(customerPathJson).not.toContain("setup_payload");
     expect(customerPathJson).not.toContain("Paperclip");
+    expect(customerPathJson).not.toContain("routine");
+    expect(customerPathJson).not.toContain("anthropic");
+    expect(customerPathJson).not.toContain("claude-sonnet");
     expect(customerPathJson).not.toContain(DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND);
   });
 });

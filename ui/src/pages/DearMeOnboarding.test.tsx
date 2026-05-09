@@ -314,6 +314,20 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         summary: "DearMe created the team, cycles, and first private work lanes.",
         createdAt: "2026-05-07T14:00:00.000Z",
       },
+      {
+        id: "cycle:run-1",
+        kind: "cycle_check_in",
+        title: "Cycle check-in completed",
+        summary: "Weekly content cycle checked in and kept the private growth cycle moving.",
+        createdAt: "2026-05-07T14:01:00.000Z",
+      },
+      {
+        id: "spend:2026-05-07T14:02:00.000Z",
+        kind: "spend_checkpoint",
+        title: "Spend checkpoint recorded",
+        summary: "DearMe recorded $2.37 of private team work across 1 checkpoint. Billing details stay backstage; spend-sensitive moves still wait for approval.",
+        createdAt: "2026-05-07T14:02:00.000Z",
+      },
     ],
     memory: {
       summary: "2 recent Voice & Memory sources are available. Latest: Voice sample.",
@@ -407,6 +421,46 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         issueIdentifier: null,
         approvalId: null,
         createdAt: "2026-05-07T14:00:00.000Z",
+        reviewLoop: null,
+      },
+      {
+        id: "progress:cycle:run-1",
+        kind: "progress_recorded",
+        cycleStage: "work",
+        role: "chief_of_staff",
+        title: "Cycle check-in completed",
+        summary: "Weekly content cycle checked in and kept the private growth cycle moving.",
+        artifact: "Cycle check-in",
+        status: "recorded",
+        needsApproval: false,
+        sourceLabel: "Cycle cadence",
+        costImpact: null,
+        nextAction: "Open prepared work only when a teammate asks for your call.",
+        relatedOutputId: null,
+        issueId: null,
+        issueIdentifier: null,
+        approvalId: null,
+        createdAt: "2026-05-07T14:01:00.000Z",
+        reviewLoop: null,
+      },
+      {
+        id: "progress:spend:2026-05-07T14:02:00.000Z",
+        kind: "progress_recorded",
+        cycleStage: "work",
+        role: "growth_analyst",
+        title: "Spend checkpoint recorded",
+        summary: "DearMe recorded $2.37 of private team work across 1 checkpoint. Billing details stay backstage; spend-sensitive moves still wait for approval.",
+        artifact: "Spend checkpoint",
+        status: "recorded",
+        needsApproval: false,
+        sourceLabel: "Spend guardrail",
+        costImpact: "Private spend recorded",
+        nextAction: "No action needed unless a future move asks to spend money.",
+        relatedOutputId: null,
+        issueId: null,
+        issueIdentifier: null,
+        approvalId: null,
+        createdAt: "2026-05-07T14:02:00.000Z",
         reviewLoop: null,
       },
     ],
@@ -974,6 +1028,12 @@ describe("DearMeOnboarding", () => {
     ).not.toBeNull();
     expect(container.textContent).toContain("Live team feed");
     expect(container.textContent).toContain("Your call: Review Starter posts");
+    expect(container.textContent).toContain("Cycle check-in completed");
+    expect(container.textContent).toContain("Weekly content cycle checked in");
+    expect(container.textContent).toContain("Spend checkpoint recorded");
+    expect(container.textContent).toContain("$2.37");
+    expect(container.textContent).toContain("Billing details stay backstage");
+    expect(container.textContent).toContain("Spend guardrail");
     expect(container.textContent).toContain("Action needed");
     expect(container.textContent).toContain("Prepared output");
     expect(container.textContent).toContain("Next action");
@@ -1019,6 +1079,9 @@ describe("DearMeOnboarding", () => {
       HIDDEN_PRODUCT_TERMS.bridgeName,
       HIDDEN_PRODUCT_TERMS.vendorName,
     ]);
+    expect(container.textContent).not.toContain("routine");
+    expect(container.textContent).not.toContain("cost_event");
+    expect(container.textContent).not.toContain("anthropic");
     expect((container.querySelector("#dearme-display-name") as HTMLInputElement | null)?.value).toBe("Peter Studio");
 
     await act(async () => {
