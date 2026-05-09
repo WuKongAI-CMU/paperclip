@@ -5,6 +5,8 @@ import {
   DEARME_BRAND_CHANNELS,
   DEARME_MEMORY_UPDATE_KINDS,
   DEARME_PAID_BETA_MIN_PAYMENT_CENTS,
+  type DearMeActionGraph,
+  type DearMeActionGraphNode,
   type DearMeBrandBlueprintExecutionPlan,
   type DearMeChiefOfStaffMessageIntent,
   type DearMeChiefOfStaffMessageResult,
@@ -82,6 +84,7 @@ import {
   Users,
   Workflow,
   XCircle,
+  type LucideIcon,
 } from "lucide-react";
 
 const CHANNEL_LABELS: Record<DearMeBrandChannel, string> = {
@@ -425,6 +428,119 @@ const WORKSTREAM_STATUS_LABELS = {
   decision_needed: "Needs your call",
   recorded: "Recorded",
 } as const;
+
+const ACTION_GRAPH_KIND_LABELS: Record<DearMeActionGraphNode["kind"], string> = {
+  cycle: "Growth cycle",
+  role: "Team role",
+  work_item: "Work in motion",
+  artifact: "Prepared work",
+  decision: "Decision needed",
+  memory_signal: "Memory update",
+  report: "Dear me report",
+  guardrail: "Approval guardrail",
+};
+
+const ACTION_GRAPH_KIND_ICONS: Record<DearMeActionGraphNode["kind"], LucideIcon> = {
+  cycle: Workflow,
+  role: Users,
+  work_item: Gauge,
+  artifact: FileText,
+  decision: ShieldCheck,
+  memory_signal: Sparkles,
+  report: FileText,
+  guardrail: ShieldCheck,
+};
+
+const ACTION_GRAPH_KIND_ORDER: Record<DearMeActionGraphNode["kind"], number> = {
+  cycle: 0,
+  role: 1,
+  work_item: 2,
+  artifact: 3,
+  decision: 4,
+  guardrail: 5,
+  memory_signal: 6,
+  report: 7,
+};
+
+function titleizeStatus(value: string) {
+  return value
+    .replaceAll("_", " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function selectActionGraphCards(graph: DearMeActionGraph) {
+  const cycleNode = graph.nodes.find((node) => node.id === graph.cycleNodeId)
+    ?? graph.nodes.find((node) => node.kind === "cycle")
+    ?? null;
+  const selected = new Set<string>();
+  const cards: DearMeActionGraphNode[] = [];
+
+  if (cycleNode) {
+    cards.push(cycleNode);
+    selected.add(cycleNode.id);
+  }
+
+  const remaining = graph.nodes
+    .filter((node) => !selected.has(node.id))
+    .sort((a, b) => {
+      const kindOrder = ACTION_GRAPH_KIND_ORDER[a.kind] - ACTION_GRAPH_KIND_ORDER[b.kind];
+      if (kindOrder !== 0) return kindOrder;
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+
+  return [...cards, ...remaining].slice(0, 8);
+}
+
+function actionGraphStatusLabel(node: DearMeActionGraphNode) {
+  if (node.kind === "decision") return "Waiting on you";
+  if (node.kind === "guardrail") return "Approval protected";
+  if (node.kind === "memory_signal") return "Learning";
+  if (node.kind === "report") return "Report ready";
+  if (node.status) return titleizeStatus(node.status);
+  return ACTION_GRAPH_KIND_LABELS[node.kind];
+}
+
+function actionGraphStatusVariant(node: DearMeActionGraphNode) {
+  const status = node.status?.toLowerCase() ?? "";
+  if (status.includes("blocked") || status.includes("cancelled")) return "destructive" as const;
+  if (node.kind === "decision" || status.includes("decision")) return "secondary" as const;
+  if (node.kind === "artifact" || node.kind === "report" || status.includes("ready") || status.includes("complete")) {
+    return "default" as const;
+  }
+  return "outline" as const;
+}
+
+function actionGraphNextMove(node: DearMeActionGraphNode) {
+  switch (node.kind) {
+    case "cycle":
+      return "Your team keeps this loop moving through plan, work, review, learning, and reporting.";
+    case "role":
+      return "This teammate owns a visible part of your personal-brand growth loop.";
+    case "work_item":
+      return "The team keeps preparing this privately until it becomes reviewable.";
+    case "artifact":
+      return "Open the prepared work, then approve, request changes, regenerate, or mark it not useful.";
+    case "decision":
+      return "This waits for your call before it can represent you publicly or externally.";
+    case "memory_signal":
+      return "DearMe uses this signal to make future work more accurate to your voice and proof.";
+    case "report":
+      return "Use this as the closing letter for what changed, what needs a call, and what comes next.";
+    case "guardrail":
+      return "This keeps publishing, sending, deploying, spending, and sensitive moves behind approval.";
+  }
+}
+
+function actionGraphConnectionLabels(graph: DearMeActionGraph, nodeId: string) {
+  const labels = graph.edges
+    .filter((edge) => edge.fromNodeId === nodeId || edge.toNodeId === nodeId)
+    .map((edge) => edge.label)
+    .filter(Boolean);
+  return Array.from(new Set(labels)).slice(0, 2);
+}
 
 const RISK_GATE_LABELS: Record<NonNullable<DearMeWorkbenchDecision["riskGate"]>, string> = {
   publish_social: "Publish",
@@ -1400,11 +1516,13 @@ function OperatingLoopPanel({
   const workCount = workbench.workReady.length + workbench.activeWork.length;
   const latestEvent = workbench.workStream[0] ?? null;
   const graph = workbench.actionGraph;
-  const graphHighlights = graph.nodes
-    .filter((node) => ["artifact", "decision", "memory_signal", "report"].includes(node.kind))
-    .slice(0, 3);
+  const graphCards = selectActionGraphCards(graph);
   const roleNodeCount = graph.nodes.filter((node) => node.kind === "role").length;
-  const decisionEdgeCount = graph.edges.filter((edge) => edge.kind === "requires_decision").length;
+  const decisionNodeCount = graph.nodes.filter((node) => node.kind === "decision").length;
+  const workLaneNodeCount = graph.nodes.filter((node) => node.kind === "work_item").length;
+  const assetNodeCount = graph.nodes.filter((node) => node.kind === "artifact" || node.kind === "report").length;
+  const memorySignalCount = graph.nodes.filter((node) => node.kind === "memory_signal").length;
+  const guardrailNodeCount = graph.nodes.filter((node) => node.kind === "guardrail").length;
   const loopStages = [
     {
       key: "plan",
@@ -1494,25 +1612,86 @@ function OperatingLoopPanel({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-medium uppercase text-muted-foreground">Growth map</p>
-            <p className="mt-2 text-sm text-foreground/85">{graph.summary}</p>
+            <p className="mt-2 text-sm text-foreground/85">
+              Your team turns private work into reviewable moves, remembers what you correct, and keeps public actions gated.
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline">{pluralizeCount(roleNodeCount, "role")} connected</Badge>
-            <Badge variant={decisionEdgeCount > 0 ? "secondary" : "outline"}>
-              {decisionEdgeCount > 0 ? pluralizeCount(decisionEdgeCount, "decision") : "No decision waiting"}
+            <Badge variant={decisionNodeCount > 0 ? "secondary" : "outline"}>
+              {decisionNodeCount > 0 ? pluralizeCount(decisionNodeCount, "decision") : "No decision waiting"}
             </Badge>
+            {guardrailNodeCount > 0 ? <Badge variant="outline">{pluralizeCount(guardrailNodeCount, "guardrail")}</Badge> : null}
           </div>
         </div>
-        {graphHighlights.length > 0 ? (
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            {graphHighlights.map((node) => (
-              <div key={node.id} className="rounded-md border border-border bg-muted/15 p-3">
-                <p className="text-xs font-medium text-muted-foreground">{node.role ? roleLabel(node.role) : "DearMe"}</p>
-                <p className="mt-1 text-sm font-medium">{node.label}</p>
-                <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">{node.summary}</p>
-                {node.status ? <Badge className="mt-3" variant="outline">{node.status.replaceAll("_", " ")}</Badge> : null}
+        <DearMeEvidenceGrid className="mt-4">
+          <div className="rounded-md border border-border bg-muted/15 p-3">
+            <p className="text-xs font-medium text-muted-foreground">Work lanes</p>
+            <p className="mt-1 text-sm font-medium">{pluralizeCount(workLaneNodeCount, "lane")}</p>
+          </div>
+          <div className="rounded-md border border-border bg-muted/15 p-3">
+            <p className="text-xs font-medium text-muted-foreground">Prepared assets</p>
+            <p className="mt-1 text-sm font-medium">{pluralizeCount(assetNodeCount, "asset")}</p>
+          </div>
+          <div className="rounded-md border border-border bg-muted/15 p-3">
+            <p className="text-xs font-medium text-muted-foreground">Memory signals</p>
+            <p className="mt-1 text-sm font-medium">{pluralizeCount(memorySignalCount, "signal")}</p>
+          </div>
+        </DearMeEvidenceGrid>
+        {graphCards.length > 0 ? (
+          <div className="mt-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold">Team work stream</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  The current loop, shown as the moves, memories, and guardrails that matter to you.
+                </p>
               </div>
-            ))}
+              <Badge variant="outline">Team visible</Badge>
+            </div>
+            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {graphCards.map((node) => {
+                const connectionLabels = actionGraphConnectionLabels(graph, node.id);
+                const Icon = ACTION_GRAPH_KIND_ICONS[node.kind];
+                return (
+                  <DearMeWorkbenchCard
+                    key={node.id}
+                    className="p-3"
+                    eyebrow={
+                      <span className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline">{ACTION_GRAPH_KIND_LABELS[node.kind]}</Badge>
+                        {node.role ? <span className="text-xs text-muted-foreground">{roleLabel(node.role)}</span> : null}
+                      </span>
+                    }
+                    title={node.label}
+                    description={node.summary}
+                    badge={
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground">
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <Badge variant={actionGraphStatusVariant(node)}>{actionGraphStatusLabel(node)}</Badge>
+                      </div>
+                    }
+                  >
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs font-medium uppercase text-muted-foreground">Next move</p>
+                        <p className="mt-1 line-clamp-3 text-sm text-foreground/85">{actionGraphNextMove(node)}</p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <Badge variant="outline">Updated {shortDate(node.updatedAt)}</Badge>
+                        {connectionLabels.map((label) => (
+                          <Badge key={`${node.id}:${label}`} variant="secondary">
+                            {titleizeStatus(label)}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </DearMeWorkbenchCard>
+                );
+              })}
+            </div>
           </div>
         ) : null}
       </div>

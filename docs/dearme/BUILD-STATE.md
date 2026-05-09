@@ -2,6 +2,33 @@
 
 Date: 2026-05-09
 
+## Premium Work Stream From Action Graph - 2026-05-09
+
+Implementation slice:
+
+- Rendered `workbench.actionGraph` directly in the DearMe Growth cycle panel as
+  a premium Team work stream instead of leaving the graph as a mostly hidden
+  read-model.
+- Reused the Polsia/Naive/Lindy split already locked in the architecture:
+  Polsia-style visible cycle and team momentum, Naive/Paperclip-derived
+  workbench graph projection, and Lindy-style action-card presentation.
+- Added customer-safe card mapping for cycle, role, work item, artifact,
+  decision, guardrail, memory signal, and report nodes.
+- Kept machinery hidden: cards display labels, summaries, roles, statuses,
+  connection labels, and next moves without showing raw node ids, issue ids,
+  approval ids, providers, adapters, or model/runtime language.
+- Added UI coverage for the new stream, including absence checks for raw action
+  graph ids.
+- Verification:
+  - `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
+    passed: 1 file, 17 tests.
+  - `pnpm --filter @paperclipai/ui typecheck` passed.
+  - `git diff --check` passed.
+  - Browser smoke passed against `http://127.0.0.1:3100/DEAA/dearme`:
+    desktop and mobile both rendered `Team work stream` / `Team visible`; the
+    mobile viewport had no horizontal overflow; no Paperclip/OpenClaw/provider/
+    adapter language appeared in the visible page text.
+
 ## Action Graph Projection Bridge - 2026-05-09
 
 Implementation slice:

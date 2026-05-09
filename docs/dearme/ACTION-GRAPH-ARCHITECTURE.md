@@ -99,8 +99,9 @@ Adapt the interaction patterns, not the whole shell:
 
 The current customer UI already moves in this direction by adding clearer
 decision context and next-step copy to Work Ready and Decisions Needed. The
-next UI slice should render the typed `actionGraph` directly as a premium work
-stream.
+paid-beta shell now renders the typed `actionGraph` directly as a premium Team
+work stream, while keeping raw graph ids, issue ids, approval ids, providers,
+adapters, and runtime language out of the user-facing surface.
 
 ## Non-Goals
 
@@ -116,8 +117,10 @@ stream.
 
 ### DM-103: Premium Work Stream From Action Graph
 
-Render `workbench.actionGraph` as a Lindy-style stream of customer-safe action
-cards:
+Status: implemented in the DearMe onboarding/workbench shell on 2026-05-09.
+
+`workbench.actionGraph` now renders as a Lindy-style stream of customer-safe
+action cards:
 
 - cycle card
 - role cards
@@ -126,8 +129,8 @@ cards:
 - memory update cards
 - weekly report card
 
-Acceptance: the first screen should make the Polsia-style "my team is working"
-feeling visible without exposing substrate language.
+Acceptance covered: the first screen makes the Polsia-style "my team is
+working" feeling visible without exposing substrate language.
 
 ### DM-104: Voice & Memory Source Surface
 

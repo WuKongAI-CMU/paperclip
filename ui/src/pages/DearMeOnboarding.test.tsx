@@ -380,6 +380,19 @@ function workbenchResponse() {
           updatedAt: "2026-05-07T14:00:00.000Z",
         },
         {
+          id: "work:issue-2:content_drafts",
+          kind: "work_item",
+          label: "Starter posts",
+          summary: "Content Producer is shaping three private drafts before review.",
+          role: "content_producer",
+          status: "ready_for_review",
+          source: "work",
+          relatedOutputId: "issue-2:content_drafts",
+          issueId: "issue-2",
+          approvalId: null,
+          updatedAt: "2026-05-07T14:00:00.000Z",
+        },
+        {
           id: "decision:output:issue-2:content_drafts",
           kind: "decision",
           label: "Review Starter posts",
@@ -392,14 +405,94 @@ function workbenchResponse() {
           approvalId: null,
           updatedAt: "2026-05-07T14:00:00.000Z",
         },
+        {
+          id: "guardrail:batch:publish_social",
+          kind: "guardrail",
+          label: "Review content batch",
+          summary: "External publishing stays gated until Peter approves the batch.",
+          role: "chief_of_staff",
+          status: "needs review",
+          source: "guardrail",
+          relatedOutputId: null,
+          issueId: null,
+          approvalId: null,
+          updatedAt: "2026-05-07T14:00:00.000Z",
+        },
+        {
+          id: "artifact:issue-2:content_drafts",
+          kind: "artifact",
+          label: "Starter posts are ready",
+          summary: "Three proof-backed posts are prepared for voice review.",
+          role: "content_producer",
+          status: "ready_for_review",
+          source: "artifact",
+          relatedOutputId: "issue-2:content_drafts",
+          issueId: "issue-2",
+          approvalId: null,
+          updatedAt: "2026-05-07T14:00:00.000Z",
+        },
+        {
+          id: "memory:voice-sample",
+          kind: "memory_signal",
+          label: "Voice memory updated",
+          summary: "Voice Editor learned from one new sample before preparing public-facing drafts.",
+          role: "voice_editor",
+          status: "learning",
+          source: "memory",
+          relatedOutputId: null,
+          issueId: null,
+          approvalId: null,
+          updatedAt: "2026-05-07T14:00:00.000Z",
+        },
+        {
+          id: "report:issue-1:weekly_report",
+          kind: "report",
+          label: "Weekly Dear me report",
+          summary: "The closing letter captures completed work, decisions, and next bets.",
+          role: "growth_analyst",
+          status: "ready_for_review",
+          source: "report",
+          relatedOutputId: "issue-1:weekly_report",
+          issueId: "issue-1",
+          approvalId: null,
+          updatedAt: "2026-05-07T14:00:00.000Z",
+        },
       ],
       edges: [
+        {
+          id: "owns:role:content_producer->work:issue-2:content_drafts",
+          kind: "owns",
+          fromNodeId: "role:content_producer",
+          toNodeId: "work:issue-2:content_drafts",
+          label: "owns",
+        },
         {
           id: "requires_decision:cycle:weekly-growth-loop->decision:output:issue-2:content_drafts",
           kind: "requires_decision",
           fromNodeId: "cycle:weekly-growth-loop",
           toNodeId: "decision:output:issue-2:content_drafts",
           label: "needs your decision",
+        },
+        {
+          id: "blocks:guardrail:batch:publish_social->decision:output:issue-2:content_drafts",
+          kind: "blocks",
+          fromNodeId: "guardrail:batch:publish_social",
+          toNodeId: "decision:output:issue-2:content_drafts",
+          label: "collects decision",
+        },
+        {
+          id: "produces:work:issue-2:content_drafts->artifact:issue-2:content_drafts",
+          kind: "produces",
+          fromNodeId: "work:issue-2:content_drafts",
+          toNodeId: "artifact:issue-2:content_drafts",
+          label: "produces prepared work",
+        },
+        {
+          id: "reports:cycle:weekly-growth-loop->report:issue-1:weekly_report",
+          kind: "reports",
+          fromNodeId: "cycle:weekly-growth-loop",
+          toNodeId: "report:issue-1:weekly_report",
+          label: "reports progress",
         },
       ],
     },
@@ -596,8 +689,26 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("You make the high-leverage calls");
     expect(container.textContent).toContain("Nothing publishes, sends, deploys, or spends without your approval.");
     expect(container.textContent).toContain("Growth map");
-    expect(container.textContent).toContain("DearMe projects the current team loop");
+    expect(container.textContent).toContain("Your team turns private work into reviewable moves");
     expect(container.textContent).toContain("1 role connected");
+    expect(container.textContent).toContain("1 lane");
+    expect(container.textContent).toContain("2 assets");
+    expect(container.textContent).toContain("1 signal");
+    expect(container.textContent).toContain("1 guardrail");
+    expect(container.textContent).toContain("Team work stream");
+    expect(container.textContent).toContain("The current loop, shown as the moves, memories, and guardrails that matter to you.");
+    expect(container.textContent).toContain("Team visible");
+    expect(container.textContent).toContain("Weekly growth loop");
+    expect(container.textContent).toContain("Starter posts");
+    expect(container.textContent).toContain("Content Producer");
+    expect(container.textContent).toContain("Review Starter posts");
+    expect(container.textContent).toContain("Starter posts are ready");
+    expect(container.textContent).toContain("Approval guardrail");
+    expect(container.textContent).toContain("Voice memory updated");
+    expect(container.textContent).toContain("Weekly Dear me report");
+    expect(container.textContent).toContain("This waits for your call before it can represent you publicly or externally.");
+    expect(container.textContent).not.toContain("cycle:weekly-growth-loop");
+    expect(container.textContent).not.toContain("decision:output:issue-2:content_drafts");
     expect(container.textContent).toContain("Prepared work waiting for review");
     expect(container.textContent).toContain("Why it matters");
     expect(container.textContent).toContain("Your next step");
@@ -612,9 +723,9 @@ describe("DearMeOnboarding", () => {
       pageText.indexOf("High-leverage calls"),
     );
     expect(pageText.indexOf("High-leverage calls")).toBeLessThan(
-      pageText.indexOf("Weekly Dear me"),
+      pageText.indexOf("Private progress letter"),
     );
-    expect(pageText.indexOf("Weekly Dear me")).toBeLessThan(
+    expect(pageText.indexOf("Private progress letter")).toBeLessThan(
       pageText.indexOf("Voice & Memory"),
     );
     expect(container.textContent).toContain("Approve Brand OS for Peter Studio");
