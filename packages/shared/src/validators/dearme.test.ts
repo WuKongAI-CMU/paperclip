@@ -34,6 +34,7 @@ function reviewLoop(overrides: Partial<DearMeOutputReviewLoop> = {}): DearMeOutp
     lastDecisionAt: null,
     lastDecisionNotePreview: null,
     nextStep: "Review it, then approve, request changes, regenerate, or mark it not useful.",
+    reviewHandoff: null,
     ...overrides,
   };
 }
@@ -535,11 +536,23 @@ describe("DearMe brand blueprint contract", () => {
             lastDecisionAt: "2026-05-07T14:00:00.000Z",
             lastDecisionNotePreview: "Make it sharper.",
             nextStep: "Your team has your direction and should prepare another version.",
+            reviewHandoff: {
+              action: "regenerate",
+              title: "Regeneration brief captured",
+              summary: "DearMe will keep this direction attached to the next private draft.",
+              userDirection: "Make it sharper.",
+              nextDraftDirection: "Prepare a stronger replacement before asking for approval again.",
+            },
           }),
           details: [],
         },
       ],
     }).outputs[0]!;
+    expect(output.reviewLoop.reviewHandoff).toEqual(expect.objectContaining({
+      action: "regenerate",
+      userDirection: "Make it sharper.",
+      nextDraftDirection: expect.stringContaining("replacement"),
+    }));
     const result = dearMeOutputReviewResultSchema.parse({
       companyId: "company-1",
       outputId: "issue-1:weekly_report",

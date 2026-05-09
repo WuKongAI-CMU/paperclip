@@ -565,6 +565,14 @@ export const dearMeOutputUpdateSchema = z.object({
   createdAt: z.string().datetime(),
 }).strict();
 
+const dearMeOutputReviewHandoffSchema = z.object({
+  action: z.enum(DEARME_OUTPUT_REVIEW_ACTIONS),
+  title: shortTextSchema,
+  summary: mediumTextSchema,
+  userDirection: mediumTextSchema.nullable(),
+  nextDraftDirection: mediumTextSchema,
+}).strict();
+
 export const dearMeOutputReviewLoopSchema = z.object({
   state: z.enum(DEARME_OUTPUT_REVIEW_LOOP_STATES),
   attemptCount: z.number().int().min(0).max(99),
@@ -574,6 +582,7 @@ export const dearMeOutputReviewLoopSchema = z.object({
   lastDecisionAt: z.string().datetime().nullable(),
   lastDecisionNotePreview: mediumTextSchema.nullable(),
   nextStep: mediumTextSchema,
+  reviewHandoff: dearMeOutputReviewHandoffSchema.nullable(),
 }).strict();
 
 export const dearMeOutputDetailSchema = z.object({

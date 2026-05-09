@@ -546,4 +546,54 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       expect(serialized).not.toContain(hiddenTerm);
     }
   });
+
+  it("keeps user feedback attached as a private handoff for the next draft", async () => {
+    const companyId = await seedCompany();
+    const agentId = await seedAgent(companyId);
+    const issueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Prepare content batch",
+      identifier: "DME-12",
+      originFingerprint: "operation-draft_content_batch",
+      status: "in_review",
+      assigneeAgentId: agentId,
+      updatedAt: new Date("2026-05-07T18:00:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId,
+      key: "content-drafts",
+      title: "Content drafts",
+      body: "Hook: From messy work to public proof.\nDraft body: Here is the first private draft.",
+      updatedAt: new Date("2026-05-07T18:01:00.000Z"),
+    });
+
+    const result = await dearmeOutputHandoffService(db).reviewOutput(
+      companyId,
+      `${issueId}:content_drafts`,
+      { action: "request_changes", decisionNote: "Make the proof more concrete and less generic." },
+      { actorType: "user", actorId: "user-1", agentId: null, runId: null },
+    );
+
+    expect(result.status).toBe("queued");
+    expect(result.output.reviewLoop).toEqual(expect.objectContaining({
+      state: "revision_requested",
+      attemptCount: 1,
+      lastAction: "request_changes",
+      lastDecisionNotePreview: "Make the proof more concrete and less generic.",
+      reviewHandoff: expect.objectContaining({
+        action: "request_changes",
+        title: "Change request captured",
+        userDirection: "Make the proof more concrete and less generic.",
+        nextDraftDirection: expect.stringContaining("Revise"),
+      }),
+    }));
+    expect(result.output.reviewLoop.reviewHandoff?.summary).toContain("next private revision");
+    expect(result.wakeIssue).toEqual({ id: issueId, assigneeAgentId: agentId, status: "todo" });
+
+    const serialized = JSON.stringify(result).toLowerCase();
+    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw"]) {
+      expect(serialized).not.toContain(hiddenTerm);
+    }
+  });
 });

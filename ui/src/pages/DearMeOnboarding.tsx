@@ -491,6 +491,31 @@ function ReviewLoopNextStep({
   );
 }
 
+function ReviewHandoffCard({
+  loop,
+  className,
+}: {
+  loop: DearMeOutputReviewLoop;
+  className?: string;
+}) {
+  const handoff = loop.reviewHandoff;
+  if (!handoff) return null;
+  return (
+    <div className={cn("rounded-md border border-border bg-background/80 p-3", className)}>
+      <div className="flex items-center gap-2">
+        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+        <p className="text-xs font-medium text-muted-foreground">Private handoff</p>
+      </div>
+      <p className="mt-2 text-sm font-medium text-foreground">{handoff.title}</p>
+      <p className="mt-1 text-sm text-foreground/85">{handoff.summary}</p>
+      {handoff.userDirection ? (
+        <p className="mt-2 text-xs text-muted-foreground">Your note: {handoff.userDirection}</p>
+      ) : null}
+      <p className="mt-2 text-xs text-muted-foreground">{handoff.nextDraftDirection}</p>
+    </div>
+  );
+}
+
 const VOICE_GATE_STATUS_LABELS: Record<DearMeVoiceGateResult["status"], string> = {
   ready_for_review: "Ready for review",
   needs_voice_review: "Needs voice review",
@@ -1287,6 +1312,7 @@ function FocusedDecisionPanel({
           }
         />
         <ReviewLoopNextStep loop={workItem.reviewLoop} className="mt-4" />
+        <ReviewHandoffCard loop={workItem.reviewLoop} className="mt-4" />
         <div className="mt-4 flex items-center justify-between gap-3">
           <span className="text-xs text-muted-foreground">Prepared by {roleLabel(workItem.ownerRole)}</span>
           <Button type="button" size="sm" variant="outline" onClick={() => onOpenWorkItem(workItem)}>
@@ -1371,6 +1397,7 @@ function FocusedOutputPanel({
       ) : null}
 
       <ReviewLoopNextStep loop={output.reviewLoop} className="mt-4" />
+      <ReviewHandoffCard loop={output.reviewLoop} className="mt-4" />
 
       <div className="mt-4 rounded-md border border-border bg-background/80 p-3">
         <FieldLabel
@@ -1422,6 +1449,20 @@ function FocusedOutputPanel({
           >
             <RefreshCw className={cn("h-4 w-4", pendingAction === "regenerate" ? "animate-spin" : "")} />
             Regenerate
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="destructive"
+            onClick={() => review("not_useful")}
+            disabled={!canReview}
+          >
+            {pendingAction === "not_useful" ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <XCircle className="h-4 w-4" />
+            )}
+            Not useful
           </Button>
         </div>
       </div>
@@ -1572,6 +1613,7 @@ function WorkReadyPanel({
                     <p className="mt-2 text-xs text-muted-foreground">{workReadyNextStepLabel(item.status)}</p>
                   </div>
                 </DearMeEvidenceGrid>
+                <ReviewHandoffCard loop={item.reviewLoop} className="mt-3" />
               </DearMeWorkbenchCard>
             );
           })}

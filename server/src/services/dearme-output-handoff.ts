@@ -61,6 +61,12 @@ type DearMeReviewComment = {
   createdAt: Date;
 };
 
+type DearMeParsedReviewDecision = {
+  action: DearMeOutputReviewAction;
+  createdAt: Date;
+  notePreview: string | null;
+};
+
 const BRAND_OS_FINGERPRINT = "brand-os-review";
 const VOICE_OPERATION_FINGERPRINT = "operation-seed_voice_profile";
 const DEARME_OUTPUT_REVIEW_LOOP_MAX_ATTEMPTS = 3;
@@ -245,6 +251,47 @@ function reviewLoopNextStep(state: DearMeOutputReviewLoop["state"]) {
   }
 }
 
+function buildReviewHandoff(
+  decision: DearMeParsedReviewDecision | null,
+  state: DearMeOutputReviewLoop["state"],
+): DearMeOutputReviewLoop["reviewHandoff"] {
+  if (!decision || decision.action === "approve") return null;
+  if (state === "retry_limit_reached") {
+    return {
+      action: decision.action,
+      title: "Clearer direction needed",
+      summary: "DearMe has paused this loop so your team does not keep spending attempts on the wrong direction.",
+      userDirection: decision.notePreview,
+      nextDraftDirection: "Give one sharper instruction before the team prepares another private attempt.",
+    };
+  }
+  if (decision.action === "request_changes") {
+    return {
+      action: decision.action,
+      title: "Change request captured",
+      summary: "DearMe will keep your note attached to the next private revision.",
+      userDirection: decision.notePreview,
+      nextDraftDirection: "Revise the current draft around this note before asking for approval again.",
+    };
+  }
+  if (decision.action === "not_useful") {
+    return {
+      action: decision.action,
+      title: "New route requested",
+      summary: "DearMe should avoid this angle and prepare a different route for your brand work.",
+      userDirection: decision.notePreview,
+      nextDraftDirection: "Drop this angle, choose a better one, and bring back a more useful private draft.",
+    };
+  }
+  return {
+    action: decision.action,
+    title: "Regeneration brief captured",
+    summary: "DearMe will keep this direction attached to the next private draft.",
+    userDirection: decision.notePreview,
+    nextDraftDirection: "Prepare a stronger replacement before asking for approval again.",
+  };
+}
+
 function buildReviewLoop(input: {
   status: DearMeOutputStatus;
   reviewComments: DearMeReviewComment[];
@@ -259,11 +306,7 @@ function buildReviewLoop(input: {
         notePreview: reviewDecisionNotePreview(comment.body),
       };
     })
-    .filter((decision): decision is {
-      action: DearMeOutputReviewAction;
-      createdAt: Date;
-      notePreview: string | null;
-    } => Boolean(decision))
+    .filter((decision): decision is DearMeParsedReviewDecision => Boolean(decision))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   const lastDecision = decisions[0] ?? null;
   const attemptCount = decisions.filter((decision) => decision.action !== "approve").length;
@@ -296,6 +339,7 @@ function buildReviewLoop(input: {
     lastDecisionAt: lastDecision ? toIso(lastDecision.createdAt) : null,
     lastDecisionNotePreview: lastDecision?.notePreview ?? null,
     nextStep: reviewLoopNextStep(state),
+    reviewHandoff: buildReviewHandoff(lastDecision, state),
   };
 }
 

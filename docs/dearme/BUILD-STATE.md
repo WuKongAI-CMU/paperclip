@@ -2,6 +2,32 @@
 
 Date: 2026-05-09
 
+## DM-107 Review Feedback Handoff - 2026-05-09
+
+Implementation slice:
+
+- Added a typed `reviewHandoff` contract to DearMe prepared-output review loops
+  so a user's rejection, change request, or regeneration note stays attached to
+  the next private draft.
+- Reused the existing Naive/Paperclip substrate instead of adding a DearMe-only
+  queue, table, worker, or runtime: review decisions are still issue comments,
+  issue status changes, work products, and the existing output projection.
+- Preserved the Polsia product lesson that momentum must remain visible after a
+  decision: the UI now shows a customer-safe "Private handoff" card explaining
+  what the team will do next with the user's feedback.
+- Adapted the Lindy-style action-card pattern by adding a focused handoff card
+  and a "Not useful" decision action in the prepared-work review surface.
+- Kept the customer surface clean: no issue ids, raw handoff ids, adapters,
+  providers, Paperclip/OpenClaw language, or runtime details are shown to the
+  user.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-output-handoff.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 3 files, 39 tests.
+- `pnpm -r typecheck` passed.
+- `git diff --check` passed.
+
 ## DM-106 Review Loop State - 2026-05-09
 
 Implementation slice:

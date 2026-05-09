@@ -172,6 +172,7 @@ function reviewLoopFixture(
     lastDecisionAt: null,
     lastDecisionNotePreview: null,
     nextStep,
+    reviewHandoff: null,
     ...overrides,
   };
 }
@@ -1614,6 +1615,58 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("renders review handoff context for the next private draft", async () => {
+    mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
+    mockDearmeApi.getOutputs.mockResolvedValue({
+      companyId: "company-1",
+      outputs: [
+        {
+          ...outputsResponse().outputs[0],
+          reviewLoop: reviewLoopFixture(
+            "revision_requested",
+            "Your team has your note and should prepare a revised version.",
+            {
+              attemptCount: 1,
+              lastAction: "request_changes",
+              lastDecisionAt: "2026-05-07T14:05:00.000Z",
+              lastDecisionNotePreview: "Make the proof more concrete.",
+              reviewHandoff: {
+                action: "request_changes",
+                title: "Change request captured",
+                summary: "DearMe will keep your note attached to the next private revision.",
+                userDirection: "Make the proof more concrete.",
+                nextDraftDirection: "Revise the current draft around this note before asking for approval again.",
+              },
+            },
+          ),
+        },
+      ],
+    });
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Private handoff");
+    expect(container.textContent).toContain("Change request captured");
+    expect(container.textContent).toContain("Your note: Make the proof more concrete.");
+    expect(container.textContent).toContain("Revise the current draft around this note");
+    expect(container.textContent).not.toContain("/issues/");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("requests regeneration from focused private output without exposing issue route", async () => {
     mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
     mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse());
@@ -1648,6 +1701,43 @@ describe("DearMeOnboarding", () => {
       { action: "regenerate", decisionNote: "Make it sharper before review." },
     );
     expect(container.textContent).not.toContain("/issues/");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("lets users mark prepared work as not useful from the focused output", async () => {
+    mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
+    mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse());
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      setTextareaValue(
+        container.querySelector("#dearme-focused-output-note") as HTMLTextAreaElement,
+        "This angle is not useful for the audience.",
+      );
+      buttonByText(container, "Not useful")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.reviewOutput).toHaveBeenCalledWith(
+      "company-1",
+      "issue-1:weekly_report",
+      { action: "not_useful", decisionNote: "This angle is not useful for the audience." },
+    );
 
     await act(async () => {
       root.unmount();

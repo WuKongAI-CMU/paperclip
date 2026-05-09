@@ -225,6 +225,7 @@ function reviewLoopFromChiefBriefStatus(
     lastAction: null,
     lastDecisionAt: null,
     lastDecisionNotePreview: null,
+    reviewHandoff: null,
     nextStep: needsReview
       ? "Review the prepared private move, then approve, request changes, regenerate, or mark it not useful."
       : "Chief of Staff is preparing this privately before it asks for a public or external move.",
