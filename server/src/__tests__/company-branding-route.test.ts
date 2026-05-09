@@ -205,3 +205,178 @@ describe("PATCH /api/companies/:companyId/branding", () => {
     expect(mockCompanyService.update).not.toHaveBeenCalled();
   });
 });
+
+describe("PATCH /api/companies/:companyId", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.doUnmock("../routes/companies.js");
+    vi.doUnmock("../routes/authz.js");
+    vi.doUnmock("../middleware/index.js");
+    vi.clearAllMocks();
+  });
+
+  it("rejects governance fields on the general company patch", async () => {
+    mockCompanyService.getById.mockResolvedValue(createCompany());
+    const app = await createApp({
+      type: "board",
+      userId: "user-1",
+      companyId: "company-1",
+      source: "local_implicit",
+    });
+
+    const res = await request(app)
+      .patch("/api/companies/company-1")
+      .send({
+        name: "DearMe",
+        budgetMonthlyCents: 5000,
+        spentMonthlyCents: 1000,
+        requireBoardApprovalForNewAgents: true,
+        attachmentMaxBytes: 1024 * 1024,
+        status: "archived",
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Validation error");
+    expect(mockCompanyService.update).not.toHaveBeenCalled();
+  });
+
+  it("still accepts board-owned profile and brand fields", async () => {
+    const company = { ...createCompany(), name: "DearMe", brandColor: null };
+    mockCompanyService.getById.mockResolvedValue(createCompany());
+    mockCompanyService.update.mockResolvedValue(company);
+    const app = await createApp({
+      type: "board",
+      userId: "user-1",
+      companyId: "company-1",
+      source: "local_implicit",
+    });
+
+    const res = await request(app)
+      .patch("/api/companies/company-1")
+      .send({
+        name: "DearMe",
+        description: null,
+        brandColor: null,
+      });
+
+    expect(res.status).toBe(200);
+    expect(mockCompanyService.update).toHaveBeenCalledWith("company-1", {
+      name: "DearMe",
+      description: null,
+      brandColor: null,
+    });
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        companyId: "company-1",
+        actorType: "user",
+        actorId: "user-1",
+        action: "company.updated",
+        details: {
+          name: "DearMe",
+          description: null,
+          brandColor: null,
+        },
+      }),
+    );
+  });
+});
+
+describe("PATCH /api/companies/:companyId/governance", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.doUnmock("../routes/companies.js");
+    vi.doUnmock("../routes/authz.js");
+    vi.doUnmock("../middleware/index.js");
+    vi.clearAllMocks();
+  });
+
+  it("lets board callers update governed company settings", async () => {
+    const company = {
+      ...createCompany(),
+      budgetMonthlyCents: 5000,
+      attachmentMaxBytes: 1024 * 1024,
+      requireBoardApprovalForNewAgents: true,
+    };
+    mockBudgetService.upsertPolicy.mockResolvedValue({});
+    mockCompanyService.update.mockResolvedValue(company);
+    const app = await createApp({
+      type: "board",
+      userId: "user-1",
+      companyId: "company-1",
+      source: "local_implicit",
+    });
+
+    const body = {
+      budgetMonthlyCents: 5000,
+      attachmentMaxBytes: 1024 * 1024,
+      requireBoardApprovalForNewAgents: true,
+    };
+    const res = await request(app)
+      .patch("/api/companies/company-1/governance")
+      .send(body);
+
+    expect(res.status).toBe(200);
+    expect(mockBudgetService.upsertPolicy).toHaveBeenCalledWith(
+      "company-1",
+      {
+        scopeType: "company",
+        scopeId: "company-1",
+        amount: 5000,
+        windowKind: "calendar_month_utc",
+      },
+      "user-1",
+    );
+    expect(mockCompanyService.update).toHaveBeenCalledWith("company-1", body);
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        companyId: "company-1",
+        actorType: "user",
+        actorId: "user-1",
+        action: "company.governance_updated",
+        details: body,
+      }),
+    );
+  });
+
+  it("rejects spend, tier, and profile fields on the governance patch", async () => {
+    const app = await createApp({
+      type: "board",
+      userId: "user-1",
+      companyId: "company-1",
+      source: "local_implicit",
+    });
+
+    const res = await request(app)
+      .patch("/api/companies/company-1/governance")
+      .send({
+        spentMonthlyCents: 1000,
+        tier: "pro",
+        name: "DearMe",
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Validation error");
+    expect(mockBudgetService.upsertPolicy).not.toHaveBeenCalled();
+    expect(mockCompanyService.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects agent callers even when they are CEO agents", async () => {
+    const app = await createApp({
+      type: "agent",
+      agentId: "agent-1",
+      companyId: "company-1",
+      source: "agent_key",
+      runId: "run-1",
+    });
+
+    const res = await request(app)
+      .patch("/api/companies/company-1/governance")
+      .send({ requireBoardApprovalForNewAgents: true });
+
+    expect(res.status).toBe(403);
+    expect(mockBudgetService.upsertPolicy).not.toHaveBeenCalled();
+    expect(mockCompanyService.update).not.toHaveBeenCalled();
+  });
+});
