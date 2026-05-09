@@ -17,21 +17,16 @@ Implementation slice:
   report outputs are projected by `server/src/services/dearme-workbench.ts`.
 - Adapted Lindy-style action-card behavior in the customer shell by clarifying
   Work Ready next steps, batch decision states, and after-approval outcomes.
-- Kept the UI on the existing workbench fields for this slice. The typed graph
-  is now available for the next premium work-stream/action-card UI.
+- Rendered the graph in the existing Growth cycle panel as a customer-facing
+  Growth map with connected roles, waiting decisions, and current graph
+  highlights. The UI consumes the typed graph without exposing the substrate.
 - Updated `ACTION-GRAPH-ARCHITECTURE.md` and the Symphony-style operating loop
   so worker tickets reuse Polsia/Naive/Lindy before adding DearMe-only runtime
   code.
 - Verification:
-  - `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run --maxWorkers=1`
-    passed: 1 file, 14 tests.
-  - `pnpm exec vitest server/src/__tests__/dearme-workbench.test.ts --run --maxWorkers=1`
-    passed: 1 file, 1 test.
-  - `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
-    passed: 1 file, 17 tests.
-  - `pnpm --filter @paperclipai/ui typecheck` passed.
-  - `pnpm --filter @paperclipai/server typecheck` passed.
-  - `git diff --check` passed.
+  - `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+    passed: 3 files, 32 tests.
+  - `pnpm -r typecheck` passed across the workspace.
 
 ## Polsia / Naive / Lindy Operating Loop - 2026-05-09
 
