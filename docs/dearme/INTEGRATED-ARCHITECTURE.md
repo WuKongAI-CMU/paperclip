@@ -146,20 +146,37 @@ The customer shell has started to catch up with the product spine:
 - `ui/src/pages/DearMeOnboarding.tsx` routes focused review actions back into
   `/dearme?view=decisions` instead of raw issue or approval pages.
 
-The critical current gap has moved. It is no longer "does DearMe have a product
-shell at all?" It is:
+The critical current gap has moved again after the DM-106 through DM-109
+implementation slices. It is no longer "can users review prepared work?"
 
-- output-level review and regeneration actions are still behind approval-level
-  actions;
-- Team Work Stream is still a projection of prepared work, not a full
-  block/event stream;
-- Voice & Memory ingestion is not yet a Lindy-style source management surface;
+Already true:
+
+- output-level review, rejection, regeneration, and feedback handoff exist;
+- Team Work Stream items now read like Polsia-style cycle stages instead of raw
+  run logs;
+- live feed cards can open their focused DearMe review surfaces directly;
+- the current implementation still reuses existing issues, approvals, work
+  products, comments, documents, and activity records instead of adding a
+  parallel runtime.
+
+Remaining gaps:
+
+- feed/action-card behavior is still mostly inline in
+  `ui/src/pages/DearMeOnboarding.tsx` instead of a reusable DearMe action-card
+  primitive;
+- action-needed, paused, retry, continue, and blocked states are not yet
+  first-class DearMe work-stream blocks;
+- routine telemetry and cost lineage are still thinly projected into the
+  customer work stream;
+- Voice & Memory source ingestion has not yet adopted the Lindy knowledge-base
+  setup pattern;
 - product-copy leakage still needs repeated passes because the same checkout
   preserves Paperclip compatibility identifiers below the waterline.
 
-That means the next architecture priority is not "more agents." It is turning
-prepared work into reviewable, regeneratable, learnable DearMe artifacts while
-keeping the Paperclip control plane hidden from paid-beta users.
+That means the next architecture priority is not "more agents" or a new
+runtime. It is a reusable donor-reuse spine: Polsia supplies visible motion,
+Naive/Paperclip supplies execution truth, Lindy supplies the web interaction
+grammar, and DearMe owns the customer language.
 
 ## Reuse-First Architecture Refresh
 
@@ -323,6 +340,51 @@ Do not reuse:
 
 The Lindy baseline should improve DearMe's web experience, not turn DearMe into
 Lindy.
+
+## DM-110 Donor Reuse Spine
+
+The next bounded architecture target is to turn the current inline live-feed and
+review behavior into a reusable DearMe action-card spine.
+
+Fresh read-only donor sweep:
+
+- Lindy `ActionCard.tsx` provides the strongest direct web pattern for
+  execution actions, status states, progress, and user-facing action buttons.
+- Lindy `PausedOnActionNeededComponents.tsx` provides the missing grammar for
+  blocked or user-needed work without exposing the runtime.
+- Lindy retry hooks provide the shape for retry/continue actions that do not
+  feel like raw job controls.
+- Lindy `KnowledgeBaseModal.tsx` and `KnowledgeBaseTile.tsx` are the best
+  direct source for Voice & Memory source-management UX.
+- Naive/Paperclip already gives DearMe the execution truth: issues, routines,
+  activity, documents, work products, approvals, and cost events.
+- Polsia remains the choreography reference: the user should see a team moving
+  through a growth cycle, then make a small number of high-leverage decisions.
+
+DM-110 implementation contract:
+
+1. Keep this slice architecture/docs-only so the concurrent implementation lane
+   gets a clean target.
+2. The next code slice should extract a DearMe-owned action-card component from
+   the current inline feed/review behavior.
+3. The component should copy Lindy's interaction discipline, not donor names,
+   app shell, Relay/GraphQL assumptions, logos, or no-code workflow editor.
+4. The server contract should continue projecting from Naive/Paperclip tables;
+   add new data only when the projection becomes lossy.
+5. Every card should answer: who is working, what artifact is being prepared,
+   what state it is in, what the user can do next, and whether any approval is
+   required.
+
+Recommended next implementation ticket:
+
+```text
+DM-111 DearMe ActionCard Primitive
+
+Create a reusable DearMe action-card component for live work, action-needed,
+review-ready, private-work, retry, and report-ready states. Replace the inline
+feed card action rendering in DearMeOnboarding with that component first. Do not
+add a new runtime, database table, or workflow editor.
+```
 
 ## Target Web Information Architecture
 
@@ -500,13 +562,18 @@ kernel, then parse into DearMe-safe contracts.
 
 ## Build Order From Here
 
-1. DearMe customer shell isolation
-   - Make `/dearme` feel like the product, not one tab inside a control plane.
-   - Hide or separate Paperclip admin navigation from paid-beta users.
+1. Reusable DearMe action-card spine
+   - Extract the current inline feed/review rendering into a DearMe-owned web
+     component.
+   - Adapt Lindy `ActionCard`, action-needed, retry, and paused-state patterns.
+   - Keep Polsia's visible cycle momentum and Naive/Paperclip's execution truth
+     underneath.
 
-2. Team Work Stream
+2. Team Work Stream telemetry
    - Adapt Lindy `transcriptV2` and Block concepts into a DearMe work stream.
    - Use product-safe event names and collapse internal trace detail.
+   - Project routine state and cost lineage into the feed when it helps user
+     trust.
 
 3. Voice & Memory
    - Adapt Lindy KnowledgeBase patterns for writing samples, proof, website,

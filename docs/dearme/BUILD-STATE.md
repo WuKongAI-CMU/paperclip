@@ -2,6 +2,39 @@
 
 Date: 2026-05-09
 
+## DM-110 Donor Reuse Spine - 2026-05-09
+
+Architecture integration slice:
+
+- Refreshed the integrated DearMe architecture after DM-106 through DM-109 so
+  the docs no longer describe output-level review/regeneration as missing.
+- Reconciled fresh Polsia, Naive/Paperclip, and internal assistant baseline
+  donor sweeps into one next-step spine:
+  - Polsia remains the product choreography source for visible growth-cycle
+    motion and "my team worked while I was away" proof.
+  - Naive/Paperclip remains the execution substrate for issues, routines,
+    approvals, documents, work products, activity, and cost events.
+  - The internal assistant baseline is the strongest direct web-code donor for
+    action cards, action-needed/paused states, retry, and knowledge source UX.
+- Locked the next implementation ticket as `DM-111 DearMe ActionCard Primitive`
+  instead of another broad architecture pass.
+- Added a Symphony-style worker handoff under `doc/plans/` so concurrent agents
+  can implement the next code slice without re-litigating the product direction.
+
+Verification:
+
+- `git diff --check` passed.
+- Docs-only change; no runtime tests were needed for this slice.
+
+Next:
+
+- Extract a DearMe-owned action-card component from the current inline
+  `DearMeOnboarding` feed/review rendering.
+- Use Lindy action-card/action-needed/retry patterns as source material while
+  preserving DearMe language and Naive/Paperclip execution truth.
+- After the card primitive lands, add routine telemetry and cost lineage to the
+  work stream where it improves trust.
+
 ## DM-109 Actionable Live Feed - 2026-05-09
 
 Implementation slice:

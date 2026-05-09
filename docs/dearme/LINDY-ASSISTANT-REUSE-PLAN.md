@@ -26,6 +26,41 @@ DearMe =
   + DearMe personal-brand layer
 ```
 
+## Implementation Status - 2026-05-09
+
+DearMe is already adapting the internal assistant baseline in small,
+product-safe slices instead of importing the whole app shell.
+
+Already adapted:
+
+- DM-106 made review-loop state visible without a new runtime.
+- DM-107 carried review feedback into the next prepared draft, matching the
+  assistant-loop idea that user decisions should teach the next action.
+- DM-108 turned the live feed into a cycle-aware work stream, matching the
+  transcript/action-stream lesson.
+- DM-109 made feed cards actionable by routing directly to the focused DearMe
+  review surface.
+
+Still missing:
+
+- a reusable DearMe action-card component instead of inline card behavior inside
+  `ui/src/pages/DearMeOnboarding.tsx`;
+- a first-class action-needed / paused / retry card grammar;
+- a Voice & Memory source-management surface based on the knowledge-base
+  modal/tile pattern;
+- one normalized retry/continue entrypoint that maps DearMe run or review state
+  into a customer-safe action.
+
+Next direct reuse target:
+
+```text
+Extract a DearMe-owned ActionCard primitive.
+
+Use the internal baseline ActionCard, paused-action-needed, retry, and knowledge
+source patterns as source material. Do not port the whole Relay/GraphQL
+transcript app, no-code editor, marketplace, donor copy, or donor visual brand.
+```
+
 ## Local Archive
 
 Primary archive:

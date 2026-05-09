@@ -30,6 +30,42 @@ are genuinely DearMe-specific.
 | OK Partner | Cannibalize and reshape | Reuse deliverables, memory, channel actions, provider jobs, credit ledger, and setup-blueprint flow, but rename, merge, or replace OK Partner boundaries when DearMe benefits |
 | DearMe | Thin overlay | Add Brand OS, voice profile, voice gate, personal-brand templates, opportunity scoring, portfolio semantics, Dear me reports |
 
+## Current Implementation Status - 2026-05-09
+
+The current DearMe branch has moved beyond architecture-only planning.
+
+Already implemented:
+
+- `brand_blueprint` exists as a typed DearMe contract rather than a raw
+  `setup_payload` copy.
+- DearMe routes and workbench services project from existing Paperclip/Naive
+  primitives: companies, agents, issues, routines, approvals, documents, work
+  products, activity records, and finance events.
+- DM-106 through DM-109 added visible review-loop state, feedback handoff,
+  cycle-aware team progress, and actionable live-feed review buttons without
+  adding a parallel runtime.
+- Polsia's key product lesson is now represented in the product shell: the user
+  sees a team moving through a growth cycle and can open the prepared decision
+  directly from the work stream.
+
+Still not maximized:
+
+- Naive/Paperclip routine telemetry and cost lineage are not yet fully visible
+  as DearMe-safe progress context.
+- Lindy-style reusable action cards are not yet the shared web primitive behind
+  live feed, paused states, retry, and review surfaces.
+- Voice & Memory still needs a source-ingestion surface before it can feel like
+  a durable Brand OS, not just generated text.
+
+Next reuse priority:
+
+```text
+Polsia = keep visible growth-cycle motion.
+Naive/Paperclip = keep execution, approval, document, routine, and cost truth.
+Lindy = extract reusable web action-card and action-needed patterns.
+DearMe = translate all of that into personal-brand language.
+```
+
 ## 2. Polsia Reuse
 
 Polsia should be treated as the product and automation template.
