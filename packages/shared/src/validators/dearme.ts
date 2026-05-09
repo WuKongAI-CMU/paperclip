@@ -1019,12 +1019,12 @@ export function describeDearMePaidBetaEntitlement(
     return dearMePaidBetaEntitlementSchema.parse({
       state: "paid_beta_active",
       label: "Paid beta active",
-      summary: "Paid beta is active. DearMe can start the private Brand OS cycle after approval.",
+      summary: "Paid beta is active. DearMe can start the Brand OS cycle and prepare launch-ready work.",
       canPreviewBrandOs: true,
       canRequestBrandOsApproval: true,
       canStartPrivateWork: true,
-      nextActionLabel: "Request Brand OS approval",
-      nextActionDescription: "Approve Brand OS to create the growth team, cycles, and private first outputs.",
+      nextActionLabel: "Start Brand OS",
+      nextActionDescription: "Start Brand OS to create the growth team, cycles, and first launch-ready outputs.",
     });
   }
 
@@ -1062,44 +1062,44 @@ const teamTemplate: DearMeBrandBlueprint["team"] = [
   {
     role: "chief_of_staff",
     name: "Chief of Staff",
-    mission: "Turn goals into weekly plans, live progress, and approval decisions.",
-    approvalBoundary: "Can plan and draft automatically; must ask before risky external actions.",
+    mission: "Turn goals into weekly plans, live progress, and launch decisions.",
+    approvalBoundary: "Can plan and draft automatically; external actions run inside launch boundaries.",
   },
   {
     role: "brand_strategist",
     name: "Brand Strategist",
     mission: "Shape positioning, audiences, proof points, and weekly growth themes.",
-    approvalBoundary: "Can recommend strategy changes; must ask before public claims.",
+    approvalBoundary: "Can recommend strategy changes; public claims run inside launch boundaries.",
   },
   {
     role: "voice_editor",
     name: "Voice Editor",
     mission: "Learn the user's voice and keep drafts consistent with the voice profile.",
-    approvalBoundary: "Can edit private drafts; must ask before publishing or sending.",
+    approvalBoundary: "Can edit drafts; publishing or sending runs inside launch boundaries.",
   },
   {
     role: "content_producer",
     name: "Content Producer",
     mission: "Create content drafts from proof, ideas, and weekly priorities.",
-    approvalBoundary: "Can draft and queue content; must ask before public posting.",
+    approvalBoundary: "Can draft and queue content; public posting runs inside launch boundaries.",
   },
   {
     role: "opportunity_scout",
     name: "Opportunity Scout",
     mission: "Find relevant opportunities and prepare outreach drafts.",
-    approvalBoundary: "Can research and draft outreach; must ask before sending messages.",
+    approvalBoundary: "Can research and draft outreach; sending messages run inside launch boundaries.",
   },
   {
     role: "portfolio_builder",
     name: "Portfolio Builder",
     mission: "Turn proof into portfolio, case study, and site updates.",
-    approvalBoundary: "Can draft site changes; must ask before deploying public pages.",
+    approvalBoundary: "Can draft site changes; public page changes run inside launch boundaries.",
   },
   {
     role: "growth_analyst",
     name: "Growth Analyst",
     mission: "Summarize progress, gaps, and next week's growth bets.",
-    approvalBoundary: "Can analyze and report; must ask before spending money or changing channels.",
+    approvalBoundary: "Can analyze and report; spend and channel changes run inside launch boundaries.",
   },
 ];
 
@@ -1126,7 +1126,7 @@ const riskGateTemplate: DearMeBrandBlueprint["gates"] = [
     kind: "spend_money",
     label: "Spend money",
     mode: "approval_required",
-    reason: "Paid actions require explicit user approval.",
+    reason: "Paid actions stay inside the selected launch boundary.",
   },
   {
     kind: "public_claim",
@@ -1320,7 +1320,7 @@ export function evaluateDearMeVoiceGate(input: DearMeVoiceGateEvaluation): DearM
       recommendation:
         forbiddenHits.length > 0
           ? "Remove these phrases and replace them with concrete, first-person language."
-          : "Keep the direct language and review the substance before approval.",
+          : "Keep the direct language and review the substance before launch.",
     },
     {
       kind: "generic_launch_copy",
@@ -1342,7 +1342,7 @@ export function evaluateDearMeVoiceGate(input: DearMeVoiceGateEvaluation): DearM
       status: proofSource ? "pass" : "block",
       summary: proofSource
         ? "A proof point is attached to the draft."
-        : "Public claims need a real proof point before approval.",
+        : "Public claims need a real proof point before launch.",
       evidence: proofSource ? [clampText(proofSource, 220)] : [],
       recommendation: proofSource
         ? "Check that the proof is accurate before approving the public move."
@@ -1365,7 +1365,7 @@ export function evaluateDearMeVoiceGate(input: DearMeVoiceGateEvaluation): DearM
         lengthLimits && length > lengthLimits.block
           ? "Shorten before review so the final draft fits the selected channel."
           : lengthLimits && length > lengthLimits.warn
-            ? "Tighten the draft before approval if it needs to stay skimmable."
+            ? "Tighten the draft before launch if it needs to stay skimmable."
             : "Length is within the first-pass range for review.",
     },
   ];
@@ -1384,10 +1384,10 @@ export function evaluateDearMeVoiceGate(input: DearMeVoiceGateEvaluation): DearM
     score: Math.max(0, 100 - blockCount * 30 - warnCount * 12),
     summary:
       status === "blocked_before_public"
-        ? "Blocked before public use. Fix the blocked checks, then review again before approval."
+        ? "Blocked before public use. Fix the blocked checks, then review again before launch."
         : status === "needs_voice_review"
-          ? "Needs voice review. The draft stays private until the user approves what represents them."
-          : "Ready for review. Approval is still required before any public move.",
+          ? "Needs voice review. The draft stays private until the user chooses what represents them."
+          : "Ready for launch once the user chooses the boundary.",
     approvalGate,
     checks,
     blockedActions,
@@ -1423,7 +1423,7 @@ export function createDearMeBrandBlueprint(input: DearMeBrandBlueprintSeed): Dea
       status: voiceReady ? "ready_for_gate" : "needs_samples",
       sampleCount: seed.voiceSamples.length,
       guidance: voiceReady
-        ? "Use the supplied samples to draft in the user's voice, then hold public output for approval."
+        ? "Use the supplied samples to draft in the user's voice, then keep public output inside the launch boundary."
         : "Collect at least two voice samples before treating draft tone as reliable.",
     },
     contentPillars: buildContentPillars(seed),
@@ -1434,14 +1434,14 @@ export function createDearMeBrandBlueprint(input: DearMeBrandBlueprintSeed): Dea
         title: "Weekly growth plan",
         cadence: seed.cadence,
         ownerRole: "chief_of_staff",
-        deliverables: ["Priorities", "content batch", "opportunity list", "approval queue"],
+        deliverables: ["Priorities", "content batch", "opportunity list", "launch boundary"],
       },
       {
         id: "content_pipeline",
         title: "Content pipeline",
         cadence: seed.cadence,
         ownerRole: "content_producer",
-        deliverables: ["drafts", "voice edits", "approval-ready posts"],
+        deliverables: ["drafts", "voice edits", "launch-ready posts"],
       },
       {
         id: "portfolio_refresh",
@@ -1481,8 +1481,8 @@ export function summarizeDearMeBrandBlueprint(
 ): DearMeBrandBlueprintSummary {
   return dearMeBrandBlueprintSummarySchema.parse({
     title: `Create Brand OS for ${blueprint.brand.displayName}`,
-    summary: `DearMe will create a ${blueprint.team.length}-member personal brand growth team, seed Brand OS memory, start ${blueprint.cycles.length} recurring cycles, and hold risky external actions for approval.`,
-    recommendedAction: "Approve this only after the goals, audience, channels, budget, and approval gates match the user's intent.",
+    summary: `DearMe will create a ${blueprint.team.length}-member personal brand growth team, seed Brand OS memory, start ${blueprint.cycles.length} recurring cycles, and keep public moves inside launch boundaries.`,
+    recommendedAction: "Start the Brand OS once the goals, audience, channels, budget, and launch boundaries match the user's intent.",
     nextActionOnApproval: "DearMe will prepare the Brand OS, voice profile, content pipeline, opportunity pipeline, portfolio draft, and weekly Dear me report.",
     teamMemberCount: blueprint.team.length,
     cycleCount: blueprint.cycles.length,
@@ -1512,7 +1512,7 @@ export function buildDearMeBrandBlueprintExecutionPlan(
       {
         id: "seed_voice_profile",
         title: "Seed voice profile",
-        description: "Turn provided samples into a draft voice profile and keep public output gated.",
+        description: "Turn provided samples into a draft voice profile and keep public output inside the launch boundary.",
         ownerRole: "voice_editor",
         approvalGate: "sensitive_material",
       },
@@ -1526,14 +1526,14 @@ export function buildDearMeBrandBlueprintExecutionPlan(
       {
         id: "draft_content_batch",
         title: "Draft first content batch",
-        description: "Prepare the first approval-ready drafts from goals, proof, offers, and voice samples.",
+        description: "Prepare the first launch-ready drafts from goals, proof, offers, and voice samples.",
         ownerRole: "content_producer",
         approvalGate: "publish_social",
       },
       {
         id: "draft_opportunity_list",
         title: "Draft opportunity list",
-        description: "Prepare relevant opportunity and outreach drafts without sending anything.",
+        description: "Prepare relevant opportunity and outreach drafts behind the launch boundary.",
         ownerRole: "opportunity_scout",
         approvalGate: "send_email",
       },

@@ -198,7 +198,7 @@ const CHIEF_OF_STAFF_CYCLE_CONTROLS: Array<{
     label: "Focus the week",
     helper: "Pick the highest-leverage moves.",
     message:
-      "Focus this week on the highest-leverage personal-brand move. Choose three private work items, explain why they matter, and hold external actions for approval.",
+      "Focus this week on the highest-leverage personal-brand move. Choose three work items, explain why they matter, and prepare the launch boundary for anything external.",
     icon: Gauge,
   },
   {
@@ -207,7 +207,7 @@ const CHIEF_OF_STAFF_CYCLE_CONTROLS: Array<{
     label: "Prepare content batch",
     helper: "Turn proof into reviewable drafts.",
     message:
-      "Turn my latest proof and point of view into a small content batch for review. Keep it in my voice and flag anything that needs approval before publishing.",
+      "Turn my latest proof and point of view into a small content batch. Keep it in my voice and separate the launch-ready pieces from anything that needs a boundary.",
     icon: FileText,
   },
   {
@@ -216,7 +216,7 @@ const CHIEF_OF_STAFF_CYCLE_CONTROLS: Array<{
     label: "Scout opportunities",
     helper: "Find leads and draft outreach.",
     message:
-      "Find practical opportunities I can act on this week: customers, collaborators, podcasts, jobs, or warm introductions. Prepare outreach drafts but do not send them.",
+      "Find practical opportunities I can act on this week: customers, collaborators, podcasts, jobs, or warm introductions. Prepare outreach drafts and stage them behind the launch boundary.",
     icon: Sparkles,
   },
   {
@@ -225,7 +225,7 @@ const CHIEF_OF_STAFF_CYCLE_CONTROLS: Array<{
     label: "Refresh public proof",
     helper: "Package recent work privately.",
     message:
-      "Turn recent work into a portfolio or bio update and a proof card. Keep it private until I approve the public wording.",
+      "Turn recent work into a portfolio or bio update and a proof card. Make it launch-ready and call out the public wording boundary.",
     icon: ShieldCheck,
   },
   {
@@ -307,13 +307,13 @@ function parseDearMeReviewEntryIntent(value: string | null): DearMeReviewEntryIn
 }
 
 function defaultDearMeDecisionNote(action: DearMeApprovalReviewAction) {
-  if (action === "approve") return "Approved from DearMe. This represents me.";
-  if (action === "reject") return "Rejected from DearMe. Do not move this forward.";
+  if (action === "approve") return "Launch this from DearMe. This represents me.";
+  if (action === "reject") return "Pause this from DearMe. Do not move this forward.";
   return "Please revise this from DearMe before moving forward.";
 }
 
 function defaultDearMeOutputReviewNote(action: DearMeOutputReviewAction) {
-  if (action === "approve") return "Approved from DearMe. This prepared work represents me.";
+  if (action === "approve") return "Launch this from DearMe. This prepared work represents me.";
   if (action === "request_changes") return "Please revise this from DearMe before review.";
   if (action === "regenerate") return "Please prepare another private pass of this DearMe work for review.";
   return "Please use a clearer direction before preparing the next private version.";
@@ -513,7 +513,7 @@ const REVIEW_LOOP_STATE_LABELS: Record<DearMeOutputReviewLoop["state"], string> 
   revision_requested: "Changes requested",
   regeneration_requested: "Next pass in motion",
   not_useful: "New direction needed",
-  approved: "Approved",
+  approved: "Launched",
   retry_limit_reached: "Needs clearer direction",
 };
 
@@ -676,7 +676,7 @@ function outputActionAttention(
     return {
       kind: "decision_needed",
       label: "Ready for your review",
-      detail: loop?.nextStep ?? "Open it, then approve, request changes, ask for another pass, or choose a new direction.",
+      detail: loop?.nextStep ?? "Open it, then launch, request changes, ask for another pass, or choose a new direction.",
     };
   }
   if (status === "blocked") {
@@ -816,9 +816,9 @@ const OUTPUT_KIND_LABELS: Record<DearMeOutputItem["kind"], string> = {
 };
 
 const OUTPUT_KIND_VALUE_LABELS: Record<DearMeOutputItem["kind"], string> = {
-  brand_os: "Keeps the team aligned on positioning, voice, proof, channels, and approval boundaries.",
+  brand_os: "Keeps the team aligned on positioning, voice, proof, channels, and launch boundaries.",
   voice_profile: "Protects the user's tone before private drafts become public-facing work.",
-  content_drafts: "Turns proof and point of view into material the user can approve, revise, or send back for another pass.",
+  content_drafts: "Turns proof and point of view into material the user can launch, revise, or send back for another pass.",
   opportunity_drafts: "Turns relationships and market openings into prepared next moves.",
   portfolio_update: "Converts shipped work into proof that can strengthen the user's public surface.",
   weekly_report: "Shows what changed, what needs a decision, and what the team should try next.",
@@ -859,7 +859,7 @@ const ACTION_GRAPH_KIND_LABELS: Record<DearMeActionGraphNode["kind"], string> = 
   decision: "Decision needed",
   memory_signal: "Memory update",
   report: "Dear me report",
-  guardrail: "Approval guardrail",
+  guardrail: "Launch boundary",
 };
 
 const ACTION_GRAPH_KIND_ICONS: Record<DearMeActionGraphNode["kind"], LucideIcon> = {
@@ -956,7 +956,7 @@ function selectActionGraphCards(graph: DearMeActionGraph) {
 
 function actionGraphStatusLabel(node: DearMeActionGraphNode) {
   if (node.kind === "decision") return "Waiting on you";
-  if (node.kind === "guardrail") return "Approval protected";
+  if (node.kind === "guardrail") return "Boundary protected";
   if (node.kind === "memory_signal") return "Learning";
   if (node.kind === "report") return "Report ready";
   if (node.status) return titleizeStatus(node.status);
@@ -982,15 +982,15 @@ function actionGraphNextMove(node: DearMeActionGraphNode) {
     case "work_item":
       return "The team keeps preparing this privately until it becomes reviewable.";
     case "artifact":
-      return "Open the prepared work, then approve, request changes, ask for another pass, or choose a new direction.";
+      return "Open the prepared work, then launch it, request changes, ask for another pass, or choose a new direction.";
     case "decision":
-      return "This waits for your call before it can represent you publicly or externally.";
+      return "This waits for your launch call before it can represent you publicly or externally.";
     case "memory_signal":
       return "DearMe uses this signal to make future work more accurate to your voice and proof.";
     case "report":
       return "Use this as the closing letter for what changed, what needs a call, and what comes next.";
     case "guardrail":
-      return "This keeps publishing, sending, deploying, spending, and sensitive moves behind approval.";
+      return "This keeps publishing, sending, deploying, spending, and sensitive moves inside the launch boundary.";
   }
 }
 
@@ -1341,7 +1341,7 @@ function TeamWorkstreamPanel({
         <DearMeWorkbenchSectionHeader
           icon={Sparkles}
           eyebrow="Work ready / Launch boundary"
-          description="Private work moves by default. Public posts, outbound messages, spend, and page changes come back for your call."
+          description="Private work moves by default. Public posts, outbound messages, spend, and page changes come back as one launch call."
         />
         <DearMeChecklist
           className="mt-4"
@@ -1505,7 +1505,7 @@ function FirstCycleProofPackage({
           icon={CheckCircle2}
           items={preview.approvalBoundary.blockedActions}
           itemClassName="bg-background/60"
-          aria-label="Approval boundary blocked actions"
+          aria-label="Launch boundary actions"
         />
       </DearMeWorkbenchCard>
 
@@ -1619,7 +1619,7 @@ function FocusedPreparedWorkReviewControls({
       <FieldLabel
         htmlFor={noteId}
         label="What should your team do next?"
-        hint={canReview ? "Approval gated" : "Waiting"}
+        hint={canReview ? "Launch boundary" : "Waiting"}
       />
       <p className="text-xs text-muted-foreground">
         {canReview ? description : disabledReason ?? "This prepared work is not ready for a decision yet."}
@@ -1650,7 +1650,7 @@ function FocusedPreparedWorkReviewControls({
           ) : (
             <CheckCircle2 className="h-4 w-4" />
           )}
-          Approve this work
+          Launch this work
         </Button>
         <Button
           type="button"
@@ -1739,7 +1739,7 @@ function FocusedDecisionPanel({
           trailing={
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={decision.riskGate ? "secondary" : "outline"}>
-                {decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval"}
+                {decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Launch"}
               </Badge>
               {decision.reviewLoop ? <ReviewLoopBadges loop={decision.reviewLoop} /> : null}
               <Badge variant="outline">Updated {shortDate(decision.updatedAt)}</Badge>
@@ -1750,13 +1750,13 @@ function FocusedDecisionPanel({
           <div className="rounded-md border border-border bg-background/80 p-3">
             <p className="text-xs font-medium text-muted-foreground">Prepared work</p>
             <p className="mt-1 text-sm">
-              {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Brand OS approval"}
+              {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Brand OS launch decision"}
             </p>
           </div>
           <div className="rounded-md border border-border bg-background/80 p-3">
             <p className="text-xs font-medium text-muted-foreground">State</p>
             <p className="mt-1 text-sm">
-              {decision.reviewLoop ? reviewLoopStateLabel(decision.reviewLoop) : decision.status === "pending" ? "Waiting for your call" : "Ready for review"}
+              {decision.reviewLoop ? reviewLoopStateLabel(decision.reviewLoop) : decision.status === "pending" ? "Waiting on launch call" : "Ready for review"}
             </p>
           </div>
           <div className="rounded-md border border-border bg-background/80 p-3">
@@ -1777,7 +1777,7 @@ function FocusedDecisionPanel({
             />
             <div className="mt-4 grid gap-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
               <p className="text-xs text-muted-foreground">
-                Your team prepared the move. These actions update the existing approval gate.
+                Your team prepared the move. Your call sets the launch boundary.
               </p>
               <div
                 className="grid gap-2 sm:flex sm:flex-wrap sm:justify-end"
@@ -1795,7 +1795,7 @@ function FocusedDecisionPanel({
                   ) : (
                     <CheckCircle2 className="h-4 w-4" />
                   )}
-                  Approve prepared move
+                  Launch prepared move
                 </Button>
                 <Button
                   type="button"
@@ -1877,7 +1877,7 @@ function FocusedDecisionPanel({
             <p className="mt-1 text-sm">{shortDate(batch.updatedAt)}</p>
           </div>
           <div className="rounded-md border border-border bg-background/80 p-3">
-            <p className="text-xs font-medium text-muted-foreground">Trust boundary</p>
+            <p className="text-xs font-medium text-muted-foreground">Launch boundary</p>
             <p className="mt-1 text-sm">Prepared privately. You choose what ships.</p>
           </div>
         </DearMeEvidenceGrid>
@@ -1885,7 +1885,7 @@ function FocusedDecisionPanel({
           <FocusedPreparedWorkReviewControls
             outputId={outputId}
             noteId="dearme-focused-batch-output-note"
-            description="DearMe prepared the work privately. Approve what represents you, send changes back to the team, ask for another private pass, or choose a new direction."
+            description="DearMe prepared the work privately. Launch what represents you, send changes back to the team, ask for another private pass, or choose a new direction."
             reviewState={outputReviewState}
             onReviewOutput={onReviewOutput}
           />
@@ -1941,7 +1941,7 @@ function FocusedDecisionPanel({
         <FocusedPreparedWorkReviewControls
           outputId={workItem.id}
           noteId="dearme-focused-work-output-note"
-          description="Review this prepared item in place. Nothing publishes, sends, deploys, or spends until you approve the move that represents you."
+          description="Review this launch-ready item in place. Keep it moving, request changes, or choose the boundary for what represents you."
           disabledReason="This lane is still in private work; DearMe will bring it back when it needs your call."
           isReviewable={workItem.status === "ready_for_review" || workItem.reviewLoop.state === "needs_user_review"}
           reviewState={outputReviewState}
@@ -2092,10 +2092,10 @@ function FocusedOutputPanel({
         <FieldLabel
           htmlFor="dearme-focused-output-note"
           label="What should your team do next?"
-          hint={output.isReviewable ? "Approval gated" : "Waiting"}
+          hint={output.isReviewable ? "Launch boundary" : "Waiting"}
         />
         <p className="text-xs text-muted-foreground">
-          Your team prepares the moves. You approve what represents you.
+          Your team prepares the moves. You choose what represents you.
         </p>
         <Textarea
           id="dearme-focused-output-note"
@@ -2113,7 +2113,7 @@ function FocusedOutputPanel({
             ) : (
               <CheckCircle2 className="h-4 w-4" />
             )}
-            Approve this work
+            Launch this work
           </Button>
           <Button
             type="button"
@@ -2183,18 +2183,18 @@ function privateWorkActionLabel(output: DearMeOutputItem) {
 
 function workReadyNextStepLabel(status: DearMeOutputStatus) {
   if (status === "ready_for_review") {
-    return "Open it, then approve, request changes, ask for another pass, or choose a new direction.";
+    return "Open it, then launch, request changes, ask for another pass, or choose a new direction.";
   }
   if (status === "complete") return "Use it as proof or keep it in your private history.";
   if (status === "blocked") return "Review what is blocking the team before more private work continues.";
   if (status === "working") return "Track the lane; DearMe will bring it back here when it is ready.";
-  if (status === "queued") return "No action yet; the team will prepare this before asking for your call.";
+  if (status === "queued") return "No action yet; the team will prepare this before asking for the launch call.";
   return "Open it to see what changed and decide whether DearMe should continue.";
 }
 
 function decisionAfterCallLabel(riskGate?: DearMeWorkbenchDecision["riskGate"] | DearMeWorkbenchBatchDecision["riskGate"]) {
   if (riskGate) {
-    return "Approved work can move forward; changes go back to the private team before anything external happens.";
+    return "Launched work moves forward inside the boundary; changes go back to the private team.";
   }
   return "Your call updates the private review path so the team knows what to use, revise, or stop.";
 }
@@ -2671,7 +2671,7 @@ function DecisionsNeededPanel({
         icon={ShieldCheck}
         eyebrow="Decisions needed"
         title="High-leverage calls"
-        description="Approve, request changes, reject, or ask for another private pass on the moves that would represent you."
+        description="Choose what ships, request changes, pause a lane, or ask for another private pass on the moves that would represent you."
         trailing={
           waitingCount > 0 ? (
             <Badge variant="secondary">{waitingCount} waiting</Badge>
@@ -2693,7 +2693,7 @@ function DecisionsNeededPanel({
                 attention={{
                   kind: "decision_needed",
                   label: "Waiting on your decision",
-                  detail: `Review ${batch.itemCount} prepared move${batch.itemCount === 1 ? "" : "s"} before anything public or external happens.`,
+                  detail: `Choose the launch boundary for ${batch.itemCount} prepared move${batch.itemCount === 1 ? "" : "s"}.`,
                 }}
                 statusBadges={[
                   {
@@ -2726,7 +2726,7 @@ function DecisionsNeededPanel({
                   </div>
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">Choices</p>
-                    <p className="mt-1 text-sm">Approve, request changes, or ask for another private pass.</p>
+                    <p className="mt-1 text-sm">Launch, request changes, pause, or ask for another private pass.</p>
                   </div>
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">After your call</p>
@@ -2820,7 +2820,7 @@ function DecisionsNeededPanel({
                 attention={decisionActionAttention(decision)}
                 statusBadges={[
                   {
-                    label: decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval",
+                    label: decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Launch",
                     variant: decision.riskGate ? "secondary" : "outline",
                   },
                   ...(decision.reviewLoop
@@ -2837,14 +2837,14 @@ function DecisionsNeededPanel({
                   {
                     label: decision.outputKind
                       ? OUTPUT_KIND_LABELS[decision.outputKind]
-                      : "Brand OS approval",
+                      : "Brand OS launch decision",
                     variant: "outline",
                   },
                 ]}
                 footer={`Updated ${shortDate(decision.updatedAt)}`}
                 action={
                   {
-                    label: decision.approvalId ? "Approve" : "Review",
+                    label: decision.approvalId ? "Launch" : "Review",
                     onClick: () => onOpenDecision(decision),
                     disabled: !decision.approvalId && !decision.issueIdentifier && !decision.issueId,
                     variant: decision.approvalId ? "default" : "outline",
@@ -2855,12 +2855,12 @@ function DecisionsNeededPanel({
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">Prepared artifact</p>
                     <p className="mt-1 text-sm">
-                      {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Brand OS approval"}
+                      {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Brand OS launch decision"}
                     </p>
                   </div>
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">Available choices</p>
-                    <p className="mt-1 text-sm">Approve, request changes, or reject before anything public happens.</p>
+                    <p className="mt-1 text-sm">Launch, request changes, pause, or keep it private.</p>
                   </div>
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">After your call</p>
@@ -2982,9 +2982,9 @@ function OperatingLoopPanel({
           )}
         </div>
         <div className="rounded-md border border-border bg-background/80 p-4">
-          <p className="text-xs font-medium uppercase text-muted-foreground">Safety boundary</p>
+          <p className="text-xs font-medium uppercase text-muted-foreground">Launch boundary</p>
           <p className="mt-2 text-sm text-foreground/85">
-            Private work keeps moving. Public posts, outbound messages, page changes, and spend come back for your call.
+            Private work keeps moving. Public posts, outbound messages, page changes, and spend come back as one launch call.
           </p>
         </div>
       </div>
@@ -2994,7 +2994,7 @@ function OperatingLoopPanel({
           <div>
             <p className="text-xs font-medium uppercase text-muted-foreground">Growth map</p>
             <p className="mt-2 text-sm text-foreground/85">
-              Your team turns private work into reviewable moves, remembers what you correct, and keeps public actions gated.
+              Your team turns private work into launch-ready moves, remembers what you change, and keeps public action inside one boundary.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -4104,7 +4104,7 @@ function ChiefOfStaffComposerPanel({
             />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-muted-foreground">
-                External actions, spend, publishing, and public claims come back for your call.
+                External actions, spend, publishing, and public claims come back as one launch call.
               </p>
               <Button type="submit" disabled={disabled}>
                 {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -4116,7 +4116,7 @@ function ChiefOfStaffComposerPanel({
       </form>
       {!paidBetaActive ? (
         <div className="mt-4 rounded-md border border-border bg-background/70 px-3 py-2 text-sm text-muted-foreground">
-          Activate paid beta and approve Brand OS before briefing the private team.
+          Activate paid beta, then brief the private team.
         </div>
       ) : null}
       {error ? (
@@ -4414,7 +4414,7 @@ function PreviewPanel({
         className="min-h-[360px] rounded-lg p-5"
         icon={Sparkles}
         title="First cycle preview"
-        description="Preview shows the team, first-cycle artifacts, budget, memory seeds, and approval gates before anything is applied."
+        description="Preview shows the team, first-cycle artifacts, budget, memory seeds, and launch boundaries before the first cycle starts."
       />
     );
   }
@@ -4423,7 +4423,7 @@ function PreviewPanel({
     <section className="space-y-4" aria-label="Brand OS preview">
       {!previewMatchesForm ? (
         <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-          Refresh the preview before requesting approval.
+          Refresh the preview before starting Brand OS.
         </div>
       ) : null}
 
@@ -4442,7 +4442,7 @@ function PreviewPanel({
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Metric icon={Users} label="Team" value={preview.summary.teamMemberCount} />
           <Metric icon={Workflow} label="Cycles" value={preview.summary.cycleCount} />
-          <Metric icon={ShieldCheck} label="Approval gates" value={preview.summary.riskGateCount} />
+          <Metric icon={ShieldCheck} label="Launch boundaries" value={preview.summary.riskGateCount} />
           <Metric icon={CircleDollarSign} label="Monthly budget" value={money(preview.blueprint.budgetPolicy.monthlyCents)} />
         </div>
       </div>
@@ -4742,7 +4742,7 @@ function PrivateWorkPanel({
           className="mt-4"
           icon={Workflow}
           title="Private work has not started yet"
-          description="Approve Brand OS to start the private team cycle."
+          description="Launch Brand OS to start the private team cycle."
         />
       ) : (
         <>
@@ -5063,7 +5063,7 @@ export function DearMeOnboarding() {
 
   function handleApplyRequest() {
     if (!previewResult || !previewMatchesForm) {
-      setActionError("Refresh the preview before requesting approval.");
+      setActionError("Refresh the preview before starting Brand OS.");
       return;
     }
     if (!canRequestPaidBetaWork) {
@@ -5162,7 +5162,7 @@ export function DearMeOnboarding() {
               disabled={requestDisabled}
             >
               {applyRequestMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              Request approval
+              Start Brand OS
               <ArrowRight className="h-4 w-4" />
             </Button>
           </>
@@ -5324,7 +5324,7 @@ export function DearMeOnboarding() {
 
           <TextAreaField
             id="dearme-constraints"
-            label="Approval boundaries"
+            label="Launch boundaries"
             hint={FIELD_HELP.constraints}
             value={form.constraints}
             onChange={(value) => updateField("constraints", value)}
@@ -5340,7 +5340,7 @@ export function DearMeOnboarding() {
             <div className="flex min-h-10 items-center justify-between gap-4 rounded-md border border-border px-3 py-2">
               <div>
                 <p className="text-sm font-medium">Auto-draft</p>
-                <p className="text-xs text-muted-foreground">Private drafts only</p>
+                <p className="text-xs text-muted-foreground">Drafts start privately</p>
               </div>
               <ToggleSwitch
                 checked={form.autoDraftEnabled}
@@ -5351,7 +5351,7 @@ export function DearMeOnboarding() {
 
           <TextAreaField
             id="dearme-approval-note"
-            label="Approval note"
+            label="Team note"
             value={form.approvalNote}
             rows={3}
             onChange={(value) => updateField("approvalNote", value)}

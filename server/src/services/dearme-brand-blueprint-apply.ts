@@ -250,7 +250,7 @@ function renderDearMeReportDocument(payload: DearMeBrandBlueprintApplyPayload) {
     "- No reviewable drafts have been reported yet.",
     "",
     "## Decisions Needed",
-    "- Confirm which private drafts should move toward external approval gates.",
+    "- Choose which private drafts should move toward the launch boundary.",
     "",
     "## Outcomes and Signals",
     "- No live channel or opportunity signals have been reported yet.",
@@ -304,7 +304,7 @@ function renderBrandOsIssueDescription(payload: DearMeBrandBlueprintApplyPayload
     "Acceptance:",
     "- Brand OS document reflects identity, positioning, goals, audiences, proof, offers, channels, constraints, and budget.",
     "- Voice profile document records whether more samples are needed.",
-    "- Approval gates document lists every risky action that still requires explicit approval.",
+    "- Launch boundaries document lists every public, outbound, spend, and channel action that still needs the user's launch call.",
     "",
     `Memory seeds created in document form: ${blueprint.memorySeeds.length}`,
   ].join("\n");
@@ -319,7 +319,7 @@ function renderRoutineDescription(cycle: DearMeBrandBlueprint["cycles"][number],
     ...renderVoiceAndMemoryTaskContext(payload.brandBlueprint),
     "",
     "Operating boundary:",
-    "This routine may plan, research, and draft privately. It must create a follow-up approval before publishing, sending messages, deploying public pages, spending money, changing channel connections, using sensitive material, making public claims, or deleting existing work.",
+    "This routine may plan, research, and draft privately. It must create a follow-up launch decision before publishing, sending messages, deploying public pages, spending money, changing channel connections, using sensitive material, making public claims, or deleting existing work.",
   ].join("\n");
 }
 
@@ -361,8 +361,8 @@ function renderDraftIssueDescription(
         "Opportunity scope:",
         "- Identify and prioritize outbound opportunities across channels aligned with the brand positioning and preferences.",
         "- Produce a shortlist with contact reasoning, outreach angle, relevance score (1-10), and a one-sentence recommendation.",
-        "- Draft email/DM outreach templates for the top opportunities, but do not send any message.",
-        "- Mark any assumptions and unknowns clearly, then propose the next approval-ready actions.",
+        "- Draft email/DM outreach templates for the top opportunities and stage them for the launch call.",
+        "- Mark any assumptions and unknowns clearly, then propose the next launch-ready actions.",
       ]
     : [];
   const contentScope = isDraftContentBatch
@@ -372,7 +372,7 @@ function renderDraftIssueDescription(
         "- Draft personal-brand content for the preferred channels using the Brand OS goals, proof points, offers, and pillars.",
         "- Focus on audience value, proof-backed point of view, portfolio credibility, and approved offers.",
         "- Do not draft generic greeting-card, birthday, reminder, or app-marketing copy unless the Brand OS explicitly requests it.",
-        "- Include channel, audience, hook, draft body, proof used, and required approval gate for every item.",
+        "- Include channel, audience, hook, draft body, proof used, and required launch boundary for every item.",
       ]
     : [];
   const artifactBoundaryLine = isWeeklyReportScheduling
@@ -457,7 +457,7 @@ export function dearmeBrandBlueprintApplyService(db: Db) {
         role: member.role,
         title: member.name,
         reportsTo: null,
-        capabilities: `${member.mission}\n\nApproval boundary: ${member.approvalBoundary}`,
+        capabilities: `${member.mission}\n\nLaunch boundary: ${member.approvalBoundary}`,
         adapterType: DEARME_BRAND_BLUEPRINT_AGENT_ADAPTER_TYPE,
         adapterConfig: DEARME_BRAND_BLUEPRINT_AGENT_ADAPTER_CONFIG,
         runtimeConfig: DEARME_BRAND_BLUEPRINT_AGENT_RUNTIME_CONFIG,

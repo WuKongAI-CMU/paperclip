@@ -243,7 +243,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
         "Hook: Your personal brand should show proof while you keep building.",
         "Draft body: A short proof-backed post about shipping local AI products.",
         "Proof used: shipped a local agent runtime",
-        "Approval gate: publish social posts",
+        "Launch boundary: publish social posts",
       ].join("\n"),
       updatedAt: new Date("2026-05-07T15:01:00.000Z"),
     });
@@ -342,7 +342,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       }),
       expect.objectContaining({
         kind: "approval_gate",
-        label: "Approval boundary",
+        label: "Launch boundary",
         value: "no public claims without review.",
       }),
     ]));
@@ -395,7 +395,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       }),
       expect.objectContaining({
         kind: "approval_boundary",
-        label: "Approval boundary",
+        label: "Launch boundary",
         summary: "publish social posts",
       }),
       expect.objectContaining({
@@ -433,7 +433,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       }),
       expect.objectContaining({
         kind: "approval_boundary",
-        label: "Approval boundary",
+        label: "Launch boundary",
         summary: expect.stringContaining("approve the content"),
       }),
     ]));
@@ -463,7 +463,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       issueId,
       key: "starter-posts",
       title: "Starter posts",
-      body: "Draft body: Three proof-backed starter posts.\nApproval gate: publish social posts",
+      body: "Draft body: Three proof-backed starter posts.\nLaunch boundary: publish social posts",
       updatedAt: new Date("2026-05-07T16:01:00.000Z"),
     });
     const workProductId = randomUUID();

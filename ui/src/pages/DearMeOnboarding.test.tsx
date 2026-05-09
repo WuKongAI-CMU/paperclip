@@ -186,7 +186,7 @@ function paidBetaStatus(status: "trial" | "active") {
 function reviewLoopFixture(
   state: DearMeOutputReviewLoop["state"] = "fresh",
   nextStep = state === "needs_user_review"
-    ? "Review it, then approve, request changes, ask for another pass, or choose a new direction."
+    ? "Review it, then launch, request changes, ask for another pass, or choose a new direction."
     : "Your team is preparing this privately.",
   overrides: Partial<DearMeOutputReviewLoop> = {},
 ): DearMeOutputReviewLoop {
@@ -339,7 +339,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
       {
         id: "approval:approval-ready",
         kind: "approve_brand_os",
-        title: "Approve Brand OS for Peter Studio",
+        title: "Launch Brand OS for Peter Studio",
         summary: "Review the first growth-team plan before DearMe starts private work.",
         riskGate: null,
         status: "pending",
@@ -355,7 +355,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
       {
         id: "batch:publish_social",
         title: "Review content batch",
-        summary: "1 item is ready. DearMe prepared the work; approval still controls the external move.",
+        summary: "1 item is ready. DearMe prepared the work; the launch boundary controls the external move.",
         actionLabel: "Review posts",
         action: "review_posts",
         riskGate: "publish_social",
@@ -368,7 +368,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
       {
         id: "batch:review",
         title: "Review prepared work",
-        summary: "1 item is ready. DearMe prepared the work; approval still controls the external move.",
+        summary: "1 item is ready. DearMe prepared the work; the launch boundary controls the external move.",
         actionLabel: "Review work",
         action: "review_work",
         riskGate: null,
@@ -398,7 +398,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         id: "spend:2026-05-07T14:02:00.000Z",
         kind: "spend_checkpoint",
         title: "Spend checkpoint recorded",
-        summary: "DearMe recorded $2.37 of private team work across 1 checkpoint. Billing details stay backstage; spend-sensitive moves still wait for approval.",
+        summary: "DearMe recorded $2.37 of private team work across 1 checkpoint. Billing details stay backstage; spend-sensitive moves wait for the launch call.",
         createdAt: "2026-05-07T14:02:00.000Z",
       },
     ],
@@ -468,7 +468,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         needsApproval: true,
         sourceLabel: "Prepared output",
         costImpact: null,
-        nextAction: "Review it, then approve, request changes, ask for another pass, or choose a new direction.",
+        nextAction: "Review it, then launch, request changes, ask for another pass, or choose a new direction.",
         relatedOutputId: "issue-2:content_drafts",
         issueId: "issue-2",
         issueIdentifier: "PET-8",
@@ -528,7 +528,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         needsApproval: false,
         sourceLabel: "Cycle cadence",
         costImpact: null,
-        nextAction: "Open prepared work only when a teammate asks for your call.",
+        nextAction: "Open prepared work only when a teammate asks for the launch call.",
         relatedOutputId: null,
         issueId: null,
         issueIdentifier: null,
@@ -542,7 +542,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         cycleStage: "work",
         role: "growth_analyst",
         title: "Spend checkpoint recorded",
-        summary: "DearMe recorded $2.37 of private team work across 1 checkpoint. Billing details stay backstage; spend-sensitive moves still wait for approval.",
+        summary: "DearMe recorded $2.37 of private team work across 1 checkpoint. Billing details stay backstage; spend-sensitive moves wait for the launch call.",
         artifact: "Spend checkpoint",
         status: "recorded",
         needsApproval: false,
@@ -567,7 +567,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         evidenceLabel: "Prepared output / Content drafts",
         status: "decision_needed",
         needsApproval: true,
-        nextAction: "Review it, then approve, request changes, ask for another pass, or choose a new direction.",
+        nextAction: "Review it, then launch, request changes, ask for another pass, or choose a new direction.",
         relatedOutputId: "issue-2:content_drafts",
         issueId: "issue-2",
         issueIdentifier: "PET-8",
@@ -795,7 +795,7 @@ function workbenchResponseWithChiefBrief() {
   const response = workbenchResponse();
   const chiefUpdatedAt = "2026-05-07T16:30:00.000Z";
   const chiefSummary =
-    "Chief of Staff accepted this private brief and is turning it into the next reviewable move. Public moves still wait for approval.";
+    "Chief of Staff accepted this private brief and is turning it into the next launch-ready move. Public moves wait for the launch call.";
   const roleNodes = [
     ["role:chief_of_staff", "Chief of Staff", "Coordinating today's brand growth plan and the next decisions."],
     ["role:brand_strategist", "Brand Strategist", "Keeping positioning, audience, proof, and offers aligned."],
@@ -962,7 +962,7 @@ function outputsResponse() {
           },
           {
             kind: "approval_boundary",
-            label: "Approval boundary",
+            label: "Launch boundary",
             summary: "Review one public claim before publishing.",
             source: "derived",
           },
@@ -1275,10 +1275,10 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("The team prepares assets");
     expect(container.textContent).toContain("You make the high-leverage calls");
     expect(container.textContent).toContain(
-      "Private work keeps moving. Public posts, outbound messages, page changes, and spend come back for your call.",
+      "Private work keeps moving. Public posts, outbound messages, page changes, and spend come back as one launch call.",
     );
     expect(container.textContent).toContain("Growth map");
-    expect(container.textContent).toContain("Your team turns private work into reviewable moves");
+    expect(container.textContent).toContain("Your team turns private work into launch-ready moves");
     expect(container.textContent).toContain("1 role connected");
     expect(container.textContent).toContain("1 lane");
     expect(container.textContent).toContain("2 assets");
@@ -1292,10 +1292,10 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Content Producer");
     expect(container.textContent).toContain("Review Starter posts");
     expect(container.textContent).toContain("Starter posts are ready");
-    expect(container.textContent).toContain("Approval guardrail");
+    expect(container.textContent).toContain("Launch boundary");
     expect(container.textContent).toContain("Voice memory updated");
     expect(container.textContent).toContain("Weekly Dear me report");
-    expect(container.textContent).toContain("This waits for your call before it can represent you publicly or externally.");
+    expect(container.textContent).toContain("This waits for your launch call before it can represent you publicly or externally.");
     expect(container.textContent).not.toContain("cycle:weekly-growth-loop");
     expect(container.textContent).not.toContain("decision:output:issue-2:content_drafts");
     expect(container.textContent).toContain("Prepared work waiting for review");
@@ -1304,7 +1304,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Review pass 0/3");
     expect(container.textContent).toContain("Needs your review");
     expect(container.textContent).toContain(
-      "Open it, then approve, request changes, ask for another pass, or choose a new direction.",
+      "Open it, then launch, request changes, ask for another pass, or choose a new direction.",
     );
     expect(
       container.querySelectorAll(
@@ -1327,13 +1327,13 @@ describe("DearMeOnboarding", () => {
       "Dear me letter",
       "Voice & Memory",
     ]);
-    expect(container.textContent).toContain("Approve Brand OS for Peter Studio");
+    expect(container.textContent).toContain("Launch Brand OS for Peter Studio");
     expect(container.textContent).toContain("Batch decisions");
     expect(container.textContent).toContain("Review content batch");
     expect(container.textContent).toContain("Review posts");
     expect(container.textContent).toContain("Waiting on you");
     expect(container.textContent).toContain("After your call");
-    expect(container.textContent).toContain("Approved work can move forward");
+    expect(container.textContent).toContain("Launched work moves forward inside the boundary");
     expect(
       container.querySelectorAll(
         '[aria-label="Decisions needed"] [data-dearme-surface="action-card"]',
@@ -1487,7 +1487,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("First operations");
 
     await act(async () => {
-      buttonByText(container, "Request approval")?.click();
+      buttonByText(container, "Start Brand OS")?.click();
     });
     await flushReact();
 
@@ -1759,7 +1759,7 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
-    const requestButton = buttonByText(container, "Request approval");
+    const requestButton = buttonByText(container, "Start Brand OS");
     expect(requestButton?.disabled).toBe(true);
     expect(container.textContent).toContain("unlock the private Brand OS cycle");
     expect(mockDearmeApi.createBrandBlueprintApplyRequest).not.toHaveBeenCalled();
@@ -2180,7 +2180,7 @@ describe("DearMeOnboarding", () => {
 
     const textarea = container.querySelector("#dearme-chief-of-staff-message") as HTMLTextAreaElement;
     expect(textarea.value).toContain("Find practical opportunities");
-    expect(textarea.value).toContain("Prepare outreach drafts but do not send them.");
+    expect(textarea.value).toContain("Prepare outreach drafts and stage them behind the launch boundary.");
 
     await act(async () => {
       buttonByText(container, "Send to Chief of Staff")?.click();
@@ -2190,7 +2190,7 @@ describe("DearMeOnboarding", () => {
     expect(mockDearmeApi.sendChiefOfStaffMessage).toHaveBeenCalledWith("company-1", {
       intent: "find_opportunities",
       message:
-        "Find practical opportunities I can act on this week: customers, collaborators, podcasts, jobs, or warm introductions. Prepare outreach drafts but do not send them.",
+        "Find practical opportunities I can act on this week: customers, collaborators, podcasts, jobs, or warm introductions. Prepare outreach drafts and stage them behind the launch boundary.",
     });
 
     await act(async () => {
@@ -2213,8 +2213,10 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
+    const decisionsSurface = surfaceByLabel(container, "Decisions needed");
+
     await act(async () => {
-      buttonByText(container, "Approve")?.click();
+      buttonByText(decisionsSurface, "Launch")?.click();
     });
 
     expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=decisions&approval=approval-ready");
@@ -2271,7 +2273,7 @@ describe("DearMeOnboarding", () => {
     const focusedDecision = surfaceByLabel(container, "Focused decision");
     expect(focusedDecision.textContent).toContain("Work focused");
     expect(focusedDecision.textContent).toContain("Dear me report");
-    expect(focusedDecision.textContent).toContain("Approve this work");
+    expect(focusedDecision.textContent).toContain("Launch this work");
     expect(focusedDecision.textContent).toContain("Request changes");
     expect(focusedDecision.textContent).toContain("Prepare another pass");
     expect(focusedDecision.textContent).toContain("Choose new direction");
@@ -2330,7 +2332,7 @@ describe("DearMeOnboarding", () => {
         focusedDecision.querySelector("#dearme-focused-work-output-note") as HTMLTextAreaElement,
         "This is ready to represent me.",
       );
-      buttonByText(focusedDecision, "Approve this work")?.click();
+      buttonByText(focusedDecision, "Launch this work")?.click();
     });
     await flushReact();
 
@@ -2433,11 +2435,11 @@ describe("DearMeOnboarding", () => {
       ...response.workStream[0]!,
       id: "decision:approval:approval-ready",
       role: "brand_strategist",
-      title: "Your call: Approve Brand OS for Peter Studio",
+      title: "Your call: Launch Brand OS for Peter Studio",
       summary: "Review the first growth-team plan before private work starts.",
       artifact: "Brand OS",
-      sourceLabel: "Approval queue",
-      nextAction: "Approve Brand OS only if the first cycle and approval boundaries match your brand.",
+      sourceLabel: "Launch queue",
+      nextAction: "Launch Brand OS when the first cycle and launch boundaries match your brand.",
       relatedOutputId: null,
       issueId: null,
       issueIdentifier: null,
@@ -2494,16 +2496,16 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     expect(container.textContent).toContain("Decision focused");
-    expect(container.textContent).toContain("Approve Brand OS for Peter Studio");
+    expect(container.textContent).toContain("Launch Brand OS for Peter Studio");
     expect(container.textContent).toContain("Review the first growth-team plan");
     expect(container.textContent).toContain("The team keeps preparing; public launch waits for your boundary");
-    expect(container.textContent).toContain("Approve prepared move");
+    expect(container.textContent).toContain("Launch prepared move");
     expect(container.textContent).toContain("Request changes");
     expect(container.textContent).toContain("Reject");
     expectMobileSafeFocusedDecision(surfaceByLabel(container, "Focused decision"), "approval-review");
     expect(container.textContent).not.toContain("/approvals/");
     expect(focusedCardsInSurface(container, "Decisions needed").some((card) =>
-      card.textContent?.includes("Approve Brand OS for Peter Studio"),
+      card.textContent?.includes("Launch Brand OS for Peter Studio"),
     )).toBe(true);
 
     await act(async () => {
@@ -2528,13 +2530,13 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     await act(async () => {
-      buttonByText(container, "Approve prepared move")?.click();
+      buttonByText(container, "Launch prepared move")?.click();
     });
     await flushReact();
 
     expect(mockApprovalsApi.approve).toHaveBeenCalledWith(
       "approval-ready",
-      "Approved from DearMe. This represents me.",
+      "Launch this from DearMe. This represents me.",
     );
     expect(mockApprovalsApi.requestRevision).not.toHaveBeenCalled();
     expect(mockApprovalsApi.reject).not.toHaveBeenCalled();
@@ -2608,7 +2610,7 @@ describe("DearMeOnboarding", () => {
 
     expect(mockApprovalsApi.reject).toHaveBeenCalledWith(
       "approval-ready",
-      "Rejected from DearMe. Do not move this forward.",
+      "Pause this from DearMe. Do not move this forward.",
     );
     expect(mockApprovalsApi.approve).not.toHaveBeenCalled();
     expect(mockApprovalsApi.requestRevision).not.toHaveBeenCalled();
@@ -2664,7 +2666,7 @@ describe("DearMeOnboarding", () => {
 
     const focusedDecision = surfaceByLabel(container, "Focused decision");
     expect(focusedDecision.textContent).toContain("Review content batch");
-    expect(focusedDecision.textContent).toContain("Approve this work");
+    expect(focusedDecision.textContent).toContain("Launch this work");
     expect(focusedDecision.textContent).toContain("Request changes");
     expect(focusedDecision.textContent).toContain("Prepare another pass");
     expect(focusedDecision.textContent).toContain("Choose new direction");
@@ -2720,7 +2722,7 @@ describe("DearMeOnboarding", () => {
 
     expect(container.textContent).toContain("Review content batch");
     expect(container.textContent).toContain("Waiting on you");
-    expect(container.textContent).toContain("Approve, request changes, or ask for another private pass.");
+    expect(container.textContent).toContain("Launch, request changes, pause, or ask for another private pass.");
     expect(container.textContent).not.toContain("No high-leverage decision is waiting right now");
 
     await act(async () => {

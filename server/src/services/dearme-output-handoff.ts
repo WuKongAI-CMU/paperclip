@@ -104,7 +104,7 @@ const OPERATION_DESCRIPTORS: Record<string, OutputDescriptor> = {
 const BRAND_OS_DESCRIPTOR: OutputDescriptor = {
   kind: "brand_os",
   title: "Brand OS",
-  summary: "Private positioning, goals, proof, offers, and approval boundaries.",
+  summary: "Private positioning, goals, proof, offers, and launch boundaries.",
   order: 10,
   documentKeys: ["brand-os", "approval-gates"],
 };
@@ -140,6 +140,8 @@ const DETAIL_EXTRACTION_LABELS = [
   "Body",
   "Proof used",
   "Proof",
+  "Launch boundary",
+  "Launch boundaries",
   "Approval gate",
   "Approval boundaries",
   "Boundaries",
@@ -239,7 +241,7 @@ function reviewLoopNextStep(state: DearMeOutputReviewLoop["state"]) {
     case "fresh":
       return "Your team is preparing this privately.";
     case "needs_user_review":
-      return "Review it, then approve, request changes, regenerate, or mark it not useful.";
+      return "Review it, then launch, request changes, ask for another pass, or mark it not useful.";
     case "revision_requested":
       return "Your team has your note and should prepare a revised version.";
     case "regeneration_requested":
@@ -247,7 +249,7 @@ function reviewLoopNextStep(state: DearMeOutputReviewLoop["state"]) {
     case "not_useful":
       return "Your team should avoid this angle and try a different route next.";
     case "approved":
-      return "Approved work is recorded as something that can represent you.";
+      return "Launched work is recorded as something that can represent you.";
     case "retry_limit_reached":
       return "Pause regeneration and give a clearer direction before spending another attempt.";
   }
@@ -466,11 +468,11 @@ function buildOutputDetails(input: {
     case "brand_os":
       addOutputDetail(details, "positioning", "Positioning", extractOutputText(input, ["Positioning", "Known for"]) ?? primary);
       addOutputDetail(details, "proof_used", "Proof", extractOutputText(input, ["Proof Points", "Proof", "Proof used"]));
-      addOutputDetail(details, "approval_gate", "Approval boundary", extractOutputText(input, ["Approval boundaries", "Boundaries", "Approval gate"]) ?? derivedText("Use these boundaries before public claims, outreach, or site updates."));
+      addOutputDetail(details, "approval_gate", "Launch boundary", extractOutputText(input, ["Launch boundaries", "Boundaries", "Approval boundaries", "Approval gate"]) ?? derivedText("Use these boundaries before public claims, outreach, or site updates."));
       break;
     case "voice_profile":
       addOutputDetail(details, "voice_guidance", "Voice guidance", extractOutputText(input, ["Voice guidance", "Guidance"]) ?? primary);
-      addOutputDetail(details, "approval_gate", "Approval gate", extractOutputText(input, ["Approval gate"]) ?? derivedText("Use this profile before any public copy represents you."));
+      addOutputDetail(details, "approval_gate", "Launch boundary", extractOutputText(input, ["Launch boundary", "Approval gate"]) ?? derivedText("Use this profile before any public copy represents you."));
       break;
     case "content_drafts":
       addOutputDetail(details, "channel", "Channel", extractOutputText(input, ["Channel"]));
@@ -478,7 +480,7 @@ function buildOutputDetails(input: {
       addOutputDetail(details, "hook", "Hook", extractOutputText(input, ["Hook"]) ?? firstSentenceText(primary));
       addOutputDetail(details, "draft_body", "Draft body", extractOutputText(input, ["Draft body", "Draft", "Body"]) ?? primary);
       addOutputDetail(details, "proof_used", "Proof used", extractOutputText(input, ["Proof used", "Proof"]));
-      addOutputDetail(details, "approval_gate", "Approval gate", extractOutputText(input, ["Approval gate"]) ?? derivedText("You approve before any post is published."));
+      addOutputDetail(details, "approval_gate", "Launch boundary", extractOutputText(input, ["Launch boundary", "Approval gate"]) ?? derivedText("The post waits for one launch call before publishing."));
       break;
     case "opportunity_drafts":
       addOutputDetail(details, "target", "Target", extractOutputText(input, ["Target", "Contact", "Opportunity"]) ?? primary);
@@ -486,13 +488,13 @@ function buildOutputDetails(input: {
       addOutputDetail(details, "relevance_score", "Relevance score", extractOutputText(input, ["Relevance score", "Score"]));
       addOutputDetail(details, "outreach_angle", "Outreach angle", extractOutputText(input, ["Outreach angle", "Angle"]));
       addOutputDetail(details, "draft_message", "Draft message", extractOutputText(input, ["Draft message", "Message"]));
-      addOutputDetail(details, "approval_gate", "Approval gate", extractOutputText(input, ["Approval gate"]) ?? derivedText("You approve before any outreach is sent."));
+      addOutputDetail(details, "approval_gate", "Launch boundary", extractOutputText(input, ["Launch boundary", "Approval gate"]) ?? derivedText("The outreach waits for one launch call before sending."));
       break;
     case "portfolio_update":
       addOutputDetail(details, "page_section", "Page or section", extractOutputText(input, ["Page section", "Section", "Page"]));
       addOutputDetail(details, "proof_source", "Proof source", extractOutputText(input, ["Proof source", "Proof"]));
       addOutputDetail(details, "proposed_copy", "Proposed copy", extractOutputText(input, ["Proposed copy", "Copy", "Recommendation"]) ?? primary);
-      addOutputDetail(details, "deploy_gate", "Deploy gate", extractOutputText(input, ["Deploy gate", "Approval gate"]) ?? derivedText("You approve before any public site update goes live."));
+      addOutputDetail(details, "deploy_gate", "Deploy boundary", extractOutputText(input, ["Deploy boundary", "Deploy gate", "Approval gate"]) ?? derivedText("The public site update waits for one launch call before going live."));
       break;
     case "weekly_report":
       addOutputDetail(details, "completed_work", "Completed work", extractOutputText(input, ["Completed work", "Work Completed"]) ?? primary);
@@ -570,7 +572,7 @@ function buildOutputSourceEvidence(input: {
     "completed_work",
     "report_reference",
   ]);
-  addSourceEvidenceFromDetail(items, "approval_boundary", "Approval boundary", input.details, [
+  addSourceEvidenceFromDetail(items, "approval_boundary", "Launch boundary", input.details, [
     "approval_gate",
     "deploy_gate",
     "decisions_needed",

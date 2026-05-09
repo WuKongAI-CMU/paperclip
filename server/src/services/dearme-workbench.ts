@@ -329,7 +329,7 @@ function reviewLoopFromChiefBriefStatus(
     lastDecisionNotePreview: null,
     reviewHandoff: null,
     nextStep: needsReview
-      ? "Review the prepared private move, then approve, request changes, regenerate, or mark it not useful."
+      ? "Review the prepared private move, then launch, request changes, ask for another pass, or mark it not useful."
       : "Chief of Staff is preparing this privately before it asks for a public or external move.",
   };
 }
@@ -350,7 +350,7 @@ function workItemFromChiefBriefIssue(input: {
   return {
     id: input.id,
     title: titleFromChiefBriefIssue(input.title),
-    summary: "Chief of Staff accepted this private brief and is turning it into the next reviewable move. Public moves still wait for approval.",
+    summary: "Chief of Staff accepted this private brief and is turning it into the next launch-ready move. Public moves wait for the launch call.",
     status,
     ownerRole: "chief_of_staff",
     outputKind: null,
@@ -423,7 +423,7 @@ function sourceLabelForWork(input: {
 function nextActionForDecision(decision: DearMeWorkbenchDecision) {
   if (decision.reviewLoop?.nextStep) return decision.reviewLoop.nextStep;
   if (decision.kind === "approve_brand_os") {
-    return "Approve Brand OS only if the first cycle and approval boundaries match how you want to be represented.";
+    return "Launch Brand OS when the first cycle and launch boundaries match how you want to be represented.";
   }
   return "Review this call so the team can continue the private growth cycle.";
 }
@@ -484,7 +484,7 @@ function nextActionForProgress(item: DearMeWorkbenchProgressItem) {
     return "Use the paid-beta guardrail before starting private work.";
   }
   if (item.kind === "cycle_check_in") {
-    return "Open prepared work only when a teammate asks for your call.";
+    return "Open prepared work only when a teammate asks for the launch call.";
   }
   if (item.kind === "spend_checkpoint") {
     return "No action needed unless a future move asks to spend money.";
@@ -541,8 +541,8 @@ function streamItemFromDecision(decision: DearMeWorkbenchDecision): DearMeWorkbe
     artifact: artifactForDecision(decision),
     status: "decision_needed",
     needsApproval: true,
-    sourceLabel: decision.approvalId ? "Approval queue" : "Prepared output",
-    costImpact: decision.riskGate === "spend_money" ? "Spend waits for approval" : null,
+    sourceLabel: decision.approvalId ? "Launch queue" : "Prepared output",
+    costImpact: decision.riskGate === "spend_money" ? "Spend waits for the launch call" : null,
     nextAction: nextActionForDecision(decision),
     relatedOutputId: decision.outputKind ? decision.id.replace(/^output:/, "") : null,
     issueId: decision.issueId,
@@ -1316,7 +1316,7 @@ function batchKeyForDecision(decision: DearMeWorkbenchDecision): DearMeBatchKey 
 
 function buildBatchSummary(count: number) {
   const subject = count === 1 ? "item is" : "items are";
-  return `${count} ${subject} ready. DearMe prepared the work; approval still controls the external move.`;
+  return `${count} ${subject} ready. DearMe prepared the work; the launch boundary controls the external move.`;
 }
 
 function buildBatchDecisions(decisions: DearMeWorkbenchDecision[]): DearMeWorkbenchBatchDecision[] {
@@ -1375,8 +1375,8 @@ function progressFromActivity(input: {
     return {
       id: input.id,
       kind: "brand_os_requested",
-      title: "Brand OS approval requested",
-      summary: "The first growth-team plan is waiting for review.",
+      title: "Brand OS launch requested",
+      summary: "The first growth-team plan is waiting for the launch call.",
       createdAt: toIso(input.createdAt),
     };
   }
@@ -1483,7 +1483,7 @@ function progressFromSpendCheckpoint(input: DearMeSpendCheckpointRow): DearMeWor
     id: `spend:${latestAt}`,
     kind: "spend_checkpoint",
     title: "Spend checkpoint recorded",
-    summary: `DearMe recorded ${moneyFromCents(totalCents)} of private team work across ${eventCount} checkpoint${eventCount === 1 ? "" : "s"}. Billing details stay backstage; spend-sensitive moves still wait for approval.`,
+    summary: `DearMe recorded ${moneyFromCents(totalCents)} of private team work across ${eventCount} checkpoint${eventCount === 1 ? "" : "s"}. Billing details stay backstage; spend-sensitive moves wait for the launch call.`,
     createdAt: latestAt,
   };
 }

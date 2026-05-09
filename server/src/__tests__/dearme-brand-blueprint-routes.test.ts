@@ -238,8 +238,8 @@ function makeFirstCycleResult() {
     },
     voiceGate: makeVoiceGateResult(),
     approvalBoundary: {
-      label: "Approval-gated by default",
-      summary: "Nothing publishes, sends, spends, or changes public pages without approval.",
+      label: "Launch boundary",
+      summary: "Public posts, sends, spend, and page changes wait for one launch call.",
       blockedActions: ["Publish social posts", "Send outreach messages", "Deploy public page changes"],
     },
     warnings: [],
@@ -375,7 +375,7 @@ describe("DearMe brand blueprint routes", () => {
           id: "output:issue-1:content_drafts",
           kind: "review_output",
           title: "Review Content drafts",
-          summary: "Your team prepared this private artifact. Approve the next move only if it represents you.",
+          summary: "Your team prepared this private artifact. Launch the next move only if it represents you.",
           riskGate: "publish_social",
           status: "needed",
           outputKind: "content_drafts",
@@ -389,7 +389,7 @@ describe("DearMe brand blueprint routes", () => {
         {
           id: "batch:publish_social",
           title: "Review content batch",
-          summary: "1 item is ready. DearMe prepared the work; approval still controls the external move.",
+          summary: "1 item is ready. DearMe prepared the work; the launch boundary controls the external move.",
           actionLabel: "Review posts",
           action: "review_posts",
           riskGate: "publish_social",
@@ -430,7 +430,7 @@ describe("DearMe brand blueprint routes", () => {
           needsApproval: true,
           sourceLabel: "Prepared output",
           costImpact: null,
-          nextAction: "Review it, then approve, request changes, regenerate, or mark it not useful.",
+          nextAction: "Review it, then launch, request changes, ask for another pass, or mark it not useful.",
           relatedOutputId: "issue-1:content_drafts",
           issueId: "issue-1",
           issueIdentifier: "PET-1",
@@ -445,11 +445,11 @@ describe("DearMe brand blueprint routes", () => {
           kind: "needs_decision",
           role: "content_producer",
           title: "Your call: Review Content drafts",
-          summary: "Your team prepared this private artifact. Approve the next move only if it represents you.",
+          summary: "Your team prepared this private artifact. Launch the next move only if it represents you.",
           evidenceLabel: "Prepared output / Content drafts",
           status: "decision_needed",
           needsApproval: true,
-          nextAction: "Review it, then approve, request changes, regenerate, or mark it not useful.",
+          nextAction: "Review it, then launch, request changes, ask for another pass, or mark it not useful.",
           relatedOutputId: "issue-1:content_drafts",
           issueId: "issue-1",
           issueIdentifier: "PET-1",
@@ -538,7 +538,7 @@ describe("DearMe brand blueprint routes", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe("recorded");
-    expect(res.body.nextStep).toContain("Approve Brand OS");
+    expect(res.body.nextStep).toContain("Launch Brand OS");
     expect(mockIssueService.create).toHaveBeenCalledWith(
       "company-1",
       expect.objectContaining({
