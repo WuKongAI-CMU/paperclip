@@ -58,7 +58,7 @@ The right reuse split is:
 
 | DearMe area | Current implementation evidence | Donor reuse status | Next gap |
 | --- | --- | --- | --- |
-| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. DM-130 now adapts Polsia's "work happened while I was away" choreography, Lindy's two-rail home composition, and Littlebird's focused step/task-row discipline into the first workbench surface. | Browser-polish the new first-screen focus across desktop and mobile, then split only if the page becomes hard to maintain. |
+| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. DM-130 adapts Polsia's "work happened while I was away" choreography, Lindy's two-rail home composition, and Littlebird's focused step/task-row discipline into the first workbench surface. DM-131 browser-polished the focus grid so the live desktop/mobile shell keeps the current work card compact and readable. | Polish the mobile shell/navigation fold next, then split only if the page becomes hard to maintain. |
 | Brand OS / `brand_blueprint` | `packages/shared/src/validators/dearme.ts`; `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/routes/dearme.ts` | Naive `setup_payload` pattern has been adapted into a typed DearMe contract and approval-gated apply flow. | Keep extending this contract only when P0 surfaces need it. |
 | Workbench projection | `server/src/services/dearme-workbench.ts`; `server/src/__tests__/dearme-workbench.test.ts` | Naive/Paperclip tables remain the substrate for team, work, decisions, progress, reports, and memory projections. | Do not add a second runtime; enrich read models first. |
 | Action graph and work stream | `docs/dearme/ACTION-GRAPH-ARCHITECTURE.md`; `packages/shared/src/validators/dearme.ts`; `ui/src/components/dearme/DearMeActionCard.tsx` | Polsia cycle/report choreography plus Lindy action-card grammar are already converging into customer-safe work cards. | Add richer detail panels instead of more tabs. |
@@ -70,6 +70,32 @@ The right reuse split is:
 | Development factory | `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` | Symphony-style worker queue is useful for bounded tickets after coordinator updates the queue. | Workers must use this ledger and `BUILD-STATE.md` before selecting old tickets. |
 
 ## Recently Completed
+
+### DM-131: Browser Polish For The DearMe Team Workbench
+
+Goal: verify and tune the DearMe first-screen workbench in a live browser after
+DM-130 made the team focus explicit.
+
+Donor grounding:
+
+- Lindy dense home/workbench rhythm: compact current-work cards should scan as
+  content, not empty containers.
+- Littlebird mobile ergonomics: the first-screen hierarchy must wrap without
+  horizontal overflow.
+- Polsia visible momentum: "work happened while I was away" must read clearly
+  in the first viewport.
+- Naive/Paperclip remains the hidden workbench projection; no new data path was
+  added.
+
+Completed:
+
+- Attempted the Browser-plugin validation path first; the current session had
+  no in-app browser backend, so the rendered pass used repo Playwright.
+- Fixed the focus grid's default stretch behavior so the "While you were away"
+  card stays top-aligned instead of filling the right status column's height.
+- Desktop `1440x1000` and mobile `390x844` browser checks passed with no
+  framework overlay, no console error/warn logs, no horizontal overflow, and a
+  working Decisions navigation.
 
 ### DM-130: Web Shell Polish From Lindy And Littlebird
 
@@ -182,23 +208,25 @@ Completed:
 
 ## Current Worker Queue
 
-### DM-131: Browser Polish For The DearMe Team Workbench
+### DM-132: Mobile Shell Navigation Polish
 
-Goal: verify and tune the current DearMe workbench in a live browser after
-DM-130 made the first-screen focus explicit.
+Goal: make the DearMe mobile shell/navigation fold feel production-ready after
+DM-131 proved the first-screen focus content is live-browser safe.
 
 Donor grounding:
 
-- Lindy polished home layout density and section rhythm.
-- Littlebird compact web task/onboarding ergonomics.
-- Polsia visible momentum and first-wow hierarchy.
+- Littlebird compact mobile shell ergonomics.
+- Lindy polished app navigation rhythm.
+- Polsia first-wow hierarchy that should remain visible without navigation
+  collisions.
 
 Acceptance:
 
-- Desktop and mobile browser checks pass.
+- Mobile browser checks pass for first viewport and longer page captures.
+- Bottom navigation does not collide with content or obscure primary review
+  actions.
 - No customer-facing donor/runtime terms appear in the DearMe paid-beta path.
-- The first viewport clearly reads as a personal brand growth team with
-  prepared work and decisions, not an operator control plane.
+- Desktop layout remains unchanged unless a shared shell fix requires it.
 
 ## Coordination Rules
 
@@ -215,6 +243,7 @@ Acceptance:
 ## Not Complete Yet
 
 DearMe is not release-ready just because these reuse decisions are documented.
-The next meaningful product gain is DM-131, because the first-screen focus now
-exists but still needs live desktop/mobile browser verification and visual
-polish against the premium DearMe web direction.
+The next meaningful product gain is DM-132, because the first-screen focus now
+passes live desktop/mobile browser verification, but the mobile shell/navigation
+fold still needs a dedicated polish pass before the product feels beta-ready on
+small screens.

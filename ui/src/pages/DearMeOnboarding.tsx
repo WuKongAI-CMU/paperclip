@@ -2234,7 +2234,7 @@ function TeamFocusWorkbenchPanel({
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
         <DearMeWorkbenchCard
           eyebrow="While you were away"
           title={latestProof?.title ?? "Your team is ready to start"}

@@ -2,6 +2,64 @@
 
 Date: 2026-05-09
 
+## DM-131 Browser Polish For The DearMe Team Workbench - 2026-05-09
+
+Implementation slice:
+
+- Browser-verified the DM-130 first-screen DearMe workbench on the live local
+  app at `http://127.0.0.1:3100/dearme`.
+- Fixed the first-screen focus grid so the "While you were away" work card
+  stays top-aligned instead of being stretched to the full height of the right
+  status column.
+- Kept the slice to layout polish only: no backend route, database table,
+  workbench contract, runtime service, dependency, or donor component import
+  changed.
+
+Donor reuse:
+
+- Lindy supplies the dense home/workbench rhythm: compact current-work cards
+  should scan as content, not empty containers.
+- Littlebird supplies the mobile ergonomics target: the same first-screen
+  hierarchy should wrap cleanly without horizontal overflow.
+- Polsia supplies the visible-momentum requirement: "work happened while I was
+  away" needs to read immediately in the first viewport.
+- Naive/Paperclip remains the hidden substrate; this slice only changes how
+  the existing workbench projection is arranged.
+
+Rejected:
+
+- Rejected adding another workbench endpoint or layout-specific data shape;
+  the issue was a CSS grid stretch artifact.
+- Rejected replacing the DearMe shell with a donor dashboard or adding a
+  separate mobile view before the current responsive shell was proven.
+
+Verification:
+
+- Browser plugin path attempted first; current session exposed no in-app
+  browser backend, so the rendered pass used the repo Playwright fallback.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 1 file, 34 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check` passed.
+- Customer-surface hidden-term scan over the touched DearMe onboarding UI/test
+  files returned no matches.
+- Playwright desktop `1440x1000` on `/dearme` passed: title
+  `Team · DearMe · DearMe`, redirected URL `/DEAA/dearme`, required focus
+  copy present, Vite/Next/Webpack overlay selectors all `0`, console
+  error/warn logs empty, horizontal overflow false, and the `Decisions` link
+  navigated to `/DEAA/dearme?view=decisions`.
+- Playwright mobile `390x844` passed: required focus copy present, overlay
+  selectors all `0`, console error/warn logs empty, and horizontal overflow
+  false.
+- Screenshot evidence: `/tmp/dearme-dm131-desktop-fixed.png`,
+  `/tmp/dearme-dm131-mobile-fixed.png`, and
+  `/tmp/dearme-dm131-decisions-fixed.png`.
+
+Next:
+
+- Use the next product ticket to polish the mobile shell/navigation fold where
+  longer full-page captures can still collide with the bottom navigation.
+
 ## DM-130 Web Shell Polish From Lindy And Littlebird - 2026-05-09
 
 Implementation slice:
@@ -53,8 +111,7 @@ Verification:
 
 Next:
 
-- Use the next product ticket to make the same first-screen focus work in the
-  live browser across desktop and mobile.
+- Completed by DM-131; continue with mobile shell/navigation polish.
 
 ## DM-129 Automation Reliability And Cost Policy - 2026-05-09
 
