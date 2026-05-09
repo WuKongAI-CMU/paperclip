@@ -6,6 +6,7 @@ import {
   DEARME_MEMORY_SOURCE_INPUT_MODES,
   DEARME_MEMORY_UPDATE_KINDS,
   DEARME_PAID_BETA_MIN_PAYMENT_CENTS,
+  createDearMeFirstCyclePreview,
   type DearMeActionGraph,
   type DearMeActionGraphNode,
   type DearMeBrandBlueprintExecutionPlan,
@@ -1243,6 +1244,29 @@ const FIRST_CYCLE_ARTIFACTS = [
   "First growth plan",
 ];
 
+const SAMPLE_FIRST_CYCLE_PREVIEW = createDearMeFirstCyclePreview("sample-company", {
+  brand: {
+    displayName: "Maya Chen",
+    positioning: "Known for turning messy customer research into calm B2B product decisions",
+    goals: [
+      "Become a trusted product strategy voice",
+      "Turn weekly research into proof-backed content",
+    ],
+    audiences: ["B2B SaaS founders"],
+    proofPoints: ["Ran 42 customer interviews that changed a pricing launch"],
+    offers: ["a product positioning teardown"],
+    voiceSamples: [
+      "I prefer clear, practical writing that starts from what users actually did.",
+      "My best posts use one concrete example, one decision, and one next step.",
+    ],
+    preferredChannels: ["linkedin", "newsletter", "portfolio"],
+    constraints: ["No invented metrics", "Ask before public outreach"],
+    cadence: "weekly",
+    budgetMonthlyCents: 25_000,
+    autoDraftEnabled: true,
+  },
+});
+
 function outputPreview(output: DearMeOutputItem) {
   return (
     output.documents[0]?.bodyPreview ||
@@ -1297,7 +1321,7 @@ function TeamWorkstreamPanel({
         <DearMeWorkbenchSectionHeader
           icon={Users}
           eyebrow="Your personal brand growth team"
-          description="Team visible, machinery hidden. DearMe prepares the moves; you approve what represents you."
+          description="Team visible, machinery hidden. DearMe starts planning, drafting, scouting, and packaging proof before you manage settings."
           trailing={<Badge variant={paidBetaActive ? "default" : "secondary"}>{statusLabel}</Badge>}
         />
 
@@ -1315,9 +1339,9 @@ function TeamWorkstreamPanel({
 
       <aside className="rounded-lg border border-border p-5">
         <DearMeWorkbenchSectionHeader
-          icon={ShieldCheck}
-          eyebrow="Work ready / Decisions needed"
-          description="No publishing, sending, deploying, or spending happens without approval by default."
+          icon={Sparkles}
+          eyebrow="Work ready / Launch boundary"
+          description="Private work moves by default. Public posts, outbound messages, spend, and page changes come back for your call."
         />
         <DearMeChecklist
           className="mt-4"
@@ -1375,11 +1399,11 @@ function FirstCyclePanel({
 
         <div className="rounded-md border border-border bg-muted/20 p-4">
           <div className="flex items-center gap-2 text-sm font-medium">
-            <ShieldCheck className="h-4 w-4" />
-            Prepared privately
+            <Sparkles className="h-4 w-4" />
+            Already preparing
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            Your team prepares the moves. Nothing publishes, sends, spends, or changes public pages without approval.
+            DearMe starts with useful private work: posts, opportunities, proof, and a plan. Public posts, outbound messages, spend, and page changes come back for your final call.
           </p>
           <DearMeChecklist
             className="mt-4 sm:grid-cols-2"
@@ -1390,82 +1414,107 @@ function FirstCyclePanel({
         </div>
       </div>
 
-      {preview ? (
-        <div className="mt-5 space-y-4">
-          <DearMeWorkbenchCard
-            title={preview.voiceProfile.title}
-            description={preview.voiceProfile.guidance}
-            badge={
-              <Badge variant={preview.voiceProfile.status === "ready_for_gate" ? "default" : "secondary"}>
-                {preview.voiceProfile.status === "ready_for_gate" ? "Voice ready" : "Needs samples"}
-              </Badge>
-            }
-          >
-            <div className="flex flex-wrap gap-2">
-              {preview.voiceProfile.draftTone.map((tone) => (
-                <Badge key={tone} variant="outline">{tone}</Badge>
-              ))}
-            </div>
-          </DearMeWorkbenchCard>
+      <FirstCycleProofPackage
+        preview={preview ?? SAMPLE_FIRST_CYCLE_PREVIEW}
+        isSample={!preview}
+      />
+    </DearMePanel>
+  );
+}
 
-          <VoiceGatePanel gate={preview.voiceGate} />
-
-          <section className="grid gap-3 lg:grid-cols-3">
-            {preview.starterPosts.map((post) => (
-              <DearMeWorkbenchCard
-                key={post.id}
-                title={post.title}
-                description={post.body}
-                badge={<Badge variant="outline">{CHANNEL_LABELS[post.channel]}</Badge>}
-              >
-                <p className="text-sm font-medium text-foreground/80">{post.hook}</p>
-              </DearMeWorkbenchCard>
-            ))}
-          </section>
-
-          <section className="grid gap-3 lg:grid-cols-3">
-            <DearMeWorkbenchCard
-              eyebrow="Opportunity lead"
-              title={preview.opportunityLead.title}
-              description={preview.opportunityLead.draftMessage}
-              badge={<Users className="h-4 w-4 text-muted-foreground" />}
-            />
-            <DearMeWorkbenchCard
-              eyebrow="Portfolio proof card"
-              title={preview.portfolioProofCard.placement}
-              description={preview.portfolioProofCard.proposedCopy}
-              badge={<FileText className="h-4 w-4 text-muted-foreground" />}
-            />
-            <DearMeWorkbenchCard
-              eyebrow="First growth plan"
-              title="First growth plan"
-              description={preview.growthPlan.summary}
-              badge={<Gauge className="h-4 w-4 text-muted-foreground" />}
-            />
-          </section>
-
-          <DearMeWorkbenchCard
-            title={preview.approvalBoundary.label}
-            description={preview.approvalBoundary.summary}
-            badge={<ShieldCheck className="h-4 w-4 text-muted-foreground" />}
-          >
-            <DearMeChecklist
-              className="sm:grid-cols-2"
-              icon={CheckCircle2}
-              items={preview.approvalBoundary.blockedActions}
-              itemClassName="bg-background/60"
-              aria-label="Approval boundary blocked actions"
-            />
-          </DearMeWorkbenchCard>
-
-          {preview.warnings.length > 0 ? (
-            <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-              {preview.warnings[0]}
-            </div>
-          ) : null}
+function FirstCycleProofPackage({
+  preview,
+  isSample,
+}: {
+  preview: DearMeFirstCyclePreviewResponse;
+  isSample: boolean;
+}) {
+  return (
+    <div className="mt-5 space-y-4" aria-label={isSample ? "Sample first-cycle proof package" : "First-cycle proof package"}>
+      {isSample ? (
+        <div className="flex flex-col gap-2 rounded-md border border-border bg-background/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Badge variant="secondary">Sample team package</Badge>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Maya's team prepared private posts, one opportunity, a proof card, and a first plan.
+            </p>
+          </div>
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Private preview</span>
         </div>
       ) : null}
-    </DearMePanel>
+
+      <DearMeWorkbenchCard
+        title={preview.voiceProfile.title}
+        description={preview.voiceProfile.guidance}
+        badge={
+          <Badge variant={preview.voiceProfile.status === "ready_for_gate" ? "default" : "secondary"}>
+            {preview.voiceProfile.status === "ready_for_gate" ? "Voice ready" : "Needs samples"}
+          </Badge>
+        }
+      >
+        <div className="flex flex-wrap gap-2">
+          {preview.voiceProfile.draftTone.map((tone) => (
+            <Badge key={tone} variant="outline">{tone}</Badge>
+          ))}
+        </div>
+      </DearMeWorkbenchCard>
+
+      <VoiceGatePanel gate={preview.voiceGate} />
+
+      <section className="grid gap-3 lg:grid-cols-3">
+        {preview.starterPosts.map((post) => (
+          <DearMeWorkbenchCard
+            key={post.id}
+            title={post.title}
+            description={post.body}
+            badge={<Badge variant="outline">{CHANNEL_LABELS[post.channel]}</Badge>}
+          >
+            <p className="text-sm font-medium text-foreground/80">{post.hook}</p>
+          </DearMeWorkbenchCard>
+        ))}
+      </section>
+
+      <section className="grid gap-3 lg:grid-cols-3">
+        <DearMeWorkbenchCard
+          eyebrow="Opportunity lead"
+          title={preview.opportunityLead.title}
+          description={preview.opportunityLead.draftMessage}
+          badge={<Users className="h-4 w-4 text-muted-foreground" />}
+        />
+        <DearMeWorkbenchCard
+          eyebrow="Portfolio proof card"
+          title={preview.portfolioProofCard.placement}
+          description={preview.portfolioProofCard.proposedCopy}
+          badge={<FileText className="h-4 w-4 text-muted-foreground" />}
+        />
+        <DearMeWorkbenchCard
+          eyebrow="First growth plan"
+          title="First growth plan"
+          description={preview.growthPlan.summary}
+          badge={<Gauge className="h-4 w-4 text-muted-foreground" />}
+        />
+      </section>
+
+      <DearMeWorkbenchCard
+        title={preview.approvalBoundary.label}
+        description={preview.approvalBoundary.summary}
+        badge={<ShieldCheck className="h-4 w-4 text-muted-foreground" />}
+      >
+        <DearMeChecklist
+          className="sm:grid-cols-2"
+          icon={CheckCircle2}
+          items={preview.approvalBoundary.blockedActions}
+          itemClassName="bg-background/60"
+          aria-label="Approval boundary blocked actions"
+        />
+      </DearMeWorkbenchCard>
+
+      {preview.warnings.length > 0 ? (
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+          {preview.warnings[0]}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -1711,8 +1760,8 @@ function FocusedDecisionPanel({
             </p>
           </div>
           <div className="rounded-md border border-border bg-background/80 p-3">
-            <p className="text-xs font-medium text-muted-foreground">Trust boundary</p>
-            <p className="mt-1 text-sm">Nothing public happens without approval.</p>
+            <p className="text-xs font-medium text-muted-foreground">Launch boundary</p>
+            <p className="mt-1 text-sm">The team keeps preparing; public launch waits for your boundary.</p>
           </div>
         </DearMeEvidenceGrid>
         {decision.approvalId ? (
@@ -2316,7 +2365,7 @@ function TeamFocusWorkbenchPanel({
         icon={Sparkles}
         eyebrow="Today's operating focus"
         title="Your team is turning private work into visible proof."
-        description="Start with the few moves that need your judgment. Drafts, reports, and opportunities stay private until you approve what represents you."
+        description="Start with visible work: drafts, reports, opportunities, and proof your team already moved forward, plus the few decisions that matter."
         trailing={
           <Badge variant={paidBetaActive ? "default" : "secondary"}>
             {paidBetaActive ? "Team working" : "Private work locked"}
@@ -2888,7 +2937,7 @@ function OperatingLoopPanel({
         icon={Workflow}
         eyebrow="Growth cycle"
         title="Plan, work, review, then learn."
-        description="DearMe keeps the operating rhythm visible while the underlying work stays private and approval-gated."
+        description="DearMe keeps the operating rhythm visible while private work keeps moving in the background."
         trailing={
           <Badge variant={paidBetaActive ? "default" : "secondary"}>
             {paidBetaActive ? "Cycle active" : "Preview mode"}
@@ -2935,7 +2984,7 @@ function OperatingLoopPanel({
         <div className="rounded-md border border-border bg-background/80 p-4">
           <p className="text-xs font-medium uppercase text-muted-foreground">Safety boundary</p>
           <p className="mt-2 text-sm text-foreground/85">
-            Nothing publishes, sends, deploys, or spends without your approval.
+            Private work keeps moving. Public posts, outbound messages, page changes, and spend come back for your call.
           </p>
         </div>
       </div>
@@ -3977,7 +4026,7 @@ function ChiefOfStaffComposerPanel({
         icon={MessageSquare}
         eyebrow="Chief of Staff"
         title="Brief the team"
-        description="Ask for the next plan, a content batch, opportunity research, a portfolio update, or this week's direction. DearMe keeps the work private until you approve a move."
+        description="Ask for the next plan, a content batch, opportunity research, a portfolio update, or this week's direction. DearMe turns the ask into reviewable work automatically."
         trailing={
           <Badge variant={paidBetaActive ? "secondary" : "outline"}>
             {paidBetaActive ? "Private work ready" : "Paid beta needed"}
@@ -3989,7 +4038,7 @@ function ChiefOfStaffComposerPanel({
           <div>
             <p className="text-xs font-medium uppercase text-muted-foreground">Cycle controls</p>
             <p className="mt-1 text-sm text-foreground/85">
-              Pick the next private cycle; your team prepares reviewable moves and waits for approval.
+              Pick the next private cycle; your team turns it into reviewable moves.
             </p>
           </div>
           <Badge variant="outline">Review pass</Badge>
@@ -4055,7 +4104,7 @@ function ChiefOfStaffComposerPanel({
             />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-muted-foreground">
-                External actions, spend, publishing, and public claims still come back for approval.
+                External actions, spend, publishing, and public claims come back for your call.
               </p>
               <Button type="submit" disabled={disabled}>
                 {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -5093,7 +5142,7 @@ export function DearMeOnboarding() {
         description={
           <>
             Your personal brand growth team turns work, voice, proof, and relationships into posts,
-            opportunities, portfolio updates, and weekly direction. You approve what represents you.
+            opportunities, portfolio updates, and weekly direction. It starts with usable work and brings you the few decisions that matter.
           </>
         }
         actions={

@@ -61,9 +61,13 @@ Conclusion:
 
 Working rule:
 
-- For product-demo and trust-loop questions, start from Polsia.
+- For product-demo and aha-loop questions, start from Polsia.
 - For execution-state, approval, budget, isolation, and scheduling questions,
   start from Naive/Paperclip.
+- Bias toward autonomy for private work: research, planning, sample output,
+  drafting, reporting, previews, and memory updates should move without asking.
+  Keep explicit gates for the few actions that actually publish, send, deploy,
+  spend, or materially represent the user.
 
 ## Donor Evidence
 
@@ -80,7 +84,7 @@ Working rule:
 
 | DearMe area | Current implementation evidence | Donor reuse status | Next gap |
 | --- | --- | --- | --- |
-| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. DM-130 adapts Polsia's "work happened while I was away" choreography, Lindy's two-rail home composition, and Littlebird's focused step/task-row discipline into the first workbench surface. DM-131 browser-polished the focus grid so the live desktop/mobile shell keeps the current work card compact and readable. DM-132 adds a DearMe-specific mobile nav so the phone shell routes users to Home, Decisions, Work Ready, Voice, and More without showing generic workspace destinations. DM-133 makes focused decision actions mobile-safe. DM-134 adds a Brand Team Run Ledger so the first product surface records what the team tried, prepared, learned, and needs from the user. DM-135 renders the first-run generated package with its approval boundary, proving that one positioning answer can produce useful team work without exposing runtime machinery. | Next shell work should polish sample/demo proof before personal input, not create a new runtime UI. |
+| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. DM-130 adapts Polsia's "work happened while I was away" choreography, Lindy's two-rail home composition, and Littlebird's focused step/task-row discipline into the first workbench surface. DM-131 browser-polished the focus grid so the live desktop/mobile shell keeps the current work card compact and readable. DM-132 adds a DearMe-specific mobile nav so the phone shell routes users to Home, Decisions, Work Ready, Voice, and More without showing generic workspace destinations. DM-133 makes focused decision actions mobile-safe. DM-134 adds a Brand Team Run Ledger so the first product surface records what the team tried, prepared, learned, and needs from the user. DM-135 renders the first-run generated package with its approval boundary, proving that one positioning answer can produce useful team work without exposing runtime machinery. DM-136 reuses the same first-cycle contract for a private sample package so the shell proves the team output before personal input. | Next shell work should polish the home/landing composition around sample proof and Work Ready decisions, not create a new runtime UI. |
 | Brand OS / `brand_blueprint` | `packages/shared/src/validators/dearme.ts`; `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/routes/dearme.ts` | Naive `setup_payload` pattern has been adapted into a typed DearMe contract and approval-gated apply flow. | Keep extending this contract only when P0 surfaces need it. |
 | Workbench projection | `server/src/services/dearme-workbench.ts`; `server/src/__tests__/dearme-workbench.test.ts` | Naive/Paperclip tables remain the substrate for team, work, decisions, progress, reports, and memory projections. | Do not add a second runtime; enrich read models first. |
 | Action graph and work stream | `docs/dearme/ACTION-GRAPH-ARCHITECTURE.md`; `packages/shared/src/validators/dearme.ts`; `ui/src/components/dearme/DearMeActionCard.tsx` | Polsia cycle/report choreography plus Lindy action-card grammar are already converging into customer-safe work cards. DM-133 makes focused decision/detail actions mobile-safe without changing the hidden approval/output-review substrate. DM-134 adds a typed `runLedger` read model derived from the existing workbench stream, with latest memory as a fallback, without adding another event table. | Use the ledger as the customer-facing progress spine before adding notification or report surfaces. |
@@ -92,6 +96,33 @@ Working rule:
 | Development factory | `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` | Symphony-style worker queue is useful for bounded tickets after coordinator updates the queue. | Workers must use this ledger and `BUILD-STATE.md` before selecting old tickets. |
 
 ## Recently Completed
+
+### DM-136: First-Run Sample Demo Proof
+
+Goal: make DearMe's first-run surface understandable before the visitor enters
+their own positioning answer.
+
+Donor grounding:
+
+- Polsia first-wow packaging: a user should see visible work immediately.
+- Naive/Paperclip hidden substrate: reuse the typed first-cycle preview
+  generator and the same public-action boundary contract.
+- Lindy review grammar: separate prepared private work from the user's launch
+  decision without making caution the first product emotion.
+- Littlebird web ergonomics: keep the sample package compact inside the current
+  shell.
+
+Completed:
+
+- Added a sample first-cycle package for Maya Chen that includes a Voice
+  Profile, Voice Gate, starter posts, opportunity lead, portfolio proof card,
+  first growth plan, and launch boundary.
+- Refactored first-cycle rendering so the sample state and generated user state
+  share the same proof-package component.
+- Added UI coverage proving the sample renders without a backend preview call
+  and is replaced after the user starts their own first cycle.
+- Added `POLSIA-NAIVE-PM-ANALYSIS.md` as the PM/product-architect layer above
+  the existing architecture comparison and implementation reuse plan.
 
 ### DM-135: First-Run Sample Team Proof
 
@@ -332,29 +363,29 @@ Completed:
 
 ## Current Worker Queue
 
-### DM-136: Sample/Demo Proof Path
+### DM-137: Aha-First Home Composition
 
-Goal: make a new visitor understand DearMe before entering personal positioning
-or connecting real channels by showing a polished sample brand-team package and
-proof outputs.
+Goal: make the first DearMe web experience feel more like a Polsia-style team
+already working and less like a cautious setup dashboard.
 
 Donor grounding:
 
-- Polsia 90-second wow and public proof loop.
-- Naive/Paperclip first-cycle preview and sample workbench seed paths, if
-  available.
-- Lindy polished empty/sample states.
-- DearMe personal-brand semantics for content, opportunity, portfolio, voice,
-  and weekly letter progress.
+- Polsia first-screen momentum, visible work stream, and "work happened while I
+  was away" proof loop.
+- Naive/Paperclip hidden workbench, output, approval, and cost substrate.
+- Lindy polished home/action-card composition.
+- Littlebird web ergonomics for a compact, credible customer shell.
 
 Acceptance:
 
-- A user can see useful sample content, opportunity, proof, and report work
-  without connecting accounts or exposing private data.
-- The sample state clearly stays a demo/sample, not fake production activity.
+- The first viewport shows visible team motion, ready work, and decisions
+  without exposing machinery or asking the user to configure agents.
+- Sample proof, first-cycle generation, Work Ready, and Decisions Needed read
+  as one coherent product loop.
+- Private work feels autonomous by default; only external/public/spend actions
+  are visibly gated.
 - No customer-facing donor/runtime terms appear in the DearMe paid-beta path.
-- The sample path supports future onboarding conversion and founder dogfood
-  screenshots.
+- The surface is polished enough for founder dogfood screenshots.
 
 ## Coordination Rules
 
@@ -371,7 +402,7 @@ Acceptance:
 ## Not Complete Yet
 
 DearMe is not release-ready just because these reuse decisions are documented.
-The next meaningful product gain is DM-136, because the first-run generated
-package is now approval-gated and product-safe, but new visitors still need a
-polished sample proof path before entering personal positioning, connecting real
-accounts, or private sources.
+The next meaningful product gain is DM-137: turn the now-working sample and
+generated first-cycle proof into an aha-first home composition. The product
+should shock the user with visible autonomous work before it asks them to manage
+settings, sources, or approvals.

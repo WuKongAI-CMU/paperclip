@@ -1274,7 +1274,9 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Chief of Staff sets the cycle");
     expect(container.textContent).toContain("The team prepares assets");
     expect(container.textContent).toContain("You make the high-leverage calls");
-    expect(container.textContent).toContain("Nothing publishes, sends, deploys, or spends without your approval.");
+    expect(container.textContent).toContain(
+      "Private work keeps moving. Public posts, outbound messages, page changes, and spend come back for your call.",
+    );
     expect(container.textContent).toContain("Growth map");
     expect(container.textContent).toContain("Your team turns private work into reviewable moves");
     expect(container.textContent).toContain("1 role connected");
@@ -1612,6 +1614,47 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("shows a private sample team package before the user enters positioning", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Sample team package");
+    expect(container.textContent).toContain("Private preview");
+    expect(container.textContent).toContain("Maya's team prepared private posts");
+    expect(container.textContent).toContain("Maya Chen");
+    expect(container.textContent).toContain(
+      "Known for turning messy customer research into calm B2B product decisions",
+    );
+    expect(container.textContent).toContain("Draft Voice Profile");
+    expect(container.textContent).toContain("Starter post: point of view");
+    expect(container.textContent).toContain("Opportunity lead");
+    expect(container.textContent).toContain("Portfolio proof card");
+    expect(container.textContent).toContain("First growth plan");
+    expect(container.textContent).toContain("Ready to launch, with you in control");
+    expect(container.textContent).not.toContain("Approval-gated by default");
+    expect(mockDearmeApi.previewFirstCycle).not.toHaveBeenCalled();
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("starts a 90-second first cycle from one positioning answer", async () => {
     const root = createRoot(container);
     const queryClient = new QueryClient({
@@ -1629,6 +1672,7 @@ describe("DearMeOnboarding", () => {
 
     expect(container.textContent).toContain("90-second first cycle");
     expect(container.textContent).toContain("What do you want to become known for?");
+    expect(container.textContent).toContain("Sample team package");
 
     await act(async () => {
       setTextareaValue(
@@ -1660,9 +1704,11 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Opportunity lead");
     expect(container.textContent).toContain("Portfolio proof card");
     expect(container.textContent).toContain("First growth plan");
-    expect(container.textContent).toContain("Approval-gated by default");
-    expect(container.textContent).toContain("Publish social posts");
-    expect(container.textContent).toContain("Deploy public page changes");
+    expect(container.textContent).toContain("Ready to launch, with you in control");
+    expect(container.textContent).toContain("Post publicly");
+    expect(container.textContent).toContain("Update the public page");
+    expect(container.textContent).not.toContain("Approval-gated by default");
+    expect(container.textContent).not.toContain("Sample team package");
     expect((container.querySelector("#dearme-positioning") as HTMLTextAreaElement | null)?.value).toBe(
       "Known for turning research into practical AI products",
     );
@@ -2450,7 +2496,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Decision focused");
     expect(container.textContent).toContain("Approve Brand OS for Peter Studio");
     expect(container.textContent).toContain("Review the first growth-team plan");
-    expect(container.textContent).toContain("Nothing public happens without approval");
+    expect(container.textContent).toContain("The team keeps preparing; public launch waits for your boundary");
     expect(container.textContent).toContain("Approve prepared move");
     expect(container.textContent).toContain("Request changes");
     expect(container.textContent).toContain("Reject");

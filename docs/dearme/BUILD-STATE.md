@@ -2,6 +2,76 @@
 
 Date: 2026-05-09
 
+## DM-136 First-Run Sample Demo Proof - 2026-05-09
+
+Implementation slice:
+
+- Added a private sample first-cycle package to the DearMe onboarding surface so
+  a visitor can feel the personal brand team already moving before typing their
+  own positioning answer.
+- Reused the existing shared first-cycle preview generator instead of adding a
+  second demo route, backend fixture, or one-off UI data shape.
+- Refactored the first-cycle result renderer into a shared proof-package
+  component so the sample state and generated user state stay visually and
+  contractually aligned.
+- Recalibrated customer-facing copy toward Polsia-style aha-first autonomy:
+  private work keeps moving automatically, while public posts, outbound
+  messages, spend, and page changes come back as launch decisions.
+- Added focused UI coverage that proves the sample appears without calling the
+  preview API, carries the more aggressive launch-boundary language, and
+  disappears after the user starts their own first cycle.
+- Integrated the PM / product-architect donor analysis into the canonical
+  provenance order through `POLSIA-NAIVE-PM-ANALYSIS.md` and
+  `REBRAND-AND-PROVENANCE.md`.
+
+Donor reuse:
+
+- Polsia remains the choreography reference: first contact should show visible
+  work and a prepared team package, not an empty dashboard.
+- Naive/Paperclip remains the hidden implementation substrate: the sample uses
+  the existing typed first-cycle contract while presenting public/send/deploy/
+  spend control as a launch boundary instead of a concern-heavy first screen.
+- Lindy remains the review grammar reference: the proof package is presented as
+  ready private work plus one clear launch decision controlled by the user.
+- Littlebird remains the web ergonomics reference: the sample is compact and
+  readable in the existing DearMe web shell.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts
+  ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1` passed: 2 files,
+  49 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- Customer-surface hidden-term scan over `ui/src/pages/DearMeOnboarding.tsx`
+  returned no matches for donor/runtime terms.
+- Browser plugin check on
+  `http://127.0.0.1:3100/DEAA/dearme` confirmed the sample team package,
+  Maya Chen sample, and launch boundary are visible.
+- Playwright desktop/mobile check on
+  `http://127.0.0.1:3100/DEAA/dearme` passed: the sample package renders on
+  first load, the generated first-cycle package replaces it after the user
+  starts a cycle, no checked donor/runtime terms appear, and horizontal
+  overflow stays at `0`.
+- Screenshots: `/tmp/dearme-dm136-desktop-sample-demo-proof.png` and
+  `/tmp/dearme-dm136-mobile-sample-demo-proof.png`.
+- `git diff --check` passed.
+
+Product calibration:
+
+- DearMe should bias harder toward Polsia's aha-first posture. Research,
+  planning, sample output, private drafting, reports, and previews should run
+  automatically and visibly; the user should feel a team already moved before
+  they manage settings.
+- Concern should not dominate the product surface. Keep gates for actions that
+  actually affect reputation, spend, public pages, or outbound messages, but
+  express them as launch boundaries after the product has shown momentum.
+
+Next:
+
+- After DM-136, the next useful product slice is a higher-polish aha-first
+  landing/home composition around visible team motion, sample proof, and Work
+  Ready decisions, not a new runtime or donor UI transplant.
+
 ## DM-135 First-Run Sample Team Proof - 2026-05-09
 
 Implementation slice:

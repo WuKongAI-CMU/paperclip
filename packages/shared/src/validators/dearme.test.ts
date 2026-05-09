@@ -114,7 +114,8 @@ describe("DearMe brand blueprint contract", () => {
     expect(firstCycle.growthPlan.approvalGate).toBe("public_claim");
     expect(firstCycle.voiceGate.status).toBe("ready_for_review");
     expect(firstCycle.voiceGate.approvalGate).toBe("publish_social");
-    expect(firstCycle.approvalBoundary.summary).toContain("Nothing publishes");
+    expect(firstCycle.approvalBoundary.label).toBe("Ready to launch, with you in control");
+    expect(firstCycle.approvalBoundary.summary).toContain("one launch decision");
 
     const serialized = JSON.stringify(firstCycle).toLocaleLowerCase();
     for (const hiddenTerm of ["provider", "adapter", "setup_payload", "mcp", "paperclip", "openclaw"]) {

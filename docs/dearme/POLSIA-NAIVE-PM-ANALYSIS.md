@@ -223,51 +223,242 @@ Naive is most useful when it is invisible.
 
 ## What DearMe Should Not Copy
 
-Do not copy these because they weaken DearMe's product, not because we want a
-timid product:
+> 2026-05-09 calibration (Peter's doctrine): **好用、自主、aha moment、震撼。**
+> Reject items only when they damage DearMe's product mechanics, unit economics,
+> resilience, or personal-brand fit. Do not turn every aggressive move into a
+> warning label. Preserve Polsia's speed, shock, and autonomy; express external
+> action control as launch boundaries, not per-step friction.
 
-| Source | Do not copy | Product reason |
+| Source | Do not copy | Reason |
 |---|---|---|
-| Polsia | Generic startup generator framing | DearMe is for a person's public identity, not a disposable SaaS idea |
-| Polsia | Shared platform social account as default | Personal brand trust depends on the user's name, voice, and channels |
-| Polsia | Unbounded external actions | One bad public/send/spend action can destroy brand trust |
-| Polsia | Generic company templates | DearMe must feel specific to the person and their market |
-| Polsia | No voice/taste layer | Brand growth without voice memory becomes content spam |
-| Polsia | Single backend choke point | Long-running teams need recoverable execution paths |
-| Naive | Builder-first setup | DearMe customers should not start with keys, primitives, workers, or VM concepts |
-| Naive | Raw issue / worker / setup-payload language in UI | It breaks the personal-team illusion |
-| Naive | Template marketplace as customer surface | DearMe should sell outcomes, not agent inventory |
-| Naive | Per-tenant VM as default P0 promise | Too expensive and operationally heavy for first paid beta |
+| Polsia | Generic startup generator framing | Positioning: DearMe is for a person's public identity, not a disposable SaaS idea |
+| Polsia | Generic company templates | Positioning: DearMe must feel specific to the person and their market |
+| Polsia | No voice/taste layer | Engineering: brand growth without voice memory becomes content spam — voice gate is the moat |
+| Polsia | Single Sapiom backend choke point | Resilience: long-running teams need recoverable execution rails |
+| Polsia | 22 MCP servers tightly mounted via JSONB | Engineering: one MCP upgrade can break all agents; use Paperclip plugin SDK pattern |
+| Polsia | 2.3MB monolithic SPA bundle | Engineering: one-line bug → whole site down |
+| Naive | Builder-first setup (API keys, CLI, primitives in onboarding) | UX: DearMe customers do not start with `nv_sk_` keys or worker concepts |
+| Naive | Raw issue / worker / setup_payload jargon exposed in UI | UX: breaks the personal-team illusion |
+| Naive | Template marketplace as customer surface | Positioning: DearMe sells outcomes, not agent inventory |
+| Naive | Per-tenant VM as default P0 promise | Cost: too expensive and operationally heavy for first paid beta |
+| Naive | `?secret=` URL-bound admin auth | Operational: URLs leak via referer headers, browser history, screenshots |
+| Naive | `/api/public/templates` open + installCount visible | Operational: free competitive intel for copycats |
 
-The key distinction: **aggressive product motion is good; unbounded brand-risk
-automation is not.** DearMe should run hard by default inside clear boundaries.
+**Things explicitly NOT on this reject list (take the product energy):**
+short activation window, live proof, autonomous research, automatic public-context
+enrichment, launch-ready drafts, opportunity preparation, founder-style urgency,
+platform amplification when it helps distribution, and a visible "the team is
+already working" stream. These were the moves earlier drafts underweighted.
+
+The key distinction: **be aggressive on preparation and momentum; be deliberate
+on irreversible external action.** Research, drafting, enrichment from available
+public context, opportunity mapping, portfolio assembly, and launch planning
+should run automatically. Publishing, outbound, spend, and public page changes
+should run under a standing launch boundary once the user grants it, not through
+micromanaged approval chores.
 
 ---
 
-## DearMe's Aha Moment
+## DearMe's Aha Moment — the 5-minute design contract
 
-The first-run promise should be closer to Polsia than Naive:
+> 2026-05-09 doctrine (Peter): **好用、自主、aha moment、让用户被震惊到。**
+> Polsia did this with "AI builds your company in 5 minutes." DearMe
+> must do it with "AI fully understood you and started living a piece
+> of your life in 5 minutes." Below is the literal shot-list every
+> trial user must hit, second-by-second. If a user finishes onboarding
+> and hasn't been shocked at least 3 times, the product failed.
+>
+> Design rules (do not break):
+> - **Research before asking.** If connected profiles, pasted links, or public
+>   surfaces can answer, start there instead of running a setup interview.
+> - **Show what already happened, not candidates awaiting approval.**
+> - **Default button = "Let them ship".** Micromanagement UI is the
+>   secondary path, not the primary.
+> - **Numbers shown must be real.** No fake banners, no theatrical
+>   counters.
+> - **Day-0 wow must be re-hit by Day-1 ritual** or it doesn't retain.
 
-1. User gives one input: name, URL, handle, or rough paragraph.
-2. DearMe immediately starts a visible brand-team run.
-3. Within minutes, the user sees:
-   - voice read
-   - public-positioning diagnosis
-   - audience lanes
-   - content/opportunity plan
-   - first polished sample outputs
-   - private proof surface
-   - next 72-hour action plan
-4. The product says what it will do automatically next.
-5. External/public/spend actions are bundled into one strong decision package:
-   "Approve this 72-hour launch boundary."
+### 0:30 — "How do you know who I am?"
 
-This preserves the user feeling of autonomy:
+Within 30 seconds of Google OAuth, the dashboard mood line reads:
 
-- The team keeps working.
-- The user does not micromanage.
-- The product produces artifacts first.
-- Approval is about boundaries, not chores.
+> "Hey **Peter Yang**, founder of **WuKong AI** in **NYC**. I see you
+> started **brila-backend** 3 weeks ago — let me look at what you've
+> been shipping."
+
+Underneath: Google name + connected email/domain → public LinkedIn or
+homepage → company + title; GitHub public commit history → recent repos
++ activity heat; Twitter/X handle reverse-lookup from LinkedIn / homepage
+when confidence is high.
+
+Polsia move reused: automatic identity enrichment and public-context research
+without turning onboarding into a questionnaire. Data-source detail belongs in
+the account/privacy surface, not in the first-run hero.
+
+**User reaction target:** "this AI already has a dossier on me."
+
+### 1:00 — "I learned how you talk"
+
+Voice ingest finishes (last 200 tweets + last 10 LinkedIn posts +
+1 newsletter sample):
+
+> **Your voice signature**
+> - Average sentence: 8 words
+> - Direct, dry. No emoji.
+> - Top 3 phrases: "ship it", "first principles", "skin in the game"
+> - **Forbidden** (you've never used these): "leverage", "synergy", "ecosystem", "thought leader"
+> - Tone: builder, slightly bitter, no hype
+>
+> **Sample tweet I'd write for you, right now:**
+> "Spent 3 hours on a problem that turned out to be one missing semicolon. The bug was in the mirror."
+
+DearMe-original: voice profile MCP + signature_phrases +
+forbidden_phrases.
+
+**User reaction target:** "this AI writes more like me than I do."
+
+### 2:00 — "I figured out your audience"
+
+Pull top 500 followers' bio + headline + follower count:
+
+> **Your audience right now**
+> - 41% SaaS founders / indie hackers
+> - 19% AI engineers
+> - 12% VCs / angels
+> - 28% mixed builder / designer / writer
+> - Median follower-of-follower: 8.5K
+>
+> **Highest-leverage 5 people to DM this week:**
+> 1. @swyx — building Latent Space; you both know @bencera
+> 2. @geoffreylitt — overlap on local-first; 3 mutual replies
+> 3. …
+
+DearMe-original: audience graph (cross-platform follower store).
+
+**User reaction target:** "I've been on Twitter 5 years and never saw
+my audience this clearly."
+
+### 3:00 — "I already built you a site"
+
+Brand Site Builder agent has been running in parallel since 0:30:
+
+> **`peteryang.dearme.app` is live.**
+> 6 pages: hero / about / what I'm building now / writing / talks / contact
+> Color palette: lifted from your Twitter banner (charcoal + electric blue + warm white)
+> Hero copy: "Builder. Currently making AI agents that actually ship. Skin in the game since 2018."
+> [Click to see your site →]
+
+Polsia move reused: pre-emptive deployment to subdomain in parallel
+with onboarding (the `slug-{rand4}.polsia.app` pattern).
+
+**User reaction target:** "I didn't ask for a site. There's a site."
+
+### 4:00 — "I found 5 real opportunities"
+
+Opportunity Scout finishes (job boards + podcast pitch DBs +
+sponsorship pages + freelance marketplaces):
+
+> **5 opportunities, ranked by fit × leverage:**
+> 1. **Lenny's Newsletter** hiring "AI/Product writer" — **cold-DM to Lenny in your voice is drafted, click to send**
+> 2. **Acquired podcast** has a guest pitch form open — **3-paragraph pitch draft in your voice ready**
+> 3. **Klaviyo** Series B SDR role posted 6h ago — **personalized application + custom intro letter ready**
+> 4. …
+
+Polsia move reused: Cold Outreach agent + browser automation +
+Hunter.io email verification.
+
+**User reaction target:** "this isn't suggestions, this is finished
+work."
+
+### 5:00 — "Here's what I'm shipping today"
+
+Final onboarding screen, default button = **"Let them ship"**:
+
+> **Today, your DearMe team is going to:**
+> - Launch 3 cold DMs inside the selected channel boundary (drafted, voice-gated, from a connected or DearMe-assisted sender)
+> - Publish 2 X posts inside the selected channel boundary (drafted, in your voice)
+> - Reply to 4 existing comments inside the selected channel boundary (in your voice)
+> - Pitch you to 1 podcast inside the selected outreach boundary (drafted)
+>
+> Trial: 3 days. By Day 3 you'll see whether something actually landed.
+>
+> **[Let them ship →]**   [Pause everything]
+
+This is the **launch boundary** — one decision unlocks 72 hours of bounded
+autonomous work. No per-item queue unless the user restricts a lane or pauses.
+
+Polsia move reused: default-on autonomous preparation + 72-hour launch
+boundary + 3-day trial pressure curve.
+
+**User reaction target:** binary choice — release or pause. Friction = 0.
+
+---
+
+### Day-1 morning — the second shock (retention)
+
+**6 AM email arrives, subject: "dear me, day 1"**
+
+```
+Dear me, day 1.
+
+Sent 3 DMs. Lenny opened yours but hasn't replied. The Klaviyo
+recruiter replied — they want to schedule. I drafted your reply.
+
+Posted 2 tweets. The one about "the bug was in the mirror" got 47
+likes in 4 hours, 3 quote tweets, 1 reply from @swyx.
+
+I noticed your follower count went up by 23 overnight. 7 of those
+new followers are SaaS founders.
+
+Tomorrow I'm pitching 2 more podcasts and writing your /now page.
+
+— your AI
+```
+
+DearMe-original: "Dear me, day N" letter motif (Reporting agent).
+
+**User reaction target:** "this isn't a daily report. Someone is
+living a piece of my life on my behalf."
+
+### Day-3 — the conversion shock
+
+24h before trial expires:
+
+> "In 3 days I shipped 9 things in your voice. 2 of them landed
+> (Klaviyo recruiter wants a call, @swyx replied to your tweet).
+> 1 didn't (cold DM to Lenny got opened but not replied).
+>
+> Day 4 I get paused unless you pick a plan. **Which of these
+> should I keep doing for you?**"
+>
+> [☑ Cold outreach] [☑ Twitter] [☑ Podcast pitching]
+> [☐ LinkedIn] [☐ /now page updates]
+>
+> [$29/mo to keep all 5 →]
+
+Polsia move reused: 3-day trial → Stripe Connect 20% take rate
+captures the customers who graduate to revenue.
+
+**User reaction target:** paying isn't a product decision anymore —
+it's an emotional one. Not paying = firing the only entity actively
+helping me.
+
+---
+
+### Implementation gap audit (2026-05-09)
+
+| Aha moment | Status | Owner / next step |
+|---|---|---|
+| 0:30 dossier from name + email | not built | spec ticket: "Identity Researcher" service (connected profile + LinkedIn / GitHub / Twitter public-context scan) |
+| 1:00 voice signature + sample tweet | partial — voice plugin in `FORK-NOTE.md` planned | promote to P0 |
+| 2:00 audience graph + 5 named DM targets | not built | spec ticket: "Audience Graph" service + cross-platform follower store |
+| 3:00 site live at `peteryang.dearme.app` | partial — brand site builder skeleton in place | enforce 3-min SLA before onboarding ends |
+| 4:00 5 named opportunities + ready-to-send drafts | not built | spec ticket: "Opportunity Scout" agent + Hunter.io / Apollo wiring |
+| 5:00 "Let them ship" default-button onboarding | not built | reframe approve-style UI in `dearme/server/src/routes/dearme.ts` |
+| Day-1 "Dear me" letter | partial — Reporting agent exists, format not enforced | override Reporting prompt to letter format |
+| Day-3 conversion screen | not built | spec ticket: "Trial Outcome Summary" + Stripe checkout |
+
+This audit is the running P0 list for the next 4 weeks.
 
 ---
 

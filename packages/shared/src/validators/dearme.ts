@@ -1645,8 +1645,8 @@ export function createDearMeFirstCyclePreview(
       sampleCount: blueprint.voiceProfile.sampleCount,
       guidance:
         blueprint.voiceProfile.status === "ready_for_gate"
-          ? "Use the supplied samples to keep the first drafts direct, specific, and approval-ready."
-          : "Start with clear, proof-first drafts and keep tone finalization gated until more samples are available.",
+          ? "Use the supplied samples to make the first drafts direct, specific, and ready to launch."
+          : "Start with clear, proof-first drafts and sharpen the tone as more samples arrive.",
       draftTone:
         blueprint.voiceProfile.status === "ready_for_gate"
           ? ["Direct and specific", "Proof-backed", "Concrete next steps"]
@@ -1674,31 +1674,31 @@ export function createDearMeFirstCyclePreview(
     },
     growthPlan: {
       title: "First growth plan",
-      summary: "Start with one positioning decision, three private drafts, one opportunity lead, and one proof card before any public move.",
+      summary: "Start with one sharp positioning decision, three private drafts, one opportunity lead, and one proof card so the first session already feels alive.",
       priorities: [
-        "Approve the positioning before it becomes public language",
-        "Review starter posts for voice and proof accuracy",
-        "Decide whether the first opportunity is worth outreach",
+        "Lock the sharpest positioning line",
+        "Pick the first proof-backed starter post",
+        "Choose the opportunity lane worth moving on first",
       ],
       nextActions: [
-        "Voice Editor checks tone against the current samples",
-        "Content Producer prepares the three starter posts for review",
-        "Opportunity Scout keeps the outreach message private until approval",
-        "Portfolio Builder prepares the proof card without publishing it",
+        "Voice Editor sharpens tone against the current samples",
+        "Content Producer turns the three starter posts into launch-ready drafts",
+        "Opportunity Scout prepares the first outreach angle",
+        "Portfolio Builder assembles the proof card for the public site",
       ],
       ownerRole: "chief_of_staff",
       approvalGate: "public_claim",
     },
     voiceGate,
     approvalBoundary: {
-      label: "Approval-gated by default",
-      summary: "Your team prepares the moves. Nothing publishes, sends, spends, or changes public pages without approval.",
+      label: "Ready to launch, with you in control",
+      summary: "Your team keeps preparing the work automatically. Public posts, outreach, spend, and page changes wait for one launch decision.",
       blockedActions: [
-        "Publish social posts",
-        "Send outreach messages",
-        "Deploy public page changes",
-        "Spend money",
-        "Use sensitive material",
+        "Post publicly",
+        "Send outreach",
+        "Update the public page",
+        "Spend budget",
+        "Use sensitive proof",
       ],
     },
     warnings,
