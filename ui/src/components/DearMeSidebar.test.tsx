@@ -3,7 +3,7 @@
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DearMeSidebar } from "./DearMeSidebar";
+import { DearMeMobileNav, DearMeSidebar } from "./DearMeSidebar";
 
 const mockLocation = vi.hoisted(() => ({
   pathname: "/PET/dearme",
@@ -93,6 +93,49 @@ describe("DearMeSidebar", () => {
 
     const activeLink = container.querySelector("a[aria-current='page']");
     expect(activeLink?.textContent).toContain("Decisions");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("shows a compact DearMe mobile navigation without generic workspace links", async () => {
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<DearMeMobileNav visible onOpenMenu={vi.fn()} />);
+    });
+
+    expect(container.querySelector("nav[aria-label='DearMe mobile navigation']")).not.toBeNull();
+    expect(container.textContent).toContain("Home");
+    expect(container.textContent).toContain("Decisions");
+    expect(container.textContent).toContain("Work Ready");
+    expect(container.textContent).toContain("Voice");
+    expect(container.textContent).toContain("More");
+    expect(container.textContent).not.toContain("Issues");
+    expect(container.textContent).not.toContain("Agents");
+    expect(container.textContent).not.toContain("Inbox");
+    expect(container.textContent).not.toContain("Plugins");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("opens the full DearMe menu from mobile navigation", async () => {
+    const onOpenMenu = vi.fn();
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<DearMeMobileNav visible onOpenMenu={onOpenMenu} />);
+    });
+
+    const menuButton = container.querySelector<HTMLButtonElement>("button[aria-label='Open DearMe menu']");
+    expect(menuButton).not.toBeNull();
+    await act(async () => {
+      menuButton?.click();
+    });
+    expect(onOpenMenu).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       root.unmount();

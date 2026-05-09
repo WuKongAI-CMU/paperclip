@@ -22,11 +22,34 @@ const mockCompanyState = vi.hoisted(() => ({
   selectedCompany: { id: "company-1", issuePrefix: "PAP", name: "Paperclip" },
   selectedCompanyId: "company-1",
 }));
+const mockSidebarState = vi.hoisted(() => ({
+  isMobile: false,
+  sidebarOpen: true,
+}));
 const mockPluginSlots = vi.hoisted(() => ({
   slots: [] as Array<Record<string, unknown>>,
 }));
 const mockUsePluginSlots = vi.hoisted(() => vi.fn());
 const mockPluginSlotContexts = vi.hoisted(() => [] as Array<Record<string, unknown>>);
+const mockDearMeMobileNav = vi.hoisted(() =>
+  vi.fn(({ visible, onOpenMenu }: { visible: boolean; onOpenMenu: () => void }) => (
+    <button
+      type="button"
+      data-testid="dearme-mobile-nav"
+      data-visible={String(visible)}
+      onClick={onOpenMenu}
+    >
+      DearMe mobile nav
+    </button>
+  )),
+);
+const mockMobileBottomNav = vi.hoisted(() =>
+  vi.fn(({ visible }: { visible: boolean }) => (
+    <div data-testid="generic-mobile-nav" data-visible={String(visible)}>
+      Generic mobile nav
+    </div>
+  )),
+);
 let currentPathname = "/PAP/dashboard";
 
 vi.mock("@/lib/router", () => ({
@@ -50,6 +73,7 @@ vi.mock("./Sidebar", () => ({
 
 vi.mock("./DearMeSidebar", () => ({
   DearMeSidebar: () => <div>DearMe customer nav</div>,
+  DearMeMobileNav: mockDearMeMobileNav,
 }));
 
 vi.mock("./InstanceSidebar", () => ({
@@ -97,7 +121,7 @@ vi.mock("./ToastViewport", () => ({
 }));
 
 vi.mock("./MobileBottomNav", () => ({
-  MobileBottomNav: () => null,
+  MobileBottomNav: mockMobileBottomNav,
 }));
 
 vi.mock("./WorktreeBanner", () => ({
@@ -169,10 +193,10 @@ vi.mock("../context/CompanyContext", () => ({
 
 vi.mock("../context/SidebarContext", () => ({
   useSidebar: () => ({
-    sidebarOpen: true,
+    sidebarOpen: mockSidebarState.sidebarOpen,
     setSidebarOpen: mockSetSidebarOpen,
     toggleSidebar: vi.fn(),
-    isMobile: false,
+    isMobile: mockSidebarState.isMobile,
   }),
 }));
 
@@ -226,6 +250,8 @@ describe("Layout", () => {
     mockCompanyState.companies = [{ id: "company-1", issuePrefix: "PAP", name: "Paperclip" }];
     mockCompanyState.selectedCompany = { id: "company-1", issuePrefix: "PAP", name: "Paperclip" };
     mockCompanyState.selectedCompanyId = "company-1";
+    mockSidebarState.isMobile = false;
+    mockSidebarState.sidebarOpen = true;
     mockHealthApi.get.mockResolvedValue({
       status: "ok",
       deploymentMode: "authenticated",
@@ -268,6 +294,41 @@ describe("Layout", () => {
     expect(container.textContent).not.toContain(
       "Sign-in is required and this instance is intended for private-network access.",
     );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("reserves the DearMe mobile nav gap without rendering the generic bottom nav", async () => {
+    currentPathname = "/PAP/dearme";
+    mockSidebarState.isMobile = true;
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <Layout />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    const main = container.querySelector("#main-content");
+    expect(main?.className).toContain("pb-[calc(5rem+env(safe-area-inset-bottom))]");
+    expect(container.textContent).toContain("DearMe customer nav");
+    const dearMeNav = container.querySelector<HTMLButtonElement>("[data-testid='dearme-mobile-nav']");
+    expect(dearMeNav).not.toBeNull();
+    expect(container.textContent).not.toContain("Generic mobile nav");
+    expect(mockMobileBottomNav).not.toHaveBeenCalled();
+    await act(async () => {
+      dearMeNav?.click();
+    });
+    expect(mockSetSidebarOpen).toHaveBeenCalledWith(true);
 
     await act(async () => {
       root.unmount();
@@ -365,6 +426,40 @@ describe("Layout", () => {
         enabled: false,
       }),
     );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("uses the DearMe mobile navigation instead of the generic mobile app nav", async () => {
+    currentPathname = "/PAP/dearme";
+    mockSidebarState.isMobile = true;
+    mockSidebarState.sidebarOpen = false;
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <Layout />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    expect(container.textContent).toContain("DearMe mobile nav");
+    expect(container.textContent).not.toContain("Generic mobile nav");
+    expect(mockMobileBottomNav).not.toHaveBeenCalled();
+
+    const mobileNavButton = container.querySelector<HTMLButtonElement>("[data-testid='dearme-mobile-nav']");
+    await act(async () => {
+      mobileNavButton?.click();
+    });
+    expect(mockSetSidebarOpen).toHaveBeenCalledWith(true);
 
     await act(async () => {
       root.unmount();

@@ -2,6 +2,61 @@
 
 Date: 2026-05-09
 
+## DM-132 Mobile Shell Navigation Polish - 2026-05-09
+
+Implementation slice:
+
+- Added a DearMe-specific mobile bottom navigation for the customer route.
+- The mobile nav leads with Home, Decisions, Work Ready, Voice, and More
+  instead of inherited workspace navigation.
+- Wired More to open the existing DearMe sidebar drawer, keeping secondary
+  surfaces available without crowding the bottom bar.
+- Kept the generic mobile bottom nav disabled on DearMe routes.
+- Kept backend routes, database tables, runtime services, route contracts,
+  dependencies, and desktop layout unchanged.
+
+Donor reuse:
+
+- Polsia supplies the routing priority: keep the user close to high-leverage
+  decisions and ready work rather than exposing operations chrome.
+- Naive/Paperclip remains the hidden substrate; this slice reuses the existing
+  layout shell and sidebar drawer instead of creating a new runtime or route.
+- Lindy supplies the compact app-navigation rhythm for returning to active
+  work, decisions, and voice review.
+- Littlebird supplies the mobile ergonomics target: short labels, stable tap
+  targets, safe-area padding, and no first-viewport navigation collision.
+
+Rejected:
+
+- Rejected enabling the generic Paperclip mobile nav on DearMe because it
+  exposes workspace-style destinations that do not match the personal-brand
+  product.
+- Rejected adding all DearMe surfaces to the bottom bar; the phone needs the
+  few repeat actions first, with More opening the full menu.
+- Rejected adding a backend route, new nav contract, or donor component import
+  for a shell-only interaction.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/DearMeSidebar.test.tsx ui/src/components/Layout.test.tsx --maxWorkers=1`
+  passed: 2 files, 14 tests.
+- `pnpm -r typecheck` passed across the workspace.
+- `git diff --check` passed.
+- Customer-surface hidden-term scan over the touched DearMe shell files
+  returned no matches.
+- Browser plugin mobile `390x844` on `/dearme` passed: title
+  `Team · DearMe · DearMe`, redirected URL `/DEAA/dearme`, DearMe mobile nav
+  count `1`, generic nav count `0`, console error/warn logs empty, and More
+  opened the full DearMe menu.
+- Browser plugin desktop `1280x720` on `/dearme` passed: mobile nav count `0`,
+  generic nav count `0`, and console error/warn logs empty.
+
+Next:
+
+- Continue with a mobile action-detail polish pass: the bottom nav is now
+  product-safe, but focused review/decision drawers should get a dedicated
+  small-screen interaction check before paid-beta launch.
+
 ## DM-131 Browser Polish For The DearMe Team Workbench - 2026-05-09
 
 Implementation slice:
@@ -57,8 +112,7 @@ Verification:
 
 Next:
 
-- Use the next product ticket to polish the mobile shell/navigation fold where
-  longer full-page captures can still collide with the bottom navigation.
+- Completed by DM-132; continue with mobile action-detail polish.
 
 ## DM-130 Web Shell Polish From Lindy And Littlebird - 2026-05-09
 

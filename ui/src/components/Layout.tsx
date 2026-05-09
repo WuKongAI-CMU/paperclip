@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Outlet, useLocation, useNavigate, useNavigationType, useParams } from "@/lib/router";
 import { CompanyRail } from "./CompanyRail";
 import { Sidebar } from "./Sidebar";
-import { DearMeSidebar } from "./DearMeSidebar";
+import { DearMeMobileNav, DearMeSidebar } from "./DearMeSidebar";
 import { InstanceSidebar } from "./InstanceSidebar";
 import { CompanySettingsSidebar } from "./CompanySettingsSidebar";
 import { BreadcrumbBar } from "./BreadcrumbBar";
@@ -454,6 +454,9 @@ export function Layout() {
           </div>
         </div>
       </div>
+      {isMobile && isDearMeRoute && (
+        <DearMeMobileNav visible={mobileNavVisible} onOpenMenu={() => setSidebarOpen(true)} />
+      )}
       {isMobile && !isDearMeRoute && <MobileBottomNav visible={mobileNavVisible} />}
       <CommandPalette />
       {!isDearMeRoute && (

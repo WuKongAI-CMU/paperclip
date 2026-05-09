@@ -43,12 +43,34 @@ The right reuse split is:
   broader customer-facing shell pass.
 - Symphony: development factory pattern only; not the DearMe product runtime.
 
+## Latest Polsia vs Naive Read - 2026-05-09
+
+The refreshed comparison is captured in
+`docs/dearme/POLSIA-NAIVE-COMPARISON.md`.
+
+Conclusion:
+
+- Polsia wins the customer-visible layer: onboarding compression, immediate
+  wow, visible team motion, cycle/report rhythm, and high-leverage decisions.
+- Naive/Paperclip wins the execution layer: tenancy, issue ownership,
+  heartbeats, approval gates, worker isolation, app/site rails, cost events,
+  and budget preflight.
+- DearMe should keep a Polsia-style personal brand growth team on top of a
+  Naive/Paperclip-style substrate. Do not turn the product into either a
+  company factory or an agent admin console.
+
+Working rule:
+
+- For product-demo and trust-loop questions, start from Polsia.
+- For execution-state, approval, budget, isolation, and scheduling questions,
+  start from Naive/Paperclip.
+
 ## Donor Evidence
 
 | Donor | Local evidence | What to reuse | What not to reuse |
 | --- | --- | --- | --- |
-| Polsia | `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/02-ONBOARDING-FLOW.md`; `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/12-REAL-SOURCE-CODE-DEEP-DIVE.md`; `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/15-PERSONAL-BRAND-FORK-SPEC.md` | 90-second wow, live work stream, mood/status choreography, manager loop, cycle/report model, personal-brand fork vocabulary, async execution + cost attribution patterns | Its visual style, raw public personal data feed, company-factory framing, or fragile in-process scheduling as the only reliability mechanism |
-| Naive/Paperclip | `/Users/peter/naive-research-2026-05-05/ARCHITECTURE.md`; `/Users/peter/naive-research-2026-05-05/DEEP-CODE-PATHS.md`; `/Users/peter/naive-research-2026-05-05/npm-packages/` | Existing Paperclip kernel, setup_payload idea adapted as `brand_blueprint`, CEO/worker split as an internal model, cost/budget rails, app/site provisioning options | Exposed Paperclip UI language, raw issue/agent/admin controls, private endpoint names, or a direct Naive UI copy before source quality is proven |
+| Polsia | `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/02-ONBOARDING-FLOW.md`; `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/12-REAL-SOURCE-CODE-DEEP-DIVE.md`; `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/08-POLSIA-WEAKNESSES.md`; `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/polsia-internal-docs/CYCLE_ENGINE.md`; `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/polsia-internal-docs/AGENT_PROMPTS.md` | 90-second wow, live work stream, mood/status choreography, manager loop, cycle/report model, personal-brand fork vocabulary, async execution + cost attribution patterns | Its visual style, raw public personal data feed, company-factory framing, shared social identity, or fragile in-process scheduling as the only reliability mechanism |
+| Naive/Paperclip | `/Users/peter/naive-research-2026-05-05/ARCHITECTURE.md`; `/Users/peter/naive-research-2026-05-05/DEEP-CODE-PATHS.md`; `/Users/peter/naive-research-2026-05-05/FINAL-FINDINGS.md`; `/Users/peter/naive-research-2026-05-05/NAIVE-CATALOG-SUMMARY.md`; `/Users/peter/naive-research-2026-05-05/naive-default-agent-prompts/ceo/AGENTS.md` | Existing Paperclip kernel, setup_payload idea adapted as `brand_blueprint`, CEO/worker split as an internal model, cost/budget rails, template catalog, app/site provisioning options | Exposed Paperclip UI language, raw issue/agent/admin controls, private endpoint names, or a direct Naive UI copy before source quality is proven |
 | Lindy frontend | `/Users/peter/lindy-extraction/01_frontend_source/src/components/transcript/agentUI/ActionCard.tsx`; `/Users/peter/lindy-extraction/01_frontend_source/src/components/KnowledgeBase/components/KnowledgeBaseEditor.tsx`; `/Users/peter/lindy-extraction/01_frontend_source/src/components/layouts/ResizableSlideOutPanel.tsx`; `/Users/peter/lindy-extraction/01_frontend_source/src/components/modals/LindyPendingApprovalModal.tsx`; `/Users/peter/lindy-extraction/01_frontend_source/src/components/prompt/PromptInput.tsx` | Action-card grammar, review modal shape, source/knowledge UI pattern, side-panel detail pattern, polished prompt/composer behavior | Relay/GraphQL shell, Lindy brand copy, generic agent-builder/editor surfaces, full app routing |
 | Lindy internal tool | `/Users/peter/lindy-extraction/06_omni_dash_internal_tool/src/omni_dash/agent/router.py`; `/Users/peter/lindy-extraction/06_omni_dash_internal_tool/src/omni_dash/agent/executor.py`; `/Users/peter/lindy-extraction/06_omni_dash_internal_tool/convex/schema.ts` | Rule-based model routing, max-turn budgets, tool execution wrapper, consecutive-failure circuit breaker, learning after recovery, lightweight state schema ideas | Python service transplant, dashboard-specific vocabulary, Ralph naming, or replacing DearMe/Paperclip services |
 | Littlebird | `/Users/peter/research/littlebird-2026-04-23/recovered-source/src` | Customer web shell, onboarding/product polish patterns, lightweight account/product flow references | Becoming the primary runtime or overfitting DearMe to a different product category |
@@ -58,7 +80,7 @@ The right reuse split is:
 
 | DearMe area | Current implementation evidence | Donor reuse status | Next gap |
 | --- | --- | --- | --- |
-| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. DM-130 adapts Polsia's "work happened while I was away" choreography, Lindy's two-rail home composition, and Littlebird's focused step/task-row discipline into the first workbench surface. DM-131 browser-polished the focus grid so the live desktop/mobile shell keeps the current work card compact and readable. | Polish the mobile shell/navigation fold next, then split only if the page becomes hard to maintain. |
+| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. DM-130 adapts Polsia's "work happened while I was away" choreography, Lindy's two-rail home composition, and Littlebird's focused step/task-row discipline into the first workbench surface. DM-131 browser-polished the focus grid so the live desktop/mobile shell keeps the current work card compact and readable. DM-132 adds a DearMe-specific mobile nav so the phone shell routes users to Home, Decisions, Work Ready, Voice, and More without showing generic workspace destinations. | Polish focused review/decision drawers on mobile before paid-beta launch. |
 | Brand OS / `brand_blueprint` | `packages/shared/src/validators/dearme.ts`; `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/routes/dearme.ts` | Naive `setup_payload` pattern has been adapted into a typed DearMe contract and approval-gated apply flow. | Keep extending this contract only when P0 surfaces need it. |
 | Workbench projection | `server/src/services/dearme-workbench.ts`; `server/src/__tests__/dearme-workbench.test.ts` | Naive/Paperclip tables remain the substrate for team, work, decisions, progress, reports, and memory projections. | Do not add a second runtime; enrich read models first. |
 | Action graph and work stream | `docs/dearme/ACTION-GRAPH-ARCHITECTURE.md`; `packages/shared/src/validators/dearme.ts`; `ui/src/components/dearme/DearMeActionCard.tsx` | Polsia cycle/report choreography plus Lindy action-card grammar are already converging into customer-safe work cards. | Add richer detail panels instead of more tabs. |
@@ -70,6 +92,33 @@ The right reuse split is:
 | Development factory | `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` | Symphony-style worker queue is useful for bounded tickets after coordinator updates the queue. | Workers must use this ledger and `BUILD-STATE.md` before selecting old tickets. |
 
 ## Recently Completed
+
+### DM-132: Mobile Shell Navigation Polish
+
+Goal: make the DearMe mobile shell/navigation fold feel product-owned after
+DM-131 proved the first-screen focus content in a live browser.
+
+Donor grounding:
+
+- Polsia first-wow hierarchy: keep users near decisions and ready work.
+- Naive/Paperclip hidden substrate: reuse the existing layout shell and sidebar
+  drawer while keeping inherited workspace chrome out of the customer path.
+- Lindy compact app-navigation rhythm: short repeat actions for current work,
+  decisions, and voice review.
+- Littlebird mobile ergonomics: short labels, stable tap targets, safe-area
+  padding, and no first-viewport collision.
+
+Completed:
+
+- Added a DearMe-specific mobile bottom nav with Home, Decisions, Work Ready,
+  Voice, and More.
+- Wired More to open the full DearMe sidebar drawer.
+- Kept the generic mobile bottom nav disabled on DearMe routes.
+- Playwright mobile `390x844` passed with DearMe nav count `1`, generic
+  nav count `0`, empty console error/warn logs, and a working More-to-menu
+  interaction.
+- Playwright desktop `1440x1000` passed with no mobile/generic bottom nav
+  rendered.
 
 ### DM-131: Browser Polish For The DearMe Team Workbench
 
@@ -208,25 +257,26 @@ Completed:
 
 ## Current Worker Queue
 
-### DM-132: Mobile Shell Navigation Polish
+### DM-133: Mobile Action Detail And Decision Drawer Polish
 
-Goal: make the DearMe mobile shell/navigation fold feel production-ready after
-DM-131 proved the first-screen focus content is live-browser safe.
+Goal: make focused review/decision details feel production-ready on phone
+after DM-132 made the mobile navigation product-safe.
 
 Donor grounding:
 
-- Littlebird compact mobile shell ergonomics.
-- Lindy polished app navigation rhythm.
-- Polsia first-wow hierarchy that should remain visible without navigation
-  collisions.
+- Lindy slide-out/action-detail pattern.
+- Littlebird compact mobile review ergonomics.
+- Polsia high-leverage decision queue rhythm.
+- Naive/Paperclip hidden output-review substrate.
 
 Acceptance:
 
-- Mobile browser checks pass for first viewport and longer page captures.
-- Bottom navigation does not collide with content or obscure primary review
-  actions.
+- Mobile browser checks pass for Decisions and Work Ready detail states.
+- Focused review/decision drawers do not collide with the bottom navigation or
+  obscure primary approve/revise/regenerate actions.
 - No customer-facing donor/runtime terms appear in the DearMe paid-beta path.
-- Desktop layout remains unchanged unless a shared shell fix requires it.
+- Desktop detail behavior remains unchanged unless a shared shell fix requires
+  it.
 
 ## Coordination Rules
 
@@ -243,7 +293,7 @@ Acceptance:
 ## Not Complete Yet
 
 DearMe is not release-ready just because these reuse decisions are documented.
-The next meaningful product gain is DM-132, because the first-screen focus now
-passes live desktop/mobile browser verification, but the mobile shell/navigation
-fold still needs a dedicated polish pass before the product feels beta-ready on
-small screens.
+The next meaningful product gain is DM-133, because the mobile navigation now
+routes to DearMe-owned surfaces, but focused review/decision drawers still need
+a dedicated small-screen polish pass before the product feels beta-ready on
+phones.

@@ -4,6 +4,7 @@ import {
   BriefcaseBusiness,
   ClipboardCheck,
   Home,
+  Menu,
   Mic2,
   NotebookText,
   PenLine,
@@ -35,6 +36,13 @@ const growthItems: DearMeNavItem[] = [
   { to: "/dearme?view=opportunities", label: "Opportunities", icon: Telescope },
   { to: "/dearme?view=portfolio", label: "Portfolio", icon: BriefcaseBusiness },
   { to: "/dearme?view=reports", label: "Reports", icon: BarChart3 },
+];
+
+const mobileNavItems: DearMeNavItem[] = [
+  { to: "/dearme", label: "Home", icon: Home },
+  { to: "/dearme?view=decisions", label: "Decisions", icon: ClipboardCheck },
+  { to: "/dearme?view=work-ready", label: "Work Ready", icon: Sparkles },
+  { to: "/dearme?view=voice", label: "Voice", icon: Mic2 },
 ];
 
 function openSearch() {
@@ -89,6 +97,60 @@ function DearMeNavSection({ label, items }: { label: string; items: DearMeNavIte
         ))}
       </div>
     </section>
+  );
+}
+
+export function DearMeMobileNav({
+  visible,
+  onOpenMenu,
+}: {
+  visible: boolean;
+  onOpenMenu: () => void;
+}) {
+  const location = useLocation();
+
+  return (
+    <nav
+      aria-label="DearMe mobile navigation"
+      className={cn(
+        "fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/95 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] backdrop-blur supports-[backdrop-filter]:bg-background/85 md:hidden",
+        "pb-[env(safe-area-inset-bottom)] transition-transform duration-150 ease-out",
+        visible ? "translate-y-0" : "translate-y-full",
+      )}
+    >
+      <div className="mx-auto grid h-16 max-w-md grid-cols-5 px-1.5">
+        {mobileNavItems.map((item) => {
+          const Icon = item.icon;
+          const active = isItemActive(location.pathname, location.search, item.to);
+
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] font-medium transition-colors",
+                active
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="max-w-full truncate">{item.label}</span>
+            </Link>
+          );
+        })}
+        <button
+          type="button"
+          className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+          onClick={onOpenMenu}
+          aria-label="Open DearMe menu"
+        >
+          <Menu className="h-4 w-4 shrink-0" />
+          <span className="max-w-full truncate">More</span>
+        </button>
+      </div>
+    </nav>
   );
 }
 
