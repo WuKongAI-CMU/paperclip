@@ -122,7 +122,7 @@ const CHIEF_OF_STAFF_INTENT_OPTIONS: Array<{
   {
     value: "plan_next",
     label: "Plan next moves",
-    helper: "Prioritize the next brand loop.",
+    helper: "Prioritize the next brand cycle.",
   },
   {
     value: "draft_content",
@@ -450,7 +450,7 @@ const REVIEW_LOOP_STATE_LABELS: Record<DearMeOutputReviewLoop["state"], string> 
 };
 
 function reviewLoopLabel(loop: DearMeOutputReviewLoop) {
-  return `Review loop ${loop.attemptCount}/${loop.maxAttempts}`;
+  return `Review pass ${loop.attemptCount}/${loop.maxAttempts}`;
 }
 
 function reviewLoopStateLabel(loop: DearMeOutputReviewLoop) {
@@ -482,7 +482,7 @@ function ReviewLoopNextStep({
 }) {
   return (
     <div className={cn("rounded-md border border-border bg-background/80 p-3", className)}>
-      <p className="text-xs font-medium text-muted-foreground">Team loop</p>
+      <p className="text-xs font-medium text-muted-foreground">Team follow-through</p>
       <p className="mt-1 text-sm text-foreground/85">{loop.nextStep}</p>
       {loop.lastDecisionNotePreview ? (
         <p className="mt-2 text-xs text-muted-foreground">Last call: {loop.lastDecisionNotePreview}</p>
@@ -561,6 +561,23 @@ const WORKSTREAM_STATUS_LABELS = {
   decision_needed: "Needs your call",
   recorded: "Recorded",
 } as const;
+
+const WORKSTREAM_KIND_LABELS: Record<DearMeWorkbenchStreamItem["kind"], string> = {
+  cycle_brief: "Cycle brief",
+  work_in_motion: "Work in motion",
+  decision_needed: "Action needed",
+  memory_recorded: "Memory learned",
+  progress_recorded: "Progress",
+  report_ready: "Report ready",
+};
+
+const WORKSTREAM_STAGE_LABELS: Record<DearMeWorkbenchStreamItem["cycleStage"], string> = {
+  plan: "Plan",
+  work: "Work",
+  review: "Review",
+  learn: "Learn",
+  report: "Report",
+};
 
 const ACTION_GRAPH_KIND_LABELS: Record<DearMeActionGraphNode["kind"], string> = {
   cycle: "Growth cycle",
@@ -649,9 +666,9 @@ function actionGraphStatusVariant(node: DearMeActionGraphNode) {
 function actionGraphNextMove(node: DearMeActionGraphNode) {
   switch (node.kind) {
     case "cycle":
-      return "Your team keeps this loop moving through plan, work, review, learning, and reporting.";
+      return "Your team keeps this cycle moving through plan, work, review, learning, and reporting.";
     case "role":
-      return "This teammate owns a visible part of your personal-brand growth loop.";
+      return "This teammate owns a visible part of your personal-brand growth cycle.";
     case "work_item":
       return "The team keeps preparing this privately until it becomes reviewable.";
     case "artifact":
@@ -1499,7 +1516,7 @@ function decisionAfterCallLabel(riskGate?: DearMeWorkbenchDecision["riskGate"] |
   if (riskGate) {
     return "Approved work can move forward; changes go back to the private team before anything external happens.";
   }
-  return "Your call updates the private loop so the team knows what to use, revise, or stop.";
+  return "Your call updates the private review path so the team knows what to use, revise, or stop.";
 }
 
 function TeamSummaryPanel({
@@ -1815,7 +1832,7 @@ function OperatingLoopPanel({
   ];
 
   return (
-    <DearMePanel aria-label="Growth cycle operating loop">
+    <DearMePanel aria-label="Growth cycle plan">
       <DearMeWorkbenchSectionHeader
         icon={Workflow}
         eyebrow="Growth cycle"
@@ -1908,7 +1925,7 @@ function OperatingLoopPanel({
               <div>
                 <p className="text-sm font-semibold">Team work stream</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  The current loop, shown as the moves, memories, and guardrails that matter to you.
+                  The current cycle, shown as the moves, memories, and guardrails that matter to you.
                 </p>
               </div>
               <Badge variant="outline">Team visible</Badge>
@@ -2007,7 +2024,7 @@ function DearMeLetterPanel({
           className="mt-4"
           icon={FileText}
           title="Dear me letter is not ready yet"
-          description="The first Dear me letter appears here after the growth loop starts."
+          description="The first Dear me letter appears here after the growth cycle starts."
         />
       )}
     </DearMePanel>
@@ -2070,11 +2087,17 @@ function LiveTeamFeedPanel({
         {liveStream.map((item, index) => (
           <DearMeWorkbenchCard
             key={`${item.id}:${item.role}:${item.createdAt}:${index}`}
-            eyebrow={roleLabel(item.role)}
+            eyebrow={
+              <span className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline">{WORKSTREAM_STAGE_LABELS[item.cycleStage]}</Badge>
+                <span>{roleLabel(item.role)}</span>
+              </span>
+            }
             title={item.title}
             description={item.summary}
             badge={
               <div className="flex shrink-0 flex-col items-end gap-2">
+                <Badge variant="outline">{WORKSTREAM_KIND_LABELS[item.kind]}</Badge>
                 <Badge variant={item.needsApproval ? "secondary" : "outline"}>
                   {WORKSTREAM_STATUS_LABELS[item.status]}
                 </Badge>
@@ -2084,12 +2107,15 @@ function LiveTeamFeedPanel({
           >
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <Badge variant="outline">{item.artifact}</Badge>
+              <Badge variant="outline">{item.sourceLabel}</Badge>
               {item.needsApproval ? <Badge variant="default">Decision ready</Badge> : null}
+              {item.costImpact ? <Badge variant="secondary">{item.costImpact}</Badge> : null}
               <span>{shortDate(item.createdAt)}</span>
             </div>
-            {item.reviewLoop ? (
-              <p className="mt-3 text-xs text-muted-foreground">{item.reviewLoop.nextStep}</p>
-            ) : null}
+            <div className="mt-3 rounded-md border border-border bg-background/80 p-3">
+              <p className="text-xs font-medium uppercase text-muted-foreground">Next action</p>
+              <p className="mt-1 text-sm text-foreground/85">{item.nextAction}</p>
+            </div>
           </DearMeWorkbenchCard>
         ))}
       </div>
@@ -2375,7 +2401,7 @@ function ChiefOfStaffComposerPanel({
   const selectedIntent = CHIEF_OF_STAFF_INTENT_OPTIONS.find((option) => option.value === intent) ?? {
     value: DEFAULT_CHIEF_OF_STAFF_INTENT,
     label: "Plan next moves",
-    helper: "Prioritize the next brand loop.",
+    helper: "Prioritize the next brand cycle.",
   };
   const trimmedMessage = message.trim();
   const disabled = !paidBetaActive || isPending || trimmedMessage.length === 0;
@@ -2411,10 +2437,10 @@ function ChiefOfStaffComposerPanel({
           <div>
             <p className="text-xs font-medium uppercase text-muted-foreground">Cycle controls</p>
             <p className="mt-1 text-sm text-foreground/85">
-              Pick the next private loop; your team prepares reviewable moves and waits for approval.
+              Pick the next private cycle; your team prepares reviewable moves and waits for approval.
             </p>
           </div>
-          <Badge variant="outline">Review loop</Badge>
+          <Badge variant="outline">Review pass</Badge>
         </div>
         <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {CHIEF_OF_STAFF_CYCLE_CONTROLS.map((control) => {
@@ -3039,7 +3065,7 @@ function PrivateWorkPanel({
           className="mt-4"
           icon={Workflow}
           title="Private work has not started yet"
-          description="Approve Brand OS to start the private team loop."
+          description="Approve Brand OS to start the private team cycle."
         />
       ) : (
         <>

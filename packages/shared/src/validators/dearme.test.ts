@@ -344,11 +344,11 @@ describe("DearMe brand blueprint contract", () => {
     });
     expect(dearMeMemoryUpdateSchema.parse({
       kind: "proof_point",
-      body: "Shipped the first private work loop.",
+      body: "Shipped the first private growth cycle.",
     })).toEqual({
       kind: "proof_point",
       title: null,
-      body: "Shipped the first private work loop.",
+      body: "Shipped the first private growth cycle.",
       sourceLabel: null,
     });
     expect(dearMeMemoryUpdateResultSchema.parse({
@@ -592,7 +592,7 @@ describe("DearMe brand blueprint contract", () => {
     const response = dearMeWorkbenchResponseSchema.parse({
       companyId: "company-1",
       headline: "Dear me, your team has decisions ready",
-      summary: "7 team members are assigned to your brand loop. 2 items ready. 1 decision needed. 1 lane in motion.",
+      summary: "7 team members are assigned to your brand cycle. 2 items ready. 1 decision needed. 1 lane in motion.",
       team: [
         {
           role: "chief_of_staff",
@@ -706,12 +706,17 @@ describe("DearMe brand blueprint contract", () => {
       workStream: [
         {
           id: "decision:approval:approval-1",
+          kind: "decision_needed",
+          cycleStage: "review",
           role: "brand_strategist",
           title: "Your call: Approve Brand OS for Peter",
           summary: "Review the first growth-team plan before private work starts.",
           artifact: "Brand OS",
           status: "decision_needed",
           needsApproval: true,
+          sourceLabel: "Approval queue",
+          costImpact: null,
+          nextAction: "Approve Brand OS only if the first cycle and approval boundaries match how you want to be represented.",
           relatedOutputId: null,
           issueId: null,
           issueIdentifier: null,
@@ -730,13 +735,13 @@ describe("DearMe brand blueprint contract", () => {
         updatedAt: "2026-05-07T14:00:00.000Z",
       },
       actionGraph: {
-        summary: "DearMe projects the current team loop into a customer-safe graph of roles, work, artifacts, decisions, memory, and reports.",
+        summary: "DearMe projects the current growth cycle into a customer-safe graph of roles, work, artifacts, decisions, memory, and reports.",
         cycleNodeId: "cycle:weekly-growth-loop",
         nodes: [
           {
             id: "cycle:weekly-growth-loop",
             kind: "cycle",
-            label: "Weekly growth loop",
+            label: "Weekly growth cycle",
             summary: "Plan, work, review, learn, and report across 1 roles, 2 work lanes, and 1 decisions.",
             role: "chief_of_staff",
             status: "decisions_needed",
@@ -785,9 +790,13 @@ describe("DearMe brand blueprint contract", () => {
       proofCount: 1,
     }));
     expect(response.workStream[0]).toEqual(expect.objectContaining({
+      kind: "decision_needed",
+      cycleStage: "review",
       role: "brand_strategist",
       status: "decision_needed",
       needsApproval: true,
+      sourceLabel: "Approval queue",
+      nextAction: expect.stringContaining("Approve Brand OS"),
     }));
     expect(response.actionGraph.nodes.map((node) => node.kind)).toEqual(
       expect.arrayContaining(["cycle", "decision"]),

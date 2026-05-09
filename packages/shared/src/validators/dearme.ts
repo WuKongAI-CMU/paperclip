@@ -137,6 +137,21 @@ export const DEARME_WORKBENCH_STREAM_STATUSES = [
   "decision_needed",
   "recorded",
 ] as const;
+export const DEARME_WORKBENCH_STREAM_KINDS = [
+  "cycle_brief",
+  "work_in_motion",
+  "decision_needed",
+  "memory_recorded",
+  "progress_recorded",
+  "report_ready",
+] as const;
+export const DEARME_WORKBENCH_CYCLE_STAGES = [
+  "plan",
+  "work",
+  "review",
+  "learn",
+  "report",
+] as const;
 export const DEARME_ACTION_GRAPH_NODE_KINDS = [
   "cycle",
   "role",
@@ -693,12 +708,17 @@ export const dearMeWorkbenchProgressItemSchema = z.object({
 
 export const dearMeWorkbenchStreamItemSchema = z.object({
   id: z.string().min(1),
+  kind: z.enum(DEARME_WORKBENCH_STREAM_KINDS),
+  cycleStage: z.enum(DEARME_WORKBENCH_CYCLE_STAGES),
   role: z.enum(DEARME_TEAM_ROLES),
   title: shortTextSchema,
   summary: mediumTextSchema,
   artifact: shortTextSchema,
   status: z.enum(DEARME_WORKBENCH_STREAM_STATUSES),
   needsApproval: z.boolean(),
+  sourceLabel: shortTextSchema,
+  costImpact: shortTextSchema.nullable(),
+  nextAction: mediumTextSchema,
   relatedOutputId: z.string().min(1).nullable(),
   issueId: z.string().min(1).nullable(),
   issueIdentifier: z.string().nullable(),
@@ -858,7 +878,7 @@ export function describeDearMePaidBetaEntitlement(
     return dearMePaidBetaEntitlementSchema.parse({
       state: "paid_beta_active",
       label: "Paid beta active",
-      summary: "Paid beta is active. DearMe can start the private Brand OS work loop after approval.",
+      summary: "Paid beta is active. DearMe can start the private Brand OS cycle after approval.",
       canPreviewBrandOs: true,
       canRequestBrandOsApproval: true,
       canStartPrivateWork: true,
@@ -875,7 +895,7 @@ export function describeDearMePaidBetaEntitlement(
     canRequestBrandOsApproval: false,
     canStartPrivateWork: false,
     nextActionLabel: "Record paid beta payment",
-    nextActionDescription: "Add a paid beta credit purchase to unlock the private Brand OS work loop.",
+    nextActionDescription: "Add a paid beta credit purchase to unlock the private Brand OS cycle.",
   });
 }
 
@@ -1294,7 +1314,7 @@ export function createDearMeBrandBlueprint(input: DearMeBrandBlueprintSeed): Dea
         title: "Dear me report",
         cadence: "weekly",
         ownerRole: "growth_analyst",
-        deliverables: ["progress summary", "learning loop", "next bets"],
+        deliverables: ["progress summary", "learning summary", "next bets"],
       },
     ],
     assets: [
@@ -1358,7 +1378,7 @@ export function buildDearMeBrandBlueprintExecutionPlan(
       {
         id: "start_weekly_growth_cycle",
         title: "Start weekly growth cycle",
-        description: "Create the recurring weekly plan and live progress loop.",
+        description: "Create the recurring weekly plan and live progress cycle.",
         ownerRole: "chief_of_staff",
         approvalGate: null,
       },

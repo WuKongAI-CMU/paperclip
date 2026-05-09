@@ -346,7 +346,7 @@ describe("DearMe brand blueprint routes", () => {
     mockDearMeWorkbenchService.getWorkbench.mockResolvedValue({
       companyId: "company-1",
       headline: "Dear me, your team has decisions ready",
-      summary: "7 team members are assigned to your brand loop. 1 item ready. 1 decision needed. 1 lane in motion.",
+      summary: "7 team members are assigned to your brand cycle. 1 item ready. 1 decision needed. 1 lane in motion.",
       team: [
         {
           role: "chief_of_staff",
@@ -534,7 +534,7 @@ describe("DearMe brand blueprint routes", () => {
       });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toBe("Add a paid beta credit purchase to unlock the private Brand OS work loop.");
+    expect(res.body.error).toBe("Add a paid beta credit purchase to unlock the private Brand OS cycle.");
     expect(mockIssueService.create).not.toHaveBeenCalled();
     expect(mockAgentService.list).not.toHaveBeenCalled();
     expect(mockQueueIssueAssignmentWakeup).not.toHaveBeenCalled();
@@ -1055,7 +1055,7 @@ describe("DearMe brand blueprint routes", () => {
       });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toBe("Add a paid beta credit purchase to unlock the private Brand OS work loop.");
+    expect(res.body.error).toBe("Add a paid beta credit purchase to unlock the private Brand OS cycle.");
     expect(mockDearMeBrandBlueprintService.createApplyRequest).not.toHaveBeenCalled();
     expect(mockLogActivity).not.toHaveBeenCalledWith(
       expect.anything(),

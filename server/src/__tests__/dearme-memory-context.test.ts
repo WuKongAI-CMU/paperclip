@@ -120,9 +120,9 @@ describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
         projectId: null,
         goalId: null,
         parentIssueId: brandOsIssue.id,
-        title: "DearMe: Weekly growth loop",
+        title: "DearMe: Weekly growth cycle",
         description: [
-          "Weekly growth loop for Peter.",
+          "Weekly growth cycle for Peter.",
           "",
           "Deliverables:",
           "- Draft posts",

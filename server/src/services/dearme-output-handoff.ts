@@ -260,7 +260,7 @@ function buildReviewHandoff(
     return {
       action: decision.action,
       title: "Clearer direction needed",
-      summary: "DearMe has paused this loop so your team does not keep spending attempts on the wrong direction.",
+      summary: "DearMe has paused this review path so your team does not keep spending attempts on the wrong direction.",
       userDirection: decision.notePreview,
       nextDraftDirection: "Give one sharper instruction before the team prepares another private attempt.",
     };

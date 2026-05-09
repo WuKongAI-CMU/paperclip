@@ -2,6 +2,35 @@
 
 Date: 2026-05-09
 
+## DM-108 Cycle Timeline Feed - 2026-05-09
+
+Implementation slice:
+
+- Turned DearMe's live team feed into a cycle-aware timeline that makes the
+  personal-brand team visibly work through plan, work, review, learn, and report
+  stages.
+- Reused the existing Naive/Paperclip substrate: issues, prepared outputs,
+  approvals, activity log, and Voice & Memory records remain the source of
+  truth. This slice adds no database table, queue, worker, runtime, or
+  dependency.
+- Adapted Polsia's visible-autonomy product choreography into customer-safe
+  stream kinds: cycle brief, work in motion, action needed, memory learned,
+  progress, and report ready.
+- Adapted Lindy-style action cards by adding source context, cost/guardrail
+  context, and a concrete next-action panel to each live feed item.
+- Kept the UI product-facing: no Paperclip, OpenClaw, adapter, provider,
+  control-plane, or setup-payload language is introduced into the paid-beta
+  feed.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-output-handoff.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-memory-context.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 6 files, 64 tests.
+- `pnpm -r typecheck` passed.
+- `git diff --check` passed.
+- `rg -n "brand loop|team loop|Weekly growth loop|Review loop|work loop|current loop|growth loop|private loop|learning loop|progress loop|paused this loop|brand growth loop|operating loop" ui/src/pages/DearMeOnboarding.tsx server/src/services/dearme-workbench.ts server/src/services/dearme-output-handoff.ts packages/shared/src/validators/dearme.ts ui/src/pages/DearMeOnboarding.test.tsx server/src/__tests__ packages/shared/src/validators/dearme.test.ts`
+  returned no matches.
+
 ## DM-107 Review Feedback Handoff - 2026-05-09
 
 Implementation slice:

@@ -181,7 +181,7 @@ function workbenchResponse() {
   return {
     companyId: "company-1",
     headline: "Dear me, your team has decisions ready",
-    summary: "7 team members are assigned to your brand loop. 2 items ready. 1 decision needed. 1 lane in motion.",
+    summary: "7 team members are assigned to your brand cycle. 2 items ready. 1 decision needed. 1 lane in motion.",
     team: [
       {
         role: "chief_of_staff",
@@ -327,12 +327,17 @@ function workbenchResponse() {
     workStream: [
       {
         id: "decision:output:issue-2:content_drafts",
+        kind: "decision_needed",
+        cycleStage: "review",
         role: "content_producer",
         title: "Your call: Review Starter posts",
         summary: "Three posts are ready for voice review.",
         artifact: "Content drafts",
         status: "decision_needed",
         needsApproval: true,
+        sourceLabel: "Prepared output",
+        costImpact: null,
+        nextAction: "Review it, then approve, request changes, regenerate, or mark it not useful.",
         relatedOutputId: "issue-2:content_drafts",
         issueId: "issue-2",
         issueIdentifier: "PET-8",
@@ -341,12 +346,17 @@ function workbenchResponse() {
       },
       {
         id: "work:issue-3:opportunity_drafts",
+        kind: "work_in_motion",
+        cycleStage: "work",
         role: "opportunity_scout",
         title: "Opportunity Scout is working on Opportunity leads",
         summary: "Warm collaboration and customer leads are being prepared.",
         artifact: "Opportunity leads",
         status: "working",
         needsApproval: false,
+        sourceLabel: "Prepared output",
+        costImpact: null,
+        nextAction: "Your team is preparing this privately.",
         relatedOutputId: "issue-3:opportunity_drafts",
         issueId: "issue-3",
         issueIdentifier: "PET-9",
@@ -355,12 +365,17 @@ function workbenchResponse() {
       },
       {
         id: "progress:activity-1",
+        kind: "progress_recorded",
+        cycleStage: "plan",
         role: "chief_of_staff",
         title: "Growth team created",
         summary: "DearMe created the team, cycles, and first private work lanes.",
         artifact: "Growth team",
         status: "recorded",
         needsApproval: false,
+        sourceLabel: "Brand OS",
+        costImpact: "Work stays inside paid-beta guardrails",
+        nextAction: "Start or steer the first private growth cycle from the Chief of Staff.",
         relatedOutputId: null,
         issueId: null,
         issueIdentifier: null,
@@ -379,13 +394,13 @@ function workbenchResponse() {
       updatedAt: "2026-05-07T14:00:00.000Z",
     },
     actionGraph: {
-      summary: "DearMe projects the current team loop into a customer-safe graph of roles, work, artifacts, decisions, memory, and reports.",
+      summary: "DearMe projects the current growth cycle into a customer-safe graph of roles, work, artifacts, decisions, memory, and reports.",
       cycleNodeId: "cycle:weekly-growth-loop",
       nodes: [
         {
           id: "cycle:weekly-growth-loop",
           kind: "cycle",
-          label: "Weekly growth loop",
+          label: "Weekly growth cycle",
           summary: "Plan, work, review, learn, and report across 2 roles, 3 work lanes, and 1 decisions.",
           role: "chief_of_staff",
           status: "decisions_needed",
@@ -575,12 +590,17 @@ function workbenchResponseWithChiefBrief() {
     workStream: [
       {
         id: "work:issue-chief-1",
+        kind: "cycle_brief",
+        cycleStage: "plan",
         role: "chief_of_staff",
         title: "Chief of Staff is turning your brief into private work",
         summary: chiefSummary,
         artifact: "Cycle brief",
         status: "working",
         needsApproval: false,
+        sourceLabel: "Chief of Staff brief",
+        costImpact: null,
+        nextAction: "Your team is preparing this privately.",
         relatedOutputId: null,
         issueId: "issue-chief-1",
         issueIdentifier: "PET-22",
@@ -831,9 +851,9 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("1 signal");
     expect(container.textContent).toContain("1 guardrail");
     expect(container.textContent).toContain("Team work stream");
-    expect(container.textContent).toContain("The current loop, shown as the moves, memories, and guardrails that matter to you.");
+    expect(container.textContent).toContain("The current cycle, shown as the moves, memories, and guardrails that matter to you.");
     expect(container.textContent).toContain("Team visible");
-    expect(container.textContent).toContain("Weekly growth loop");
+    expect(container.textContent).toContain("Weekly growth cycle");
     expect(container.textContent).toContain("Starter posts");
     expect(container.textContent).toContain("Content Producer");
     expect(container.textContent).toContain("Review Starter posts");
@@ -847,7 +867,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Prepared work waiting for review");
     expect(container.textContent).toContain("Why it matters");
     expect(container.textContent).toContain("Your next step");
-    expect(container.textContent).toContain("Review loop 0/3");
+    expect(container.textContent).toContain("Review pass 0/3");
     expect(container.textContent).toContain("Needs your review");
     expect(container.textContent).toContain("Open it, then approve, request changes, regenerate, or mark it not useful.");
     expect(pageText.indexOf("Dear me, your team has decisions ready")).toBeLessThan(
@@ -874,6 +894,9 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Approved work can move forward");
     expect(container.textContent).toContain("Live team feed");
     expect(container.textContent).toContain("Your call: Review Starter posts");
+    expect(container.textContent).toContain("Action needed");
+    expect(container.textContent).toContain("Prepared output");
+    expect(container.textContent).toContain("Next action");
     expect(container.textContent).toContain("Decision ready");
     expect(container.textContent).toContain("Weekly Dear me");
     expect(container.textContent).toContain("Open letter");
@@ -1089,7 +1112,7 @@ describe("DearMeOnboarding", () => {
 
     const requestButton = buttonByText(container, "Request approval");
     expect(requestButton?.disabled).toBe(true);
-    expect(container.textContent).toContain("unlock the private Brand OS work loop");
+    expect(container.textContent).toContain("unlock the private Brand OS cycle");
     expect(mockDearmeApi.createBrandBlueprintApplyRequest).not.toHaveBeenCalled();
 
     await act(async () => {
@@ -1605,7 +1628,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Dear me report");
     expect(container.textContent).toContain("Completed work: refreshed positioning");
     expect(container.textContent).toContain("Review one public claim before publishing");
-    expect(container.textContent).toContain("Review loop 0/3");
+    expect(container.textContent).toContain("Review pass 0/3");
     expect(container.textContent).toContain("Needs your review");
     expect(container.textContent).toContain("1 private reference prepared");
     expect(container.textContent).not.toContain("/issues/");

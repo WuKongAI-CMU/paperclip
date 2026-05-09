@@ -29,6 +29,8 @@ type DearMeTeamRole = DearMeWorkbenchTeamMember["role"];
 type DearMeRiskGate = DearMeWorkbenchDecision["riskGate"];
 type DearMeBatchAction = DearMeWorkbenchBatchDecision["action"];
 type DearMeBatchKey = NonNullable<DearMeRiskGate> | "review";
+type DearMeStreamKind = DearMeWorkbenchStreamItem["kind"];
+type DearMeCycleStage = DearMeWorkbenchStreamItem["cycleStage"];
 
 const TEAM_ROLE_ORDER = new Map(DEARME_TEAM_ROLES.map((role, index) => [role, index]));
 const MEMORY_KIND_SET = new Set<string>(DEARME_MEMORY_UPDATE_KINDS);
@@ -271,6 +273,102 @@ function artifactForDecision(decision: DearMeWorkbenchDecision) {
   return "Approval";
 }
 
+function cycleStageForOutputKind(outputKind: DearMeOutputKind | null): DearMeCycleStage {
+  if (outputKind === "brand_os") return "plan";
+  if (outputKind === "voice_profile") return "learn";
+  if (outputKind === "weekly_report") return "report";
+  return "work";
+}
+
+function streamKindForWork(item: DearMeWorkbenchWorkItem): DearMeStreamKind {
+  if (!item.outputKind && item.ownerRole === "chief_of_staff") return "cycle_brief";
+  if (item.outputKind === "weekly_report" && item.status === "ready_for_review") return "report_ready";
+  if (item.status === "ready_for_review") return "decision_needed";
+  return "work_in_motion";
+}
+
+function cycleStageForWork(item: DearMeWorkbenchWorkItem): DearMeCycleStage {
+  if (!item.outputKind && item.ownerRole === "chief_of_staff") return "plan";
+  if (item.status === "ready_for_review") {
+    return item.outputKind === "weekly_report" ? "report" : "review";
+  }
+  return cycleStageForOutputKind(item.outputKind);
+}
+
+function nextActionForWork(input: {
+  item: DearMeWorkbenchWorkItem;
+  isChiefBrief: boolean;
+  isReady: boolean;
+}) {
+  if (input.item.reviewLoop?.nextStep) return input.item.reviewLoop.nextStep;
+  if (input.isChiefBrief) {
+    return "Let Chief of Staff turn the brief into private work before asking for a public move.";
+  }
+  if (input.isReady) {
+    return "Open the prepared work and decide whether it represents you.";
+  }
+  return "Let the team keep preparing this privately; public moves remain approval-gated.";
+}
+
+function sourceLabelForWork(input: {
+  item: DearMeWorkbenchWorkItem;
+  isChiefBrief: boolean;
+}) {
+  if (input.isChiefBrief) return "Chief of Staff brief";
+  if (input.item.outputKind === "voice_profile") return "Voice & Memory";
+  if (input.item.outputKind === "weekly_report") return "Weekly report";
+  return "Prepared output";
+}
+
+function nextActionForDecision(decision: DearMeWorkbenchDecision) {
+  if (decision.reviewLoop?.nextStep) return decision.reviewLoop.nextStep;
+  if (decision.kind === "approve_brand_os") {
+    return "Approve Brand OS only if the first cycle and approval boundaries match how you want to be represented.";
+  }
+  return "Review this call so the team can continue the private growth cycle.";
+}
+
+function streamKindForProgress(item: DearMeWorkbenchProgressItem): DearMeStreamKind {
+  if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "memory_recorded";
+  return "progress_recorded";
+}
+
+function cycleStageForProgress(item: DearMeWorkbenchProgressItem): DearMeCycleStage {
+  if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "learn";
+  if (item.kind === "brand_os_requested" || item.kind === "brand_os_applied") return "plan";
+  if (item.kind === "paid_beta") return "plan";
+  return "work";
+}
+
+function sourceLabelForProgress(item: DearMeWorkbenchProgressItem) {
+  if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "Voice & Memory";
+  if (item.kind === "brand_os_requested" || item.kind === "brand_os_applied") return "Brand OS";
+  if (item.kind === "paid_beta") return "Paid beta access";
+  return "Team activity";
+}
+
+function costImpactForProgress(item: DearMeWorkbenchProgressItem) {
+  if (item.kind === "paid_beta") return "Paid-beta credit recorded";
+  if (item.kind === "brand_os_applied") return "Work stays inside paid-beta guardrails";
+  return null;
+}
+
+function nextActionForProgress(item: DearMeWorkbenchProgressItem) {
+  if (item.kind === "team_progress" && item.title === "Voice & Memory updated") {
+    return "No approval needed; DearMe will use this source in the next private cycle.";
+  }
+  if (item.kind === "brand_os_requested") {
+    return "Review the Brand OS request before private work starts.";
+  }
+  if (item.kind === "brand_os_applied") {
+    return "Start or steer the first private growth cycle from the Chief of Staff.";
+  }
+  if (item.kind === "paid_beta") {
+    return "Use the paid-beta guardrail before starting private work.";
+  }
+  return "Use this signal to decide what the team should prepare next.";
+}
+
 function streamItemFromWork(item: DearMeWorkbenchWorkItem): DearMeWorkbenchStreamItem {
   const role = item.ownerRole;
   const isChiefBrief = !item.outputKind && role === "chief_of_staff";
@@ -283,6 +381,8 @@ function streamItemFromWork(item: DearMeWorkbenchWorkItem): DearMeWorkbenchStrea
 
   return {
     id: `work:${item.id}`,
+    kind: streamKindForWork(item),
+    cycleStage: cycleStageForWork(item),
     role,
     title: isChiefBrief
       ? "Chief of Staff is turning your brief into private work"
@@ -293,6 +393,9 @@ function streamItemFromWork(item: DearMeWorkbenchWorkItem): DearMeWorkbenchStrea
     artifact,
     status: item.status === "queued" ? "working" : item.status,
     needsApproval: isReady,
+    sourceLabel: sourceLabelForWork({ item, isChiefBrief }),
+    costImpact: null,
+    nextAction: nextActionForWork({ item, isChiefBrief, isReady }),
     relatedOutputId: item.outputKind ? item.id : null,
     issueId: item.issueId,
     issueIdentifier: item.issueIdentifier,
@@ -306,12 +409,17 @@ function streamItemFromDecision(decision: DearMeWorkbenchDecision): DearMeWorkbe
 
   return {
     id: `decision:${decision.id}`,
+    kind: decision.outputKind === "weekly_report" ? "report_ready" : "decision_needed",
+    cycleStage: decision.outputKind === "weekly_report" ? "report" : "review",
     role,
     title: `Your call: ${decision.title}`,
     summary: decision.summary,
     artifact: artifactForDecision(decision),
     status: "decision_needed",
     needsApproval: true,
+    sourceLabel: decision.approvalId ? "Approval queue" : "Prepared output",
+    costImpact: decision.riskGate === "spend_money" ? "Spend waits for approval" : null,
+    nextAction: nextActionForDecision(decision),
     relatedOutputId: decision.outputKind ? decision.id.replace(/^output:/, "") : null,
     issueId: decision.issueId,
     issueIdentifier: decision.issueIdentifier,
@@ -324,12 +432,17 @@ function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbe
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") {
     return {
       id: `progress:${item.id}`,
+      kind: streamKindForProgress(item),
+      cycleStage: cycleStageForProgress(item),
       role: "voice_editor",
       title: item.title,
       summary: item.summary,
       artifact: "Voice & Memory",
       status: "recorded",
       needsApproval: false,
+      sourceLabel: sourceLabelForProgress(item),
+      costImpact: costImpactForProgress(item),
+      nextAction: nextActionForProgress(item),
       relatedOutputId: null,
       issueId: null,
       issueIdentifier: null,
@@ -340,12 +453,17 @@ function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbe
 
   return {
     id: `progress:${item.id}`,
+    kind: streamKindForProgress(item),
+    cycleStage: cycleStageForProgress(item),
     role: item.kind === "brand_os_applied" ? "chief_of_staff" : "growth_analyst",
     title: item.title,
     summary: item.summary,
     artifact: item.kind === "brand_os_applied" ? "Growth team" : "Progress",
     status: "recorded",
     needsApproval: false,
+    sourceLabel: sourceLabelForProgress(item),
+    costImpact: costImpactForProgress(item),
+    nextAction: nextActionForProgress(item),
     relatedOutputId: null,
     issueId: null,
     issueIdentifier: null,
@@ -561,7 +679,7 @@ function buildActionGraph(input: {
   addNode({
     id: DEARME_ACTION_GRAPH_CYCLE_NODE_ID,
     kind: "cycle",
-    label: "Weekly growth loop",
+    label: "Weekly growth cycle",
     summary: [
       "Plan, work, review, learn, and report across",
       `${input.team.length} roles,`,
@@ -749,7 +867,7 @@ function buildActionGraph(input: {
   }
 
   return {
-    summary: "DearMe projects the current team loop into a customer-safe graph of roles, work, artifacts, decisions, memory, and reports.",
+    summary: "DearMe projects the current growth cycle into a customer-safe graph of roles, work, artifacts, decisions, memory, and reports.",
     cycleNodeId: DEARME_ACTION_GRAPH_CYCLE_NODE_ID,
     nodes: Array.from(nodes.values()).slice(0, 80),
     edges: Array.from(edges.values()).slice(0, 160),
@@ -897,7 +1015,7 @@ function progressFromActivity(input: {
     id: input.id,
     kind: "team_progress",
     title: "Team progress recorded",
-    summary: "DearMe recorded new private progress in the brand growth loop.",
+    summary: "DearMe recorded new private progress in the brand growth cycle.",
     createdAt: toIso(input.createdAt),
   };
 }
@@ -922,7 +1040,7 @@ function buildHeadline(input: {
   }
 
   if (input.activeWorkCount > 0) {
-    return "Dear me, your team is working on today's brand loop";
+    return "Dear me, your team is working on today's brand cycle";
   }
 
   return "Dear me, your team is standing by";
@@ -935,11 +1053,11 @@ function buildSummary(input: {
   decisionCount: number;
 }) {
   if (input.teamCount === 0) {
-    return "Preview Brand OS, record paid beta access, and approve the first private work loop to create the team.";
+    return "Preview Brand OS, record paid beta access, and approve the first private growth cycle to create the team.";
   }
 
   return [
-    `${input.teamCount} team members are assigned to your brand loop.`,
+    `${input.teamCount} team members are assigned to your brand cycle.`,
     `${input.workReadyCount} item${input.workReadyCount === 1 ? "" : "s"} ready.`,
     `${input.decisionCount} decision${input.decisionCount === 1 ? "" : "s"} needed.`,
     `${input.activeWorkCount} lane${input.activeWorkCount === 1 ? "" : "s"} in motion.`,
