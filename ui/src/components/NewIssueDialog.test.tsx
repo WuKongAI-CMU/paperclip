@@ -54,6 +54,7 @@ const mockProjectsApi = vi.hoisted(() => ({
 const mockAgentsApi = vi.hoisted(() => ({
   list: vi.fn(),
   adapterModels: vi.fn(),
+  adapterModelProfiles: vi.fn(),
 }));
 
 const mockAuthApi = vi.hoisted(() => ({
@@ -301,6 +302,7 @@ describe("NewIssueDialog", () => {
     ]);
     mockAgentsApi.list.mockResolvedValue([]);
     mockAgentsApi.adapterModels.mockResolvedValue([]);
+    mockAgentsApi.adapterModelProfiles.mockResolvedValue([]);
     mockAuthApi.getSession.mockResolvedValue({ user: { id: "user-1" } });
     mockAssetsApi.uploadImage.mockResolvedValue({ contentPath: "/uploads/asset.png" });
     mockInstanceSettingsApi.getExperimental.mockResolvedValue({ enableIsolatedWorkspaces: false });
@@ -527,6 +529,60 @@ describe("NewIssueDialog", () => {
     expect(bodyScrollRegion?.className).toContain("overflow-y-auto");
     expect(bodyScrollRegion?.contains(titleInput ?? null)).toBe(true);
     expect(bodyScrollRegion?.contains(descriptionInput ?? null)).toBe(true);
+
+    act(() => root.unmount());
+  });
+
+  it("describes cheap model defaults without adapter copy", async () => {
+    dialogState.newIssueDefaults = {
+      title: "Draft issue",
+      assigneeAgentId: "agent-1",
+    };
+    mockAgentsApi.list.mockResolvedValue([
+      {
+        id: "agent-1",
+        name: "Ava",
+        role: "Engineer",
+        title: null,
+        status: "active",
+        adapterType: "claude_local",
+        icon: null,
+      },
+    ]);
+    mockAgentsApi.adapterModelProfiles.mockResolvedValue([
+      {
+        key: "cheap",
+        label: "Cheap",
+        adapterConfig: { model: "claude-haiku-4-5" },
+      },
+    ]);
+
+    const { root } = renderDialog(container);
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Claude options");
+    });
+
+    const optionsButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.includes("Claude options"));
+    expect(optionsButton).not.toBeUndefined();
+
+    await act(async () => {
+      optionsButton!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    const cheapButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Cheap");
+    expect(cheapButton).not.toBeUndefined();
+
+    await act(async () => {
+      cheapButton!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(container.textContent).toContain("configured cheap model");
+    expect(container.textContent).toContain("claude-haiku-4-5");
+    expect(container.textContent).not.toContain("adapter default");
 
     act(() => root.unmount());
   });

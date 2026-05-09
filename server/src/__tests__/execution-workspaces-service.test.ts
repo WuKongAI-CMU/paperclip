@@ -443,5 +443,16 @@ describeEmbeddedPostgres("executionWorkspaceService.getCloseReadiness", () => {
       "git_worktree_remove",
       "git_branch_delete",
     ]));
+    expect(readiness?.plannedActions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: "git_worktree_remove",
+        description: `DearMe will run git worktree cleanup for ${worktreePath}.`,
+      }),
+      expect.objectContaining({
+        kind: "git_branch_delete",
+        description: "DearMe will try to delete the runtime-created branch after removing the worktree.",
+      }),
+    ]));
+    expect(readiness?.plannedActions.map((action) => action.description).join("\n")).not.toContain("Paperclip will");
   }, 20_000);
 });

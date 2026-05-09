@@ -3,6 +3,8 @@
  */
 import type { CompanyPortabilityManifest } from "@paperclipai/shared";
 
+const PRODUCT_NAME = "DearMe";
+
 const ROLE_LABELS: Record<string, string> = {
   ceo: "CEO",
   cto: "CTO",
@@ -96,7 +98,7 @@ export function generateReadme(
   // What's Inside table
   lines.push("## What's Inside");
   lines.push("");
-  lines.push("> This is an [Agent Company](https://agentcompanies.io) package from [Paperclip](https://paperclip.ing)");
+  lines.push(`This is a ${PRODUCT_NAME} company package.`);
   lines.push("");
 
   const counts: Array<[string, number]> = [];
@@ -156,16 +158,14 @@ export function generateReadme(
   // Getting Started
   lines.push("## Getting Started");
   lines.push("");
-  lines.push("```bash");
-  lines.push("pnpm paperclipai company import this-github-url-or-folder");
-  lines.push("```");
+  lines.push(`Use the ${PRODUCT_NAME} company import screen with this GitHub URL or folder.`);
   lines.push("");
-  lines.push("See [Paperclip](https://paperclip.ing) for more information.");
+  lines.push(`See ${PRODUCT_NAME} for more information.`);
   lines.push("");
 
   // Footer
   lines.push("---");
-  lines.push(`Exported from [Paperclip](https://paperclip.ing) on ${new Date().toISOString().split("T")[0]}`);
+  lines.push(`Exported from ${PRODUCT_NAME} on ${new Date().toISOString().split("T")[0]}`);
   lines.push("");
 
   return lines.join("\n");

@@ -19,6 +19,12 @@ describe("company routes", () => {
     );
   });
 
+  it("treats DearMe as a company-scoped board route", () => {
+    expect(isBoardPathWithoutPrefix("/dearme")).toBe(true);
+    expect(extractCompanyPrefixFromPath("/dearme")).toBeNull();
+    expect(applyCompanyPrefix("/dearme", "PET")).toBe("/PET/dearme");
+  });
+
   it("normalizes prefixed execution workspace paths back to company-relative paths", () => {
     expect(toCompanyRelativePath("/PAP/execution-workspaces/workspace-123")).toBe(
       "/execution-workspaces/workspace-123",

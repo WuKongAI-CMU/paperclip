@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Outlet, useLocation, useNavigate, useNavigationType, useParams } from "@/lib/router";
 import { CompanyRail } from "./CompanyRail";
 import { Sidebar } from "./Sidebar";
+import { DearMeSidebar } from "./DearMeSidebar";
 import { InstanceSidebar } from "./InstanceSidebar";
 import { CompanySettingsSidebar } from "./CompanySettingsSidebar";
 import { BreadcrumbBar } from "./BreadcrumbBar";
@@ -98,12 +99,13 @@ export function Layout() {
     () => getCompanyRouteSegment(location.pathname, companyPrefix),
     [companyPrefix, location.pathname],
   );
+  const isDearMeRoute = pluginRoutePath === "dearme";
   const routeSidebarCompanyId = matchedCompany?.id ?? null;
   const routeSidebarCompanyPrefix = matchedCompany?.issuePrefix ?? null;
   const { slots: routeSidebarSlots } = usePluginSlots({
     slotTypes: ["page", "routeSidebar"],
     companyId: routeSidebarCompanyId,
-    enabled: Boolean(routeSidebarCompanyId && pluginRoutePath),
+    enabled: Boolean(routeSidebarCompanyId && pluginRoutePath && !isDearMeRoute),
   });
   const routeSidebarSlot = useMemo(
     () => resolveRouteSidebarSlot(routeSidebarSlots, pluginRoutePath),
@@ -116,7 +118,9 @@ export function Layout() {
     }),
     [routeSidebarCompanyId, routeSidebarCompanyPrefix],
   );
-  const companySidebar = routeSidebarSlot ? (
+  const companySidebar = isDearMeRoute ? (
+    <DearMeSidebar />
+  ) : routeSidebarSlot ? (
     <PluginSlotMount
       slot={routeSidebarSlot}
       context={sidebarContext}
@@ -205,7 +209,9 @@ export function Layout() {
 
   useKeyboardShortcuts({
     enabled: keyboardShortcutsEnabled,
-    onNewIssue: () => openNewIssue(),
+    onNewIssue: () => {
+      if (!isDearMeRoute) openNewIssue();
+    },
     onSearch: openSearch,
     onToggleSidebar: toggleSidebar,
     onTogglePanel: togglePanel,
@@ -378,7 +384,7 @@ export function Layout() {
             )}
           >
             <div className="flex flex-1 min-h-0 overflow-hidden">
-              <CompanyRail />
+              {!isDearMeRoute && <CompanyRail />}
               <div className="w-60 shrink-0 overflow-hidden">
                 {isInstanceSettingsRoute ? (
                   <InstanceSidebar />
@@ -398,7 +404,7 @@ export function Layout() {
         ) : (
           <div className="flex h-full flex-col shrink-0">
             <div className="flex flex-1 min-h-0">
-              <CompanyRail />
+              {!isDearMeRoute && <CompanyRail />}
               <ResizableSidebarPane open={sidebarOpen} resizable className="h-full shrink-0">
                 {isInstanceSettingsRoute ? (
                   <InstanceSidebar />
@@ -444,16 +450,20 @@ export function Layout() {
                 <Outlet />
               )}
             </main>
-            <PropertiesPanel />
+            {!isDearMeRoute && <PropertiesPanel />}
           </div>
         </div>
       </div>
-      {isMobile && <MobileBottomNav visible={mobileNavVisible} />}
+      {isMobile && !isDearMeRoute && <MobileBottomNav visible={mobileNavVisible} />}
       <CommandPalette />
-      <NewIssueDialog />
-      <NewProjectDialog />
-      <NewGoalDialog />
-      <NewAgentDialog />
+      {!isDearMeRoute && (
+        <>
+          <NewIssueDialog />
+          <NewProjectDialog />
+          <NewGoalDialog />
+          <NewAgentDialog />
+        </>
+      )}
       <KeyboardShortcutsCheatsheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       <ToastViewport />
       </div>

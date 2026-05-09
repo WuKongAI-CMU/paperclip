@@ -42,7 +42,8 @@ describe("probeEnvironment", () => {
 
     expect(result.ok).toBe(true);
     expect(result.driver).toBe("local");
-    expect(result.summary).toContain("Local environment");
+    expect(result.summary).toBe("Local environment is available on this DearMe host.");
+    expect(result.summary).not.toContain("Paperclip");
     expect(mockEnsureSshWorkspaceReady).not.toHaveBeenCalled();
   });
 

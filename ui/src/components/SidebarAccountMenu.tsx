@@ -14,6 +14,7 @@ import type { DeploymentMode } from "@paperclipai/shared";
 import { Link } from "@/lib/router";
 import { authApi } from "@/api/auth";
 import { queryKeys } from "@/lib/queryKeys";
+import { PRODUCT_NAME } from "@/lib/product-labels";
 import { useSidebar } from "../context/SidebarContext";
 import { useTheme } from "../context/ThemeContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -21,7 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "../lib/utils";
 
 const PROFILE_SETTINGS_PATH = "/instance/settings/profile";
-const DOCS_URL = "https://docs.paperclip.ing/";
+const DOCS_URL = import.meta.env.VITE_DOCS_URL?.trim() || "https://dearme.app/docs";
 
 interface SidebarAccountMenuProps {
   deploymentMode?: DeploymentMode;
@@ -180,7 +181,7 @@ export function SidebarAccountMenu({
                 </div>
                 <p className="truncate text-sm text-muted-foreground">{secondaryLabel}</p>
                 {version ? (
-                  <p className="mt-1 text-xs text-muted-foreground">Paperclip v{version}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{PRODUCT_NAME} v{version}</p>
                 ) : null}
               </div>
             </div>
@@ -209,7 +210,7 @@ export function SidebarAccountMenu({
               />
               <MenuAction
                 label="Documentation"
-                description="Open Paperclip docs in a new tab."
+                description={`Open ${PRODUCT_NAME} docs in a new tab.`}
                 icon={BookOpen}
                 href={DOCS_URL}
                 external

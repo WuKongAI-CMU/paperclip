@@ -7,6 +7,10 @@ const mockAgentService = vi.hoisted(() => ({
   terminate: vi.fn(),
 }));
 
+const mockDearMeBrandBlueprintApplyService = vi.hoisted(() => ({
+  applyApprovedBlueprint: vi.fn(),
+}));
+
 const mockNotifyHireApproved = vi.hoisted(() => vi.fn());
 
 vi.mock("../services/agents.js", () => ({
@@ -15,6 +19,10 @@ vi.mock("../services/agents.js", () => ({
 
 vi.mock("../services/hire-hook.js", () => ({
   notifyHireApproved: mockNotifyHireApproved,
+}));
+
+vi.mock("../services/dearme-brand-blueprint-apply.js", () => ({
+  dearmeBrandBlueprintApplyService: vi.fn(() => mockDearMeBrandBlueprintApplyService),
 }));
 
 type ApprovalRecord = {
@@ -34,6 +42,17 @@ function createApproval(status: string): ApprovalRecord {
     status,
     payload: { agentId: "agent-1" },
     requestedByAgentId: "requester-1",
+  };
+}
+
+function createDearMeApproval(status: string): ApprovalRecord {
+  return {
+    id: "approval-1",
+    companyId: "company-1",
+    type: "dearme_brand_blueprint_apply",
+    status,
+    payload: {},
+    requestedByAgentId: null,
   };
 }
 
@@ -61,6 +80,7 @@ describe("approvalService resolution idempotency", () => {
     mockAgentService.activatePendingApproval.mockResolvedValue(undefined);
     mockAgentService.create.mockResolvedValue({ id: "agent-1" });
     mockAgentService.terminate.mockResolvedValue(undefined);
+    mockDearMeBrandBlueprintApplyService.applyApprovedBlueprint.mockResolvedValue({});
     mockNotifyHireApproved.mockResolvedValue(undefined);
   });
 
@@ -77,6 +97,7 @@ describe("approvalService resolution idempotency", () => {
     expect(result.approval.status).toBe("approved");
     expect(mockAgentService.activatePendingApproval).not.toHaveBeenCalled();
     expect(mockNotifyHireApproved).not.toHaveBeenCalled();
+    expect(mockDearMeBrandBlueprintApplyService.applyApprovedBlueprint).not.toHaveBeenCalled();
   });
 
   it("treats repeated reject retries as no-ops after another worker resolves the approval", async () => {
@@ -103,5 +124,27 @@ describe("approvalService resolution idempotency", () => {
     expect(result.applied).toBe(true);
     expect(mockAgentService.activatePendingApproval).toHaveBeenCalledWith("agent-1");
     expect(mockNotifyHireApproved).toHaveBeenCalledTimes(1);
+    expect(mockDearMeBrandBlueprintApplyService.applyApprovedBlueprint).not.toHaveBeenCalled();
+  });
+
+  it("applies a DearMe brand blueprint only when approval is newly approved", async () => {
+    const approved = createDearMeApproval("approved");
+    const dbStub = createDbStub([[createDearMeApproval("pending")]], [approved]);
+
+    const svc = approvalService(dbStub.db as any);
+    const result = await svc.approve("approval-1", "board", "create it");
+
+    expect(result.applied).toBe(true);
+    expect(mockDearMeBrandBlueprintApplyService.applyApprovedBlueprint).toHaveBeenCalledWith(approved);
+  });
+
+  it("does not reapply DearMe brand blueprint approvals on repeated approve retries", async () => {
+    const dbStub = createDbStub([[createDearMeApproval("approved")]], []);
+
+    const svc = approvalService(dbStub.db as any);
+    const result = await svc.approve("approval-1", "board", "retry");
+
+    expect(result.applied).toBe(false);
+    expect(mockDearMeBrandBlueprintApplyService.applyApprovedBlueprint).not.toHaveBeenCalled();
   });
 });

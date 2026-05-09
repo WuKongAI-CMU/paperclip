@@ -1,9 +1,17 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { onboard } from "../commands/onboard.js";
 import type { PaperclipConfig } from "../config/schema.js";
+
+const mocks = vi.hoisted(() => ({
+  execFileSync: vi.fn(),
+}));
+
+vi.mock("node:child_process", () => ({
+  execFileSync: mocks.execFileSync,
+}));
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -85,6 +93,11 @@ describe("onboard", () => {
     delete process.env.PAPERCLIP_AGENT_JWT_SECRET;
     delete process.env.PAPERCLIP_SECRETS_MASTER_KEY;
     delete process.env.PAPERCLIP_SECRETS_MASTER_KEY_FILE;
+    delete process.env.PAPERCLIP_TAILNET_BIND_HOST;
+    mocks.execFileSync.mockReset();
+    mocks.execFileSync.mockImplementation(() => {
+      throw new Error("tailscale unavailable");
+    });
   });
 
   afterEach(() => {

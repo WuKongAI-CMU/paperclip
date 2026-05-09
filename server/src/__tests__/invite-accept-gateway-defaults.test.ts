@@ -74,6 +74,46 @@ describe("buildJoinDefaultsPayloadForAccept (openclaw_gateway)", () => {
 });
 
 describe("normalizeAgentDefaultsForJoin (openclaw_gateway)", () => {
+  it("keeps gateway validation diagnostics DearMe-facing", () => {
+    const missingDefaults = normalizeAgentDefaultsForJoin({
+      adapterType: "openclaw_gateway",
+      defaultsPayload: null,
+      deploymentMode: "authenticated",
+      deploymentExposure: "private",
+      bindHost: "127.0.0.1",
+      allowedHostnames: [],
+    });
+    const invalidUrl = normalizeAgentDefaultsForJoin({
+      adapterType: "openclaw_gateway",
+      defaultsPayload: { url: "not a url" },
+      deploymentMode: "authenticated",
+      deploymentExposure: "private",
+      bindHost: "127.0.0.1",
+      allowedHostnames: [],
+    });
+    const httpUrl = normalizeAgentDefaultsForJoin({
+      adapterType: "openclaw_gateway",
+      defaultsPayload: { url: "https://gateway.example/ws" },
+      deploymentMode: "authenticated",
+      deploymentExposure: "private",
+      bindHost: "127.0.0.1",
+      allowedHostnames: [],
+    });
+
+    const diagnostics = [
+      ...missingDefaults.diagnostics,
+      ...invalidUrl.diagnostics,
+      ...httpUrl.diagnostics,
+    ]
+      .map((diag) => `${diag.message} ${diag.hint ?? ""}`)
+      .join("\n");
+
+    expect(diagnostics).toContain("remote gateway config");
+    expect(diagnostics).toContain("Remote gateway URL must use ws:// or wss://");
+    expect(diagnostics).toContain("Invalid remote gateway URL");
+    expect(diagnostics).not.toMatch(/\bOpenClaw\b/);
+  });
+
   it("generates persistent device key when device auth is enabled", () => {
     const normalized = normalizeAgentDefaultsForJoin({
       adapterType: "openclaw_gateway",

@@ -182,6 +182,24 @@ describe("run liveness classifier", () => {
     expect(classification.nextAction).toBe("wait for board approval before continuing.");
   });
 
+  it("treats durable document output with review approval wording as progress", () => {
+    const latestEvidenceAt = new Date("2026-05-07T08:46:51Z");
+    const classification = classifyRunLiveness({
+      ...baseInput,
+      issueCommentBodies: [
+        "Updated the attached report document. Next action: user approval before external sharing.",
+      ],
+      evidence: {
+        documentRevisionsCreated: 1,
+        latestEvidenceAt,
+      },
+    });
+
+    expect(classification.livenessState).toBe("advanced");
+    expect(classification.actionability).toBe("approval_required");
+    expect(classification.lastUsefulActionAt).toBe(latestEvidenceAt);
+  });
+
   it("routes production-sensitive next actions to manager review", () => {
     const classification = classifyRunLiveness({
       ...baseInput,

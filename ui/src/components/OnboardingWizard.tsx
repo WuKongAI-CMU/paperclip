@@ -78,7 +78,7 @@ export function OnboardingWizard() {
   const { companyPrefix } = useParams<{ companyPrefix?: string }>();
   const [routeDismissed, setRouteDismissed] = useState(false);
 
-  // Sync disabled adapter types from server so adapter grid filters them out
+  // Sync disabled runner types from server so the run-method grid filters them out
   const disabledTypes = useDisabledAdaptersSync();
 
   const routeOnboardingOptions =
@@ -192,7 +192,7 @@ export function OnboardingWizard() {
 
   const { data: adapterModels } = useQuery({
     // The wizard doesn't expose an environment selector, so models always
-    // resolve against the local Paperclip host (environmentId = null).
+    // resolve against the local host (environmentId = null).
     queryKey: createdCompanyId
       ? queryKeys.agents.adapterModels(createdCompanyId, adapterType, null)
       : ["agents", "none", "adapter-models", adapterType, null],
@@ -377,7 +377,7 @@ export function OnboardingWizard() {
       return result;
     } catch (err) {
       setAdapterEnvError(
-        err instanceof Error ? err.message : "Adapter environment test failed"
+        err instanceof Error ? err.message : "Runner environment test failed"
       );
       return null;
     } finally {
@@ -429,7 +429,7 @@ export function OnboardingWizard() {
       if (adapterType === "opencode_local") {
         if (!isValidOpenCodeModelId(model)) {
           setError(
-            "OpenCode requires an explicit model in provider/model format."
+            "OpenCode requires an explicit model in source/model format."
           );
           return;
         }
@@ -735,10 +735,10 @@ export function OnboardingWizard() {
                     />
                   </div>
 
-                  {/* Adapter type radio cards */}
+                  {/* Run method radio cards */}
                   <div>
                     <label className="text-xs text-muted-foreground mb-2 block">
-                      Adapter type
+                      Run method
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       {recommendedAdapters.map((opt) => (
@@ -790,7 +790,7 @@ export function OnboardingWizard() {
                           showMoreAdapters ? "rotate-0" : "-rotate-90"
                         )}
                       />
-                      More Agent Adapter Types
+                      More run methods
                     </button>
 
                     {showMoreAdapters && (
@@ -839,7 +839,7 @@ export function OnboardingWizard() {
                     )}
                   </div>
 
-                  {/* Conditional adapter fields */}
+                  {/* Conditional runner fields */}
                   {isLocalAdapter && (
                     <div className="space-y-3">
                       <div>
@@ -947,10 +947,10 @@ export function OnboardingWizard() {
                       <div className="flex items-center justify-between gap-2">
                         <div>
                           <p className="text-xs font-medium">
-                            Adapter environment check
+                            Runner check
                           </p>
                           <p className="text-[11px] text-muted-foreground">
-                            Runs a live probe that asks the adapter CLI to
+                            Runs a live probe that asks the selected runner to
                             respond with hello.
                           </p>
                         </div>
@@ -986,7 +986,7 @@ export function OnboardingWizard() {
                           <p className="text-[11px] text-amber-900/90 leading-relaxed">
                             Claude failed while{" "}
                             <span className="font-mono">ANTHROPIC_API_KEY</span>{" "}
-                            is set. You can clear it in this CEO adapter config
+                            is set. You can clear it in this CEO runner config
                             and retry the probe.
                           </p>
                           <Button

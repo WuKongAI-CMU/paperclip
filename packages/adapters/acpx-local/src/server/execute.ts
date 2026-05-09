@@ -220,7 +220,7 @@ async function prepareManagedCodexHome(input: {
 
   await onLog(
     "stdout",
-    `[paperclip] Using Paperclip-managed ACPX Codex home "${targetHome}" (seeded from "${sourceHome}").\n`,
+    `[paperclip] Using DearMe-managed ACPX Codex home "${targetHome}" (seeded from "${sourceHome}").\n`,
   );
   return targetHome;
 }
@@ -328,7 +328,7 @@ async function prepareClaudeSkillRuntime(input: {
   const selectedNames = selectedSkills.map((entry) => entry.runtimeName).sort();
   const promptInstructions = selectedSkills.length > 0
     ? [
-        "Paperclip has materialized selected runtime skills for this ACPX Claude session.",
+        "DearMe has materialized selected runtime skills for this ACPX Claude session.",
         `Skill root: ${skillsHome}`,
         selectedNames.length > 0 ? `Selected skills: ${selectedNames.join(", ")}` : "",
         "When a task calls for one of these skills, read its SKILL.md from that root and follow it.",
@@ -345,7 +345,7 @@ async function prepareClaudeSkillRuntime(input: {
     },
     promptInstructions,
     commandNotes: selectedSkills.length > 0
-      ? [`Materialized ${selectedSkills.length} Paperclip skill(s) for ACPX Claude at ${skillsHome}.`]
+      ? [`Materialized ${selectedSkills.length} DearMe skill(s) for ACPX Claude at ${skillsHome}.`]
       : [],
   };
 }
@@ -715,7 +715,7 @@ async function buildRuntime(input: {
     const desired = resolvePaperclipDesiredSkillNames(config, await readPaperclipRuntimeSkillEntries(config, __moduleDir));
     skillsIdentity = { mode: "custom_unsupported", desiredSkillNames: desired };
     if (desired.length > 0) {
-      skillCommandNotes.push("Selected Paperclip skills are tracked only; ACPX custom commands do not expose a runtime skill contract yet.");
+      skillCommandNotes.push("Selected DearMe skills are tracked only; ACPX custom commands do not expose a runtime skill contract yet.");
     }
   }
 
@@ -1083,7 +1083,7 @@ export function createAcpxLocalExecutor(deps: ExecuteDeps = {}) {
         command: prepared.agentCommand ?? prepared.acpxAgent,
         cwd: prepared.cwd,
         commandNotes: [
-          `ACPX runtime embedded in Paperclip with ${prepared.mode} session mode.`,
+          `ACPX runtime embedded in DearMe with ${prepared.mode} session mode.`,
           `Effective ACPX permission mode: ${prepared.permissionMode}.`,
           ...(Array.isArray(prepared.skillsIdentity.commandNotes)
             ? prepared.skillsIdentity.commandNotes.filter((note): note is string => typeof note === "string")

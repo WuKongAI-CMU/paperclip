@@ -8,6 +8,7 @@ import { useBreadcrumbs } from "@/context/BreadcrumbContext";
 import { useCompany } from "@/context/CompanyContext";
 import { useToast } from "@/context/ToastContext";
 import { Link } from "@/lib/router";
+import { PRODUCT_NAME } from "@/lib/product-labels";
 import { queryKeys } from "@/lib/queryKeys";
 
 const inviteRoleOptions = [
@@ -248,7 +249,7 @@ export function CompanyInvites() {
                 ) : null}
               </div>
               <div className="text-sm text-muted-foreground">
-                This URL includes the current Paperclip domain returned by the server.
+                This URL includes the current {PRODUCT_NAME} domain returned by the server.
               </div>
             </div>
             <button

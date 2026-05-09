@@ -18,9 +18,9 @@ export const agentConfigurationDoc = `# acpx_local agent configuration
 Adapter: acpx_local
 
 Use when:
-- The agent should run through Agent Client Protocol via ACPX on the Paperclip host or a managed execution environment.
+- The agent should run through Agent Client Protocol via ACPX on the DearMe host or a runtime-managed execution environment.
 - You want one built-in adapter that can target Claude, Codex, or a custom ACP server command.
-- You need Paperclip-managed session identity and live streamed ACP events in later ACPX runtime phases.
+- You need DearMe-managed session identity and live streamed ACP events in later ACPX runtime phases.
 
 Don't use when:
 - You need today's stable Claude Code or Codex CLI wrapper behavior. Use claude_local or codex_local until acpx_local runtime execution is enabled.
@@ -34,8 +34,8 @@ Core fields:
 - cwd (string, optional): default absolute working directory fallback for the agent process.
 - permissionMode (string, optional): defaults to approve-all, meaning ACPX permission requests are auto-approved.
 - nonInteractivePermissions (string, optional): fallback behavior when ACPX cannot ask interactively. Supported values are deny and fail.
-- stateDir (string, optional): ACPX state directory. Defaults to a Paperclip-managed company/agent scoped location.
-- instructionsFilePath (string, optional): absolute path to a markdown instructions file used by Paperclip prompt construction.
+- stateDir (string, optional): ACPX state directory. Defaults to a runtime-managed company/agent scoped location.
+- instructionsFilePath (string, optional): absolute path to a markdown instructions file used by DearMe prompt construction.
 - promptTemplate (string, optional): run prompt template.
 - bootstrapPromptTemplate (string, optional): first-run bootstrap prompt template.
 - timeoutSec (number, optional): run timeout in seconds. Defaults to 0, meaning no adapter timeout.
@@ -43,5 +43,5 @@ Core fields:
 
 Dependency decision:
 - acpx_local declares direct dependencies on acpx, @agentclientprotocol/claude-agent-acp, and @zed-industries/codex-acp so the built-in adapter has deterministic package resolution instead of relying on globally installed ACP commands.
-- ACPX currently requires Node >=22.12.0. Paperclip keeps the repo-wide Node >=20 engine and surfaces the stricter runtime prerequisite through acpx_local diagnostics.
+- ACPX currently requires Node >=22.12.0. DearMe keeps the repo-wide Node >=20 engine and surfaces the stricter runtime prerequisite through acpx_local diagnostics.
 `;

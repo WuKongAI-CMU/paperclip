@@ -149,6 +149,12 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     });
     await seedDearMeAgent({
       companyId,
+      name: "DearMe Chief of Staff 9",
+      role: "chief_of_staff",
+      updatedAt: new Date("2026-05-07T13:10:00.000Z"),
+    });
+    await seedDearMeAgent({
+      companyId,
       name: "DearMe Content Producer",
       role: "content_producer",
       updatedAt: new Date("2026-05-07T13:05:00.000Z"),
@@ -269,6 +275,38 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         companyId,
         actorType: "user",
         actorId: "user-1",
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: "memory-voice-1",
+        details: {
+          kind: "voice_sample",
+          title: "Operator note",
+          body: "Short, direct writing sample with concrete proof.",
+          sourceLabel: "Manual note",
+        },
+        createdAt: new Date("2026-05-07T16:35:00.000Z"),
+      },
+      {
+        id: randomUUID(),
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: "memory-proof-1",
+        details: {
+          kind: "proof_point",
+          title: "Shipped proof",
+          body: "Shipped a working local agent product and verified the first private work loop.",
+          sourceLabel: "Build log",
+        },
+        createdAt: new Date("2026-05-07T16:33:00.000Z"),
+      },
+      {
+        id: randomUUID(),
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
         action: "dearme.brand_blueprint_applied",
         entityType: "approval",
         entityId: "approval-1",
@@ -289,6 +327,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     const result = await dearmeWorkbenchService(db).getWorkbench(companyId);
 
     expect(result.headline).toBe("Dear me, your team has decisions ready");
+    expect(result.team).toHaveLength(2);
     expect(result.team.map((member) => member.name)).toEqual([
       "Chief of Staff",
       "Content Producer",
@@ -327,12 +366,65 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
       title: "Dear me report",
       bodyPreview: expect.stringContaining("Work ready"),
     }));
-    expect(result.recentProgress).toEqual([
-      expect.objectContaining({
-        kind: "brand_os_applied",
-        title: "Growth team created",
+    expect(result.recentProgress).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "brand_os_applied",
+          title: "Growth team created",
+        }),
+        expect.objectContaining({
+          kind: "team_progress",
+          title: "Voice & Memory updated",
+        }),
+      ]),
+    );
+    expect(result.memory).toEqual(expect.objectContaining({
+      sourceCount: 2,
+      voiceSampleCount: 1,
+      proofCount: 1,
+      voiceProfile: expect.objectContaining({
+        title: "Draft Voice Profile",
+        status: "learning",
+        sampleCount: 1,
+        confidence: 55,
+        draftTone: expect.arrayContaining(["Direct", "Evidence-backed"]),
       }),
-    ]);
+      latest: expect.arrayContaining([
+        expect.objectContaining({
+          id: "memory-voice-1",
+          kind: "voice_sample",
+          title: "Operator note",
+          sourceLabel: "Manual note",
+        }),
+      ]),
+    }));
+    expect(result.workStream).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "content_producer",
+          artifact: "Content drafts",
+          status: "decision_needed",
+          needsApproval: true,
+          issueId: contentIssueId,
+        }),
+        expect.objectContaining({
+          role: "opportunity_scout",
+          artifact: "Opportunity leads",
+          status: "working",
+          needsApproval: false,
+        }),
+        expect.objectContaining({
+          role: "chief_of_staff",
+          artifact: "Growth team",
+          status: "recorded",
+        }),
+        expect.objectContaining({
+          role: "voice_editor",
+          artifact: "Voice & Memory",
+          status: "recorded",
+        }),
+      ]),
+    );
 
     const customerPathJson = JSON.stringify(result);
     expect(customerPathJson).not.toContain("codex-local");

@@ -29,7 +29,7 @@ function configuredDetail(agent: AcpxSkillAgent): string {
 }
 
 function unsupportedDetail(): string {
-  return "Desired state is stored in Paperclip only; custom ACP commands need an explicit skill integration contract before runtime sync is available.";
+  return "Desired state is stored in DearMe only; custom ACP commands need an explicit skill integration contract before runtime sync is available.";
 }
 
 async function buildAcpxSkillSnapshot(config: Record<string, unknown>): Promise<AdapterSkillSnapshot> {
@@ -42,7 +42,7 @@ async function buildAcpxSkillSnapshot(config: Record<string, unknown>): Promise<
   const warnings: string[] = supported
     ? []
     : [
-        "Custom ACP commands do not expose a Paperclip skill integration contract yet; selected skills are tracked only.",
+        "Custom ACP commands do not expose a DearMe skill integration contract yet; selected skills are tracked only.",
       ];
 
   const entries: AdapterSkillEntry[] = availableEntries.map((entry) => {
@@ -54,7 +54,7 @@ async function buildAcpxSkillSnapshot(config: Record<string, unknown>): Promise<
       managed: true,
       state: desired ? "configured" : "available",
       origin: entry.required ? "paperclip_required" : "company_managed",
-      originLabel: entry.required ? "Required by Paperclip" : "Managed by Paperclip",
+      originLabel: entry.required ? "Required by DearMe" : "Managed by DearMe",
       readOnly: false,
       sourcePath: entry.source,
       targetPath: null,
@@ -66,7 +66,7 @@ async function buildAcpxSkillSnapshot(config: Record<string, unknown>): Promise<
 
   for (const desiredSkill of desiredSkills) {
     if (availableByKey.has(desiredSkill)) continue;
-    warnings.push(`Desired skill "${desiredSkill}" is not available from the Paperclip skills directory.`);
+    warnings.push(`Desired skill "${desiredSkill}" is not available from the DearMe runtime skills directory.`);
     entries.push({
       key: desiredSkill,
       runtimeName: null,
@@ -78,7 +78,7 @@ async function buildAcpxSkillSnapshot(config: Record<string, unknown>): Promise<
       readOnly: false,
       sourcePath: null,
       targetPath: null,
-      detail: "Paperclip cannot find this skill in the local runtime skills directory.",
+      detail: "DearMe cannot find this skill in the local runtime skills directory.",
     });
   }
 

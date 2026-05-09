@@ -493,7 +493,10 @@ describe("openclaw gateway adapter execute", () => {
       expect(String(payload?.message ?? "")).toContain("wake now");
       expect(String(payload?.message ?? "")).toContain("PAPERCLIP_RUN_ID=run-123");
       expect(String(payload?.message ?? "")).toContain("PAPERCLIP_TASK_ID=task-123");
-      expect(String(payload?.message ?? "")).toContain("## Paperclip Wake Payload");
+      expect(String(payload?.message ?? "")).toContain("DearMe wake event for a remote gateway adapter.");
+      expect(String(payload?.message ?? "")).not.toContain("Paperclip wake event for a cloud adapter.");
+      expect(String(payload?.message ?? "")).toContain("## DearMe Wake Payload");
+      expect(String(payload?.message ?? "")).not.toContain("## Paperclip Wake Payload");
       expect(String(payload?.message ?? "")).toContain(
         "Treat this wake payload as the highest-priority change for the current heartbeat.",
       );
@@ -518,6 +521,8 @@ describe("openclaw gateway adapter execute", () => {
   it("fails fast when url is missing", async () => {
     const result = await execute(buildContext({}));
     expect(result.exitCode).toBe(1);
+    expect(result.errorMessage).toBe("Remote gateway adapter missing url");
+    expect(result.errorMessage).not.toMatch(/\bOpenClaw\b/);
     expect(result.errorCode).toBe("openclaw_gateway_url_missing");
   });
 
@@ -672,6 +677,9 @@ describe("openclaw gateway testEnvironment", () => {
     });
 
     expect(result.status).toBe("fail");
-    expect(result.checks.some((check) => check.code === "openclaw_gateway_url_missing")).toBe(true);
+    const missingUrlCheck = result.checks.find((check) => check.code === "openclaw_gateway_url_missing");
+    expect(missingUrlCheck).toBeTruthy();
+    expect(missingUrlCheck?.message).toBe("Remote gateway adapter requires a WebSocket URL.");
+    expect(missingUrlCheck?.message).not.toMatch(/\bOpenClaw\b/);
   });
 });

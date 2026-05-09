@@ -22,6 +22,7 @@ describe("BreadcrumbContext", () => {
     act(() => {
       root.unmount();
     });
+    document.title = "";
     container.remove();
   });
 
@@ -57,5 +58,32 @@ describe("BreadcrumbContext", () => {
     });
 
     expect(renderCounts).toHaveLength(2);
+  });
+
+  it("uses DearMe in the browser title", () => {
+    let updateBreadcrumbs: ((crumbs: Array<{ label: string; href?: string }>) => void) | null = null;
+
+    function TestConsumer() {
+      const { setBreadcrumbs } = useBreadcrumbs();
+      updateBreadcrumbs = setBreadcrumbs;
+      return null;
+    }
+
+    act(() => {
+      root.render(
+        <BreadcrumbProvider>
+          <TestConsumer />
+        </BreadcrumbProvider>,
+      );
+    });
+
+    expect(document.title).toBe("DearMe");
+
+    act(() => {
+      updateBreadcrumbs?.([{ label: "Issues", href: "/issues" }, { label: "DEAA-1488" }]);
+    });
+
+    expect(document.title).toBe("DEAA-1488 · Issues · DearMe");
+    expect(document.title).not.toContain("Paperclip");
   });
 });

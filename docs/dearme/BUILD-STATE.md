@@ -254,10 +254,71 @@ Structured output details:
 - The detail read-model keeps technical source values internal and does not
   render adapter/provider/kernel language on the customer path.
 
+Live Team Feed details:
+
+- Added a shared `workStream` contract to the DearMe workbench read-model so the
+  customer shell can show a Polsia-style visible team feed without introducing a
+  new runtime, queue, or database table.
+- `server/src/services/dearme-workbench.ts` now projects the feed from existing
+  decisions, work products, issues, agents, and activity events.
+- The feed turns existing Paperclip/Naive substrate state into DearMe-language
+  role/action/artifact cards: Chief of Staff, Brand Strategist, Voice Editor,
+  Content Producer, Opportunity Scout, Portfolio Builder, and Growth Analyst.
+- Decision-ready work is lifted to the top of the stream with the underlying
+  output, issue, and approval context preserved for the review loop.
+- `ui/src/pages/DearMeOnboarding.tsx` now renders a `Live team feed` section in
+  the Team Workbench instead of making the first screen feel like a generic
+  dashboard or raw activity log.
+- The slice reuses Polsia's product choreography, the existing
+  Paperclip/Naive workbench primitives, and the Lindy-style action-card pattern
+  while keeping provider, adapter, setup payload, and kernel language out of the
+  customer-facing UI.
+
 Verification:
 
 - `rg -n "PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE|Current positioning|Product Positioning" docs/dearme/README.md docs/dearme/PRODUCT-ARCHITECTURE.md docs/dearme/PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`
   confirmed the README link and new plan heading.
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/pages/DearMeOnboarding.test.tsx`
+  passed for the Live Team Feed slice: 4 test files, 42 tests.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm dev` started the local full-stack app on `http://127.0.0.1:3100`
+  using embedded Postgres and Vite dev middleware.
+- Browser smoke check at `http://127.0.0.1:3100/dearme` rendered the DearMe
+  customer shell, `Live team feed`, and `Decision ready` content. The visible
+  body text did not contain `Paperclip`, `OpenClaw`, `setup_payload`,
+  `adapter`, `provider`, or `MCP`.
+
+## Team Role Projection Hygiene - 2026-05-08
+
+Browser verification exposed a DearMe packaging bug after the Live Team Feed
+slice: the local/smoke dataset had many substrate agent rows, so the customer
+shell could say `112 team members are assigned` and show names such as
+`Chief of Staff 9`.
+
+Fix:
+
+- `server/src/services/dearme-workbench.ts` now projects at most one public
+  team member per DearMe role.
+- The customer-facing name always comes from the canonical DearMe role label:
+  Chief of Staff, Brand Strategist, Voice Editor, Content Producer,
+  Opportunity Scout, Portfolio Builder, and Growth Analyst.
+- Duplicate runtime/local/smoke agent rows still remain available to the
+  Paperclip/Naive substrate, but DearMe presents the intended seven-person
+  personal brand team.
+- The slice did not add a database table, runtime, or new agent orchestration
+  layer; it only corrected the customer read-model projection.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-workbench.test.ts ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 test files, 14 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- Browser smoke at `http://127.0.0.1:3100/dearme` confirmed
+  `112 team members` was absent, `7 team members` was present, numbered
+  Chief of Staff variants were absent, and both `Live team feed` and
+  `Decision ready` were visible.
 
 ## Output Review Loop - 2026-05-08
 
@@ -2501,6 +2562,2668 @@ Verification:
   `Team · DearMe · DearMe`, DearMe and Personal brand team visible, health
   failure absent, duplicate-key console errors 0.
 
+## DearMe Voice & Memory Entrance - 2026-05-08
+
+Thirtieth verified DearMe slice:
+
+- Added a shared DearMe Voice & Memory contract for user-owned brand memory
+  updates: voice samples, proof, goals, audience, offers, boundaries,
+  relationships, and preferences.
+- Reused the existing `activity_log` substrate for `dearme.memory_updated`
+  persistence instead of adding a new memory database or runtime service.
+- Extended the DearMe workbench projection so Voice & Memory updates produce
+  counts, latest sources, a human-readable memory summary, and Voice Editor
+  work-stream progress.
+- Added a customer-facing Voice & Memory panel to the DearMe team workbench,
+  positioned before the first-cycle generator so users can feed the team before
+  asking for more output.
+- Added `POST /api/dearme/companies/:companyId/memory-updates` with the
+  existing company access and board-gate checks, then refreshed the workbench
+  and activity views after submission.
+- Kept the slice reuse-first: no new dependency, no new table, no new memory
+  engine, and no exposure of Paperclip/OpenClaw/OK Partner/provider/adapter
+  terminology in the customer surface.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/pages/DearMeOnboarding.test.tsx` passed: 4 files, 45 tests.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/ui build` passed with the existing Vite chunking
+  warnings.
+- Local dev server check passed: `curl -I --max-time 5 http://127.0.0.1:3100/dearme` returned HTTP 200.
+- Browser check on `/dearme` passed: landed on `/DEAA/dearme`, Voice & Memory,
+  Add to Voice & Memory, Live team feed, and 90-second first cycle were visible;
+  the team workbench appeared before the first-cycle generator; no
+  Paperclip/OpenClaw/setup_payload/adapter/provider/MCP/OK Partner terms were
+  visible.
+- Browser interaction check passed: adding `Browser verification memory` through
+  the Voice & Memory form persisted and re-rendered in the workbench with no
+  visible substrate-name leaks.
+- Mobile viewport check at 390px passed with Voice & Memory, Add to Voice &
+  Memory, Live team feed, and first cycle visible, zero console errors, and no
+  substrate-name leaks.
+
+Remaining gaps:
+
+- This is a recent-activity projection, not semantic memory retrieval.
+- Voice scoring, imports, deduplication, memory editing, and richer Brand OS
+  synthesis remain P1/P2.
+
+## DearMe Draft Voice Profile Signal - 2026-05-08
+
+Thirty-first verified DearMe slice:
+
+- Added a shared DearMe workbench `voiceProfile` contract under Voice & Memory
+  so the customer surface can show readiness, confidence, tone signals, and the
+  next voice-improvement step.
+- Reused saved `dearme.memory_updated` Voice & Memory activity as the source of
+  truth; no new table, runtime, dependency, or separate voice engine was added.
+- Derived a deterministic Draft Voice Profile from the current voice samples:
+  no samples means `Needs samples`, one sample means `Learning`, and two or more
+  samples means `Ready for voice review`.
+- Rendered the Draft Voice Profile inside the DearMe Voice & Memory panel with
+  customer-safe language, current tone badges, confidence, and sample count.
+- Kept the profile as a review/readiness signal for private work; publish/send/
+  deploy/spend actions remain approval-gated elsewhere in the DearMe flow.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts ui/src/pages/DearMeOnboarding.test.tsx` passed: 3 files, 28 tests.
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts` passed: 1 file, 17 tests.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/ui build` passed with the existing Vite
+  MarkdownEditor/large-chunk warnings.
+- Local dev server check passed: `curl -I --max-time 5 http://127.0.0.1:3100/dearme`
+  returned HTTP 200.
+- Desktop and mobile Playwright checks on `/dearme` passed: both landed on
+  `/DEAA/dearme`, showed Draft Voice Profile, status, Confidence, and Samples,
+  had zero console/page errors, and showed no Paperclip/OpenClaw/OK Partner/
+  setup_payload/provider/adapter leaks.
+- `git diff --check` passed for the shared/server/ui files touched by this
+  slice.
+
+Remaining gaps:
+
+- This is still a deterministic readiness projection, not semantic voice
+  extraction, clustering, or model-based style scoring.
+- Voice Profile now feeds the first-cycle preview, but does not yet feed the
+  deeper runtime task prompt contract used by long-running output agents.
+- Connector/import ingestion and memory deduplication remain P1/P2.
+
+## DearMe First Cycle Uses Voice & Memory - 2026-05-08
+
+Thirty-second verified DearMe slice:
+
+- Connected the first-cycle preview to the saved Voice & Memory activity stream
+  so the 90-second onboarding/wow loop uses the user's current voice samples,
+  proof, goals, audience, offer, and boundaries.
+- Reused the existing `activity_log` substrate and `dearme.memory_updated`
+  events; no new table, dependency, runtime, semantic memory engine, or
+  generation service was added.
+- Kept the customer-facing first-cycle route company-scoped and approval-safe:
+  it still only prepares private posts, opportunity drafts, proof cards, and
+  growth plan output.
+- Added an embedded Postgres regression proving first-cycle preview ignores
+  other companies' memory and unrelated activity actions while promoting saved
+  voice/proof/audience/goal/offer context into the generated preview.
+- Made the first-cycle route await the service path, preserving the existing
+  validation/authz route contract while allowing memory-backed enrichment.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprints.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts packages/shared/src/validators/dearme.test.ts` passed: 3 files, 32 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `git diff --check -- server/src/services/dearme-brand-blueprints.ts server/src/routes/dearme.ts server/src/__tests__/dearme-brand-blueprints.test.ts` passed.
+
+Remaining gaps:
+
+- This is deterministic recent-activity enrichment, not semantic retrieval,
+  ranking, clustering, or model-based voice/profile synthesis.
+- Initial DearMe output tasks and recurring DearMe routines now receive
+  explicit Voice & Memory context from the approved Brand OS, but still do not
+  perform semantic retrieval, ranking, clustering, or model-based memory
+  selection.
+- Memory editing, deduplication, and connector/import ingestion remain P1/P2.
+
+## DearMe Runtime Tasks Use Voice & Memory - 2026-05-08
+
+Thirty-third verified DearMe slice:
+
+- Added a reusable server-side Voice & Memory context renderer for DearMe Brand
+  OS apply artifacts.
+- Injected the approved Brand OS voice guidance, voice sample count, voice
+  samples, goals, audiences, offers, and constraints into every seeded DearMe
+  draft operation issue: voice profile, content batch, opportunity list,
+  portfolio update, and weekly report.
+- Added the same customer-safe Voice & Memory context to the initial weekly
+  Dear me report document so the report lane starts from the user's actual
+  audience, offer, voice samples, and boundaries.
+- Reused existing issue descriptions and attached documents as the runtime
+  context carrier; no schema, database, queue, route, dependency, or separate
+  memory runtime was added.
+- Kept public actions approval-gated: the task context still tells agents to
+  prepare private artifacts and request approval before publish, send, deploy,
+  spend, sensitive material, public claims, channel changes, or destructive
+  work.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-apply.test.ts`
+  passed: 1 file, 2 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm exec prettier --check server/src/services/dearme-brand-blueprint-apply.ts server/src/__tests__/dearme-brand-blueprint-apply.test.ts`
+  could not run because this workspace does not expose a `prettier` command.
+
+Remaining gaps:
+
+- This carries approved deterministic context into runtime prompts, but it is
+  not semantic retrieval or long-term memory ranking.
+- Voice/Profile context is injected at apply-time; future memory updates after
+  Brand OS apply still need a refresh or retrieval path for already-created
+  tasks.
+- The deeper heartbeat context snapshot could eventually carry structured
+  DearMe context, but that is a broader runtime contract change and was
+  intentionally left untouched in this slice.
+
+## DearMe Recurring Routines Use Voice & Memory - 2026-05-08
+
+Thirty-fourth verified DearMe slice:
+
+- Extended DearMe recurring routine descriptions with the same approved Voice &
+  Memory context already used by seeded DearMe draft operation issues.
+- Reused the existing `routines.description` -> routine dispatch -> execution
+  issue path, so future scheduled DearMe cycles inherit Brand OS goals,
+  audiences, offers, voice samples, voice guidance, and approval boundaries.
+- Kept the existing routine operating boundary intact: routines may plan,
+  research, and draft privately, but must request approval before publishing,
+  sending, deploying, spending, changing channels, using sensitive material,
+  making public claims, or deleting work.
+- Added regression coverage proving all four applied DearMe routines carry the
+  voice/memory context, saved sample language, target audience, and public-action
+  boundary.
+- No schema, database, queue, route, dependency, UI, or runtime contract changes
+  were added.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-apply.test.ts`
+  passed: 1 file, 2 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `git diff --check -- server/src/services/dearme-brand-blueprint-apply.ts server/src/__tests__/dearme-brand-blueprint-apply.test.ts docs/dearme/BUILD-STATE.md`
+  passed.
+
+Remaining gaps:
+
+- Routine descriptions now refresh after future Voice & Memory updates, but
+  already in-flight routine execution issues still keep the description copied
+  at dispatch time.
+- This remains deterministic context injection, not semantic retrieval,
+  ranking, clustering, or model-based memory selection.
+
+## DearMe Memory Updates Refresh Recurring Routines - 2026-05-08
+
+Thirty-fifth verified DearMe slice:
+
+- Added a DearMe memory-context refresh service that reuses the existing
+  `activity_log` Voice & Memory events and existing `routineService.update()`
+  revision path.
+- When a board user saves a Voice & Memory update, already-created DearMe
+  recurring routines now receive a latest memory block before their
+  `Operating boundary`.
+- The refresh is company-scoped and only targets routines attached to the
+  DearMe Brand OS apply parent issue, so generic/manual routines are left
+  untouched.
+- Reused existing routine descriptions as the execution-context carrier; no
+  schema, table, dependency, queue, or runtime contract was added.
+- The refresh is idempotent: repeated saves/rechecks replace the latest memory
+  block instead of stacking duplicate context, and unchanged routines do not
+  create extra revisions.
+- Public/send/deploy/spend boundaries remain intact because the new block is
+  inserted before the existing operating boundary rather than replacing it.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-memory-context.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts`
+  passed: 2 files, 18 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `git diff --check -- server/src/services/dearme-memory-context.ts server/src/services/index.ts server/src/routes/dearme.ts server/src/__tests__/dearme-memory-context.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts docs/dearme/BUILD-STATE.md`
+  passed.
+
+Remaining gaps:
+
+- This still refreshes deterministic recent-memory context, not semantic
+  retrieval, ranking, clustering, or model-based memory selection.
+- Existing in-flight routine execution issues created before the refresh still
+  carry their old copied descriptions; future routine dispatches inherit the
+  refreshed routine description.
+- Memory editing, deduplication, connector imports, and structured heartbeat
+  context snapshots remain P1/P2.
+
+## DearMe Voice & Memory Save Shows Growth Cycle Refresh - 2026-05-08
+
+Thirty-sixth verified DearMe slice:
+
+- Extended the Voice & Memory save response with DearMe-facing growth-cycle
+  refresh counts instead of exposing routine internals.
+- The memory update route now maps the backend routine refresh result into
+  `growthCycles.checked`, `growthCycles.updated`,
+  `growthCycles.unchanged`, and `growthCycles.memorySources`.
+- The DearMe web shell now shows a short success message after saving memory,
+  so the user sees whether existing growth cycles were refreshed or whether
+  future cycles will inherit the memory after Brand OS starts.
+- Kept the product language focused on Voice & Memory and growth cycles; no
+  Paperclip, OpenClaw, adapter, provider, setup payload, or routine-management
+  language was added to the customer UI.
+- No schema table, dependency, queue, runtime contract, publish/send/deploy
+  path, or automatic external action was added.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 3 files, 44 tests.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- packages/shared/src/validators/dearme.ts packages/shared/src/validators/dearme.test.ts server/src/routes/dearme.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed.
+
+Remaining gaps:
+
+- The feedback is still deterministic count feedback, not a semantic memory
+  quality score or retrieval explanation.
+- The UI does not yet let users edit, delete, merge, or de-duplicate saved
+  Voice & Memory items.
+- Existing in-flight routine execution issues still keep the context copied
+  when they were dispatched.
+
+## DearMe Voice & Memory Immediate Save Visibility - 2026-05-08
+
+Thirty-seventh verified DearMe slice:
+
+- The Voice & Memory panel now immediately shows the saved memory item from the
+  mutation response at the top of the latest-memory card list instead of waiting
+  only for the workbench refetch.
+- The just-saved item carries a `Just saved` badge, so the user gets a visible
+  receipt that their voice sample, proof point, goal, or boundary entered the
+  Brand OS memory surface.
+- The panel displays the refreshed source count from the save response and
+  locally increments voice/proof counts for newly saved voice samples or proof
+  points while the workbench cache catches up.
+- The UI still invalidates the DearMe workbench and activity queries after save,
+  so the Paperclip/Naive substrate remains the source of truth; this is only a
+  customer-facing immediacy polish over the existing route.
+- Added API helper coverage for the Voice & Memory update endpoint.
+- Kept the web copy DearMe-facing: no Paperclip, OpenClaw, adapter, provider,
+  setup payload, MCP, model, or routine-management language was added to the
+  customer UI.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/api/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 21 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx ui/src/api/dearme.test.ts`
+  passed.
+- Focused leak scan for `Paperclip`, `OpenClaw`, `OK Partner`, `provider`,
+  `adapter`, `setup_payload`, `setup payload`, `MCP`, `model`, and `routine`
+  across the touched UI/API test files returned only negative test assertions.
+
+Remaining gaps:
+
+- Saved memories still cannot be edited, deleted, merged, or de-duplicated from
+  the DearMe web shell.
+- Voice/profile confidence remains deterministic and is not yet a semantic
+  retrieval or voice-match score.
+- The immediate card mirrors the saved API response; deeper memory ranking and
+  clustering still belongs to a later memory-quality slice.
+
+## DearMe Voice & Memory Empty State - 2026-05-08
+
+Thirty-eighth verified DearMe slice:
+
+- The Voice & Memory panel now shows a DearMe-owned empty state when the Brand OS
+  has no saved memories yet instead of silently omitting the latest-memory area.
+- The empty state tells the user to add a real sample, proof point, goal, or
+  boundary and explains that DearMe will use it to protect their voice and
+  prepare the next growth cycle.
+- The empty state preserves the product direction: team and memory are visible,
+  but provider, adapter, setup payload, model, MCP, routine, Paperclip, OpenClaw,
+  and OK Partner language stay out of the customer UI.
+- Added focused rendering coverage for the no-memory state so a new design
+  partner does not start from a blank workbench section.
+- The same test now covers the first-save transition: after a new user saves a
+  voice sample, the empty state is replaced immediately by the saved memory
+  card with a `Just saved` receipt.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 1 file, 14 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/ui build` passed. Vite still emits the existing
+  non-blocking `MarkdownEditor` mixed dynamic/static import warning and large
+  chunk warnings.
+
+Remaining gaps:
+
+- The empty state is still a local panel affordance; it does not yet launch a
+  guided import flow for LinkedIn, X, newsletter, resume, GitHub, or a portfolio.
+- Saved memories still cannot be edited, deleted, merged, or de-duplicated from
+  the DearMe web shell.
+
+## DearMe Letter Packaging - 2026-05-08
+
+Thirty-ninth verified DearMe slice:
+
+- Reframed the report/approval card in the Team Workbench from `Approval gate`
+  to `Dear me letter`, making the recurring letter ritual visible as a product
+  surface instead of hiding it behind control-plane language.
+- The card now explains that DearMe turns progress, decisions, and next bets
+  into a private letter while approvals still control what represents the user
+  publicly.
+- The report action now reads `Open letter`, preserving the same issue/open
+  behavior while changing the customer-facing packaging.
+- This follows the Polsia packaging lesson of making progress feel watchable and
+  ritualized, but keeps the personal-brand trust boundary approval-gated.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 1 file, 14 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+
+Remaining gaps:
+
+- The letter is still backed by the existing weekly report read-model; there is
+  not yet a separate morning/evening daily-letter schedule or notification
+  surface.
+- The UI still needs a broader visual-design pass so the product feels premium
+  rather than like a dense operational dashboard.
+
+## DearMe Approval Payload Stable Team Keys - 2026-05-08
+
+Fortieth verified DearMe slice:
+
+- Browser verification found the DearMe web shell opening on the Team Workbench
+  as intended, but the current page emitted React duplicate-key errors when old
+  or smoke Brand OS approval payloads contained repeated DearMe team roles.
+- The DearMe Brand OS approval team summary now keys rendered team rows with
+  role plus position, so repeated `content_producer`, `opportunity_scout`, or
+  similar legacy role entries do not destabilize the visible approval payload.
+- Added regression coverage proving a repeated-role Brand OS payload renders the
+  Growth team summary without React duplicate-key warnings.
+- No customer-facing copy, route, schema, API contract, runtime loop, external
+  action, approval policy, dependency, or billing behavior changed.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/ApprovalPayload.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 21 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/ui build` passed. Vite still emits the existing
+  non-blocking `MarkdownEditor` mixed dynamic/static import warning and large
+  chunk warnings.
+- Fresh browser tab on `http://127.0.0.1:3100/dearme` redirected to
+  `/DEAAAAA/dearme`, rendered the Team Workbench, and reported no console
+  errors.
+
+Remaining gaps:
+
+- This hardens rendering for repeated payload rows; it does not de-duplicate
+  stored legacy approvals or smoke data.
+- The product surface is directionally right but still visually dense/dark; the
+  premium web design pass should use Littlebird/Lindy front-end patterns and
+  DearMe-specific brand packaging rather than copying Polsia's quirky visual
+  style.
+
+## DearMe Front-End Reuse Findings - 2026-05-08
+
+Read-only subagent inventory:
+
+- Highest-value front-end donor: `/Users/peter/research/littlebird-2026-04-23`,
+  especially `recovered-source/src/components`, `features`, `stores`,
+  `providers`, `components/ui`, `chat`, `todos`, `onboarding-v2`, `settings`,
+  `subscription`, `RouterRoot`, and layout patterns.
+- Secondary pattern donor: `/Users/peter/lindy-extraction/01_frontend_source/src`,
+  especially `components`, `pages`, and `layouts`. This extraction is noisier
+  and should be adapted selectively instead of migrated whole.
+- Naive/Paperclip remains the technical substrate and workbench/runtime pattern
+  source. Its front-end code is useful for workspace, command/panel, sidebar,
+  and live-work surfaces, but it is domain-coupled to agents/workspaces and is
+  not a direct DearMe web shell drop-in.
+- DearMe should stay web-first. The next premium UI architecture pass should
+  reuse Littlebird/Lindy web interaction and layout patterns where they reduce
+  work, while keeping Polsia's product choreography and Naive/Paperclip's hidden
+  runtime substrate.
+
+Integration guidance:
+
+- Copy/adapt Littlebird product-shell primitives first for the next large UI
+  pass.
+- Borrow Lindy patterns only where they improve assistant/chat/onboarding
+  ergonomics without importing its API assumptions.
+- Keep Naive/Paperclip machinery hidden behind DearMe language: Team visible,
+  machinery hidden.
+
+## DearMe Web UI Reuse Architecture - 2026-05-08
+
+Forty-first DearMe slice:
+
+- Added `docs/dearme/WEB-UI-REUSE-ARCHITECTURE.md` to lock the web-first UI
+  reuse strategy before the next large design/code pass.
+- The architecture decision is now explicit: DearMe should copy Polsia's
+  product choreography, keep Naive/Paperclip as hidden runtime substrate, use
+  Littlebird as the primary web product-shell donor, and use Lindy selectively
+  for premium assistant, modal, drawer, transcript, and section-boundary
+  patterns.
+- The doc rejects three tempting wrong paths:
+  - copying Polsia's quirky visual style,
+  - waiting for a complete proprietary Naive UI source drop,
+  - exposing raw Paperclip/Naive control-plane pages as DearMe's customer UI.
+- It also explains why DearMe still needs both a frontend and API layer:
+  the frontend owns the premium product experience, while the API owns auth,
+  company scoping, persistence, approvals, Brand OS memory, runtime dispatch,
+  usage, and provider isolation.
+- A designer subagent independently confirmed the same direction: keep the
+  current DearMe route/focus decision logic, borrow Littlebird onboarding and
+  trust-gate patterns, adapt Lindy's section boundary, modal, drawer, and home
+  layout primitives, and avoid donor marketplace/admin IA.
+- The next implementation slice is now constrained to UI architecture
+  extraction, not another product feature: create DearMe-owned shell primitives
+  such as page shell, section boundary, header, inspector, decision card, work
+  item card, and team feed before visually rebuilding the Team Workbench.
+
+Verification:
+
+- Read local donor evidence from:
+  - `/Users/peter/research/littlebird-2026-04-23/recovered-source/src/features/onboarding-v2/onboarding.tsx`
+  - `/Users/peter/research/littlebird-2026-04-23/recovered-source/src/features/hummingbird/hummingbird-chat.tsx`
+  - `/Users/peter/research/littlebird-2026-04-23/recovered-source/src/routes/team/join.tsx`
+  - `/Users/peter/lindy-extraction/01_frontend_source/src/components/transcript/Response.tsx`
+  - `/Users/peter/lindy-extraction/01_frontend_source/src/components/prompt/PromptInput.tsx`
+  - `/Users/peter/lindy-extraction/01_frontend_source/src/components/SectionBoundary.tsx`
+  - `/Users/peter/lindy-extraction/01_frontend_source/src/layouts/Home/HomeLayout.tsx`
+- Read-only designer subagent completed with file-level reuse recommendations
+  across current DearMe, Littlebird, and Lindy UI sources.
+
+Remaining gaps:
+
+- No UI code changed in this slice.
+- The current DearMe workbench is still visually dense/dark and should not be
+  treated as the final product shell.
+- The next code slice should protect existing route/focus behavior with tests
+  while extracting DearMe shell primitives from the monolithic
+  `DearMeOnboarding.tsx` page.
+
+## DearMe Shell Primitives - 2026-05-08
+
+Forty-second DearMe slice:
+
+- Added `ui/src/components/DearMeShell.tsx` as the first DearMe-owned web shell
+  primitive set inspired by the Lindy section-boundary pattern and the current
+  DearMe page structure.
+- The new primitive set includes:
+  - `DearMePageShell` for the stable page surface marker and spacing.
+  - `DearMeHero` for the product-level header and action area.
+  - `DearMePanel` for bounded DearMe product panels.
+  - `DearMeSectionBoundary` for customer-safe section loading/failure handling.
+- Wired `ui/src/pages/DearMeOnboarding.tsx` to use `DearMePageShell` and
+  `DearMeHero` without changing the visible hero copy or the existing
+  `Preview Brand OS` / `Request approval` actions.
+- Added `ui/src/components/DearMeShell.test.tsx` to lock the shell markers,
+  hero action rendering, panel rendering, and customer-safe section failure
+  copy.
+- Extended the shell test to guard the section fallback against visible
+  substrate language: `Paperclip`, `OpenClaw`, `adapter`, `provider`,
+  `setup_payload`, and `OK Partner`.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 16 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/ui build` passed. It still emits the existing
+  non-blocking Vite warnings for `MarkdownEditor` mixed static/dynamic import
+  and large chunks.
+- `git diff --check -- ui/src/components/DearMeShell.tsx ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.tsx docs/dearme/BUILD-STATE.md`
+  passed.
+- Browser smoke on `http://127.0.0.1:3100/dearme` redirected to
+  `/DEAAAAA/dearme`, rendered title `Team · DearMe · DearMe`, found both
+  `data-dearme-surface="page-shell"` and `data-dearme-surface="hero"`, and
+  recorded no console errors or warnings.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|setup_payload|OK Partner" ui/src/components/DearMeShell.tsx ui/src/pages/DearMeOnboarding.tsx`
+  returned no matches.
+
+Remaining gaps:
+
+- This is a shell extraction slice, not the full premium workbench redesign.
+- `DearMeOnboarding.tsx` is still monolithic and should be split into
+  DearMe-owned decision/work/team/feed cards in the next UI architecture slice.
+- The current route still runs on the Paperclip/Naive substrate; the customer
+  page now hides those internals at the touched shell/page source boundary, but
+  broad source still contains internal compatibility names.
+
+## DearMe Panel Reuse Slice - 2026-05-08
+
+Forty-third DearMe slice:
+
+- Reused `DearMePanel` across the first large DearMe web surfaces in
+  `ui/src/pages/DearMeOnboarding.tsx`.
+- Converted the high-level first-cycle, team-workbench, decisions, work-ready,
+  live-feed, paid-beta, private-work-ready, and Brand OS seed shells to the
+  DearMe-owned panel primitive.
+- Kept visible copy, actions, route behavior, API calls, and inner work cards
+  unchanged. This slice is UI architecture consolidation, not a redesign.
+- Preserved the current customer-facing rule: team/product surfaces are visible,
+  while substrate implementation language stays out of the touched DearMe page
+  and shell files.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 16 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/ui build` passed. It still emits the existing
+  non-blocking Vite warnings for `MarkdownEditor` mixed static/dynamic import
+  and large chunks.
+- `git diff --check -- ui/src/components/DearMeShell.tsx ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.tsx docs/dearme/BUILD-STATE.md`
+  passed.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|setup_payload|OK Partner" ui/src/components/DearMeShell.tsx ui/src/pages/DearMeOnboarding.tsx`
+  returned no matches.
+- Browser smoke on `http://127.0.0.1:3100/dearme` redirected to
+  `/DEAAAAA/dearme`, rendered title `Team · DearMe · DearMe`, found
+  `data-dearme-surface="page-shell"`, `data-dearme-surface="hero"`, and 10
+  `data-dearme-surface="panel"` instances, and recorded no console errors or
+  warnings.
+
+Remaining gaps:
+
+- This still does not make the workbench visually premium. It only gives the
+  next redesign slice a DearMe-owned panel substrate.
+- The smaller repeated cards for team members, decisions, ready work, and live
+  feed are still inline inside `DearMeOnboarding.tsx`.
+- The workbench should next extract DearMe-owned cards and then move toward the
+  Lindy-quality two-column home/cockpit layout.
+
+## DearMe Workbench Chrome Slice - 2026-05-08
+
+Forty-fourth DearMe slice:
+
+- Added DearMe-owned workbench chrome primitives in
+  `ui/src/components/DearMeShell.tsx`:
+  - `DearMeWorkbenchSectionHeader` for role-led section headers.
+  - `DearMeMetricStrip` for stable workbench metric rows.
+  - `DearMeCockpitGrid` for balanced and primary two-column cockpit layouts.
+- Extended `ui/src/components/DearMeShell.test.tsx` to lock the new surface
+  markers and keep the primitives reusable outside the current onboarding page.
+- Reused the new chrome primitives in `ui/src/pages/DearMeOnboarding.tsx` for
+  the core team workbench:
+  - My AI team today.
+  - Voice & Memory.
+  - Team at work.
+  - Dear me letter.
+  - Decisions needed.
+  - Work ready.
+  - Live team feed.
+- Kept query/mutation/deep-link behavior, existing Voice & Memory save
+  behavior, and inner decision/work/feed cards unchanged. This is a workbench
+  shell consolidation slice, not a full visual redesign.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 17 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/ui build` passed. It still emits the existing
+  non-blocking Vite warnings for `MarkdownEditor` mixed static/dynamic import
+  and large chunks.
+- `git diff --check -- ui/src/components/DearMeShell.tsx ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.tsx docs/dearme/BUILD-STATE.md`
+  passed.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|setup_payload|OK Partner" ui/src/components/DearMeShell.tsx ui/src/pages/DearMeOnboarding.tsx`
+  returned no matches.
+- Browser smoke on `http://127.0.0.1:3100/DEAAAAA/dearme` rendered title
+  `Team · DearMe · DearMe`, found `page-shell`, `hero`, 11 `panel`
+  instances, 7 `workbench-section-header` instances, 2 `cockpit-grid`
+  instances, and 2 `metric-strip` instances, with no console errors or
+  warnings.
+
+Remaining gaps:
+
+- The smaller repeated team, decision, work-ready, and live-feed cards are still
+  inline inside `DearMeOnboarding.tsx`.
+- The workbench now has DearMe-owned chrome, but still needs the premium visual
+  pass that combines Naive-style polish, Lindy-style assistant layout, and
+  DearMe-specific personal-brand packaging.
+- The voice profile detail area and memory form still use local inline layout
+  inside `VoiceMemoryPanel`; their outer chrome now matches the rest of the
+  DearMe workbench.
+
+## DearMe Focus Surface Slice - 2026-05-08
+
+Forty-fifth DearMe slice:
+
+- Added DearMe-owned decision-detail primitives in
+  `ui/src/components/DearMeShell.tsx`:
+  - `DearMeFocusSurface` for the high-priority decision/work review area.
+  - `DearMeEvidenceGrid` for prepared-work, state, trust-boundary, and output
+    evidence rows.
+- Extended `ui/src/components/DearMeShell.test.tsx` to lock the new focus and
+  evidence surface markers.
+- Reused the new primitives in `ui/src/pages/DearMeOnboarding.tsx` for:
+  - focused approval decisions,
+  - focused batch decisions,
+  - focused prepared work items,
+  - focused output review.
+- Kept approval review, output review, deep-link focus, query/mutation behavior,
+  and visible customer copy unchanged. This slice turns the most important
+  review area into a reusable DearMe product surface without touching the
+  underlying runtime/API path.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 18 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/ui build` passed. It still emits the existing
+  non-blocking Vite warnings for `MarkdownEditor` mixed static/dynamic import
+  and large chunks.
+- `git diff --check -- ui/src/components/DearMeShell.tsx ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.tsx`
+  passed.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|setup_payload|OK Partner" ui/src/components/DearMeShell.tsx ui/src/pages/DearMeOnboarding.tsx`
+  returned no matches.
+
+Remaining gaps:
+
+- The focused surfaces now have DearMe-owned structure, but still need a visual
+  QA pass across desktop, tablet, and mobile after the next broader layout pass.
+- The smaller repeated team, decision, work-ready, and live-feed cards are still
+  inline inside `DearMeOnboarding.tsx`.
+- The next high-value UI reuse slice should move the page toward a premium
+  Home/Team Workbench frame inspired by Lindy layout discipline and Littlebird
+  route containment, while keeping Paperclip/Naive runtime machinery hidden.
+
+## DearMe Workbench Card Slice - 2026-05-08
+
+Forty-sixth DearMe slice:
+
+- Added `DearMeWorkbenchCard` in `ui/src/components/DearMeShell.tsx` as the
+  reusable card primitive for prepared work, team activity, decision rows, and
+  live-feed items.
+- Extended `ui/src/components/DearMeShell.test.tsx` to lock the card marker,
+  title, description, badge, footer, and action behavior.
+- Reused `DearMeWorkbenchCard` in `ui/src/pages/DearMeOnboarding.tsx` across
+  the customer-facing workbench:
+  - initial personal-brand team workstream,
+  - Team at work,
+  - Dear me letter,
+  - batch decisions,
+  - individual decisions,
+  - Work ready,
+  - Live team feed.
+- Kept query/mutation behavior, approval review behavior, output review
+  behavior, and visible customer copy unchanged. This is a component reuse and
+  product-surface consolidation slice, not a runtime/API change.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 19 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/ui build` passed. It still emits the existing
+  non-blocking Vite warnings for `MarkdownEditor` mixed static/dynamic import
+  and large chunks.
+- `git diff --check -- ui/src/components/DearMeShell.tsx ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.tsx`
+  passed.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|setup_payload|OK Partner" ui/src/components/DearMeShell.tsx ui/src/pages/DearMeOnboarding.tsx`
+  returned no matches.
+- Browser smoke on `http://127.0.0.1:3100/DEAAAAA/dearme` rendered title
+  `Team · DearMe · DearMe`, found 1 `page-shell`, 1 `hero`, 11 `panel`
+  instances, 7 `workbench-section-header` instances, 2 `cockpit-grid`
+  instances, 2 `metric-strip` instances, and 5 `workbench-card` instances, with
+  no error/warning entries in the latest browser log window.
+
+Remaining gaps:
+
+- Focus surfaces are covered by unit tests, but the default local smoke company
+  did not expose a focused decision route during this pass.
+- Some preview, voice-gate, and private-work cards remain inline; those should
+  move only after the primary workbench cards settle visually.
+- Next high-value Web slice is a real visual QA/polish pass on the DearMe
+  workbench frame using the new shell/card primitives.
+
+## DearMe Empty State And Preview Card Slice - 2026-05-08
+
+Forty-seventh DearMe slice:
+
+- Added `DearMeEmptyState` in `ui/src/components/DearMeShell.tsx` as the
+  reusable DearMe-owned empty-state primitive for customer-facing workbench
+  sections.
+- Extended `ui/src/components/DearMeShell.test.tsx` to lock the empty-state
+  marker, title, description, icon, actions, and child content behavior.
+- Reused `DearMeWorkbenchCard` in `ui/src/pages/DearMeOnboarding.tsx` for the
+  first-cycle preview, Voice & Memory memory cards, and private-work output
+  cards.
+- Replaced scattered dashed empty blocks in the DearMe workbench with
+  `DearMeEmptyState` for:
+  - Voice & Memory,
+  - Dear me letter,
+  - Decisions needed,
+  - Work ready,
+  - Private work.
+- Kept query/mutation behavior, approval review behavior, output review
+  behavior, and visible customer copy unchanged. This slice is about reuse and
+  product-surface consistency, not API/runtime behavior.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 20 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/ui build` passed. It still emits the existing
+  non-blocking Vite warnings for `MarkdownEditor` mixed static/dynamic import
+  and large chunks.
+- `git diff --check -- ui/src/components/DearMeShell.tsx ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+  passed before this BUILD-STATE append.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|setup_payload|OK Partner" ui/src/components/DearMeShell.tsx ui/src/pages/DearMeOnboarding.tsx`
+  returned no matches.
+- Browser smoke on `http://127.0.0.1:3100/DEAAAAA/dearme` rendered title
+  `Team · DearMe · DearMe`, found 1 `page-shell`, 1 `hero`, 11 `panel`
+  instances, 7 `workbench-section-header` instances, 2 `cockpit-grid`
+  instances, 2 `metric-strip` instances, 5 `workbench-card` instances, and 5
+  `empty-state` instances after a fresh reload, with no fresh error/warning
+  entries.
+- Browser interaction smoke clicked `Voice & Memory`, navigated to
+  `http://127.0.0.1:3100/DEAAAAA/dearme?view=voice`, kept the Voice & Memory
+  surface visible, and preserved the 5 `empty-state` plus 5 `workbench-card`
+  markers with no fresh error/warning entries.
+
+Remaining gaps:
+
+- The workbench now has shared shell, panel, section, card, focused-surface, and
+  empty-state primitives, but the visual hierarchy still needs a premium pass
+  inspired by Lindy's front-end layout discipline rather than Paperclip's admin
+  density.
+- Browser DOM, URL, interaction, and console checks passed, but Browser
+  screenshot capture timed out twice on the local tab. The next visual pass
+  should either recover screenshot capture or use an allowed fallback before
+  making pixel-level layout claims.
+- The next Web slice should tighten the Home Cockpit visual layout without
+  exposing runtime machinery.
+
+## DearMe Checklist Surface Slice - 2026-05-08
+
+Forty-eighth DearMe slice:
+
+- Added `DearMeChecklist` in `ui/src/components/DearMeShell.tsx` as the
+  reusable DearMe-owned checklist primitive for first-cycle artifacts,
+  trust-boundary lists, and approval-ready work summaries.
+- Extended `ui/src/components/DearMeShell.test.tsx` to lock the checklist and
+  checklist-item markers.
+- Reused `DearMeChecklist` in `ui/src/pages/DearMeOnboarding.tsx` for both
+  first-cycle artifact lists:
+  - the personal-brand team approval rail,
+  - the prepared-private first-cycle panel.
+- Kept first-cycle preview behavior, form behavior, approval behavior, and
+  visible customer copy unchanged.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 21 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/ui build` passed. It still emits the existing
+  non-blocking Vite warnings for `MarkdownEditor` mixed static/dynamic import
+  and large chunks.
+- `git diff --check -- ui/src/components/DearMeShell.tsx ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+  passed before this BUILD-STATE append.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|setup_payload|OK Partner" ui/src/components/DearMeShell.tsx ui/src/pages/DearMeOnboarding.tsx`
+  returned no matches.
+- Fresh Browser smoke on `http://127.0.0.1:3100/DEAAAAA/dearme` rendered title
+  `Team · DearMe · DearMe`, found 1 `page-shell`, 1 `hero`, 5
+  `workbench-card` instances, 5 `empty-state` instances, 1 `checklist`, and 5
+  `checklist-item` instances, with no fresh error/warning entries.
+- Browser route-state check on
+  `http://127.0.0.1:3100/DEAAAAA/dearme?view=voice` kept Voice & Memory
+  visible and preserved the checklist/empty-state markers.
+
+Remaining gaps:
+
+- Browser click interaction on the reused old tab hit a CDP selector timeout;
+  a fresh-tab DOM/console smoke passed. Continue using fresh Browser tabs if
+  the in-app tab enters this state again.
+- The next Web slice should replace the remaining inline preview and voice-gate
+  microcards only where reuse clarifies the product surface.
+
+## DearMe Preview Primitive Reuse Slice - 2026-05-08
+
+Forty-ninth DearMe slice:
+
+- Extended `DearMeEmptyState` with an `align="center"` option for large preview
+  and waiting surfaces that need a calm, centered composition instead of a
+  left-aligned row.
+- Added component coverage for centered empty states in
+  `ui/src/components/DearMeShell.test.tsx`.
+- Reused `DearMeEvidenceGrid` and `DearMeWorkbenchCard` for Voice Gate checks
+  in `ui/src/pages/DearMeOnboarding.tsx`.
+- Reused `DearMeWorkbenchCard` in the Brand OS preview for team members, growth
+  cycles, and planned operations.
+- Replaced the preview empty block with `DearMeEmptyState` so the first-cycle
+  preview uses the same DearMe-owned shell language as the rest of the
+  workbench.
+- Tightened static team, fallback team, and live team feed React keys to stable
+  composite keys so repeated team roles cannot produce duplicate-key warnings
+  when multiple items come from the same role.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 22 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/ui build` passed. It still emits the existing
+  non-blocking Vite warnings for `MarkdownEditor` mixed static/dynamic import
+  and large chunks.
+- `git diff --check -- ui/src/components/DearMeShell.tsx ui/src/components/DearMeShell.test.tsx ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+  passed before this BUILD-STATE append.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|setup_payload|OK Partner" ui/src/components/DearMeShell.tsx ui/src/pages/DearMeOnboarding.tsx`
+  returned no matches.
+- Fresh Browser smoke on `http://127.0.0.1:3100/DEAAAAA/dearme` rendered title
+  `Team · DearMe · DearMe`, found 1 `page-shell`, 1 `hero`, 11 `panel`
+  instances, 7 `workbench-section-header` instances, 2 `cockpit-grid`
+  instances, 2 `metric-strip` instances, 5 `workbench-card` instances, 6
+  `empty-state` instances, 1 `checklist`, and 5 `checklist-item` instances,
+  with zero framework overlays and zero relevant console entries.
+- Fresh Browser smoke on
+  `http://127.0.0.1:3100/DEAAAAA/dearme?view=voice` preserved the same DearMe
+  surface markers, rendered title `Team · DearMe · DearMe`, and recorded zero
+  framework overlays plus zero relevant console entries.
+
+Remaining gaps:
+
+- This slice improves reuse and front-end cleanliness, but it is still working
+  inside the current DearMe web shell. The larger visual direction still needs
+  a dedicated premium design pass drawing from Lindy's front-end strengths and
+  Naive's product feel where source evidence allows.
+- Browser smoke now verifies DOM markers and console cleanliness on fresh tabs;
+  a future visual QA slice should add reliable screenshot capture before making
+  pixel-level layout claims.
+
+## DearMe Architecture Integration And Worker Coordination - 2026-05-08
+
+Fiftieth DearMe slice:
+
+- Updated `docs/dearme/WEB-UI-REUSE-ARCHITECTURE.md` to make the reuse model
+  source-honest:
+  - Paperclip OSS and the current DearMe fork are the concrete reusable code
+    base for auth/company/work/runtime/approval/document/output mechanics.
+  - Naive private product findings are architecture and choreography evidence
+    unless a specific local executable source file is verified.
+  - Littlebird remains the primary web-shell/onboarding donor.
+  - Lindy remains the premium assistant/drawer/modal/prompt-pattern donor.
+  - Polsia remains the product choreography and proof-of-work packaging donor,
+    not a visual-system donor.
+- Added current implementation reality for `ui/src/components/DearMeShell.tsx`:
+  existing DearMe-owned primitives include page shell, hero, panel, workbench
+  section header, cockpit grid, metric strip, focus surface, evidence grid,
+  workbench card, empty state, checklist, and section boundary.
+- Reframed the next UI work away from recreating generic primitives and toward
+  using the existing primitives to compose premium Home, Team Workbench, and
+  Decision surfaces.
+- Added worker-coordination guidance for the dirty integration tree:
+  - keep one lead thread as architecture/integration owner,
+  - use isolated worktrees for product-code workers after a recoverable DearMe
+    baseline exists,
+  - start worker execution with `DM-005A` before unblocking product-code tickets
+    like `DM-001`,
+  - do not let multiple agents freely edit the same files in the active mixed
+    checkout.
+- Updated `doc/plans/2026-05-08-dearme-dm-005a-integration-baseline-ticket.md`
+  so the first worker ticket points at the current branch, includes
+  `docs/dearme/WEB-UI-REUSE-ARCHITECTURE.md`, and records the source-honest
+  Paperclip/Naive/Littlebird/Lindy/Polsia donor split.
+- Incorporated the Naive/Paperclip verifier finding that
+  `/Users/peter/naive-research-2026-05-05` contains concrete Paperclip OSS
+  source plus Naive research artifacts, but not a complete directly reusable
+  private Naive front-end/backend implementation.
+- Ignored the failed Polsia/Symphony verifier subagent because it hit context
+  limits; this pass used direct local inspection for the Symphony and Polsia
+  coordination claims instead.
+
+Verification:
+
+- Donor path checks found:
+  - `/Users/peter/research/littlebird-2026-04-23/recovered-source/src/features/onboarding-v2/onboarding.tsx`
+  - `/Users/peter/research/littlebird-2026-04-23/recovered-source/src/routes/team/join.tsx`
+  - `/Users/peter/lindy-extraction/01_frontend_source/src/components/SectionBoundary.tsx`
+  - `/Users/peter/lindy-extraction/01_frontend_source/src/components/layouts/ResizableSlideOutPanel.tsx`
+  - `/Users/peter/lindy-extraction/01_frontend_source/src/components/prompt/PromptInput.tsx`
+  - `/Users/peter/naive-research-2026-05-05/paperclipai/paperclip/ui/src`
+  - `/Users/peter/naive-research-2026-05-05/session-fetches/extracted-setup_payload.json`
+- `rg -n "export function DearMe|function DearMe|export const DearMe" ui/src/components/DearMeShell.tsx`
+  confirmed the current shell primitive inventory.
+- `rg -n "setupPayload|setup_payload|brand_blueprint|budget|cost|workbench|apply" packages/shared/src/validators/dearme.ts server/src/services/dearme-brand-blueprints.ts server/src/services/dearme-brand-blueprint-apply.ts server/src/services/dearme-workbench.ts server/src/routes/dearme.ts`
+  confirmed the existing Brand OS/apply/workbench/budget-policy implementation
+  surface.
+- `command -v symphony` produced no path, so this pass treats Symphony as a
+  documented development-loop pattern rather than an active local runtime.
+- `git diff --check -- docs/dearme/BUILD-STATE.md doc/plans/2026-05-08-dearme-dm-005a-integration-baseline-ticket.md`
+  passed.
+- `awk '/[ \t]$/{print FILENAME ":" FNR ": trailing whitespace"; found=1} END{exit found ? 1 : 0}' docs/dearme/WEB-UI-REUSE-ARCHITECTURE.md docs/dearme/BUILD-STATE.md doc/plans/2026-05-08-dearme-dm-005a-integration-baseline-ticket.md`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed earlier in this architecture
+  pass after the stale `CrashingSection` report was checked against the current
+  source.
+
+Remaining gaps:
+
+- The next architecture-to-code bridge should choose between:
+  - `DM-005A` integration baseline/product spine for safe parallel worker use,
+  - premium Home/Team Workbench composition using existing DearMe primitives,
+  - internal setup-intent/brand_blueprint payload persistence with explicit
+    budget gates.
+- Naive private cloud parity still lacks verified local implementation for
+  setup parser/orchestrator, private cloud billing/provisioning, per-tenant VM
+  control, and full private DB schema.
+- The active checkout remains highly dirty. Do not broad stage, broad cleanup,
+  or assign concurrent workers against the same files without a scoped baseline.
+
+## DM-005A Baseline Spine Manifest - 2026-05-08
+
+Fifty-first DearMe slice:
+
+- Added `docs/dearme/BASELINE-SPINE-MANIFEST.md` as the current handoff
+  manifest for the minimum DearMe product spine.
+- Confirmed live git state:
+  - branch: `codex/dearme-baseline-2026-05-08`
+  - head: `6b322408456318c237834a1ef5ceb08447ec7213`
+  - head summary: `Establish a recoverable DearMe product baseline`
+  - active checkout: still heavily dirty with tracked and untracked changes.
+- Recorded the source-of-truth distinction:
+  - `6b322408` is a recoverable baseline candidate,
+  - the active checkout still contains newer DearMe spine files outside that
+    commit,
+  - future product-code workers must not use `/Users/peter/dearme` as their
+    direct work base.
+- Locked the minimum spine categories:
+  - DearMe source-of-truth docs,
+  - shared DearMe validators and exports,
+  - `/api/dearme` route and DearMe server services,
+  - DearMe-focused server tests,
+  - `/dearme` UI shell, API client, route, page, and focused UI tests.
+- Incorporated the subagent findings:
+  - focused DM-005A tests pass,
+  - `docs/dearme/WEB-UI-REUSE-ARCHITECTURE.md`,
+    `server/src/services/dearme-memory-context.ts`, and
+    `ui/src/components/DearMeShell.tsx` remain untracked in the active checkout,
+  - DM-001 through DM-010 overlap on the same shared/server/UI spine and must
+    be integrated sequentially by the lead thread, not blindly merged in
+    parallel.
+- Updated `doc/plans/2026-05-08-dearme-dm-005a-integration-baseline-ticket.md`
+  so its starting evidence reflects the live `6b322408` baseline candidate
+  instead of the older pre-baseline state.
+
+Verification:
+
+- `git status --short --branch` confirmed the current branch and mixed dirty
+  tree.
+- `git rev-parse --abbrev-ref HEAD && git rev-parse HEAD && git log --oneline -5`
+  confirmed `6b322408456318c237834a1ef5ceb08447ec7213`.
+- `git worktree list` confirmed active DM worktrees under `/private/tmp`,
+  including `dearme-dm-001` through `dearme-dm-010`.
+- Candidate spine status inspection confirmed the tracked/untracked split used
+  in `BASELINE-SPINE-MANIFEST.md`.
+- Subagent verifier evidence reported:
+  - `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run`
+    passed, 14 tests.
+  - `pnpm exec vitest server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-output-handoff.test.ts --run`
+    passed, 20 tests.
+  - `pnpm exec vitest ui/src/api/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run`
+    passed, 22 tests.
+- Lead verification after writing the manifest reran the same focused checks:
+  - `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run`
+    passed, 14 tests.
+  - `pnpm exec vitest server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-output-handoff.test.ts --run`
+    passed, 20 tests.
+  - `pnpm exec vitest ui/src/api/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run`
+    passed, 22 tests.
+- `git diff --check -- docs/dearme/BASELINE-SPINE-MANIFEST.md docs/dearme/BUILD-STATE.md doc/plans/2026-05-08-dearme-dm-005a-integration-baseline-ticket.md`
+  passed.
+- `awk '/[ \t]$/{print FILENAME ":" FNR ": trailing whitespace"; found=1} END{exit found ? 1 : 0}' docs/dearme/BASELINE-SPINE-MANIFEST.md docs/dearme/WEB-UI-REUSE-ARCHITECTURE.md docs/dearme/BUILD-STATE.md doc/plans/2026-05-08-dearme-dm-005a-integration-baseline-ticket.md`
+  passed.
+
+Remaining gaps:
+
+- This manifest is not a commit and does not make untracked files recoverable
+  by itself.
+- DM-001 should not start from the shared checkout. It needs either a new
+  explicit baseline ref containing the selected untracked spine files or a
+  disposable worktree from `6b322408` with only the manifest-selected files
+  applied as a reviewable patch.
+
+## DearMe DM Merge Queue Scan - 2026-05-08
+
+Fifty-second DearMe slice:
+
+- Added `doc/plans/2026-05-08-dearme-dm-merge-queue.md` to make the current
+  worker-branch integration order explicit.
+- Read-only scanned `/private/tmp/dearme-dm-*` worktrees against
+  `6b322408456318c237834a1ef5ceb08447ec7213`.
+- Confirmed DM-001 through DM-009 are a linear cumulative stack, not independent
+  branches:
+  - DM-001: `29b87bd8`, clean worktree, 11 changed files.
+  - DM-002: `7b95a2d5`, clean worktree, 16 changed files.
+  - DM-003: `876ec6b3`, clean worktree, 24 changed files.
+  - DM-004: `f402d94e`, clean worktree, 26 changed files.
+  - DM-005: `acaa7842`, clean worktree, 27 changed files.
+  - DM-006: `cc358376`, clean worktree, 28 changed files.
+  - DM-007: `d1bf8431`, clean worktree, 30 changed files.
+  - DM-008: `9b1d1f3f`, clean worktree, 34 changed files.
+  - DM-009: `aeac3696`, clean worktree, 35 changed files.
+- Confirmed DM-010 points at `aeac3696` but has 8 uncommitted files, so it is
+  not merge-ready.
+- Locked the merge rule: integrate sequentially from DM-001 in a clean
+  disposable integration worktree. Do not merge these branches blindly in
+  parallel, and do not use the dirty `/Users/peter/dearme` checkout as the
+  product-code worker base.
+
+Verification:
+
+- `git worktree list` confirmed active DM worktrees.
+- Read-only branch scan recorded branch, head, dirty count, and diff-file count
+  for each `/private/tmp/dearme-dm-*` worktree.
+- `git log --oneline --decorate --graph --all --simplify-by-decoration --branches='codex/dearme-dm-*' --branches='codex/dearme-baseline-2026-05-08'`
+  confirmed the stacked branch shape.
+- `git -C /private/tmp/dearme-dm-001-output-review-regeneration log --oneline 6b322408..HEAD`
+  confirmed DM-001 is one commit over the baseline.
+- `git -C /private/tmp/dearme-dm-010-approval-ready-handoff status --short --branch`
+  confirmed DM-010 has uncommitted files.
+
+Next integration candidate:
+
+- DM-001, after running its focused tests inside
+  `/private/tmp/dearme-dm-001-output-review-regeneration` and verifying that the
+  review loop stays inside `/dearme`.
+
+## DM-001 Worktree Readiness Verification - 2026-05-08
+
+Fifty-third DearMe slice:
+
+- Verified `/private/tmp/dearme-dm-001-output-review-regeneration` as the first
+  clean integration candidate from the DM worker stack.
+- Confirmed the worktree is clean on branch `codex/dearme-dm-001-output-review`
+  and head `29b87bd8`.
+- Confirmed the branch is one commit over
+  `6b322408456318c237834a1ef5ceb08447ec7213` and changes 11 scoped DearMe spine
+  files.
+- Confirmed the product behavior of DM-001:
+  - output review stays inside `/dearme`,
+  - private prepared work can be marked `Useful`, `Needs changes`,
+    `Regenerate`, or `Not useful`,
+  - regeneration/not-useful feedback can wake the existing assignee internally,
+    but the route response strips that wake detail from the customer payload,
+  - provider/setup/Paperclip/OpenClaw internals are tested as stripped from
+    customer-visible output payloads.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-001 is marked
+  as verified first integration candidate, while DM-010 remains held because it
+  has uncommitted files.
+
+Verification:
+
+- `git diff --check -- docs/dearme/BASELINE-SPINE-MANIFEST.md docs/dearme/BUILD-STATE.md doc/plans/2026-05-08-dearme-dm-005a-integration-baseline-ticket.md doc/plans/2026-05-08-dearme-dm-merge-queue.md`
+  passed before this readiness note.
+- `awk '/[ \t]$/{print FILENAME ":" FNR ": trailing whitespace"; found=1} END{exit found ? 1 : 0}' docs/dearme/BASELINE-SPINE-MANIFEST.md docs/dearme/WEB-UI-REUSE-ARCHITECTURE.md docs/dearme/BUILD-STATE.md doc/plans/2026-05-08-dearme-dm-005a-integration-baseline-ticket.md doc/plans/2026-05-08-dearme-dm-merge-queue.md`
+  passed before this readiness note.
+- In `/private/tmp/dearme-dm-001-output-review-regeneration`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run`
+  passed, 13 tests.
+- In `/private/tmp/dearme-dm-001-output-review-regeneration`,
+  `pnpm exec vitest server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-output-handoff.test.ts --run`
+  passed, 20 tests. The command emitted existing Postgres truncate cascade
+  `NOTICE` logs and exited 0.
+- In `/private/tmp/dearme-dm-001-output-review-regeneration`,
+  `pnpm exec vitest ui/src/api/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run`
+  passed, 22 tests.
+- `rg -n "Useful|Needs changes|Regenerate|Not useful|Paperclip|OpenClaw|provider|wake|heartbeat|issue|approval" ...`
+  showed expected internal-only substrate matches in server/service code and
+  product-native customer action labels in `ui/src/pages/DearMeOnboarding.tsx`.
+- Test assertions confirm user-visible payloads and UI do not expose provider,
+  setup payload, Paperclip, OpenClaw, wake internals, or raw issue/approval
+  navigation for the output-review loop.
+
+Next integration step:
+
+- Replay DM-001 onto a clean disposable integration worktree from the approved
+  baseline, preserving the newer lead-owned `BUILD-STATE.md` notes from the main
+  checkout instead of blindly accepting the worker's older state hunk.
+
+## DM-001 Clean Integration Commit - 2026-05-08
+
+Fifty-fourth DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-001-integrate`
+  from baseline `6b322408456318c237834a1ef5ceb08447ec7213`.
+- Created integration branch `codex/dearme-dm-001-integrated`.
+- Replayed worker commit `29b87bd8` with `git cherry-pick --no-commit`.
+- Dropped the worker's older `docs/dearme/BUILD-STATE.md` hunk so this main
+  checkout remains the lead-owned build-state surface.
+- Committed the integrated product-code slice as
+  `d53b6115 Keep DearMe output review inside the product surface`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-001 is no
+  longer merely ready; it is now integrated into the disposable branch.
+
+Product behavior now carried by the integration branch:
+
+- Private prepared DearMe work can be reviewed from the DearMe surface.
+- The user can choose `Useful`, `Needs changes`, `Regenerate`, or `Not useful`.
+- Regeneration and not-useful feedback reuse the existing issue/comment/work
+  product substrate and internal assignee wakeups.
+- Customer-visible responses and UI keep wake/issue/provider/setup/Paperclip/
+  OpenClaw details backstage.
+
+Verification:
+
+- In `/tmp/dearme-dm-001-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded after the disposable
+  worktree initially lacked `node_modules`. It reused the lockfile cache and
+  emitted the existing `paperclip-plugin-dev-server` bin warning from the local
+  plugin SDK build artifact state.
+- In `/tmp/dearme-dm-001-integrate`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run`
+  passed, 13 tests.
+- In `/tmp/dearme-dm-001-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-output-handoff.test.ts --run`
+  passed, 20 tests. The command emitted existing Postgres truncate cascade
+  `NOTICE` logs and exited 0.
+- In `/tmp/dearme-dm-001-integrate`,
+  `pnpm exec vitest ui/src/api/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run`
+  passed, 22 tests.
+- In `/tmp/dearme-dm-001-integrate`,
+  `git diff --check -- doc/plans/2026-05-08-dearme-dm-001-output-review-regeneration-ticket.md packages/shared/src/validators/dearme.test.ts packages/shared/src/validators/dearme.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-output-handoff.test.ts server/src/routes/dearme.ts server/src/services/dearme-output-handoff.ts ui/src/api/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx ui/src/pages/DearMeOnboarding.tsx`
+  passed.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm -r typecheck`.
+- Full `pnpm build`.
+
+Next integration step:
+
+- Treat `d53b6115` as the next candidate baseline for DM-002.
+- Replay DM-002 onto `d53b6115` in a new clean disposable worktree; do not merge
+  directly into the dirty `/Users/peter/dearme` checkout.
+- Keep resolving product copy toward the locked rule: team visible, machinery
+  hidden.
+
+## DM-002 Clean Integration Commit - 2026-05-08
+
+Fifty-fifth DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-002-integrate`
+  from integrated DM-001 baseline `d53b6115`.
+- Created integration branch `codex/dearme-dm-002-integrated`.
+- Replayed worker commit `7b95a2d5` with `git cherry-pick --no-commit`.
+- Resolved the only conflict by dropping the worker's older
+  `docs/dearme/BUILD-STATE.md` hunk and keeping state lead-owned.
+- Committed the integrated product-code slice as
+  `80128431 Show DearMe team updates in the customer work stream`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-002 is now an
+  integrated queue item and `80128431` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- The DearMe work stream can show `team_update` cards from DearMe-origin agent
+  comments.
+- Shared work stream schema now requires explicit product-facing item kinds:
+  `decision`, `prepared_work`, `team_update`, or `progress`.
+- The UI presents the stream as a customer-facing team work stream while the
+  issue/comment/work-product substrate remains backstage.
+
+Verification:
+
+- In `/tmp/dearme-dm-002-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded after the disposable
+  worktree initially lacked `node_modules`. It reused the lockfile cache and
+  emitted the existing `paperclip-plugin-dev-server` bin warning from the local
+  plugin SDK build artifact state.
+- In `/tmp/dearme-dm-002-integrate`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run`
+  passed, 28 tests.
+- In `/tmp/dearme-dm-002-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-output-handoff.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/api/dearme.test.ts --run`
+  passed, 28 tests. The server tests emitted existing Postgres truncate cascade
+  `NOTICE` logs and exited 0.
+- In `/tmp/dearme-dm-002-integrate`, `pnpm -r typecheck` passed.
+- In `/tmp/dearme-dm-002-integrate`, `git diff --check` passed across the 9
+  integrated files.
+- A targeted forbidden-copy scan over touched runtime/test paths showed
+  substrate terms only in fixtures and negative assertions, not in the changed
+  runtime service/UI path.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser smoke.
+
+Completed next integration step:
+
+- Treat `80128431` as the next candidate baseline for DM-003.
+- Replay DM-003 onto `80128431` in a new clean disposable worktree; do not merge
+  directly into the dirty `/Users/peter/dearme` checkout.
+- Keep watching `team_update` content because agent comments are now projected
+  into customer-visible cards.
+- Completed below as DM-003 integration commit `c5b11039`.
+
+## DM-003 Clean Integration Commit - 2026-05-08
+
+Fifty-sixth DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-003-integrate`
+  from integrated DM-002 baseline `80128431`.
+- Created integration branch `codex/dearme-dm-003-integrated`.
+- Replayed worker commit `876ec6b3` with `git cherry-pick --no-commit`.
+- Resolved the only conflict by dropping the worker's older
+  `docs/dearme/BUILD-STATE.md` hunk and keeping this file lead-owned.
+- Added an extra safety patch so customer-visible Voice & Memory summaries
+  redact Paperclip/OpenClaw/provider/adapter/setup/runtime/issue language from
+  projected team updates.
+- Committed the integrated product-code slice as
+  `c5b11039 Show DearMe voice and memory sources from existing work`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-003 is now an
+  integrated queue item and `c5b11039` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- DearMe can show a Voice & Memory panel sourced from existing Brand OS
+  documents, voice samples, proof sources, approval boundaries, team updates,
+  and agents.
+- The slice reuses the current document/comment/agent substrate; it does not
+  introduce a new voice-memory table.
+- The customer sees private source cards, counts, owner roles, and freshness
+  timestamps without seeing raw issue ids, provider mechanics, setup payloads,
+  adapters, or runtime language.
+- The DearMe UI refreshes the Voice & Memory view after Brand OS apply, output
+  review, and approval decisions so the user can see what the team has learned.
+
+Verification:
+
+- In `/tmp/dearme-dm-003-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-003-integrate`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-voice-memory.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run`
+  passed, 29 tests.
+- In `/tmp/dearme-dm-003-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-output-handoff.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/api/dearme.test.ts --run`
+  passed, 31 tests.
+- In `/tmp/dearme-dm-003-integrate`, `pnpm -r typecheck` passed.
+- `git diff --check` passed across the integrated DM-003 file set.
+- Targeted forbidden-copy scan showed substrate words only in tests, redaction
+  constants, and internal route code that strips `wakeIssue`, not in the changed
+  customer UI path.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser smoke.
+
+Next integration step:
+
+- Treat `c5b11039` as the next candidate baseline for DM-004.
+- Replay DM-004 onto `c5b11039` in a new clean disposable worktree; do not merge
+  directly into the dirty `/Users/peter/dearme` checkout.
+- Keep resolving UI copy toward the locked rule: team visible, machinery
+  hidden.
+
+Completed next integration step:
+
+- Treat `c5b11039` as the candidate baseline for DM-004.
+- Replayed DM-004 onto `c5b11039` in a new clean disposable worktree.
+- Completed below as DM-004 integration commit `484fe995`.
+
+## DM-004 Clean Integration Commit - 2026-05-08
+
+Fifty-seventh DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-004-integrate`
+  from integrated DM-003 baseline `c5b11039`.
+- Created integration branch `codex/dearme-dm-004-integrated`.
+- Replayed worker commit `f402d94e` with `git cherry-pick --no-commit`.
+- Resolved the `docs/dearme/BUILD-STATE.md` conflict by keeping this file
+  lead-owned and dropping the worker's older state hunk.
+- Resolved the route-test overlap while preserving the DM-003 stronger Voice &
+  Memory source fixture and source-kind assertion.
+- Preserved the DM-003 Voice & Memory redaction service unchanged.
+- Committed the integrated product-code slice as
+  `484fe995 Keep DearMe paid-beta language on the product surface`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-004 is now an
+  integrated queue item and `484fe995` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- DearMe customer copy now prefers private work, private drafts, Brand OS,
+  Voice Profile, approval boundaries, and team updates.
+- The `/dearme` onboarding and private work surfaces no longer show `doc`
+  counts, first-cycle `artifact` framing, or raw workspace/document wording.
+- Workbench decisions and progress summaries now describe reviewable private
+  work instead of private artifacts or Brand OS documents.
+- Generated DearMe operation instructions now avoid visible workspace,
+  attached-document, issue-comment, and issue-identifier language where the
+  customer may later read the work.
+- Internal route, schema, database, issue, document, and Paperclip-compatible
+  contracts were intentionally preserved.
+
+Verification:
+
+- In `/tmp/dearme-dm-004-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-004-integrate`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run`
+  passed, 14 tests.
+- In `/tmp/dearme-dm-004-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-brand-blueprint-routes.test.ts --run`
+  passed, 18 tests.
+- In `/tmp/dearme-dm-004-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-workbench.test.ts --run`
+  passed, 1 test.
+- In `/tmp/dearme-dm-004-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-voice-memory.test.ts --run`
+  passed, 1 test and confirmed the internal-token redaction assertions still
+  hold.
+- In `/tmp/dearme-dm-004-integrate`,
+  `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run` passed, 14
+  tests.
+- In `/tmp/dearme-dm-004-integrate`, `pnpm -r typecheck` passed.
+- `git diff --check` and `git diff --cached --check` passed.
+- Customer-path forbidden-copy scan returned no matches for old visible
+  document/artifact/workspace/issue-comment phrases across the touched files.
+- Redaction scan matched only the intended Voice & Memory redaction constants
+  and negative test fixtures.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser smoke.
+
+Next integration step:
+
+- Treat `484fe995` as the candidate baseline for DM-005.
+- Replayed DM-005 onto `484fe995` in a new clean disposable worktree.
+- Completed below as DM-005 integration commit `77e7d403`.
+
+## DM-005 Clean Integration Commit - 2026-05-08
+
+Fifty-eighth DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-005-integrate`
+  from integrated DM-004 baseline `484fe995`.
+- Created integration branch `codex/dearme-dm-005-integrated`.
+- Replayed worker commit `acaa7842` with `git cherry-pick --no-commit`.
+- Resolved the `docs/dearme/BUILD-STATE.md` conflict by keeping this file
+  lead-owned and dropping the worker's older state hunk.
+- Committed the integrated product-code slice as
+  `77e7d403 Let DearMe learn from private sources without exposing the substrate`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-005 is now an
+  integrated queue item and `77e7d403` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- DearMe paid-beta users can add private Voice & Memory sources from `/dearme`
+  as voice samples, proof sources, or approval boundaries.
+- The route is board-gated:
+  `/api/dearme/companies/:companyId/voice-memory/sources`.
+- The response returns the customer-safe source card and refreshed Voice &
+  Memory read-model while intentionally omitting `documentId`.
+- Managed sources persist through the existing Brand OS issue document
+  substrate with generated source keys, avoiding a new Voice & Memory table.
+- The Voice & Memory UI adds a compact source-intake form and refreshes the
+  panel after each successful save.
+
+Integration hardening:
+
+- Managed-source key classification now requires exact generated key patterns
+  such as `voice-sample-<8hex>` so legacy prefix collisions do not leak into the
+  customer read-model.
+- Shared validation rejects whitespace-only source bodies.
+- The Voice & Memory service test asserts legacy-prefix documents are ignored
+  by customer Voice & Memory JSON.
+
+Verification:
+
+- In `/tmp/dearme-dm-005-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-005-integrate`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run`
+  passed, 15 tests.
+- In `/tmp/dearme-dm-005-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-brand-blueprint-routes.test.ts --run`
+  passed, 21 tests.
+- In `/tmp/dearme-dm-005-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-voice-memory.test.ts --run`
+  passed, 3 tests.
+- In `/tmp/dearme-dm-005-integrate`,
+  `pnpm exec vitest ui/src/api/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run`
+  passed, 25 tests.
+- In `/tmp/dearme-dm-005-integrate`, `pnpm -r typecheck` passed.
+- `git diff --check` and `git diff --cached --check` passed.
+- Customer-copy forbidden-term scan returned no matches for stale private
+  draft/document/workspace/issue language in the targeted product surface.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser smoke.
+
+Next integration step:
+
+- Treat `77e7d403` as the candidate baseline for DM-006.
+- Replayed DM-006 onto `77e7d403` in a new clean disposable worktree.
+- Completed below as DM-006 integration commit `44b7bfd6`.
+
+## DM-006 Clean Integration Commit - 2026-05-08
+
+Fifty-ninth DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-006-integrate`
+  from integrated DM-005 baseline `77e7d403`.
+- Created integration branch `codex/dearme-dm-006-integrated`.
+- Replayed worker commit `cc358376` with `git cherry-pick --no-commit`.
+- Resolved the `docs/dearme/BUILD-STATE.md` conflict by keeping this file
+  lead-owned and dropping the worker's older state hunk.
+- Committed the integrated product-code slice as
+  `44b7bfd6 Make output review feel like a DearMe decision desk`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-006 is now an
+  integrated queue item and `44b7bfd6` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- DearMe outputs now include a strict `reviewContext` with draft preview, Voice
+  Gate, Voice & Memory context, approval boundary, and review prompt.
+- The focused output panel now feels like a DearMe decision desk instead of a
+  raw output card.
+- The review context is derived from existing output details, prepared work,
+  private source documents, and team updates; no new review table, route family,
+  or dependency was added.
+- Customer-facing review UI keeps issue, document, work-product, provider,
+  adapter, model, route, and runtime mechanics backstage.
+
+Verification:
+
+- In `/tmp/dearme-dm-006-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-006-integrate`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run`
+  passed, 15 tests.
+- In `/tmp/dearme-dm-006-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-output-handoff.test.ts --run`
+  passed, 4 tests.
+- In `/tmp/dearme-dm-006-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-brand-blueprint-routes.test.ts --run`
+  passed, 21 tests.
+- In `/tmp/dearme-dm-006-integrate`,
+  `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run`
+  passed, 15 tests.
+- In `/tmp/dearme-dm-006-integrate`,
+  `pnpm exec vitest ui/src/api/dearme.test.ts --run` passed, 10 tests.
+- In `/tmp/dearme-dm-006-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-voice-memory.test.ts --run`
+  passed, 3 tests.
+- In `/tmp/dearme-dm-006-integrate`, `pnpm -r typecheck` passed.
+- `git diff --check` and `git diff --cached --check` passed.
+- Customer-copy forbidden-term scan returned matches only in negative test
+  assertions, not in touched production DearMe surfaces.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser smoke.
+
+Next integration step:
+
+- Treat `44b7bfd6` as the next candidate baseline for DM-007.
+- Replay DM-007 onto `44b7bfd6` in a new clean disposable worktree; do not merge
+  directly into the dirty `/Users/peter/dearme` checkout.
+- Keep the same rule: make the team and product outputs visible while keeping
+  machinery, provider, adapter, workspace, issue, document, and approval-route
+  mechanics backstage.
+
+## DM-007 Clean Integration Commit - 2026-05-08
+
+Sixtieth DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-007-integrate`
+  from integrated DM-006 baseline `44b7bfd6`.
+- Created integration branch `codex/dearme-dm-007-integrated`.
+- Replayed worker commit `d1bf8431` with `git cherry-pick --no-commit`.
+- Resolved the `docs/dearme/BUILD-STATE.md` conflict by keeping this file
+  lead-owned and dropping the worker's older state hunk.
+- Committed the integrated product-code slice as
+  `3d419f55 Make review decisions feed DearMe memory`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-007 is now an
+  integrated queue item and `3d419f55` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- Customer review outcomes feed the Workbench work stream and Voice & Memory as
+  customer-safe learning updates.
+- The slice reuses existing issue comments and DearMe read models; no new
+  table, route family, migration, or dependency was added.
+- Only explicit `DearMe decision:` comments with known DearMe phrases are
+  projected into product memory.
+- Ordinary user scratch notes stay hidden.
+- Review notes are redacted for substrate, provider, runtime, setup, route, and
+  issue identifiers before they reach customer-facing Workbench or Voice &
+  Memory surfaces.
+
+Integration hardening:
+
+- `server/src/services/dearme-review-feedback.ts` only parses the first line
+  beginning with exact `DearMe decision:`.
+- Accepted phrases are constrained to approved, requested-changes, regenerate,
+  and not-useful review outcomes.
+- Internal-note redaction covers Paperclip, OpenClaw, Codex/codex-local, MCP,
+  model provider, provider, adapter, setup payload/blueprint, runtime,
+  heartbeat, wakeup, issue/approval ids, route-like issue/approval paths, ticket
+  ids, and UUIDs.
+- Workbench and Voice & Memory regressions assert these internal terms do not
+  appear in customer JSON when embedded in a review note.
+
+Verification:
+
+- In `/tmp/dearme-dm-007-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-007-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-voice-memory.test.ts --run`
+  passed, 3 tests.
+- In `/tmp/dearme-dm-007-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-workbench.test.ts --run`
+  passed, 1 test.
+- In `/tmp/dearme-dm-007-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-output-handoff.test.ts --run`
+  passed, 4 tests.
+- In `/tmp/dearme-dm-007-integrate`, `pnpm -r typecheck` passed.
+- `git diff --cached --check && git diff --check` passed.
+- Customer-copy forbidden substrate scan returned no matches in staged
+  Workbench and Voice & Memory service additions.
+- Verifier subagent returned PASS.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser smoke.
+
+Known residual risks:
+
+- Review-note redaction is heuristic; new internal labels or ID formats need to
+  be added as they appear.
+- Workbench items still carry existing response fields such as `issueId` and
+  `relatedOutputId`. If these are considered customer-visible forbidden IDs,
+  that is a broader API contract cleanup, not a DM-007 regression.
+
+Next integration step:
+
+- Treat `3d419f55` as the next candidate baseline for DM-008.
+- Replay DM-008 onto `3d419f55` in a clean disposable worktree.
+- Continue using Polsia for visible iteration choreography, Lindy for
+  action-card/revision grammar, and the Naive/Paperclip substrate for hidden
+  persistence and wakeups.
+
+## DM-008 Clean Integration Commit - 2026-05-08
+
+Sixty-first DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-008-integrate`
+  from integrated DM-007 baseline `3d419f55`.
+- Created integration branch `codex/dearme-dm-008-integrated`.
+- Replayed worker commit `9b1d1f3f` with `git cherry-pick --no-commit`.
+- Resolved the `docs/dearme/BUILD-STATE.md` conflict by keeping this file
+  lead-owned and dropping the worker's older state hunk.
+- Resolved `server/src/services/dearme-review-feedback.ts` toward the DearMe
+  product boundary: reuse DM-007's decision parsing and strengthen redaction
+  before generating the new regeneration brief.
+- Committed the integrated product-code slice as
+  `b58827c2 Carry review feedback into DearMe regeneration briefs`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-008 is now an
+  integrated queue item and `b58827c2` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- Customer requests for changes, regeneration, or not-useful decisions now
+  become a compact DearMe regeneration brief for the next private assignment.
+- Approved work does not create a regeneration brief.
+- The brief is synthesized from the existing DearMe decision comment, latest
+  issue document, and latest prepared work summary.
+- The slice reuses existing issue comments, issue documents, prepared work
+  summaries, and heartbeat assignment markdown; no new table, route family,
+  migration, UI surface, or dependency was added.
+
+Integration hardening:
+
+- Regeneration briefs redact substrate, provider, model, runtime, setup,
+  route, ticket, issue, approval, and UUID-shaped details from user notes and
+  previous draft context.
+- The new regression test embeds provider/model/setup/runtime/wakeup/route
+  identifiers in both user feedback and previous draft context, then asserts
+  the resulting brief contains only a private-detail placeholder.
+- Raw review comment bodies are not passed through as worker assignment text;
+  the brief is rebuilt from DearMe-owned phrases and sanitized context.
+- The only forbidden-substrate scan match in staged production additions was
+  the intended `MCP` redaction pattern.
+
+Verification:
+
+- In `/tmp/dearme-dm-008-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-008-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-regeneration-brief.test.ts --run`
+  passed, 4 tests.
+- In `/tmp/dearme-dm-008-integrate`,
+  `pnpm exec vitest server/src/__tests__/heartbeat-comment-wake-batching.test.ts --run`
+  passed, 9 tests.
+- In `/tmp/dearme-dm-008-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-output-handoff.test.ts --run`
+  passed, 4 tests. The command emitted existing Postgres truncate cascade
+  `NOTICE` logs and exited 0.
+- In `/tmp/dearme-dm-008-integrate`, `pnpm -r typecheck` passed.
+- `git diff --cached --check && git diff --check` passed.
+- `rg -n "^<<<<<<<|^=======|^>>>>>>>" .` returned no conflict markers.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser smoke.
+
+Known residual risks:
+
+- Regeneration-brief redaction is heuristic; new internal labels or ID formats
+  need to be added as they appear.
+- The worker assignment markdown still uses the inherited internal
+  `Paperclip task context` wrapper for the hidden kernel. That is not a
+  customer-facing surface, but it remains a future substrate-cleanup target if
+  the worker protocol itself is rebranded.
+
+Next integration step:
+
+- Treat `b58827c2` as the next candidate baseline for DM-009.
+- Replay DM-009 onto `b58827c2` in a clean disposable worktree.
+- Continue using Polsia for visible iteration choreography, Lindy for
+  action-card/result traces, and the Naive/Paperclip substrate for hidden
+  persistence, prepared work, and wakeups.
+
+## DM-009 Clean Integration Commit - 2026-05-08
+
+Sixty-second DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-009-integrate`
+  from integrated DM-008 baseline `b58827c2`.
+- Created integration branch `codex/dearme-dm-009-integrated`.
+- Replayed worker commit `aeac3696` with `git cherry-pick --no-commit`.
+- Resolved the `docs/dearme/BUILD-STATE.md` conflict by keeping this file
+  lead-owned and dropping the worker's older state hunk from the clean commit.
+- Committed the integrated product-code slice as
+  `52190ed3 Show applied feedback in DearMe review decisions`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-009 is now an
+  integrated queue item and `52190ed3` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- The DearMe decision desk can show a `Feedback applied` trace after refreshed
+  private work lands in response to a customer's previous review decision.
+- The trace summarizes what the user asked for, what changed, and that the
+  draft remains private until approval.
+- The path reuses existing DearMe decision comments, private documents, latest
+  work updates, and output handoff projections; no new table, route family,
+  migration, workflow, or dependency was added.
+- The UI renders the trace in the focused output panel so the review loop feels
+  visible and product-native instead of like raw task/comment history.
+
+Integration hardening:
+
+- `server/src/services/dearme-review-feedback.ts` now exports a shared
+  private-detail redaction helper so output handoff traces and regeneration
+  briefs use the same substrate-hiding vocabulary.
+- Feedback traces redact substrate, provider, model, runtime, setup, route,
+  ticket, issue, approval, and UUID-shaped details before they reach customer
+  JSON.
+- The new regression embeds Paperclip, OpenClaw, MCP, model/provider,
+  setup-payload, codex-local, issue/approval routes, wakeup, and agent-wakeup
+  terms in review feedback, then asserts the final `feedbackTrace` contains
+  only customer-safe product language.
+
+Verification:
+
+- In `/tmp/dearme-dm-009-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-009-integrate`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run`
+  passed, 15 tests.
+- In `/tmp/dearme-dm-009-integrate`,
+  `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run`
+  passed, 15 tests.
+- In `/tmp/dearme-dm-009-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-output-handoff.test.ts --run`
+  passed, 5 tests. The command emitted existing Postgres truncate cascade
+  `NOTICE` logs and exited 0.
+- In `/tmp/dearme-dm-009-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-regeneration-brief.test.ts --run`
+  passed, 4 tests.
+- In `/tmp/dearme-dm-009-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-workbench.test.ts --run`
+  passed, 1 test.
+- In `/tmp/dearme-dm-009-integrate`, `pnpm -r typecheck` passed.
+- `rg -n "^<<<<<<<|^=======|^>>>>>>>" .` returned no conflict markers.
+- `git diff --cached --check && git diff --check` passed.
+- `git diff --cached -- docs/dearme/BUILD-STATE.md | wc -l` returned `0`, so
+  the clean integration commit did not absorb the worker's state-file hunk.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser smoke.
+
+Known residual risks:
+
+- Feedback-trace redaction is still heuristic; new internal labels or ID
+  formats need to be added as they appear.
+- DM-010 remains a dirty handoff branch. It must be inspected and normalized
+  before any approval-ready handoff behavior is integrated.
+
+Next integration step:
+
+- Treat `52190ed3` as the next candidate baseline.
+- Inspect `/private/tmp/dearme-dm-010-approval-ready-handoff` and turn its
+  uncommitted edits into a clean, bounded patch or commit before replaying it.
+- Continue using Polsia for decision ceremony, Lindy for approval/action-card
+  grammar, and the Naive/Paperclip approval substrate for hidden persistence.
+
+## DM-010 Clean Integration Commit - 2026-05-08
+
+Sixty-second DearMe slice:
+
+- Normalized `/private/tmp/dearme-dm-010-approval-ready-handoff` from a dirty
+  handoff into committed worker patch `47b2c581`.
+- Created clean disposable integration worktree `/tmp/dearme-dm-010-integrate`
+  from integrated DM-009 baseline `52190ed3`.
+- Created integration branch `codex/dearme-dm-010-integrated`.
+- Replayed worker commit `47b2c581` with `git cherry-pick --no-commit`.
+- Resolved the `docs/dearme/BUILD-STATE.md` conflict by keeping this file
+  lead-owned and dropping the worker's older state hunk from the clean commit.
+- Committed the integrated product-code slice as
+  `73224495 Make approved DearMe outputs wait for final approval`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-010 is now an
+  integrated queue item and `73224495` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- When a customer marks a private DearMe output as useful, DearMe creates an
+  idempotent `dearme_output_next_move` approval for the downstream move.
+- The downstream move is projected as an explicit final gate before publish,
+  send, deploy, or spend/start-next-cycle behavior.
+- The Workbench shows that pending next move as the focused final decision and
+  suppresses the duplicate private-output review decision while final approval
+  is pending.
+- The UI labels the decision `Ready for final approval` with `Give final
+  approval`, so the customer sees a clear ceremony instead of raw approval
+  mechanics.
+
+Integration hardening:
+
+- The slice reuses existing approvals, issue-approval links, output handoff
+  review state, Work Ready projection, batch grouping, and approval payload
+  rendering.
+- No new table, migration, route family, dependency, connector, or real
+  publishing/sending/deploying/spending path was added.
+- DM-009's `feedbackTrace` and shared private-detail redaction path stayed
+  intact after the replay.
+- A staged leak scan found no added Paperclip/OpenClaw/OK Partner/MCP/provider/
+  adapter/runtime/setup route-language matches in the changed runtime
+  service/UI paths.
+
+Verification:
+
+- In `/tmp/dearme-dm-010-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-010-integrate`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run`
+  passed, 15 tests.
+- In `/tmp/dearme-dm-010-integrate`,
+  `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run` passed, 16
+  tests.
+- In `/tmp/dearme-dm-010-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-output-handoff.test.ts --run`
+  passed, 5 tests. The command emitted existing Postgres truncate cascade
+  `NOTICE` logs and exited 0.
+- In `/tmp/dearme-dm-010-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-workbench.test.ts --run`
+  passed, 2 tests. The command emitted existing Postgres truncate cascade
+  `NOTICE` logs and exited 0.
+- In `/tmp/dearme-dm-010-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-regeneration-brief.test.ts --run`
+  passed, 4 tests.
+- In `/tmp/dearme-dm-010-integrate`,
+  `pnpm exec vitest ui/src/components/ApprovalPayload.test.tsx --run` passed,
+  3 tests.
+- In `/tmp/dearme-dm-010-integrate`, `pnpm -r typecheck` passed.
+- `rg -n "^<<<<<<<|^=======|^>>>>>>>" .` returned no conflict markers.
+- `git diff --cached --check && git diff --check` passed.
+- `git diff --cached -- docs/dearme/BUILD-STATE.md | wc -l` returned `0`, so
+  the clean integration commit did not absorb the worker's state-file hunk.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser smoke.
+
+Known residual risks:
+
+- Next-move approvals currently prepare the final decision boundary; they do
+  not execute real publishing, email sending, deployment, or spend automation.
+- `dearme_output_next_move` remains an internal approval type and must continue
+  to be rendered through DearMe-native labels before reaching customer UI.
+
+Next integration step:
+
+- Treat `73224495` as the next candidate baseline.
+- Inspect `/private/tmp/dearme-dm-011-execution-receipt` before replaying
+  anything.
+- Keep real external execution out of scope until its adapter and approval
+  boundary are separately reviewed.
+
+## DM-011 Clean Integration Commit - 2026-05-08
+
+Sixty-second DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-011-integrate`
+  from integrated DM-010 baseline `73224495`.
+- Created integration branch `codex/dearme-dm-011-integrated`.
+- Replayed worker commit `3194402b` with `git cherry-pick --no-commit`.
+- Resolved the `docs/dearme/BUILD-STATE.md` conflict by keeping this file
+  lead-owned and dropping the worker's older state hunk from the clean commit.
+- Committed the integrated product-code slice as
+  `b04a2c1d Keep DearMe final approvals visible`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-011 is now an
+  integrated queue item and `b04a2c1d` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- After a customer gives final approval on a DearMe next move, DearMe records a
+  customer-safe execution receipt through the existing approval route.
+- The receipt logs `dearme.next_move_approved` activity and a DearMe-native
+  issue comment.
+- The receipt states that external execution is `not_run_yet`, so the customer
+  can see what was approved without implying that publishing, sending,
+  deployment, or spend already happened.
+- The Workbench projects the receipt as `next_move_approved` progress and a
+  work-stream item.
+- Approved next-move outputs no longer reappear as duplicate private-output
+  review decisions after final approval.
+- No real publish, send, deploy, or spend path was added.
+
+Integration hardening:
+
+- `server/src/services/dearme-output-handoff.ts` now imports the shared
+  `DEARME_NEXT_MOVE_APPROVAL_TYPE` constant from the receipt helper instead of
+  carrying a duplicate private constant.
+- Receipt comments prefer linked issue ids over a possibly stale issue id
+  embedded in the approval payload.
+- The slice reuses existing approval, activity, issue comment, approval-link,
+  output handoff, and Workbench projection surfaces.
+- No new table, migration, route family, dependency, connector, or real
+  external execution path was added.
+- A staged leak scan found no added Paperclip/OpenClaw/OK Partner/MCP/provider/
+  adapter/runtime/setup route-language matches in the changed runtime
+  service/UI paths.
+
+Verification:
+
+- In `/tmp/dearme-dm-011-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-011-integrate`,
+  `pnpm exec vitest server/src/__tests__/approval-routes-idempotency.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-output-handoff.test.ts server/src/__tests__/dearme-regeneration-brief.test.ts --run`
+  passed, 21 tests. The Workbench and output-handoff tests emitted existing
+  Postgres truncate cascade `NOTICE` logs and exited 0.
+- In `/tmp/dearme-dm-011-integrate`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run`
+  passed, 15 tests.
+- In `/tmp/dearme-dm-011-integrate`,
+  `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run` passed, 16
+  tests.
+- In `/tmp/dearme-dm-011-integrate`,
+  `pnpm --filter @paperclipai/shared typecheck` passed.
+- In `/tmp/dearme-dm-011-integrate`,
+  `pnpm --filter @paperclipai/server typecheck` passed.
+- In `/tmp/dearme-dm-011-integrate`,
+  `pnpm --filter @paperclipai/ui typecheck` passed.
+- `rg -n "^<<<<<<<|^=======|^>>>>>>>" .` returned no conflict markers.
+- `git diff --cached --check && git diff --check` passed.
+- `git diff --cached -- docs/dearme/BUILD-STATE.md | wc -l` returned `0`, so
+  the clean integration commit did not absorb the worker's state-file hunk.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser smoke.
+
+Known residual risks:
+
+- This receipt records final approval and blocks duplicate decisions, but it
+  does not execute real external actions.
+- Workbench suppression is bounded by the latest approval and activity query
+  windows; revisit if old approved outputs reappear in long-running accounts.
+- `dearme_output_next_move` must continue to render through DearMe-native
+  labels before reaching customer UI.
+
+Next integration step:
+
+- Treat `b04a2c1d` as the next candidate baseline.
+- Inspect `/private/tmp/dearme-dm-012-private-execution-handoff` before
+  replaying anything.
+- Keep real external execution out of scope until adapter and trust boundaries
+  are separately reviewed.
+
+## DM-012 Clean Integration Commit - 2026-05-08
+
+Sixty-second DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-012-integrate`
+  from integrated DM-011 baseline `b04a2c1d`.
+- Created integration branch `codex/dearme-dm-012-integrated`.
+- Replayed worker commit `17f75810` with `git cherry-pick --no-commit`.
+- Resolved the `docs/dearme/BUILD-STATE.md` conflict by keeping this file
+  lead-owned and dropping the worker's older state hunk from the clean commit.
+- Resolved `server/src/services/dearme-approval-receipts.ts` by preserving the
+  DM-011 linked-issue-id hardening while adding the private handoff behavior.
+- Dropped a duplicate output-handoff import-order hunk because DM-011 already
+  centralized the approval type import.
+- Committed the integrated product-code slice as
+  `b6bfffb4 Show private DearMe execution handoffs`.
+- Full integration commit:
+  `b6bfffb45c558c852d27ce3b5f85d4801e0a7027`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-012 is now an
+  integrated queue item and `b6bfffb4` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- After a customer gives final approval on a DearMe next move, DearMe now also
+  records a private execution handoff.
+- The approval route logs `dearme.private_execution_handoff_prepared` activity
+  and writes a DearMe-native issue comment.
+- The Workbench projects that activity as `execution_handoff_prepared`
+  progress and a work-stream item.
+- The private handoff has `needsApproval: false`; it is an internal/team
+  readiness receipt, not a second customer gate.
+- No real publish, send, deploy, or spend path was added.
+
+Integration hardening:
+
+- The slice reuses existing approvals, activity logs, issue comments,
+  Workbench projection, and DearMe receipt surfaces.
+- No new table, migration, route family, dependency, connector, or real
+  external execution path was added.
+- The linked issue id preference from DM-011 stayed intact.
+- A staged leak scan found no added Paperclip/OpenClaw/OK Partner/MCP/provider/
+  adapter/runtime/setup route-language matches in the changed runtime paths.
+
+Verification:
+
+- In `/tmp/dearme-dm-012-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-012-integrate`,
+  `pnpm exec vitest server/src/__tests__/approval-routes-idempotency.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-output-handoff.test.ts server/src/__tests__/dearme-regeneration-brief.test.ts --run`
+  passed, 21 tests. The Workbench and output-handoff tests emitted existing
+  Postgres truncate cascade `NOTICE` logs and exited 0.
+- In `/tmp/dearme-dm-012-integrate`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run`
+  passed, 15 tests.
+- In `/tmp/dearme-dm-012-integrate`,
+  `pnpm --filter @paperclipai/shared typecheck` passed.
+- In `/tmp/dearme-dm-012-integrate`,
+  `pnpm --filter @paperclipai/server typecheck` passed.
+- In `/tmp/dearme-dm-012-integrate`,
+  `pnpm --filter @paperclipai/ui typecheck` passed.
+- `rg -n "^<<<<<<<|^=======|^>>>>>>>" .` returned no conflict markers.
+- `git diff --cached --check && git diff --check` passed.
+- `git diff --cached -- docs/dearme/BUILD-STATE.md | wc -l` returned `0`, so
+  the clean integration commit did not absorb the worker's state-file hunk.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser smoke.
+
+Known residual risks:
+
+- This handoff makes private execution readiness visible, but it still does not
+  execute real external actions.
+- Handoff copy is currently risk-gate based; new risk gates need mapped
+  DearMe-native copy.
+- Workbench projection depends on recent activity query windows.
+
+Next integration step:
+
+- Treat `b6bfffb4` as the next candidate baseline.
+- Inspect `/private/tmp/dearme-dm-013-handoff-brief-surface` before replaying
+  anything.
+- Keep real external execution out of scope until adapter and trust boundaries
+  are separately reviewed.
+
+## DM-013 Clean Integration Commit - 2026-05-08
+
+Sixty-second DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-013-integrate`
+  from integrated DM-012 baseline `b6bfffb4`.
+- Created integration branch `codex/dearme-dm-013-integrated`.
+- Replayed worker commit `2673975d` with `git cherry-pick --no-commit`.
+- Resolved the `docs/dearme/BUILD-STATE.md` conflict by keeping this file
+  lead-owned and dropping the worker's older state hunk from the clean commit.
+- Committed the integrated product-code slice as
+  `39480533 Surface private handoff readiness in DearMe`.
+- Full integration commit:
+  `39480533a8a26db86858cc053edd0ec8f77ff04c`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-013 is now an
+  integrated queue item and `39480533` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- Workbench progress can now carry `private_handoff_ready` readiness and a
+  customer-safe next step for private execution handoffs.
+- DearMe renders a compact private handoff panel when recent progress includes
+  a ready execution handoff.
+- The panel shows what is ready, the handoff summary, the next step, the
+  artifact type, and an `External action not run` badge.
+- The panel opens the existing DearMe decision/brief view instead of adding a
+  new route or operator surface.
+- No real publish, send, deploy, or spend path was added.
+
+Integration hardening:
+
+- The slice reuses the DM-012 private handoff activity and existing Workbench
+  projection.
+- No new table, migration, route family, dependency, connector, or real
+  external execution path was added.
+- A staged runtime leak scan found no added Paperclip/OpenClaw/OK Partner/MCP/
+  provider/adapter/runtime/setup route-language matches in changed runtime
+  paths.
+
+Verification:
+
+- In `/tmp/dearme-dm-013-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-013-integrate`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run`
+  passed, 35 tests.
+- In `/tmp/dearme-dm-013-integrate`,
+  `pnpm --filter @paperclipai/shared typecheck` passed.
+- In `/tmp/dearme-dm-013-integrate`,
+  `pnpm --filter @paperclipai/server typecheck` passed.
+- In `/tmp/dearme-dm-013-integrate`,
+  `pnpm --filter @paperclipai/ui typecheck` passed.
+- `rg -n "^<<<<<<<|^=======|^>>>>>>>" .` returned no conflict markers.
+- `git diff --cached --check && git diff --check` passed.
+- `git diff --cached -- docs/dearme/BUILD-STATE.md | wc -l` returned `0`.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser smoke.
+
+Known residual risks:
+
+- `nextStep` must remain customer-safe at its source before display in the
+  Workbench panel.
+- The phrase "execution handoff" is still more mechanical than launch-quality
+  DearMe product language and should be polished before paid-beta release.
+- This slice surfaces readiness; it still does not execute real external
+  actions.
+
+Next integration step:
+
+- Treat `39480533` as the next candidate baseline.
+- Inspect `/private/tmp/dearme-dm-014-mobile-nav-safe-area` before replaying
+  anything.
+- DM-016 has since diverged from DM-015 and must be inspected as its own queue
+  item after DM-015.
+
+## DM-014 Clean Integration Commit - 2026-05-08
+
+Sixty-second DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-014-integrate`
+  from integrated DM-013 baseline `39480533`.
+- Created integration branch `codex/dearme-dm-014-integrated`.
+- Replayed worker commit `65d7a599` with `git cherry-pick --no-commit`.
+- Resolved the `docs/dearme/BUILD-STATE.md` conflict by keeping this file
+  lead-owned and dropping the worker's older state hunk from the clean commit.
+- Committed the integrated product-code slice as
+  `75458d80 Keep DearMe mobile work unobstructed`.
+- Full integration commit:
+  `75458d807fc7ff3e35a51a860b1d8d6171e814b9`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-014 is now an
+  integrated queue item and `75458d80` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- `/dearme` mobile routes no longer render the inherited fixed mobile bottom
+  navigation that can cross through customer review work.
+- Standard non-DearMe mobile company routes still render the existing mobile
+  bottom navigation.
+- DearMe mobile content now reserves only the smaller safe-area bottom padding.
+- Stale prepared outputs without `reviewContext` still render as private work
+  needing review through a conservative customer-safe fallback.
+
+Integration hardening:
+
+- The slice stays inside the existing Layout shell and DearMe output review
+  surface.
+- No new route, table, backend path, dependency, connector, or real external
+  execution path was added.
+- A staged runtime UI leak scan found no added Paperclip/OpenClaw/OK
+  Partner/MCP/provider/adapter/runtime/setup route-language matches in changed
+  runtime UI paths.
+
+Verification:
+
+- In `/tmp/dearme-dm-014-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-014-integrate`,
+  `pnpm exec vitest ui/src/components/Layout.test.tsx --run` passed, 8 tests.
+- In `/tmp/dearme-dm-014-integrate`,
+  `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run` passed, 18
+  tests.
+- In `/tmp/dearme-dm-014-integrate`,
+  `pnpm --filter @paperclipai/ui typecheck` passed.
+- `rg -n "^<<<<<<<|^=======|^>>>>>>>" .` returned no conflict markers.
+- `git diff --cached --check && git diff --check` passed.
+- `git diff --cached -- docs/dearme/BUILD-STATE.md | wc -l` returned `0`.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser mobile smoke.
+
+Known residual risks:
+
+- This is unit/typecheck verified but not browser screenshot verified in the
+  clean worktree.
+- The route detector keys off the final path segment `dearme`; keep this simple
+  unless route structure changes.
+- Stale output fallback copy is intentionally conservative and should stay
+  private/review-first.
+
+Next integration step:
+
+- Treat `75458d80` as the next candidate baseline.
+- Inspect `/private/tmp/dearme-dm-015-first-week-output-details` before
+  replaying anything.
+- DM-016 has since diverged from DM-015 and must be inspected as its own queue
+  item after DM-015.
+
+## DM-015 Clean Integration Commit - 2026-05-08
+
+Sixty-second DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-015-integrate`
+  from integrated DM-014 baseline `75458d80`.
+- Created integration branch `codex/dearme-dm-015-integrated`.
+- Replayed worker commit `f9267e58` with `git cherry-pick --no-commit`.
+- Resolved the `docs/dearme/BUILD-STATE.md` conflict by keeping this file
+  lead-owned and dropping the worker's older state hunk from the clean commit.
+- Excluded the worker's architecture-plan and Symphony-plan hunks from the clean
+  commit so lead-owned planning docs remain coherent.
+- Committed the integrated product-code slice as
+  `5a09b4d3 Make first-week DearMe outputs scannable`.
+- Full integration commit:
+  `5a09b4d34612bc69aa950c4ad97b4ff9c4e1194c`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-015 is now an
+  integrated queue item and `5a09b4d3` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- First-week Work Ready cards now show value-specific details before the user
+  opens focused review.
+- Content drafts surface channel, audience, hook, draft body, proof used, and
+  approval gate.
+- Opportunity drafts surface target, why relevant, relevance score, outreach
+  angle, draft message, and approval gate.
+- Portfolio updates surface page/section, proof source, proposed copy, and
+  deploy gate.
+- Weekly reports surface completed work, decisions needed, next bets, and report
+  reference.
+- Focused review uses the same detail ordering as the cards.
+
+Integration hardening:
+
+- The slice stays inside the existing DearMe output detail contract and Work
+  Ready card surface.
+- No backend route, table, migration, connector, dependency, scraper, external
+  fetch, or real external execution path was added.
+- A staged runtime UI leak scan found no added Paperclip/OpenClaw/OK
+  Partner/MCP/provider/adapter/runtime/setup route-language matches in changed
+  runtime UI paths.
+
+Verification:
+
+- In `/tmp/dearme-dm-015-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-015-integrate`,
+  `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run` passed, 19
+  tests.
+- In `/tmp/dearme-dm-015-integrate`,
+  `pnpm --filter @paperclipai/ui typecheck` passed.
+- `rg -n "^<<<<<<<|^=======|^>>>>>>>" doc ui packages server docs` returned no
+  conflict markers.
+- `git diff --cached --check && git diff --check` passed.
+- `git diff --cached -- docs/dearme/BUILD-STATE.md doc/plans/2026-05-08-dearme-architecture-first-reuse-execution-plan.md doc/plans/2026-05-08-dearme-symphony-operating-loop.md`
+  returned no staged lead-owned doc hunks.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser mobile smoke.
+
+Known residual risks:
+
+- This is unit/typecheck verified but not browser screenshot verified in the
+  clean worktree.
+- The detail list is capped at six fields; future output kinds need deliberate
+  priority ordering.
+- Upstream output generators still need to provide useful detail payloads.
+
+Next integration step:
+
+- Treat `5a09b4d3` as the next candidate baseline.
+- Inspect `/private/tmp/dearme-dm-016-voice-memory-reference-links`; it now has
+  distinct head `ae4fef73` and should not be skipped.
+
+## DM-016 Clean Integration Commit - 2026-05-08
+
+Sixty-second DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-016-integrate`
+  from integrated DM-015 baseline `5a09b4d3`.
+- Created integration branch `codex/dearme-dm-016-integrated`.
+- Replayed worker commit `ae4fef73` with `git cherry-pick --no-commit`.
+- Resolved conflicts in `docs/dearme/BUILD-STATE.md`,
+  `doc/plans/2026-05-08-dearme-architecture-first-reuse-execution-plan.md`, and
+  `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` by keeping those
+  documents lead-owned and dropping the worker's older state hunks from the
+  clean commit.
+- Committed the integrated product-code slice as
+  `16fa8fb8 Keep DearMe source references private and traceable`.
+- Full integration commit:
+  `16fa8fb804baae650f76da19792279761a4e8e7c`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-016 is now an
+  integrated queue item and `16fa8fb8` is the next candidate baseline.
+
+Product behavior now carried by the integration branch:
+
+- Voice & Memory source entries can carry an optional private `referenceUrl`.
+- The shared DearMe contract accepts trimmed `http://` and `https://` reference
+  links, treats an empty input as absent, and rejects non-HTTP schemes.
+- The server stores the reference link in the existing managed-source document,
+  projects it back to the source response, and removes the literal reference
+  metadata line from the summary body.
+- The `/dearme` Voice & Memory source form now submits the reference link, and
+  source cards render it as a private `Reference` link.
+
+Integration hardening:
+
+- The slice stays inside existing shared validators, DearMe voice-memory
+  document storage, route projection, UI API payload, and `/dearme` UI.
+- No table, migration, dependency, connector, background worker, uploader,
+  scraper, external fetch, public publishing path, or real external action was
+  added.
+- Staged diff leak scan found no added user-facing Paperclip/OpenClaw/OK
+  Partner/MCP/provider/adapter/runtime/setup route-language matches. A broader
+  source scan only matched existing sanitizer patterns that intentionally filter
+  those terms.
+
+Verification:
+
+- In `/tmp/dearme-dm-016-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-016-integrate`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run`
+  passed, 15 tests.
+- In `/tmp/dearme-dm-016-integrate`,
+  `pnpm exec vitest ui/src/api/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run`
+  passed, 29 tests.
+- In `/tmp/dearme-dm-016-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-voice-memory.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts --run`
+  passed, 24 tests. The command emitted existing Postgres truncate cascade
+  `NOTICE` logs and exited 0.
+- In `/tmp/dearme-dm-016-integrate`,
+  `pnpm --filter @paperclipai/shared typecheck` passed.
+- In `/tmp/dearme-dm-016-integrate`,
+  `pnpm --filter @paperclipai/server typecheck` passed.
+- In `/tmp/dearme-dm-016-integrate`,
+  `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --cached --check` and `git diff --check` passed.
+- `rg -n "^<<<<<<<|^=======|^>>>>>>>" doc ui packages server docs` returned no
+  conflict markers.
+- `git diff --cached -- docs/dearme/BUILD-STATE.md doc/plans/2026-05-08-dearme-architecture-first-reuse-execution-plan.md doc/plans/2026-05-08-dearme-symphony-operating-loop.md`
+  returned no staged lead-owned doc hunks.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser mobile smoke.
+
+Known residual risks:
+
+- Reference links are private provenance only. They must not become fetch,
+  summarize, publish, or external-action inputs without a separate
+  trust-boundary review.
+- Historical note: `/private/tmp/dearme-dm-017-voice-memory-source-editing`
+  shared DM-016's source head (`ae4fef73`), but later proved to contain a
+  12-file dirty worker diff. See `DM-017 Clean Integration Commit - 2026-05-08`.
+
+## DM-017 Clean Integration Commit - 2026-05-08
+
+Sixty-second DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-017-integrate`
+  from integrated DM-016 baseline `16fa8fb8`.
+- Created integration branch `codex/dearme-dm-017-integrated`.
+- Inspected `/private/tmp/dearme-dm-017-voice-memory-source-editing` and found
+  source head `ae4fef73` with a 12-file dirty implementation diff rather than a
+  distinct source commit.
+- Applied that dirty diff to the clean integration worktree with
+  `git apply --index`.
+- Committed the integrated product-code slice as
+  `feaaa66a Let DearMe users revise private voice memory sources`.
+- Full integration commit:
+  `feaaa66a391520dbb96b5cd9ac116b3c15480485`.
+- Updated `doc/plans/2026-05-08-dearme-dm-merge-queue.md` so DM-017 became an
+  integrated queue item. This initial `feaaa66a` candidate baseline was later
+  superseded by the `20290812` hardening commit recorded below.
+
+Product behavior now carried by the integration branch:
+
+- Editable managed Voice & Memory sources expose their private body for review
+  and correction in the `/dearme` surface.
+- The Voice & Memory source form now supports add, edit, save changes, and
+  cancel states while keeping the interaction inside DearMe product language.
+- The API client can update a source through the shared DearMe request/result
+  contract.
+- The server updates managed private sources through the existing
+  document-revision path, logs `dearme.voice_memory_source_updated`, and
+  returns the refreshed source list.
+
+Integration hardening:
+
+- The slice reuses existing shared validators, the company-scoped DearMe route,
+  document-backed Voice & Memory storage, the UI API client, and the `/dearme`
+  source-management panel.
+- No migration, table, dependency, upload system, scraper, external fetch,
+  connector, public publishing path, or real external action was added.
+- Staged diff leak checks found no added user-facing Paperclip/OpenClaw/OK
+  Partner/MCP/provider/adapter/setup route-language matches. A broader runtime
+  scan only matched existing sanitizer patterns that intentionally filter those
+  words.
+
+Verification:
+
+- In `/tmp/dearme-dm-017-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-017-integrate`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run`
+  passed, 15 tests.
+- In `/tmp/dearme-dm-017-integrate`,
+  `pnpm exec vitest ui/src/api/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run`
+  passed, 31 tests.
+- In `/tmp/dearme-dm-017-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-voice-memory.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts --run`
+  passed, 26 tests. The command emitted existing Postgres truncate cascade
+  `NOTICE` logs and exited 0.
+- In `/tmp/dearme-dm-017-integrate`,
+  `pnpm --filter @paperclipai/shared typecheck` passed.
+- In `/tmp/dearme-dm-017-integrate`,
+  `pnpm --filter @paperclipai/server typecheck` passed.
+- In `/tmp/dearme-dm-017-integrate`,
+  `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --cached --check` and `git diff --check` passed.
+- `rg -n "^<<<<<<<|^=======|^>>>>>>>" packages server ui` returned no conflict
+  markers.
+- `git diff --cached -- package.json pnpm-lock.yaml '**/package.json'`
+  returned no dependency changes.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser mobile smoke.
+
+Known residual risks:
+
+- Source edits are audited through document revisions, but the UI only exposes
+  the current editable body. Add explicit revision history only if design
+  partners need it.
+- Source edits remain private memory maintenance. Do not wire edited source
+  bodies to public publishing or external actions without a separate
+  approval-boundary review.
+
+## DM-017 Approval Apply Hardening Commit - 2026-05-08
+
+Sixty-second DearMe slice:
+
+- Continued in clean disposable integration worktree
+  `/tmp/dearme-dm-017-integrate`.
+- Kept branch `codex/dearme-dm-017-integrated`.
+- Found a real post-DM017 product bug: approving a DearMe Brand OS apply
+  request marked the approval approved but did not invoke the existing Brand OS
+  apply service, so the private team, cycles, draft lanes, issues, and
+  documents were not created from that approval path.
+- Committed the hardening slice as
+  `20290812 Apply DearMe Brand OS approvals through the gate`.
+- `20290812` is now the current clean candidate baseline for the next DearMe
+  integration slice.
+
+Product behavior now carried by the integration branch:
+
+- `approvalService.approve()` centrally invokes the existing DearMe Brand OS
+  apply service when a `dearme_brand_blueprint_apply` approval is actually
+  applied, so route callers and direct service callers share the same gate.
+- Generated first-operation briefs now explicitly tell the team to update the
+  attached `dear-me-report` document as the durable report surface, not only a
+  standalone workspace file.
+- DearMe operation briefs now explicitly forbid modifying repository source,
+  app configuration, or local runtime files during customer brand work.
+- CLI Tailnet fallback tests are isolated from host-installed `tailscale`
+  binaries so local developer networking does not make the fallback assertions
+  flaky.
+
+Verification:
+
+- In `/tmp/dearme-dm-017-integrate`,
+  `pnpm exec vitest cli/src/__tests__/network-bind.test.ts cli/src/__tests__/onboard.test.ts server/src/__tests__/dearme-brand-blueprint-apply.test.ts --run`
+  passed, 3 files and 13 tests.
+- In `/tmp/dearme-dm-017-integrate`,
+  `pnpm --filter @paperclipai/server typecheck` passed.
+- In `/tmp/dearme-dm-017-integrate`, full `pnpm test:run` passed. The run
+  reached the final serialized server shard and exited 0.
+- `git diff --check` and `git diff --cached --check` passed.
+- `rg -n "^(<<<<<<<|=======|>>>>>>>)" cli/src/__tests__ server/src/services`
+  returned no conflict markers.
+- `git diff -- package.json pnpm-lock.yaml` returned no dependency changes.
+
+Not run:
+
+- Browser visual pass for DearMe UI after this backend/test hardening commit.
+
+## DM-018 Voice & Memory Source Archive Commit - 2026-05-08
+
+Sixty-second DearMe slice:
+
+- Created clean disposable integration worktree `/tmp/dearme-dm-018-integrate`
+  from hardened DM-017 baseline `20290812`.
+- Created integration branch `codex/dearme-dm-018-integrated`.
+- Inspected `/private/tmp/dearme-dm-018-voice-memory-source-archive` and found
+  source head `c151fe69` with a 12-file dirty implementation/test diff.
+- Applied that dirty diff to the clean integration worktree with
+  `git apply --index`.
+- Committed the integrated product-code slice as
+  `94c3b4c6 Archive stale DearMe Voice & Memory sources without deleting history`.
+- `94c3b4c6` became the clean candidate baseline for the follow-up DM-019
+  polish slice.
+
+Product behavior now carried by the integration branch:
+
+- Paid-beta users can archive editable managed private Voice & Memory sources
+  from `/dearme`.
+- Archiving writes a hidden document revision with `Status: archived` instead
+  of hard-deleting source history.
+- Archived sources disappear from the active Voice & Memory projection, source
+  counts, and the customer source card list.
+- The archive API response returns only `archivedSourceId` plus the refreshed
+  Voice & Memory projection, keeping internal document ids and bodies out of
+  the customer response.
+- The UI adds an archive affordance and confirmation copy before removing a
+  source from active memory.
+
+Integration hardening:
+
+- The slice reuses existing shared DearMe validators, company-scoped DearMe
+  route, document-backed Voice & Memory storage, UI API client, and the
+  `/dearme` source-management panel.
+- No migration, table, dependency, upload system, scraper, external fetch,
+  connector, public publishing path, or real external action was added.
+- The archive path remains private memory maintenance. It does not publish,
+  send, deploy, spend, or alter any external channel.
+- Added-line leak checks found no new user-facing Paperclip/OpenClaw/OK
+  Partner/MCP/provider/adapter/setup route-language matches.
+
+Verification:
+
+- In `/tmp/dearme-dm-018-integrate`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-018-integrate`,
+  `pnpm exec vitest packages/shared/src/validators/dearme.test.ts --run`
+  passed, 15 tests.
+- In `/tmp/dearme-dm-018-integrate`,
+  `pnpm exec vitest ui/src/api/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run`
+  passed, 33 tests.
+- In `/tmp/dearme-dm-018-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-voice-memory.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts --run`
+  passed after a targeted rerun of the Voice & Memory suite cleared a transient
+  embedded Postgres setup failure.
+- In `/tmp/dearme-dm-018-integrate`,
+  `pnpm exec vitest server/src/__tests__/dearme-voice-memory.test.ts --run`
+  passed, 5 tests.
+- In `/tmp/dearme-dm-018-integrate`,
+  `pnpm --filter @paperclipai/shared typecheck` passed.
+- In `/tmp/dearme-dm-018-integrate`,
+  `pnpm --filter @paperclipai/server typecheck` passed.
+- In `/tmp/dearme-dm-018-integrate`,
+  `pnpm --filter @paperclipai/ui typecheck` passed.
+- In `/tmp/dearme-dm-018-integrate`, full `pnpm test:run` passed. The run
+  reached the final serialized server shard and exited 0.
+- `git diff --check` and `git diff --cached --check` passed.
+- `rg -n "^(<<<<<<<|=======|>>>>>>>)" packages/shared/src/validators server/src ui/src`
+  returned no conflict markers.
+- `git diff --cached -- package.json pnpm-lock.yaml '**/package.json'`
+  returned no dependency changes.
+
+Not run:
+
+- Browser visual pass for the archive confirmation UI.
+
+Known residual risks:
+
+- The original archive affordance used browser `confirm()`. This was resolved
+  in the follow-up DM-019 polish slice.
+- Archived sources are hidden from active projection. A separate recovery UI
+  should be designed before exposing archived source history to customers.
+
+## DM-019 Voice & Memory Archive Confirmation Dialog - 2026-05-08
+
+Sixty-second DearMe slice:
+
+- Created clean disposable worktree
+  `/tmp/dearme-dm-019-archive-confirm-dialog` from DM-018 baseline
+  `94c3b4c6`.
+- Created branch `codex/dearme-dm-019-archive-confirm-dialog`.
+- Replaced the customer-facing browser `confirm()` archive ceremony with the
+  shared DearMe/Radix dialog primitives already used by the web app.
+- Committed the UI-only polish slice as
+  `98fa9796c3e8 Make Voice Memory archiving feel native to DearMe`.
+- `98fa9796c3e8` is now the current clean candidate baseline for the next
+  DearMe implementation slice.
+
+Product behavior now carried by the branch:
+
+- Paid-beta users archiving a private Voice & Memory source now see a
+  DearMe-native confirmation dialog titled `Archive private source?`.
+- The dialog explains that DearMe will stop using the source for future drafts
+  while keeping it in private history instead of deleting it.
+- `Keep source` closes the dialog and leaves the source active.
+- `Archive source` runs the existing document-backed archive mutation and
+  removes the source from the active Voice & Memory projection.
+- No backend, database, API, dependency, external action, connector, publish,
+  send, deploy, or spend path changed.
+
+Verification:
+
+- In `/tmp/dearme-dm-019-archive-confirm-dialog`,
+  `pnpm install --frozen-lockfile --offline` succeeded with the existing local
+  plugin SDK dev-bin warnings.
+- In `/tmp/dearme-dm-019-archive-confirm-dialog`,
+  `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run` passed, 21
+  tests.
+- In `/tmp/dearme-dm-019-archive-confirm-dialog`,
+  `pnpm --filter @paperclipai/ui typecheck` passed.
+- In `/tmp/dearme-dm-019-archive-confirm-dialog`,
+  `pnpm --filter @paperclipai/ui build` passed with existing non-blocking Vite
+  chunking warnings.
+- Browser verification on `http://127.0.0.1:3101/DEAAAAAAA/dearme` passed:
+  the page opened, a temporary `Browser archive source` was added, the
+  DearMe-native archive dialog opened, `Keep source` preserved the source,
+  `Archive source` removed it from the page, and the Voice & Memory API then
+  returned `privateSourceCount: 5` with no `Browser archive source`.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed.
+- `rg -n "window\\.confirm"` on the touched DearMe page/test files returned no
+  matches.
+
+Not run:
+
+- Full `pnpm test:run` for this UI-only polish slice.
+
 ## Known Gaps
 
 - The `Process adapter missing command` blocker is fixed for newly applied Brand OS approvals, not retroactively for old smoke data.
@@ -2525,9 +5248,13 @@ Verification:
 
 ## Next Slice
 
-Make the runtime loop paid-beta credible now that Codex receives task context, produces content, updates the attached weekly report document, has live-verified review handoffs for content and report output, only auto-starts the content lane by default, has live-verified weekly report reviewer decisions, and now shows generated work on `/dearme`:
+Make the runtime loop paid-beta credible now that Codex receives task context, produces content, updates the attached weekly report document, has live-verified review handoffs for content and report output, only auto-starts the content lane by default, has live-verified weekly report reviewer decisions, now shows generated work on `/dearme`, and Voice & Memory source add/edit/archive/dialog behavior is integrated through `98fa9796c3e8`:
 
 1. Continue reducing remaining product-copy leakage while preserving internal
    compatibility identifiers and real CLI/package names.
-2. Re-run full `pnpm test:run`, `pnpm -r typecheck`, and `pnpm build` after the
-   next implementation slice; all three are green for the current tree.
+2. Choose the next paid-beta runtime credibility slice: make the Work Ready /
+   Decisions Needed cockpit more explicit, or deepen the Voice Profile scoring
+   and review loop.
+3. Re-run full `pnpm test:run`, `pnpm -r typecheck`, and `pnpm build` after the
+   next implementation slice; the latest DM-019 worktree is green for focused
+   UI test/typecheck/build plus browser verification.

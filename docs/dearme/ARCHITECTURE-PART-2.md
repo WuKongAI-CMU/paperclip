@@ -1,5 +1,10 @@
 # Architecture Part 2 — Data model + MCP + Subsystems
 
+> 2026-05-07 consolidation: historical source material only. Current direction
+> is `README.md`, `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`,
+> `POLSIA-NAIVE-REUSE-PLAN.md`, and `REBRAND-AND-PROVENANCE.md`. Do not follow
+> clone/verbatim-copy instructions below when they conflict with those files.
+
 > Continues from `ARCHITECTURE.md`. Tables / MCP tools / subsystem mechanics.
 
 ---

@@ -99,7 +99,44 @@ describe("CloudAccessGate", () => {
     await flushReact();
 
     expect(container.textContent).toContain("No company access");
+    expect(container.textContent).toContain("DearMe instance");
+    expect(container.textContent).not.toContain("Paperclip");
     expect(container.textContent).not.toContain("Outlet content");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("uses DearMe language while first-admin setup is pending", async () => {
+    mockHealthApi.get.mockResolvedValue({
+      status: "ok",
+      deploymentMode: "authenticated",
+      bootstrapStatus: "bootstrap_pending",
+      bootstrapInviteActive: true,
+    });
+    mockAuthApi.getSession.mockResolvedValue(null);
+
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <CloudAccessGate />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+    await flushReact();
+
+    expect(container.textContent).toContain("DearMe startup logs");
+    expect(container.textContent).toContain("local first-admin setup command for this install: auth bootstrap-ceo");
+    expect(container.textContent).not.toContain("paperclipai");
+    expect(container.textContent).not.toContain("Paperclip");
 
     await act(async () => {
       root.unmount();

@@ -66,7 +66,7 @@ export function BillerSpendCard({
               {" · "}
               <span className="font-mono">{formatTokens(row.outputTokens)}</span> out
               {" · "}
-              {row.providerCount} provider{row.providerCount === 1 ? "" : "s"}
+              {row.providerCount} model source{row.providerCount === 1 ? "" : "s"}
               {" · "}
               {row.modelCount} model{row.modelCount === 1 ? "" : "s"}
             </CardDescription>
@@ -121,7 +121,7 @@ export function BillerSpendCard({
             <div className="border-t border-border" />
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Upstream providers
+                Model sources
               </p>
               <div className="space-y-1.5">
                 {providerBreakdown.map((entry) => (

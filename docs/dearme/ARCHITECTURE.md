@@ -1,5 +1,10 @@
 # DearMe — Architecture (v2, 2026-05-06)
 
+> 2026-05-07 consolidation: historical source material only. Current direction
+> is `README.md`, `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`,
+> `POLSIA-NAIVE-REUSE-PLAN.md`, and `REBRAND-AND-PROVENANCE.md`. Do not follow
+> clone/verbatim-copy instructions below when they conflict with those files.
+
 > **Doctrine:** 100% Polsia clone + voice profile add-on. Default to Polsia patterns at every junction.
 > Differentiation lives in (a) framing/copy, (b) 6-page portfolio templates, (c) voice profile MCP.
 

@@ -10,6 +10,7 @@ import {
   PayloadTemplateJsonField,
   RuntimeServicesJsonField,
 } from "../runtime-json-fields";
+import { PRODUCT_NAME } from "@/lib/product-labels";
 
 const inputClass =
   "w-full rounded-md border border-border px-2.5 py-1.5 bg-transparent outline-none text-sm font-mono placeholder:text-muted-foreground/40";
@@ -134,7 +135,7 @@ export function OpenClawGatewayConfigFields({
 
       {!isCreate && (
         <>
-          <Field label="Paperclip API URL override">
+          <Field label={`${PRODUCT_NAME} API URL override`}>
             <DraftInput
               value={
                 eff(
@@ -146,7 +147,7 @@ export function OpenClawGatewayConfigFields({
               onCommit={(v) => mark("adapterConfig", "paperclipApiUrl", v || undefined)}
               immediate
               className={inputClass}
-              placeholder="https://paperclip.example"
+              placeholder="https://dearme.example"
             />
           </Field>
 
@@ -156,7 +157,7 @@ export function OpenClawGatewayConfigFields({
               onCommit={(v) => mark("adapterConfig", "claimedApiKeyPath", v || undefined)}
               immediate
               className={inputClass}
-              placeholder="~/.openclaw/workspace/paperclip-claimed-api-key.json"
+              placeholder="~/.dearme/workspace/gateway-api-key.json"
             />
           </Field>
 
@@ -175,11 +176,11 @@ export function OpenClawGatewayConfigFields({
           {sessionStrategy === "fixed" && (
             <Field label="Session key">
               <DraftInput
-                value={eff("adapterConfig", "sessionKey", String(config.sessionKey ?? "paperclip"))}
+                value={eff("adapterConfig", "sessionKey", String(config.sessionKey ?? "dearme"))}
                 onCommit={(v) => mark("adapterConfig", "sessionKey", v || undefined)}
                 immediate
                 className={inputClass}
-                placeholder="paperclip"
+                placeholder="dearme"
               />
             </Field>
           )}
@@ -188,7 +189,7 @@ export function OpenClawGatewayConfigFields({
             label="Gateway auth token (x-openclaw-token)"
             value={effectiveGatewayToken}
             onCommit={commitGatewayToken}
-            placeholder="OpenClaw gateway token"
+            placeholder="Gateway token"
           />
 
           <Field label="Role">
@@ -236,7 +237,7 @@ export function OpenClawGatewayConfigFields({
 
           <Field label="Device auth">
             <div className="text-xs text-muted-foreground leading-relaxed">
-              Always enabled for gateway agents. Paperclip persists a device key during onboarding so pairing approvals
+              Always enabled for gateway agents. {PRODUCT_NAME} persists a device key during onboarding so pairing approvals
               remain stable across runs.
             </div>
           </Field>

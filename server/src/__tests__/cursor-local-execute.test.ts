@@ -178,9 +178,11 @@ describe("cursor execute", () => {
           "PAPERCLIP_RUN_ID",
         ]),
       );
-      expect(capture.prompt).toContain("Paperclip runtime note:");
+      expect(capture.prompt).toContain("DearMe runtime note:");
+      expect(capture.prompt).not.toContain("Paperclip runtime note:");
       expect(capture.prompt).toContain("PAPERCLIP_API_KEY");
-      expect(invocationPrompt).toContain("Paperclip runtime note:");
+      expect(invocationPrompt).toContain("DearMe runtime note:");
+      expect(invocationPrompt).not.toContain("Paperclip runtime note:");
       expect(invocationPrompt).toContain("PAPERCLIP_API_URL");
     } finally {
       if (previousHome === undefined) {
@@ -289,7 +291,7 @@ describe("cursor execute", () => {
               name: "paperclip",
               source: paperclipDir,
               required: true,
-              requiredReason: "Bundled Paperclip skills are always available for local adapters.",
+              requiredReason: "Bundled DearMe runtime skills are always available for local adapters.",
             },
             {
               name: "ascii-heart",

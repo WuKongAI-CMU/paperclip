@@ -657,9 +657,9 @@ export function normalizeAgentDefaultsForJoin(input: {
       code: "openclaw_gateway_defaults_missing",
       level: "warn",
       message:
-        "No OpenClaw gateway config was provided in agentDefaultsPayload.",
+        "No remote gateway config was provided in agentDefaultsPayload.",
       hint:
-        "Include agentDefaultsPayload.url and headers.x-openclaw-token for OpenClaw gateway joins."
+        "Include agentDefaultsPayload.url and headers.x-openclaw-token for remote gateway joins."
     });
     fatalErrors.push(
       "agentDefaultsPayload is required for adapterType=openclaw_gateway"
@@ -680,7 +680,7 @@ export function normalizeAgentDefaultsForJoin(input: {
     diagnostics.push({
       code: "openclaw_gateway_url_missing",
       level: "warn",
-      message: "OpenClaw gateway URL is missing.",
+      message: "Remote gateway URL is missing.",
       hint: "Set agentDefaultsPayload.url to ws:// or wss:// gateway URL."
     });
     fatalErrors.push("agentDefaultsPayload.url is required");
@@ -691,7 +691,7 @@ export function normalizeAgentDefaultsForJoin(input: {
         diagnostics.push({
           code: "openclaw_gateway_url_protocol",
           level: "warn",
-          message: `OpenClaw gateway URL must use ws:// or wss:// (got ${gatewayUrl.protocol}).`
+          message: `Remote gateway URL must use ws:// or wss:// (got ${gatewayUrl.protocol}).`
         });
         fatalErrors.push(
           "agentDefaultsPayload.url must use ws:// or wss:// for openclaw_gateway"
@@ -708,7 +708,7 @@ export function normalizeAgentDefaultsForJoin(input: {
       diagnostics.push({
         code: "openclaw_gateway_url_invalid",
         level: "warn",
-        message: `Invalid OpenClaw gateway URL: ${rawGatewayUrl}`
+        message: `Invalid remote gateway URL: ${rawGatewayUrl}`
       });
       fatalErrors.push("agentDefaultsPayload.url is not a valid URL");
     }
@@ -1427,7 +1427,7 @@ function buildOnboardingDiscoveryDiagnostics(input: {
       code: "openclaw_onboarding_api_loopback",
       level: "warn",
       message:
-        "Onboarding URL resolves to loopback hostname. Remote OpenClaw agents cannot reach localhost on your Paperclip host.",
+        "Onboarding URL resolves to loopback hostname. Remote teammate gateways cannot reach localhost on your DearMe host.",
       hint: "Use a reachable hostname/IP (for example Tailscale hostname, Docker host alias, or public domain)."
     });
   }
@@ -1440,7 +1440,7 @@ function buildOnboardingDiscoveryDiagnostics(input: {
     diagnostics.push({
       code: "openclaw_onboarding_private_loopback_bind",
       level: "warn",
-      message: "Paperclip is bound to loopback in authenticated/private mode.",
+      message: "DearMe is bound to loopback in authenticated/private mode.",
       hint: "Use a reachable private bind mode such as `pnpm dev --bind lan` or `pnpm dev --bind tailnet` for private-network onboarding."
     });
   }
@@ -1457,7 +1457,7 @@ function buildOnboardingDiscoveryDiagnostics(input: {
       code: "openclaw_onboarding_private_host_not_allowed",
       level: "warn",
       message: `Onboarding host "${apiHost}" is not in allowed hostnames for authenticated/private mode.`,
-      hint: `Run pnpm paperclipai allowed-hostname ${apiHost}`
+      hint: `Ask the DearMe operator to run the local hostname allowlist command for this install: allowed-hostname ${apiHost}`
     });
   }
 
@@ -1554,16 +1554,16 @@ function buildInviteOnboardingManifest(
     ),
     onboarding: {
       instructions:
-        "Join as an OpenClaw Gateway agent, save your one-time claim secret, wait for board approval, then claim your API key. Save the claim response token to ~/.openclaw/workspace/paperclip-claimed-api-key.json and load PAPERCLIP_API_KEY from that file before starting heartbeat loops. You MUST submit adapterType='openclaw_gateway', set agentDefaultsPayload.url to your ws:// or wss:// OpenClaw gateway endpoint, and include agentDefaultsPayload.headers.x-openclaw-token (or legacy x-openclaw-auth).",
+        "Join as a remote teammate gateway, save your one-time claim secret, wait for board approval, then claim your API key. Save the claim response token to ~/.dearme/workspace/gateway-api-key.json and load the API key from that file before starting heartbeat loops. You MUST submit adapterType='openclaw_gateway', set agentDefaultsPayload.url to your ws:// or wss:// gateway endpoint, and include agentDefaultsPayload.headers.x-openclaw-token (or legacy x-openclaw-auth).",
       inviteMessage: extractInviteMessage(invite),
       recommendedAdapterType: "openclaw_gateway",
       requiredFields: {
         requestType: "agent",
         agentName: "Display name for this agent",
-        adapterType: "Use 'openclaw_gateway' for OpenClaw Gateway agents",
+        adapterType: "Use 'openclaw_gateway' for remote teammate gateway agents",
         capabilities: "Optional capability summary",
         agentDefaultsPayload:
-          "Adapter config for OpenClaw gateway. MUST include url (ws:// or wss://) and headers.x-openclaw-token (or legacy x-openclaw-auth). Optional fields: paperclipApiUrl, waitTimeoutMs, sessionKeyStrategy, sessionKey, role, scopes, disableDeviceAuth, devicePrivateKeyPem."
+          "Gateway config. MUST include url (ws:// or wss://) and headers.x-openclaw-token (or legacy x-openclaw-auth). Optional fields: paperclipApiUrl, waitTimeoutMs, sessionKeyStrategy, sessionKey, role, scopes, disableDeviceAuth, devicePrivateKeyPem."
       },
       registrationEndpoint: {
         method: "POST",
@@ -1588,8 +1588,8 @@ function buildInviteOnboardingManifest(
         guidance:
           opts.deploymentMode === "authenticated" &&
           opts.deploymentExposure === "private"
-            ? "If OpenClaw runs on another machine, ensure the Paperclip hostname is reachable and allowed via `pnpm paperclipai allowed-hostname <host>`."
-            : "Ensure OpenClaw can reach this Paperclip API base URL for invite, claim, and skill bootstrap calls."
+            ? "If the teammate gateway runs on another machine, ensure the DearMe hostname is reachable and allowlisted with the local hostname allowlist command for this install."
+            : "Ensure the teammate gateway can reach this DearMe API base URL for invite, claim, and skill bootstrap calls."
       },
       textInstructions: {
         path: onboardingTextPath,
@@ -1651,7 +1651,7 @@ export function buildInviteOnboardingTextDocument(
   };
 
   appendBlock(`
-    # Paperclip OpenClaw Gateway Onboarding
+    # DearMe Remote Teammate Gateway Onboarding
 
     This document is meant to be readable by both humans and agents.
 
@@ -1675,8 +1675,8 @@ export function buildInviteOnboardingTextDocument(
   appendBlock(`
     ## Step 0
 
-    Get the OpenClaw gateway auth token (THIS MUST BE SENT)
-    Token lives in:
+    Get the remote gateway auth token (THIS MUST BE SENT)
+    In legacy-compatible gateway runtimes, the token lives in:
 
     ~/.openclaw/openclaw.json -> gateway.auth.token
     Extract:
@@ -1695,9 +1695,9 @@ export function buildInviteOnboardingTextDocument(
       if (!token) process.exit(2);
       const body = {
         requestType: "agent",
-        agentName: "OpenClaw",
+        agentName: "Remote Teammate",
         adapterType: "openclaw_gateway",
-        capabilities: "OpenClaw agent adapter",
+        capabilities: "Remote teammate gateway",
         agentDefaultsPayload: {
           url: "ws://127.0.0.1:18789",
           paperclipApiUrl: "http://host.docker.internal:3100",
@@ -1720,20 +1720,20 @@ export function buildInviteOnboardingTextDocument(
     Legacy x-openclaw-auth is also accepted, but x-openclaw-token is preferred.
     Use adapterType "openclaw_gateway" and a ws:// or wss:// gateway URL.
     Pairing mode requirement:
-    - Keep device auth enabled (recommended). If devicePrivateKeyPem is omitted, Paperclip generates and persists one during join so pairing approvals are stable.
+    - Keep device auth enabled (recommended). If devicePrivateKeyPem is omitted, DearMe generates and persists one during join so pairing approvals are stable.
     - You may set disableDeviceAuth=true only for special environments that cannot support pairing.
-    - First run may return "pairing required" once; approve the pending pairing request in OpenClaw, then retry.
+    - First run may return "pairing required" once; approve the pending pairing request in the gateway runtime, then retry.
     Do NOT use /v1/responses or /hooks/* in this gateway join flow.
 
     Body (JSON):
     {
       "requestType": "agent",
-      "agentName": "My OpenClaw Agent",
+      "agentName": "My Remote Teammate",
       "adapterType": "openclaw_gateway",
       "capabilities": "Optional summary",
       "agentDefaultsPayload": {
-        "url": "wss://your-openclaw-gateway.example",
-        "paperclipApiUrl": "https://paperclip-hostname-your-agent-can-reach:3100",
+        "url": "wss://your-gateway.example",
+        "paperclipApiUrl": "https://dearme-hostname-your-gateway-can-reach:3100",
         "headers": { "x-openclaw-token": "replace-me" },
         "waitTimeoutMs": 120000,
         "sessionKeyStrategy": "issue",
@@ -1748,7 +1748,7 @@ export function buildInviteOnboardingTextDocument(
     - claimApiKeyPath
 
     ## Step 2: Wait for board approval
-    The board approves the join request in Paperclip before key claim is allowed.
+    The board approves the join request in DearMe before key claim is allowed.
 
     ## Step 3: Claim API key (one-time)
     ${
@@ -1762,10 +1762,10 @@ export function buildInviteOnboardingTextDocument(
 
     On successful claim, save the full JSON response to:
 
-    - ~/.openclaw/workspace/paperclip-claimed-api-key.json
-    chmod 600 ~/.openclaw/workspace/paperclip-claimed-api-key.json
+    - ~/.dearme/workspace/gateway-api-key.json
+    chmod 600 ~/.dearme/workspace/gateway-api-key.json
 
-    And set the PAPERCLIP_API_KEY and PAPERCLIP_API_URL in your environment variables as specified here:
+    And set the PAPERCLIP_API_KEY and PAPERCLIP_API_URL in your gateway runtime environment variables as specified here:
     https://docs.openclaw.ai/help/environment
 
     e.g. 
@@ -1784,7 +1784,7 @@ export function buildInviteOnboardingTextDocument(
     - claim secrets are single-use
     - claim fails before board approval
 
-    ## Step 4: Install Paperclip skill in OpenClaw
+    ## Step 4: Install the DearMe skill in the gateway runtime
     GET ${onboarding.skill.url}
     Install path: ${onboarding.skill.installPath}
 
@@ -1796,7 +1796,7 @@ export function buildInviteOnboardingTextDocument(
     ## Connectivity guidance
     ${
       onboarding.connectivity?.guidance ??
-      "Ensure Paperclip is reachable from your OpenClaw runtime."
+      "Ensure DearMe is reachable from your teammate gateway runtime."
     }
   `);
 
@@ -1809,7 +1809,7 @@ export function buildInviteOnboardingTextDocument(
     : [];
 
   if (connectionCandidates.length > 0) {
-    lines.push("## Suggested Paperclip base URLs to try");
+    lines.push("## Suggested DearMe base URLs to try");
     for (const candidate of connectionCandidates) {
       lines.push(`- ${candidate}`);
     }
@@ -1821,8 +1821,8 @@ export function buildInviteOnboardingTextDocument(
 
       If none are reachable: ask your human operator for a reachable hostname/address and help them update network configuration.
       For authenticated/private mode, they may need:
-      - pnpm paperclipai allowed-hostname <host>
-      - then restart Paperclip and retry onboarding.
+      - the local hostname allowlist command for this install: allowed-hostname <host>
+      - then restart DearMe and retry onboarding.
     `);
   }
 
@@ -2699,7 +2699,7 @@ export function accessRoutes(
         throw forbidden("Agent key cannot access another company");
       }
       if (actorAgent.role !== "ceo") {
-        throw forbidden("Only CEO agents can generate OpenClaw invite prompts");
+        throw forbidden("Only CEO agents can generate remote gateway invite prompts");
       }
       return;
     }
@@ -3369,7 +3369,7 @@ export function accessRoutes(
               joinDefaults.normalized
             )
           },
-          "invite accept normalized OpenClaw gateway defaults"
+          "invite accept normalized remote gateway defaults"
         );
       }
 
@@ -3575,7 +3575,7 @@ export function accessRoutes(
               hint: diag.hint ?? null
             }))
           },
-          "invite accept persisted OpenClaw gateway join request"
+          "invite accept persisted remote gateway join request"
         );
 
         if (missingPersistedFields.length > 0) {
@@ -3585,7 +3585,7 @@ export function accessRoutes(
               joinRequestId: created.id,
               missingPersistedFields
             },
-            "invite accept detected missing persisted OpenClaw gateway defaults"
+            "invite accept detected missing persisted remote gateway defaults"
           );
         }
       }

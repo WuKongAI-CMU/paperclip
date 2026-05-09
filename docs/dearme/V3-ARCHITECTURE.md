@@ -1,5 +1,10 @@
 # DearMe v3 — Unified Architecture
 
+> 2026-05-07 consolidation: historical source material only. Current direction
+> is `README.md`, `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`,
+> `POLSIA-NAIVE-REUSE-PLAN.md`, and `REBRAND-AND-PROVENANCE.md`. Do not follow
+> clone/verbatim-copy instructions below when they conflict with those files.
+
 > Re-architected after positioning lock: **DearMe is the AI marketing department for one-person companies (OPCs).** 100% Polsia clone, OPC-positioned, voice-cloned.
 
 ---

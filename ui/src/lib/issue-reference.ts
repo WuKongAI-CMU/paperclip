@@ -9,6 +9,27 @@ const BARE_ISSUE_IDENTIFIER_RE = /^[A-Z][A-Z0-9]*-\d+$/i;
 const ISSUE_SCHEME_RE = /^issue:\/\/:?([^?#\s]+)(?:[?#].*)?$/i;
 const ISSUE_REFERENCE_TOKEN_RE = /issue:\/\/:?[^\s<>()]+|https?:\/\/[^\s<>()]+|\/(?:[^\s<>()/]+\/)*issues\/[A-Z][A-Z0-9]*-\d+(?=$|[\s<>)\],.;!?:])|\b[A-Z][A-Z0-9]*-\d+\b/gi;
 
+export type IssueReferenceOptions = {
+  allowedPrefixes?: readonly string[] | null;
+};
+
+function normalizeAllowedPrefixes(prefixes: readonly string[] | null | undefined) {
+  const normalized = (prefixes ?? [])
+    .map((prefix) => prefix.trim().toUpperCase())
+    .filter((prefix) => /^[A-Z][A-Z0-9]*$/.test(prefix));
+  return normalized.length > 0 ? new Set(normalized) : null;
+}
+
+function isAllowedIssuePathId(issuePathId: string, options?: IssueReferenceOptions) {
+  const allowedPrefixes = normalizeAllowedPrefixes(options?.allowedPrefixes);
+  if (!allowedPrefixes) return true;
+
+  const match = issuePathId.match(BARE_ISSUE_IDENTIFIER_RE);
+  if (!match) return false;
+  const prefix = issuePathId.slice(0, issuePathId.lastIndexOf("-")).toUpperCase();
+  return allowedPrefixes.has(prefix);
+}
+
 export function parseIssuePathIdFromPath(pathOrUrl: string | null | undefined): string | null {
   if (!pathOrUrl) return null;
   const pathname = pathOrUrl.trim();
@@ -23,12 +44,13 @@ export function parseIssuePathIdFromPath(pathOrUrl: string | null | undefined): 
   return BARE_ISSUE_IDENTIFIER_RE.test(issuePathId) ? issuePathId.toUpperCase() : issuePathId;
 }
 
-export function parseIssueReferenceFromHref(href: string | null | undefined) {
+export function parseIssueReferenceFromHref(href: string | null | undefined, options?: IssueReferenceOptions) {
   if (!href) return null;
   const trimmed = href.trim();
   const issueSchemeMatch = trimmed.match(ISSUE_SCHEME_RE);
   if (issueSchemeMatch?.[1]) {
     const issuePathId = decodeURIComponent(issueSchemeMatch[1]);
+    if (!isAllowedIssuePathId(issuePathId, options)) return null;
     return {
       issuePathId,
       href: `/issues/${encodeURIComponent(issuePathId)}`,
@@ -37,6 +59,7 @@ export function parseIssueReferenceFromHref(href: string | null | undefined) {
 
   const pathId = parseIssuePathIdFromPath(href);
   if (pathId) {
+    if (!isAllowedIssuePathId(pathId, options)) return null;
     return {
       issuePathId: pathId,
       href: `/issues/${encodeURIComponent(pathId)}`,
@@ -45,6 +68,7 @@ export function parseIssueReferenceFromHref(href: string | null | undefined) {
 
   if (!BARE_ISSUE_IDENTIFIER_RE.test(trimmed)) return null;
   const normalized = trimmed.toUpperCase();
+  if (!isAllowedIssuePathId(normalized, options)) return null;
   return {
     issuePathId: normalized,
     href: `/issues/${encodeURIComponent(normalized)}`,
@@ -83,7 +107,7 @@ function createIssueLinkNode(value: string, href: string, childType: "text" | "i
   };
 }
 
-function linkifyIssueReferencesInText(value: string): MarkdownNode[] | null {
+function linkifyIssueReferencesInText(value: string, options?: IssueReferenceOptions): MarkdownNode[] | null {
   const nodes: MarkdownNode[] = [];
   let cursor = 0;
   let matched = false;
@@ -95,7 +119,7 @@ function linkifyIssueReferencesInText(value: string): MarkdownNode[] | null {
     const start = match.index ?? 0;
     const end = start + raw.length;
     const { core, trailing } = splitTrailingPunctuation(raw);
-    const issueRef = parseIssueReferenceFromHref(core);
+    const issueRef = parseIssueReferenceFromHref(core, options);
     if (!issueRef) continue;
 
     matched = true;
@@ -116,7 +140,7 @@ function linkifyIssueReferencesInText(value: string): MarkdownNode[] | null {
   return nodes;
 }
 
-function rewriteMarkdownTree(node: MarkdownNode) {
+function rewriteMarkdownTree(node: MarkdownNode, options?: IssueReferenceOptions) {
   if (!Array.isArray(node.children) || node.children.length === 0) return;
   if (node.type === "link" || node.type === "linkReference" || node.type === "code" || node.type === "definition" || node.type === "html") {
     return;
@@ -125,7 +149,7 @@ function rewriteMarkdownTree(node: MarkdownNode) {
   const nextChildren: MarkdownNode[] = [];
   for (const child of node.children) {
     if (child.type === "inlineCode" && typeof child.value === "string") {
-      const issueRef = parseIssueReferenceFromHref(child.value);
+      const issueRef = parseIssueReferenceFromHref(child.value, options);
       if (issueRef) {
         nextChildren.push(createIssueLinkNode(child.value, issueRef.href, "inlineCode"));
         continue;
@@ -133,21 +157,21 @@ function rewriteMarkdownTree(node: MarkdownNode) {
     }
 
     if (child.type === "text" && typeof child.value === "string") {
-      const linked = linkifyIssueReferencesInText(child.value);
+      const linked = linkifyIssueReferencesInText(child.value, options);
       if (linked) {
         nextChildren.push(...linked);
         continue;
       }
     }
 
-    rewriteMarkdownTree(child);
+    rewriteMarkdownTree(child, options);
     nextChildren.push(child);
   }
   node.children = nextChildren;
 }
 
-export function remarkLinkIssueReferences() {
+export function remarkLinkIssueReferences(options?: IssueReferenceOptions) {
   return (tree: MarkdownNode) => {
-    rewriteMarkdownTree(tree);
+    rewriteMarkdownTree(tree, options);
   };
 }

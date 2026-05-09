@@ -22,6 +22,7 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { MarkdownBody } from "../components/MarkdownBody";
 import { cn } from "../lib/utils";
 import { queryKeys } from "../lib/queryKeys";
+import { PRODUCT_NAME } from "../lib/product-labels";
 import { createZipArchive } from "../lib/zip";
 import { buildInitialExportCheckedFiles } from "../lib/company-export-selection";
 import { useAgentOrder } from "../hooks/useAgentOrder";
@@ -398,7 +399,7 @@ const ROLE_LABELS: Record<string, string> = {
  * Regenerate README.md content based on the currently checked files.
  * Only counts/lists entities whose files are in the checked set.
  */
-function generateReadmeFromSelection(
+export function generateReadmeFromSelection(
   manifest: CompanyPortabilityManifest,
   checkedFiles: Set<string>,
   companyName: string,
@@ -429,7 +430,7 @@ function generateReadmeFromSelection(
 
   lines.push("## What's Inside");
   lines.push("");
-  lines.push("This is an [Agent Company](https://paperclip.ing) package.");
+  lines.push(`This is a ${PRODUCT_NAME} company package.`);
   lines.push("");
 
   const counts: Array<[string, number]> = [];
@@ -472,14 +473,12 @@ function generateReadmeFromSelection(
 
   lines.push("## Getting Started");
   lines.push("");
-  lines.push("```bash");
-  lines.push("pnpm paperclipai company import this-github-url-or-folder");
-  lines.push("```");
+  lines.push(`Use the ${PRODUCT_NAME} company import screen with this GitHub URL or folder.`);
   lines.push("");
-  lines.push("See [Paperclip](https://paperclip.ing) for more information.");
+  lines.push(`See ${PRODUCT_NAME} for more information.`);
   lines.push("");
   lines.push("---");
-  lines.push(`Exported from [Paperclip](https://paperclip.ing) on ${new Date().toISOString().split("T")[0]}`);
+  lines.push(`Exported from ${PRODUCT_NAME} on ${new Date().toISOString().split("T")[0]}`);
   lines.push("");
 
   return lines.join("\n");

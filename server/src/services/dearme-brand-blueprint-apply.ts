@@ -16,6 +16,7 @@ import { routineService } from "./routines.js";
 type ApprovalRecord = typeof approvals.$inferSelect;
 type DearMeTeamRole = DearMeBrandBlueprint["team"][number]["role"];
 type DearMeRiskGate = DearMeBrandBlueprint["gates"][number];
+type DearMeMemorySeedKind = DearMeBrandBlueprint["memorySeeds"][number]["kind"];
 type DearMeOperationId = DearMeBrandBlueprintApplyPayload["executionPlan"]["operations"][number]["id"];
 
 export const DEARME_BRAND_BLUEPRINT_ORIGIN_KIND = "dearme_brand_blueprint_apply";
@@ -98,6 +99,24 @@ function parsePayload(rawPayload: unknown): DearMeBrandBlueprintApplyPayload {
 function listLines(values: string[]) {
   if (values.length === 0) return "- None supplied yet.";
   return values.map((value) => `- ${value}`).join("\n");
+}
+
+function compactLine(value: string, maxLength = 360) {
+  const compact = value.replace(/\s+/g, " ").trim();
+  if (compact.length <= maxLength) return compact;
+  return `${compact.slice(0, maxLength - 3).trimEnd()}...`;
+}
+
+function listPreviewLines(values: string[], maxItems = 6, maxLength = 360) {
+  return listLines(values.slice(0, maxItems).map((value) => compactLine(value, maxLength)));
+}
+
+function memorySeedValues(blueprint: DearMeBrandBlueprint, kind: DearMeMemorySeedKind) {
+  return blueprint.memorySeeds.filter((seed) => seed.kind === kind).map((seed) => seed.value);
+}
+
+function voiceProfileStatusLabel(status: DearMeBrandBlueprint["voiceProfile"]["status"]) {
+  return status === "ready_for_gate" ? "Ready for voice-gated drafts" : "Needs more voice samples";
 }
 
 function money(cents: number) {
@@ -194,6 +213,7 @@ function renderApprovalGatesDocument(blueprint: DearMeBrandBlueprint) {
 
 function renderDearMeReportDocument(payload: DearMeBrandBlueprintApplyPayload) {
   const { brandBlueprint: blueprint } = payload;
+  const voiceSamples = memorySeedValues(blueprint, "voice");
   return [
     `# Dear me report: ${blueprint.brand.displayName}`,
     "",
@@ -205,6 +225,23 @@ function renderDearMeReportDocument(payload: DearMeBrandBlueprintApplyPayload) {
     "",
     "## Brand Goal This Week",
     listLines(blueprint.brand.goals.slice(0, 3)),
+    "",
+    "## Voice & Memory Context",
+    `- Voice profile: ${voiceProfileStatusLabel(blueprint.voiceProfile.status)}`,
+    `- Voice guidance: ${compactLine(blueprint.voiceProfile.guidance, 320)}`,
+    `- Voice samples supplied: ${blueprint.voiceProfile.sampleCount}`,
+    "",
+    "### Audiences",
+    listPreviewLines(blueprint.brand.audiences, 4, 240),
+    "",
+    "### Offers",
+    listPreviewLines(blueprint.brand.offers, 4, 240),
+    "",
+    "### Voice Samples For Tone Review",
+    listPreviewLines(voiceSamples, 4, 360),
+    "",
+    "### Constraints",
+    listPreviewLines(blueprint.brand.constraints, 4, 240),
     "",
     "## Work Completed",
     "- No completed work has been reported yet.",
@@ -231,6 +268,32 @@ function renderDearMeReportDocument(payload: DearMeBrandBlueprintApplyPayload) {
   ].join("\n");
 }
 
+function renderVoiceAndMemoryTaskContext(blueprint: DearMeBrandBlueprint) {
+  const voiceSamples = memorySeedValues(blueprint, "voice");
+  return [
+    "",
+    "Voice & Memory context:",
+    `- Voice profile: ${voiceProfileStatusLabel(blueprint.voiceProfile.status)}`,
+    `- Voice guidance: ${compactLine(blueprint.voiceProfile.guidance, 320)}`,
+    `- Voice samples supplied: ${blueprint.voiceProfile.sampleCount}`,
+    "",
+    "Goals to serve:",
+    listPreviewLines(blueprint.brand.goals, 6, 240),
+    "",
+    "Audiences to write for:",
+    listPreviewLines(blueprint.brand.audiences, 6, 240),
+    "",
+    "Offers to keep available:",
+    listPreviewLines(blueprint.brand.offers, 6, 240),
+    "",
+    "Voice samples for tone review:",
+    listPreviewLines(voiceSamples, 4, 360),
+    "",
+    "Constraints and boundaries:",
+    listPreviewLines(blueprint.brand.constraints, 6, 240),
+  ];
+}
+
 function renderBrandOsIssueDescription(payload: DearMeBrandBlueprintApplyPayload) {
   const { brandBlueprint: blueprint } = payload;
   return [
@@ -253,6 +316,7 @@ function renderRoutineDescription(cycle: DearMeBrandBlueprint["cycles"][number],
     "",
     "Deliverables:",
     listLines(cycle.deliverables),
+    ...renderVoiceAndMemoryTaskContext(payload.brandBlueprint),
     "",
     "Operating boundary:",
     "This routine may plan, research, and draft privately. It must create a follow-up approval before publishing, sending messages, deploying public pages, spending money, changing channel connections, using sensitive material, making public claims, or deleting existing work.",
@@ -343,6 +407,7 @@ function renderDraftIssueDescription(
     "",
     "Relevant proof points:",
     listLines(payload.brandBlueprint.brand.proofPoints.slice(0, 6)),
+    ...renderVoiceAndMemoryTaskContext(payload.brandBlueprint),
     ...contentScope,
     ...opportunityScope,
     ...portfolioScope,

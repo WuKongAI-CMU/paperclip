@@ -126,6 +126,16 @@ export const DEARME_WORKBENCH_STREAM_STATUSES = [
   "decision_needed",
   "recorded",
 ] as const;
+export const DEARME_MEMORY_UPDATE_KINDS = [
+  "voice_sample",
+  "proof_point",
+  "goal",
+  "audience",
+  "offer",
+  "constraint",
+  "relationship",
+  "preference",
+] as const;
 export const DEARME_VOICE_GATE_CHECK_KINDS = [
   "voice_samples",
   "forbidden_phrases",
@@ -228,6 +238,18 @@ const dearMeMemorySeedSchema = z.object({
   label: shortTextSchema,
   value: longTextSchema,
 }).strict();
+
+export const dearMeMemoryUpdateSchema = z.object({
+  kind: z.enum(DEARME_MEMORY_UPDATE_KINDS),
+  title: optionalText(160),
+  body: longTextSchema,
+  sourceLabel: optionalText(240),
+}).strict().transform((input) => ({
+  kind: input.kind,
+  title: input.title ?? null,
+  body: input.body,
+  sourceLabel: input.sourceLabel ?? null,
+}));
 
 export const dearMeBrandBlueprintSchema = z.object({
   version: z.literal(DEARME_BRAND_BLUEPRINT_VERSION),
@@ -593,6 +615,46 @@ export const dearMeWorkbenchStreamItemSchema = z.object({
   createdAt: z.string().datetime(),
 }).strict();
 
+export const dearMeMemoryUpdateItemSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(DEARME_MEMORY_UPDATE_KINDS),
+  title: shortTextSchema.nullable(),
+  bodyPreview: mediumTextSchema,
+  sourceLabel: shortTextSchema.nullable(),
+  createdAt: z.string().datetime(),
+}).strict();
+
+export const dearMeMemoryUpdateResultSchema = z.object({
+  companyId: z.string().min(1),
+  status: z.literal("recorded"),
+  memory: dearMeMemoryUpdateItemSchema,
+  growthCycles: z.object({
+    checked: z.number().int().nonnegative(),
+    updated: z.number().int().nonnegative(),
+    unchanged: z.number().int().nonnegative(),
+    memorySources: z.number().int().nonnegative(),
+  }).strict(),
+}).strict();
+
+const dearMeWorkbenchVoiceProfileSchema = z.object({
+  title: shortTextSchema,
+  status: z.enum(["needs_samples", "learning", "ready_for_review"]),
+  sampleCount: z.number().int().nonnegative(),
+  confidence: z.number().int().min(0).max(100),
+  guidance: mediumTextSchema,
+  draftTone: z.array(shortTextSchema).min(2).max(6),
+  nextStep: mediumTextSchema,
+}).strict();
+
+export const dearMeWorkbenchMemorySchema = z.object({
+  summary: mediumTextSchema,
+  sourceCount: z.number().int().nonnegative(),
+  voiceSampleCount: z.number().int().nonnegative(),
+  proofCount: z.number().int().nonnegative(),
+  voiceProfile: dearMeWorkbenchVoiceProfileSchema,
+  latest: z.array(dearMeMemoryUpdateItemSchema).max(12),
+}).strict();
+
 export const dearMeWorkbenchReportSchema = z.object({
   title: shortTextSchema,
   summary: mediumTextSchema,
@@ -615,6 +677,7 @@ export const dearMeWorkbenchResponseSchema = z.object({
   batchDecisions: z.array(dearMeWorkbenchBatchDecisionSchema).max(8),
   recentProgress: z.array(dearMeWorkbenchProgressItemSchema),
   workStream: z.array(dearMeWorkbenchStreamItemSchema).max(20),
+  memory: dearMeWorkbenchMemorySchema,
   report: dearMeWorkbenchReportSchema.nullable(),
   outputs: z.array(dearMeOutputItemSchema),
 }).strict();
@@ -630,6 +693,10 @@ export type DearMeFirstCyclePreview = z.infer<typeof dearMeFirstCyclePreviewSche
 export type DearMeFirstCyclePreviewResponse = z.infer<typeof dearMeFirstCyclePreviewResponseSchema>;
 export type DearMeVoiceGateEvaluation = z.infer<typeof dearMeVoiceGateEvaluationSchema>;
 export type DearMeVoiceGateResult = z.infer<typeof dearMeVoiceGateResultSchema>;
+export type DearMeMemoryUpdate = z.infer<typeof dearMeMemoryUpdateSchema>;
+export type DearMeMemoryUpdateItem = z.infer<typeof dearMeMemoryUpdateItemSchema>;
+export type DearMeMemoryUpdateKind = z.infer<typeof dearMeMemoryUpdateSchema>["kind"];
+export type DearMeMemoryUpdateResult = z.infer<typeof dearMeMemoryUpdateResultSchema>;
 export type DearMeOutputDetail = z.infer<typeof dearMeOutputDetailSchema>;
 export type DearMeOutputDocument = z.infer<typeof dearMeOutputDocumentSchema>;
 export type DearMeOutputItem = z.infer<typeof dearMeOutputItemSchema>;
@@ -648,6 +715,8 @@ export type DearMeWorkbenchBatchDecision = z.infer<typeof dearMeWorkbenchBatchDe
 export type DearMeWorkbenchDecision = z.infer<typeof dearMeWorkbenchDecisionSchema>;
 export type DearMeWorkbenchProgressItem = z.infer<typeof dearMeWorkbenchProgressItemSchema>;
 export type DearMeWorkbenchReport = z.infer<typeof dearMeWorkbenchReportSchema>;
+export type DearMeWorkbenchMemory = z.infer<typeof dearMeWorkbenchMemorySchema>;
+export type DearMeWorkbenchVoiceProfile = z.infer<typeof dearMeWorkbenchVoiceProfileSchema>;
 export type DearMeWorkbenchResponse = z.infer<typeof dearMeWorkbenchResponseSchema>;
 export type DearMeWorkbenchStreamItem = z.infer<typeof dearMeWorkbenchStreamItemSchema>;
 export type DearMeWorkbenchTeamMember = z.infer<typeof dearMeWorkbenchTeamMemberSchema>;

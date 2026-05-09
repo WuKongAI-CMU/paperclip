@@ -61,13 +61,13 @@ export function getConfigSchema(): AdapterConfigSchema {
         key: "cwd",
         label: "Working directory",
         type: "text",
-        hint: "Absolute fallback directory. Paperclip execution workspaces can override this at runtime.",
+        hint: "Absolute fallback directory. DearMe execution workspaces can override this at runtime.",
       },
       {
         key: "stateDir",
         label: "State directory",
         type: "text",
-        hint: "Optional ACPX session state directory. Defaults to Paperclip-managed company/agent scoped storage.",
+        hint: "Optional ACPX session state directory. Defaults to DearMe-managed company/agent scoped storage.",
       },
       {
         key: "instructionsFilePath",

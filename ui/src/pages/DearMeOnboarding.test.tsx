@@ -18,6 +18,7 @@ const mockDearmeApi = vi.hoisted(() => ({
   getWorkbench: vi.fn(),
   getOutputs: vi.fn(),
   getPaidBetaAccess: vi.fn(),
+  recordMemoryUpdate: vi.fn(),
   recordPaidBetaPayment: vi.fn(),
   previewFirstCycle: vi.fn(),
   previewBrandBlueprint: vi.fn(),
@@ -247,6 +248,39 @@ function workbenchResponse() {
         createdAt: "2026-05-07T14:00:00.000Z",
       },
     ],
+    memory: {
+      summary: "2 recent Voice & Memory sources are available. Latest: Voice sample.",
+      sourceCount: 2,
+      voiceSampleCount: 1,
+      proofCount: 1,
+      voiceProfile: {
+        title: "Draft Voice Profile",
+        status: "learning",
+        sampleCount: 1,
+        confidence: 55,
+        guidance: "Voice Editor has one sample and can start drafting, but public output should stay under close review.",
+        draftTone: ["Proof-first", "Plain language", "Direct", "Evidence-backed"],
+        nextStep: "Add one more real sample to make voice review stronger before publishing or sending anything.",
+      },
+      latest: [
+        {
+          id: "memory-1",
+          kind: "voice_sample",
+          title: "Operator note",
+          bodyPreview: "Short, direct operator note.",
+          sourceLabel: "Manual note",
+          createdAt: "2026-05-07T14:00:00.000Z",
+        },
+        {
+          id: "memory-2",
+          kind: "proof_point",
+          title: "Shipped proof",
+          bodyPreview: "Shipped a working local product.",
+          sourceLabel: "Build log",
+          createdAt: "2026-05-07T13:00:00.000Z",
+        },
+      ],
+    },
     workStream: [
       {
         id: "decision:output:issue-2:content_drafts",
@@ -387,6 +421,24 @@ describe("DearMeOnboarding", () => {
       outputs: [],
     });
     mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("trial"));
+    mockDearmeApi.recordMemoryUpdate.mockResolvedValue({
+      companyId: "company-1",
+      status: "recorded",
+      memory: {
+        id: "memory-3",
+        kind: "voice_sample",
+        title: "Fresh operator note",
+        bodyPreview: "Fresh direct operator note from today's work.",
+        sourceLabel: null,
+        createdAt: "2026-05-07T14:05:00.000Z",
+      },
+      growthCycles: {
+        checked: 2,
+        updated: 1,
+        unchanged: 1,
+        memorySources: 3,
+      },
+    });
     mockDearmeApi.recordPaidBetaPayment.mockResolvedValue({
       event: { id: "finance-event-1", amountCents: 25_000, currency: "USD" },
       access: paidBetaStatus("active"),
@@ -464,13 +516,53 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Live team feed");
     expect(container.textContent).toContain("Your call: Review Starter posts");
     expect(container.textContent).toContain("Decision ready");
+    expect(container.textContent).toContain("Dear me letter");
+    expect(container.textContent).toContain("Open letter");
     expect(container.textContent).toContain("Completed work: refreshed positioning");
+    expect(container.textContent).toContain("Voice & Memory");
+    expect(container.textContent).toContain("Learning");
+    expect(container.textContent).toContain("Draft Voice Profile");
+    expect(container.textContent).toContain("55%");
+    expect(container.textContent).toContain("Add one more real sample");
+    expect(container.textContent).toContain("Manual note");
     expect(container.textContent).toContain("Voice Editor");
     expect(container.textContent).toContain("What do you want to become known for?");
     expect(container.textContent).toContain("Paid beta");
     expect(container.textContent).not.toContain("adapter");
     expect(container.textContent).not.toContain("provider");
     expect((container.querySelector("#dearme-display-name") as HTMLInputElement | null)?.value).toBe("Peter Studio");
+
+    await act(async () => {
+      setInputValue(
+        container.querySelector("#dearme-memory-title") as HTMLInputElement,
+        "Operator note",
+      );
+      setTextareaValue(
+        container.querySelector("#dearme-memory-body") as HTMLTextAreaElement,
+        "Short, direct operator note.",
+      );
+    });
+
+    await act(async () => {
+      buttonByText(container, "Add to Voice & Memory")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.recordMemoryUpdate).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        kind: "voice_sample",
+        title: "Operator note",
+        body: "Short, direct operator note.",
+        sourceLabel: null,
+      }),
+    );
+    expect(container.textContent).toContain(
+      "Saved. 1 growth cycle refreshed with your latest Voice & Memory.",
+    );
+    expect(container.textContent).toContain("Fresh operator note");
+    expect(container.textContent).toContain("Fresh direct operator note from today's work.");
+    expect(container.textContent).toContain("Just saved");
 
     await act(async () => {
       setTextareaValue(
@@ -627,6 +719,78 @@ describe("DearMeOnboarding", () => {
     expect(requestButton?.disabled).toBe(true);
     expect(container.textContent).toContain("unlock the private Brand OS work loop");
     expect(mockDearmeApi.createBrandBlueprintApplyRequest).not.toHaveBeenCalled();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("shows a DearMe empty state when Voice & Memory has not started", async () => {
+    const emptyWorkbench = workbenchResponse();
+    emptyWorkbench.memory = {
+      ...emptyWorkbench.memory,
+      summary: "Voice & Memory is ready for the first real sample.",
+      sourceCount: 0,
+      voiceSampleCount: 0,
+      proofCount: 0,
+      voiceProfile: {
+        ...emptyWorkbench.memory.voiceProfile,
+        sampleCount: 0,
+        confidence: 0,
+        guidance: "Voice Editor is ready for the first real sample.",
+        nextStep: "Add one real sample so DearMe can protect your tone before public work.",
+      },
+      latest: [],
+    };
+    mockDearmeApi.getWorkbench.mockResolvedValue(emptyWorkbench);
+
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("No Voice & Memory saved yet");
+    expect(container.textContent).toContain("Add one real sample, proof point, goal, or boundary.");
+    expect(container.textContent).toContain("DearMe will use it to protect your voice");
+    expect(container.querySelector('[data-dearme-surface="empty-state"]')).not.toBeNull();
+    expect(container.textContent).toContain("Voice sample");
+    expect(container.textContent).toContain("Proof point");
+    expect(container.textContent).toContain("Boundary");
+    expect(container.textContent).not.toContain("adapter");
+    expect(container.textContent).not.toContain("provider");
+    expect(container.textContent).not.toContain("setup_payload");
+
+    await act(async () => {
+      setTextareaValue(
+        container.querySelector("#dearme-memory-body") as HTMLTextAreaElement,
+        "First real voice sample from a new design partner.",
+      );
+    });
+
+    await act(async () => {
+      buttonByText(container, "Add to Voice & Memory")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.recordMemoryUpdate).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        kind: "voice_sample",
+        body: "First real voice sample from a new design partner.",
+      }),
+    );
+    expect(container.textContent).not.toContain("No Voice & Memory saved yet");
+    expect(container.textContent).toContain("Fresh operator note");
+    expect(container.textContent).toContain("Just saved");
 
     await act(async () => {
       root.unmount();

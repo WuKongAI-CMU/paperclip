@@ -1065,7 +1065,8 @@ describe("heartbeat comment wake batching", () => {
           commentIds: [],
         },
       });
-      expect(String(firstPayload.message ?? "")).toContain("## Paperclip Wake Payload");
+      expect(String(firstPayload.message ?? "")).toContain("## DearMe Wake Payload");
+      expect(String(firstPayload.message ?? "")).not.toContain("## Paperclip Wake Payload");
       expect(String(firstPayload.message ?? "")).toContain("Do not switch to another issue until you have handled this wake.");
       expect(String(firstPayload.message ?? "")).toContain("- checkout: already claimed by the harness for this run");
       expect(String(firstPayload.message ?? "")).toContain(

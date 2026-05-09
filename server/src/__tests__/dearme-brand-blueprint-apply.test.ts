@@ -160,6 +160,22 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(artifacts.triggers).toHaveLength(4);
     expect(artifacts.triggers.every((trigger) => trigger.enabled)).toBe(true);
     expect(artifacts.triggers.map((trigger) => trigger.cronExpression)).toEqual(Array(4).fill("0 14 * * 1"));
+    expect(artifacts.routines.every((routine) => routine.description?.includes("Voice & Memory context:") ?? false))
+      .toBe(true);
+    expect(artifacts.routines.every((routine) => routine.description?.includes("Direct and precise.") ?? false)).toBe(
+      true,
+    );
+    expect(
+      artifacts.routines.every(
+        (routine) => routine.description?.includes("founders evaluating local AI workflows") ?? false,
+      ),
+    ).toBe(true);
+    expect(
+      artifacts.routines.every((routine) => routine.description?.includes("No public posts without approval") ?? false),
+    ).toBe(true);
+    expect(artifacts.routines.every((routine) => routine.description?.includes("Operating boundary:") ?? false)).toBe(
+      true,
+    );
 
     expect(artifacts.issues).toHaveLength(6);
     expect(
@@ -215,6 +231,30 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
         .filter((issue) => issue.id !== contentIssue?.id)
         .every((issue) => Boolean(issue.assigneeAgentId)),
     ).toBe(true);
+    const draftIssues = artifacts.issues.filter((issue) => issue.title.startsWith("DearMe Draft:"));
+    expect(draftIssues.every((issue) => issue.description?.includes("Voice & Memory context:") ?? false)).toBe(
+      true,
+    );
+    expect(draftIssues.every((issue) => issue.description?.includes("Voice guidance:") ?? false)).toBe(true);
+    expect(draftIssues.every((issue) => issue.description?.includes("Goals to serve:") ?? false)).toBe(true);
+    expect(draftIssues.every((issue) => issue.description?.includes("Audiences to write for:") ?? false)).toBe(
+      true,
+    );
+    expect(draftIssues.every((issue) => issue.description?.includes("Offers to keep available:") ?? false)).toBe(
+      true,
+    );
+    expect(draftIssues.every((issue) => issue.description?.includes("Voice samples for tone review:") ?? false)).toBe(
+      true,
+    );
+    expect(draftIssues.every((issue) => issue.description?.includes("Constraints and boundaries:") ?? false)).toBe(
+      true,
+    );
+    expect(contentIssue?.description).toContain("Build visible proof");
+    expect(contentIssue?.description).toContain("founders evaluating local AI workflows");
+    expect(contentIssue?.description).toContain("paid beta personal brand growth");
+    expect(contentIssue?.description).toContain("Direct and precise.");
+    expect(contentIssue?.description).toContain("Evidence first.");
+    expect(contentIssue?.description).toContain("No public posts without approval");
     expect(
       artifacts.issues
         .filter((issue) => issue.title.startsWith("DearMe Draft:"))
@@ -280,6 +320,9 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(reportDocuments.map((document) => document.key)).toEqual(["dear-me-report"]);
     expect(reportDocuments[0]?.title).toBe("Dear me report");
     expect(reportDocuments[0]?.body).toContain("# Dear me report: Peter");
+    expect(reportDocuments[0]?.body).toContain("## Voice & Memory Context");
+    expect(reportDocuments[0]?.body).toContain("Direct and precise.");
+    expect(reportDocuments[0]?.body).toContain("paid beta personal brand growth");
     expect(reportDocuments[0]?.body).toContain("## Work Completed");
     expect(reportDocuments[0]?.body).toContain("## Decisions Needed");
 

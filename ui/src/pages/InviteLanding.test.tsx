@@ -146,11 +146,12 @@ describe("InviteLandingPage", () => {
     await flushReact();
     await flushReact();
 
-    expect(container.textContent).toContain("You've been invited to join Paperclip");
+    expect(container.textContent).toContain("You've been invited to join DearMe");
     expect(container.textContent).toContain("Join Acme Robotics");
     expect(container.textContent).toContain("Create account");
     expect(container.textContent).toContain("I already have an account");
     expect(container.textContent).toContain("Message from inviter");
+    expect(container.textContent).not.toContain("Paperclip");
     expect(container.querySelector('[data-testid="invite-inline-auth"]')).not.toBeNull();
     expect(localStorage.getItem("paperclip:pending-invite-token")).toBe("pcp_invite_test");
     const inviteLogo = container.querySelector('img[alt="Acme Robotics logo"]');
@@ -198,6 +199,51 @@ describe("InviteLandingPage", () => {
     expect(container.querySelector('input[name="name"]')).toBeNull();
     expect(container.textContent).toContain("Sign in to continue");
     expect(localStorage.getItem("paperclip:pending-invite-token")).toBe("pcp_invite_test");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("shows agent invites as run-method requests without adapter copy", async () => {
+    getInviteMock.mockResolvedValue({
+      id: "invite-1",
+      companyId: "company-1",
+      companyName: "Acme Robotics",
+      companyLogoUrl: "/api/invites/pcp_invite_test/logo",
+      companyBrandColor: "#114488",
+      inviteType: "company_join",
+      allowedJoinTypes: "agent",
+      humanRole: null,
+      expiresAt: "2027-03-07T00:10:00.000Z",
+      inviteMessage: "Welcome aboard.",
+    });
+
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={["/invite/pcp_invite_test"]}>
+          <QueryClientProvider client={queryClient}>
+            <Routes>
+              <Route path="/invite/:token" element={<InviteLandingPage />} />
+            </Routes>
+          </QueryClientProvider>
+        </MemoryRouter>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    expect(container.textContent).toContain("Submit agent details");
+    expect(container.textContent).toContain("Run method");
+    expect(container.textContent).toContain("Claude Code (local)");
+    expect(container.textContent).not.toContain("Adapter type");
+    expect(container.textContent).not.toContain("claude_local");
+    expect(acceptInviteMock).not.toHaveBeenCalled();
 
     await act(async () => {
       root.unmount();
@@ -272,8 +318,9 @@ describe("InviteLandingPage", () => {
       password: "wrongpass",
     });
     expect(container.textContent).toContain(
-      "That email and password did not match an existing Paperclip account. Check both fields, or create an account first if you are new here.",
+      "That email and password did not match an existing DearMe account. Check both fields, or create an account first if you are new here.",
     );
+    expect(container.textContent).not.toContain("Paperclip");
 
     await act(async () => {
       root.unmount();

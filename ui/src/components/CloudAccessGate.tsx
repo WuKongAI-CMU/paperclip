@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { accessApi } from "@/api/access";
 import { authApi } from "@/api/auth";
 import { healthApi } from "@/api/health";
+import { PRODUCT_NAME } from "@/lib/product-labels";
 import { queryKeys } from "@/lib/queryKeys";
 
 function BootstrapPendingPage({ hasActiveInvite = false }: { hasActiveInvite?: boolean }) {
@@ -12,11 +13,11 @@ function BootstrapPendingPage({ hasActiveInvite = false }: { hasActiveInvite?: b
         <h1 className="text-xl font-semibold">Instance setup required</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {hasActiveInvite
-            ? "No instance admin exists yet. A bootstrap invite is already active. Check your Paperclip startup logs for the first admin invite URL, or run this command to rotate it:"
-            : "No instance admin exists yet. Run this command in your Paperclip environment to generate the first admin invite URL:"}
+            ? `No instance admin exists yet. A bootstrap invite is already active. Check your ${PRODUCT_NAME} startup logs for the first admin invite URL, or rotate it with this local setup command:`
+            : `No instance admin exists yet. Generate the first admin invite URL with this local setup command:`}
         </p>
         <pre className="mt-4 overflow-x-auto rounded-md border border-border bg-muted/30 p-3 text-xs">
-{`pnpm paperclipai auth bootstrap-ceo`}
+{`local first-admin setup command for this install: auth bootstrap-ceo`}
         </pre>
       </div>
     </div>
@@ -30,7 +31,7 @@ function NoBoardAccessPage() {
         <h1 className="text-xl font-semibold">No company access</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           This account is signed in, but it does not have an active company membership or instance-admin access on
-          this Paperclip instance.
+          this {PRODUCT_NAME} instance.
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
           Use a company invite or sign in with an account that already belongs to this org.

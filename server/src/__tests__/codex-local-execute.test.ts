@@ -93,7 +93,7 @@ function createLocalSandboxRunner() {
 }
 
 describe("codex execute", () => {
-  it("uses a Paperclip-managed CODEX_HOME outside worktree mode while preserving shared auth and config", async () => {
+  it("uses a DearMe-managed CODEX_HOME outside worktree mode while preserving shared auth and config", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "paperclip-codex-execute-default-"));
     const workspace = path.join(root, "workspace");
     const commandPath = path.join(root, "codex");
@@ -173,7 +173,7 @@ describe("codex execute", () => {
       expect(logs).toContainEqual(
         expect.objectContaining({
           stream: "stdout",
-          chunk: expect.stringContaining("Using Paperclip-managed Codex home"),
+          chunk: expect.stringContaining("Using DearMe-managed Codex home"),
         }),
       );
     } finally {
@@ -478,7 +478,8 @@ describe("codex execute", () => {
         latestCommentId: "comment-2",
         commentIds: ["comment-1", "comment-2"],
       });
-      expect(capture.prompt).toContain("## Paperclip Wake Payload");
+      expect(capture.prompt).toContain("## DearMe Wake Payload");
+      expect(capture.prompt).not.toContain("## Paperclip Wake Payload");
       expect(capture.prompt).toContain("Treat this wake payload as the highest-priority change for the current heartbeat.");
       expect(capture.prompt).toContain("Do not switch to another issue until you have handled this wake.");
       expect(capture.prompt).toContain(
@@ -670,7 +671,7 @@ describe("codex execute", () => {
       expect(capture.argv).not.toContain("resume");
       expect(capture.argv).not.toContain('service_tier="fast"');
       expect(capture.argv).not.toContain("features.fast_mode=true");
-      expect(capture.prompt).toContain("Paperclip session handoff:");
+      expect(capture.prompt).toContain("DearMe session handoff:");
       expect(capture.prompt).toContain("Issue continuation summary for the next fresh session.");
       expect(commandNotes).toContain("Codex transient fallback requested safer invocation settings for this retry.");
       expect(commandNotes).toContain("Codex transient fallback forced a fresh session with a continuation handoff.");
@@ -846,6 +847,7 @@ describe("codex execute", () => {
     const previousHome = process.env.HOME;
     process.env.HOME = root;
 
+    let promptMetrics: Record<string, number> = {};
     try {
       const result = await execute({
         runId: "run-issue-wake",
@@ -895,9 +897,24 @@ describe("codex execute", () => {
             truncated: false,
             fallbackFetchNeeded: false,
           },
+          paperclipTaskMarkdown: [
+            "DearMe task context:",
+            "- Issue: \"PAP-1201\"",
+            "- Title: \"Fix gallery opening for inline images\"",
+            "",
+            "Issue description:",
+            "```text",
+            "Do not modify repository source. Draft the customer-facing artifact in the issue thread.",
+            "```",
+            "",
+            "Use this task context as the current assignment.",
+          ].join("\n"),
         },
         authToken: "run-jwt-token",
         onLog: async () => {},
+        onMeta: async (meta) => {
+          promptMetrics = meta.promptMetrics ?? {};
+        },
       });
 
       expect(result.exitCode).toBe(0);
@@ -917,13 +934,23 @@ describe("codex execute", () => {
         checkedOutByHarness: true,
         commentIds: [],
       });
-      expect(capture.prompt).toContain("## Paperclip Wake Payload");
+      expect(capture.prompt).toContain("## DearMe Wake Payload");
+      expect(capture.prompt).not.toContain("## Paperclip Wake Payload");
       expect(capture.prompt).toContain("Do not switch to another issue until you have handled this wake.");
       expect(capture.prompt).toContain("- issue: PAP-1201 Fix gallery opening for inline images");
       expect(capture.prompt).toContain("- pending comments: 0/0");
       expect(capture.prompt).toContain("- issue status: in_progress");
       expect(capture.prompt).toContain("- checkout: already claimed by the harness for this run");
       expect(capture.prompt).toContain("The harness already checked out this issue for the current run.");
+      expect(capture.prompt).toContain("DearMe task context:");
+      expect(capture.prompt).not.toContain("Paperclip task context:");
+      expect(capture.prompt).toContain("Issue description:");
+      expect(capture.prompt).toContain("Do not modify repository source. Draft the customer-facing artifact in the issue thread.");
+      expect(capture.prompt).toContain("Follow the paperclip heartbeat.");
+      expect(capture.prompt.indexOf("DearMe task context:")).toBeLessThan(
+        capture.prompt.indexOf("Follow the paperclip heartbeat."),
+      );
+      expect(promptMetrics.taskContextChars).toBeGreaterThan(0);
     } finally {
       if (previousHome === undefined) delete process.env.HOME;
       else process.env.HOME = previousHome;
@@ -1024,12 +1051,14 @@ describe("codex execute", () => {
 
       const capture = JSON.parse(await fs.readFile(capturePath, "utf8")) as CapturePayload;
       expect(capture.argv).toEqual(expect.arrayContaining(["resume", "codex-session-1", "-"]));
-      expect(capture.prompt).toContain("## Paperclip Resume Delta");
+      expect(capture.prompt).toContain("## DearMe Resume Delta");
+      expect(capture.prompt).not.toContain("## Paperclip Resume Delta");
       expect(capture.prompt).toContain("Do not switch to another issue until you have handled this wake.");
       expect(capture.prompt).toContain("Second comment");
       expect(capture.prompt).not.toContain("Follow the paperclip heartbeat.");
       expect(capture.prompt).not.toContain("You are managed instructions.");
-      expect(invocationPrompt).toContain("## Paperclip Resume Delta");
+      expect(invocationPrompt).toContain("## DearMe Resume Delta");
+      expect(invocationPrompt).not.toContain("## Paperclip Resume Delta");
       expect(invocationNotes).toContain(
         "Skipped stdin instruction reinjection because an existing Codex session is being resumed with a wake delta.",
       );

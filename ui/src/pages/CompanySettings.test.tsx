@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AGENT_ADAPTER_TYPES, getEnvironmentCapabilities } from "@paperclipai/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CompanyEnvironments } from "./CompanyEnvironments";
+import { CompanySettings } from "./CompanySettings";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const mockCompaniesApi = vi.hoisted(() => ({
@@ -81,14 +82,14 @@ vi.mock("../context/ToastContext", () => ({
 
 vi.mock("../context/CompanyContext", () => ({
   useCompany: () => ({
-    companies: [{ id: "company-1", name: "Paperclip", issuePrefix: "PAP" }],
+    companies: [{ id: "company-1", name: "Peter Studio", issuePrefix: "PET" }],
     selectedCompany: {
       id: "company-1",
-      name: "Paperclip",
+      name: "Peter Studio",
       description: null,
       brandColor: null,
       logoUrl: null,
-      issuePrefix: "PAP",
+      issuePrefix: "PET",
     },
     selectedCompanyId: "company-1",
     setSelectedCompanyId: mockSetSelectedCompanyId,
@@ -122,11 +123,11 @@ describe("CompanyEnvironments", () => {
     mockSecretsApi.list.mockResolvedValue([]);
     mockCompaniesApi.update.mockResolvedValue({
       id: "company-1",
-      name: "Paperclip",
+      name: "Peter Studio",
       description: null,
       brandColor: null,
       logoUrl: null,
-      issuePrefix: "PAP",
+      issuePrefix: "PET",
     });
   });
 
@@ -159,6 +160,19 @@ describe("CompanyEnvironments", () => {
     expect(optionLabels).not.toContain("Sandbox");
     expect(container.textContent).not.toContain("Fake sandbox");
     expect(container.textContent).not.toContain("Fake is the deterministic test provider");
+    expect(container.textContent).toContain("sandbox runner plugin");
+    expect(container.textContent).not.toContain("sandbox provider plugin");
+    expect(container.textContent).toContain("remote-capable run methods");
+    expect(container.textContent).toContain("run-method support matrix");
+    expect(container.textContent).toContain("remote-managed runners");
+    expect(container.querySelector("caption")?.textContent).toContain("Environment support by run method");
+    expect(
+      Array.from(container.querySelectorAll("th")).map((header) => header.textContent?.trim()),
+    ).toContain("Run method");
+    expect(container.textContent).not.toContain("remote-capable adapters");
+    expect(container.textContent).not.toContain("adapter support matrix");
+    expect(container.textContent).not.toContain("remote-managed adapters");
+    expect(container.querySelector("caption")?.textContent).not.toContain("Environment support by adapter");
 
     await act(async () => {
       root.unmount();
@@ -229,6 +243,11 @@ describe("CompanyEnvironments", () => {
     });
     await flushReact();
 
+    expect(container.textContent).toContain("Secure Sandbox sandbox source");
+    expect(container.textContent).toContain("Sandbox source");
+    expect(container.textContent).not.toContain("sandbox provider");
+    expect(container.textContent).not.toContain("Test provider");
+
     const providerSelect = Array.from(container.querySelectorAll("select"))
       .find((select) => Array.from(select.options).some((option) => option.value === "secure-plugin")) as HTMLSelectElement | undefined;
     expect(providerSelect).toBeTruthy();
@@ -242,6 +261,82 @@ describe("CompanyEnvironments", () => {
     const templateInput = Array.from(container.querySelectorAll("input"))
       .find((input) => (input as HTMLInputElement).value === "saved-template") as HTMLInputElement | undefined;
     expect(templateInput?.value).toBe("saved-template");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+});
+
+describe("CompanySettings", () => {
+  let container: HTMLDivElement;
+
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+
+    mockAccessApi.createOpenClawInvitePrompt.mockResolvedValue({
+      token: "invite-token",
+      onboardingTextUrl: "http://127.0.0.1:3100/api/invites/invite-token/onboarding.txt",
+    });
+    mockAccessApi.getInviteOnboarding.mockResolvedValue({
+      onboarding: {
+        connectivity: {
+          connectionCandidates: ["http://127.0.0.1:3100"],
+          testResolutionEndpoint: {
+            url: "http://127.0.0.1:3100/api/access/test-resolution",
+          },
+        },
+      },
+    });
+  });
+
+  afterEach(() => {
+    container.remove();
+    document.body.innerHTML = "";
+    vi.clearAllMocks();
+  });
+
+  it("keeps teammate invite copy product-safe while preserving gateway contract keys", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <CompanySettings />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Generate teammate invite");
+    expect(container.textContent).not.toContain("OpenClaw");
+
+    const generateButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.trim() === "Generate teammate invite");
+    expect(generateButton).toBeTruthy();
+
+    await act(async () => {
+      generateButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flushReact();
+    await flushReact();
+
+    const textarea = container.querySelector(
+      "[data-testid='company-settings-invites-snippet-textarea']",
+    ) as HTMLTextAreaElement | null;
+    expect(textarea?.value).toContain("remote teammate gateway");
+    expect(textarea?.value).toContain("hostname allowlist command");
+    expect(textarea?.value).toContain('adapterType: "openclaw_gateway"');
+    expect(textarea?.value).toContain('agentDefaultsPayload.headers["x-openclaw-token"]');
+    expect(textarea?.value).not.toContain("paperclipai");
+    expect(textarea?.value).not.toContain("OpenClaw");
+    expect(container.textContent).not.toContain("OpenClaw");
 
     await act(async () => {
       root.unmount();

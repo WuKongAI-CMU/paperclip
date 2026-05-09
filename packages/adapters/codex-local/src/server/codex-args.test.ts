@@ -59,6 +59,7 @@ describe("buildCodexExecArgs", () => {
     expect(result.fastModeIgnoredReason).toContain(
       "currently only supported on gpt-5.4 or manually configured model IDs",
     );
+    expect(result.fastModeIgnoredReason).toContain("DearMe will ignore it for model gpt-5.3-codex");
     expect(result.args).toEqual([
       "exec",
       "--json",

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Agent, Issue, IssueTreeControlPreview, IssueTreeHold } from "@paperclipai/shared";
+import type { Agent, Issue, IssueComment, IssueTreeControlPreview, IssueTreeHold } from "@paperclipai/shared";
 import { act, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -20,6 +20,12 @@ const mockIssuesApi = vi.hoisted(() => ({
   listTreeHolds: vi.fn(),
   createTreeHold: vi.fn(),
   releaseTreeHold: vi.fn(),
+  checkMonitorNow: vi.fn(),
+  listInteractions: vi.fn(),
+  acceptInteraction: vi.fn(),
+  rejectInteraction: vi.fn(),
+  respondToInteraction: vi.fn(),
+  cancelInteraction: vi.fn(),
   archiveFromInbox: vi.fn(),
   addComment: vi.fn(),
   cancelComment: vi.fn(),
@@ -36,6 +42,7 @@ const mockActivityApi = vi.hoisted(() => ({
 
 const mockHeartbeatsApi = vi.hoisted(() => ({
   liveRunsForIssue: vi.fn(),
+  liveRunsForCompany: vi.fn(),
   activeRunForIssue: vi.fn(),
   cancel: vi.fn(),
 }));
@@ -418,6 +425,20 @@ function createAgent(overrides: Partial<Agent> = {}): Agent {
   };
 }
 
+function createComment(overrides: Partial<IssueComment> = {}): IssueComment {
+  return {
+    id: "comment-1",
+    companyId: "company-1",
+    issueId: "issue-1",
+    authorAgentId: null,
+    authorUserId: "user-1",
+    body: "Comment",
+    createdAt: new Date("2026-04-21T00:00:00.000Z"),
+    updatedAt: new Date("2026-04-21T00:00:00.000Z"),
+    ...overrides,
+  };
+}
+
 function createPauseHold(overrides: Partial<IssueTreeHold> = {}): IssueTreeHold {
   const now = new Date("2026-04-21T00:00:00.000Z");
   return {
@@ -742,6 +763,16 @@ async function flushReact() {
   });
 }
 
+function setNativeTextareaValue(textarea: HTMLTextAreaElement, value: string) {
+  const valueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value")?.set;
+  const previous = textarea.value;
+  valueSetter?.call(textarea, value);
+  const tracker = (textarea as HTMLTextAreaElement & { _valueTracker?: { setValue: (v: string) => void } })
+    ._valueTracker;
+  tracker?.setValue(previous);
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 async function waitForAssertion(assertion: () => void, attempts = 20) {
   let lastError: unknown;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -777,14 +808,20 @@ describe("IssueDetail", () => {
 
     mockIssuesApi.list.mockResolvedValue([]);
     mockIssuesApi.listComments.mockResolvedValue([]);
+    mockIssuesApi.listInteractions.mockResolvedValue([]);
     mockIssuesApi.listAttachments.mockResolvedValue([]);
     mockIssuesApi.listFeedbackVotes.mockResolvedValue([]);
     mockIssuesApi.markRead.mockResolvedValue({ id: "issue-1", lastReadAt: new Date().toISOString() });
+    mockIssuesApi.update.mockImplementation((_id: string, data: Partial<Issue>) =>
+      Promise.resolve(createIssue(data)),
+    );
     mockIssuesApi.getTreeControlState.mockResolvedValue({ activePauseHold: null });
     mockIssuesApi.listTreeHolds.mockResolvedValue([]);
+    mockIssuesApi.checkMonitorNow.mockResolvedValue({ ok: true });
     mockActivityApi.forIssue.mockResolvedValue([]);
     mockActivityApi.runsForIssue.mockResolvedValue([]);
     mockHeartbeatsApi.liveRunsForIssue.mockResolvedValue([]);
+    mockHeartbeatsApi.liveRunsForCompany.mockResolvedValue([]);
     mockHeartbeatsApi.activeRunForIssue.mockResolvedValue(null);
     mockAgentsApi.list.mockResolvedValue([]);
     mockAccessApi.getCurrentBoardAccess.mockResolvedValue({
@@ -862,6 +899,277 @@ describe("IssueDetail", () => {
     await flushReact();
 
     expect(container.querySelector('[data-status-icon-state="covered"]')?.textContent).toBe("blocked");
+  });
+
+  it("lets an assigned reviewer accept in-review output", async () => {
+    const reviewIssue = createIssue({
+      status: "in_review",
+      assigneeUserId: "user-1",
+    });
+    mockIssuesApi.get.mockResolvedValue(reviewIssue);
+    mockIssuesApi.listComments.mockResolvedValue([
+      createComment({
+        id: "agent-comment-1",
+        authorAgentId: "agent-1",
+        authorUserId: null,
+        body: "Draft output",
+      }),
+    ]);
+    mockAuthApi.getSession.mockResolvedValue({
+      session: { userId: "user-1" },
+      user: { id: "user-1" },
+    });
+    mockIssuesApi.update.mockResolvedValue({
+      ...createIssue({
+        status: "done",
+        assigneeAgentId: null,
+        assigneeUserId: null,
+      }),
+      comment: createComment({
+        id: "review-comment-1",
+        body: "Accepted this draft for private use.",
+      }),
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Review output");
+    });
+
+    const acceptButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.trim() === "Accept draft");
+    expect(acceptButton).toBeTruthy();
+
+    await act(async () => {
+      acceptButton!.click();
+    });
+    await flushReact();
+
+    expect(mockIssuesApi.update).toHaveBeenCalledWith("PAP-1", {
+      status: "done",
+      assigneeAgentId: null,
+      assigneeUserId: null,
+      comment: "Accepted this draft for private use.",
+    });
+    expect(mockPushToast).toHaveBeenCalledWith(expect.objectContaining({
+      title: "Draft accepted",
+      tone: "success",
+    }));
+  });
+
+  it("returns requested changes to the latest draft author", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({
+      status: "in_review",
+      assigneeUserId: "user-1",
+    }));
+    mockIssuesApi.listComments.mockResolvedValue([
+      createComment({
+        id: "agent-comment-1",
+        authorAgentId: "agent-1",
+        authorUserId: null,
+        body: "Older draft",
+        createdAt: new Date("2026-04-21T00:00:00.000Z"),
+      }),
+      createComment({
+        id: "agent-comment-2",
+        authorAgentId: "agent-2",
+        authorUserId: null,
+        body: "Latest draft",
+        createdAt: new Date("2026-04-21T00:01:00.000Z"),
+      }),
+    ]);
+    mockAgentsApi.list.mockResolvedValue([
+      createAgent({ id: "agent-1", name: "Older Draft Agent" }),
+      createAgent({ id: "agent-2", name: "Latest Draft Agent" }),
+    ]);
+    mockAuthApi.getSession.mockResolvedValue({
+      session: { userId: "user-1" },
+      user: { id: "user-1" },
+    });
+    mockIssuesApi.update.mockResolvedValue({
+      ...createIssue({
+        status: "todo",
+        assigneeAgentId: "agent-2",
+        assigneeUserId: null,
+      }),
+      comment: createComment({
+        id: "review-comment-2",
+        body: "Revision requested:\n\nTighten the privacy language.",
+      }),
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    const reviseButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.trim() === "Request changes");
+    expect(reviseButton).toBeTruthy();
+
+    await act(async () => {
+      reviseButton!.click();
+    });
+    await flushReact();
+
+    const revisionNotes = container.querySelector('textarea[aria-label="Revision notes"]') as HTMLTextAreaElement | null;
+    expect(revisionNotes).toBeTruthy();
+    await act(async () => {
+      setNativeTextareaValue(revisionNotes!, "Tighten the privacy language.");
+    });
+    await flushReact();
+
+    const sendButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.trim() === "Send changes");
+    expect(sendButton).toBeTruthy();
+    expect((sendButton as HTMLButtonElement).disabled).toBe(false);
+
+    await act(async () => {
+      sendButton!.click();
+    });
+    await flushReact();
+
+    expect(mockIssuesApi.update).toHaveBeenCalledWith("PAP-1", {
+      status: "todo",
+      assigneeAgentId: "agent-2",
+      assigneeUserId: null,
+      comment: "Revision requested:\n\nTighten the privacy language.",
+    });
+    expect(mockPushToast).toHaveBeenCalledWith(expect.objectContaining({
+      title: "Changes requested",
+      tone: "success",
+    }));
+  });
+
+  it("does not return requested changes to an unavailable draft author", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({
+      status: "in_review",
+      assigneeUserId: "user-1",
+    }));
+    mockIssuesApi.listComments.mockResolvedValue([
+      createComment({
+        id: "agent-comment-1",
+        authorAgentId: "agent-1",
+        authorUserId: null,
+        body: "Draft output",
+      }),
+    ]);
+    mockAgentsApi.list.mockResolvedValue([
+      createAgent({ id: "agent-1", status: "terminated" }),
+    ]);
+    mockAuthApi.getSession.mockResolvedValue({
+      session: { userId: "user-1" },
+      user: { id: "user-1" },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    const reviseButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.trim() === "Request changes");
+    expect(reviseButton).toBeTruthy();
+
+    await act(async () => {
+      reviseButton!.click();
+    });
+    await flushReact();
+
+    const revisionNotes = container.querySelector('textarea[aria-label="Revision notes"]') as HTMLTextAreaElement | null;
+    expect(revisionNotes).toBeTruthy();
+    await act(async () => {
+      setNativeTextareaValue(revisionNotes!, "Try again with a sharper ending.");
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("This draft author is no longer available for changes.");
+    const sendButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.trim() === "Send changes");
+    expect(sendButton).toBeTruthy();
+    expect((sendButton as HTMLButtonElement).disabled).toBe(true);
+    expect(mockIssuesApi.update).not.toHaveBeenCalled();
+  });
+
+  it("lets an assigned reviewer reject in-review output", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({
+      status: "in_review",
+      assigneeUserId: "user-1",
+    }));
+    mockAuthApi.getSession.mockResolvedValue({
+      session: { userId: "user-1" },
+      user: { id: "user-1" },
+    });
+    mockIssuesApi.update.mockResolvedValue({
+      ...createIssue({
+        status: "cancelled",
+        assigneeAgentId: null,
+        assigneeUserId: null,
+      }),
+      comment: createComment({
+        id: "review-comment-3",
+        body: "Rejected this draft.",
+      }),
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    const rejectButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.trim() === "Reject draft");
+    expect(rejectButton).toBeTruthy();
+
+    await act(async () => {
+      rejectButton!.click();
+    });
+    await flushReact();
+
+    const confirmRejectButton = Array.from(container.querySelectorAll("button"))
+      .filter((button) => button.textContent?.trim() === "Reject draft")
+      .at(-1);
+    expect(confirmRejectButton).toBeTruthy();
+
+    await act(async () => {
+      confirmRejectButton!.click();
+    });
+    await flushReact();
+
+    expect(mockIssuesApi.update).toHaveBeenCalledWith("PAP-1", {
+      status: "cancelled",
+      assigneeAgentId: null,
+      assigneeUserId: null,
+      comment: "Rejected this draft.",
+    });
+    expect(mockPushToast).toHaveBeenCalledWith(expect.objectContaining({
+      title: "Draft rejected",
+      tone: "success",
+    }));
   });
 
   it("refreshes subtree pause state after resuming a hold", async () => {

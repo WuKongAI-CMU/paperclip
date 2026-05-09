@@ -222,6 +222,22 @@ describe("IssueRunLedger", () => {
     expect(container.textContent).toContain("Last useful action Unavailable");
   });
 
+  it("renders adapter stop reasons with runner language", () => {
+    renderLedger({
+      runs: [
+        createRun({
+          status: "failed",
+          resultJson: { stopReason: "adapter_failed" },
+          livenessState: "failed",
+          livenessReason: "Runner stopped before completing the run.",
+        }),
+      ],
+    });
+
+    expect(container.textContent).toContain("Stop runner failed");
+    expect(container.textContent).not.toContain("adapter failed");
+  });
+
   it("interleaves run rows and activity rows by timestamp", () => {
     renderLedger({
       runs: [

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/popover";
 import { Shield } from "lucide-react";
 import { cn, agentUrl } from "../lib/utils";
+import { PRODUCT_NAME } from "../lib/product-labels";
 import { roleLabels } from "../components/agent-config-primitives";
 import {
   AgentConfigForm,
@@ -143,7 +144,7 @@ export function NewAgent() {
     setFormError(null);
     if (configValues.adapterType === "opencode_local") {
       if (!isValidOpenCodeModelId(configValues.model)) {
-        setFormError("OpenCode requires an explicit model in provider/model format.");
+        setFormError("OpenCode requires an explicit model in source/model format.");
         return;
       }
     }
@@ -271,7 +272,7 @@ export function NewAgent() {
             <div>
               <h2 className="text-sm font-medium">Company skills</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Optional skills from the company library. Built-in Paperclip runtime skills are added automatically.
+                Optional skills from the company library. Built-in {PRODUCT_NAME} runtime skills are added automatically.
               </p>
             </div>
             {availableSkills.length === 0 ? (

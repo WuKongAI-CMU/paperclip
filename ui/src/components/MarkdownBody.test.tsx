@@ -12,7 +12,7 @@ import {
   buildUserMentionHref,
 } from "@paperclipai/shared";
 import { ThemeProvider } from "../context/ThemeContext";
-import { MarkdownBody } from "./MarkdownBody";
+import { inferIssueReferencePrefixesFromPathname, MarkdownBody } from "./MarkdownBody";
 import { queryKeys } from "../lib/queryKeys";
 
 const mockIssuesApi = vi.hoisted(() => ({
@@ -65,6 +65,13 @@ function renderMarkdown(
 }
 
 describe("MarkdownBody", () => {
+  it("infers issue reference prefixes from company-scoped issue routes", () => {
+    expect(inferIssueReferencePrefixesFromPathname("/DEAA/issues/DEAA-109")).toEqual(["DEAA"]);
+    expect(inferIssueReferencePrefixesFromPathname("/issues/pap-1271")).toEqual(["PAP"]);
+    expect(inferIssueReferencePrefixesFromPathname("/DEAA/dearme")).toEqual(["DEAA"]);
+    expect(inferIssueReferencePrefixesFromPathname("/settings/profile")).toBeUndefined();
+  });
+
   it("renders markdown images without a resolver", () => {
     const html = renderToStaticMarkup(
       <QueryClientProvider client={new QueryClient()}>
@@ -265,6 +272,19 @@ describe("MarkdownBody", () => {
     expect(html).toContain('>/issues/PAP-1272</a>]');
     expect(html).toContain('<a href="/issues/PAP-1273"');
     expect(html).toContain('>issue://PAP-1273</a>.');
+  });
+
+  it("can constrain auto-linked issue references to the active company prefix", () => {
+    const html = renderMarkdown(
+      "Review DEAA-109, STAGE-2, ADCF-4312, and issue://REVISE-1778144399.",
+      [{ identifier: "DEAA-109", status: "in_review" }],
+      { issueReferencePrefixes: ["DEAA"] },
+    );
+
+    expect(html).toContain('<a href="/issues/DEAA-109"');
+    expect(html).not.toContain('href="/issues/STAGE-2"');
+    expect(html).not.toContain('href="/issues/ADCF-4312"');
+    expect(html).not.toContain('href="/issues/REVISE-1778144399"');
   });
 
   it("can opt out of issue reference linkification for offline previews", () => {

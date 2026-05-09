@@ -229,6 +229,60 @@ describe("useLiveRunTranscripts", () => {
     container.remove();
   });
 
+  it("skips terminal runs that explicitly have no stored output until output metadata appears", async () => {
+    let latestIsInitialHydrating = true;
+    let runs = [{
+      id: "run-empty",
+      status: "cancelled",
+      adapterType: "codex_local",
+      hasStoredOutput: false,
+      logBytes: 0,
+      lastOutputBytes: 0,
+    }];
+
+    function Harness() {
+      const { isInitialHydrating } = useLiveRunTranscripts({
+        companyId: "company-1",
+        runs,
+      });
+      latestIsInitialHydrating = isInitialHydrating;
+      return null;
+    }
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<Harness />);
+      await Promise.resolve();
+    });
+
+    expect(logMock).not.toHaveBeenCalled();
+    expect(latestIsInitialHydrating).toBe(false);
+
+    await act(async () => {
+      root.render(<Harness />);
+      await Promise.resolve();
+    });
+
+    expect(logMock).not.toHaveBeenCalled();
+
+    runs = [{ ...runs[0], hasStoredOutput: true, logBytes: 512 }];
+
+    await act(async () => {
+      root.render(<Harness />);
+      await Promise.resolve();
+    });
+
+    expect(logMock).toHaveBeenCalledWith("run-empty", 0, 256_000);
+
+    act(() => {
+      root.unmount();
+    });
+    container.remove();
+  });
+
   it("can hydrate active runs without opening the live event socket", async () => {
     function Harness() {
       useLiveRunTranscripts({

@@ -1,5 +1,10 @@
 # DearMe v3 — Architecture Part 3 (archetype journeys, GTM flywheel, build sequence)
 
+> 2026-05-07 consolidation: historical source material only. Current direction
+> is `README.md`, `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`,
+> `POLSIA-NAIVE-REUSE-PLAN.md`, and `REBRAND-AND-PROVENANCE.md`. Do not follow
+> clone/verbatim-copy instructions below when they conflict with those files.
+
 > Continues `V3-ARCHITECTURE-PART-2.md`. Concrete user journeys + flywheel mechanics + sprint plan.
 
 ---

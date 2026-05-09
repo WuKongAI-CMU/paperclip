@@ -56,6 +56,22 @@ describe("dearmeApi", () => {
     );
   });
 
+  it("posts Voice & Memory updates through the DearMe company endpoint", async () => {
+    const payload = {
+      kind: "voice_sample" as const,
+      title: "Operator note",
+      body: "Short, direct operator note.",
+      sourceLabel: null,
+    };
+
+    await dearmeApi.recordMemoryUpdate("company-1", payload);
+
+    expect(mockApi.post).toHaveBeenCalledWith(
+      "/dearme/companies/company-1/memory-updates",
+      payload,
+    );
+  });
+
   it("posts paid beta payment records through the DearMe company endpoint", async () => {
     const payload = {
       amountCents: 25_000,

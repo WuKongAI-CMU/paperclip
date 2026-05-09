@@ -1,13 +1,20 @@
 # Polsia vs DearMe — Final Comparison (v3 + Side Hustle)
 
 > Canonical side-by-side after positioning lock and 5-archetype funnel addition. Supersedes earlier `POLSIA-VS-DEARME.md`.
+>
+> 2026-05-07 consolidation: this is now a historical comparison artifact, not
+> the canonical implementation or provenance contract. For current direction,
+> use `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`,
+> `POLSIA-NAIVE-REUSE-PLAN.md`, and `REBRAND-AND-PROVENANCE.md`.
 
 ---
 
 ## 0. The 1-line difference
 
 > **Polsia builds and runs companies. DearMe markets people.**
-> Architecture 95% identical. Customer + outcome 100% different.
+> The reusable lesson is the choreography: visible team, background progress,
+> prepared work, and approval gates. DearMe should not be described or built as
+> a proprietary-code clone.
 
 ---
 
@@ -224,7 +231,7 @@
 
 ## 12. The honest assessment
 
-**Architecture: DearMe is a Polsia clone. Code-level overlap >95%. The four innovations (voice MCP, voice tables, voice gate, letter motif) are all bolt-ons to a Polsia-shaped runtime.**
+**Architecture: DearMe is Polsia-inspired in choreography and Paperclip/Naive-backed in runtime. It should not be framed as a Polsia clone or measured by proprietary code-level overlap. The current moat is DearMe's Brand OS, voice profile, Voice Gate, personal-brand output semantics, Work Ready approvals, and weekly Dear me report on top of the shared operator kernel.**
 
 **Customer: DearMe and Polsia don't compete. Polsia is for "I want to build a company". DearMe is for "I want the world to find me". Different lifecycle stages. A Polsia customer might graduate to DearMe (their company is built; now they need personal-brand growth). A DearMe customer might graduate to Polsia (their personal brand is built; now they want to build a SaaS too).**
 

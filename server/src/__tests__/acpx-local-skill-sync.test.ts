@@ -27,6 +27,7 @@ describe("acpx local skill sync", () => {
     expect(snapshot.desiredSkills).toContain(paperclipKey);
     expect(snapshot.desiredSkills).toContain(createAgentKey);
     expect(snapshot.entries.find((entry) => entry.key === paperclipKey)?.state).toBe("configured");
+    expect(snapshot.entries.find((entry) => entry.key === paperclipKey)?.originLabel).toBe("Required by DearMe");
     expect(snapshot.entries.find((entry) => entry.key === paperclipKey)?.detail).toContain("ACPX Claude session");
     expect(snapshot.warnings).toEqual([]);
   });
@@ -70,9 +71,9 @@ describe("acpx local skill sync", () => {
     expect(snapshot.mode).toBe("unsupported");
     expect(snapshot.desiredSkills).toContain(paperclipKey);
     expect(snapshot.entries.find((entry) => entry.key === paperclipKey)?.desired).toBe(true);
-    expect(snapshot.entries.find((entry) => entry.key === paperclipKey)?.detail).toContain("stored in Paperclip only");
+    expect(snapshot.entries.find((entry) => entry.key === paperclipKey)?.detail).toContain("stored in DearMe only");
     expect(snapshot.warnings).toContain(
-      "Custom ACP commands do not expose a Paperclip skill integration contract yet; selected skills are tracked only.",
+      "Custom ACP commands do not expose a DearMe skill integration contract yet; selected skills are tracked only.",
     );
   });
 });

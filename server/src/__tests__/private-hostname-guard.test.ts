@@ -42,14 +42,17 @@ describe("privateHostnameGuard", () => {
     expect(res.status).toBe(200);
   });
 
-  it("blocks unknown hostnames with remediation command", async () => {
+  it("blocks unknown hostnames with product-safe remediation copy", async () => {
     const app = createApp({ enabled: true, allowedHostnames: ["some-other-host"] });
     const res = await request(app).get("/api/health").set("Host", `${unknownHostname}:3100`);
     expect(res.status).toBe(403);
-    expect(res.body?.error).toContain(`please run pnpm paperclipai allowed-hostname ${unknownHostname}`);
+    expect(res.body?.error).toContain("DearMe instance");
+    expect(res.body?.error).toContain(`local hostname allowlist command for this install: allowed-hostname ${unknownHostname}`);
+    expect(res.body?.error).not.toContain("Paperclip");
+    expect(res.body?.error).not.toContain("pnpm paperclipai");
   });
 
-  it("blocks unknown hostnames on page routes with plain-text remediation command", async () => {
+  it("blocks unknown hostnames on page routes with product-safe plain-text remediation copy", async () => {
     const middleware = privateHostnameGuard({
       enabled: true,
       allowedHostnames: ["some-other-host"],
@@ -73,7 +76,11 @@ describe("privateHostnameGuard", () => {
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.send).toHaveBeenCalledWith(
-      expect.stringContaining(`please run pnpm paperclipai allowed-hostname ${unknownHostname}`),
+      expect.stringContaining(`local hostname allowlist command for this install: allowed-hostname ${unknownHostname}`),
     );
+    const rendered = res.send.mock.calls[0]?.[0] as string;
+    expect(rendered).toContain("DearMe instance");
+    expect(rendered).not.toContain("Paperclip");
+    expect(rendered).not.toContain("pnpm paperclipai");
   }, 20_000);
 });

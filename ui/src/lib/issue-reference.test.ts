@@ -56,6 +56,22 @@ describe("issue-reference", () => {
     });
   });
 
+  it("can restrict issue references to known company prefixes", () => {
+    const options = { allowedPrefixes: ["DEAA"] };
+
+    expect(parseIssueReferenceFromHref("DEAA-109", options)).toEqual({
+      issuePathId: "DEAA-109",
+      href: "/issues/DEAA-109",
+    });
+    expect(parseIssueReferenceFromHref("/DEAA/issues/deaa-110", options)).toEqual({
+      issuePathId: "DEAA-110",
+      href: "/issues/DEAA-110",
+    });
+    expect(parseIssueReferenceFromHref("STAGE-2", options)).toBeNull();
+    expect(parseIssueReferenceFromHref("ADCF-4312", options)).toBeNull();
+    expect(parseIssueReferenceFromHref("issue://REVISE-1778144399", options)).toBeNull();
+  });
+
   it("preserves absolute Paperclip issue URLs so origin, port, and hash are not lost", () => {
     expect(parseIssueReferenceFromHref("http://localhost:3100/PAP/issues/PAP-1179")).toBeNull();
     expect(parseIssueReferenceFromHref("http://remote.example.test:3103/PAPA/issues/PAPA-115#comment-850083f3-24de-43e7-a8cd-bc01f7cc9f0d")).toBeNull();

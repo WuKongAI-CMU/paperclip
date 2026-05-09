@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Paperclip",
-  "short_name": "Paperclip",
-  "description": "AI-powered project management and agent coordination platform",
+  "name": "DearMe",
+  "short_name": "DearMe",
+  "description": "Personal operating system for turning conversations into done work.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

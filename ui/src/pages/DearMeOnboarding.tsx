@@ -3,9 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DEARME_BRAND_CADENCES,
   DEARME_BRAND_CHANNELS,
+  DEARME_MEMORY_UPDATE_KINDS,
   DEARME_PAID_BETA_MIN_PAYMENT_CENTS,
   type DearMeBrandBlueprintExecutionPlan,
   type DearMeFirstCyclePreviewResponse,
+  type DearMeMemoryUpdate,
+  type DearMeMemoryUpdateKind,
+  type DearMeMemoryUpdateResult,
   type DearMeOutputItem,
   type DearMeOutputReviewAction,
   type DearMeOutputStatus,
@@ -13,11 +17,25 @@ import {
   type DearMeVoiceGateResult,
   type DearMeWorkbenchBatchDecision,
   type DearMeWorkbenchDecision,
+  type DearMeWorkbenchMemory,
   type DearMeWorkbenchWorkItem,
 } from "@paperclipai/shared";
 import { useLocation, useNavigate } from "@/lib/router";
 import { approvalsApi } from "../api/approvals";
 import { dearmeApi, type DearMeBrandBlueprintPreviewResult } from "../api/dearme";
+import {
+  DearMeChecklist,
+  DearMeCockpitGrid,
+  DearMeEvidenceGrid,
+  DearMeEmptyState,
+  DearMeFocusSurface,
+  DearMeHero,
+  DearMeMetricStrip,
+  DearMePageShell,
+  DearMePanel,
+  DearMeWorkbenchCard,
+  DearMeWorkbenchSectionHeader,
+} from "../components/DearMeShell";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
@@ -361,6 +379,45 @@ const RISK_GATE_LABELS: Record<NonNullable<DearMeWorkbenchDecision["riskGate"]>,
   destructive_change: "Replace work",
 };
 
+const MEMORY_KIND_LABELS: Record<DearMeMemoryUpdateKind, string> = {
+  voice_sample: "Voice sample",
+  proof_point: "Proof point",
+  goal: "Goal",
+  audience: "Audience",
+  offer: "Offer",
+  constraint: "Boundary",
+  relationship: "Relationship",
+  preference: "Preference",
+};
+
+const VOICE_PROFILE_STATUS_LABELS: Record<DearMeWorkbenchMemory["voiceProfile"]["status"], string> = {
+  needs_samples: "Needs samples",
+  learning: "Learning",
+  ready_for_review: "Ready for voice review",
+};
+
+function voiceProfileVariant(status: DearMeWorkbenchMemory["voiceProfile"]["status"]) {
+  if (status === "ready_for_review") return "default" as const;
+  if (status === "learning") return "secondary" as const;
+  return "outline" as const;
+}
+
+function pluralizeGrowthCycle(count: number) {
+  return `${count} growth cycle${count === 1 ? "" : "s"}`;
+}
+
+function memoryUpdateFeedback(result: DearMeMemoryUpdateResult | null) {
+  if (!result) return null;
+  const cycles = result.growthCycles;
+  if (cycles.checked === 0) {
+    return "Saved. Future growth cycles will use this after Brand OS starts.";
+  }
+  if (cycles.updated > 0) {
+    return `Saved. ${pluralizeGrowthCycle(cycles.updated)} refreshed with your latest Voice & Memory.`;
+  }
+  return `Saved. ${pluralizeGrowthCycle(cycles.checked)} already had the latest Voice & Memory.`;
+}
+
 const TEAM_WORKSTREAM = [
   {
     role: "Chief of Staff",
@@ -427,17 +484,16 @@ function VoiceGatePanel({ gate }: { gate: DearMeVoiceGateResult }) {
           <Badge variant="outline">{gate.score}/100</Badge>
         </div>
       </div>
-      <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+      <DearMeEvidenceGrid className="mt-4 xl:grid-cols-5" columns="two">
         {gate.checks.map((check) => (
-          <article key={check.kind} className="rounded-md border border-border px-3 py-3">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-sm font-medium">{check.label}</p>
-              <Badge variant={voiceGateCheckVariant(check.status)}>{roleLabel(check.status)}</Badge>
-            </div>
-            <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{check.summary}</p>
-          </article>
+          <DearMeWorkbenchCard
+            key={check.kind}
+            title={check.label}
+            description={check.summary}
+            badge={<Badge variant={voiceGateCheckVariant(check.status)}>{roleLabel(check.status)}</Badge>}
+          />
         ))}
-      </div>
+      </DearMeEvidenceGrid>
     </section>
   );
 }
@@ -453,51 +509,38 @@ function TeamWorkstreamPanel({
 
   return (
     <section className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]">
-      <div className="rounded-lg border border-border p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Users className="h-4 w-4" />
-              Your personal brand growth team
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Team visible, machinery hidden. DearMe prepares the moves; you approve what represents you.
-            </p>
-          </div>
-          <Badge variant={paidBetaActive ? "default" : "secondary"}>{statusLabel}</Badge>
-        </div>
+      <DearMePanel aria-label="Personal brand growth team">
+        <DearMeWorkbenchSectionHeader
+          icon={Users}
+          eyebrow="Your personal brand growth team"
+          description="Team visible, machinery hidden. DearMe prepares the moves; you approve what represents you."
+          trailing={<Badge variant={paidBetaActive ? "default" : "secondary"}>{statusLabel}</Badge>}
+        />
 
         <div className="mt-5 grid gap-3 md:grid-cols-2">
-          {TEAM_WORKSTREAM.map((item) => (
-            <article key={item.role} className="rounded-md border border-border px-3 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium">{item.role}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{item.action}</p>
-                </div>
-                <Badge variant="outline">{item.artifact}</Badge>
-              </div>
-            </article>
+          {TEAM_WORKSTREAM.map((item, index) => (
+            <DearMeWorkbenchCard
+              key={`team-workstream:${item.role}:${index}`}
+              title={item.role}
+              description={item.action}
+              badge={<Badge variant="outline">{item.artifact}</Badge>}
+            />
           ))}
         </div>
-      </div>
+      </DearMePanel>
 
       <aside className="rounded-lg border border-border p-5">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <ShieldCheck className="h-4 w-4" />
-          Work ready / Decisions needed
-        </div>
-        <p className="mt-2 text-sm text-muted-foreground">
-          No publishing, sending, deploying, or spending happens without approval by default.
-        </p>
-        <div className="mt-4 space-y-2">
-          {FIRST_CYCLE_ARTIFACTS.map((artifact) => (
-            <div key={artifact} className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span>{artifact}</span>
-            </div>
-          ))}
-        </div>
+        <DearMeWorkbenchSectionHeader
+          icon={ShieldCheck}
+          eyebrow="Work ready / Decisions needed"
+          description="No publishing, sending, deploying, or spending happens without approval by default."
+        />
+        <DearMeChecklist
+          className="mt-4"
+          icon={CheckCircle2}
+          items={FIRST_CYCLE_ARTIFACTS}
+          aria-label="First-cycle approval artifacts"
+        />
       </aside>
     </section>
   );
@@ -522,7 +565,7 @@ function FirstCyclePanel({
   }
 
   return (
-    <section className="rounded-lg border border-border p-5" aria-label="90-second first cycle">
+    <DearMePanel aria-label="90-second first cycle">
       <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <div>
           <Badge variant="outline">90-second first cycle</Badge>
@@ -554,75 +597,67 @@ function FirstCyclePanel({
           <p className="mt-2 text-sm text-muted-foreground">
             Your team prepares the moves. Nothing publishes, sends, spends, or changes public pages without approval.
           </p>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
-            {FIRST_CYCLE_ARTIFACTS.map((artifact) => (
-              <div key={artifact} className="flex min-h-10 items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
-                <span>{artifact}</span>
-              </div>
-            ))}
-          </div>
+          <DearMeChecklist
+            className="mt-4 sm:grid-cols-2"
+            icon={CheckCircle2}
+            items={FIRST_CYCLE_ARTIFACTS}
+            aria-label="Prepared first-cycle artifacts"
+          />
         </div>
       </div>
 
       {preview ? (
         <div className="mt-5 space-y-4">
-          <section className="rounded-md border border-border p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium">{preview.voiceProfile.title}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{preview.voiceProfile.guidance}</p>
-              </div>
+          <DearMeWorkbenchCard
+            title={preview.voiceProfile.title}
+            description={preview.voiceProfile.guidance}
+            badge={
               <Badge variant={preview.voiceProfile.status === "ready_for_gate" ? "default" : "secondary"}>
                 {preview.voiceProfile.status === "ready_for_gate" ? "Voice ready" : "Needs samples"}
               </Badge>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
+            }
+          >
+            <div className="flex flex-wrap gap-2">
               {preview.voiceProfile.draftTone.map((tone) => (
                 <Badge key={tone} variant="outline">{tone}</Badge>
               ))}
             </div>
-          </section>
+          </DearMeWorkbenchCard>
 
           <VoiceGatePanel gate={preview.voiceGate} />
 
           <section className="grid gap-3 lg:grid-cols-3">
             {preview.starterPosts.map((post) => (
-              <article key={post.id} className="rounded-md border border-border p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-medium">{post.title}</p>
-                  <Badge variant="outline">{CHANNEL_LABELS[post.channel]}</Badge>
-                </div>
-                <p className="mt-2 text-sm font-medium text-foreground/80">{post.hook}</p>
-                <p className="mt-2 line-clamp-4 text-sm text-muted-foreground">{post.body}</p>
-              </article>
+              <DearMeWorkbenchCard
+                key={post.id}
+                title={post.title}
+                description={post.body}
+                badge={<Badge variant="outline">{CHANNEL_LABELS[post.channel]}</Badge>}
+              >
+                <p className="text-sm font-medium text-foreground/80">{post.hook}</p>
+              </DearMeWorkbenchCard>
             ))}
           </section>
 
           <section className="grid gap-3 lg:grid-cols-3">
-            <article className="rounded-md border border-border p-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Users className="h-4 w-4" />
-                Opportunity lead
-              </div>
-              <p className="mt-2 text-sm text-foreground/80">{preview.opportunityLead.title}</p>
-              <p className="mt-2 line-clamp-4 text-sm text-muted-foreground">{preview.opportunityLead.draftMessage}</p>
-            </article>
-            <article className="rounded-md border border-border p-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <FileText className="h-4 w-4" />
-                Portfolio proof card
-              </div>
-              <p className="mt-2 text-sm text-foreground/80">{preview.portfolioProofCard.placement}</p>
-              <p className="mt-2 line-clamp-4 text-sm text-muted-foreground">{preview.portfolioProofCard.proposedCopy}</p>
-            </article>
-            <article className="rounded-md border border-border p-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Gauge className="h-4 w-4" />
-                First growth plan
-              </div>
-              <p className="mt-2 line-clamp-4 text-sm text-muted-foreground">{preview.growthPlan.summary}</p>
-            </article>
+            <DearMeWorkbenchCard
+              eyebrow="Opportunity lead"
+              title={preview.opportunityLead.title}
+              description={preview.opportunityLead.draftMessage}
+              badge={<Users className="h-4 w-4 text-muted-foreground" />}
+            />
+            <DearMeWorkbenchCard
+              eyebrow="Portfolio proof card"
+              title={preview.portfolioProofCard.placement}
+              description={preview.portfolioProofCard.proposedCopy}
+              badge={<FileText className="h-4 w-4 text-muted-foreground" />}
+            />
+            <DearMeWorkbenchCard
+              eyebrow="First growth plan"
+              title="First growth plan"
+              description={preview.growthPlan.summary}
+              badge={<Gauge className="h-4 w-4 text-muted-foreground" />}
+            />
           </section>
 
           {preview.warnings.length > 0 ? (
@@ -632,7 +667,7 @@ function FirstCyclePanel({
           ) : null}
         </div>
       ) : null}
-    </section>
+    </DearMePanel>
   );
 }
 
@@ -707,24 +742,22 @@ function FocusedDecisionPanel({
   if (decision) {
     const isReviewingDecision = reviewState.isPending && reviewState.approvalId === decision.approvalId;
     return (
-      <section className="rounded-lg border border-primary/30 bg-primary/5 p-5" aria-label="Focused decision">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <ShieldCheck className="h-4 w-4" />
-              Decision focused
+      <DearMeFocusSurface aria-label="Focused decision">
+        <DearMeWorkbenchSectionHeader
+          icon={ShieldCheck}
+          eyebrow="Decision focused"
+          title={decision.title}
+          description={decision.summary}
+          trailing={
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={decision.riskGate ? "secondary" : "outline"}>
+                {decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval"}
+              </Badge>
+              <Badge variant="outline">Updated {shortDate(decision.updatedAt)}</Badge>
             </div>
-            <h2 className="mt-2 text-xl font-semibold">{decision.title}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">{decision.summary}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={decision.riskGate ? "secondary" : "outline"}>
-              {decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval"}
-            </Badge>
-            <Badge variant="outline">Updated {shortDate(decision.updatedAt)}</Badge>
-          </div>
-        </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          }
+        />
+        <DearMeEvidenceGrid className="mt-4">
           <div className="rounded-md border border-border bg-background/80 p-3">
             <p className="text-xs font-medium text-muted-foreground">Prepared work</p>
             <p className="mt-1 text-sm">
@@ -739,7 +772,7 @@ function FocusedDecisionPanel({
             <p className="text-xs font-medium text-muted-foreground">Trust boundary</p>
             <p className="mt-1 text-sm">Nothing public happens without approval.</p>
           </div>
-        </div>
+        </DearMeEvidenceGrid>
         {decision.approvalId ? (
           <div className="mt-4 rounded-md border border-border bg-background/80 p-4">
             <FieldLabel htmlFor="dearme-focused-decision-note" label="Decision note" />
@@ -808,32 +841,30 @@ function FocusedDecisionPanel({
             </Button>
           </div>
         )}
-      </section>
+      </DearMeFocusSurface>
     );
   }
 
   if (batch) {
     return (
-      <section className="rounded-lg border border-primary/30 bg-primary/5 p-5" aria-label="Focused decision">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <ShieldCheck className="h-4 w-4" />
-              Decision focused
+      <DearMeFocusSurface aria-label="Focused decision">
+        <DearMeWorkbenchSectionHeader
+          icon={ShieldCheck}
+          eyebrow="Decision focused"
+          title={batch.title}
+          description={batch.summary}
+          trailing={
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={batch.riskGate ? "secondary" : "outline"}>
+                {batch.riskGate ? RISK_GATE_LABELS[batch.riskGate] : "Review"}
+              </Badge>
+              <Badge variant="outline">
+                {batch.itemCount} item{batch.itemCount === 1 ? "" : "s"}
+              </Badge>
             </div>
-            <h2 className="mt-2 text-xl font-semibold">{batch.title}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">{batch.summary}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={batch.riskGate ? "secondary" : "outline"}>
-              {batch.riskGate ? RISK_GATE_LABELS[batch.riskGate] : "Review"}
-            </Badge>
-            <Badge variant="outline">
-              {batch.itemCount} item{batch.itemCount === 1 ? "" : "s"}
-            </Badge>
-          </div>
-        </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          }
+        />
+        <DearMeEvidenceGrid className="mt-4">
           <div className="rounded-md border border-border bg-background/80 p-3">
             <p className="text-xs font-medium text-muted-foreground">Next move</p>
             <p className="mt-1 text-sm">{batch.actionLabel}</p>
@@ -846,33 +877,31 @@ function FocusedDecisionPanel({
             <p className="text-xs font-medium text-muted-foreground">Trust boundary</p>
             <p className="mt-1 text-sm">Prepared privately. You choose what ships.</p>
           </div>
-        </div>
+        </DearMeEvidenceGrid>
         <div className="mt-4 flex justify-end">
           <Button type="button" size="sm" onClick={() => onOpenBatch(batch)}>
             {batch.actionLabel}
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
-      </section>
+      </DearMeFocusSurface>
     );
   }
 
   if (workItem) {
     return (
-      <section className="rounded-lg border border-primary/30 bg-primary/5 p-5" aria-label="Focused decision">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <FileText className="h-4 w-4" />
-              Work focused
-            </div>
-            <h2 className="mt-2 text-xl font-semibold">{workItem.title}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">{workItem.summary}</p>
-          </div>
-          <Badge variant={outputStatusVariant(workItem.status)}>
-            {OUTPUT_STATUS_LABELS[workItem.status]}
-          </Badge>
-        </div>
+      <DearMeFocusSurface aria-label="Focused decision">
+        <DearMeWorkbenchSectionHeader
+          icon={FileText}
+          eyebrow="Work focused"
+          title={workItem.title}
+          description={workItem.summary}
+          trailing={
+            <Badge variant={outputStatusVariant(workItem.status)}>
+              {OUTPUT_STATUS_LABELS[workItem.status]}
+            </Badge>
+          }
+        />
         <div className="mt-4 flex items-center justify-between gap-3">
           <span className="text-xs text-muted-foreground">Prepared by {roleLabel(workItem.ownerRole)}</span>
           <Button type="button" size="sm" variant="outline" onClick={() => onOpenWorkItem(workItem)}>
@@ -880,12 +909,12 @@ function FocusedDecisionPanel({
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
-      </section>
+      </DearMeFocusSurface>
     );
   }
 
   return (
-    <section className="rounded-lg border border-dashed border-border p-5" aria-label="Focused decision">
+    <DearMeFocusSurface aria-label="Focused decision" tone="empty">
       <div className="flex items-center gap-2 text-sm font-medium">
         <ShieldCheck className="h-4 w-4" />
         Decision focus unavailable
@@ -893,7 +922,7 @@ function FocusedDecisionPanel({
       <p className="mt-2 text-sm text-muted-foreground">
         The selected item is no longer waiting here. The current decision queue is still below.
       </p>
-    </section>
+    </DearMeFocusSurface>
   );
 }
 
@@ -922,23 +951,21 @@ function FocusedOutputPanel({
   }
 
   return (
-    <article className="mt-4 rounded-lg border border-primary/30 bg-primary/5 p-5" aria-label="Focused work">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="max-w-3xl">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <FileText className="h-4 w-4" />
-            Focused work
+    <DearMeFocusSurface className="mt-4" aria-label="Focused work">
+      <DearMeWorkbenchSectionHeader
+        icon={FileText}
+        eyebrow="Focused work"
+        title={output.title}
+        description={output.summary}
+        trailing={
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline">{OUTPUT_KIND_LABELS[output.kind]}</Badge>
+            <Badge variant={outputStatusVariant(output.status)}>
+              {OUTPUT_STATUS_LABELS[output.status]}
+            </Badge>
           </div>
-          <h2 className="mt-2 text-xl font-semibold">{output.title}</h2>
-          <p className="mt-2 text-sm text-muted-foreground">{output.summary}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline">{OUTPUT_KIND_LABELS[output.kind]}</Badge>
-          <Badge variant={outputStatusVariant(output.status)}>
-            {OUTPUT_STATUS_LABELS[output.status]}
-          </Badge>
-        </div>
-      </div>
+        }
+      />
 
       {preview ? (
         <p className="mt-4 rounded-md border border-border bg-background/80 p-3 text-sm text-foreground/85">
@@ -947,14 +974,14 @@ function FocusedOutputPanel({
       ) : null}
 
       {details.length > 0 ? (
-        <dl className="mt-4 grid gap-3 md:grid-cols-2">
+        <DearMeEvidenceGrid className="mt-4" columns="two">
           {details.map((detail) => (
             <div key={`${output.id}:focused:${detail.kind}`} className="rounded-md border border-border bg-background/80 p-3">
-              <dt className="text-xs font-medium text-muted-foreground">{detail.label}</dt>
-              <dd className="mt-1 text-sm text-foreground/85">{detail.value}</dd>
+              <p className="text-xs font-medium text-muted-foreground">{detail.label}</p>
+              <p className="mt-1 text-sm text-foreground/85">{detail.value}</p>
             </div>
           ))}
-        </dl>
+        </DearMeEvidenceGrid>
       ) : null}
 
       <div className="mt-4 rounded-md border border-border bg-background/80 p-3">
@@ -1017,7 +1044,211 @@ function FocusedOutputPanel({
           {output.documents.length} doc{output.documents.length === 1 ? "" : "s"} prepared privately
         </span>
       </div>
-    </article>
+    </DearMeFocusSurface>
+  );
+}
+
+function VoiceMemoryPanel({
+  memory,
+  isPending,
+  error,
+  result,
+  onAdd,
+}: {
+  memory: DearMeWorkbenchMemory;
+  isPending: boolean;
+  error: string | null;
+  result: DearMeMemoryUpdateResult | null;
+  onAdd: (input: DearMeMemoryUpdate) => void;
+}) {
+  const [kind, setKind] = useState<DearMeMemoryUpdateKind>("voice_sample");
+  const [title, setTitle] = useState("");
+  const [sourceLabel, setSourceLabel] = useState("");
+  const [body, setBody] = useState("");
+  const [localError, setLocalError] = useState<string | null>(null);
+  const voiceProfile = memory.voiceProfile;
+  const feedback = memoryUpdateFeedback(result);
+  const recordedMemory = result?.memory ?? null;
+  const recordedMemoryAlreadyLoaded = recordedMemory
+    ? memory.latest.some((item) => item.id === recordedMemory.id)
+    : false;
+  const latestMemory = recordedMemory
+    ? [recordedMemory, ...memory.latest.filter((item) => item.id !== recordedMemory.id)]
+    : memory.latest;
+  const displayedSourceCount = result
+    ? Math.max(memory.sourceCount, result.growthCycles.memorySources)
+    : memory.sourceCount;
+  const displayedVoiceSampleCount =
+    recordedMemory && !recordedMemoryAlreadyLoaded && recordedMemory.kind === "voice_sample"
+      ? memory.voiceSampleCount + 1
+      : memory.voiceSampleCount;
+  const displayedProofCount =
+    recordedMemory && !recordedMemoryAlreadyLoaded && recordedMemory.kind === "proof_point"
+      ? memory.proofCount + 1
+      : memory.proofCount;
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmedBody = body.trim();
+    if (!trimmedBody) {
+      setLocalError("Add a voice sample, proof point, goal, or boundary before saving.");
+      return;
+    }
+
+    setLocalError(null);
+    onAdd({
+      kind,
+      title: title.trim() || null,
+      body: trimmedBody,
+      sourceLabel: sourceLabel.trim() || null,
+    });
+    setTitle("");
+    setSourceLabel("");
+    setBody("");
+  }
+
+  return (
+    <DearMePanel aria-label="Voice & Memory">
+      <DearMeWorkbenchSectionHeader
+        icon={Sparkles}
+        eyebrow="Voice & Memory"
+        description={memory.summary}
+      />
+
+      <DearMeMetricStrip className="mt-5">
+        <Metric icon={FileText} label="Sources" value={displayedSourceCount} />
+        <Metric icon={Sparkles} label="Voice" value={displayedVoiceSampleCount} />
+        <Metric icon={ShieldCheck} label="Proof" value={displayedProofCount} />
+      </DearMeMetricStrip>
+
+      <div className="mt-5 grid gap-4 border-t border-border pt-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(12rem,0.6fr)]">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-medium">{voiceProfile.title}</p>
+            <Badge variant={voiceProfileVariant(voiceProfile.status)}>
+              {VOICE_PROFILE_STATUS_LABELS[voiceProfile.status]}
+            </Badge>
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">{voiceProfile.guidance}</p>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">Current tone signals</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {voiceProfile.draftTone.map((tone) => (
+              <Badge key={tone} variant="outline">{tone}</Badge>
+            ))}
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">{voiceProfile.nextStep}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center lg:grid-cols-1">
+          <Metric icon={Gauge} label="Confidence" value={`${voiceProfile.confidence}%`} />
+          <Metric icon={Sparkles} label="Samples" value={voiceProfile.sampleCount} />
+        </div>
+      </div>
+
+      <form className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]" onSubmit={handleSubmit}>
+        <div className="grid gap-3">
+          <div>
+            <FieldLabel htmlFor="dearme-memory-kind" label="Kind" />
+            <select
+              id="dearme-memory-kind"
+              value={kind}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                setKind(event.target.value as DearMeMemoryUpdateKind)
+              }
+            >
+              {DEARME_MEMORY_UPDATE_KINDS.map((item) => (
+                <option key={item} value={item}>
+                  {MEMORY_KIND_LABELS[item]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <FieldLabel htmlFor="dearme-memory-title" label="Title" />
+            <Input
+              id="dearme-memory-title"
+              value={title}
+              placeholder="Operator note"
+              onChange={(event) => setTitle(event.target.value)}
+            />
+          </div>
+          <div>
+            <FieldLabel htmlFor="dearme-memory-source" label="Source" />
+            <Input
+              id="dearme-memory-source"
+              value={sourceLabel}
+              placeholder="Manual note"
+              onChange={(event) => setSourceLabel(event.target.value)}
+            />
+          </div>
+        </div>
+
+        <div>
+          <FieldLabel htmlFor="dearme-memory-body" label="Memory" />
+          <Textarea
+            id="dearme-memory-body"
+            value={body}
+            rows={7}
+            placeholder="Paste a real voice sample, proof point, relationship note, offer, or boundary."
+            onChange={(event) => setBody(event.target.value)}
+          />
+          {localError || error ? (
+            <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {localError ?? error}
+            </div>
+          ) : null}
+          {feedback && !error ? (
+            <div className="mt-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-foreground">
+              {feedback}
+            </div>
+          ) : null}
+          <div className="mt-3 flex justify-end">
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Adding..." : "Add to Voice & Memory"}
+            </Button>
+          </div>
+        </div>
+      </form>
+
+      {latestMemory.length > 0 ? (
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {latestMemory.slice(0, 6).map((item) => {
+            const justSaved = recordedMemory?.id === item.id;
+            return (
+              <DearMeWorkbenchCard
+                key={item.id}
+                eyebrow={MEMORY_KIND_LABELS[item.kind]}
+                title={item.title ?? "Untitled memory"}
+                description={item.bodyPreview}
+                badge={
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {justSaved ? <Badge variant="secondary">Just saved</Badge> : null}
+                    {item.sourceLabel ? <Badge variant="outline">{item.sourceLabel}</Badge> : null}
+                  </div>
+                }
+                footer={shortDate(item.createdAt)}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <DearMeEmptyState
+          className="mt-5"
+          icon={Sparkles}
+          title="No Voice & Memory saved yet"
+          description="Add one real sample, proof point, goal, or boundary. DearMe will use it to protect your voice and prepare the next growth cycle."
+        >
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline">Voice sample</Badge>
+            <Badge variant="outline">Proof point</Badge>
+            <Badge variant="outline">Goal</Badge>
+            <Badge variant="outline">Boundary</Badge>
+          </div>
+        </DearMeEmptyState>
+      )}
+    </DearMePanel>
   );
 }
 
@@ -1042,9 +1273,22 @@ function TeamWorkbenchPanel({
   ) => void;
   reviewState: DearMeApprovalReviewState;
 }) {
+  const queryClient = useQueryClient();
+  const [memoryError, setMemoryError] = useState<string | null>(null);
   const workbenchQuery = useQuery({
     queryKey: queryKeys.dearme.workbench(companyId),
     queryFn: () => dearmeApi.getWorkbench(companyId),
+  });
+  const memoryMutation = useMutation({
+    mutationFn: (input: DearMeMemoryUpdate) => dearmeApi.recordMemoryUpdate(companyId, input),
+    onSuccess: () => {
+      setMemoryError(null);
+      queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(companyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
+    },
+    onError: (err) => {
+      setMemoryError(err instanceof Error ? err.message : "Could not update Voice & Memory.");
+    },
   });
   const workbench = workbenchQuery.data ?? null;
 
@@ -1124,113 +1368,113 @@ function TeamWorkbenchPanel({
         />
       ) : null}
 
-      <div className="rounded-lg border border-border p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Users className="h-4 w-4" />
-              My AI team today
-            </div>
-            <h2 className="mt-2 text-xl font-semibold">{workbench.headline}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">{workbench.summary}</p>
-          </div>
-          <Badge variant={paidBetaActive ? "default" : "secondary"}>
-            {paidBetaActive ? "Working now" : "Private work locked"}
-          </Badge>
-        </div>
+      <DearMePanel aria-label="My AI team today">
+        <DearMeWorkbenchSectionHeader
+          icon={Users}
+          eyebrow="My AI team today"
+          title={workbench.headline}
+          description={workbench.summary}
+          trailing={
+            <Badge variant={paidBetaActive ? "default" : "secondary"}>
+              {paidBetaActive ? "Working now" : "Private work locked"}
+            </Badge>
+          }
+        />
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <DearMeMetricStrip className="mt-5">
           <Metric icon={Users} label="Team" value={workbench.team.length} />
           <Metric icon={FileText} label="Work ready" value={workbench.workReady.length} />
           <Metric icon={ShieldCheck} label="Decisions" value={workbench.decisionsNeeded.length} />
           <Metric icon={Workflow} label="In motion" value={workbench.activeWork.length} />
-        </div>
-      </div>
+        </DearMeMetricStrip>
+      </DearMePanel>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)]">
-        <section className="rounded-lg border border-border p-5">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Users className="h-4 w-4" />
-            Team at work
-          </div>
+      <VoiceMemoryPanel
+        memory={workbench.memory}
+        isPending={memoryMutation.isPending}
+        error={memoryError}
+        result={memoryMutation.data ?? null}
+        onAdd={(input) => memoryMutation.mutate(input)}
+      />
+
+      <DearMeCockpitGrid variant="primary">
+        <DearMePanel aria-label="Team at work">
+          <DearMeWorkbenchSectionHeader icon={Users} eyebrow="Team at work" />
           <div className="mt-4 grid gap-2 md:grid-cols-2">
             {hasTeam
               ? workbench.team.map((member, index) => (
-                  <article key={`${member.role}:${index}`} className="rounded-md border border-border px-3 py-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-medium">{member.name}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">{member.currentFocus}</p>
-                      </div>
-                      <Badge variant="outline">{member.status}</Badge>
-                    </div>
-                  </article>
+                  <DearMeWorkbenchCard
+                    key={`${member.role}:${index}`}
+                    title={member.name}
+                    description={member.currentFocus}
+                    badge={<Badge variant="outline">{member.status}</Badge>}
+                  />
                 ))
-              : TEAM_WORKSTREAM.slice(0, 4).map((item) => (
-                  <article key={item.role} className="rounded-md border border-dashed border-border px-3 py-3">
-                    <p className="text-sm font-medium">{item.role}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{item.action}</p>
-                  </article>
+              : TEAM_WORKSTREAM.slice(0, 4).map((item, index) => (
+                  <DearMeWorkbenchCard
+                    key={`fallback-team:${item.role}:${index}`}
+                    title={item.role}
+                    description={item.action}
+                    tone="empty"
+                  />
                 ))}
           </div>
-        </section>
+        </DearMePanel>
 
-        <section className="rounded-lg border border-border p-5">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <ShieldCheck className="h-4 w-4" />
-            Approval gate
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Your team prepares posts, pages, outreach, and opportunity moves. You approve what represents you.
-          </p>
+        <DearMePanel aria-label="Dear me letter">
+          <DearMeWorkbenchSectionHeader
+            icon={FileText}
+            eyebrow="Dear me letter"
+            description="Your team turns progress, decisions, and next bets into a private letter. Approval still controls what represents you publicly."
+          />
           {workbench.report ? (
-            <article className="mt-4 rounded-md border border-border px-3 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium">{workbench.report.title}</p>
-                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{workbench.report.summary}</p>
-                </div>
+            <DearMeWorkbenchCard
+              className="mt-4"
+              title={workbench.report.title}
+              description={workbench.report.summary}
+              badge={
                 <Badge variant={outputStatusVariant(workbench.report.status)}>
                   {OUTPUT_STATUS_LABELS[workbench.report.status]}
                 </Badge>
-              </div>
-              <p className="mt-3 line-clamp-3 text-sm text-foreground/80">{workbench.report.bodyPreview}</p>
-              <div className="mt-4 flex justify-end">
+              }
+              action={
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
                   onClick={() => onOpenIssue(workbench.report!.issueIdentifier ?? workbench.report!.issueId)}
                 >
-                  Open report
+                  Open letter
                   <ArrowRight className="h-4 w-4" />
                 </Button>
-              </div>
-            </article>
+              }
+            >
+              <p className="line-clamp-3 text-sm text-foreground/80">{workbench.report.bodyPreview}</p>
+            </DearMeWorkbenchCard>
           ) : (
-            <div className="mt-4 rounded-md border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
-              The first Dear me report appears here after the growth loop starts.
-            </div>
+            <DearMeEmptyState
+              className="mt-4"
+              icon={FileText}
+              title="Dear me letter is not ready yet"
+              description="The first Dear me letter appears here after the growth loop starts."
+            />
           )}
-        </section>
-      </div>
+        </DearMePanel>
+      </DearMeCockpitGrid>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <section className="rounded-lg border border-border p-5">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <ShieldCheck className="h-4 w-4" />
-            Decisions needed
-          </div>
+      <DearMeCockpitGrid>
+        <DearMePanel aria-label="Decisions needed">
+          <DearMeWorkbenchSectionHeader icon={ShieldCheck} eyebrow="Decisions needed" />
           {batches.length > 0 ? (
             <div className="mt-4 space-y-3">
               <p className="text-xs font-medium text-muted-foreground">Batch decisions</p>
               {batches.map((batch) => (
-                <article key={batch.id} className="rounded-md border border-border p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium">{batch.title}</p>
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{batch.summary}</p>
-                    </div>
+                <DearMeWorkbenchCard
+                  key={batch.id}
+                  className="p-4"
+                  title={batch.title}
+                  description={batch.summary}
+                  badge={
                     <div className="flex shrink-0 flex-col items-end gap-2">
                       <Badge variant={batch.riskGate ? "secondary" : "outline"}>
                         {batch.riskGate ? RISK_GATE_LABELS[batch.riskGate] : "Review"}
@@ -1239,9 +1483,9 @@ function TeamWorkbenchPanel({
                         {batch.itemCount} item{batch.itemCount === 1 ? "" : "s"}
                       </span>
                     </div>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <span className="text-xs text-muted-foreground">Updated {shortDate(batch.updatedAt)}</span>
+                  }
+                  footer={`Updated ${shortDate(batch.updatedAt)}`}
+                  action={
                     <Button
                       type="button"
                       size="sm"
@@ -1251,33 +1495,36 @@ function TeamWorkbenchPanel({
                       {batch.actionLabel}
                       <ArrowRight className="h-4 w-4" />
                     </Button>
-                  </div>
-                </article>
+                  }
+                />
               ))}
             </div>
           ) : null}
           {decisions.length === 0 ? (
-            <div className="mt-4 rounded-md border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
-              No high-leverage decision is waiting right now.
-            </div>
+            <DearMeEmptyState
+              className="mt-4"
+              icon={ShieldCheck}
+              title="No high-leverage decision is waiting right now"
+              description="Your team will place prepared public moves here when they need your call."
+            />
           ) : (
             <div className="mt-4 space-y-3">
               {batches.length > 0 ? (
                 <p className="text-xs font-medium text-muted-foreground">Individual decisions</p>
               ) : null}
               {decisions.map((decision) => (
-                <article key={decision.id} className="rounded-md border border-border p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium">{decision.title}</p>
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{decision.summary}</p>
-                    </div>
+                <DearMeWorkbenchCard
+                  key={decision.id}
+                  className="p-4"
+                  title={decision.title}
+                  description={decision.summary}
+                  badge={
                     <Badge variant={decision.riskGate ? "secondary" : "outline"}>
                       {decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval"}
                     </Badge>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <span className="text-xs text-muted-foreground">Updated {shortDate(decision.updatedAt)}</span>
+                  }
+                  footer={`Updated ${shortDate(decision.updatedAt)}`}
+                  action={
                     <Button
                       type="button"
                       size="sm"
@@ -1287,37 +1534,35 @@ function TeamWorkbenchPanel({
                       {decision.approvalId ? "Approve" : "Review"}
                       <ArrowRight className="h-4 w-4" />
                     </Button>
-                  </div>
-                </article>
+                  }
+                />
               ))}
             </div>
           )}
-        </section>
+        </DearMePanel>
 
-        <section className="rounded-lg border border-border p-5">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <FileText className="h-4 w-4" />
-            Work ready
-          </div>
+        <DearMePanel aria-label="Work ready">
+          <DearMeWorkbenchSectionHeader icon={FileText} eyebrow="Work ready" />
           {readyItems.length === 0 ? (
-            <div className="mt-4 rounded-md border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
-              Nothing is ready for review yet. The active lanes below show what is moving.
-            </div>
+            <DearMeEmptyState
+              className="mt-4"
+              icon={FileText}
+              title="Nothing is ready for review yet"
+              description="The active lanes below show what is moving."
+            />
           ) : (
             <div className="mt-4 space-y-3">
               {readyItems.map((item) => {
                 const issueReference = workItemTarget(item);
                 return (
-                  <article key={item.id} className="rounded-md border border-border p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-medium">{item.title}</p>
-                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.summary}</p>
-                      </div>
-                      <Badge variant="outline">{OUTPUT_KIND_LABELS[item.outputKind ?? "brand_os"]}</Badge>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                      <span className="text-xs text-muted-foreground">Prepared by {roleLabel(item.ownerRole)}</span>
+                  <DearMeWorkbenchCard
+                    key={item.id}
+                    className="p-4"
+                    title={item.title}
+                    description={item.summary}
+                    badge={<Badge variant="outline">{OUTPUT_KIND_LABELS[item.outputKind ?? "brand_os"]}</Badge>}
+                    footer={`Prepared by ${roleLabel(item.ownerRole)}`}
+                    action={
                       <Button
                         type="button"
                         size="sm"
@@ -1328,51 +1573,45 @@ function TeamWorkbenchPanel({
                         Open
                         <ArrowRight className="h-4 w-4" />
                       </Button>
-                    </div>
-                  </article>
+                    }
+                  />
                 );
               })}
             </div>
           )}
-        </section>
-      </div>
+        </DearMePanel>
+      </DearMeCockpitGrid>
 
       {liveStream.length > 0 ? (
-        <section className="rounded-lg border border-border p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Workflow className="h-4 w-4" />
-                Live team feed
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Watch the team turn private work into reviewable moves. The machinery stays backstage.
-              </p>
-            </div>
-            <Badge variant="outline">While you were away</Badge>
-          </div>
+        <DearMePanel aria-label="Live team feed">
+          <DearMeWorkbenchSectionHeader
+            icon={Workflow}
+            eyebrow="Live team feed"
+            description="Watch the team turn private work into reviewable moves. The machinery stays backstage."
+            trailing={<Badge variant="outline">While you were away</Badge>}
+          />
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {liveStream.map((item) => (
-              <article key={item.id} className="rounded-md border border-border px-3 py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground">{roleLabel(item.role)}</p>
-                    <p className="mt-1 text-sm font-medium">{item.title}</p>
-                  </div>
+            {liveStream.map((item, index) => (
+              <DearMeWorkbenchCard
+                key={`${item.id}:${item.role}:${item.createdAt}:${index}`}
+                eyebrow={roleLabel(item.role)}
+                title={item.title}
+                description={item.summary}
+                badge={
                   <Badge variant={item.needsApproval ? "secondary" : "outline"}>
                     {WORKSTREAM_STATUS_LABELS[item.status]}
                   </Badge>
-                </div>
-                <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{item.summary}</p>
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                }
+              >
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <Badge variant="outline">{item.artifact}</Badge>
                   {item.needsApproval ? <Badge variant="default">Decision ready</Badge> : null}
                   <span>{shortDate(item.createdAt)}</span>
                 </div>
-              </article>
+              </DearMeWorkbenchCard>
             ))}
           </div>
-        </section>
+        </DearMePanel>
       ) : null}
     </section>
   );
@@ -1391,15 +1630,13 @@ function PreviewPanel({
 }) {
   if (!preview || !executionPlan) {
     return (
-      <section className="min-h-[360px] rounded-lg border border-dashed border-border p-5">
-        <div className="flex h-full min-h-[320px] flex-col items-center justify-center text-center">
-          <Sparkles className="h-8 w-8 text-muted-foreground/40" />
-          <p className="mt-3 text-sm font-medium">First cycle preview</p>
-          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            Preview shows the team, first-cycle artifacts, budget, memory seeds, and approval gates before anything is applied.
-          </p>
-        </div>
-      </section>
+      <DearMeEmptyState
+        align="center"
+        className="min-h-[360px] rounded-lg p-5"
+        icon={Sparkles}
+        title="First cycle preview"
+        description="Preview shows the team, first-cycle artifacts, budget, memory seeds, and approval gates before anything is applied."
+      />
     );
   }
 
@@ -1441,10 +1678,11 @@ function PreviewPanel({
           </div>
           <div className="grid gap-2">
             {preview.blueprint.team.map((member, index) => (
-              <div key={`${member.role}:${index}`} className="rounded-md border border-border px-3 py-3">
-                <p className="text-sm font-medium">{member.name}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{member.mission}</p>
-              </div>
+              <DearMeWorkbenchCard
+                key={`${member.role}:${index}`}
+                title={member.name}
+                description={member.mission}
+              />
             ))}
           </div>
         </section>
@@ -1456,13 +1694,12 @@ function PreviewPanel({
           </div>
           <div className="grid gap-2">
             {preview.blueprint.cycles.map((cycle) => (
-              <div key={cycle.id} className="rounded-md border border-border px-3 py-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-medium">{cycle.title}</p>
-                  <Badge variant="outline">{CADENCE_LABELS[cycle.cadence]}</Badge>
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">{roleLabel(cycle.ownerRole)}</p>
-              </div>
+              <DearMeWorkbenchCard
+                key={cycle.id}
+                title={cycle.title}
+                description={roleLabel(cycle.ownerRole)}
+                badge={<Badge variant="outline">{CADENCE_LABELS[cycle.cadence]}</Badge>}
+              />
             ))}
           </div>
         </section>
@@ -1475,16 +1712,12 @@ function PreviewPanel({
         </div>
         <div className="grid gap-2">
           {executionPlan.operations.map((operation) => (
-            <div
+            <DearMeWorkbenchCard
               key={operation.id}
-              className="grid gap-2 rounded-md border border-border px-3 py-3 md:grid-cols-[minmax(0,1fr)_auto]"
-            >
-              <div>
-                <p className="text-sm font-medium">{operation.title}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{operation.description}</p>
-              </div>
-              {operation.approvalGate ? <Badge variant="secondary">{roleLabel(operation.approvalGate)}</Badge> : null}
-            </div>
+              title={operation.title}
+              description={operation.description}
+              badge={operation.approvalGate ? <Badge variant="secondary">{roleLabel(operation.approvalGate)}</Badge> : null}
+            />
           ))}
         </div>
       </section>
@@ -1559,7 +1792,7 @@ function PaidBetaAccessPanel({
   }
 
   return (
-    <section className="rounded-lg border border-border p-5" aria-label="Paid beta access">
+    <DearMePanel aria-label="Paid beta access">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm font-medium">
@@ -1638,7 +1871,7 @@ function PaidBetaAccessPanel({
           {paymentError}
         </div>
       ) : null}
-    </section>
+    </DearMePanel>
   );
 }
 
@@ -1665,7 +1898,7 @@ function PrivateWorkPanel({
     : null;
 
   return (
-    <section className="rounded-lg border border-border p-5" aria-label="Private work ready">
+    <DearMePanel aria-label="Private work ready">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm font-medium">
@@ -1692,9 +1925,12 @@ function PrivateWorkPanel({
           ))}
         </div>
       ) : outputs.length === 0 ? (
-        <div className="mt-4 rounded-md border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
-          Approve Brand OS to start the private team loop.
-        </div>
+        <DearMeEmptyState
+          className="mt-4"
+          icon={Workflow}
+          title="Private work has not started yet"
+          description="Approve Brand OS to start the private team loop."
+        />
       ) : (
         <>
           {focusedOutput ? (
@@ -1708,22 +1944,39 @@ function PrivateWorkPanel({
             {outputs.map((output) => {
               const preview = outputPreview(output);
               const details = output.details.slice(0, 3);
+              const footer = `Updated ${shortDate(output.updatedAt)}${
+                output.documents.length > 0
+                  ? ` / ${output.documents.length} doc${output.documents.length === 1 ? "" : "s"}`
+                  : ""
+              }`;
               return (
-                <article key={output.id} className="flex min-h-44 flex-col rounded-md border border-border p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="truncate text-sm font-semibold">{output.title}</h2>
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{output.summary}</p>
-                    </div>
+                <DearMeWorkbenchCard
+                  key={output.id}
+                  className="flex min-h-44 flex-col p-4"
+                  title={output.title}
+                  description={output.summary}
+                  badge={
                     <Badge variant={outputStatusVariant(output.status)}>
                       {OUTPUT_STATUS_LABELS[output.status]}
                     </Badge>
-                  </div>
-
+                  }
+                  footer={footer}
+                  action={
+                    <Button
+                      type="button"
+                      variant={output.isReviewable ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => onOpenOutput(output)}
+                    >
+                      {output.isReviewable ? "Review" : "Open"}
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  }
+                >
                   {preview ? (
-                    <p className="mt-3 line-clamp-3 text-sm text-foreground/80">{preview}</p>
+                    <p className="line-clamp-3 text-sm text-foreground/80">{preview}</p>
                   ) : (
-                    <p className="mt-3 text-sm text-muted-foreground">Waiting for the first private draft.</p>
+                    <p className="text-sm text-muted-foreground">Waiting for the first private draft.</p>
                   )}
 
                   {details.length > 0 ? (
@@ -1736,29 +1989,13 @@ function PrivateWorkPanel({
                       ))}
                     </dl>
                   ) : null}
-
-                  <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
-                    <div className="text-xs text-muted-foreground">
-                      Updated {shortDate(output.updatedAt)}
-                      {output.documents.length > 0 ? ` / ${output.documents.length} doc${output.documents.length === 1 ? "" : "s"}` : ""}
-                    </div>
-                    <Button
-                      type="button"
-                      variant={output.isReviewable ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => onOpenOutput(output)}
-                    >
-                      {output.isReviewable ? "Review" : "Open"}
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </article>
+                </DearMeWorkbenchCard>
               );
             })}
           </div>
         </>
       )}
-    </section>
+    </DearMePanel>
   );
 }
 
@@ -2046,21 +2283,23 @@ export function DearMeOnboarding() {
     applyRequestMutation.isPending;
 
   return (
-    <div className="space-y-6">
-      <header className="rounded-lg border border-border bg-muted/20 p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-3xl">
-            <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-              <Sparkles className="h-4 w-4" />
-              DearMe / Team workbench
-            </div>
-            <h1 className="text-2xl font-semibold tracking-normal">Your personal brand growth team</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Your personal brand growth team turns work, voice, proof, and relationships into posts,
-              opportunities, portfolio updates, and weekly direction. You approve what represents you.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+    <DearMePageShell>
+      <DearMeHero
+        eyebrow={
+          <>
+            <Sparkles className="h-4 w-4" />
+            DearMe / Team workbench
+          </>
+        }
+        title="Your personal brand growth team"
+        description={
+          <>
+            Your personal brand growth team turns work, voice, proof, and relationships into posts,
+            opportunities, portfolio updates, and weekly direction. You approve what represents you.
+          </>
+        }
+        actions={
+          <>
             <Button
               type="button"
               variant="outline"
@@ -2079,9 +2318,9 @@ export function DearMeOnboarding() {
               Request approval
               <ArrowRight className="h-4 w-4" />
             </Button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {actionError ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -2094,18 +2333,6 @@ export function DearMeOnboarding() {
           {paidBetaEntitlement.nextActionDescription}
         </div>
       ) : null}
-
-      <FirstCyclePanel
-        intent={firstCycleIntent}
-        preview={firstCyclePreview}
-        isPending={firstCycleMutation.isPending}
-        onIntentChange={(value) => {
-          setActionError(null);
-          setFirstCycleIntent(value);
-          setFirstCyclePreview(null);
-        }}
-        onPreview={handleFirstCyclePreview}
-      />
 
       <TeamWorkbenchPanel
         companyId={selectedCompanyId}
@@ -2121,12 +2348,16 @@ export function DearMeOnboarding() {
         }}
       />
 
-      <PaidBetaAccessPanel
-        companyId={selectedCompanyId}
-        status={paidBetaStatus}
-        isLoading={paidBetaAccessQuery.isLoading}
-        isError={paidBetaAccessQuery.isError}
-        error={paidBetaAccessQuery.error}
+      <FirstCyclePanel
+        intent={firstCycleIntent}
+        preview={firstCyclePreview}
+        isPending={firstCycleMutation.isPending}
+        onIntentChange={(value) => {
+          setActionError(null);
+          setFirstCycleIntent(value);
+          setFirstCyclePreview(null);
+        }}
+        onPreview={handleFirstCyclePreview}
       />
 
       <PrivateWorkPanel
@@ -2141,8 +2372,16 @@ export function DearMeOnboarding() {
         onReviewOutput={handleReviewOutput}
       />
 
+      <PaidBetaAccessPanel
+        companyId={selectedCompanyId}
+        status={paidBetaStatus}
+        isLoading={paidBetaAccessQuery.isLoading}
+        isError={paidBetaAccessQuery.isError}
+        error={paidBetaAccessQuery.error}
+      />
+
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        <section className="space-y-5 rounded-lg border border-border p-5" aria-label="Brand OS seed">
+        <DearMePanel className="space-y-5" aria-label="Brand OS seed">
           <div>
             <div className="flex items-center gap-2 text-sm font-medium">
               <Sparkles className="h-4 w-4" />
@@ -2263,7 +2502,7 @@ export function DearMeOnboarding() {
             rows={3}
             onChange={(value) => updateField("approvalNote", value)}
           />
-        </section>
+        </DearMePanel>
 
         <PreviewPanel
           preview={previewResult}
@@ -2272,6 +2511,6 @@ export function DearMeOnboarding() {
           previewMatchesForm={previewMatchesForm}
         />
       </div>
-    </div>
+    </DearMePageShell>
   );
 }

@@ -56,7 +56,7 @@ export interface AdapterDisplayInfo {
 const adapterDisplayMap: Record<string, AdapterDisplayInfo> = {
   acpx_local: {
     label: "ACPX",
-    description: "Experimental local ACPX multi-agent adapter",
+    description: "Experimental local ACPX multi-agent runner",
     icon: Bot,
     experimental: true,
     hideFromVisualSelection: true,
@@ -80,7 +80,7 @@ const adapterDisplayMap: Record<string, AdapterDisplayInfo> = {
   },
   opencode_local: {
     label: "OpenCode",
-    description: "Local multi-provider agent",
+    description: "Local agent with broad model support",
     icon: OpenCodeLogoIcon,
   },
   hermes_local: {
@@ -99,21 +99,21 @@ const adapterDisplayMap: Record<string, AdapterDisplayInfo> = {
     icon: MousePointer2,
   },
   openclaw_gateway: {
-    label: "OpenClaw Gateway",
-    description: "Invoke OpenClaw via gateway protocol",
+    label: "Remote Gateway",
+    description: "Invoke a remote teammate through the gateway protocol",
     icon: Bot,
     comingSoon: true,
-    disabledLabel: "Configure OpenClaw within the App",
+    disabledLabel: "Configure the remote gateway within the app",
   },
   process: {
     label: "Process",
-    description: "Internal process adapter",
+    description: "Internal process runner",
     icon: Cpu,
     comingSoon: true,
   },
   http: {
     label: "HTTP",
-    description: "Internal HTTP adapter",
+    description: "Internal HTTP runner",
     icon: Cpu,
     comingSoon: true,
   },
@@ -124,7 +124,7 @@ const adapterDisplayMap: Record<string, AdapterDisplayInfo> = {
 // ---------------------------------------------------------------------------
 
 function humanizeType(type: string): string {
-  // Strip known type suffixes so "droid_local" → "Droid", not "Droid Local"
+  // Strip known type suffixes so "droid_local" becomes "Droid", not "Droid Local"
   let base = type;
   for (const suffix of Object.keys(TYPE_SUFFIXES)) {
     if (base.endsWith(suffix)) {
@@ -156,7 +156,7 @@ export function getAdapterDisplay(type: string): AdapterDisplayInfo {
   const label = withSuffix(humanizeType(type), suffix);
   return {
     label,
-    description: suffix ? `External ${suffix} adapter` : "External adapter",
+    description: suffix ? `External ${suffix} runner` : "External runner",
     icon: Cpu,
   };
 }

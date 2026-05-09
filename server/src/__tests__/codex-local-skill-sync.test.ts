@@ -44,8 +44,10 @@ describe("codex local skill sync", () => {
     expect(before.desiredSkills).toContain(paperclipKey);
     expect(before.desiredSkills).toContain(createAgentKey);
     expect(before.entries.find((entry) => entry.key === paperclipKey)?.required).toBe(true);
+    expect(before.entries.find((entry) => entry.key === paperclipKey)?.originLabel).toBe("Required by DearMe");
     expect(before.entries.find((entry) => entry.key === paperclipKey)?.state).toBe("configured");
     expect(before.entries.find((entry) => entry.key === createAgentKey)?.required).toBe(true);
+    expect(before.entries.find((entry) => entry.key === createAgentKey)?.originLabel).toBe("Required by DearMe");
     expect(before.entries.find((entry) => entry.key === createAgentKey)?.state).toBe("configured");
     expect(before.entries.find((entry) => entry.key === paperclipKey)?.detail).toContain("CODEX_HOME/skills/");
   });

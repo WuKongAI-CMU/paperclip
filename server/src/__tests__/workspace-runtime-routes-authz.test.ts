@@ -436,6 +436,50 @@ describe.sequential("workspace runtime service route authorization", () => {
     expect(mockProjectService.getById).toHaveBeenCalledWith(projectId);
   });
 
+  it("uses DearMe-facing copy when a project workspace has no local path for runtime commands", async () => {
+    mockProjectService.getById.mockResolvedValue(buildProject({
+      id: projectId,
+      workspaces: [{
+        id: workspaceId,
+        companyId: "company-1",
+        projectId,
+        name: "Workspace",
+        sourceType: "local_path",
+        cwd: null,
+        repoUrl: null,
+        repoRef: null,
+        defaultRef: null,
+        visibility: "default",
+        setupCommand: null,
+        cleanupCommand: null,
+        remoteProvider: null,
+        remoteWorkspaceRef: null,
+        sharedWorkspaceKey: null,
+        metadata: null,
+        runtimeConfig: null,
+        isPrimary: false,
+        runtimeServices: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }],
+    }));
+    const app = await createProjectApp({
+      type: "board",
+      userId: "board-1",
+      companyIds: ["company-1"],
+      source: "session",
+      isInstanceAdmin: false,
+    });
+
+    const res = await request(app)
+      .post(`/api/projects/${projectId}/workspaces/${workspaceId}/runtime-services/start`)
+      .send({});
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toContain("Project workspace needs a local path before DearMe can run workspace commands");
+    expect(res.body.error).not.toContain("Paperclip");
+  });
+
   it("rejects agent callers for execution workspace runtime service mutations when workspace auth denies access", async () => {
     const { forbidden } = await import("../errors.js");
     mockExecutionWorkspaceService.getById.mockResolvedValue(buildExecutionWorkspace({ id: executionWorkspaceId }));
@@ -459,6 +503,28 @@ describe.sequential("workspace runtime service route authorization", () => {
     expect(mockExecutionWorkspaceService.getById).toHaveBeenCalledWith(executionWorkspaceId);
     expect(mockAssertCanManageExecutionWorkspaceRuntimeServices).toHaveBeenCalled();
   }, 15000);
+
+  it("uses DearMe-facing copy when an execution workspace has no local path for runtime commands", async () => {
+    mockExecutionWorkspaceService.getById.mockResolvedValue(buildExecutionWorkspace({
+      id: executionWorkspaceId,
+      cwd: null,
+    }));
+    const app = await createExecutionWorkspaceApp({
+      type: "board",
+      userId: "board-1",
+      companyIds: ["company-1"],
+      source: "session",
+      isInstanceAdmin: false,
+    });
+
+    const res = await request(app)
+      .post(`/api/execution-workspaces/${executionWorkspaceId}/runtime-services/start`)
+      .send({});
+
+    expect(res.status).toBe(422);
+    expect(res.body.error).toContain("Execution workspace needs a local path before DearMe can run workspace commands");
+    expect(res.body.error).not.toContain("Paperclip");
+  });
 
   it("rejects agent callers that patch execution workspace command config", async () => {
     mockExecutionWorkspaceService.getById.mockResolvedValue(buildExecutionWorkspace({ id: executionWorkspaceId }));

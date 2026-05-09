@@ -1,5 +1,10 @@
 # Polsia vs DearMe — Architecture Comparison
 
+> 2026-05-07 consolidation: historical source material only. Current direction
+> is `README.md`, `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`,
+> `POLSIA-NAIVE-REUSE-PLAN.md`, and `REBRAND-AND-PROVENANCE.md`. Do not follow
+> clone/verbatim-copy instructions below when they conflict with those files.
+
 > Side-by-side audit. Where we copy verbatim, where we diverge, why.
 
 Legend: ✅ identical · 🟡 minor change · ⭐ DearMe-only · ❌ DearMe drops

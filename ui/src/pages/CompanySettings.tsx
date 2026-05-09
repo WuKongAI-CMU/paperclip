@@ -10,6 +10,7 @@ import { companiesApi } from "../api/companies";
 import { accessApi } from "../api/access";
 import { assetsApi } from "../api/assets";
 import { queryKeys } from "../lib/queryKeys";
+import { PRODUCT_NAME } from "../lib/product-labels";
 import { Button } from "@/components/ui/button";
 import { Settings, Check, Download, Upload } from "lucide-react";
 import { CompanyPatternIcon } from "../components/CompanyPatternIcon";
@@ -440,9 +441,9 @@ export function CompanySettings() {
         <div className="space-y-3 rounded-md border border-border px-4 py-4">
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground">
-              Generate an OpenClaw agent invite snippet.
+              Generate a remote teammate invite snippet.
             </span>
-            <HintIcon text="Creates a short-lived OpenClaw agent invite and renders a copy-ready prompt." />
+            <HintIcon text="Creates a short-lived remote teammate invite and renders a copy-ready prompt." />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -453,7 +454,7 @@ export function CompanySettings() {
             >
               {inviteMutation.isPending
                 ? "Generating..."
-                : "Generate OpenClaw Invite Prompt"}
+                : "Generate teammate invite"}
             </Button>
           </div>
           {inviteError && (
@@ -466,7 +467,7 @@ export function CompanySettings() {
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs text-muted-foreground">
-                  OpenClaw Invite Prompt
+                  Teammate invite prompt
                 </div>
                 {snippetCopied && (
                   <span
@@ -604,52 +605,52 @@ function buildAgentSnippet(input: AgentSnippetInput) {
 
   const connectivityBlock =
     candidateUrls.length === 0
-      ? `No candidate URLs are available. Ask your user to configure a reachable hostname in Paperclip, then retry.
+      ? `No candidate URLs are available. Ask your user to configure a reachable hostname in ${PRODUCT_NAME}, then retry.
 Suggested steps:
-- choose a hostname that resolves to the Paperclip host from your runtime
-- run: pnpm paperclipai allowed-hostname <host>
-- restart Paperclip
+- choose a hostname that resolves to the ${PRODUCT_NAME} host from your runtime
+- ask your user to run the local hostname allowlist command for this install: allowed-hostname <host>
+- restart ${PRODUCT_NAME}
 - verify with: curl -fsS http://<host>:3100/api/health
 - regenerate this invite snippet`
-      : `If none are reachable, ask your user to add a reachable hostname in Paperclip, restart, and retry.
-Suggested command:
-- pnpm paperclipai allowed-hostname <host>
+      : `If none are reachable, ask your user to add a reachable hostname in ${PRODUCT_NAME}, restart, and retry.
+Suggested hostname allowlist command:
+- allowed-hostname <host> (using the local ${PRODUCT_NAME} setup CLI)
 Then verify with: curl -fsS <base-url>/api/health`;
 
   const resolutionLine = resolutionTestUrl
-    ? `\nYou MUST test Paperclip-to-gateway reachability, call: ${resolutionTestUrl}?url=<urlencoded-gateway-url> (using the hostname that worked above). Do not assume your 172.x is necessarily reachable from Paperclip. Test it. `
+    ? `\nYou MUST test ${PRODUCT_NAME}-to-gateway reachability, call: ${resolutionTestUrl}?url=<urlencoded-gateway-url> (using the hostname that worked above). Do not assume your 172.x is necessarily reachable from ${PRODUCT_NAME}. Test it. `
     : "";
 
-  return `You're invited to join a Paperclip organization.
+  return `You're invited to join a ${PRODUCT_NAME} workspace.
 
 The URLs you should try are:
 ${candidateList}
 
 Connectivity guidance:
-If you are running on a different machine than Paperclip, Paperclip must be reachable at one of the hostnames used above.
+If you are running on a different machine than ${PRODUCT_NAME}, ${PRODUCT_NAME} must be reachable at one of the hostnames used above.
 Verify the hostname works from your runtime with: GET <base-url>/api/health
 
 ${connectivityBlock}
 
-For your "agentName", just use your own agent name (OpenClaw or whatever your name is) and send it directly.
-You also need to send a gateway URL that Paperclip can access. Check your config and include that URL.${resolutionLine}
+For your "agentName", use the name you want shown for your teammate and send it directly.
+You also need to send a gateway URL that ${PRODUCT_NAME} can access. Check the teammate runtime config and include that URL.${resolutionLine}
 
 ---
 
-This onboarding flow is for OpenClaw Gateway.
+This onboarding flow is for a remote teammate gateway.
 When you submit the join request, use:
 - \`adapterType: "openclaw_gateway"\`
 - \`agentDefaultsPayload.url\` as your \`ws://\` or \`wss://\` gateway URL
 - \`agentDefaultsPayload.headers["x-openclaw-token"]\` with your gateway token
 - (legacy accepted) \`agentDefaultsPayload.headers["x-openclaw-auth"]\`
-- Keep device auth enabled (recommended). If \`devicePrivateKeyPem\` is omitted, Paperclip will generate and persist one during join so pairing approvals remain stable.
+- Keep device auth enabled (recommended). If \`devicePrivateKeyPem\` is omitted, ${PRODUCT_NAME} will generate and persist one during join so pairing approvals remain stable.
 - Only use \`disableDeviceAuth=true\` for special environments where pairing cannot be completed.
 
 Do NOT use \`/v1/responses\` or \`/hooks/*\` in this join flow.
 
-Before you do anything, please respond to your user that you understand the instructions and you're going to work on them. Then do the step above in another session called "paperclip-onboarding" and then tell your user when you're done. Update your user in intermediate steps along the way so they know what's going on.
+Before you do anything, please respond to your user that you understand the instructions and you're going to work on them. Then do the step above in another session called "dearme-onboarding" and then tell your user when you're done. Update your user in intermediate steps along the way so they know what's going on.
 
-Then after you've connected to Paperclip (exchanged keys etc.) you MUST review and follow the onboarding instructions in onboarding.txt they give you.
+Then after you've connected to ${PRODUCT_NAME} (exchanged keys etc.) you MUST review and follow the onboarding instructions in onboarding.txt they give you.
 
 `;
 }

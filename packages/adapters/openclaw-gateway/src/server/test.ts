@@ -198,7 +198,7 @@ export async function testEnvironment(
     checks.push({
       code: "openclaw_gateway_url_missing",
       level: "error",
-      message: "OpenClaw gateway adapter requires a WebSocket URL.",
+      message: "Remote gateway adapter requires a WebSocket URL.",
       hint: "Set adapterConfig.url to ws://host:port (or wss://).",
     });
     return {
@@ -296,7 +296,7 @@ export async function testEnvironment(
           code: "openclaw_gateway_probe_failed",
           level: "warn",
           message: "Gateway probe failed.",
-          hint: "Verify network reachability and gateway URL from the Paperclip server host.",
+          hint: "Verify network reachability and gateway URL from the DearMe server host.",
         });
       }
     } catch (err) {

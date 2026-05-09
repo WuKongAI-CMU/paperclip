@@ -199,6 +199,58 @@ describe("IssueWorkspaceCard", () => {
     });
   });
 
+  it("labels adapter-managed workspaces as runner-managed", () => {
+    const root = createRoot(container);
+    const legacyAdapterManagedWorkspaceMode =
+      "adapter_managed" as unknown as ExecutionWorkspace["mode"];
+    const legacyAdapterManagedIssueMode =
+      "adapter_managed" as unknown as NonNullable<Issue["executionWorkspaceSettings"]>["mode"];
+    const currentWorkspace = createExecutionWorkspace({
+      mode: legacyAdapterManagedWorkspaceMode,
+      name: "Managed workspace",
+      branchName: null,
+      cwd: null,
+    });
+
+    useQueryMock.mockImplementation((options: { queryKey: unknown[] }) => {
+      if (options.queryKey[0] === "instance") {
+        return { data: { enableEnvironments: false, enableIsolatedWorkspaces: true } };
+      }
+      return { data: undefined };
+    });
+
+    act(() => {
+      root.render(
+        <IssueWorkspaceCard
+          issue={createIssue({
+            executionWorkspaceSettings: {
+              mode: legacyAdapterManagedIssueMode,
+              environmentId: null,
+            },
+            currentExecutionWorkspace: currentWorkspace,
+          })}
+          project={{
+            id: "project-1",
+            executionWorkspacePolicy: {
+              enabled: true,
+              defaultMode: "isolated_workspace",
+              environmentId: null,
+            },
+          }}
+          onUpdate={vi.fn()}
+        />,
+      );
+    });
+
+    expect(container.textContent).toContain("Runner managed");
+    expect(container.textContent).not.toContain("Adapter managed");
+    expect(container.textContent).not.toContain("adapter_managed");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   it("hides environment UI when environments are disabled", () => {
     const root = createRoot(container);
 

@@ -51,7 +51,7 @@ export function AgentProperties({ agent, runtimeState }: AgentPropertiesProps) {
             <span className="text-sm">{agent.title}</span>
           </PropertyRow>
         )}
-        <PropertyRow label="Adapter">
+        <PropertyRow label="Run method">
           <span className="text-sm font-mono">{getAdapterLabel(agent.adapterType)}</span>
         </PropertyRow>
       </div>

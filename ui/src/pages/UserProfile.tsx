@@ -228,12 +228,12 @@ export function UserProfile() {
     [data?.topAgents],
   );
 
-  const providerUsageRows = useMemo<UsageRow[]>(
+  const modelUsageRows = useMemo<UsageRow[]>(
     () =>
       (data?.topProviders ?? []).map((row) => ({
         key: `${row.provider}:${row.biller}:${row.model}`,
         label: `${providerDisplayName(row.provider)} / ${row.model}`,
-        sublabel: `Billed through ${providerDisplayName(row.biller)}`,
+        sublabel: `Billed via ${providerDisplayName(row.biller)}`,
         costCents: row.costCents,
         inputTokens: row.inputTokens,
         cachedInputTokens: row.cachedInputTokens,
@@ -352,7 +352,7 @@ export function UserProfile() {
 
       <div className="grid gap-10 xl:grid-cols-2">
         <UsageList title="Agent attribution" empty="No issue-linked token usage yet." rows={agentUsageRows} />
-        <UsageList title="Provider mix" empty="No provider usage attributed yet." rows={providerUsageRows} />
+        <UsageList title="Model and spend mix" empty="No model usage attributed yet." rows={modelUsageRows} />
       </div>
     </div>
   );

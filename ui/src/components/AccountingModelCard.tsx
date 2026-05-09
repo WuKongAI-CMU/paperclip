@@ -1,12 +1,13 @@
 import { Database, Gauge, ReceiptText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { PRODUCT_NAME } from "@/lib/product-labels";
 
 const SURFACES = [
   {
     title: "Inference ledger",
     description: "Request-scoped usage and billed runs from cost_events.",
     icon: Database,
-    points: ["tokens + billed dollars", "provider, biller, model", "subscription and overage aware"],
+    points: ["tokens + billed dollars", "model source, biller, model", "subscription and overage aware"],
     tone: "from-sky-500/12 via-sky-500/6 to-transparent",
   },
   {
@@ -18,9 +19,9 @@ const SURFACES = [
   },
   {
     title: "Live quotas",
-    description: "Provider or biller windows that can stop traffic in real time.",
+    description: "Model-source or biller windows that can stop traffic in real time.",
     icon: Gauge,
-    points: ["provider quota windows", "biller credit systems", "errors surfaced directly"],
+    points: ["model-source quota windows", "biller credit systems", "errors surfaced directly"],
     tone: "from-emerald-500/14 via-emerald-500/6 to-transparent",
   },
 ] as const;
@@ -34,8 +35,8 @@ export function AccountingModelCard() {
           Accounting model
         </CardTitle>
         <CardDescription className="max-w-2xl text-sm leading-6">
-          Paperclip now separates request-level inference usage from account-level finance events.
-          That keeps provider reporting honest when the biller is OpenRouter, Cloudflare, Bedrock, or another intermediary.
+          {PRODUCT_NAME} now separates request-level inference usage from account-level finance events.
+          That keeps model-source reporting honest when the biller is OpenRouter, Cloudflare, Bedrock, or another intermediary.
         </CardDescription>
       </CardHeader>
       <CardContent className="relative grid gap-3 px-5 pb-5 md:grid-cols-3">

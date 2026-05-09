@@ -45,6 +45,7 @@ import { ScrollToBottom } from "../components/ScrollToBottom";
 import { formatCents, formatDate, relativeTime, formatTokens, visibleRunCostUsd } from "../lib/utils";
 import { cn } from "../lib/utils";
 import { describeRunRetryState } from "../lib/runRetryState";
+import { PRODUCT_NAME } from "../lib/product-labels";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs } from "@/components/ui/tabs";
@@ -302,6 +303,41 @@ function asNonEmptyString(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function humanizeRunMethodType(adapterType: string): string {
+  return adapterType
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+export function agentRunMethodLabel(adapterType: string | null | undefined): string {
+  const trimmed = adapterType?.trim();
+  if (!trimmed) return "Unknown run method";
+  return adapterLabels[trimmed] ?? humanizeRunMethodType(trimmed);
+}
+
+export function agentUnsupportedSkillManagementMessage({
+  mode,
+  adapterType,
+  adapterConfigAgent,
+}: {
+  mode: AgentSkillSnapshot["mode"] | undefined;
+  adapterType: string;
+  adapterConfigAgent: unknown;
+}): string | null {
+  if (mode !== "unsupported") return null;
+  if (
+    adapterType === "acpx_local" &&
+    typeof adapterConfigAgent === "string" &&
+    adapterConfigAgent === "custom"
+  ) {
+    return `${PRODUCT_NAME} cannot manage skills for custom ACP commands yet.`;
+  }
+  if (adapterType === "openclaw_gateway") {
+    return `${PRODUCT_NAME} cannot manage gateway skills here. Manage them in the connected gateway.`;
+  }
+  return `${PRODUCT_NAME} cannot manage skills for this runner yet. Manage them in the runner directly.`;
+}
+
 export function RunInvocationCard({
   payload,
   censorUsernameInLogs,
@@ -330,7 +366,7 @@ export function RunInvocationCard({
     <div className="rounded-lg border border-border bg-background/60 p-3 space-y-2">
       <div className="text-xs font-medium text-muted-foreground">Invocation</div>
       {typeof payload.adapterType === "string" && (
-        <div className="text-xs"><span className="text-muted-foreground">Adapter: </span>{payload.adapterType}</div>
+        <div className="text-xs"><span className="text-muted-foreground">Run method: </span>{agentRunMethodLabel(payload.adapterType)}</div>
       )}
       {typeof payload.cwd === "string" && (
         <div className="text-xs break-all"><span className="text-muted-foreground">Working dir: </span><span className="font-mono">{payload.cwd}</span></div>
@@ -2011,7 +2047,7 @@ function PromptsTab({
     return (
       <div className="max-w-3xl">
         <p className="text-sm text-muted-foreground">
-          Instructions bundles are only available for local adapters.
+          Instruction bundles are only available for local runners.
         </p>
       </div>
     );
@@ -2049,7 +2085,7 @@ function PromptsTab({
                       <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="right" sideOffset={4}>
-                      Managed: Paperclip stores and serves the instructions bundle. External: you provide a path on disk where the instructions live.
+                      Managed: {PRODUCT_NAME} stores and serves the instructions bundle. External: you provide a path on disk where the instructions live.
                     </TooltipContent>
                   </Tooltip>
                 </span>
@@ -2104,7 +2140,7 @@ function PromptsTab({
                       <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="right" sideOffset={4}>
-                      The absolute directory on disk where the instructions bundle lives. In managed mode this is set by Paperclip automatically.
+                      The absolute directory on disk where the instructions bundle lives. In managed mode this is set by {PRODUCT_NAME} automatically.
                     </TooltipContent>
                   </Tooltip>
                 </span>
@@ -2655,20 +2691,11 @@ export function AgentSkillsTab({
         return "Unknown";
     }
   }, [skillSnapshot?.mode]);
-  const unsupportedSkillMessage = useMemo(() => {
-    if (skillSnapshot?.mode !== "unsupported") return null;
-    if (
-      agent.adapterType === "acpx_local" &&
-      typeof agent.adapterConfig.agent === "string" &&
-      agent.adapterConfig.agent === "custom"
-    ) {
-      return "Paperclip cannot manage skills for custom ACP commands yet.";
-    }
-    if (agent.adapterType === "openclaw_gateway") {
-      return "Paperclip cannot manage OpenClaw skills here. Visit your OpenClaw instance to manage this agent's skills.";
-    }
-    return "Paperclip cannot manage skills for this adapter yet. Manage them in the adapter directly.";
-  }, [agent.adapterConfig.agent, agent.adapterType, skillSnapshot?.mode]);
+  const unsupportedSkillMessage = useMemo(() => agentUnsupportedSkillManagementMessage({
+    mode: skillSnapshot?.mode,
+    adapterType: agent.adapterType,
+    adapterConfigAgent: agent.adapterConfig.agent,
+  }), [agent.adapterConfig.agent, agent.adapterType, skillSnapshot?.mode]);
   const hasUnsavedChanges = !arraysEqual(skillDraft, lastSavedSkills);
   const saveStatusLabel = syncSkills.isPending
     ? "Saving changes..."
@@ -2792,7 +2819,7 @@ export function AgentSkillsTab({
                         <span>{checkbox}</span>
                       </TooltipTrigger>
                       <TooltipContent side="top">
-                        {unsupportedSkillMessage ?? "Manage skills in the adapter directly."}
+                        {unsupportedSkillMessage ?? "Manage skills in the runner directly."}
                       </TooltipContent>
                     </Tooltip>
                   ) : (
@@ -2825,7 +2852,7 @@ export function AgentSkillsTab({
                   <section className="border-y border-border">
                     <div className="border-b border-border bg-muted/40 px-3 py-2">
                       <span className="text-xs font-medium text-muted-foreground">
-                        Required by Paperclip
+                        Required by {PRODUCT_NAME}
                       </span>
                     </div>
                     {requiredSkillRows.map(renderSkillRow)}
@@ -2842,7 +2869,7 @@ export function AgentSkillsTab({
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setUnmanagedOpen((v) => !v); } }}
                     >
                       <span className="text-xs font-medium text-muted-foreground">
-                        ({unmanagedSkillRows.length}) User-installed skills, not managed by Paperclip
+                        ({unmanagedSkillRows.length}) User-installed skills, not managed by {PRODUCT_NAME}
                       </span>
                       {unmanagedOpen ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
                     </div>
@@ -2865,8 +2892,8 @@ export function AgentSkillsTab({
           <section className="border-t border-border pt-4">
             <div className="grid gap-2 text-sm sm:grid-cols-2">
               <div className="flex items-center justify-between gap-3 border-b border-border/60 py-2">
-                <span className="text-muted-foreground">Adapter</span>
-                <span className="font-medium">{adapterLabels[agent.adapterType] ?? agent.adapterType}</span>
+                <span className="text-muted-foreground">Run method</span>
+                <span className="font-medium">{agentRunMethodLabel(agent.adapterType)}</span>
               </div>
               <div className="flex items-center justify-between gap-3 border-b border-border/60 py-2">
                 <span className="text-muted-foreground">Skills applied</span>
@@ -3220,7 +3247,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
                 </Button>
               )}
             </div>
-            {/* Adapter type · provider · model */}
+            {/* Run method · provider · model */}
             {(() => {
               const displayProvider = metrics.provider
                 ?? asNonEmptyString(adapterConfig?.provider);
@@ -3230,7 +3257,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
               return (
                 <div className="text-[11px] text-muted-foreground font-mono flex items-center gap-1.5 flex-wrap">
                   {adapterType && (
-                    <span className="bg-muted rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">{adapterType.replace(/_/g, " ")}</span>
+                    <span className="bg-muted rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">{agentRunMethodLabel(adapterType)}</span>
                   )}
                   {displayProvider && displayModel && (
                     <span>{displayProvider}/{displayModel}</span>
@@ -4014,7 +4041,7 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
           )}
           {run.resultJson && (
             <div>
-              <div className="text-xs text-red-700 dark:text-red-300 mb-1">adapter result JSON</div>
+              <div className="text-xs text-red-700 dark:text-red-300 mb-1">runner result JSON</div>
               <pre className="bg-red-50 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap text-red-800 dark:text-red-100">
                 {JSON.stringify(redactPathValue(run.resultJson, censorUsernameInLogs), null, 2)}
               </pre>
@@ -4155,7 +4182,7 @@ function KeysTab({ agentId, companyId }: { agentId: string; companyId?: string }
           Create API Key
         </h3>
         <p className="text-xs text-muted-foreground">
-          API keys allow this agent to authenticate calls to the Paperclip server.
+          API keys allow this agent to authenticate calls to the {PRODUCT_NAME} server.
         </p>
         <div className="flex items-center gap-2">
           <Input

@@ -9,6 +9,7 @@ import {
   buildFeedbackTraceQuery,
   registerFeedbackCommands,
   renderFeedbackReport,
+  renderFeedbackExportSummary,
   summarizeFeedbackTraces,
   writeFeedbackExportBundle,
 } from "../commands/client/feedback.js";
@@ -119,7 +120,8 @@ describe("renderFeedbackReport", () => {
       includePayloads: false,
     });
 
-    expect(report).toContain("Paperclip Feedback Report");
+    expect(report).toContain("DearMe Feedback Report");
+    expect(report).not.toContain("Paperclip Feedback Report");
     expect(report).toContain("thumbs up");
     expect(report).toContain("thumbs down");
     expect(report).toContain("Needed more detail");
@@ -173,5 +175,20 @@ describe("writeFeedbackExportBundle", () => {
         `traces/${manifest.files.traces[0]}`,
       ]),
     );
+  });
+
+  it("renders the export summary with DearMe-facing branding", async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), "paperclip-feedback-export-"));
+    const exported = await writeFeedbackExportBundle({
+      apiBase: "http://127.0.0.1:3100",
+      companyId: "company-123",
+      traces: [makeTrace()],
+      outputDir: path.join(tempDir, "feedback-export"),
+    });
+
+    const summary = renderFeedbackExportSummary(exported);
+
+    expect(summary).toContain("DearMe Feedback Export");
+    expect(summary).not.toContain("Paperclip Feedback Export");
   });
 });

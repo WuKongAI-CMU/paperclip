@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useBreadcrumbs } from "@/context/BreadcrumbContext";
 import { useCompany } from "@/context/CompanyContext";
 import { useToast } from "@/context/ToastContext";
+import { getAdapterLabel } from "@/adapters/adapter-display-registry";
 import { queryKeys } from "@/lib/queryKeys";
 
 export function JoinRequestQueue() {
@@ -131,7 +132,7 @@ export function JoinRequestQueue() {
                       {request.status.replace("_", " ")}
                     </Badge>
                     <Badge variant="outline">{request.requestType}</Badge>
-                    {request.adapterType ? <Badge variant="outline">{request.adapterType}</Badge> : null}
+                    {request.adapterType ? <Badge variant="outline">{getAdapterLabel(request.adapterType)}</Badge> : null}
                   </div>
                   <div>
                     <div className="text-base font-medium">

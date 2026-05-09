@@ -34,6 +34,7 @@ import { useToastActions } from "../context/ToastContext";
 import { collectLiveIssueIds } from "../lib/liveIssueIds";
 import { queryKeys } from "../lib/queryKeys";
 import { cn, formatDateTime, issueUrl, projectRouteRef, projectWorkspaceUrl } from "../lib/utils";
+import { PRODUCT_NAME } from "../lib/product-labels";
 import {
   getWorkspaceSpecificRoutineVariableNames,
   routineHasWorkspaceSpecificVariables,
@@ -54,6 +55,30 @@ type WorkspaceFormState = {
 };
 
 type ExecutionWorkspaceTab = "configuration" | "runtime_logs" | "issues" | "routines";
+
+export const EXECUTION_WORKSPACE_SOURCE_REF_LABEL = "Workspace source / ref";
+export const EXECUTION_WORKSPACE_SOURCE_REF_PLACEHOLDER = "/path/to/worktree or workspace ref";
+export const EXECUTION_WORKSPACE_CONCRETE_REF_LABEL = "Workspace ref";
+
+function titleCaseWords(value: string) {
+  const words = value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.toLowerCase());
+  return words
+    .map((word, index) => (index === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word))
+    .join(" ");
+}
+
+export function executionWorkspaceRunnerTypeLabel(providerType: string | null | undefined) {
+  const normalized = (providerType ?? "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\bproviders?\b/gi, "source")
+    .trim();
+  if (!normalized) return "Runner";
+  const label = titleCaseWords(normalized);
+  return /\brunner$/i.test(label) ? label : `${label} runner`;
+}
 
 function resolveExecutionWorkspaceTab(pathname: string, workspaceId: string): ExecutionWorkspaceTab | null {
   const segments = pathname.split("/").filter(Boolean);
@@ -424,7 +449,7 @@ function ExecutionWorkspaceRoutinesList({
       ]);
       pushToast({
         title: "Routine started",
-        body: "Paperclip created a run using this execution workspace.",
+        body: `${PRODUCT_NAME} created a run using this execution workspace.`,
         tone: "success",
       });
     },
@@ -434,7 +459,7 @@ function ExecutionWorkspaceRoutinesList({
     onError: (mutationError) => {
       pushToast({
         title: "Routine run failed",
-        body: mutationError instanceof Error ? mutationError.message : "Paperclip could not start the routine run.",
+        body: mutationError instanceof Error ? mutationError.message : `${PRODUCT_NAME} could not start the routine run.`,
         tone: "error",
       });
     },
@@ -715,7 +740,7 @@ export function ExecutionWorkspaceDetail() {
             </Link>
           </Button>
           <StatusPill>{workspace.mode}</StatusPill>
-          <StatusPill>{workspace.providerType}</StatusPill>
+          <StatusPill>{executionWorkspaceRunnerTypeLabel(workspace.providerType)}</StatusPill>
           <StatusPill className={workspace.status === "active" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : undefined}>
             {workspace.status}
           </StatusPill>
@@ -727,7 +752,7 @@ export function ExecutionWorkspaceDetail() {
           </div>
           <h1 className="truncate text-xl font-semibold sm:text-2xl">{workspace.name}</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Configure the concrete runtime workspace that Paperclip reuses for this issue flow.
+            Configure the concrete runtime workspace that {PRODUCT_NAME} reuses for this issue flow.
             <span className="hidden sm:inline"> These settings stay attached to the execution workspace so future runs can keep local paths, repo refs, provisioning, teardown, and runtime-service behavior in sync with the actual workspace being reused.</span>
           </p>
         </div>
@@ -861,12 +886,12 @@ export function ExecutionWorkspaceDetail() {
                     />
                   </Field>
 
-                  <Field label="Provider path / ref">
+                  <Field label={EXECUTION_WORKSPACE_SOURCE_REF_LABEL}>
                     <Input
                       className="font-mono"
                       value={form.providerRef}
                       onChange={(event) => setForm((current) => current ? { ...current, providerRef: event.target.value } : current)}
-                      placeholder="/path/to/worktree or provider ref"
+                      placeholder={EXECUTION_WORKSPACE_SOURCE_REF_PLACEHOLDER}
                     />
                   </Field>
                 </div>
@@ -875,7 +900,7 @@ export function ExecutionWorkspaceDetail() {
 
                 <div className="space-y-4">
                   <div className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Lifecycle commands</div>
-                  <Field label="Provision command" hint="Runs when Paperclip prepares this execution workspace">
+                  <Field label="Provision command" hint={`Runs when ${PRODUCT_NAME} prepares this execution workspace`}>
                     <Textarea
                       className="min-h-20 font-mono"
                       value={form.provisionCommand}
@@ -1057,7 +1082,7 @@ export function ExecutionWorkspaceDetail() {
               <DetailRow label="Working dir">
                 {workspace.cwd ? <MonoValue value={workspace.cwd} copy /> : "None"}
               </DetailRow>
-              <DetailRow label="Provider ref">
+              <DetailRow label={EXECUTION_WORKSPACE_CONCRETE_REF_LABEL}>
                 {workspace.providerRef ? <MonoValue value={workspace.providerRef} copy /> : "None"}
               </DetailRow>
               <DetailRow label="Repo URL">

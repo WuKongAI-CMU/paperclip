@@ -88,7 +88,7 @@ const MATERIALIZED_SKILL_LOCK_OWNER = "owner.json";
 const MATERIALIZED_SKILL_LOCK_STALE_MS = 30_000;
 
 export const DEFAULT_PAPERCLIP_AGENT_PROMPT_TEMPLATE = [
-  "You are agent {{agent.id}} ({{agent.name}}). Continue your Paperclip work.",
+  "You are agent {{agent.id}} ({{agent.name}}). Continue your DearMe work.",
   "",
   "Execution contract:",
   "- Start actionable work in this heartbeat; do not stop at a plan unless the issue asks for planning.",
@@ -157,13 +157,13 @@ function buildManagedSkillOrigin(entry: { required?: boolean }): Pick<
   if (entry.required) {
     return {
       origin: "paperclip_required",
-      originLabel: "Required by Paperclip",
+      originLabel: "Required by DearMe",
       readOnly: false,
     };
   }
   return {
     origin: "company_managed",
-    originLabel: "Managed by Paperclip",
+    originLabel: "Managed by DearMe",
     readOnly: false,
   };
 }
@@ -607,9 +607,9 @@ export function renderPaperclipWakePrompt(
 
   const lines = resumedSession
       ? [
-        "## Paperclip Resume Delta",
+        "## DearMe Resume Delta",
         "",
-        "You are resuming an existing Paperclip session.",
+        "You are resuming an existing DearMe session.",
         "This heartbeat is scoped to the issue below. Do not switch to another issue until you have handled this wake.",
         "Focus on the new wake delta below and continue the current task without restating the full heartbeat boilerplate.",
         "Fetch the API thread only when `fallbackFetchNeeded` is true or you need broader history than this batch.",
@@ -623,7 +623,7 @@ export function renderPaperclipWakePrompt(
         `- fallback fetch needed: ${normalized.fallbackFetchNeeded ? "yes" : "no"}`,
       ]
     : [
-        "## Paperclip Wake Payload",
+        "## DearMe Wake Payload",
         "",
         "Treat this wake payload as the highest-priority change for the current heartbeat.",
         "This heartbeat is scoped to the issue below. Do not switch to another issue until you have handled this wake.",
@@ -1243,7 +1243,7 @@ export async function listPaperclipSkillEntries(
         source: skillDir,
         required,
         requiredReason: required
-          ? "Bundled Paperclip skills are always available for local adapters."
+          ? "Bundled DearMe runtime skills are always available for local adapters."
           : null,
       };
     }));
@@ -1319,7 +1319,7 @@ export function buildPersistentSkillSnapshot(
 
   for (const desiredSkill of desiredSkills) {
     if (availableByKey.has(desiredSkill)) continue;
-    warnings.push(`Desired skill "${desiredSkill}" is not available from the Paperclip skills directory.`);
+    warnings.push(`Desired skill "${desiredSkill}" is not available from the DearMe runtime skills directory.`);
     entries.push({
       key: desiredSkill,
       runtimeName: null,
@@ -1328,7 +1328,7 @@ export function buildPersistentSkillSnapshot(
       state: "missing",
       sourcePath: null,
       targetPath: null,
-      detail: "Paperclip cannot find this skill in the local runtime skills directory.",
+      detail: "DearMe cannot find this skill in the local runtime skills directory.",
       origin: "external_unknown",
       originLabel: "External or unavailable",
       readOnly: false,
@@ -1653,7 +1653,7 @@ export async function materializePaperclipSkillCopy(
     throw new Error("Refusing to materialize a skill root that is itself a symlink.");
   }
   if (!rootStat.isDirectory()) {
-    throw new Error("Paperclip skills must be directories.");
+    throw new Error("DearMe skills must be directories.");
   }
 
   const result: MaterializedPaperclipSkillCopyResult = {

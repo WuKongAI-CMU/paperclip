@@ -10,6 +10,8 @@ import {
   dearMeBrandBlueprintPreviewSchema,
   dearMeFirstCyclePreviewResponseSchema,
   dearMeFirstCyclePreviewSchema,
+  dearMeMemoryUpdateResultSchema,
+  dearMeMemoryUpdateSchema,
   dearMeOutputReviewRequestSchema,
   dearMeOutputReviewResultSchema,
   dearMeOutputsResponseSchema,
@@ -298,6 +300,53 @@ describe("DearMe brand blueprint contract", () => {
     expect(trialEntitlement.nextActionLabel).toBe("Record paid beta payment");
   });
 
+  it("normalizes Voice & Memory updates for private brand memory", () => {
+    const update = dearMeMemoryUpdateSchema.parse({
+      kind: "voice_sample",
+      title: " Operator note ",
+      body: " Short, specific proof. ",
+      sourceLabel: " Manual note ",
+    });
+
+    expect(update).toEqual({
+      kind: "voice_sample",
+      title: "Operator note",
+      body: "Short, specific proof.",
+      sourceLabel: "Manual note",
+    });
+    expect(dearMeMemoryUpdateSchema.parse({
+      kind: "proof_point",
+      body: "Shipped the first private work loop.",
+    })).toEqual({
+      kind: "proof_point",
+      title: null,
+      body: "Shipped the first private work loop.",
+      sourceLabel: null,
+    });
+    expect(dearMeMemoryUpdateResultSchema.parse({
+      companyId: "company-1",
+      status: "recorded",
+      memory: {
+        id: "memory-1",
+        kind: "voice_sample",
+        title: "Operator note",
+        bodyPreview: "Short, specific proof.",
+        sourceLabel: "Manual note",
+        createdAt: "2026-05-07T14:00:00.000Z",
+      },
+      growthCycles: {
+        checked: 2,
+        updated: 1,
+        unchanged: 1,
+        memorySources: 2,
+      },
+    }).memory.kind).toBe("voice_sample");
+    expect(() => dearMeMemoryUpdateSchema.parse({
+      kind: "agent_config",
+      body: "Expose runtime internals",
+    })).toThrow();
+  });
+
   it("describes customer-visible DearMe outputs without provider internals", () => {
     const response = dearMeOutputsResponseSchema.parse({
       companyId: "company-1",
@@ -569,6 +618,39 @@ describe("DearMe brand blueprint contract", () => {
           createdAt: "2026-05-07T14:00:00.000Z",
         },
       ],
+      memory: {
+        summary: "2 recent Voice & Memory sources are available. Latest: Voice sample.",
+        sourceCount: 2,
+        voiceSampleCount: 1,
+        proofCount: 1,
+        voiceProfile: {
+          title: "Draft Voice Profile",
+          status: "learning",
+          sampleCount: 1,
+          confidence: 55,
+          guidance: "Voice Editor has one sample and can start drafting, but public output should stay under close review.",
+          draftTone: ["Proof-first", "Plain language", "Direct", "Evidence-backed"],
+          nextStep: "Add one more real sample to make voice review stronger before publishing or sending anything.",
+        },
+        latest: [
+          {
+            id: "memory-1",
+            kind: "voice_sample",
+            title: "Operator note",
+            bodyPreview: "Short, direct writing sample.",
+            sourceLabel: "Manual note",
+            createdAt: "2026-05-07T14:00:00.000Z",
+          },
+          {
+            id: "memory-2",
+            kind: "proof_point",
+            title: "Shipped proof",
+            bodyPreview: "Shipped a working local agent product.",
+            sourceLabel: null,
+            createdAt: "2026-05-07T13:00:00.000Z",
+          },
+        ],
+      },
       workStream: [
         {
           id: "decision:approval:approval-1",
@@ -602,6 +684,11 @@ describe("DearMe brand blueprint contract", () => {
     expect(response.batchDecisions[0]).toEqual(expect.objectContaining({
       actionLabel: "Review work",
       approvalIds: ["approval-1"],
+    }));
+    expect(response.memory).toEqual(expect.objectContaining({
+      sourceCount: 2,
+      voiceSampleCount: 1,
+      proofCount: 1,
     }));
     expect(response.workStream[0]).toEqual(expect.objectContaining({
       role: "brand_strategist",

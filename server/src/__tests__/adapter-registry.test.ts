@@ -278,7 +278,7 @@ describe("server adapter registry", () => {
     expect(detectModel).toHaveBeenCalledTimes(1);
   });
 
-  it("injects the local agent JWT and Paperclip API auth guidance into Hermes", async () => {
+  it("injects the local agent JWT and DearMe API auth guidance into Hermes", async () => {
     const adapter = requireServerAdapter("hermes_local");
 
     await adapter.execute({
@@ -317,6 +317,10 @@ describe("server adapter registry", () => {
     expect(patchedCtx.agent.adapterConfig.promptTemplate).toContain(
       "Authorization: Bearer $PAPERCLIP_API_KEY",
     );
+    expect(patchedCtx.agent.adapterConfig.promptTemplate).toContain("DearMe API safety rule:");
+    expect(patchedCtx.agent.adapterConfig.promptTemplate).toContain("DearMe API request");
+    expect(patchedCtx.agent.adapterConfig.promptTemplate).not.toContain("Paperclip API safety rule:");
+    expect(patchedCtx.agent.adapterConfig.promptTemplate).not.toContain("Paperclip API request");
     expect(patchedCtx.agent.adapterConfig.promptTemplate).toContain(
       "X-Paperclip-Run-Id: $PAPERCLIP_RUN_ID",
     );

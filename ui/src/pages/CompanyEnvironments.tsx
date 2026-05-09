@@ -17,6 +17,7 @@ import { useBreadcrumbs } from "@/context/BreadcrumbContext";
 import { useCompany } from "@/context/CompanyContext";
 import { useToast } from "@/context/ToastContext";
 import { queryKeys } from "@/lib/queryKeys";
+import { PRODUCT_NAME } from "@/lib/product-labels";
 import {
   Field,
   ToggleField,
@@ -422,23 +423,23 @@ export function CompanyEnvironments() {
           <h1 className="text-lg font-semibold">Company Environments</h1>
         </div>
         <p className="max-w-3xl text-sm text-muted-foreground">
-          Define reusable execution targets for projects, issue workspaces, and remote-capable adapters.
+          Define reusable execution targets for projects, issue workspaces, and remote-capable run methods.
         </p>
       </div>
 
       <div className="space-y-4 rounded-md border border-border px-4 py-4">
         <div className="rounded-md border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-          Environment choices use the same adapter support matrix as agent defaults. SSH is always available for
-          remote-managed adapters, and sandbox environments appear only when a run-capable sandbox provider plugin is
+          Environment choices use the same run-method support matrix as agent defaults. SSH is always available for
+          remote-managed runners, and sandbox environments appear only when a run-capable sandbox runner plugin is
           installed.
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[34rem] text-left text-xs">
-            <caption className="sr-only">Environment support by adapter</caption>
+            <caption className="sr-only">Environment support by run method</caption>
             <thead className="border-b border-border text-muted-foreground">
               <tr>
-                <th className="py-2 pr-3 font-medium">Adapter</th>
+                <th className="py-2 pr-3 font-medium">Run method</th>
                 <th className="px-3 py-2 font-medium">Local</th>
                 <th className="px-3 py-2 font-medium">SSH</th>
                 {sandboxSupportVisible ? (
@@ -508,11 +509,11 @@ export function CompanyEnvironments() {
                             const displayName =
                               environmentCapabilities?.sandboxProviders?.[provider]?.displayName ?? provider;
                             const summary = summarizeSandboxConfig(environment.config as Record<string, unknown>);
-                            return `${displayName} sandbox provider${summary ? ` · ${summary}` : ""}`;
+                            return `${displayName} sandbox source${summary ? ` · ${summary}` : ""}`;
                           })()}
                         </div>
                       ) : (
-                        <div className="text-xs text-muted-foreground">Runs on this Paperclip host.</div>
+                        <div className="text-xs text-muted-foreground">Runs on this {PRODUCT_NAME} host.</div>
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -527,7 +528,7 @@ export function CompanyEnvironments() {
                             ? "Testing..."
                             : environment.driver === "ssh"
                               ? "Test connection"
-                              : "Test provider"}
+                              : "Test sandbox"}
                         </Button>
                       ) : null}
                       <Button
@@ -580,7 +581,7 @@ export function CompanyEnvironments() {
                 onChange={(e) => setEnvironmentForm((current) => ({ ...current, description: e.target.value }))}
               />
             </Field>
-            <Field label="Driver" hint="Local runs on this host. SSH stores a remote machine target. Sandbox stores plugin-backed provider config on the shared environment seam.">
+            <Field label="Driver" hint="Local runs on this host. SSH stores a remote machine target. Sandbox stores plugin-backed config for reusable isolated runs.">
               <select
                 className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
                 value={environmentForm.driver}
@@ -645,11 +646,11 @@ export function CompanyEnvironments() {
                     onChange={(e) => setEnvironmentForm((current) => ({ ...current, sshUsername: e.target.value }))}
                   />
                 </Field>
-                <Field label="Remote workspace path" hint="Absolute path that Paperclip will verify during SSH connection tests.">
+                <Field label="Remote workspace path" hint={`Absolute path that ${PRODUCT_NAME} will verify during SSH connection tests.`}>
                   <input
                     className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
                     type="text"
-                    placeholder="/Users/paperclip/workspace"
+                    placeholder="/Users/dearme/workspace"
                     value={environmentForm.sshRemoteWorkspacePath}
                     onChange={(e) =>
                       setEnvironmentForm((current) => ({ ...current, sshRemoteWorkspacePath: e.target.value }))}
@@ -701,7 +702,7 @@ export function CompanyEnvironments() {
 
             {environmentForm.driver === "sandbox" ? (
               <div className="grid gap-3 md:grid-cols-2">
-                <Field label="Provider" hint="Installed run-capable sandbox provider plugins appear here.">
+                <Field label="Sandbox source" hint="Installed run-capable sandbox plugins appear here.">
                   <select
                     className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
                     value={environmentForm.sandboxProvider}
@@ -743,7 +744,7 @@ export function CompanyEnvironments() {
                     />
                   ) : (
                     <div className="rounded-md border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-                      This provider does not declare additional configuration fields.
+                      This sandbox source does not declare additional configuration fields.
                     </div>
                   )}
                 </div>

@@ -26,6 +26,10 @@
 
 ## What is Paperclip?
 
+DearMe product work in this checkout starts from
+[`docs/dearme/README.md`](docs/dearme/README.md); the rest of this README is the
+inherited Paperclip substrate context.
+
 # Open-source orchestration for zero-human companies
 
 **If OpenClaw is an _employee_, Paperclip is the _company_**

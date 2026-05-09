@@ -460,7 +460,9 @@ describe("acpx_local execute", () => {
         selectedSkills: [skill.runtimeName],
       });
       expect(String(meta?.prompt ?? "")).toContain(`Skill root: ${skillRoot}`);
-      expect((meta?.commandNotes as string[]).join("\n")).toContain("Materialized 1 Paperclip skill");
+      const commandNotes = (meta?.commandNotes as string[]).join("\n");
+      expect(commandNotes).toContain("ACPX runtime embedded in DearMe");
+      expect(commandNotes).toContain("Materialized 1 DearMe skill");
     } finally {
       await fs.rm(root, { recursive: true, force: true });
     }

@@ -11,6 +11,7 @@ import {
   InboxGroupHeader,
   InboxIssueMetaLeading,
   InboxIssueTrailingColumns,
+  JoinRequestInboxRow,
   formatJoinRequestInboxLabel,
 } from "./Inbox";
 
@@ -317,6 +318,50 @@ describe("formatJoinRequestInboxLabel", () => {
         }),
       ),
     ).toBe("snapshot@example.com");
+  });
+});
+
+describe("JoinRequestInboxRow", () => {
+  let container: HTMLDivElement;
+
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+  });
+
+  afterEach(() => {
+    container.remove();
+  });
+
+  it("shows agent request run methods as human labels instead of raw adapter ids", () => {
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <JoinRequestInboxRow
+          joinRequest={createJoinRequest({
+            requestType: "agent",
+            agentName: "Ops Helper",
+            adapterType: "claude_local",
+            requestingUserId: null,
+            requestEmailSnapshot: null,
+            requesterUser: null,
+          })}
+          onApprove={() => {}}
+          onReject={() => {}}
+          isPending={false}
+        />,
+      );
+    });
+
+    expect(container.textContent).toContain("Agent join request: Ops Helper");
+    expect(container.textContent).toContain("run method: Claude Code (local)");
+    expect(container.textContent).not.toContain("adapter:");
+    expect(container.textContent).not.toContain("claude_local");
+
+    act(() => {
+      root.unmount();
+    });
   });
 });
 

@@ -8,6 +8,7 @@ import {
   agentRuntimeState,
   agentWakeupRequests,
   budgetPolicies,
+  companyMemberships,
   companySkills,
   companies,
   costEvents,
@@ -356,6 +357,7 @@ describeEmbeddedPostgres("heartbeat orphaned process recovery", () => {
     }
     for (let attempt = 0; attempt < 5; attempt += 1) {
       await db.delete(companySkills);
+      await db.delete(companyMemberships);
       try {
         await db.delete(companies);
         break;
@@ -2182,7 +2184,7 @@ describeEmbeddedPostgres("heartbeat orphaned process recovery", () => {
     expect(wakeups).toHaveLength(1);
   });
 
-  it("re-enqueues recovery when the latest in-progress continuation made progress but left no live path", async () => {
+  it("re-enqueues recovery when the latest in-progress continuation made progress but left no reviewable output", async () => {
     const { agentId, issueId, runId } = await seedStrandedIssueFixture({
       status: "in_progress",
       runStatus: "succeeded",
@@ -2221,6 +2223,60 @@ describeEmbeddedPostgres("heartbeat orphaned process recovery", () => {
     expect(wakeups).toHaveLength(2);
   });
 
+  it("moves first productive continuation output to review without a recovery retry", async () => {
+    const { companyId, agentId, issueId, runId } = await seedStrandedIssueFixture({
+      status: "in_progress",
+      runStatus: "succeeded",
+      livenessState: "advanced",
+    });
+    await db.insert(companyMemberships).values({
+      companyId,
+      principalType: "user",
+      principalId: "board-user-1",
+      status: "active",
+      membershipRole: "owner",
+    });
+    await db.update(issues).set({ createdByUserId: "board-user-1" }).where(eq(issues.id, issueId));
+    await db.insert(issueComments).values({
+      companyId,
+      issueId,
+      authorAgentId: agentId,
+      authorUserId: null,
+      createdByRunId: runId,
+      body: "Batch 1: reviewable DearMe content drafts with approval gates.",
+    });
+    const heartbeat = heartbeatService(db);
+
+    const result = await heartbeat.reconcileStrandedAssignedIssues();
+    expect(result.continuationRequeued).toBe(0);
+    expect(result.productiveContinuationObserved).toBe(1);
+    expect(result.escalated).toBe(0);
+    expect(result.issueIds).toEqual([issueId]);
+
+    const issue = await db.select().from(issues).where(eq(issues.id, issueId)).then((rows) => rows[0] ?? null);
+    expect(issue).toMatchObject({
+      status: "in_review",
+      assigneeAgentId: null,
+      assigneeUserId: "board-user-1",
+      checkoutRunId: null,
+      executionRunId: null,
+    });
+
+    const recoveryIssues = await db
+      .select()
+      .from(issues)
+      .where(and(eq(issues.companyId, companyId), eq(issues.originKind, "stranded_issue_recovery")));
+    expect(recoveryIssues).toHaveLength(0);
+
+    const wakeups = await db.select().from(agentWakeupRequests).where(eq(agentWakeupRequests.agentId, agentId));
+    expect(wakeups).toHaveLength(1);
+
+    const comments = await db.select().from(issueComments).where(eq(issueComments.issueId, issueId));
+    expect(comments).toHaveLength(2);
+    expect(comments.some((comment) => comment.body.includes("Batch 1: reviewable DearMe content drafts"))).toBe(true);
+    expect(comments.some((comment) => comment.body.includes("latest run produced reviewable output"))).toBe(true);
+  });
+
   it("blocks stranded in-progress work after a productive continuation retry was already used", async () => {
     const { companyId, agentId, issueId, runId } = await seedStrandedIssueFixture({
       status: "in_progress",
@@ -2253,6 +2309,71 @@ describeEmbeddedPostgres("heartbeat orphaned process recovery", () => {
     expect(comments[0]?.body).toContain("automatically retried continuation");
     expect(comments[0]?.body).toContain("still has no live execution path");
     expect(comments[0]?.body).toContain(`Recovery issue: [${recovery.identifier}]`);
+  });
+
+  it("moves repeated productive continuation output to review instead of recovery", async () => {
+    const { companyId, agentId, issueId, runId } = await seedStrandedIssueFixture({
+      status: "in_progress",
+      runStatus: "succeeded",
+      retryReason: "issue_continuation_needed",
+      runSource: "issue.productive_terminal_continuation_recovery",
+      livenessState: "advanced",
+    });
+    await db.insert(companyMemberships).values({
+      companyId,
+      principalType: "user",
+      principalId: "board-user-1",
+      status: "active",
+      membershipRole: "owner",
+    });
+    await db.update(issues).set({ createdByUserId: "board-user-1" }).where(eq(issues.id, issueId));
+    await db.insert(issueComments).values({
+      companyId,
+      issueId,
+      authorAgentId: agentId,
+      authorUserId: null,
+      createdByRunId: runId,
+      body: "Batch 2: reviewable DearMe content drafts with approval gates.",
+    });
+    const heartbeat = heartbeatService(db);
+
+    const result = await heartbeat.reconcileStrandedAssignedIssues();
+    expect(result.continuationRequeued).toBe(0);
+    expect(result.productiveContinuationObserved).toBe(1);
+    expect(result.escalated).toBe(0);
+    expect(result.issueIds).toEqual([issueId]);
+
+    const issue = await db.select().from(issues).where(eq(issues.id, issueId)).then((rows) => rows[0] ?? null);
+    expect(issue).toMatchObject({
+      status: "in_review",
+      assigneeAgentId: null,
+      assigneeUserId: "board-user-1",
+      checkoutRunId: null,
+      executionRunId: null,
+    });
+
+    const recoveryIssues = await db
+      .select()
+      .from(issues)
+      .where(and(eq(issues.companyId, companyId), eq(issues.originKind, "stranded_issue_recovery")));
+    expect(recoveryIssues).toHaveLength(0);
+
+    const blockerRelations = await db
+      .select()
+      .from(issueRelations)
+      .where(
+        and(
+          eq(issueRelations.companyId, companyId),
+          eq(issueRelations.relatedIssueId, issueId),
+          eq(issueRelations.type, "blocks"),
+        ),
+      );
+    expect(blockerRelations).toHaveLength(0);
+
+    const comments = await db.select().from(issueComments).where(eq(issueComments.issueId, issueId));
+    expect(comments).toHaveLength(2);
+    expect(comments.some((comment) => comment.body.includes("reviewable DearMe content drafts"))).toBe(true);
+    expect(comments.some((comment) => comment.body.includes("latest run produced reviewable output"))).toBe(true);
   });
 
   it("allows one productive-terminal recovery after regular continuation recovery made progress", async () => {

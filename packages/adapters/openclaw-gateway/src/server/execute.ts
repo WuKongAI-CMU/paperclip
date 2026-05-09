@@ -388,7 +388,7 @@ function buildWakeText(
   const apiBaseHint = paperclipEnv.PAPERCLIP_API_URL ?? "<set PAPERCLIP_API_URL>";
 
   const lines = [
-    "Paperclip wake event for a cloud adapter.",
+    "DearMe wake event for a remote gateway adapter.",
     "",
     "Run this procedure now. Do not guess undocumented endpoints and do not ask for additional heartbeat docs.",
     "",
@@ -1052,7 +1052,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       exitCode: 1,
       signal: null,
       timedOut: false,
-      errorMessage: "OpenClaw gateway adapter missing url",
+      errorMessage: "Remote gateway adapter missing url",
       errorCode: "openclaw_gateway_url_missing",
     };
   }
@@ -1327,7 +1327,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
 
       if (acceptedStatus === "error") {
         const errorMessage =
-          nonEmpty(acceptedPayload?.summary) ?? lifecycleError ?? "OpenClaw gateway agent request failed";
+          nonEmpty(acceptedPayload?.summary) ?? lifecycleError ?? "Remote gateway agent request failed";
         return {
           exitCode: 1,
           signal: null,
@@ -1353,7 +1353,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
             exitCode: 1,
             signal: null,
             timedOut: true,
-            errorMessage: `OpenClaw gateway run timed out after ${waitTimeoutMs}ms`,
+            errorMessage: `Remote gateway run timed out after ${waitTimeoutMs}ms`,
             errorCode: "openclaw_gateway_wait_timeout",
             resultJson: waitPayload,
           };
@@ -1367,7 +1367,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
             errorMessage:
               nonEmpty(waitPayload?.error) ??
               lifecycleError ??
-              "OpenClaw gateway run failed",
+              "Remote gateway run failed",
             errorCode: "openclaw_gateway_wait_error",
             resultJson: waitPayload,
           };
@@ -1378,7 +1378,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
             exitCode: 1,
             signal: null,
             timedOut: false,
-            errorMessage: `Unexpected OpenClaw gateway agent.wait status: ${waitStatus}`,
+            errorMessage: `Unexpected remote gateway agent.wait status: ${waitStatus}`,
             errorCode: "openclaw_gateway_wait_status_unexpected",
             resultJson: waitPayload,
           };
@@ -1472,7 +1472,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       }
 
       const detailedMessage = pairingRequired
-        ? `${message}. Approve the pending device in OpenClaw (for example: openclaw devices approve --latest --url <gateway-ws-url> --token <gateway-token>) and retry. Ensure this agent has a persisted adapterConfig.devicePrivateKeyPem so approvals are reused.`
+        ? `${message}. Approve the pending remote gateway device (for example: openclaw devices approve --latest --url <gateway-ws-url> --token <gateway-token>) and retry. Ensure this agent has a persisted adapterConfig.devicePrivateKeyPem so approvals are reused.`
         : message;
 
       await ctx.onLog("stderr", `[openclaw-gateway] request failed: ${detailedMessage}\n`);

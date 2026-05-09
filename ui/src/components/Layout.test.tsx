@@ -48,6 +48,10 @@ vi.mock("./Sidebar", () => ({
   Sidebar: () => <div>Main company nav</div>,
 }));
 
+vi.mock("./DearMeSidebar", () => ({
+  DearMeSidebar: () => <div>DearMe customer nav</div>,
+}));
+
 vi.mock("./InstanceSidebar", () => ({
   InstanceSidebar: () => <div>Instance sidebar</div>,
 }));
@@ -315,6 +319,52 @@ describe("Layout", () => {
     expect(container.textContent).not.toContain("Instance sidebar");
     expect(container.textContent).not.toContain("Main company nav");
     expect(container.textContent).not.toContain("Plugin route sidebar");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("uses the DearMe customer shell on DearMe routes", async () => {
+    currentPathname = "/PAP/dearme";
+    mockPluginSlots.slots = [
+      {
+        type: "routeSidebar",
+        id: "dearme-sidebar",
+        displayName: "Internal DearMe Sidebar",
+        exportName: "DearMeSidebar",
+        routePath: "dearme",
+        pluginId: "plugin-1",
+        pluginKey: "fake-plugin",
+        pluginDisplayName: "Fake Plugin",
+        pluginVersion: "1.0.0",
+      },
+    ];
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <Layout />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    expect(container.textContent).toContain("DearMe customer nav");
+    expect(container.textContent).not.toContain("Main company nav");
+    expect(container.textContent).not.toContain("Plugin route sidebar");
+    expect(container.textContent).not.toContain("Company rail");
+    expect(mockUsePluginSlots).toHaveBeenCalledWith(
+      expect.objectContaining({
+        companyId: "company-1",
+        enabled: false,
+      }),
+    );
 
     await act(async () => {
       root.unmount();

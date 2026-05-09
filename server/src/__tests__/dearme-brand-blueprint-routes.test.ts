@@ -19,6 +19,10 @@ const mockDearMeOutputHandoffService = vi.hoisted(() => ({
   reviewOutput: vi.fn(),
 }));
 
+const mockDearMeMemoryContextService = vi.hoisted(() => ({
+  refreshRoutineMemoryContext: vi.fn(),
+}));
+
 const mockDearMeWorkbenchService = vi.hoisted(() => ({
   getWorkbench: vi.fn(),
 }));
@@ -29,6 +33,7 @@ const mockQueueIssueAssignmentWakeup = vi.hoisted(() => vi.fn());
 function registerModuleMocks() {
   vi.doMock("../services/index.js", () => ({
     dearmeBrandBlueprintService: () => mockDearMeBrandBlueprintService,
+    dearmeMemoryContextService: () => mockDearMeMemoryContextService,
     dearmeOutputHandoffService: () => mockDearMeOutputHandoffService,
     dearmePaidBetaAccessService: () => mockDearMePaidBetaAccessService,
     dearmeWorkbenchService: () => mockDearMeWorkbenchService,
@@ -263,6 +268,13 @@ describe("DearMe brand blueprint routes", () => {
     mockDearMePaidBetaAccessService.recordPayment.mockReset();
     mockDearMeOutputHandoffService.listOutputs.mockReset();
     mockDearMeOutputHandoffService.reviewOutput.mockReset();
+    mockDearMeMemoryContextService.refreshRoutineMemoryContext.mockReset();
+    mockDearMeMemoryContextService.refreshRoutineMemoryContext.mockResolvedValue({
+      memoryCount: 2,
+      routineCount: 2,
+      updated: 1,
+      skipped: 1,
+    });
     mockDearMeWorkbenchService.getWorkbench.mockReset();
     mockQueueIssueAssignmentWakeup.mockReset();
     mockLogActivity.mockReset();
@@ -328,6 +340,37 @@ describe("DearMe brand blueprint routes", () => {
         },
       ],
       recentProgress: [],
+      memory: {
+        summary: "1 recent Voice & Memory source is available. Latest: Voice sample.",
+        sourceCount: 1,
+        voiceSampleCount: 1,
+        proofCount: 0,
+        latest: [
+          {
+            id: "memory-1",
+            kind: "voice_sample",
+            title: "Operator note",
+            bodyPreview: "Short, direct writing sample.",
+            sourceLabel: "Manual note",
+            createdAt: "2026-05-07T14:00:00.000Z",
+          },
+        ],
+      },
+      workStream: [
+        {
+          id: "decision:output:issue-1:content_drafts",
+          role: "content_producer",
+          title: "Your call: Review Content drafts",
+          summary: "Your team prepared this private artifact. Approve the next move only if it represents you.",
+          artifact: "Content drafts",
+          status: "decision_needed",
+          needsApproval: true,
+          relatedOutputId: "issue-1:content_drafts",
+          issueId: "issue-1",
+          issueIdentifier: "PET-1",
+          createdAt: "2026-05-07T14:00:00.000Z",
+        },
+      ],
       report: null,
       outputs: [],
     });
@@ -339,6 +382,7 @@ describe("DearMe brand blueprint routes", () => {
     expect(res.body.headline).toContain("team");
     expect(res.body.team[0].role).toBe("chief_of_staff");
     expect(res.body.batchDecisions[0].actionLabel).toBe("Review posts");
+    expect(res.body.workStream[0].artifact).toBe("Content drafts");
     expect(mockDearMeWorkbenchService.getWorkbench).toHaveBeenCalledWith("company-1");
     expect(mockLogActivity).not.toHaveBeenCalled();
   });
@@ -349,6 +393,74 @@ describe("DearMe brand blueprint routes", () => {
 
     expect(res.status).toBe(403);
     expect(mockDearMeWorkbenchService.getWorkbench).not.toHaveBeenCalled();
+  });
+
+  it("records a Voice & Memory update through the activity log", async () => {
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/memory-updates")
+      .send({
+        kind: "voice_sample",
+        title: "Operator note",
+        body: "Short, direct note.",
+        sourceLabel: "Manual note",
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe("recorded");
+    expect(res.body.memory).toEqual(expect.objectContaining({
+      kind: "voice_sample",
+      title: "Operator note",
+      bodyPreview: "Short, direct note.",
+      sourceLabel: "Manual note",
+    }));
+    expect(res.body.growthCycles).toEqual({
+      checked: 2,
+      updated: 1,
+      unchanged: 1,
+      memorySources: 2,
+    });
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        companyId: "company-1",
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: expect.any(String),
+        details: expect.objectContaining({
+          kind: "voice_sample",
+          title: "Operator note",
+          body: "Short, direct note.",
+          sourceLabel: "Manual note",
+        }),
+      }),
+    );
+    expect(mockDearMeMemoryContextService.refreshRoutineMemoryContext).toHaveBeenCalledWith(
+      "company-1",
+      {
+        userId: "user-1",
+        agentId: null,
+        runId: null,
+      },
+    );
+  });
+
+  it("requires board access before recording Voice & Memory updates", async () => {
+    const res = await request(await createApp({
+      type: "agent",
+      companyId: "company-1",
+      agentId: "agent-1",
+    }))
+      .post("/api/dearme/companies/company-1/memory-updates")
+      .send({
+        kind: "voice_sample",
+        body: "Short, direct note.",
+      });
+
+    expect(res.status).toBe(403);
+    expect(mockLogActivity).not.toHaveBeenCalled();
+    expect(mockDearMeMemoryContextService.refreshRoutineMemoryContext).not.toHaveBeenCalled();
   });
 
   it("returns generated output handoffs for a caller with company access", async () => {

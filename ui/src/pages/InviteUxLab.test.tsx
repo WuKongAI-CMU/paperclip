@@ -44,6 +44,8 @@ describe("InviteUxLab", () => {
     expect(container.textContent).toContain("Company invite management");
     expect(container.textContent).toContain("Create your account");
     expect(container.textContent).toContain("Invite history");
+    expect(container.textContent).toContain("Run method");
+    expect(container.textContent).not.toContain("Adapter type");
 
     await act(async () => {
       root.unmount();

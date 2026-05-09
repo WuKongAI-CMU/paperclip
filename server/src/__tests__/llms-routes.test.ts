@@ -66,10 +66,29 @@ describe("llm routes", () => {
     const res = await request(app).get("/api/llms/agent-configuration.txt");
 
     expect(res.status).toBe(200);
-    expect(res.text).toContain("Use the paperclip-create-agent skill for end-to-end hiring");
+    expect(res.text).toContain("# DearMe Agent Configuration Index");
+    expect(res.text).toContain("Use the local create-agent workflow for end-to-end hiring");
     expect(res.text).toContain("desiredSkills");
     expect(res.text).toContain("sourceIssueId/sourceIssueIds");
     expect(res.text).toContain("Timer heartbeats are opt-in for new hires.");
     expect(res.text).toContain("Leave runtimeConfig.heartbeat.enabled false");
+    expect(res.text).not.toContain("Paperclip");
+    expect(res.text).not.toContain("paperclip-create-agent");
+  });
+
+  it("uses DearMe-facing copy in the agent icon reference", async () => {
+    const app = await createApp({
+      type: "board",
+      userId: "board-user",
+      companyIds: ["company-1"],
+      source: "local_implicit",
+      isInstanceAdmin: true,
+    });
+
+    const res = await request(app).get("/api/llms/agent-icons.txt");
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("# DearMe Agent Icon Names");
+    expect(res.text).not.toContain("Paperclip");
   });
 });

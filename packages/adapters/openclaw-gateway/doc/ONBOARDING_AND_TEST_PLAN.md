@@ -17,7 +17,7 @@ This plan is now **gateway-only**. Paperclip supports OpenClaw through `openclaw
 
 ## Current Product Flow
 1. Board/CEO opens company settings.
-2. Click `Generate OpenClaw Invite Prompt`.
+2. Click `Generate Remote Gateway Invite Prompt`.
 3. Paste generated prompt into OpenClaw chat.
 4. OpenClaw submits invite acceptance with:
 - `adapterType: "openclaw_gateway"`

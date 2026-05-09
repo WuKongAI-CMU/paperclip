@@ -148,11 +148,25 @@ export function ApprovalDetail() {
   const linkedAgentId = typeof payload.agentId === "string" ? payload.agentId : null;
   const isActionable = approval.status === "pending" || approval.status === "revision_requested";
   const isBudgetApproval = approval.type === "budget_override_required";
+  const isDearMeBrandOsApproval = approval.type === "dearme_brand_blueprint_apply";
   const TypeIcon = typeIcon[approval.type] ?? defaultTypeIcon;
   const showApprovedBanner = searchParams.get("resolved") === "approved" && approval.status === "approved";
   const primaryLinkedIssue = linkedIssues?.[0] ?? null;
   const resolvedCta =
-    primaryLinkedIssue
+    isDearMeBrandOsApproval
+      ? primaryLinkedIssue
+        ? {
+            label:
+              (linkedIssues?.length ?? 0) > 1
+                ? "Review DearMe work"
+                : "Review Brand OS issue",
+            to: `/issues/${primaryLinkedIssue.identifier ?? primaryLinkedIssue.id}`,
+          }
+        : {
+            label: "Open work queue",
+            to: "/issues",
+          }
+      : primaryLinkedIssue
       ? {
           label:
             (linkedIssues?.length ?? 0) > 1
@@ -183,7 +197,9 @@ export function ApprovalDetail() {
               <div>
                 <p className="text-sm text-green-800 dark:text-green-100 font-medium">Approval confirmed</p>
                 <p className="text-xs text-green-700 dark:text-green-200/90">
-                  Requesting agent was notified to review this approval and linked issues.
+                  {isDearMeBrandOsApproval
+                    ? "DearMe created the private Brand OS artifacts, recurring cycles, and gated draft work queue."
+                    : "Requesting agent was notified to review this approval and linked issues."}
                 </p>
               </div>
             </div>
@@ -220,18 +236,22 @@ export function ApprovalDetail() {
             </div>
           )}
           <ApprovalPayloadRenderer type={approval.type} payload={payload} />
-          <button
-            type="button"
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mt-2"
-            onClick={() => setShowRawPayload((v) => !v)}
-          >
-            <ChevronRight className={`h-3 w-3 transition-transform ${showRawPayload ? "rotate-90" : ""}`} />
-            See full request
-          </button>
-          {showRawPayload && (
-            <pre className="text-xs bg-muted/40 rounded-md p-3 overflow-x-auto">
-              {JSON.stringify(payload, null, 2)}
-            </pre>
+          {!isDearMeBrandOsApproval && (
+            <>
+              <button
+                type="button"
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mt-2"
+                onClick={() => setShowRawPayload((v) => !v)}
+              >
+                <ChevronRight className={`h-3 w-3 transition-transform ${showRawPayload ? "rotate-90" : ""}`} />
+                See full request
+              </button>
+              {showRawPayload && (
+                <pre className="text-xs bg-muted/40 rounded-md p-3 overflow-x-auto">
+                  {JSON.stringify(payload, null, 2)}
+                </pre>
+              )}
+            </>
           )}
           {approval.decisionNote && (
             <p className="text-xs text-muted-foreground">Decision note: {approval.decisionNote}</p>

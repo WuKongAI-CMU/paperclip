@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyPaperclipWorkspaceEnv,
   appendWithByteCap,
+  buildPersistentSkillSnapshot,
   buildInvocationEnvForLogs,
   DEFAULT_PAPERCLIP_AGENT_PROMPT_TEMPLATE,
   materializePaperclipSkillCopy,
@@ -416,6 +417,8 @@ describe("runChildProcess", () => {
 
 describe("renderPaperclipWakePrompt", () => {
   it("keeps the default local-agent prompt action-oriented", () => {
+    expect(DEFAULT_PAPERCLIP_AGENT_PROMPT_TEMPLATE).toContain("Continue your DearMe work");
+    expect(DEFAULT_PAPERCLIP_AGENT_PROMPT_TEMPLATE).not.toContain("Continue your Paperclip work");
     expect(DEFAULT_PAPERCLIP_AGENT_PROMPT_TEMPLATE).toContain("Start actionable work in this heartbeat");
     expect(DEFAULT_PAPERCLIP_AGENT_PROMPT_TEMPLATE).toContain("do not stop at a plan");
     expect(DEFAULT_PAPERCLIP_AGENT_PROMPT_TEMPLATE).toContain("Prefer the smallest verification that proves the change");
@@ -449,7 +452,8 @@ describe("renderPaperclipWakePrompt", () => {
       fallbackFetchNeeded: false,
     });
 
-    expect(prompt).toContain("## Paperclip Wake Payload");
+    expect(prompt).toContain("## DearMe Wake Payload");
+    expect(prompt).not.toContain("## Paperclip Wake Payload");
     expect(prompt).toContain("Execution contract: take concrete action in this heartbeat");
     expect(prompt).toContain("use child issues instead of polling");
     expect(prompt).toContain("mark blocked work with the unblock owner/action");
@@ -586,6 +590,45 @@ describe("renderPaperclipWakePrompt", () => {
     expect(prompt).toContain("Direct child issue summaries:");
     expect(prompt).toContain("PAP-101 Implement helper (done)");
     expect(prompt).toContain("Added the helper route and tests.");
+  });
+});
+
+describe("buildPersistentSkillSnapshot", () => {
+  it("uses DearMe-facing labels and missing-skill details", () => {
+    const snapshot = buildPersistentSkillSnapshot({
+      adapterType: "codex",
+      availableEntries: [
+        {
+          key: "paperclipai/paperclip/paperclip",
+          runtimeName: "paperclip",
+          source: "/runtime/skills/paperclip",
+          required: true,
+        },
+        {
+          key: "paperclipai/paperclip/custom",
+          runtimeName: "custom",
+          source: "/runtime/skills/custom",
+          required: false,
+        },
+      ],
+      desiredSkills: ["paperclipai/paperclip/custom", "missing-skill"],
+      installed: new Map(),
+      skillsHome: "/home/.codex/skills",
+      missingDetail: "Install this skill locally.",
+      externalConflictDetail: "A user-installed skill conflicts with this managed skill.",
+      externalDetail: "Installed outside DearMe management.",
+    });
+
+    const requiredEntry = snapshot.entries.find((entry) => entry.runtimeName === "paperclip");
+    const optionalEntry = snapshot.entries.find((entry) => entry.runtimeName === "custom");
+    const missingEntry = snapshot.entries.find((entry) => entry.key === "missing-skill");
+
+    expect(requiredEntry?.originLabel).toBe("Required by DearMe");
+    expect(optionalEntry?.originLabel).toBe("Managed by DearMe");
+    expect(snapshot.warnings).toContain(
+      'Desired skill "missing-skill" is not available from the DearMe runtime skills directory.',
+    );
+    expect(missingEntry?.detail).toBe("DearMe cannot find this skill in the local runtime skills directory.");
   });
 });
 

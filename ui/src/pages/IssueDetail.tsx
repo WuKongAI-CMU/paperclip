@@ -155,8 +155,9 @@ type IssueDetailComment = (IssueComment | OptimisticIssueComment) & {
   queueTargetRunId?: string | null;
   queueReason?: "hold" | "active_run" | "other";
 };
+type IssueReviewDecision = "accept" | "revise" | "reject";
 
-const FEEDBACK_TERMS_URL = import.meta.env.VITE_FEEDBACK_TERMS_URL?.trim() || "https://paperclip.ing/tos";
+const FEEDBACK_TERMS_URL = import.meta.env.VITE_FEEDBACK_TERMS_URL?.trim() || "";
 const ISSUE_COMMENT_PAGE_SIZE = 50;
 const ISSUE_COMMENT_AUTOLOAD_LIMIT = ISSUE_COMMENT_PAGE_SIZE * 3;
 const JUMP_TO_LATEST_MAX_COMMENT_PAGES = 10;
@@ -222,6 +223,57 @@ function readIssueRunStateFromCache(queryClient: QueryClient, issueId: string) {
     liveRuns,
     activeRun,
     runningIssueRun: resolveRunningIssueRun(activeRun, liveRuns),
+  };
+}
+
+function isAssignableReviewAgent(agent: Agent | undefined) {
+  return Boolean(agent && agent.status !== "pending_approval" && agent.status !== "terminated");
+}
+
+function latestAssignableAgentCommentAuthorId(
+  comments: readonly IssueDetailComment[],
+  agentsById: ReadonlyMap<string, Agent>,
+) {
+  for (let index = comments.length - 1; index >= 0; index -= 1) {
+    const authorAgentId = comments[index]?.authorAgentId;
+    if (authorAgentId && isAssignableReviewAgent(agentsById.get(authorAgentId))) return authorAgentId;
+  }
+  return null;
+}
+
+function buildReviewDecisionUpdate(params: {
+  decision: IssueReviewDecision;
+  revisionAgentId: string | null;
+  note: string;
+}): Record<string, unknown> {
+  const note = params.note.trim();
+  if (params.decision === "accept") {
+    return {
+      status: "done",
+      assigneeAgentId: null,
+      assigneeUserId: null,
+      comment: "Accepted this draft for private use.",
+    };
+  }
+  if (params.decision === "revise") {
+    if (!params.revisionAgentId) {
+      throw new Error("No draft author is available for revision.");
+    }
+    if (!note) {
+      throw new Error("Revision notes are required.");
+    }
+    return {
+      status: "todo",
+      assigneeAgentId: params.revisionAgentId,
+      assigneeUserId: null,
+      comment: `Revision requested:\n\n${note}`,
+    };
+  }
+  return {
+    status: "cancelled",
+    assigneeAgentId: null,
+    assigneeUserId: null,
+    comment: note ? `Rejected this draft.\n\n${note}` : "Rejected this draft.",
   };
 }
 
@@ -566,6 +618,117 @@ function InboxMobileToolbar({
           </PopoverContent>
         </Popover>
       </div>
+    </div>
+  );
+}
+
+function IssueReviewDecisionPanel({
+  mode,
+  note,
+  revisionAgentId,
+  pendingDecision,
+  onModeChange,
+  onNoteChange,
+  onSubmit,
+}: {
+  mode: IssueReviewDecision | null;
+  note: string;
+  revisionAgentId: string | null;
+  pendingDecision: IssueReviewDecision | null;
+  onModeChange: (mode: IssueReviewDecision | null) => void;
+  onNoteChange: (note: string) => void;
+  onSubmit: (decision: IssueReviewDecision) => void;
+}) {
+  const trimmedNote = note.trim();
+  const waitingForNote = mode === "revise" || mode === "reject";
+  const confirmDisabled =
+    pendingDecision !== null ||
+    (mode === "revise" && (!trimmedNote || !revisionAgentId));
+  const confirmLabel = mode === "revise" ? "Send changes" : "Reject draft";
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-sm font-medium">Review output</h3>
+          <p className="text-xs text-muted-foreground">Ready for reviewer decision.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => onSubmit("accept")}
+            disabled={pendingDecision !== null}
+          >
+            <Check className="mr-1.5 h-3.5 w-3.5" />
+            Accept draft
+          </Button>
+          <Button
+            variant={mode === "revise" ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => {
+              onModeChange(mode === "revise" ? null : "revise");
+              onNoteChange("");
+            }}
+            disabled={pendingDecision !== null}
+          >
+            <Repeat className="mr-1.5 h-3.5 w-3.5" />
+            Request changes
+          </Button>
+          <Button
+            variant={mode === "reject" ? "secondary" : "outline"}
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={() => {
+              onModeChange(mode === "reject" ? null : "reject");
+              onNoteChange("");
+            }}
+            disabled={pendingDecision !== null}
+          >
+            <XCircle className="mr-1.5 h-3.5 w-3.5" />
+            Reject draft
+          </Button>
+        </div>
+      </div>
+
+      {waitingForNote ? (
+        <div className="mt-3 space-y-2">
+          <Textarea
+            aria-label={mode === "revise" ? "Revision notes" : "Rejection notes"}
+            value={note}
+            onChange={(event) => onNoteChange(event.target.value)}
+            placeholder={mode === "revise" ? "What should change?" : "Reason (optional)"}
+            className="min-h-20 text-sm"
+            disabled={pendingDecision !== null}
+          />
+          {mode === "revise" && !revisionAgentId ? (
+            <p className="text-xs text-destructive">This draft author is no longer available for changes.</p>
+          ) : null}
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onModeChange(null);
+                onNoteChange("");
+              }}
+              disabled={pendingDecision !== null}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant={mode === "reject" ? "destructive" : "default"}
+              size="sm"
+              onClick={() => {
+                if (mode) onSubmit(mode);
+              }}
+              disabled={confirmDisabled}
+            >
+              {pendingDecision === mode ? "Saving..." : confirmLabel}
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1138,6 +1301,8 @@ export function IssueDetail() {
   const [treeControlReason, setTreeControlReason] = useState("");
   const [treeControlWakeAgentsOnResume, setTreeControlWakeAgentsOnResume] = useState(false);
   const [treeControlCancelConfirmed, setTreeControlCancelConfirmed] = useState(false);
+  const [reviewDecisionMode, setReviewDecisionMode] = useState<IssueReviewDecision | null>(null);
+  const [reviewDecisionNote, setReviewDecisionNote] = useState("");
   const [optimisticComments, setOptimisticComments] = useState<OptimisticIssueComment[]>([]);
   const [locallyQueuedCommentRunIds, setLocallyQueuedCommentRunIds] = useState<Map<string, string>>(() => new Map());
   const [pendingCommentComposerFocusKey, setPendingCommentComposerFocusKey] = useState(0);
@@ -1471,6 +1636,17 @@ export function IssueDetail() {
     () => mergeIssueComments(comments ?? [], optimisticComments),
     [comments, optimisticComments],
   );
+  const reviewRevisionAgentId = useMemo(
+    () => latestAssignableAgentCommentAuthorId(threadComments, agentMap)
+      ?? (issue?.assigneeAgentId && isAssignableReviewAgent(agentMap.get(issue.assigneeAgentId))
+        ? issue.assigneeAgentId
+        : null),
+    [agentMap, issue?.assigneeAgentId, threadComments],
+  );
+  const canReviewIssueOutput = Boolean(
+    issue?.status === "in_review" &&
+    ((currentUserId && issue.assigneeUserId === currentUserId) || canManageTreeControl),
+  );
   const breadcrumbTitle = issue?.title ?? issueId ?? "Issue";
 
   const invalidateIssueDetail = useCallback(() => {
@@ -1620,6 +1796,56 @@ export function IssueDetail() {
       if (selectedCompanyId) {
         queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(selectedCompanyId) });
       }
+    },
+  });
+  const reviewDecision = useMutation({
+    mutationFn: (variables: { decision: IssueReviewDecision; note: string }) =>
+      issuesApi.update(
+        issueId!,
+        buildReviewDecisionUpdate({
+          decision: variables.decision,
+          revisionAgentId: reviewRevisionAgentId,
+          note: variables.note,
+        }),
+      ),
+    onSuccess: ({ comment, ...nextIssue }, variables) => {
+      const issueRefs = new Set<string>([issueId!, nextIssue.id]);
+      if (nextIssue.identifier) issueRefs.add(nextIssue.identifier);
+      mergeIssueResponseIntoCaches(issueRefs, nextIssue);
+      if (comment) {
+        queryClient.setQueryData<InfiniteData<IssueComment[], string | null>>(
+          queryKeys.issues.comments(issueId!),
+          (current) => current ? {
+            ...current,
+            pages: upsertIssueCommentInPages(current.pages, comment),
+          } : {
+            pageParams: [null],
+            pages: upsertIssueCommentInPages(undefined, comment),
+          },
+        );
+      }
+      invalidateIssueDetail();
+      invalidateIssueThreadLazily();
+      invalidateIssueRunState();
+      invalidateIssueCollections();
+      setReviewDecisionMode(null);
+      setReviewDecisionNote("");
+      pushToast({
+        title:
+          variables.decision === "accept"
+            ? "Draft accepted"
+            : variables.decision === "revise"
+              ? "Changes requested"
+              : "Draft rejected",
+        tone: "success",
+      });
+    },
+    onError: (err) => {
+      pushToast({
+        title: "Review decision failed",
+        body: err instanceof Error ? err.message : "Unable to save the review decision",
+        tone: "error",
+      });
     },
   });
   const executeTreeControl = useMutation({
@@ -3628,6 +3854,18 @@ export function IssueDetail() {
         project={resolvedProject}
         onUpdate={(data) => updateIssue.mutate(data)}
       />
+
+      {canReviewIssueOutput ? (
+        <IssueReviewDecisionPanel
+          mode={reviewDecisionMode}
+          note={reviewDecisionNote}
+          revisionAgentId={reviewRevisionAgentId}
+          pendingDecision={reviewDecision.isPending ? reviewDecision.variables?.decision ?? null : null}
+          onModeChange={setReviewDecisionMode}
+          onNoteChange={setReviewDecisionNote}
+          onSubmit={(decision) => reviewDecision.mutate({ decision, note: reviewDecisionNote })}
+        />
+      ) : null}
 
       <Separator />
 

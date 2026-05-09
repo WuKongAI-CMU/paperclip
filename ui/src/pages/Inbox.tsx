@@ -59,6 +59,7 @@ import { StatusIcon } from "../components/StatusIcon";
 import { cn } from "../lib/utils";
 import { StatusBadge } from "../components/StatusBadge";
 import { approvalLabel, defaultTypeIcon, typeIcon } from "../components/ApprovalPayload";
+import { getAdapterLabel } from "../adapters/adapter-display-registry";
 import { timeAgo } from "../lib/timeAgo";
 import { Button } from "@/components/ui/button";
 import {
@@ -524,7 +525,7 @@ function ApprovalInboxRow({
   );
 }
 
-function JoinRequestInboxRow({
+export function JoinRequestInboxRow({
   joinRequest,
   onApprove,
   onReject,
@@ -602,7 +603,7 @@ function JoinRequestInboxRow({
             </span>
             <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
               <span>requested {timeAgo(joinRequest.createdAt)} from IP {joinRequest.requestIp}</span>
-              {joinRequest.adapterType && <span>adapter: {joinRequest.adapterType}</span>}
+              {joinRequest.adapterType && <span>run method: {getAdapterLabel(joinRequest.adapterType)}</span>}
             </span>
           </span>
         </div>

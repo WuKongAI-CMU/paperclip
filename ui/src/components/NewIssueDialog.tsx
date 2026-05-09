@@ -1593,7 +1593,7 @@ export function NewIssueDialog() {
                     <p className="text-[11px] text-muted-foreground">
                       Sends <code>modelProfile: "cheap"</code>{" "}
                       {assigneeCheapProfile?.adapterConfig && typeof (assigneeCheapProfile.adapterConfig as Record<string, unknown>).model === "string"
-                        ? <>· adapter default <code>{String((assigneeCheapProfile.adapterConfig as Record<string, unknown>).model)}</code></>
+                        ? <>· configured cheap model <code>{String((assigneeCheapProfile.adapterConfig as Record<string, unknown>).model)}</code></>
                         : assigneeCheapProfile
                           ? <>· uses the agent's configured cheap profile</>
                           : <>· falls back to the primary model if no cheap profile is configured</>}

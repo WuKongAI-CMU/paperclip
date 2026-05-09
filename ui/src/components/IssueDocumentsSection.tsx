@@ -71,16 +71,28 @@ function saveFoldedDocumentKeys(issueId: string, keys: string[]) {
   window.localStorage.setItem(getFoldedDocumentsStorageKey(issueId), JSON.stringify(keys));
 }
 
-function renderFoldableBody(body: string, className?: string) {
+function renderFoldableBody(body: string, className?: string, issueReferencePrefixes?: readonly string[]) {
   return (
     <FoldCurtain>
-      <MarkdownBody className={className} softBreaks={false}>{body}</MarkdownBody>
+      <MarkdownBody
+        className={className}
+        softBreaks={false}
+        issueReferencePrefixes={issueReferencePrefixes}
+      >
+        {body}
+      </MarkdownBody>
     </FoldCurtain>
   );
 }
 
 function isPlanKey(key: string) {
   return key.trim().toLowerCase() === "plan";
+}
+
+function getIssueReferencePrefixes(issue: Issue) {
+  const identifier = issue.identifier ?? "";
+  const match = identifier.match(/^([A-Z][A-Z0-9]*)-\d+$/i);
+  return match?.[1] ? [match[1].toUpperCase()] : undefined;
 }
 
 function titlesMatchKey(title: string | null | undefined, key: string) {
@@ -174,6 +186,7 @@ export function IssueDocumentsSection({
   const autosaveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copiedDocumentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasScrolledToHashRef = useRef(false);
+  const issueReferencePrefixes = useMemo(() => getIssueReferencePrefixes(issue), [issue.identifier]);
   const {
     state: autosaveState,
     markDirty,
@@ -783,7 +796,7 @@ export function IssueDocumentsSection({
               PLAN
             </span>
           </div>
-          {renderFoldableBody(issue.legacyPlanDocument.body, documentBodyContentClassName)}
+          {renderFoldableBody(issue.legacyPlanDocument.body, documentBodyContentClassName, issueReferencePrefixes)}
         </div>
       ) : null}
 
@@ -1069,7 +1082,7 @@ export function IssueDocumentsSection({
                           {!isPlanKey(doc.key) && activeConflict.serverDocument.title ? (
                             <p className="mb-2 text-sm font-medium">{activeConflict.serverDocument.title}</p>
                           ) : null}
-                          {renderFoldableBody(activeConflict.serverDocument.body, "text-[14px] leading-7")}
+                          {renderFoldableBody(activeConflict.serverDocument.body, "text-[14px] leading-7", issueReferencePrefixes)}
                         </div>
                       )}
                     </div>
@@ -1090,7 +1103,7 @@ export function IssueDocumentsSection({
                     }`}
                   >
                     {isHistoricalPreview ? (
-                      renderFoldableBody(displayedBody, documentBodyContentClassName)
+                      renderFoldableBody(displayedBody, documentBodyContentClassName, issueReferencePrefixes)
                     ) : activeDraft ? (
                       <MarkdownEditor
                         value={displayedBody}
@@ -1112,7 +1125,7 @@ export function IssueDocumentsSection({
                         onSubmit={() => void commitDraft(activeDraft ?? draft, { clearAfterSave: false, trackAutosave: true })}
                       />
                     ) : (
-                      renderFoldableBody(displayedBody, documentBodyContentClassName)
+                      renderFoldableBody(displayedBody, documentBodyContentClassName, issueReferencePrefixes)
                     )}
                   </div>
                   <div className="flex min-h-4 items-center justify-end px-1">

@@ -1,5 +1,10 @@
 # DearMe v4 — Part 2: schema + MCP + AI proxy + cycle + build sequence
 
+> 2026-05-07 consolidation: historical source material only. Current direction
+> is `README.md`, `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`,
+> `POLSIA-NAIVE-REUSE-PLAN.md`, and `REBRAND-AND-PROVENANCE.md`. Do not follow
+> clone/verbatim-copy instructions below when they conflict with those files.
+
 > Continues `V4-ARCHITECTURE.md`. Max-reuse mode applied to every section.
 
 ---
@@ -274,17 +279,29 @@ If a client has 0 outbounds in 7 days → P0 retention bug.
 │
 ├── ops/                       ops-hub admin (post-launch)
 │
-└── docs/                      ARCHITECTURE / PRODUCT-SPEC / BACKLOG / V4 (canonical)
+└── docs/                      ARCHITECTURE / PRODUCT-SPEC / BACKLOG / V4 (historical)
 ```
 
 ---
 
-## 19. Doc consolidation — what V4 supersedes
+## 19. Historical doc consolidation
 
-V4 supersedes V3 + earlier ARCHITECTURE + PRODUCT-SPEC fragments. The earlier docs stay for history but **V4 is canonical**.
+This section is historical source material. It predates the DearMe integrated
+architecture lock and no longer defines canonical product or technical direction.
 
-Effective doc set:
-- **V4-ARCHITECTURE.md / PART-2** ⭐ canonical
+Current DearMe work must start from:
+
+- `docs/dearme/README.md`
+- `docs/dearme/INTEGRATED-ARCHITECTURE.md`
+- `docs/dearme/WORKTREE-INTEGRATION-PLAN.md`
+- `docs/dearme/PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`
+
+The older V4/V3/ARCHITECTURE/PRODUCT-SPEC fragments stay useful for provenance
+and historical reasoning, but they are superseded when they conflict with the
+current DearMe docs.
+
+Historical doc set:
+- **V4-ARCHITECTURE.md / PART-2**
 - **PRODUCT-SPEC.md / PART-2 / PART-3 / V3-ADDENDUM** (UX detail)
 - **COMPARISON-FINAL.md** (Polsia vs us audit)
 - **BACKLOG.md / PART-2** (work breakdown)

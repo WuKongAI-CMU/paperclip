@@ -79,7 +79,7 @@ describe("cursor local skill sync", () => {
             runtimeName: "paperclip",
             source: paperclipDir,
             required: true,
-            requiredReason: "Bundled Paperclip skills are always available for local adapters.",
+            requiredReason: "Bundled DearMe runtime skills are always available for local adapters.",
           },
           {
             key: "ascii-heart",

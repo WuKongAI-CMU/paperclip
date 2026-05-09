@@ -154,6 +154,77 @@ describe("CommentThread", () => {
     });
   });
 
+  it("uses product-safe run environment labels", () => {
+    const root = createRoot(container);
+    const agent: Agent = {
+      id: "agent-1",
+      companyId: "company-1",
+      name: "Content Lead",
+      urlKey: "content-lead",
+      role: "cmo",
+      title: null,
+      icon: "sparkles",
+      status: "active",
+      reportsTo: null,
+      capabilities: null,
+      adapterType: "process",
+      adapterConfig: {},
+      runtimeConfig: {},
+      budgetMonthlyCents: 0,
+      spentMonthlyCents: 0,
+      pauseReason: null,
+      pausedAt: null,
+      permissions: { canCreateAgents: false },
+      lastHeartbeatAt: null,
+      metadata: null,
+      createdAt: new Date("2026-03-11T00:00:00.000Z"),
+      updatedAt: new Date("2026-03-11T00:00:00.000Z"),
+    };
+
+    act(() => {
+      root.render(
+        <MemoryRouter>
+          <CommentThread
+            comments={[]}
+            linkedRuns={[{
+              runId: "run-lease-12345678",
+              status: "running",
+              agentId: "agent-1",
+              createdAt: "2026-03-11T11:00:00.000Z",
+              startedAt: "2026-03-11T11:00:00.000Z",
+              finishedAt: null,
+              environment: {
+                id: "env-1",
+                name: "Remote workspace",
+                driver: "sandbox",
+              },
+              environmentLease: {
+                id: "lease-12345678",
+                status: "active",
+                leasePolicy: "run",
+                provider: "daytona",
+                providerLeaseId: "external-lease-1",
+                executionWorkspaceId: "workspace-1",
+                workspacePath: "/tmp/dearme-workspace",
+                failureReason: null,
+                cleanupStatus: null,
+              },
+            }]}
+            agentMap={new Map([["agent-1", agent]])}
+            onAdd={async () => {}}
+          />
+        </MemoryRouter>,
+      );
+    });
+
+    expect(container.textContent).toContain("Runner daytona");
+    expect(container.textContent).not.toContain(["Provider", "daytona"].join(" "));
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   it("replaces the composer with a warning when comments are disabled", () => {
     const root = createRoot(container);
 

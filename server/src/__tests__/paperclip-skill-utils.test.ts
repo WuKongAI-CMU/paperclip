@@ -66,6 +66,7 @@ describe("paperclip skill utils", () => {
     expect(entries).toHaveLength(2);
     expect(entries[0]?.runtimeName).toBe("paperclip");
     expect(entries[0]?.required).toBe(true);
+    expect(entries[0]?.requiredReason).toBe("Bundled DearMe runtime skills are always available for local adapters.");
     expect(entries[1]?.runtimeName).toBe("paperclip-dev");
     expect(entries[1]?.required).toBe(false);
     expect(entries[1]?.requiredReason).toBeNull();

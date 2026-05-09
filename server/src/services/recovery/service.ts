@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gt, inArray, isNull, notInArray, sql } from "drizzl
 import type { Db } from "@paperclipai/db";
 import {
   DEFAULT_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
+  ISSUE_CONTINUATION_SUMMARY_DOCUMENT_KEY,
   MAX_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
   MIN_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
   type IssueGraphLivenessAutoRecoveryPreview,
@@ -12,12 +13,17 @@ import {
   agentWakeupRequests,
   approvals,
   companies,
+  companyMemberships,
+  documentRevisions,
   heartbeatRunEvents,
   heartbeatRunWatchdogDecisions,
   heartbeatRuns,
   issueApprovals,
+  issueComments,
+  issueDocuments,
   issueRelations,
   issueThreadInteractions,
+  issueWorkProducts,
   issues,
 } from "@paperclipai/db";
 import { parseObject, asBoolean, asNumber } from "../../adapters/utils.js";
@@ -256,7 +262,7 @@ function buildLivenessEscalationDescription(finding: IssueLivenessFinding) {
   const selectedOwner = finding.recommendedOwnerAgentId ?? "none";
 
   return [
-    "Paperclip detected a harness-level issue graph liveness incident.",
+    "DearMe detected a harness-level issue graph liveness incident.",
     "",
     "## Source",
     "",
@@ -282,7 +288,7 @@ function buildLivenessEscalationDescription(finding: IssueLivenessFinding) {
 
 function buildLivenessOriginalIssueComment(finding: IssueLivenessFinding, escalation: typeof issues.$inferSelect) {
   return [
-    "Paperclip detected a harness-level liveness incident in this issue's dependency graph.",
+    "DearMe detected a harness-level liveness incident in this issue's dependency graph.",
     "",
     `- Escalation issue: ${escalation.identifier ?? escalation.id}`,
     `- Incident key: \`${finding.incidentKey}\``,
@@ -514,7 +520,7 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
         [
           "## Assigned Orphan Blocker",
           "",
-          `Paperclip found this issue is blocking ${blockingLinks} but had no assignee, so no heartbeat could pick it up.`,
+          `DearMe found this issue is blocking ${blockingLinks} but had no assignee, so no heartbeat could pick it up.`,
           "",
           "- Assigned it back to the agent that created the blocker.",
           "- Next action: resolve this blocker or reassign it to the right owner.",
@@ -826,7 +832,7 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
       ).join("\n")
       : "- none detected";
     return [
-      `Paperclip detected ${input.level} output silence on an active heartbeat run.`,
+      `DearMe detected ${input.level} output silence on an active heartbeat run.`,
       "",
       "## Run",
       "",
@@ -902,7 +908,7 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
       blockedByIssueIds: nextBlockerIds,
     });
     await issuesSvc.addComment(input.sourceIssue.id, [
-      "Paperclip detected critical output silence on this issue's active run.",
+      "DearMe detected critical output silence on this issue's active run.",
       "",
       `- Evaluation issue: ${input.evaluationIssue.identifier ?? input.evaluationIssue.id}`,
       `- Run: \`${input.run.id}\``,
@@ -1303,7 +1309,7 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
     const failureSummary = summarizeRunFailureForIssueComment(input.latestRun);
 
     return [
-      "Paperclip exhausted automatic recovery for an assigned issue and created this explicit recovery task.",
+      "DearMe exhausted automatic recovery for an assigned issue and created this explicit recovery task.",
       "",
       "## Source",
       "",
@@ -1413,7 +1419,7 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
     const failureSummary = summarizeRunFailureForIssueComment(input.latestRun);
 
     return [
-      "Paperclip stopped automatic stranded-work recovery for this recovery issue.",
+      "DearMe stopped automatic stranded-work recovery for this recovery issue.",
       "",
       `- Recovery issue: ${issueUiLink({ identifier: input.issue.identifier, id: input.issue.id }, input.prefix)}`,
       `- Previous status: \`${input.previousStatus}\``,
@@ -1508,6 +1514,142 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
       .then((rows) => rows.map((row) => row.blockerIssueId));
   }
 
+  async function reviewableOutputKindForRun(input: {
+    issue: typeof issues.$inferSelect;
+    latestRun: SuccessfulLatestIssueRun;
+  }) {
+    const assigneeAgentId = input.issue.assigneeAgentId;
+    if (!assigneeAgentId) return null;
+
+    const [comment] = await db
+      .select({ id: issueComments.id })
+      .from(issueComments)
+      .where(
+        and(
+          eq(issueComments.companyId, input.issue.companyId),
+          eq(issueComments.issueId, input.issue.id),
+          eq(issueComments.createdByRunId, input.latestRun.id),
+          eq(issueComments.authorAgentId, assigneeAgentId),
+        ),
+      )
+      .limit(1);
+    if (comment) return "issue comment";
+
+    const [document] = await db
+      .select({ id: documentRevisions.id })
+      .from(documentRevisions)
+      .innerJoin(issueDocuments, eq(documentRevisions.documentId, issueDocuments.documentId))
+      .where(
+        and(
+          eq(documentRevisions.companyId, input.issue.companyId),
+          eq(documentRevisions.createdByRunId, input.latestRun.id),
+          eq(issueDocuments.companyId, input.issue.companyId),
+          eq(issueDocuments.issueId, input.issue.id),
+          sql`${issueDocuments.key} != ${ISSUE_CONTINUATION_SUMMARY_DOCUMENT_KEY}`,
+        ),
+      )
+      .limit(1);
+    if (document) return "document revision";
+
+    const [workProduct] = await db
+      .select({ id: issueWorkProducts.id })
+      .from(issueWorkProducts)
+      .where(
+        and(
+          eq(issueWorkProducts.companyId, input.issue.companyId),
+          eq(issueWorkProducts.issueId, input.issue.id),
+          eq(issueWorkProducts.createdByRunId, input.latestRun.id),
+        ),
+      )
+      .limit(1);
+    if (workProduct) return "work product";
+
+    return null;
+  }
+
+  async function activeReviewUserIdForIssue(issue: typeof issues.$inferSelect) {
+    const preferredUserId = readNonEmptyString(issue.createdByUserId);
+    if (preferredUserId) {
+      const [membership] = await db
+        .select({ principalId: companyMemberships.principalId })
+        .from(companyMemberships)
+        .where(
+          and(
+            eq(companyMemberships.companyId, issue.companyId),
+            eq(companyMemberships.principalType, "user"),
+            eq(companyMemberships.principalId, preferredUserId),
+            eq(companyMemberships.status, "active"),
+          ),
+        )
+        .limit(1);
+      if (membership) return preferredUserId;
+    }
+
+    const [fallback] = await db
+      .select({ principalId: companyMemberships.principalId })
+      .from(companyMemberships)
+      .where(
+        and(
+          eq(companyMemberships.companyId, issue.companyId),
+          eq(companyMemberships.principalType, "user"),
+          eq(companyMemberships.status, "active"),
+        ),
+      )
+      .orderBy(asc(companyMemberships.createdAt), asc(companyMemberships.id))
+      .limit(1);
+    return fallback?.principalId ?? null;
+  }
+
+  async function moveProductiveContinuationOutputToReview(input: {
+    issue: typeof issues.$inferSelect;
+    latestRun: SuccessfulLatestIssueRun;
+    outputKind: string;
+  }) {
+    const reviewUserId = await activeReviewUserIdForIssue(input.issue);
+    if (!reviewUserId) return null;
+
+    const updated = await issuesSvc.update(input.issue.id, {
+      status: "in_review",
+      assigneeAgentId: null,
+      assigneeUserId: reviewUserId,
+    });
+    if (!updated) return null;
+
+    await issuesSvc.addComment(input.issue.id, [
+      "DearMe stopped automatic continuation because the latest run produced reviewable output.",
+      "",
+      `- Output evidence: ${input.outputKind}`,
+      `- Run: \`${input.latestRun.id}\``,
+      `- Review owner: \`${reviewUserId}\``,
+      "",
+      "Review the latest agent output, request changes if needed, or mark the issue done.",
+    ].join("\n"), {});
+
+    await logActivity(db, {
+      companyId: input.issue.companyId,
+      actorType: "system",
+      actorId: "system",
+      agentId: null,
+      runId: null,
+      action: "issue.updated",
+      entityType: "issue",
+      entityId: input.issue.id,
+      details: {
+        identifier: input.issue.identifier,
+        status: "in_review",
+        previousStatus: "in_progress",
+        source: "recovery.reconcile_productive_continuation_output",
+        latestRunId: input.latestRun.id,
+        latestRunStatus: input.latestRun.status,
+        livenessState: input.latestRun.livenessState,
+        outputKind: input.outputKind,
+        reviewUserId,
+      },
+    });
+
+    return updated;
+  }
+
   async function escalateStrandedAssignedIssue(input: {
     issue: typeof issues.$inferSelect;
     previousStatus: "todo" | "in_progress";
@@ -1546,7 +1688,7 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
       ].join("\n")
       : [
         "",
-        "- Recovery issue: none created because Paperclip could not find an invokable manager, creator, or executive owner with budget available.",
+        "- Recovery issue: none created because DearMe could not find an invokable manager, creator, or executive owner with budget available.",
         "- Next action: a board operator should assign an invokable recovery owner, fix the agent/runtime state, or record an intentional manual resolution.",
       ].join("\n");
 
@@ -1674,7 +1816,7 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
             previousStatus: "todo",
             latestRun,
             comment:
-              "Paperclip automatically retried dispatch for this assigned `todo` issue after a lost wake/run, " +
+              "DearMe automatically retried dispatch for this assigned `todo` issue after a lost wake/run, " +
               `but it still has no live execution path.${failureSummary ?? ""} ` +
               "Moving it to `blocked` so it is visible for intervention.",
           });
@@ -1722,13 +1864,29 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
           continue;
         }
 
+        const outputKind = await reviewableOutputKindForRun({ issue, latestRun: successfulRun });
+        if (outputKind) {
+          const updated = await moveProductiveContinuationOutputToReview({
+            issue,
+            latestRun: successfulRun,
+            outputKind,
+          });
+          if (updated) {
+            result.productiveContinuationObserved += 1;
+            result.issueIds.push(issue.id);
+          } else {
+            result.skipped += 1;
+          }
+          continue;
+        }
+
         if (isRepeatedProductiveContinuationRecovery(successfulRun)) {
           const updated = await escalateStrandedAssignedIssue({
             issue,
             previousStatus: "in_progress",
             latestRun: successfulRun,
             comment:
-              "Paperclip automatically retried continuation for this assigned `in_progress` issue and the retry " +
+              "DearMe automatically retried continuation for this assigned `in_progress` issue and the retry " +
               "made progress, but it still has no live execution path. Moving it to `blocked` so it is visible for intervention.",
           });
           if (updated) {
@@ -1768,7 +1926,7 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
           previousStatus: "in_progress",
           latestRun,
           comment:
-            "Paperclip automatically retried continuation for this assigned `in_progress` issue after its live " +
+            "DearMe automatically retried continuation for this assigned `in_progress` issue after its live " +
             `execution disappeared, but it still has no live execution path.${failureSummary ?? ""} ` +
             "Moving it to `blocked` so it is visible for intervention.",
         });

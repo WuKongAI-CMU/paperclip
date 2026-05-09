@@ -452,7 +452,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
   const testEnvironment = useMutation({
     mutationFn: async () => {
       if (!selectedCompanyId) {
-        throw new Error("Select a company to test adapter environment");
+        throw new Error("Select a company to test run environment");
       }
       return agentsApi.testEnvironment(selectedCompanyId, adapterType, {
         adapterConfig: buildAdapterConfigForTest(),
@@ -518,7 +518,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
       const refreshed = await agentsApi.adapterModels(selectedCompanyId, adapterType, { refresh: true });
       queryClient.setQueryData(modelQueryKey, refreshed);
     } catch (error) {
-      setRefreshModelsError(error instanceof Error ? error.message : "Failed to refresh adapter models.");
+      setRefreshModelsError(error instanceof Error ? error.message : "Failed to refresh models.");
     } finally {
       setRefreshingModels(false);
     }
@@ -793,12 +793,12 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
         </div>
       ) : null}
 
-      {/* ---- Adapter ---- */}
+      {/* ---- Run method ---- */}
       <div className={cn(!cards && (isCreate ? "border-t border-border" : "border-b border-border"))}>
         <div className={cn(cards ? "flex items-center justify-between mb-3" : "px-4 py-2 flex items-center justify-between gap-2")}>
           {cards
-            ? <h3 className="text-sm font-medium">Adapter</h3>
-            : <span className="text-xs font-medium text-muted-foreground">Adapter</span>
+            ? <h3 className="text-sm font-medium">Run method</h3>
+            : <span className="text-xs font-medium text-muted-foreground">Run method</span>
           }
           {showInlineAdapterTestEnvironmentButton && (
             <Button
@@ -815,7 +815,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
         </div>
         <div className={cn(cards ? "border border-border rounded-lg p-4 space-y-3" : "px-4 pb-3 space-y-3")}>
           {showAdapterTypeField && (
-            <Field label="Adapter type" hint={help.adapterType}>
+            <Field label="Run method" hint={help.adapterType}>
               <AdapterTypeDropdown
                 value={adapterType}
                 disabledTypes={disabledTypes}
@@ -909,7 +909,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
             </Field>
           )}
 
-          {/* Adapter-specific fields are rendered inside Permissions & Configuration */}
+          {/* Run-method-specific fields are rendered inside Permissions & Configuration */}
         </div>
 
       </div>
@@ -992,7 +992,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                   {refreshModelsError
                     ?? (fetchedModelsError instanceof Error
                       ? fetchedModelsError.message
-                      : "Failed to load adapter models.")}
+                      : "Failed to load models.")}
                 </p>
               )}
               {adapterType === "opencode_local"
@@ -1687,7 +1687,7 @@ function ModelDropdown({
               <div className="px-2 py-2 space-y-2">
                 <p className="text-xs text-muted-foreground">
                   {onDetectModel
-                    ? (emptyDetectHint ?? "No model detected yet. Enter a provider/model manually.")
+                    ? (emptyDetectHint ?? "No model detected yet. Enter a source/model manually.")
                     : "No models found."}
                 </p>
               </div>
@@ -1721,8 +1721,8 @@ function CheapModelSection({
   onOpenChange: (open: boolean) => void;
 }) {
   const placeholderHint = adapterDefaultModel
-    ? `Adapter default · ${adapterDefaultModel}`
-    : "No adapter default — choose a cheaper model";
+    ? `Runner default · ${adapterDefaultModel}`
+    : "No runner default - choose a cheaper model";
   return (
     <div className="rounded-md border border-border/70 bg-muted/20 p-3 space-y-3">
       <div className="flex items-center justify-between gap-3">
@@ -1758,7 +1758,7 @@ function CheapModelSection({
       ) : null}
       {enabled && !model && !adapterDefaultModel ? (
         <p className="text-[11px] text-amber-500">
-          No cheap model selected and the adapter has no default. Cheap-lane runs will continue on the primary model with a fallback note.
+          No cheap model selected and the runner has no default. Cheap-lane runs will continue on the primary model with a fallback note.
         </p>
       ) : null}
     </div>

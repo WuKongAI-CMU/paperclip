@@ -39,12 +39,12 @@ describe("buildInviteOnboardingTextDocument", () => {
       allowedHostnames: [],
     });
 
-    expect(text).toContain("Paperclip OpenClaw Gateway Onboarding");
+    expect(text).toContain("DearMe Remote Teammate Gateway Onboarding");
     expect(text).toContain("/api/invites/token-123/accept");
     expect(text).toContain("/api/join-requests/{requestId}/claim-api-key");
     expect(text).toContain("/api/invites/token-123/onboarding.txt");
     expect(text).toContain("/api/invites/token-123/skills/paperclip");
-    expect(text).toContain("Suggested Paperclip base URLs to try");
+    expect(text).toContain("Suggested DearMe base URLs to try");
     expect(text).toContain("http://localhost:3100");
     expect(text).toContain("host.docker.internal");
     expect(text).toContain("paperclipApiUrl");
@@ -52,10 +52,14 @@ describe("buildInviteOnboardingTextDocument", () => {
     expect(text).toContain("headers.x-openclaw-token");
     expect(text).toContain("Do NOT use /v1/responses or /hooks/*");
     expect(text).toContain("set the first reachable candidate as agentDefaultsPayload.paperclipApiUrl");
-    expect(text).toContain("~/.openclaw/workspace/paperclip-claimed-api-key.json");
+    expect(text).toContain("~/.dearme/workspace/gateway-api-key.json");
     expect(text).toContain("PAPERCLIP_API_KEY");
     expect(text).toContain("saved token field");
     expect(text).toContain("Gateway token unexpectedly short");
+    expect(text).toContain("local hostname allowlist command");
+    expect(text).not.toContain("Paperclip");
+    expect(text).not.toContain("OpenClaw");
+    expect(text).not.toContain("pnpm paperclipai");
   });
 
   it("includes loopback diagnostics for authenticated/private onboarding", () => {
@@ -85,6 +89,9 @@ describe("buildInviteOnboardingTextDocument", () => {
     expect(text).toContain("Connectivity diagnostics");
     expect(text).toContain("loopback hostname");
     expect(text).toContain("If none are reachable");
+    expect(text).not.toContain("Paperclip");
+    expect(text).not.toContain("OpenClaw");
+    expect(text).not.toContain("pnpm paperclipai");
   });
 
   it("includes inviter message in the onboarding text when provided", () => {
@@ -151,7 +158,7 @@ describe("buildInviteOnboardingTextDocument", () => {
     });
 
     try {
-      const req = buildReq("paperclip.example.test:3103");
+      const req = buildReq("dearme.example.test:3103");
       const invite = {
         id: "invite-4",
         companyId: "company-1",
@@ -171,7 +178,7 @@ describe("buildInviteOnboardingTextDocument", () => {
         deploymentMode: "authenticated",
         deploymentExposure: "private",
         bindHost: "0.0.0.0",
-        allowedHostnames: ["paperclip.example.test", "203.0.113.42"],
+        allowedHostnames: ["dearme.example.test", "203.0.113.42"],
       });
 
       expect(text).toContain("http://192.168.6.178:3103");

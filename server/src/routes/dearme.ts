@@ -1,15 +1,20 @@
+import { randomUUID } from "node:crypto";
 import { Router } from "express";
 import type { Db } from "@paperclipai/db";
 import {
   dearMeBrandBlueprintApplyRequestSchema,
   dearMeBrandBlueprintPreviewSchema,
   dearMeFirstCyclePreviewSchema,
+  dearMeMemoryUpdateResultSchema,
+  dearMeMemoryUpdateSchema,
   dearMeOutputReviewRequestSchema,
   dearMePaidBetaRecordSchema,
+  type DearMeMemoryUpdate,
 } from "@paperclipai/shared";
 import { validate } from "../middleware/validate.js";
 import {
   dearmeBrandBlueprintService,
+  dearmeMemoryContextService,
   dearmeOutputHandoffService,
   dearmePaidBetaAccessService,
   dearmeWorkbenchService,
@@ -20,9 +25,14 @@ import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { heartbeatService } from "../services/heartbeat.js";
 import { queueIssueAssignmentWakeup } from "../services/issue-assignment-wakeup.js";
 
+function memoryBodyPreview(body: string) {
+  return body.length > 700 ? `${body.slice(0, 697)}...` : body;
+}
+
 export function dearmeRoutes(db: Db) {
   const router = Router();
   const brandBlueprints = dearmeBrandBlueprintService(db);
+  const memoryContext = dearmeMemoryContextService(db);
   const outputHandoff = dearmeOutputHandoffService(db);
   const paidBetaAccess = dearmePaidBetaAccessService(db);
   const workbench = dearmeWorkbenchService(db);
@@ -101,6 +111,62 @@ export function dearmeRoutes(db: Db) {
     },
   );
 
+  router.post(
+    "/companies/:companyId/memory-updates",
+    validate(dearMeMemoryUpdateSchema),
+    async (req, res) => {
+      const companyId = req.params.companyId as string;
+      assertCompanyAccess(req, companyId);
+      assertBoard(req);
+      const actor = getActorInfo(req);
+      const input = req.body as DearMeMemoryUpdate;
+      const memoryId = randomUUID();
+      const createdAt = new Date().toISOString();
+
+      await logActivity(db, {
+        companyId,
+        actorType: actor.actorType,
+        actorId: actor.actorId,
+        agentId: actor.agentId,
+        runId: actor.runId,
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: memoryId,
+        details: {
+          kind: input.kind,
+          title: input.title,
+          body: input.body,
+          sourceLabel: input.sourceLabel,
+        },
+      });
+
+      const cycleRefresh = await memoryContext.refreshRoutineMemoryContext(companyId, {
+        userId: actor.actorType === "user" ? actor.actorId : null,
+        agentId: actor.agentId,
+        runId: actor.runId,
+      });
+
+      res.status(201).json(dearMeMemoryUpdateResultSchema.parse({
+        companyId,
+        status: "recorded",
+        memory: {
+          id: memoryId,
+          kind: input.kind,
+          title: input.title,
+          bodyPreview: memoryBodyPreview(input.body),
+          sourceLabel: input.sourceLabel,
+          createdAt,
+        },
+        growthCycles: {
+          checked: cycleRefresh.routineCount,
+          updated: cycleRefresh.updated,
+          unchanged: cycleRefresh.skipped,
+          memorySources: cycleRefresh.memoryCount,
+        },
+      }));
+    },
+  );
+
   router.get(
     "/companies/:companyId/paid-beta/access",
     async (req, res) => {
@@ -144,10 +210,10 @@ export function dearmeRoutes(db: Db) {
   router.post(
     "/companies/:companyId/first-cycle/preview",
     validate(dearMeFirstCyclePreviewSchema),
-    (req, res) => {
+    async (req, res) => {
       const companyId = req.params.companyId as string;
       assertCompanyAccess(req, companyId);
-      res.json(brandBlueprints.previewFirstCycle(companyId, req.body));
+      res.json(await brandBlueprints.previewFirstCycle(companyId, req.body));
     },
   );
 

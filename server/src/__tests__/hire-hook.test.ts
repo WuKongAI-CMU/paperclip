@@ -39,9 +39,10 @@ afterEach(() => {
 
 describe("notifyHireApproved", () => {
   it("writes success activity when adapter hook returns ok", async () => {
+    const onHireApproved = vi.fn().mockResolvedValue({ ok: true });
     vi.mocked(findActiveServerAdapter).mockReturnValue({
       type: "openclaw_gateway",
-      onHireApproved: vi.fn().mockResolvedValue({ ok: true }),
+      onHireApproved,
     } as any);
 
     const db = mockDbWithAgent({
@@ -60,6 +61,12 @@ describe("notifyHireApproved", () => {
       }),
     ).resolves.toBeUndefined();
 
+    expect(onHireApproved).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Tell your user that your hire was approved. They can assign you a DearMe task or ask you to create issues.",
+      }),
+      expect.anything(),
+    );
     expect(logActivity).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({

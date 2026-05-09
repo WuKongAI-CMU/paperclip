@@ -44,6 +44,10 @@ function runKnownLogBytes(run: RunTranscriptSource): number | null {
   return typeof bytes === "number" && Number.isFinite(bytes) && bytes > 0 ? bytes : null;
 }
 
+function shouldSkipPersistedLogRead(run: RunTranscriptSource): boolean {
+  return isTerminalStatus(run.status) && run.hasStoredOutput === false && runKnownLogBytes(run) === null;
+}
+
 export function resolveInitialLogOffset(run: RunTranscriptSource, limitBytes: number): number {
   const knownBytes = runKnownLogBytes(run);
   if (knownBytes === null) return 0;
@@ -100,7 +104,8 @@ export function useLiveRunTranscripts({
         .map((run) => {
           const logBytes = typeof run.logBytes === "number" ? run.logBytes : "";
           const lastOutputBytes = typeof run.lastOutputBytes === "number" ? run.lastOutputBytes : "";
-          return `${run.id}:${run.status}:${run.adapterType}:${run.hasStoredOutput === true ? "1" : "0"}:${logBytes}:${lastOutputBytes}`;
+          const storedOutputState = run.hasStoredOutput === true ? "1" : run.hasStoredOutput === false ? "0" : "";
+          return `${run.id}:${run.status}:${run.adapterType}:${storedOutputState}:${logBytes}:${lastOutputBytes}`;
         })
         .sort((a, b) => a.localeCompare(b))
         .join(","),
@@ -212,8 +217,18 @@ export function useLiveRunTranscripts({
 
     let cancelled = false;
 
+    const markRunHydrated = (runId: string) => {
+      setHydratedRunIds((prev) => {
+        if (prev.has(runId)) return prev;
+        const next = new Set(prev);
+        next.add(runId);
+        return next;
+      });
+    };
+
     const readRunLog = async (run: RunTranscriptSource) => {
-      if (missingTerminalLogRunIdsRef.current.has(run.id)) {
+      if (missingTerminalLogRunIdsRef.current.has(run.id) || shouldSkipPersistedLogRead(run)) {
+        markRunHydrated(run.id);
         return;
       }
       const offset = logOffsetByRunRef.current.get(run.id) ?? resolveInitialLogOffset(run, logReadLimitBytes);
@@ -236,12 +251,7 @@ export function useLiveRunTranscripts({
         }
       } finally {
         if (!cancelled) {
-          setHydratedRunIds((prev) => {
-            if (prev.has(run.id)) return prev;
-            const next = new Set(prev);
-            next.add(run.id);
-            return next;
-          });
+          markRunHydrated(run.id);
         }
       }
     };

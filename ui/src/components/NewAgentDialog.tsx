@@ -22,8 +22,8 @@ import { getAdapterDisplay } from "../adapters/adapter-display-registry";
 import { useDisabledAdaptersSync } from "../adapters/use-disabled-adapters";
 
 /**
- * Adapter types that are suitable for agent creation (excludes internal
- * system adapters like "process" and "http").
+ * Run methods that are suitable for agent creation (excludes internal
+ * system runners like "process" and "http").
  */
 const SYSTEM_ADAPTER_TYPES = new Set(["process", "http"]);
 
@@ -38,7 +38,7 @@ export function NewAgentDialog() {
   const [showAdvancedCards, setShowAdvancedCards] = useState(false);
   const disabledTypes = useDisabledAdaptersSync();
 
-  // Fetch registered adapters from server (syncs disabled store + provides data)
+  // Fetch registered runners from server (syncs disabled store + provides data)
   const { data: serverAdapters } = useQuery({
     queryKey: queryKeys.adapters.all,
     queryFn: () => adaptersApi.list(),
@@ -54,8 +54,8 @@ export function NewAgentDialog() {
 
   const ceoAgent = (agents ?? []).find((a) => a.role === "ceo");
 
-  // Build the adapter grid from the UI registry merged with display metadata.
-  // This automatically includes external/plugin adapters.
+  // Build the run-method grid from the UI registry merged with display metadata.
+  // This automatically includes external/plugin runners.
   const adapterGrid = useMemo(() => {
     const registered = listUIAdapters()
       .filter((a) =>
@@ -145,7 +145,7 @@ export function NewAgentDialog() {
                 <p className="text-sm text-muted-foreground">
                   We recommend letting your CEO handle agent setup — they know the
                   org structure and can configure reporting, permissions, and
-                  adapters.
+                  execution settings.
                 </p>
               </div>
 
@@ -175,7 +175,7 @@ export function NewAgentDialog() {
                   Back
                 </button>
                 <p className="text-sm text-muted-foreground">
-                  Choose your adapter type for advanced setup.
+                  Choose a run method for advanced setup.
                 </p>
               </div>
 

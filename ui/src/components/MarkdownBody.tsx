@@ -19,6 +19,7 @@ interface MarkdownBodyProps {
   style?: React.CSSProperties;
   softBreaks?: boolean;
   linkIssueReferences?: boolean;
+  issueReferencePrefixes?: readonly string[];
   /** Opt into Obsidian-style [[target]] / [[target|label]] wikilinks. */
   enableWikiLinks?: boolean;
   /** Base href used for wikilinks when no resolver is supplied. */
@@ -293,6 +294,33 @@ function isExternalHttpUrl(href: string | null | undefined): boolean {
   }
 }
 
+function extractIssuePrefixFromSegment(segment: string | null | undefined) {
+  if (!segment) return null;
+  const decoded = decodeURIComponent(segment);
+  const issueMatch = decoded.match(/^([A-Z][A-Z0-9]*)-\d+$/i);
+  if (issueMatch?.[1]) return issueMatch[1].toUpperCase();
+  if (/^[A-Z][A-Z0-9]*$/.test(decoded)) return decoded;
+  return null;
+}
+
+export function inferIssueReferencePrefixesFromPathname(pathname: string | null | undefined): string[] | undefined {
+  if (!pathname) return undefined;
+  const segments = pathname.split("/").filter(Boolean);
+  const issueIndex = segments.findIndex((segment) => segment === "issues");
+  const issuePrefix = issueIndex >= 0 ? extractIssuePrefixFromSegment(segments[issueIndex + 1]) : null;
+  if (issuePrefix) return [issuePrefix];
+
+  const companyPrefix = issueIndex > 0
+    ? extractIssuePrefixFromSegment(segments[issueIndex - 1])
+    : extractIssuePrefixFromSegment(segments[0]);
+  return companyPrefix ? [companyPrefix] : undefined;
+}
+
+function getBrowserIssueReferencePrefixes() {
+  if (typeof window === "undefined") return undefined;
+  return inferIssueReferencePrefixesFromPathname(window.location.pathname);
+}
+
 function renderLinkBody(
   children: ReactNode,
   leadingIcon: ReactNode,
@@ -481,6 +509,7 @@ export function MarkdownBody({
   style,
   softBreaks = true,
   linkIssueReferences = true,
+  issueReferencePrefixes,
   enableWikiLinks = false,
   wikiLinkRoot,
   resolveWikiLinkHref,
@@ -488,12 +517,13 @@ export function MarkdownBody({
   onImageClick,
 }: MarkdownBodyProps) {
   const { theme } = useTheme();
+  const resolvedIssueReferencePrefixes = issueReferencePrefixes ?? getBrowserIssueReferencePrefixes();
   const remarkPlugins: NonNullable<Options["remarkPlugins"]> = [remarkGfm];
   if (enableWikiLinks) {
     remarkPlugins.push(createRemarkWikiLinks({ wikiLinkRoot, resolveWikiLinkHref }));
   }
   if (linkIssueReferences) {
-    remarkPlugins.push(remarkLinkIssueReferences);
+    remarkPlugins.push([remarkLinkIssueReferences, { allowedPrefixes: resolvedIssueReferencePrefixes }]);
   }
   if (softBreaks) {
     remarkPlugins.push(remarkSoftBreaks);
@@ -552,7 +582,7 @@ export function MarkdownBody({
         );
       }
 
-      const issueRef = linkIssueReferences ? parseIssueReferenceFromHref(href) : null;
+      const issueRef = linkIssueReferences ? parseIssueReferenceFromHref(href, { allowedPrefixes: resolvedIssueReferencePrefixes }) : null;
       if (issueRef) {
         return (
           <MarkdownIssueLink issuePathId={issueRef.issuePathId}>

@@ -1,5 +1,11 @@
 # Paperclip Fork Evaluation — verdict for DearMe pivot
 
+> 2026-05-07 consolidation: historical evaluation artifact. Current direction
+> is DearMe as the product shell over the Paperclip/Naive operator kernel; use
+> `README.md`, `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`,
+> `POLSIA-NAIVE-REUSE-PLAN.md`, and `REBRAND-AND-PROVENANCE.md` for the current
+> implementation and provenance contract.
+
 > 0.5-day deep read. Should we abandon the Polsia-clone path and fork paperclipai/paperclip (MIT) instead?
 
 ---

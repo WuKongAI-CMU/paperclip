@@ -39,6 +39,7 @@ import type {
 import { pluginsApi, type PluginUiContribution } from "@/api/plugins";
 import { authApi } from "@/api/auth";
 import { queryKeys } from "@/lib/queryKeys";
+import { PRODUCT_NAME } from "@/lib/product-labels";
 import { cn } from "@/lib/utils";
 import {
   PluginBridgeContext,
@@ -285,8 +286,8 @@ function getShimBlobUrl(specifier: "react" | "react-dom" | "react-dom/client" | 
       source = `
         const SDK = globalThis.__paperclipPluginBridge__?.sdkUi ?? {};
         function missing(name) {
-          return function MissingPaperclipSdkUiComponent() {
-            throw new Error('Paperclip plugin UI runtime is not initialized for "' + name + '". Ensure the host loaded the plugin bridge before rendering this UI module.');
+          return function MissingDearMeSdkUiComponent() {
+            throw new Error('${PRODUCT_NAME} plugin UI runtime is not initialized for "' + name + '". Ensure the host loaded the plugin bridge before rendering this UI module.');
           };
         }
         const { usePluginData, usePluginAction, useHostContext, useHostLocation, useHostNavigation, usePluginStream, usePluginToast } = SDK;

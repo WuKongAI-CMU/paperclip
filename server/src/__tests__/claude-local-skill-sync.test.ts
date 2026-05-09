@@ -40,6 +40,7 @@ describe("claude local skill sync", () => {
     expect(snapshot.supported).toBe(true);
     expect(snapshot.desiredSkills).toContain(paperclipKey);
     expect(snapshot.entries.find((entry) => entry.key === paperclipKey)?.required).toBe(true);
+    expect(snapshot.entries.find((entry) => entry.key === paperclipKey)?.originLabel).toBe("Required by DearMe");
     expect(snapshot.entries.find((entry) => entry.key === paperclipKey)?.state).toBe("configured");
   });
 
@@ -104,7 +105,7 @@ describe("claude local skill sync", () => {
       originLabel: "User-installed",
       locationLabel: "~/.claude/skills",
       readOnly: true,
-      detail: "Installed outside Paperclip management in the Claude skills home.",
+      detail: "Installed outside DearMe management in the Claude skills home.",
     }));
   });
 });

@@ -2,8 +2,11 @@ import { and, desc, eq } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
 import { activityLog, agents, approvals } from "@paperclipai/db";
 import {
+  DEARME_MEMORY_UPDATE_KINDS,
   DEARME_TEAM_ROLES,
   dearMeWorkbenchResponseSchema,
+  type DearMeMemoryUpdateItem,
+  type DearMeMemoryUpdateKind,
   type DearMeOutputItem,
   type DearMeOutputKind,
   type DearMeWorkbenchBatchDecision,
@@ -11,6 +14,7 @@ import {
   type DearMeWorkbenchProgressItem,
   type DearMeWorkbenchStreamItem,
   type DearMeWorkbenchTeamMember,
+  type DearMeWorkbenchVoiceProfile,
   type DearMeWorkbenchWorkItem,
 } from "@paperclipai/shared";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "./dearme-brand-blueprint-apply.js";
@@ -22,6 +26,8 @@ type DearMeBatchAction = DearMeWorkbenchBatchDecision["action"];
 type DearMeBatchKey = NonNullable<DearMeRiskGate> | "review";
 
 const TEAM_ROLE_ORDER = new Map(DEARME_TEAM_ROLES.map((role, index) => [role, index]));
+const MEMORY_KIND_SET = new Set<string>(DEARME_MEMORY_UPDATE_KINDS);
+const DEARME_MEMORY_UPDATED_ACTION = "dearme.memory_updated";
 
 const TEAM_ROLE_FOCUS: Record<DearMeTeamRole, string> = {
   chief_of_staff: "Coordinating today's brand growth plan and the next decisions.",
@@ -68,6 +74,17 @@ const TEAM_ROLE_PUBLIC_LABELS: Record<DearMeTeamRole, string> = {
   opportunity_scout: "Opportunity Scout",
   portfolio_builder: "Portfolio Builder",
   growth_analyst: "Growth Analyst",
+};
+
+const MEMORY_KIND_LABELS: Record<DearMeMemoryUpdateKind, string> = {
+  voice_sample: "Voice sample",
+  proof_point: "Proof point",
+  goal: "Goal",
+  audience: "Audience",
+  offer: "Offer",
+  constraint: "Boundary",
+  relationship: "Relationship",
+  preference: "Preference",
 };
 
 const BATCH_DECISION_COPY: Record<DearMeBatchKey, {
@@ -134,8 +151,17 @@ function isDearMeRole(value: unknown): value is DearMeTeamRole {
   return typeof value === "string" && TEAM_ROLE_ORDER.has(value as DearMeTeamRole);
 }
 
-function publicAgentName(value: string) {
-  return value.startsWith("DearMe ") ? value.slice("DearMe ".length) : value;
+function isDearMeMemoryKind(value: unknown): value is DearMeMemoryUpdateKind {
+  return typeof value === "string" && MEMORY_KIND_SET.has(value);
+}
+
+function optionalStringFromRecord(record: Record<string, unknown>, key: string) {
+  const value = record[key];
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function previewText(value: string, maxLength = 700) {
+  return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
 }
 
 function teamStatus(value: string) {
@@ -221,6 +247,22 @@ function streamItemFromDecision(decision: DearMeWorkbenchDecision): DearMeWorkbe
 }
 
 function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbenchStreamItem {
+  if (item.kind === "team_progress" && item.title === "Voice & Memory updated") {
+    return {
+      id: `progress:${item.id}`,
+      role: "voice_editor",
+      title: item.title,
+      summary: item.summary,
+      artifact: "Voice & Memory",
+      status: "recorded",
+      needsApproval: false,
+      relatedOutputId: null,
+      issueId: null,
+      issueIdentifier: null,
+      createdAt: item.createdAt,
+    };
+  }
+
   return {
     id: `progress:${item.id}`,
     role: item.kind === "brand_os_applied" ? "chief_of_staff" : "growth_analyst",
@@ -233,6 +275,98 @@ function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbe
     issueId: null,
     issueIdentifier: null,
     createdAt: item.createdAt,
+  };
+}
+
+function memoryFromActivity(input: {
+  id: string;
+  entityId: string;
+  details: unknown;
+  createdAt: Date;
+}): DearMeMemoryUpdateItem | null {
+  if (!isRecord(input.details) || !isDearMeMemoryKind(input.details.kind)) {
+    return null;
+  }
+
+  const body = optionalStringFromRecord(input.details, "body");
+  if (!body) return null;
+
+  return {
+    id: input.entityId || input.id,
+    kind: input.details.kind,
+    title: optionalStringFromRecord(input.details, "title"),
+    bodyPreview: previewText(body),
+    sourceLabel: optionalStringFromRecord(input.details, "sourceLabel"),
+    createdAt: toIso(input.createdAt),
+  };
+}
+
+function buildMemorySummary(items: DearMeMemoryUpdateItem[]) {
+  if (items.length === 0) {
+    return "Add voice samples, proof, goals, and boundaries so DearMe can make better private work.";
+  }
+
+  const latest = items[0]!;
+  const sourceLabel = items.length === 1 ? "source is" : "sources are";
+  return `${items.length} recent Voice & Memory ${sourceLabel} available. Latest: ${MEMORY_KIND_LABELS[latest.kind]}.`;
+}
+
+function buildDraftTone(samples: DearMeMemoryUpdateItem[]) {
+  const joined = samples.map((sample) => sample.bodyPreview).join(" ").toLocaleLowerCase();
+  const tones = ["Proof-first", "Plain language"];
+
+  if (joined.includes("direct") || joined.includes("short") || joined.includes("plain")) {
+    tones.push("Direct");
+  }
+  if (joined.includes("proof") || joined.includes("verified") || joined.includes("shipped")) {
+    tones.push("Evidence-backed");
+  }
+  if (joined.includes("concrete") || joined.includes("specific")) {
+    tones.push("Concrete");
+  }
+  if (tones.length < 4) {
+    tones.push("Approval-ready");
+  }
+
+  return Array.from(new Set(tones)).slice(0, 6);
+}
+
+function buildMemoryVoiceProfile(items: DearMeMemoryUpdateItem[]): DearMeWorkbenchVoiceProfile {
+  const voiceSamples = items.filter((item) => item.kind === "voice_sample");
+  const sampleCount = voiceSamples.length;
+
+  if (sampleCount === 0) {
+    return {
+      title: "Draft Voice Profile",
+      status: "needs_samples",
+      sampleCount,
+      confidence: 20,
+      guidance: "Voice Editor needs real samples before treating draft tone as reliable.",
+      draftTone: ["Plain language", "Proof-first"],
+      nextStep: "Add two real writing samples, notes, or approved posts before reviewing public-facing drafts.",
+    };
+  }
+
+  if (sampleCount === 1) {
+    return {
+      title: "Draft Voice Profile",
+      status: "learning",
+      sampleCount,
+      confidence: 55,
+      guidance: "Voice Editor has one sample and can start drafting, but public output should stay under close review.",
+      draftTone: buildDraftTone(voiceSamples),
+      nextStep: "Add one more real sample to make voice review stronger before publishing or sending anything.",
+    };
+  }
+
+  return {
+    title: "Draft Voice Profile",
+    status: "ready_for_review",
+    sampleCount,
+    confidence: 80,
+    guidance: "Voice Editor has enough samples to use this as a draft voice profile for private work.",
+    draftTone: buildDraftTone(voiceSamples),
+    nextStep: "Use voice review on prepared posts, outreach, and portfolio copy before approving external moves.",
   };
 }
 
@@ -386,6 +520,16 @@ function progressFromActivity(input: {
     };
   }
 
+  if (input.action === DEARME_MEMORY_UPDATED_ACTION) {
+    return {
+      id: input.id,
+      kind: "team_progress",
+      title: "Voice & Memory updated",
+      summary: "Voice Editor recorded a new voice or memory source for future private work.",
+      createdAt: toIso(input.createdAt),
+    };
+  }
+
   return {
     id: input.id,
     kind: "team_progress",
@@ -445,7 +589,7 @@ export function dearmeWorkbenchService(db: Db) {
   return {
     getWorkbench: async (companyId: string) => {
       const outputsResponse = await outputHandoff.listOutputs(companyId);
-      const [agentRows, approvalRows, activityRows] = await Promise.all([
+      const [agentRows, approvalRows, activityRows, memoryRows] = await Promise.all([
         db
           .select({
             name: agents.name,
@@ -479,27 +623,42 @@ export function dearmeWorkbenchService(db: Db) {
           .where(eq(activityLog.companyId, companyId))
           .orderBy(desc(activityLog.createdAt))
           .limit(25),
+        db
+          .select({
+            id: activityLog.id,
+            entityId: activityLog.entityId,
+            details: activityLog.details,
+            createdAt: activityLog.createdAt,
+          })
+          .from(activityLog)
+          .where(and(eq(activityLog.companyId, companyId), eq(activityLog.action, DEARME_MEMORY_UPDATED_ACTION)))
+          .orderBy(desc(activityLog.createdAt))
+          .limit(12),
       ]);
 
-      const team = agentRows
-        .flatMap((agent): DearMeWorkbenchTeamMember[] => {
-          const metadata = agent.metadata;
-          if (
-            !isRecord(metadata) ||
-            metadata.source !== DEARME_BRAND_BLUEPRINT_ORIGIN_KIND ||
-            !isDearMeRole(metadata.dearmeRole)
-          ) {
-            return [];
-          }
+      const teamByRole = new Map<DearMeTeamRole, DearMeWorkbenchTeamMember>();
 
-          return [{
-            role: metadata.dearmeRole,
-            name: publicAgentName(agent.name),
-            status: teamStatus(agent.status),
-            currentFocus: TEAM_ROLE_FOCUS[metadata.dearmeRole],
-            lastActiveAt: toIso(agent.lastHeartbeatAt ?? agent.updatedAt),
-          }];
-        })
+      for (const agent of agentRows) {
+        const metadata = agent.metadata;
+        if (
+          !isRecord(metadata) ||
+          metadata.source !== DEARME_BRAND_BLUEPRINT_ORIGIN_KIND ||
+          !isDearMeRole(metadata.dearmeRole) ||
+          teamByRole.has(metadata.dearmeRole)
+        ) {
+          continue;
+        }
+
+        teamByRole.set(metadata.dearmeRole, {
+          role: metadata.dearmeRole,
+          name: TEAM_ROLE_PUBLIC_LABELS[metadata.dearmeRole],
+          status: teamStatus(agent.status),
+          currentFocus: TEAM_ROLE_FOCUS[metadata.dearmeRole],
+          lastActiveAt: toIso(agent.lastHeartbeatAt ?? agent.updatedAt),
+        });
+      }
+
+      const team = Array.from(teamByRole.values())
         .sort((a, b) => TEAM_ROLE_ORDER.get(a.role)! - TEAM_ROLE_ORDER.get(b.role)!);
 
       const outputs = outputsResponse.outputs;
@@ -530,6 +689,17 @@ export function dearmeWorkbenchService(db: Db) {
         .filter((activity) => activity.action.startsWith("dearme."))
         .map(progressFromActivity)
         .slice(0, 5);
+      const latestMemory = memoryRows
+        .map(memoryFromActivity)
+        .filter((item): item is DearMeMemoryUpdateItem => Boolean(item));
+      const memory = {
+        summary: buildMemorySummary(latestMemory),
+        sourceCount: latestMemory.length,
+        voiceSampleCount: latestMemory.filter((item) => item.kind === "voice_sample").length,
+        proofCount: latestMemory.filter((item) => item.kind === "proof_point").length,
+        voiceProfile: buildMemoryVoiceProfile(latestMemory),
+        latest: latestMemory,
+      };
       const reportOutput = outputs.find((output) => output.kind === "weekly_report") ?? null;
       const workStream = buildWorkStream({
         activeWork,
@@ -560,6 +730,7 @@ export function dearmeWorkbenchService(db: Db) {
         batchDecisions,
         recentProgress,
         workStream,
+        memory,
         report: reportOutput
           ? {
               title: reportOutput.title,

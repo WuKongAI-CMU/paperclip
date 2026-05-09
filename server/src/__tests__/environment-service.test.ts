@@ -161,6 +161,7 @@ describeEmbeddedPostgres("environmentService leases", () => {
     const rows = await db.select().from(environments).where(eq(environments.companyId, companyId));
     expect(rows).toHaveLength(1);
     expect(rows[0]?.name).toBe("Local");
+    expect(rows[0]?.description).toBe("Default execution environment for DearMe runs on this machine.");
   });
 
   it("leaves an existing default local environment untouched", async () => {

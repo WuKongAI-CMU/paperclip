@@ -1,20 +1,38 @@
-# DearMe v4 — Architecture (max-reuse mode, post-OPC funnel)
+# DearMe v4 — Superseded Historical Architecture Appendix
 
-> Supersedes V3. After Peter's Day-2 decisions: max-reuse from Polsia, no funding, small team, ship-velocity over IP cleanliness, OPC funnel TAM with Side Hustler as primary entry.
+> Historical snapshot from the max-reuse planning phase. This file no longer
+> supersedes the current DearMe product architecture.
+
+> 2026-05-07 PM update: the canonical product architecture is now
+> `PRODUCT-ARCHITECTURE.md`. This file remains a technical appendix for max-reuse
+> implementation ideas. The product lock is **DearMe = personal brand growth
+> team**, not journal, companion, generic writing tool, or agent admin console.
+
+> 2026-05-07 architecture correction: do not treat this file as the current
+> platform plan. DearMe should now be built as the first product on Paperclip,
+> using OK Partner as source material that can be renamed, collapsed, or
+> rewritten when DearMe benefits. Keep Polsia as the choreography/reference
+> source, not as a mandate to clone every Render/Neon, Stripe Connect, MCP, or
+> per-customer app-factory detail.
 
 ---
 
-## 0. Operating doctrine (locked)
+## 0. Operating doctrine (superseded)
 
 ```
-Reuse maximum. Originality minimum.
-Verbatim copy of Polsia prompts / SKILL.md / patterns is fine.
-Sed-rename strings (Polsia→DearMe). Don't rewrite for IP cleanliness.
-Goal: working MVP in 3-6 weeks, not 12.
-No GitHub push. Local commits only until we know what we have.
+This older max-reuse doctrine is no longer the implementation contract.
+
+Current rule:
+- Reuse Paperclip/Naive kernel primitives.
+- Adapt Polsia product choreography.
+- Reshape OK Partner-derived source material when it helps DearMe.
+- Ship DearMe-original code, prompts, names, assets, and customer-facing copy.
+- Follow REBRAND-AND-PROVENANCE.md when any donor/source-material document
+  conflicts with provenance, ownership, asset, or public-narrative hygiene.
 ```
 
-**Implication: every "should we build it ourselves or copy?" question defaults to copy.**
+**Implication: every "should we copy or adapt?" question now defaults to
+DearMe-specific adaptation over permitted/reusable primitives.**
 
 ---
 

@@ -16,6 +16,7 @@ import { cn, relativeTime } from "../lib/utils";
 import { queryKeys } from "../lib/queryKeys";
 import { keepPreviousDataForSameQueryTail } from "../lib/query-placeholder-data";
 import { describeRunRetryState } from "../lib/runRetryState";
+import { PRODUCT_NAME } from "../lib/product-labels";
 
 type IssueRunLedgerProps = {
   issueId: string;
@@ -116,7 +117,7 @@ const PENDING_LIVENESS_COPY: LivenessCopy = {
 const RETRY_PENDING_LIVENESS_COPY: LivenessCopy = {
   label: "Retry pending",
   tone: "border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
-  description: "Paperclip queued an automatic retry that has not started yet.",
+  description: `${PRODUCT_NAME} queued an automatic retry that has not started yet.`,
 };
 
 const MISSING_LIVENESS_COPY: LivenessCopy = {
@@ -316,7 +317,7 @@ function stopReasonLabel(run: RunForIssue) {
   if (stopReason === "cancelled") return "cancelled";
   if (stopReason === "paused") return "paused by board";
   if (stopReason === "process_lost") return "process lost";
-  if (stopReason === "adapter_failed") return "adapter failed";
+  if (stopReason === "adapter_failed") return "runner failed";
   if (stopReason === "completed") return timeoutText ? `completed (${timeoutText})` : "completed";
   return timeoutText;
 }
@@ -393,7 +394,7 @@ function watchdogDecisionErrorMessage(error: unknown) {
   }
   return error instanceof Error && error.message.trim().length > 0
     ? error.message
-    : "Paperclip could not record the watchdog decision.";
+    : `${PRODUCT_NAME} could not record the watchdog decision.`;
 }
 
 export function IssueRunLedger({

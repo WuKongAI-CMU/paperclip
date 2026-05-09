@@ -208,6 +208,10 @@ function evidenceReason(evidence: RunLivenessEvidenceInput) {
   return parts.join(", ");
 }
 
+function hasDurableDeliverableEvidence(evidence: RunLivenessEvidenceInput) {
+  return evidence.documentRevisionsCreated + evidence.workProductsCreated > 0;
+}
+
 function stripMarkdownListPrefix(line: string) {
   return line.replace(/^\s*(?:[-*]|\d+\.)\s+/, "").trim();
 }
@@ -317,8 +321,16 @@ export function classifyRunLiveness(input: RunLivenessClassificationInput): RunL
     return output("completed", `Issue is ${issueStatus}`);
   }
 
+  if (issueStatus === "blocked") {
+    return output("blocked", "Issue status is blocked", nextAction);
+  }
+
+  if (hasDurableDeliverableEvidence(evidence) && actionability !== "blocked_external") {
+    return output("advanced", `Run produced concrete action evidence: ${evidenceReason(evidence)}`);
+  }
+
   if (declaredBlocker(input)) {
-    return output("blocked", issueStatus === "blocked" ? "Issue status is blocked" : "Run output declared a concrete blocker", nextAction);
+    return output("blocked", "Run output declared a concrete blocker", nextAction);
   }
 
   if (!usefulOutput && !concreteEvidence) {

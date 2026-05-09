@@ -1,5 +1,10 @@
 # DearMe — Complete Backlog
 
+> 2026-05-07 consolidation: historical source material only. Current direction
+> is `README.md`, `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`,
+> `POLSIA-NAIVE-REUSE-PLAN.md`, and `REBRAND-AND-PROVENANCE.md`. Do not follow
+> clone/verbatim-copy instructions below when they conflict with those files.
+
 Architect-view of every item needed to ship a 1:1 Polsia clone fork-tuned for personal brands. Estimates assume 1 senior full-stack engineer.
 
 Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · `[Lh]` = hours
