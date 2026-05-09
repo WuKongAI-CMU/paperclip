@@ -2,6 +2,27 @@
 
 Date: 2026-05-09
 
+## Polsia / Naive Comparison Lock - 2026-05-09
+
+Docs slice:
+
+- Added `POLSIA-NAIVE-COMPARISON.md` as the durable donor comparison: Polsia is
+  the source for visible growth-team choreography, while Naive/Paperclip remains
+  the backstage control plane for work, routines, approvals, costs, and
+  execution.
+- Linked the comparison from the DearMe docs entry point so future product
+  slices start from the same donor split instead of re-litigating Polsia vs
+  Naive.
+- Captured the current DM-105 implication: cycle controls are customer-facing
+  Chief of Staff briefs, not direct runtime controls; existing Work Ready and
+  batch decision gates still own approval.
+- Verification:
+  - `rg -n "POLSIA-NAIVE-COMPARISON|Polsia / Naive Comparison Lock|DM-105 exposes" docs/dearme`
+    found the new comparison doc, README links, and build-state entry.
+  - `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
+    passed: 1 file, 19 tests.
+  - `git diff --check` passed.
+
 ## Premium Work Stream From Action Graph - 2026-05-09
 
 Implementation slice:

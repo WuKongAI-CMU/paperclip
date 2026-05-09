@@ -14,6 +14,8 @@
 
 **Marketing packaging guide:** [`POLSIA-MARKETING-PACKAGING-GUIDE.md`](POLSIA-MARKETING-PACKAGING-GUIDE.md)
 
+**Polsia / Naive comparison:** [`POLSIA-NAIVE-COMPARISON.md`](POLSIA-NAIVE-COMPARISON.md)
+
 **Polsia / Naive reuse contract:** [`POLSIA-NAIVE-REUSE-PLAN.md`](POLSIA-NAIVE-REUSE-PLAN.md)
 
 **Agency Agents role-library reference:** [`AGENCY-AGENTS-REFERENCE.md`](AGENCY-AGENTS-REFERENCE.md)
@@ -77,18 +79,21 @@ public provenance or copy-ready implementation material.
    - current product positioning, roadmap, P0 acceptance, and code architecture.
 4. [`POLSIA-MARKETING-PACKAGING-GUIDE.md`](POLSIA-MARKETING-PACKAGING-GUIDE.md)
    - product packaging rule: sell a personal brand growth team, not AI features.
-5. [`POLSIA-NAIVE-REUSE-PLAN.md`](POLSIA-NAIVE-REUSE-PLAN.md)
+5. [`POLSIA-NAIVE-COMPARISON.md`](POLSIA-NAIVE-COMPARISON.md)
+   - donor comparison: Polsia for visible choreography, Naive/Paperclip for
+     backstage work and approval substrate.
+6. [`POLSIA-NAIVE-REUSE-PLAN.md`](POLSIA-NAIVE-REUSE-PLAN.md)
    - reuse contract: Polsia choreography plus Naive/Paperclip control plane.
-6. [`LINDY-ASSISTANT-REUSE-PLAN.md`](LINDY-ASSISTANT-REUSE-PLAN.md)
+7. [`LINDY-ASSISTANT-REUSE-PLAN.md`](LINDY-ASSISTANT-REUSE-PLAN.md)
    - frontend/workflow reuse plan for work stream, action cards, knowledge UI, hidden action graphs, router, and executor patterns.
-7. [`ACTION-GRAPH-ARCHITECTURE.md`](ACTION-GRAPH-ARCHITECTURE.md)
+8. [`ACTION-GRAPH-ARCHITECTURE.md`](ACTION-GRAPH-ARCHITECTURE.md)
    - current bridge that projects Polsia choreography over Naive/Paperclip rows
      and prepares a Lindy-style premium work stream without a new runtime.
-8. [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md)
+9. [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md)
    - governance for competitor-informed work, donor-source language, and assets.
-9. [`BUILD-STATE.md`](BUILD-STATE.md)
+10. [`BUILD-STATE.md`](BUILD-STATE.md)
    - current slice inventory and verification history.
-10. [`AGENCY-AGENTS-REFERENCE.md`](AGENCY-AGENTS-REFERENCE.md)
+11. [`AGENCY-AGENTS-REFERENCE.md`](AGENCY-AGENTS-REFERENCE.md)
    - optional OSS role-library reference for DearMe team-member definitions and
      deliverable standards.
 
@@ -128,8 +133,9 @@ cross-donor architecture lock, [`WORKTREE-INTEGRATION-PLAN.md`](WORKTREE-INTEGRA
 for the current dirty-tree integration queue, [`PRODUCT-ARCHITECTURE.md`](PRODUCT-ARCHITECTURE.md)
 for the product surface summary, [`PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`](PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md)
 for the current positioning, feature roadmap, and code-architecture execution
-plan, [`POLSIA-NAIVE-REUSE-PLAN.md`](POLSIA-NAIVE-REUSE-PLAN.md) for the
-implementation-level reuse contract, [`LINDY-ASSISTANT-REUSE-PLAN.md`](LINDY-ASSISTANT-REUSE-PLAN.md)
+plan, [`POLSIA-NAIVE-COMPARISON.md`](POLSIA-NAIVE-COMPARISON.md) for the donor
+comparison matrix, [`POLSIA-NAIVE-REUSE-PLAN.md`](POLSIA-NAIVE-REUSE-PLAN.md)
+for the implementation-level reuse contract, [`LINDY-ASSISTANT-REUSE-PLAN.md`](LINDY-ASSISTANT-REUSE-PLAN.md)
 for frontend/workflow reuse candidates, [`ACTION-GRAPH-ARCHITECTURE.md`](ACTION-GRAPH-ARCHITECTURE.md)
 for the current projection bridge, and [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md)
 for the governance layer that wins over older max-reuse notes.
