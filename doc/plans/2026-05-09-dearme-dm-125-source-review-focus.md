@@ -44,14 +44,17 @@ proposed fact already prefilled.
 
 Completed:
 
-- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx` passed: 1 file,
-  30 tests.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 1 file, 30 tests.
 - `pnpm -r typecheck` passed.
 - `pnpm build` passed with existing Vite MarkdownEditor dynamic/static import
   and large-chunk warnings.
 - `git diff --check` passed.
 - Customer-surface substrate scan over the touched UI files passed with no
   donor/runtime/provider terminology leaks.
+- `pnpm test:run` did not pass under full-suite concurrency because
+  `DearMeOnboarding.test.tsx` hit the existing 5s first-test timeout and then
+  cascaded failures inside that file. The same file passed standalone.
 
 Not run:
 

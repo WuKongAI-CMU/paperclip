@@ -33,7 +33,7 @@ Rejected:
 
 Verification:
 
-- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx` passed:
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1` passed:
   1 file, 30 tests.
 - `pnpm -r typecheck` passed.
 - `pnpm build` passed with the existing Vite MarkdownEditor dynamic/static
@@ -44,6 +44,12 @@ Verification:
   OpenClaw, OK Partner, provider, adapter, setup payload, control-plane,
   workflow-builder, GraphQL, Relay, MCP, agent-runtime, routine, cost_event,
   anthropic, or claude language.
+- `pnpm test:run` did not pass in this run: the UI project hit the existing
+  5s timeout in `DearMeOnboarding.test.tsx` under full-suite concurrency, then
+  the same file produced cascade failures from the timed-out React root. The
+  DearMe onboarding file passed standalone with 30 tests, so this is recorded
+  as a full-run stability gap to isolate next rather than a DM-125 behavior
+  regression.
 - Manual browser visual smoke was not run in this slice; the behavior is
   covered by the focused UI test and broader typecheck/build gates.
 
