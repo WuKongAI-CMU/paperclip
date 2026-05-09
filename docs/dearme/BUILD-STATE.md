@@ -2,6 +2,44 @@
 
 Date: 2026-05-09
 
+## DM-116 Action Card State Variants - 2026-05-09
+
+Implementation slice:
+
+- Added a DearMe-owned `attention` notice to `DearMeActionCard` with
+  `decision_needed`, `paused`, `retry`, and `blocked` variants.
+- Preserved the existing shared card API for badges, chips, callouts, footer,
+  and action buttons so Live Team Feed, Decisions Needed, Work Ready, Private
+  Work, and Voice & Memory source cards can keep converging on one primitive.
+- Turned Lindy's paused/action-needed/retry lesson into product-safe DearMe
+  language: the component can say a team is waiting, continuing, or taking
+  another pass without exposing jobs, providers, adapters, or runtime controls.
+- Wired existing review-loop and status projections into the shared attention
+  grammar for Work Ready, Decisions Needed, Live Team Feed, and Private Work
+  cards.
+- Kept this slice inside the existing web projection path: no new route,
+  mutation, runtime state, database table, workflow editor, or server contract
+  was introduced.
+- Added DOM-level coverage for paused and retry attention states plus a
+  substrate-language guard in the component test, and extended onboarding
+  coverage for the newly wired attention states.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/dearme/DearMeActionCard.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 25 tests.
+- `pnpm -r typecheck` passed.
+- `pnpm build` passed. Vite still reports the existing
+  `MarkdownEditor.tsx` dynamic/static import warning plus chunk-size warnings.
+- `git diff --check` passed.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|model-provider|setup-payload|setup_payload|control-plane|raw issue" ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx ui/src/components/dearme/DearMeActionCard.tsx ui/src/components/dearme/DearMeActionCard.test.tsx`
+  returned no matches.
+
+Next:
+
+- Add a normalized retry/continue entrypoint that uses the existing DearMe
+  review routes and keeps raw job controls out of the customer surface.
+
 ## DM-115 Voice & Memory Action Card Reuse - 2026-05-09
 
 Implementation slice:

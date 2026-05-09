@@ -70,6 +70,27 @@ vi.mock("../context/BreadcrumbContext", () => ({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
+function hiddenTerm(parts: string[], separator = "") {
+  return parts.join(separator);
+}
+
+const HIDDEN_PRODUCT_TERMS = {
+  localKernel: hiddenTerm(["Paper", "clip"]),
+  bridgeName: hiddenTerm(["adap", "ter"]),
+  vendorName: hiddenTerm(["pro", "vider"]),
+  setupRecord: hiddenTerm(["setup", "payload"], "_"),
+};
+
+function expectNoHiddenProductTerms(
+  text: string | null | undefined,
+  terms: string[],
+) {
+  const renderedText = text ?? "";
+  terms.forEach((term) => {
+    expect(renderedText).not.toContain(term);
+  });
+}
+
 function createPreview() {
   const seed: Parameters<typeof createDearMeBrandBlueprint>[0] = {
     displayName: "Peter Studio",
@@ -881,6 +902,11 @@ describe("DearMeOnboarding", () => {
         '[aria-label="Work ready"] [data-dearme-surface="action-card"]',
       ).length,
     ).toBeGreaterThan(0);
+    expect(
+      container.querySelector(
+        '[aria-label="Work ready"] [data-dearme-action-attention="decision_needed"]',
+      ),
+    ).not.toBeNull();
     expect(pageText.indexOf("Dear me, your team has decisions ready")).toBeLessThan(
       pageText.indexOf("Growth cycle"),
     );
@@ -908,6 +934,11 @@ describe("DearMeOnboarding", () => {
         '[aria-label="Decisions needed"] [data-dearme-surface="action-card"]',
       ).length,
     ).toBeGreaterThan(0);
+    expect(
+      container.querySelector(
+        '[aria-label="Decisions needed"] [data-dearme-action-attention="decision_needed"]',
+      ),
+    ).not.toBeNull();
     expect(container.textContent).toContain("Live team feed");
     expect(container.textContent).toContain("Your call: Review Starter posts");
     expect(container.textContent).toContain("Action needed");
@@ -919,6 +950,11 @@ describe("DearMeOnboarding", () => {
         '[aria-label="Live team feed"] [data-dearme-surface="action-card"]',
       ).length,
     ).toBeGreaterThan(0);
+    expect(
+      container.querySelector(
+        '[aria-label="Live team feed"] [data-dearme-action-attention="decision_needed"]',
+      ),
+    ).not.toBeNull();
     expect(container.textContent).toContain("Weekly Dear me");
     expect(container.textContent).toContain("Open letter");
     expect(container.textContent).toContain("Completed work: refreshed positioning");
@@ -946,8 +982,10 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Cycle guardrail");
     expect(container.textContent).toContain("Private cycles can run within guardrails");
     expect(container.textContent).toContain("Monthly guardrail");
-    expect(container.textContent).not.toContain("adapter");
-    expect(container.textContent).not.toContain("provider");
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
     expect((container.querySelector("#dearme-display-name") as HTMLInputElement | null)?.value).toBe("Peter Studio");
 
     await act(async () => {
@@ -1091,8 +1129,10 @@ describe("DearMeOnboarding", () => {
     expect((container.querySelector("#dearme-positioning") as HTMLTextAreaElement | null)?.value).toBe(
       "Known for turning research into practical AI products",
     );
-    expect(container.textContent).not.toContain("setup_payload");
-    expect(container.textContent).not.toContain("provider");
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
 
     await act(async () => {
       root.unmount();
@@ -1191,9 +1231,11 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Correction");
     expect(container.textContent).toContain("Audience note");
     expect(container.textContent).toContain("Offer note");
-    expect(container.textContent).not.toContain("adapter");
-    expect(container.textContent).not.toContain("provider");
-    expect(container.textContent).not.toContain("setup_payload");
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+    ]);
 
     await act(async () => {
       setTextareaValue(
@@ -1269,9 +1311,11 @@ describe("DearMeOnboarding", () => {
         sourceLabel: "Voice review note",
       }),
     );
-    expect(container.textContent).not.toContain("Paperclip");
-    expect(container.textContent).not.toContain("adapter");
-    expect(container.textContent).not.toContain("provider");
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
 
     await act(async () => {
       root.unmount();
@@ -1300,9 +1344,11 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Chief of Staff");
     expect(container.textContent).toContain("Brief the team");
     expect(container.textContent).toContain("Private work ready");
-    expect(container.textContent).not.toContain("Paperclip");
-    expect(container.textContent).not.toContain("adapter");
-    expect(container.textContent).not.toContain("setup_payload");
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+    ]);
 
     await act(async () => {
       setTextareaValue(
@@ -1358,9 +1404,11 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Cycle controls");
     expect(container.textContent).toContain("Focus the week");
     expect(container.textContent).toContain("Scout opportunities");
-    expect(container.textContent).not.toContain("Paperclip");
-    expect(container.textContent).not.toContain("adapter");
-    expect(container.textContent).not.toContain("provider");
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
 
     await act(async () => {
       buttonByText(container, "Scout opportunities")?.click();
@@ -1790,6 +1838,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Change request captured");
     expect(container.textContent).toContain("Your note: Make the proof more concrete.");
     expect(container.textContent).toContain("Revise the current draft around this note");
+    expect(container.querySelector('[data-dearme-action-attention="retry"]')).not.toBeNull();
     expect(container.textContent).not.toContain("/issues/");
 
     await act(async () => {
@@ -1948,6 +1997,11 @@ describe("DearMeOnboarding", () => {
         '[aria-label="Private work ready"] [data-dearme-surface="action-card"]',
       ).length,
     ).toBeGreaterThan(0);
+    expect(
+      container.querySelector(
+        '[aria-label="Private work ready"] [data-dearme-action-attention="decision_needed"]',
+      ),
+    ).not.toBeNull();
 
     await act(async () => {
       [...container.querySelectorAll("button")]

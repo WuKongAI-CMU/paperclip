@@ -164,10 +164,12 @@ Remaining gaps:
 - live feed action-card behavior now goes through
   `ui/src/components/dearme/DearMeActionCard.tsx`, and Decisions Needed, Work
   Ready, Private Work output cards, plus Voice & Memory source cards now reuse
-  that same primitive; paused and retry states are still the remaining
-  extraction surfaces;
-- action-needed, paused, retry, continue, and blocked states are not yet
-  first-class DearMe work-stream blocks;
+  that same primitive; DM-116 adds shared decision-needed, paused, retry, and
+  blocked attention variants to the primitive and wires existing review-loop
+  and status data into the main work cards;
+- action-needed, paused, retry, continue, and blocked states now have a
+  customer-safe card grammar where existing web projections expose that state,
+  but still need a normalized retry/continue entrypoint;
 - routine telemetry and cost lineage are still thinly projected into the
   customer work stream;
 - Voice & Memory source ingestion has not yet adopted the Lindy knowledge-base
@@ -350,8 +352,11 @@ review behavior into a reusable DearMe action-card spine. DM-111 lands the first
 primitive for the live feed, and DM-112 moves Decisions Needed onto the same
 grammar. DM-113 moves Work Ready onto the same primitive, and DM-114 moves
 Private Work output cards onto it. DM-115 moves Voice & Memory source cards
-onto it; the remaining work is to move paused/retry and deeper review variants
-onto that same primitive.
+onto it. DM-116 adds decision-needed, paused, retry, and blocked attention
+variants to that same primitive and wires the current Work Ready, Decisions
+Needed, Live Feed, and Private Work projections to it; the remaining work is to
+add the normalized retry/continue action path and then move deeper review
+variants onto the shared card.
 
 Fresh read-only donor sweep:
 

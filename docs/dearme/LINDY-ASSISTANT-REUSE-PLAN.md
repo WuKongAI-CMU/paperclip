@@ -40,12 +40,15 @@ Already adapted:
   transcript/action-stream lesson.
 - DM-109 made feed cards actionable by routing directly to the focused DearMe
   review surface.
+- DM-111 through DM-115 moved Live Team Feed, Decisions Needed, Work Ready,
+  Private Work, and Voice & Memory source cards onto the shared
+  `DearMeActionCard` primitive.
+- DM-116 added product-safe decision-needed, paused, retry, and blocked
+  attention variants to that primitive and wired existing review-loop/status
+  data into the main work cards.
 
 Still missing:
 
-- a reusable DearMe action-card component instead of inline card behavior inside
-  `ui/src/pages/DearMeOnboarding.tsx`;
-- a first-class action-needed / paused / retry card grammar;
 - a Voice & Memory source-management surface based on the knowledge-base
   modal/tile pattern;
 - one normalized retry/continue entrypoint that maps DearMe run or review state
@@ -54,7 +57,7 @@ Still missing:
 Next direct reuse target:
 
 ```text
-Extract a DearMe-owned ActionCard primitive.
+Add a normalized retry/continue entrypoint on the DearMe-owned ActionCard path.
 
 Use the internal baseline ActionCard, paused-action-needed, retry, and knowledge
 source patterns as source material. Do not port the whole Relay/GraphQL

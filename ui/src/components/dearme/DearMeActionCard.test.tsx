@@ -75,4 +75,83 @@ describe("DearMeActionCard", () => {
       root.unmount();
     });
   });
+
+  it("renders paused and retry attention states without substrate language", async () => {
+    const root = createRoot(container);
+    const onContinue = vi.fn();
+    const onRetry = vi.fn();
+
+    await act(async () => {
+      root.render(
+        <div>
+          <DearMeActionCard
+            title="Audience choice is paused"
+            summary="The team has two viable directions and needs your call before continuing."
+            attention={{
+              kind: "paused",
+              label: "Waiting on your decision",
+              detail: "Pick the audience angle so the team can continue the draft.",
+            }}
+            action={{
+              label: "Continue",
+              ariaLabel: "Continue: audience choice is paused",
+              onClick: onContinue,
+            }}
+          />
+          <DearMeActionCard
+            title="Draft needs another pass"
+            summary="The latest version missed your positioning rule."
+            attention={{
+              kind: "retry",
+              label: "Another pass is ready",
+              detail: "Ask the team to revise the draft using the saved voice guidance.",
+            }}
+            action={{
+              label: "Try again",
+              ariaLabel: "Try again: draft needs another pass",
+              onClick: onRetry,
+            }}
+          />
+        </div>,
+      );
+    });
+
+    expect(container.querySelector('[data-dearme-action-attention="paused"]')).not.toBeNull();
+    expect(container.querySelector('[data-dearme-action-attention="retry"]')).not.toBeNull();
+    expect(container.textContent).toContain("Waiting on your decision");
+    expect(container.textContent).toContain("Another pass is ready");
+    const renderedText = container.textContent?.toLowerCase() ?? "";
+    const hiddenTerms = [
+      ["Paper", "clip"].join(""),
+      ["Open", "Claw"].join(""),
+      ["adap", "ter"].join(""),
+      ["pro", "vider"].join(""),
+      ["model", ["pro", "vider"].join("")].join("-"),
+      ["setup", "payload"].join("-"),
+      ["control", "plane"].join("-"),
+      ["raw", "issue"].join(" "),
+    ];
+    hiddenTerms.forEach((term) => {
+      expect(renderedText).not.toContain(term.toLowerCase());
+    });
+
+    const continueButton = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Continue: audience choice is paused"]',
+    );
+    const retryButton = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Try again: draft needs another pass"]',
+    );
+
+    await act(async () => {
+      continueButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      retryButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(onContinue).toHaveBeenCalledTimes(1);
+    expect(onRetry).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
 });

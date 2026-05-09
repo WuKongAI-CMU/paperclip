@@ -1,5 +1,12 @@
 import type { ComponentProps, ReactNode } from "react";
-import { ArrowRight, type LucideIcon } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+  PauseCircle,
+  RefreshCw,
+  type LucideIcon,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,12 +35,25 @@ export type DearMeActionCardAction = {
   variant?: ButtonVariant;
 };
 
+export type DearMeActionCardAttentionKind =
+  | "decision_needed"
+  | "paused"
+  | "retry"
+  | "blocked";
+
+export type DearMeActionCardAttention = {
+  kind: DearMeActionCardAttentionKind;
+  label: ReactNode;
+  detail?: ReactNode;
+};
+
 export type DearMeActionCardProps = {
   title: ReactNode;
   summary?: ReactNode;
   eyebrow?: ReactNode;
   statusBadges?: DearMeActionCardBadge[];
   chips?: DearMeActionCardChip[];
+  attention?: DearMeActionCardAttention | null;
   calloutLabel?: ReactNode;
   callout?: ReactNode;
   footer?: ReactNode;
@@ -49,6 +69,7 @@ export function DearMeActionCard({
   eyebrow,
   statusBadges = [],
   chips = [],
+  attention,
   calloutLabel,
   callout,
   footer,
@@ -96,11 +117,17 @@ export function DearMeActionCard({
           ))}
         </div>
       ) : null}
+      {attention ? (
+        <DearMeActionCardAttentionNotice
+          attention={attention}
+          className={chips.length > 0 ? "mt-3" : undefined}
+        />
+      ) : null}
       {callout ? (
         <div
           className={cn(
             "rounded-md border border-border bg-background/80 p-3",
-            chips.length > 0 ? "mt-3" : undefined,
+            chips.length > 0 || attention ? "mt-3" : undefined,
           )}
         >
           {calloutLabel ? (
@@ -117,6 +144,62 @@ export function DearMeActionCard({
       ) : null}
       {children ? <div className="mt-3">{children}</div> : null}
     </DearMeWorkbenchCard>
+  );
+}
+
+const DEARME_ACTION_CARD_ATTENTION_STYLES: Record<
+  DearMeActionCardAttentionKind,
+  {
+    Icon: LucideIcon;
+    className: string;
+    iconClassName: string;
+  }
+> = {
+  decision_needed: {
+    Icon: AlertCircle,
+    className: "border-primary/30 bg-primary/5",
+    iconClassName: "text-primary",
+  },
+  paused: {
+    Icon: PauseCircle,
+    className: "border-amber-500/30 bg-amber-500/10",
+    iconClassName: "text-amber-600 dark:text-amber-400",
+  },
+  retry: {
+    Icon: RefreshCw,
+    className: "border-sky-500/30 bg-sky-500/10",
+    iconClassName: "text-sky-600 dark:text-sky-400",
+  },
+  blocked: {
+    Icon: AlertTriangle,
+    className: "border-destructive/30 bg-destructive/10",
+    iconClassName: "text-destructive",
+  },
+};
+
+function DearMeActionCardAttentionNotice({
+  attention,
+  className,
+}: {
+  attention: DearMeActionCardAttention;
+  className?: string;
+}) {
+  const style = DEARME_ACTION_CARD_ATTENTION_STYLES[attention.kind];
+  const Icon = style.Icon;
+
+  return (
+    <div
+      className={cn("flex items-start gap-2 rounded-md border p-3", style.className, className)}
+      data-dearme-action-attention={attention.kind}
+    >
+      <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", style.iconClassName)} aria-hidden="true" />
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{attention.label}</p>
+        {attention.detail ? (
+          <div className="mt-1 text-sm text-muted-foreground">{attention.detail}</div>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

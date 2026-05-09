@@ -45,7 +45,10 @@ import {
   DearMeWorkbenchCard,
   DearMeWorkbenchSectionHeader,
 } from "../components/DearMeShell";
-import { DearMeActionCard } from "../components/dearme/DearMeActionCard";
+import {
+  DearMeActionCard,
+  type DearMeActionCardAttention,
+} from "../components/dearme/DearMeActionCard";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
@@ -463,6 +466,117 @@ function reviewLoopVariant(loop: DearMeOutputReviewLoop) {
   if (loop.state === "retry_limit_reached" || loop.state === "not_useful") return "destructive" as const;
   if (loop.state === "fresh" || loop.state === "needs_user_review") return "outline" as const;
   return "secondary" as const;
+}
+
+function reviewLoopAttention(loop: DearMeOutputReviewLoop | null | undefined): DearMeActionCardAttention | null {
+  if (!loop) return null;
+
+  switch (loop.state) {
+    case "needs_user_review":
+      return {
+        kind: "decision_needed",
+        label: "Waiting on your decision",
+        detail: loop.nextStep,
+      };
+    case "revision_requested":
+      return {
+        kind: "retry",
+        label: "Changes requested",
+        detail: loop.nextStep,
+      };
+    case "regeneration_requested":
+      return {
+        kind: "retry",
+        label: "Another pass is in motion",
+        detail: loop.nextStep,
+      };
+    case "not_useful":
+      return {
+        kind: "paused",
+        label: "New direction needed",
+        detail: loop.nextStep,
+      };
+    case "retry_limit_reached":
+      return {
+        kind: "blocked",
+        label: "Needs clearer direction",
+        detail: loop.nextStep,
+      };
+    case "approved":
+    case "fresh":
+      return null;
+  }
+}
+
+function outputActionAttention(
+  status: DearMeOutputStatus,
+  loop: DearMeOutputReviewLoop | null | undefined,
+): DearMeActionCardAttention | null {
+  const loopAttention = reviewLoopAttention(loop);
+  if (loopAttention) return loopAttention;
+
+  if (status === "ready_for_review") {
+    return {
+      kind: "decision_needed",
+      label: "Ready for your review",
+      detail: loop?.nextStep ?? "Open it, then approve, request changes, regenerate, or mark it not useful.",
+    };
+  }
+  if (status === "blocked") {
+    return {
+      kind: "blocked",
+      label: "Needs attention",
+      detail: loop?.nextStep ?? "Give the team a clearer direction before this can continue.",
+    };
+  }
+  if (status === "cancelled") {
+    return {
+      kind: "blocked",
+      label: "Stopped",
+      detail: "This prepared work is no longer moving forward.",
+    };
+  }
+
+  return null;
+}
+
+function decisionActionAttention(decision: DearMeWorkbenchDecision): DearMeActionCardAttention {
+  return reviewLoopAttention(decision.reviewLoop) ?? {
+    kind: "decision_needed",
+    label: "Waiting on your decision",
+    detail: decision.reviewLoop?.nextStep ?? decisionAfterCallLabel(decision.riskGate),
+  };
+}
+
+function streamActionAttention(item: DearMeWorkbenchStreamItem): DearMeActionCardAttention | null {
+  const loopAttention = reviewLoopAttention(item.reviewLoop);
+  if (loopAttention) return loopAttention;
+
+  if (item.needsApproval) {
+    return {
+      kind: "decision_needed",
+      label: "Waiting on your decision",
+      detail: item.nextAction,
+    };
+  }
+
+  const status = item.status.toLowerCase();
+  if (status.includes("blocked") || status.includes("cancelled") || status.includes("failed")) {
+    return {
+      kind: "blocked",
+      label: "Needs attention",
+      detail: item.nextAction,
+    };
+  }
+  if (status.includes("paused") || status.includes("waiting")) {
+    return {
+      kind: "paused",
+      label: "Paused",
+      detail: item.nextAction,
+    };
+  }
+
+  return null;
 }
 
 function ReviewLoopBadges({ loop }: { loop: DearMeOutputReviewLoop }) {
@@ -1606,6 +1720,7 @@ function WorkReadyPanel({
                 eyebrow={roleLabel(item.ownerRole)}
                 title={item.title}
                 summary={item.summary}
+                attention={outputActionAttention(item.status, item.reviewLoop)}
                 statusBadges={[
                   {
                     label: OUTPUT_STATUS_LABELS[item.status],
@@ -1692,6 +1807,11 @@ function DecisionsNeededPanel({
               className="p-4"
               title={batch.title}
               summary={batch.summary}
+              attention={{
+                kind: "decision_needed",
+                label: "Waiting on your decision",
+                detail: `Review ${batch.itemCount} prepared move${batch.itemCount === 1 ? "" : "s"} before anything public or external happens.`,
+              }}
               statusBadges={[
                 {
                   label: batch.riskGate ? RISK_GATE_LABELS[batch.riskGate] : "Review",
@@ -1752,6 +1872,7 @@ function DecisionsNeededPanel({
               className="p-4"
               title={decision.title}
               summary={decision.summary}
+              attention={decisionActionAttention(decision)}
               statusBadges={[
                 {
                   label: decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval",
@@ -2135,6 +2256,7 @@ function LiveTeamFeedPanel({
               }
               title={item.title}
               summary={item.summary}
+              attention={streamActionAttention(item)}
               statusBadges={[
                 { label: WORKSTREAM_KIND_LABELS[item.kind], variant: "outline" },
                 {
@@ -3169,6 +3291,7 @@ function PrivateWorkPanel({
                   className="flex min-h-44 flex-col p-4"
                   title={output.title}
                   summary={output.summary}
+                  attention={outputActionAttention(output.status, output.reviewLoop)}
                   statusBadges={[
                     {
                       label: OUTPUT_STATUS_LABELS[output.status],

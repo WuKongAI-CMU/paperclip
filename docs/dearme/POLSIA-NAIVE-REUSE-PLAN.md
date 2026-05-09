@@ -54,8 +54,11 @@ Still not maximized:
   as DearMe-safe progress context.
 - Lindy-style reusable action cards have started landing as the live-feed,
   Decisions Needed, Work Ready, Private Work, and Voice & Memory source
-  `DearMeActionCard` surfaces, but paused states, retry, and deeper review
-  surfaces still need to move onto the shared primitive.
+  `DearMeActionCard` surfaces; DM-116 adds shared paused, retry, blocked, and
+  decision-needed attention grammar to the same primitive and wires current
+  review-loop/status projections into the main work cards.
+- The normalized retry/continue entrypoint still needs to become DearMe-safe
+  product behavior rather than a raw execution control.
 - Voice & Memory still needs richer source import and management before it can
   feel like a durable Brand OS, not just generated text.
 
