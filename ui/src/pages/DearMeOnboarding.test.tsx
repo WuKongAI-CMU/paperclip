@@ -535,8 +535,20 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Work ready / Decisions needed");
     expect(container.textContent).toContain("Your brand team today");
     expect(container.textContent).toContain("Dear me, your team has decisions ready");
+    expect(container.textContent).toContain("Growth cycle");
+    expect(container.textContent).toContain("Plan, work, review, then learn.");
+    expect(container.textContent).toContain("Chief of Staff sets the cycle");
+    expect(container.textContent).toContain("The team prepares assets");
+    expect(container.textContent).toContain("You make the high-leverage calls");
+    expect(container.textContent).toContain("Nothing publishes, sends, deploys, or spends without your approval.");
     expect(container.textContent).toContain("Prepared work waiting for review");
     expect(container.textContent).toContain("Why it matters");
+    expect(pageText.indexOf("Dear me, your team has decisions ready")).toBeLessThan(
+      pageText.indexOf("Growth cycle"),
+    );
+    expect(pageText.indexOf("Growth cycle")).toBeLessThan(
+      pageText.indexOf("Prepared work waiting for review"),
+    );
     expect(pageText.indexOf("Prepared work waiting for review")).toBeLessThan(
       pageText.indexOf("High-leverage calls"),
     );

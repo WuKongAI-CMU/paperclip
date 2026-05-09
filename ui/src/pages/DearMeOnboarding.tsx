@@ -21,6 +21,7 @@ import {
   type DearMeWorkbenchDecision,
   type DearMeWorkbenchMemory,
   type DearMeWorkbenchReport,
+  type DearMeWorkbenchResponse,
   type DearMeWorkbenchStreamItem,
   type DearMeWorkbenchTeamMember,
   type DearMeWorkbenchWorkItem,
@@ -461,6 +462,10 @@ function voiceProfileVariant(status: DearMeWorkbenchMemory["voiceProfile"]["stat
 
 function pluralizeGrowthCycle(count: number) {
   return `${count} growth cycle${count === 1 ? "" : "s"}`;
+}
+
+function pluralizeCount(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
 }
 
 function memoryUpdateFeedback(result: DearMeMemoryUpdateResult | null) {
@@ -1347,6 +1352,104 @@ function DecisionsNeededPanel({
   );
 }
 
+function OperatingLoopPanel({
+  workbench,
+  paidBetaActive,
+}: {
+  workbench: DearMeWorkbenchResponse;
+  paidBetaActive: boolean;
+}) {
+  const decisionCount = workbench.decisionsNeeded.length + workbench.batchDecisions.length;
+  const workCount = workbench.workReady.length + workbench.activeWork.length;
+  const latestEvent = workbench.workStream[0] ?? null;
+  const loopStages = [
+    {
+      key: "plan",
+      icon: Gauge,
+      label: "Plan",
+      title: "Chief of Staff sets the cycle",
+      summary: "Turns your Brand OS into the few moves that should compound your public surface this week.",
+      signal: pluralizeCount(workbench.team.length, "team role"),
+    },
+    {
+      key: "work",
+      icon: Workflow,
+      label: "Work",
+      title: "The team prepares assets",
+      summary: "Content, opportunity, and proof lanes turn private sources into draft work before you step in.",
+      signal: workCount > 0 ? pluralizeCount(workCount, "item") : "Ready after the first cycle",
+    },
+    {
+      key: "review",
+      icon: ShieldCheck,
+      label: "Review",
+      title: "You make the high-leverage calls",
+      summary: "Prepared posts, outreach, pages, and claims wait for your decision before they represent you.",
+      signal: decisionCount > 0 ? pluralizeCount(decisionCount, "call") : "No call waiting",
+    },
+  ];
+
+  return (
+    <DearMePanel aria-label="Growth cycle operating loop">
+      <DearMeWorkbenchSectionHeader
+        icon={Workflow}
+        eyebrow="Growth cycle"
+        title="Plan, work, review, then learn."
+        description="DearMe keeps the operating rhythm visible while the underlying work stays private and approval-gated."
+        trailing={
+          <Badge variant={paidBetaActive ? "default" : "secondary"}>
+            {paidBetaActive ? "Cycle active" : "Preview mode"}
+          </Badge>
+        }
+      />
+
+      <div className="mt-5 grid gap-3 lg:grid-cols-3">
+        {loopStages.map((stage) => {
+          const Icon = stage.icon;
+          return (
+            <DearMeWorkbenchCard
+              key={stage.key}
+              className="p-4"
+              eyebrow={<Badge variant="outline">{stage.label}</Badge>}
+              title={stage.title}
+              description={stage.summary}
+              badge={
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground">
+                  <Icon className="h-5 w-5" />
+                </div>
+              }
+            >
+              <p className="mt-4 text-xs font-medium uppercase text-muted-foreground">{stage.signal}</p>
+            </DearMeWorkbenchCard>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
+        <div className="rounded-md border border-border bg-background/80 p-4">
+          <p className="text-xs font-medium uppercase text-muted-foreground">Latest signal</p>
+          {latestEvent ? (
+            <>
+              <p className="mt-2 text-sm font-medium">{latestEvent.title}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{latestEvent.summary}</p>
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Start the first growth cycle to see what the team is doing now.
+            </p>
+          )}
+        </div>
+        <div className="rounded-md border border-border bg-background/80 p-4">
+          <p className="text-xs font-medium uppercase text-muted-foreground">Safety boundary</p>
+          <p className="mt-2 text-sm text-foreground/85">
+            Nothing publishes, sends, deploys, or spends without your approval.
+          </p>
+        </div>
+      </div>
+    </DearMePanel>
+  );
+}
+
 function DearMeLetterPanel({
   report,
   onOpenIssue,
@@ -1931,6 +2034,8 @@ function TeamWorkbenchPanel({
       ) : null}
 
       <TeamSummaryPanel workbench={workbench} paidBetaActive={paidBetaActive} />
+
+      <OperatingLoopPanel workbench={workbench} paidBetaActive={paidBetaActive} />
 
       <ChiefOfStaffComposerPanel
         paidBetaActive={paidBetaActive}

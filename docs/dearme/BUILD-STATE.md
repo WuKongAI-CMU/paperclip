@@ -2,6 +2,27 @@
 
 Date: 2026-05-09
 
+## Polsia / Naive / Lindy Operating Loop - 2026-05-09
+
+Implementation slice:
+
+- Pattern-adapted the DM-099 operating-loop UI instead of merging the divergent
+  worker branch wholesale.
+- Made the paid-beta workbench expose a customer-visible growth cycle: Plan,
+  Work, Review, plus the latest work-stream signal.
+- Reused the existing Naive/Paperclip-derived workbench response fields:
+  `team`, `workReady`, `activeWork`, `decisionsNeeded`, `batchDecisions`,
+  `workStream`, and `report`. No new tables, routes, jobs, or providers were
+  added for this slice.
+- Kept Lindy-style decision/action-card language around batch decisions and the
+  approval queue while keeping machinery names out of the paid-beta surface.
+- Kept Polsia-style visible momentum without copying Polsia's company-factory
+  framing or making reputation-risk actions automatic.
+- Verification:
+  - `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
+    passed: 1 file, 16 tests.
+  - `pnpm --filter @paperclipai/ui typecheck` passed.
+
 ## Chief of Staff Composer - 2026-05-09
 
 Implementation slice:
