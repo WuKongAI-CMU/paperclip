@@ -1938,6 +1938,11 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Decisions needed");
     expect(container.textContent).toContain("Review one public claim");
     expect(container.textContent).toContain("Ready for review");
+    expect(
+      container.querySelectorAll(
+        '[aria-label="Private work ready"] [data-dearme-surface="action-card"]',
+      ).length,
+    ).toBeGreaterThan(0);
 
     await act(async () => {
       [...container.querySelectorAll("button")]

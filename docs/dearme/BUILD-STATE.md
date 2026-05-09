@@ -2,6 +2,44 @@
 
 Date: 2026-05-09
 
+## DM-114 Private Work Action Card Reuse - 2026-05-09
+
+Implementation slice:
+
+- Reused `DearMeActionCard` for the Private Work output surface so generated
+  private reports, drafts, voice guidance, opportunity work, and portfolio work
+  now share the same customer-facing action card primitive as Live Team Feed,
+  Decisions Needed, and Work Ready.
+- Preserved existing Naive/Paperclip-backed routes and state:
+  - `Review` and `Open` still call `onOpenOutput(output)` and route through the
+    existing DearMe decision URL with issue/output focus.
+  - output status, review loop state, output kind, preview, next step,
+    details, private references, and updated-at projections remain the source
+    of truth.
+- Preserved the Polsia product lesson: Private Work still reads as prepared
+  team output waiting for the user's next decision, not a raw issue queue.
+- Applied Lindy's reusable action-card grammar without importing Lindy runtime,
+  GraphQL, workflow builder assumptions, or donor copy.
+- Added DOM-level coverage that the Private Work section now renders
+  `data-dearme-surface="action-card"` cards while keeping the existing route
+  assertion intact.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/dearme/DearMeActionCard.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 24 tests.
+- `pnpm -r typecheck` passed.
+- `pnpm build` passed. Vite still reports existing chunk-size/dynamic-import
+  warnings around the broader app bundle, but no build failure.
+- `git diff --check` passed.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|model-provider|setup-payload|setup_payload|control-plane|raw issue" ui/src/pages/DearMeOnboarding.tsx ui/src/components/dearme/DearMeActionCard.tsx ui/src/components/dearme/DearMeActionCard.test.tsx`
+  returned no matches.
+
+Next:
+
+- Reuse `DearMeActionCard` for Voice & Memory source cards before adding
+  paused/retry variants.
+
 ## DM-113 Work Ready Action Card Reuse - 2026-05-09
 
 Implementation slice:

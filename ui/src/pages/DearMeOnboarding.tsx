@@ -3160,31 +3160,35 @@ function PrivateWorkPanel({
                   : ""
               }`;
               return (
-                <DearMeWorkbenchCard
+                <DearMeActionCard
                   key={output.id}
                   className="flex min-h-44 flex-col p-4"
                   title={output.title}
-                  description={output.summary}
-                  badge={
-                    <div className="flex shrink-0 flex-col items-end gap-2">
-                      <Badge variant={outputStatusVariant(output.status)}>
-                        {OUTPUT_STATUS_LABELS[output.status]}
-                      </Badge>
-                      <ReviewLoopBadges loop={output.reviewLoop} />
-                    </div>
-                  }
+                  summary={output.summary}
+                  statusBadges={[
+                    {
+                      label: OUTPUT_STATUS_LABELS[output.status],
+                      variant: outputStatusVariant(output.status),
+                    },
+                    {
+                      label: reviewLoopLabel(output.reviewLoop),
+                      variant: "outline",
+                    },
+                    {
+                      label: reviewLoopStateLabel(output.reviewLoop),
+                      variant: reviewLoopVariant(output.reviewLoop),
+                    },
+                    {
+                      label: OUTPUT_KIND_LABELS[output.kind],
+                      variant: "outline",
+                    },
+                  ]}
                   footer={footer}
-                  action={
-                    <Button
-                      type="button"
-                      variant={output.isReviewable ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => onOpenOutput(output)}
-                    >
-                      {output.isReviewable ? "Review" : "Open"}
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  }
+                  action={{
+                    label: output.isReviewable ? "Review" : "Open",
+                    onClick: () => onOpenOutput(output),
+                    variant: output.isReviewable ? "default" : "outline",
+                  }}
                 >
                   {preview ? (
                     <p className="line-clamp-3 text-sm text-foreground/80">{preview}</p>
@@ -3206,7 +3210,7 @@ function PrivateWorkPanel({
                       ))}
                     </dl>
                   ) : null}
-                </DearMeWorkbenchCard>
+                </DearMeActionCard>
               );
             })}
           </div>
