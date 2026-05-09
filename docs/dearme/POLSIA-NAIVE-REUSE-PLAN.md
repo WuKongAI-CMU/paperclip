@@ -34,6 +34,12 @@ are genuinely DearMe-specific.
 
 The current DearMe branch has moved beyond architecture-only planning.
 
+The 2026-05-09 Polsia/Naive comparison in
+`docs/dearme/POLSIA-NAIVE-COMPARISON.md` confirms the split: Polsia is the
+product choreography and customer trust reference; Naive/Paperclip is the
+execution, approval, budget, and worker substrate. DearMe should not pick one
+donor wholesale or copy either product surface directly.
+
 Already implemented:
 
 - `brand_blueprint` exists as a typed DearMe contract rather than a raw
@@ -82,6 +88,10 @@ Naive/Paperclip = keep execution, approval, document, routine, and cost truth.
 Lindy = extract reusable web action-card and action-needed patterns.
 DearMe = translate all of that into personal-brand language.
 ```
+
+If a slice is blocked by a product-experience question, bias toward Polsia. If
+it is blocked by a work-state, spend, approval, or worker-isolation question,
+bias toward Naive/Paperclip.
 
 ## 2. Polsia Reuse
 

@@ -42,13 +42,13 @@ workspace app with inherited bottom navigation.
 
 ## Verification
 
-- `pnpm exec vitest run ui/src/components/DearMeSidebar.test.tsx ui/src/components/Layout.test.tsx --maxWorkers=1`
-- `pnpm -r typecheck`
+- `pnpm exec vitest run ui/src/components/Layout.test.tsx ui/src/components/DearMeSidebar.test.tsx ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
 - `git diff --check`
 - Customer-surface hidden-term scan over touched DearMe shell files.
-- Browser plugin mobile `390x844` on `/dearme`: title
+- Playwright mobile `390x844` on `/dearme`: title
   `Team · DearMe · DearMe`, redirected URL `/DEAA/dearme`, DearMe mobile nav
   count `1`, generic nav count `0`, console error/warn logs empty, More opens
   the full DearMe menu.
-- Browser plugin desktop `1280x720` on `/dearme`: mobile nav count `0`,
+- Playwright desktop `1440x1000` on `/dearme`: mobile nav count `0`,
   generic nav count `0`, console error/warn logs empty.

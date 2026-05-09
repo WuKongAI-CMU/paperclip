@@ -38,17 +38,17 @@ Rejected:
 
 Verification:
 
-- `pnpm exec vitest run ui/src/components/DearMeSidebar.test.tsx ui/src/components/Layout.test.tsx --maxWorkers=1`
-  passed: 2 files, 14 tests.
-- `pnpm -r typecheck` passed across the workspace.
+- `pnpm exec vitest run ui/src/components/Layout.test.tsx ui/src/components/DearMeSidebar.test.tsx ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 3 files, 48 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
 - `git diff --check` passed.
 - Customer-surface hidden-term scan over the touched DearMe shell files
   returned no matches.
-- Browser plugin mobile `390x844` on `/dearme` passed: title
+- Playwright mobile `390x844` on `/dearme` passed: title
   `Team · DearMe · DearMe`, redirected URL `/DEAA/dearme`, DearMe mobile nav
   count `1`, generic nav count `0`, console error/warn logs empty, and More
   opened the full DearMe menu.
-- Browser plugin desktop `1280x720` on `/dearme` passed: mobile nav count `0`,
+- Playwright desktop `1440x1000` on `/dearme` passed: mobile nav count `0`,
   generic nav count `0`, and console error/warn logs empty.
 
 Next:
