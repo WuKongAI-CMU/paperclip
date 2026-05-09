@@ -2,6 +2,36 @@
 
 Date: 2026-05-09
 
+## Integration Wrap-Up - 2026-05-09
+
+Current integrated state:
+
+- Before this wrap-up pass, `dearme` was clean and pointed at `69f46e10`.
+- `69f46e10` contains DM-134 and is also contained by
+  `codex/dearme-dm-134-brand-team-run-ledger`.
+- DM-134 has already been fast-forward merged into `dearme`.
+- The current long-running goal remains active; the product is not complete.
+
+Product judgment:
+
+- DearMe has moved from a generic operator shell toward a customer-facing
+  personal brand team surface.
+- The most valuable reuse so far is not raw UI copying. It is the product
+  division of labor: Polsia for visible team momentum, Naive/Paperclip for
+  hidden execution substrate, Lindy for review/action-card grammar, and
+  Littlebird for compact web ergonomics.
+- The next missing product moment is still first-run proof: a new user should
+  see a credible team output package before connecting real channels or
+  trusting deeper automation.
+
+Next:
+
+- Continue with DM-135: first-run sample team proof, so a new user sees a
+  credible Voice Profile, starter posts, opportunity lead, proof card, and
+  first plan before connecting real channels.
+- Keep DM-135 as a projection over existing preview/workbench data unless code
+  evidence proves a shared contract change is needed.
+
 ## DM-134 Brand Team Run Ledger - 2026-05-09
 
 Implementation slice:
@@ -56,7 +86,7 @@ Verification:
 
 Next:
 
-- Commit and fast-forward merge the DM-134 branch back to `dearme`.
+- DM-134 is committed and fast-forward merged into `dearme`.
 - Continue with DM-135: first-run sample team proof, so a new user sees a
   credible team output before connecting real channels.
 
