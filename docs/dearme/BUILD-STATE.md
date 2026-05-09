@@ -2,6 +2,54 @@
 
 Date: 2026-05-09
 
+## DM-135 First-Run Sample Team Proof - 2026-05-09
+
+Implementation slice:
+
+- Confirmed the existing first-cycle preview contract already generates a
+  Voice Profile, three starter posts, one opportunity lead, one portfolio proof
+  card, and one first growth plan from a single positioning answer.
+- Added the missing customer proof in the DearMe first-run result: the generated
+  package now renders its approval boundary and blocked public actions directly
+  beside the sample work.
+- Recorded the DM-135 plan in
+  `doc/plans/2026-05-09-dearme-dm-135-first-run-sample-team-proof.md`.
+
+Donor reuse:
+
+- Polsia remains the choreography reference: the first run should feel like a
+  small team is already moving across content, opportunity, portfolio, and
+  planning lanes.
+- Naive/Paperclip remains the hidden implementation substrate: this slice
+  reused the existing shared contract, route, service, and UI API.
+- Lindy remains the review grammar reference: the proof package now shows what
+  is ready and what is approval-gated before external action.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 1 file, 34 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check` passed.
+- Customer-surface hidden-term scan over `ui/src/pages/DearMeOnboarding.tsx`
+  returned no matches.
+- Browser-plugin check on `http://127.0.0.1:3100/DEAA/dearme` exercised the
+  first-cycle preview and showed the generated package plus approval boundary.
+- Playwright desktop `1440x1000` and mobile `390x844` passed on
+  `/DEAA/dearme`: all first-run package sections and approval-boundary actions
+  visible, no horizontal overflow, no framework overlay, no relevant console
+  error/warn logs, and no customer-visible donor/runtime terms.
+- Screenshot evidence:
+  `/tmp/dearme-dm135-desktop-first-run-proof.png` and
+  `/tmp/dearme-dm135-mobile-first-run-proof.png`.
+
+Next:
+
+- DM-135 is ready to commit.
+- Next product slice should be DM-136: make a polished sample/demo proof path so
+  a visitor can understand the team package even before entering their own
+  positioning answer.
+
 ## Donor Provenance Hardening - 2026-05-09
 
 Current integrated state:

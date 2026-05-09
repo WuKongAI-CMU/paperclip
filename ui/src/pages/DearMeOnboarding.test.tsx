@@ -1660,6 +1660,9 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Opportunity lead");
     expect(container.textContent).toContain("Portfolio proof card");
     expect(container.textContent).toContain("First growth plan");
+    expect(container.textContent).toContain("Approval-gated by default");
+    expect(container.textContent).toContain("Publish social posts");
+    expect(container.textContent).toContain("Deploy public page changes");
     expect((container.querySelector("#dearme-positioning") as HTMLTextAreaElement | null)?.value).toBe(
       "Known for turning research into practical AI products",
     );

@@ -80,7 +80,7 @@ Working rule:
 
 | DearMe area | Current implementation evidence | Donor reuse status | Next gap |
 | --- | --- | --- | --- |
-| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. DM-130 adapts Polsia's "work happened while I was away" choreography, Lindy's two-rail home composition, and Littlebird's focused step/task-row discipline into the first workbench surface. DM-131 browser-polished the focus grid so the live desktop/mobile shell keeps the current work card compact and readable. DM-132 adds a DearMe-specific mobile nav so the phone shell routes users to Home, Decisions, Work Ready, Voice, and More without showing generic workspace destinations. DM-133 makes focused decision actions mobile-safe. DM-134 adds a Brand Team Run Ledger so the first product surface records what the team tried, prepared, learned, and needs from the user. | Next shell work should polish first-run onboarding and sample-mode proof, not create a new runtime UI. |
+| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. DM-130 adapts Polsia's "work happened while I was away" choreography, Lindy's two-rail home composition, and Littlebird's focused step/task-row discipline into the first workbench surface. DM-131 browser-polished the focus grid so the live desktop/mobile shell keeps the current work card compact and readable. DM-132 adds a DearMe-specific mobile nav so the phone shell routes users to Home, Decisions, Work Ready, Voice, and More without showing generic workspace destinations. DM-133 makes focused decision actions mobile-safe. DM-134 adds a Brand Team Run Ledger so the first product surface records what the team tried, prepared, learned, and needs from the user. DM-135 renders the first-run generated package with its approval boundary, proving that one positioning answer can produce useful team work without exposing runtime machinery. | Next shell work should polish sample/demo proof before personal input, not create a new runtime UI. |
 | Brand OS / `brand_blueprint` | `packages/shared/src/validators/dearme.ts`; `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/routes/dearme.ts` | Naive `setup_payload` pattern has been adapted into a typed DearMe contract and approval-gated apply flow. | Keep extending this contract only when P0 surfaces need it. |
 | Workbench projection | `server/src/services/dearme-workbench.ts`; `server/src/__tests__/dearme-workbench.test.ts` | Naive/Paperclip tables remain the substrate for team, work, decisions, progress, reports, and memory projections. | Do not add a second runtime; enrich read models first. |
 | Action graph and work stream | `docs/dearme/ACTION-GRAPH-ARCHITECTURE.md`; `packages/shared/src/validators/dearme.ts`; `ui/src/components/dearme/DearMeActionCard.tsx` | Polsia cycle/report choreography plus Lindy action-card grammar are already converging into customer-safe work cards. DM-133 makes focused decision/detail actions mobile-safe without changing the hidden approval/output-review substrate. DM-134 adds a typed `runLedger` read model derived from the existing workbench stream, with latest memory as a fallback, without adding another event table. | Use the ledger as the customer-facing progress spine before adding notification or report surfaces. |
@@ -92,6 +92,33 @@ Working rule:
 | Development factory | `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` | Symphony-style worker queue is useful for bounded tickets after coordinator updates the queue. | Workers must use this ledger and `BUILD-STATE.md` before selecting old tickets. |
 
 ## Recently Completed
+
+### DM-135: First-Run Sample Team Proof
+
+Goal: make the first DearMe run prove the team shape before a customer connects
+real channels or trusts deeper automation.
+
+Donor grounding:
+
+- Polsia first-wow choreography: multiple lanes should visibly move from one
+  user direction.
+- Naive/Paperclip hidden substrate: reuse the existing first-cycle preview
+  contract, route, service, and UI API instead of adding another runtime.
+- Lindy review grammar: show what is prepared and what remains approval-gated
+  before external action.
+- Littlebird web ergonomics: keep the proof package compact enough for the
+  customer shell.
+
+Completed:
+
+- Confirmed the existing preview contract already returns a Voice Profile, three
+  starter posts, one opportunity lead, one portfolio proof card, and one first
+  growth plan.
+- Rendered the preview's approval boundary and blocked public actions next to
+  the generated first-run package.
+- Added focused UI coverage for the approval boundary.
+- Verified the slice on desktop and mobile browser viewports without
+  donor/runtime language leaking into the customer path.
 
 ### DM-134: Brand Team Run Ledger
 

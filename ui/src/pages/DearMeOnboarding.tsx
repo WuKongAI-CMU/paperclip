@@ -1444,6 +1444,20 @@ function FirstCyclePanel({
             />
           </section>
 
+          <DearMeWorkbenchCard
+            title={preview.approvalBoundary.label}
+            description={preview.approvalBoundary.summary}
+            badge={<ShieldCheck className="h-4 w-4 text-muted-foreground" />}
+          >
+            <DearMeChecklist
+              className="sm:grid-cols-2"
+              icon={CheckCircle2}
+              items={preview.approvalBoundary.blockedActions}
+              itemClassName="bg-background/60"
+              aria-label="Approval boundary blocked actions"
+            />
+          </DearMeWorkbenchCard>
+
           {preview.warnings.length > 0 ? (
             <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
               {preview.warnings[0]}
