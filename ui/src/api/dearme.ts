@@ -5,6 +5,8 @@ import type {
   DearMeBrandBlueprintExecutionPlan,
   DearMeBrandBlueprintPreview,
   DearMeBrandBlueprintSummary,
+  DearMeChiefOfStaffMessage,
+  DearMeChiefOfStaffMessageResult,
   DearMeFirstCyclePreview,
   DearMeFirstCyclePreviewResponse,
   DearMeMemoryUpdate,
@@ -47,6 +49,11 @@ export interface DearMePaidBetaRecordResult {
 export const dearmeApi = {
   getWorkbench: (companyId: string) =>
     api.get<DearMeWorkbenchResponse>(`/dearme/companies/${companyId}/workbench`),
+  sendChiefOfStaffMessage: (companyId: string, data: DearMeChiefOfStaffMessage) =>
+    api.post<DearMeChiefOfStaffMessageResult>(
+      `/dearme/companies/${companyId}/chief-of-staff/messages`,
+      data,
+    ),
   getOutputs: (companyId: string) =>
     api.get<DearMeOutputsResponse>(`/dearme/companies/${companyId}/outputs`),
   reviewOutput: (companyId: string, outputId: string, data: DearMeOutputReviewRequest) =>

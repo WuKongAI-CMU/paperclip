@@ -27,16 +27,26 @@ const mockDearMeWorkbenchService = vi.hoisted(() => ({
   getWorkbench: vi.fn(),
 }));
 
+const mockAgentService = vi.hoisted(() => ({
+  list: vi.fn(),
+}));
+
+const mockIssueService = vi.hoisted(() => ({
+  create: vi.fn(),
+}));
+
 const mockLogActivity = vi.hoisted(() => vi.fn());
 const mockQueueIssueAssignmentWakeup = vi.hoisted(() => vi.fn());
 
 function registerModuleMocks() {
   vi.doMock("../services/index.js", () => ({
+    agentService: () => mockAgentService,
     dearmeBrandBlueprintService: () => mockDearMeBrandBlueprintService,
     dearmeMemoryContextService: () => mockDearMeMemoryContextService,
     dearmeOutputHandoffService: () => mockDearMeOutputHandoffService,
     dearmePaidBetaAccessService: () => mockDearMePaidBetaAccessService,
     dearmeWorkbenchService: () => mockDearMeWorkbenchService,
+    issueService: () => mockIssueService,
     logActivity: mockLogActivity,
   }));
   vi.doMock("../services/heartbeat.js", () => ({
@@ -266,6 +276,7 @@ describe("DearMe brand blueprint routes", () => {
     mockDearMeBrandBlueprintService.createApplyRequest.mockReset();
     mockDearMePaidBetaAccessService.getAccess.mockReset();
     mockDearMePaidBetaAccessService.recordPayment.mockReset();
+    mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("active"));
     mockDearMeOutputHandoffService.listOutputs.mockReset();
     mockDearMeOutputHandoffService.reviewOutput.mockReset();
     mockDearMeMemoryContextService.refreshRoutineMemoryContext.mockReset();
@@ -276,6 +287,23 @@ describe("DearMe brand blueprint routes", () => {
       skipped: 1,
     });
     mockDearMeWorkbenchService.getWorkbench.mockReset();
+    mockAgentService.list.mockReset();
+    mockIssueService.create.mockReset();
+    mockAgentService.list.mockResolvedValue([
+      {
+        id: "agent-chief-1",
+        metadata: {
+          source: "dearme_brand_blueprint_apply",
+          dearmeRole: "chief_of_staff",
+        },
+      },
+    ]);
+    mockIssueService.create.mockResolvedValue({
+      id: "issue-chief-1",
+      identifier: "PET-22",
+      title: "DearMe: Plan next moves - Launch positioning changed",
+      assigneeAgentId: "agent-chief-1",
+    });
     mockQueueIssueAssignmentWakeup.mockReset();
     mockLogActivity.mockReset();
     mockLogActivity.mockResolvedValue(undefined);
@@ -385,6 +413,98 @@ describe("DearMe brand blueprint routes", () => {
     expect(res.body.workStream[0].artifact).toBe("Content drafts");
     expect(mockDearMeWorkbenchService.getWorkbench).toHaveBeenCalledWith("company-1");
     expect(mockLogActivity).not.toHaveBeenCalled();
+  });
+
+  it("records a Chief of Staff brief as private DearMe work and wakes the team member", async () => {
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/chief-of-staff/messages")
+      .send({
+        intent: "plan_next",
+        message: "Launch positioning changed. Prepare the next three moves before I publish anything.",
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({
+      companyId: "company-1",
+      status: "queued",
+      issueId: "issue-chief-1",
+      issueIdentifier: "PET-22",
+      title: "DearMe: Plan next moves - Launch positioning changed",
+      nextStep: "Chief of Staff has the brief and will prepare the next private move for review.",
+    });
+    expect(mockIssueService.create).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        title: expect.stringContaining("Plan next moves"),
+        status: "todo",
+        priority: "high",
+        assigneeAgentId: "agent-chief-1",
+        originKind: "dearme_chief_of_staff_message",
+      }),
+    );
+    expect(mockIssueService.create.mock.calls[0][1].description).toContain(
+      "Prepare the next useful move privately",
+    );
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: "dearme.chief_of_staff_message",
+        entityType: "issue",
+        entityId: "issue-chief-1",
+      }),
+    );
+    expect(mockQueueIssueAssignmentWakeup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        issue: expect.objectContaining({ id: "issue-chief-1" }),
+        reason: "dearme_chief_of_staff_message",
+      }),
+    );
+  });
+
+  it("saves a Chief of Staff brief before the team member exists", async () => {
+    mockAgentService.list.mockResolvedValue([]);
+    mockIssueService.create.mockResolvedValue({
+      id: "issue-chief-2",
+      identifier: "PET-23",
+      title: "DearMe: Prepare report - Friday recap",
+      assigneeAgentId: null,
+    });
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/chief-of-staff/messages")
+      .send({
+        intent: "prepare_report",
+        message: "Friday recap",
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe("recorded");
+    expect(res.body.nextStep).toContain("Approve Brand OS");
+    expect(mockIssueService.create).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        status: "backlog",
+        assigneeAgentId: null,
+      }),
+    );
+    expect(mockQueueIssueAssignmentWakeup).not.toHaveBeenCalled();
+  });
+
+  it("keeps Chief of Staff briefs locked during trial preview", async () => {
+    mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("trial"));
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/chief-of-staff/messages")
+      .send({
+        intent: "plan_next",
+        message: "Prepare the next brand move.",
+      });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe("Add a paid beta credit purchase to unlock the private Brand OS work loop.");
+    expect(mockIssueService.create).not.toHaveBeenCalled();
+    expect(mockAgentService.list).not.toHaveBeenCalled();
+    expect(mockQueueIssueAssignmentWakeup).not.toHaveBeenCalled();
   });
 
   it("rejects DearMe workbench reads outside the caller scope", async () => {

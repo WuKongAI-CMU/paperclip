@@ -136,6 +136,13 @@ export const DEARME_MEMORY_UPDATE_KINDS = [
   "relationship",
   "preference",
 ] as const;
+export const DEARME_CHIEF_OF_STAFF_MESSAGE_INTENTS = [
+  "plan_next",
+  "draft_content",
+  "find_opportunities",
+  "refresh_portfolio",
+  "prepare_report",
+] as const;
 export const DEARME_VOICE_GATE_CHECK_KINDS = [
   "voice_samples",
   "forbidden_phrases",
@@ -469,6 +476,20 @@ export const dearMePaidBetaRecordSchema = z.object({
   externalInvoiceId: value.externalInvoiceId ?? null,
 }));
 
+export const dearMeChiefOfStaffMessageSchema = z.object({
+  intent: z.enum(DEARME_CHIEF_OF_STAFF_MESSAGE_INTENTS).default("plan_next"),
+  message: longTextSchema,
+}).strict();
+
+export const dearMeChiefOfStaffMessageResultSchema = z.object({
+  companyId: z.string().min(1),
+  status: z.enum(["queued", "recorded"]),
+  issueId: z.string().min(1),
+  issueIdentifier: z.string().nullable(),
+  title: shortTextSchema,
+  nextStep: mediumTextSchema,
+}).strict();
+
 export const dearMeOutputDocumentSchema = z.object({
   id: z.string().min(1),
   key: z.string().min(1),
@@ -693,6 +714,9 @@ export type DearMeFirstCyclePreview = z.infer<typeof dearMeFirstCyclePreviewSche
 export type DearMeFirstCyclePreviewResponse = z.infer<typeof dearMeFirstCyclePreviewResponseSchema>;
 export type DearMeVoiceGateEvaluation = z.infer<typeof dearMeVoiceGateEvaluationSchema>;
 export type DearMeVoiceGateResult = z.infer<typeof dearMeVoiceGateResultSchema>;
+export type DearMeChiefOfStaffMessage = z.infer<typeof dearMeChiefOfStaffMessageSchema>;
+export type DearMeChiefOfStaffMessageIntent = z.infer<typeof dearMeChiefOfStaffMessageSchema>["intent"];
+export type DearMeChiefOfStaffMessageResult = z.infer<typeof dearMeChiefOfStaffMessageResultSchema>;
 export type DearMeMemoryUpdate = z.infer<typeof dearMeMemoryUpdateSchema>;
 export type DearMeMemoryUpdateItem = z.infer<typeof dearMeMemoryUpdateItemSchema>;
 export type DearMeMemoryUpdateKind = z.infer<typeof dearMeMemoryUpdateSchema>["kind"];

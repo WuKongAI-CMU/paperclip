@@ -6,6 +6,8 @@ import {
   DEARME_MEMORY_UPDATE_KINDS,
   DEARME_PAID_BETA_MIN_PAYMENT_CENTS,
   type DearMeBrandBlueprintExecutionPlan,
+  type DearMeChiefOfStaffMessageIntent,
+  type DearMeChiefOfStaffMessageResult,
   type DearMeFirstCyclePreviewResponse,
   type DearMeMemoryUpdate,
   type DearMeMemoryUpdateKind,
@@ -55,6 +57,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import {
@@ -64,7 +73,9 @@ import {
   CreditCard,
   FileText,
   Gauge,
+  MessageSquare,
   RefreshCw,
+  Send,
   ShieldCheck,
   Sparkles,
   Users,
@@ -97,6 +108,40 @@ const FIELD_HELP = {
   voiceSamples: "Paste two short samples when available",
   constraints: "Boundaries DearMe must preserve",
 };
+
+const CHIEF_OF_STAFF_INTENT_OPTIONS: Array<{
+  value: DearMeChiefOfStaffMessageIntent;
+  label: string;
+  helper: string;
+}> = [
+  {
+    value: "plan_next",
+    label: "Plan next moves",
+    helper: "Prioritize the next brand loop.",
+  },
+  {
+    value: "draft_content",
+    label: "Draft content",
+    helper: "Turn proof and point of view into private drafts.",
+  },
+  {
+    value: "find_opportunities",
+    label: "Find opportunities",
+    helper: "Prepare outreach angles and relevant leads.",
+  },
+  {
+    value: "refresh_portfolio",
+    label: "Refresh portfolio",
+    helper: "Package proof into site-ready updates.",
+  },
+  {
+    value: "prepare_report",
+    label: "Prepare report",
+    helper: "Summarize progress, decisions, and next bets.",
+  },
+];
+
+const DEFAULT_CHIEF_OF_STAFF_INTENT: DearMeChiefOfStaffMessageIntent = "plan_next";
 
 function buildDearMeDecisionRoute(params: {
   approvalId?: string;
@@ -1634,6 +1679,123 @@ function VoiceMemoryPanel({
   );
 }
 
+function ChiefOfStaffComposerPanel({
+  paidBetaActive,
+  isPending,
+  error,
+  result,
+  onSubmit,
+  onOpenIssue,
+}: {
+  paidBetaActive: boolean;
+  isPending: boolean;
+  error: string | null;
+  result: DearMeChiefOfStaffMessageResult | null;
+  onSubmit: (input: { intent: DearMeChiefOfStaffMessageIntent; message: string }) => void;
+  onOpenIssue: (issueReference: string) => void;
+}) {
+  const [intent, setIntent] = useState<DearMeChiefOfStaffMessageIntent>(DEFAULT_CHIEF_OF_STAFF_INTENT);
+  const [message, setMessage] = useState("");
+  const selectedIntent = CHIEF_OF_STAFF_INTENT_OPTIONS.find((option) => option.value === intent) ?? {
+    value: DEFAULT_CHIEF_OF_STAFF_INTENT,
+    label: "Plan next moves",
+    helper: "Prioritize the next brand loop.",
+  };
+  const trimmedMessage = message.trim();
+  const disabled = !paidBetaActive || isPending || trimmedMessage.length === 0;
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (disabled) return;
+    onSubmit({ intent, message: trimmedMessage });
+    setMessage("");
+  }
+
+  return (
+    <DearMePanel className="bg-muted/10" aria-label="Chief of Staff composer">
+      <DearMeWorkbenchSectionHeader
+        icon={MessageSquare}
+        eyebrow="Chief of Staff"
+        title="Brief the team"
+        description="Ask for the next plan, a content batch, opportunity research, a portfolio update, or this week's direction. DearMe keeps the work private until you approve a move."
+        trailing={
+          <Badge variant={paidBetaActive ? "secondary" : "outline"}>
+            {paidBetaActive ? "Private work ready" : "Paid beta needed"}
+          </Badge>
+        }
+      />
+      <form className="mt-5 space-y-3" onSubmit={handleSubmit}>
+        <div className="grid gap-3 lg:grid-cols-[16rem_minmax(0,1fr)]">
+          <div>
+            <Select
+              value={intent}
+              onValueChange={(value) => setIntent(value as DearMeChiefOfStaffMessageIntent)}
+              disabled={!paidBetaActive || isPending}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CHIEF_OF_STAFF_INTENT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="mt-2 text-xs text-muted-foreground">{selectedIntent.helper}</p>
+          </div>
+          <div className="space-y-3">
+            <Textarea
+              id="dearme-chief-of-staff-message"
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              disabled={!paidBetaActive || isPending}
+              placeholder="Tell Chief of Staff what changed, what you want, or what decision you need prepared."
+              className="min-h-28 resize-y"
+            />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-muted-foreground">
+                External actions, spend, publishing, and public claims still come back for approval.
+              </p>
+              <Button type="submit" disabled={disabled}>
+                {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                Send to Chief of Staff
+              </Button>
+            </div>
+          </div>
+        </div>
+      </form>
+      {!paidBetaActive ? (
+        <div className="mt-4 rounded-md border border-border bg-background/70 px-3 py-2 text-sm text-muted-foreground">
+          Activate paid beta and approve Brand OS before briefing the private team.
+        </div>
+      ) : null}
+      {error ? (
+        <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      ) : null}
+      {result ? (
+        <div className="mt-4 flex flex-col gap-3 rounded-md border border-border bg-background/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">{result.status === "queued" ? "Brief sent" : "Brief saved"}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{result.nextStep}</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenIssue(result.issueIdentifier ?? result.issueId)}
+          >
+            <ArrowRight className="h-4 w-4" />
+            Open private work
+          </Button>
+        </div>
+      ) : null}
+    </DearMePanel>
+  );
+}
+
 function TeamWorkbenchPanel({
   companyId,
   paidBetaActive,
@@ -1659,9 +1821,26 @@ function TeamWorkbenchPanel({
 }) {
   const queryClient = useQueryClient();
   const [memoryError, setMemoryError] = useState<string | null>(null);
+  const [chiefOfStaffError, setChiefOfStaffError] = useState<string | null>(null);
+  const [chiefOfStaffResult, setChiefOfStaffResult] = useState<DearMeChiefOfStaffMessageResult | null>(null);
   const workbenchQuery = useQuery({
     queryKey: queryKeys.dearme.workbench(companyId),
     queryFn: () => dearmeApi.getWorkbench(companyId),
+  });
+  const chiefOfStaffMutation = useMutation({
+    mutationFn: (input: { intent: DearMeChiefOfStaffMessageIntent; message: string }) =>
+      dearmeApi.sendChiefOfStaffMessage(companyId, input),
+    onSuccess: (result) => {
+      setChiefOfStaffError(null);
+      setChiefOfStaffResult(result);
+      queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(companyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(companyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
+    },
+    onError: (err) => {
+      setChiefOfStaffResult(null);
+      setChiefOfStaffError(err instanceof Error ? err.message : "Could not send the Chief of Staff brief.");
+    },
   });
   const memoryMutation = useMutation({
     mutationFn: (input: DearMeMemoryUpdate) => dearmeApi.recordMemoryUpdate(companyId, input),
@@ -1752,6 +1931,15 @@ function TeamWorkbenchPanel({
       ) : null}
 
       <TeamSummaryPanel workbench={workbench} paidBetaActive={paidBetaActive} />
+
+      <ChiefOfStaffComposerPanel
+        paidBetaActive={paidBetaActive}
+        isPending={chiefOfStaffMutation.isPending}
+        error={chiefOfStaffError}
+        result={chiefOfStaffResult}
+        onSubmit={(input) => chiefOfStaffMutation.mutate(input)}
+        onOpenIssue={onOpenIssue}
+      />
 
       <DearMeCockpitGrid variant="primary">
         <WorkReadyPanel items={readyItems} onOpenWorkItem={openWorkItem} />

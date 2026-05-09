@@ -4,20 +4,26 @@ import type { Db } from "@paperclipai/db";
 import {
   dearMeBrandBlueprintApplyRequestSchema,
   dearMeBrandBlueprintPreviewSchema,
+  dearMeChiefOfStaffMessageResultSchema,
+  dearMeChiefOfStaffMessageSchema,
   dearMeFirstCyclePreviewSchema,
   dearMeMemoryUpdateResultSchema,
   dearMeMemoryUpdateSchema,
   dearMeOutputReviewRequestSchema,
   dearMePaidBetaRecordSchema,
+  type DearMeChiefOfStaffMessage,
+  type DearMeChiefOfStaffMessageIntent,
   type DearMeMemoryUpdate,
 } from "@paperclipai/shared";
 import { validate } from "../middleware/validate.js";
 import {
+  agentService,
   dearmeBrandBlueprintService,
   dearmeMemoryContextService,
   dearmeOutputHandoffService,
   dearmePaidBetaAccessService,
   dearmeWorkbenchService,
+  issueService,
   logActivity,
 } from "../services/index.js";
 import { forbidden } from "../errors.js";
@@ -29,10 +35,45 @@ function memoryBodyPreview(body: string) {
   return body.length > 700 ? `${body.slice(0, 697)}...` : body;
 }
 
+const CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND = "dearme_chief_of_staff_message";
+const CHIEF_OF_STAFF_INTENT_LABELS: Record<DearMeChiefOfStaffMessageIntent, string> = {
+  plan_next: "Plan next moves",
+  draft_content: "Draft content",
+  find_opportunities: "Find opportunities",
+  refresh_portfolio: "Refresh portfolio",
+  prepare_report: "Prepare report",
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function trimTitleFragment(value: string) {
+  const firstLine = value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.length > 0) ?? "New DearMe request";
+  return firstLine.length > 88 ? `${firstLine.slice(0, 85)}...` : firstLine;
+}
+
+function renderChiefOfStaffIssueDescription(input: DearMeChiefOfStaffMessage) {
+  const intentLabel = CHIEF_OF_STAFF_INTENT_LABELS[input.intent];
+  return [
+    "DearMe Chief of Staff request",
+    `Intent: ${intentLabel}`,
+    "User brief:",
+    input.message,
+    "Private-work boundary:",
+    "Prepare the next useful move privately. Drafts, outreach, public claims, spend, publishing, or site changes still need explicit user approval before leaving DearMe.",
+  ].join("\n\n");
+}
+
 export function dearmeRoutes(db: Db) {
   const router = Router();
+  const agents = agentService(db);
   const brandBlueprints = dearmeBrandBlueprintService(db);
   const memoryContext = dearmeMemoryContextService(db);
+  const issues = issueService(db);
   const outputHandoff = dearmeOutputHandoffService(db);
   const paidBetaAccess = dearmePaidBetaAccessService(db);
   const workbench = dearmeWorkbenchService(db);
@@ -108,6 +149,80 @@ export function dearmeRoutes(db: Db) {
 
       const { wakeIssue: _wakeIssue, ...responseBody } = result;
       res.status(responseBody.status === "queued" ? 202 : 200).json(responseBody);
+    },
+  );
+
+  router.post(
+    "/companies/:companyId/chief-of-staff/messages",
+    validate(dearMeChiefOfStaffMessageSchema),
+    async (req, res) => {
+      const companyId = req.params.companyId as string;
+      assertCompanyAccess(req, companyId);
+      assertBoard(req);
+      const actor = getActorInfo(req);
+      const input = req.body as DearMeChiefOfStaffMessage;
+      const access = await paidBetaAccess.getAccess(companyId);
+      if (!access.entitlement.canStartPrivateWork) {
+        throw forbidden(access.entitlement.nextActionDescription);
+      }
+      const agentRows = await agents.list(companyId);
+      const chiefOfStaff = agentRows.find((agent) => {
+        const metadata = agent.metadata;
+        return isRecord(metadata) && metadata.dearmeRole === "chief_of_staff";
+      }) ?? null;
+      const intentLabel = CHIEF_OF_STAFF_INTENT_LABELS[input.intent];
+      const issue = await issues.create(companyId, {
+        title: `DearMe: ${intentLabel} - ${trimTitleFragment(input.message)}`,
+        description: renderChiefOfStaffIssueDescription(input),
+        status: chiefOfStaff ? "todo" : "backlog",
+        priority: "high",
+        assigneeAgentId: chiefOfStaff?.id ?? null,
+        createdByAgentId: actor.agentId,
+        createdByUserId: actor.actorType === "user" ? actor.actorId : null,
+        originKind: CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND,
+        originId: randomUUID(),
+      });
+
+      await logActivity(db, {
+        companyId,
+        actorType: actor.actorType,
+        actorId: actor.actorId,
+        agentId: actor.agentId,
+        runId: actor.runId,
+        action: "dearme.chief_of_staff_message",
+        entityType: "issue",
+        entityId: issue.id,
+        details: {
+          intent: input.intent,
+          title: issue.title,
+          identifier: issue.identifier,
+          assigned: Boolean(chiefOfStaff),
+        },
+      });
+
+      if (chiefOfStaff) {
+        void queueIssueAssignmentWakeup({
+          heartbeat,
+          issue,
+          reason: "dearme_chief_of_staff_message",
+          mutation: "dearme.chief_of_staff_message",
+          contextSource: "dearme.chief_of_staff_message",
+          requestedByActorType: actor.actorType,
+          requestedByActorId: actor.actorId,
+        });
+      }
+
+      const responseBody = dearMeChiefOfStaffMessageResultSchema.parse({
+        companyId,
+        status: chiefOfStaff ? "queued" : "recorded",
+        issueId: issue.id,
+        issueIdentifier: issue.identifier ?? null,
+        title: issue.title,
+        nextStep: chiefOfStaff
+          ? "Chief of Staff has the brief and will prepare the next private move for review."
+          : "The brief was saved. Approve Brand OS to create the DearMe team and start private work.",
+      });
+      res.status(201).json(responseBody);
     },
   );
 

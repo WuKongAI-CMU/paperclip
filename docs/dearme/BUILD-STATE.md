@@ -1,6 +1,29 @@
 # DearMe Build State
 
-Date: 2026-05-07
+Date: 2026-05-09
+
+## Chief of Staff Composer - 2026-05-09
+
+Implementation slice:
+
+- Turned the Polsia-vs-Naive comparison into a concrete DearMe product move:
+  keep Polsia's visible Chief of Staff choreography in the customer shell while
+  routing work through the inherited issue and wakeup substrate.
+- Added a shared DearMe Chief of Staff message contract plus a DearMe-specific
+  API wrapper so the UI does not call the generic work queue directly.
+- Added a paid-beta-gated `/api/dearme/companies/:companyId/chief-of-staff/messages`
+  route that records a private work item, assigns and wakes the Chief of Staff
+  when the DearMe team exists, and saves the brief for later when Brand OS still
+  needs approval.
+- Added the paid-beta workbench composer before the existing work-ready panels,
+  with intent selection, private-work copy, success/error states, and a
+  DearMe decision route instead of exposing operator paths.
+- Added route and UI coverage for queued briefs, saved briefs, trial-lock
+  behavior, and customer-copy substrate boundaries.
+- Verification:
+  - `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/pages/DearMeOnboarding.test.tsx`
+    passed: 2 files, 36 tests.
+  - `pnpm typecheck` passed across the workspace.
 
 ## Reuse-First Architecture Refresh - 2026-05-07
 

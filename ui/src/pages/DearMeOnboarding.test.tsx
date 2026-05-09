@@ -18,6 +18,7 @@ const mockDearmeApi = vi.hoisted(() => ({
   getWorkbench: vi.fn(),
   getOutputs: vi.fn(),
   getPaidBetaAccess: vi.fn(),
+  sendChiefOfStaffMessage: vi.fn(),
   recordMemoryUpdate: vi.fn(),
   recordPaidBetaPayment: vi.fn(),
   previewFirstCycle: vi.fn(),
@@ -421,6 +422,14 @@ describe("DearMeOnboarding", () => {
       outputs: [],
     });
     mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("trial"));
+    mockDearmeApi.sendChiefOfStaffMessage.mockResolvedValue({
+      companyId: "company-1",
+      status: "queued",
+      issueId: "issue-chief-1",
+      issueIdentifier: "PET-22",
+      title: "DearMe: Plan next moves - Launch positioning changed",
+      nextStep: "Chief of Staff has the brief and will prepare the next private move for review.",
+    });
     mockDearmeApi.recordMemoryUpdate.mockResolvedValue({
       companyId: "company-1",
       status: "recorded",
@@ -803,6 +812,58 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).not.toContain("No Voice & Memory saved yet");
     expect(container.textContent).toContain("Fresh operator note");
     expect(container.textContent).toContain("Just saved");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("sends a Chief of Staff brief without exposing the work queue substrate", async () => {
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Chief of Staff");
+    expect(container.textContent).toContain("Brief the team");
+    expect(container.textContent).toContain("Private work ready");
+    expect(container.textContent).not.toContain("Paperclip");
+    expect(container.textContent).not.toContain("adapter");
+    expect(container.textContent).not.toContain("setup_payload");
+
+    await act(async () => {
+      setTextareaValue(
+        container.querySelector("#dearme-chief-of-staff-message") as HTMLTextAreaElement,
+        "Launch positioning changed. Prepare the next three moves before I publish anything.",
+      );
+      buttonByText(container, "Send to Chief of Staff")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.sendChiefOfStaffMessage).toHaveBeenCalledWith("company-1", {
+      intent: "plan_next",
+      message: "Launch positioning changed. Prepare the next three moves before I publish anything.",
+    });
+    expect(container.textContent).toContain("Brief sent");
+    expect(container.textContent).toContain("will prepare the next private move for review");
+    expect(container.textContent).toContain("Open private work");
+
+    await act(async () => {
+      buttonByText(container, "Open private work")?.click();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=decisions&issue=PET-22");
+    expect(container.textContent).not.toContain("/issues/");
 
     await act(async () => {
       root.unmount();
