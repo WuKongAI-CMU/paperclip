@@ -5410,6 +5410,44 @@ Not run:
   narrow UI copy contract slice with focused regression and UI typecheck
   coverage.
 
+## DM-104 Voice & Memory Source Surface - 2026-05-09
+
+Thirty-fourth verified DearMe slice:
+
+- Continued the Polsia/Naive reuse boundary: Polsia informs the customer-visible
+  team choreography, while the inherited memory update contract remains the
+  hidden storage path for private source material.
+- Added a Lindy-style source guide to the Voice & Memory panel with entry paths
+  for writing samples, proof points, source links, corrections, forbidden
+  phrases, audience notes, and offer notes.
+- Kept the surface compact and workbench-native instead of turning Voice &
+  Memory into a settings page.
+- Source links are recorded as private source/provenance labels through the
+  existing Voice & Memory update path; this slice does not fetch, scrape, upload,
+  publish, or execute any external link.
+- Added regression coverage proving a guided forbidden-phrase entry records as
+  a `constraint` memory update and keeps customer-visible substrate terms off
+  the page.
+
+Verification:
+
+- `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
+  passed: 1 file, 18 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check` passed.
+- Playwright fallback smoke on `http://127.0.0.1:3100/DEAA/dearme` passed
+  for desktop `1440x1100` and mobile `390x844`: Source guide and all seven
+  source paths rendered, the forbidden-phrase interaction selected the
+  `constraint` memory type, horizontal overflow was `0`, console/page errors
+  were empty, and visible page text did not include Paperclip/OpenClaw/provider/
+  adapter/setup-payload language.
+
+Not run:
+
+- Full `pnpm test:run`, `pnpm -r typecheck`, and `pnpm build`; this was a
+  narrow Voice & Memory source-entry slice over an already-rendered workbench
+  shell.
+
 ## Known Gaps
 
 - The `Process adapter missing command` blocker is fixed for newly applied Brand OS approvals, not retroactively for old smoke data.

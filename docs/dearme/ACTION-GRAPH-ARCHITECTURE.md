@@ -134,6 +134,8 @@ working" feeling visible without exposing substrate language.
 
 ### DM-104: Voice & Memory Source Surface
 
+Status: implemented in the DearMe onboarding/workbench shell on 2026-05-09.
+
 Use Lindy's knowledge/memory management patterns to let the user add and manage:
 
 - writing samples
@@ -142,6 +144,12 @@ Use Lindy's knowledge/memory management patterns to let the user add and manage:
 - corrections
 - forbidden phrases
 - audience and offer notes
+
+`Voice & Memory` now exposes a compact source guide over the existing
+customer-safe memory update contract. Source material can be added as a writing
+sample, proof point, source link, correction, forbidden phrase, audience note,
+or offer note without opening a separate settings surface or exposing execution
+substrate language.
 
 Acceptance: Voice Gate gets real source material without becoming a settings
 page.

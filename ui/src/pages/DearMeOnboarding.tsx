@@ -564,6 +564,98 @@ const MEMORY_KIND_LABELS: Record<DearMeMemoryUpdateKind, string> = {
   preference: "Preference",
 };
 
+type MemorySourceGuideId =
+  | "writing_sample"
+  | "proof_point"
+  | "source_link"
+  | "correction"
+  | "forbidden_phrase"
+  | "audience_note"
+  | "offer_note";
+
+const MEMORY_SOURCE_GUIDES: Array<{
+  id: MemorySourceGuideId;
+  kind: DearMeMemoryUpdateKind;
+  label: string;
+  helper: string;
+  titlePlaceholder: string;
+  sourcePlaceholder: string;
+  bodyPlaceholder: string;
+  icon: LucideIcon;
+}> = [
+  {
+    id: "writing_sample",
+    kind: "voice_sample",
+    label: "Writing sample",
+    helper: "A paragraph that already sounds like you.",
+    titlePlaceholder: "Founder note",
+    sourcePlaceholder: "Newsletter, post, transcript, or manual note",
+    bodyPlaceholder: "Paste the exact words DearMe should learn from.",
+    icon: Sparkles,
+  },
+  {
+    id: "proof_point",
+    kind: "proof_point",
+    label: "Proof point",
+    helper: "Specific shipped work, result, metric, or receipt.",
+    titlePlaceholder: "Shipped proof",
+    sourcePlaceholder: "Project, customer, repo, deck, or receipt",
+    bodyPlaceholder: "Record the concrete proof that future drafts can cite.",
+    icon: CheckCircle2,
+  },
+  {
+    id: "source_link",
+    kind: "proof_point",
+    label: "Source link",
+    helper: "A private URL or reference note for provenance.",
+    titlePlaceholder: "Reference link",
+    sourcePlaceholder: "https://example.com/source",
+    bodyPlaceholder: "Summarize what DearMe should remember from this source.",
+    icon: FileText,
+  },
+  {
+    id: "correction",
+    kind: "constraint",
+    label: "Correction",
+    helper: "A fix for wording, claim, or positioning.",
+    titlePlaceholder: "Voice correction",
+    sourcePlaceholder: "Review note, customer comment, or manual note",
+    bodyPlaceholder: "Write the correction DearMe should apply next time.",
+    icon: RefreshCw,
+  },
+  {
+    id: "forbidden_phrase",
+    kind: "constraint",
+    label: "Forbidden phrase",
+    helper: "Words, claims, or angles that must not appear.",
+    titlePlaceholder: "Forbidden phrase",
+    sourcePlaceholder: "Style guide, review note, or manual note",
+    bodyPlaceholder: "List the exact words, claims, or angles to avoid.",
+    icon: ShieldCheck,
+  },
+  {
+    id: "audience_note",
+    kind: "audience",
+    label: "Audience note",
+    helper: "Who this should speak to and what they care about.",
+    titlePlaceholder: "Audience note",
+    sourcePlaceholder: "Customer call, segment, or manual note",
+    bodyPlaceholder: "Describe the audience signal future work should honor.",
+    icon: Users,
+  },
+  {
+    id: "offer_note",
+    kind: "offer",
+    label: "Offer note",
+    helper: "What you can sell, invite, or ask for.",
+    titlePlaceholder: "Offer note",
+    sourcePlaceholder: "Offer doc, pricing note, or manual note",
+    bodyPlaceholder: "Describe the offer, ask, or collaboration shape.",
+    icon: Send,
+  },
+];
+const DEFAULT_MEMORY_SOURCE_GUIDE = MEMORY_SOURCE_GUIDES[0]!;
+
 const VOICE_PROFILE_STATUS_LABELS: Record<DearMeWorkbenchMemory["voiceProfile"]["status"], string> = {
   needs_samples: "Needs samples",
   learning: "Learning",
@@ -1841,11 +1933,14 @@ function VoiceMemoryPanel({
   onAdd: (input: DearMeMemoryUpdate) => void;
 }) {
   const [kind, setKind] = useState<DearMeMemoryUpdateKind>("voice_sample");
+  const [sourceGuideId, setSourceGuideId] = useState<MemorySourceGuideId>("writing_sample");
   const [title, setTitle] = useState("");
   const [sourceLabel, setSourceLabel] = useState("");
   const [body, setBody] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const voiceProfile = memory.voiceProfile;
+  const selectedGuide =
+    MEMORY_SOURCE_GUIDES.find((guide) => guide.id === sourceGuideId) ?? DEFAULT_MEMORY_SOURCE_GUIDE;
   const feedback = memoryUpdateFeedback(result);
   const recordedMemory = result?.memory ?? null;
   const recordedMemoryAlreadyLoaded = recordedMemory
@@ -1870,20 +1965,34 @@ function VoiceMemoryPanel({
     event.preventDefault();
     const trimmedBody = body.trim();
     if (!trimmedBody) {
-      setLocalError("Add a voice sample, proof point, goal, or boundary before saving.");
+      setLocalError("Add source material before saving.");
       return;
     }
 
     setLocalError(null);
     onAdd({
       kind,
-      title: title.trim() || null,
+      title: title.trim() || selectedGuide.label,
       body: trimmedBody,
       sourceLabel: sourceLabel.trim() || null,
     });
     setTitle("");
     setSourceLabel("");
     setBody("");
+  }
+
+  function handleGuideSelect(guide: (typeof MEMORY_SOURCE_GUIDES)[number]) {
+    setSourceGuideId(guide.id);
+    setKind(guide.kind);
+    setLocalError(null);
+  }
+
+  function handleKindChange(nextKind: DearMeMemoryUpdateKind) {
+    setKind(nextKind);
+    const matchingGuide = MEMORY_SOURCE_GUIDES.find((guide) => guide.kind === nextKind);
+    if (matchingGuide) {
+      setSourceGuideId(matchingGuide.id);
+    }
   }
 
   return (
@@ -1925,68 +2034,103 @@ function VoiceMemoryPanel({
         </div>
       </div>
 
-      <form className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]" onSubmit={handleSubmit}>
-        <div className="grid gap-3">
-          <div>
-            <FieldLabel htmlFor="dearme-memory-kind" label="Kind" />
-            <select
-              id="dearme-memory-kind"
-              value={kind}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                setKind(event.target.value as DearMeMemoryUpdateKind)
-              }
-            >
-              {DEARME_MEMORY_UPDATE_KINDS.map((item) => (
-                <option key={item} value={item}>
-                  {MEMORY_KIND_LABELS[item]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <FieldLabel htmlFor="dearme-memory-title" label="Title" />
-            <Input
-              id="dearme-memory-title"
-              value={title}
-              placeholder="Voice note"
-              onChange={(event) => setTitle(event.target.value)}
-            />
-          </div>
-          <div>
-            <FieldLabel htmlFor="dearme-memory-source" label="Source" />
-            <Input
-              id="dearme-memory-source"
-              value={sourceLabel}
-              placeholder="Manual note"
-              onChange={(event) => setSourceLabel(event.target.value)}
-            />
+      <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
+        <div>
+          <FieldLabel htmlFor="dearme-memory-source-guide" label="Source guide" />
+          <div
+            id="dearme-memory-source-guide"
+            className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4"
+          >
+            {MEMORY_SOURCE_GUIDES.map((guide) => {
+              const Icon = guide.icon;
+              const selected = guide.id === sourceGuideId;
+              return (
+                <button
+                  key={guide.id}
+                  type="button"
+                  aria-pressed={selected}
+                  className={cn(
+                    "min-h-24 rounded-md border px-3 py-3 text-left text-sm transition-colors",
+                    selected
+                      ? "border-primary bg-primary/5 text-foreground"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/60 hover:text-foreground",
+                  )}
+                  onClick={() => handleGuideSelect(guide)}
+                >
+                  <span className="flex items-center gap-2 font-medium text-foreground">
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="break-words">{guide.label}</span>
+                  </span>
+                  <span className="mt-2 block text-xs leading-5">{guide.helper}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <div>
-          <FieldLabel htmlFor="dearme-memory-body" label="Memory" />
-          <Textarea
-            id="dearme-memory-body"
-            value={body}
-            rows={7}
-            placeholder="Paste a real voice sample, proof point, relationship note, offer, or boundary."
-            onChange={(event) => setBody(event.target.value)}
-          />
-          {localError || error ? (
-            <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {localError ?? error}
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+          <div className="grid gap-3">
+            <div>
+              <FieldLabel htmlFor="dearme-memory-kind" label="Source type" />
+              <select
+                id="dearme-memory-kind"
+                value={kind}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                  handleKindChange(event.target.value as DearMeMemoryUpdateKind);
+                }}
+              >
+                {DEARME_MEMORY_UPDATE_KINDS.map((item) => (
+                  <option key={item} value={item}>
+                    {MEMORY_KIND_LABELS[item]}
+                  </option>
+                ))}
+              </select>
             </div>
-          ) : null}
-          {feedback && !error ? (
-            <div className="mt-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-foreground">
-              {feedback}
+            <div>
+              <FieldLabel htmlFor="dearme-memory-title" label="Title" />
+              <Input
+                id="dearme-memory-title"
+                value={title}
+                placeholder={selectedGuide.titlePlaceholder}
+                onChange={(event) => setTitle(event.target.value)}
+              />
             </div>
-          ) : null}
-          <div className="mt-3 flex justify-end">
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Adding..." : "Add to Voice & Memory"}
-            </Button>
+            <div>
+              <FieldLabel htmlFor="dearme-memory-source" label="Source or link" />
+              <Input
+                id="dearme-memory-source"
+                value={sourceLabel}
+                placeholder={selectedGuide.sourcePlaceholder}
+                onChange={(event) => setSourceLabel(event.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel htmlFor="dearme-memory-body" label="Memory" />
+            <Textarea
+              id="dearme-memory-body"
+              value={body}
+              rows={7}
+              placeholder={selectedGuide.bodyPlaceholder}
+              onChange={(event) => setBody(event.target.value)}
+            />
+            {localError || error ? (
+              <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {localError ?? error}
+              </div>
+            ) : null}
+            {feedback && !error ? (
+              <div className="mt-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-foreground">
+                {feedback}
+              </div>
+            ) : null}
+            <div className="mt-3 flex justify-end">
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Adding..." : "Add to Voice & Memory"}
+              </Button>
+            </div>
           </div>
         </div>
       </form>
@@ -2017,13 +2161,15 @@ function VoiceMemoryPanel({
           className="mt-5"
           icon={Sparkles}
           title="No Voice & Memory saved yet"
-          description="Add one real sample, proof point, goal, or boundary. DearMe will use it to protect your voice and prepare the next growth cycle."
+          description="Add one writing sample, proof point, source link, correction, audience note, or offer note. DearMe will use it to protect your voice and prepare the next growth cycle."
         >
           <div className="flex flex-wrap gap-2">
-            <Badge variant="outline">Voice sample</Badge>
+            <Badge variant="outline">Writing sample</Badge>
             <Badge variant="outline">Proof point</Badge>
-            <Badge variant="outline">Goal</Badge>
-            <Badge variant="outline">Boundary</Badge>
+            <Badge variant="outline">Source link</Badge>
+            <Badge variant="outline">Correction</Badge>
+            <Badge variant="outline">Audience note</Badge>
+            <Badge variant="outline">Offer note</Badge>
           </div>
         </DearMeEmptyState>
       )}

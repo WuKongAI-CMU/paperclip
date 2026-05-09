@@ -748,6 +748,13 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Add one more real sample");
     expect(container.textContent).toContain("Manual note");
     expect(container.textContent).toContain("Voice Editor");
+    expect(container.textContent).toContain("Source guide");
+    expect(container.textContent).toContain("Writing sample");
+    expect(container.textContent).toContain("Source link");
+    expect(container.textContent).toContain("Correction");
+    expect(container.textContent).toContain("Forbidden phrase");
+    expect(container.textContent).toContain("Audience note");
+    expect(container.textContent).toContain("Offer note");
     expect(container.textContent).toContain("What do you want to become known for?");
     expect(container.textContent).toContain("Paid beta");
     expect(container.textContent).toContain("Cycle guardrail");
@@ -987,12 +994,17 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     expect(container.textContent).toContain("No Voice & Memory saved yet");
-    expect(container.textContent).toContain("Add one real sample, proof point, goal, or boundary.");
+    expect(container.textContent).toContain(
+      "Add one writing sample, proof point, source link, correction, audience note, or offer note.",
+    );
     expect(container.textContent).toContain("DearMe will use it to protect your voice");
     expect(container.querySelector('[data-dearme-surface="empty-state"]')).not.toBeNull();
-    expect(container.textContent).toContain("Voice sample");
+    expect(container.textContent).toContain("Writing sample");
     expect(container.textContent).toContain("Proof point");
-    expect(container.textContent).toContain("Boundary");
+    expect(container.textContent).toContain("Source link");
+    expect(container.textContent).toContain("Correction");
+    expect(container.textContent).toContain("Audience note");
+    expect(container.textContent).toContain("Offer note");
     expect(container.textContent).not.toContain("adapter");
     expect(container.textContent).not.toContain("provider");
     expect(container.textContent).not.toContain("setup_payload");
@@ -1019,6 +1031,61 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).not.toContain("No Voice & Memory saved yet");
     expect(container.textContent).toContain("Fresh voice note");
     expect(container.textContent).toContain("Just saved");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("records guided Voice & Memory source material without exposing substrate terms", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Forbidden phrase")?.click();
+    });
+
+    expect((container.querySelector("#dearme-memory-kind") as HTMLSelectElement | null)?.value).toBe("constraint");
+
+    await act(async () => {
+      setInputValue(
+        container.querySelector("#dearme-memory-source") as HTMLInputElement,
+        "Voice review note",
+      );
+      setTextareaValue(
+        container.querySelector("#dearme-memory-body") as HTMLTextAreaElement,
+        "Never describe the product as effortless magic.",
+      );
+    });
+
+    await act(async () => {
+      buttonByText(container, "Add to Voice & Memory")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.recordMemoryUpdate).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        kind: "constraint",
+        title: "Forbidden phrase",
+        body: "Never describe the product as effortless magic.",
+        sourceLabel: "Voice review note",
+      }),
+    );
+    expect(container.textContent).not.toContain("Paperclip");
+    expect(container.textContent).not.toContain("adapter");
+    expect(container.textContent).not.toContain("provider");
 
     await act(async () => {
       root.unmount();
