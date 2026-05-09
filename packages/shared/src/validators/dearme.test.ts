@@ -290,6 +290,18 @@ describe("DearMe brand blueprint contract", () => {
       latestPaymentDescription: "Founding beta payment",
       latestExternalInvoiceId: "stripe-invoice-manual",
       entitlement: describeDearMePaidBetaEntitlement("active"),
+      cycleGuardrail: {
+        state: "ready",
+        label: "Guardrails ready",
+        headline: "Private cycles can run within guardrails",
+        summary: "DearMe checks monthly private spend before work runs so prepared moves stay predictable.",
+        spendCents: 0,
+        budgetCents: 25_000,
+        utilizationPercent: 0,
+        remainingCreditCents: 25_000,
+        decisionRequired: false,
+        decisionLabel: null,
+      },
     });
     const trialEntitlement = describeDearMePaidBetaEntitlement("trial");
 

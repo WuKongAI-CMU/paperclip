@@ -2108,6 +2108,7 @@ function PaidBetaAccessPanel({
   const [externalInvoiceId, setExternalInvoiceId] = useState("");
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const entitlement = status?.entitlement ?? null;
+  const cycleGuardrail = status?.cycleGuardrail ?? null;
 
   const recordPaymentMutation = useMutation({
     mutationFn: () => {
@@ -2174,9 +2175,42 @@ function PaidBetaAccessPanel({
         </div>
       ) : null}
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {cycleGuardrail ? (
+        <div className="mt-4 rounded-md border border-border bg-background px-3 py-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <ShieldCheck className="h-4 w-4" />
+                Cycle guardrail
+              </div>
+              <p className="mt-1 text-sm font-medium">{cycleGuardrail.headline}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{cycleGuardrail.summary}</p>
+            </div>
+            <Badge
+              variant={
+                cycleGuardrail.state === "hard_stop"
+                  ? "destructive"
+                  : cycleGuardrail.state === "warning"
+                    ? "outline"
+                    : "secondary"
+              }
+            >
+              {cycleGuardrail.label}
+            </Badge>
+          </div>
+          {cycleGuardrail.decisionRequired && cycleGuardrail.decisionLabel ? (
+            <p className="mt-3 text-sm font-medium text-foreground">
+              Decision needed: {cycleGuardrail.decisionLabel}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <Metric icon={CircleDollarSign} label="Lifetime paid" value={money(status?.lifetimePaidCents ?? 0)} />
         <Metric icon={Gauge} label="Remaining credit" value={money(status?.remainingCreditCents ?? 0)} />
+        <Metric icon={Workflow} label="Month spend" value={money(cycleGuardrail?.spendCents ?? 0)} />
+        <Metric icon={ShieldCheck} label="Monthly guardrail" value={money(cycleGuardrail?.budgetCents ?? 0)} />
         <Metric icon={FileText} label="Payments" value={status?.eventCount ?? 0} />
         <Metric icon={CheckCircle2} label="Latest receipt" value={paymentDate(status?.latestPaymentAt ?? null)} />
       </div>

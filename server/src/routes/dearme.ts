@@ -353,6 +353,9 @@ export function dearmeRoutes(db: Db) {
       if (!access.entitlement.canRequestBrandOsApproval) {
         throw forbidden(access.entitlement.nextActionDescription);
       }
+      if (access.cycleGuardrail.state === "hard_stop") {
+        throw forbidden(access.cycleGuardrail.summary);
+      }
       const result = await brandBlueprints.createApplyRequest(companyId, req.body, actor);
 
       await logActivity(db, {

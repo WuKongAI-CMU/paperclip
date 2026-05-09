@@ -51,6 +51,18 @@ describe("DearMe paid beta access service", () => {
       latestPaymentDescription: null,
       latestExternalInvoiceId: null,
       entitlement: describeDearMePaidBetaEntitlement("trial"),
+      cycleGuardrail: {
+        state: "trial_preview",
+        label: "Trial preview",
+        headline: "Private cycles wait for paid beta access",
+        summary: "Preview the plan for free. DearMe records paid beta access before it spends budget on private cycles.",
+        spendCents: 0,
+        budgetCents: 0,
+        utilizationPercent: 0,
+        remainingCreditCents: 0,
+        decisionRequired: true,
+        decisionLabel: "Record paid beta access",
+      },
     });
   });
 
@@ -86,6 +98,73 @@ describe("DearMe paid beta access service", () => {
       latestPaymentDescription: "Founding beta payment",
       latestExternalInvoiceId: "manual-invoice-1",
       entitlement: describeDearMePaidBetaEntitlement("active"),
+      cycleGuardrail: {
+        state: "ready",
+        label: "Guardrails ready",
+        headline: "Private cycles can run within guardrails",
+        summary: "DearMe checks monthly private spend before work runs so prepared moves stay predictable.",
+        spendCents: 0,
+        budgetCents: 0,
+        utilizationPercent: 0,
+        remainingCreditCents: 20_000,
+        decisionRequired: false,
+        decisionLabel: null,
+      },
+    });
+  });
+
+  it("subtracts monthly private spend from paid credit and warns near the monthly guardrail", () => {
+    const status = summarizeDearMePaidBetaAccess(
+      "company-1",
+      [
+        financeEvent({
+          direction: "credit",
+          amountCents: 25_000,
+          description: "Founding beta payment",
+        }),
+      ],
+      {
+        spendCents: 20_000,
+        budgetCents: 25_000,
+        utilizationPercent: 80,
+      },
+    );
+
+    expect(status.remainingCreditCents).toBe(5_000);
+    expect(status.cycleGuardrail).toMatchObject({
+      state: "warning",
+      label: "Close to guardrail",
+      spendCents: 20_000,
+      budgetCents: 25_000,
+      utilizationPercent: 80,
+      remainingCreditCents: 5_000,
+      decisionRequired: false,
+    });
+  });
+
+  it("hard-stops paid beta work when monthly private spend exhausts available credit", () => {
+    const status = summarizeDearMePaidBetaAccess(
+      "company-1",
+      [
+        financeEvent({
+          direction: "credit",
+          amountCents: 25_000,
+          description: "Founding beta payment",
+        }),
+      ],
+      {
+        spendCents: 25_000,
+        budgetCents: 25_000,
+        utilizationPercent: 100,
+      },
+    );
+
+    expect(status.remainingCreditCents).toBe(0);
+    expect(status.cycleGuardrail).toMatchObject({
+      state: "hard_stop",
+      label: "Review before more spend",
+      decisionRequired: true,
+      decisionLabel: "Review monthly spend",
     });
   });
 });

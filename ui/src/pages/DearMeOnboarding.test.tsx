@@ -136,6 +136,22 @@ function paidBetaStatus(status: "trial" | "active") {
     latestPaymentDescription: active ? "Founding beta payment" : null,
     latestExternalInvoiceId: active ? "manual-invoice-1" : null,
     entitlement: describeDearMePaidBetaEntitlement(status),
+    cycleGuardrail: {
+      state: active ? "ready" : "trial_preview",
+      label: active ? "Guardrails ready" : "Trial preview",
+      headline: active
+        ? "Private cycles can run within guardrails"
+        : "Private cycles wait for paid beta access",
+      summary: active
+        ? "DearMe checks monthly private spend before work runs so prepared moves stay predictable."
+        : "Preview the plan for free. DearMe records paid beta access before it spends budget on private cycles.",
+      spendCents: 0,
+      budgetCents: 25_000,
+      utilizationPercent: 0,
+      remainingCreditCents: active ? 25_000 : 0,
+      decisionRequired: !active,
+      decisionLabel: active ? null : "Record paid beta access",
+    },
   };
 }
 
@@ -549,6 +565,9 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Voice Editor");
     expect(container.textContent).toContain("What do you want to become known for?");
     expect(container.textContent).toContain("Paid beta");
+    expect(container.textContent).toContain("Cycle guardrail");
+    expect(container.textContent).toContain("Private cycles can run within guardrails");
+    expect(container.textContent).toContain("Monthly guardrail");
     expect(container.textContent).not.toContain("adapter");
     expect(container.textContent).not.toContain("provider");
     expect((container.querySelector("#dearme-display-name") as HTMLInputElement | null)?.value).toBe("Peter Studio");
@@ -719,6 +738,9 @@ describe("DearMeOnboarding", () => {
 
     expect(container.textContent).toContain("Trial preview");
     expect(container.textContent).toContain("Record paid beta payment");
+    expect(container.textContent).toContain("Cycle guardrail");
+    expect(container.textContent).toContain("Private cycles wait for paid beta access");
+    expect(container.textContent).toContain("Decision needed: Record paid beta access");
 
     await act(async () => {
       setTextareaValue(

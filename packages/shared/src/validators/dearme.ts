@@ -50,6 +50,7 @@ export const DEARME_BRAND_BLUEPRINT_OPERATION_ORDER = [
 export const DEARME_PAID_BETA_BILLER = "dearme_paid_beta";
 export const DEARME_PAID_BETA_MIN_PAYMENT_CENTS = 100;
 export const DEARME_PAID_BETA_ENTITLEMENT_STATES = ["trial_preview", "paid_beta_active"] as const;
+export const DEARME_CYCLE_GUARDRAIL_STATES = ["trial_preview", "ready", "warning", "hard_stop"] as const;
 export const DEARME_OUTPUT_KINDS = [
   "brand_os",
   "voice_profile",
@@ -449,6 +450,19 @@ const dearMePaidBetaEntitlementSchema = z.object({
   nextActionDescription: mediumTextSchema,
 }).strict();
 
+export const dearMeCycleGuardrailSchema = z.object({
+  state: z.enum(DEARME_CYCLE_GUARDRAIL_STATES),
+  label: shortTextSchema,
+  headline: shortTextSchema,
+  summary: mediumTextSchema,
+  spendCents: z.number().int().nonnegative(),
+  budgetCents: z.number().int().nonnegative(),
+  utilizationPercent: z.number().nonnegative(),
+  remainingCreditCents: z.number().int().nonnegative(),
+  decisionRequired: z.boolean(),
+  decisionLabel: shortTextSchema.nullable(),
+}).strict();
+
 export const dearMePaidBetaStatusSchema = z.object({
   companyId: z.string().min(1),
   status: z.enum(["trial", "active"]),
@@ -461,6 +475,7 @@ export const dearMePaidBetaStatusSchema = z.object({
   latestPaymentDescription: z.string().nullable(),
   latestExternalInvoiceId: z.string().nullable(),
   entitlement: dearMePaidBetaEntitlementSchema,
+  cycleGuardrail: dearMeCycleGuardrailSchema,
 }).strict();
 
 export const dearMePaidBetaRecordSchema = z.object({
@@ -732,6 +747,7 @@ export type DearMeOutputStatus = z.infer<typeof dearMeOutputItemSchema>["status"
 export type DearMeOutputUpdate = z.infer<typeof dearMeOutputUpdateSchema>;
 export type DearMeOutputWorkProduct = z.infer<typeof dearMeOutputWorkProductSchema>;
 export type DearMeOutputsResponse = z.infer<typeof dearMeOutputsResponseSchema>;
+export type DearMeCycleGuardrail = z.infer<typeof dearMeCycleGuardrailSchema>;
 export type DearMePaidBetaEntitlement = z.infer<typeof dearMePaidBetaEntitlementSchema>;
 export type DearMePaidBetaRecord = z.infer<typeof dearMePaidBetaRecordSchema>;
 export type DearMePaidBetaStatus = z.infer<typeof dearMePaidBetaStatusSchema>;

@@ -243,6 +243,42 @@ Completed next integration step:
 - Replay DM-003 onto `80128431` in a new clean disposable worktree.
 - Completed below as DM-003 integration commit `c5b11039`.
 
+DM-100 integration verification after applying the cycle guardrails slice:
+
+- focused paid-beta/shared/onboarding Vitest coverage for cycle guardrail
+  contract, remaining-credit calculation, hard-stop state, and customer-visible
+  DearMe UI:
+  `pnpm exec vitest server/src/__tests__/dearme-paid-beta-access.test.ts packages/shared/src/validators/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
+  passed: 3 files, 64 tests
+- shared package typecheck: `pnpm --filter @paperclipai/shared typecheck` passed
+- server package typecheck: `pnpm --filter @paperclipai/server typecheck` passed
+- UI package typecheck: `pnpm --filter @paperclipai/ui typecheck` passed
+
+The current carried-forward base includes the DM-088 visible team workstream UI,
+the DM-089 Voice & Memory ingestion guardrails, the DM-090 guided source cards,
+the DM-091 source-level team impact previews, the DM-092 source-driven Work
+Ready paths, the DM-093 inline Work Ready review actions, and the DM-094
+Voice & Memory entry-mode provenance contract. DM-095 additionally carries
+review actions into Team Progress `Work ready` summary cards by reusing the
+existing DearMe output review contract and mutation path. DM-096 carries that
+same review contract into URL-focused Work Ready banners. DM-097 carries that
+same review contract into the live team progress stream. DM-098 wraps those
+reused review and approval paths in one shared decision action-card shell.
+DM-099 adds the Polsia-style plan, work, review, learn operating loop to the
+customer workbench and carries Lindy-style memory learning into Voice & Memory,
+using existing Naive/Paperclip workbench and review-learning data. DM-100 reuses
+Paperclip/Naive finance events plus cost summary rails as DearMe cycle
+guardrails, adds customer-safe ready/warning/hard-stop states, and blocks Brand
+OS approval requests when current-month private spend should pause. The
+coordinator branch
+was rechecked before the DM-094 fast-forward with focused DearMe tests, full
+workspace typecheck, substrate language scan, and `git diff --check`; DM-095,
+DM-096, DM-097, DM-098, and DM-099 were rechecked with focused onboarding tests, UI
+typecheck, and `git diff --check`; DM-100 adds focused shared/server/UI
+contract tests plus package typechecks. Before release promotion, verify this
+coordinator head with the broader package typechecks, workspace-link preflight,
+and release build/test gates.
+
 ## DM-003 Integration
 
 DM-003 was replayed onto the integrated DM-002 baseline and verified in a clean

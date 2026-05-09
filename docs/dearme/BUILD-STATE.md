@@ -5247,6 +5247,33 @@ Not run:
 
 - Full `pnpm test:run` for this UI-only polish slice.
 
+## DearMe Cycle Guardrails - 2026-05-09
+
+Thirty-first verified DearMe slice:
+
+- Reused the existing Paperclip/Naive finance, cost, and budget substrate for
+  DearMe paid-beta cycle guardrails instead of adding a new billing or usage
+  system.
+- Extended the paid-beta access contract with `cycleGuardrail`, derived from
+  paid-beta finance events plus `costService.summary(companyId)`.
+- Subtracted current-month private spend from remaining paid-beta credit and exposed
+  customer-safe ready, warning, and hard-stop states.
+- Added first enforcement at the Brand OS approval request boundary: if cycle
+- current-month private spend exhausts credit or reaches the guardrail, private
+  work pauses with a DearMe-safe message.
+- Updated the DearMe Paid beta panel to show `Cycle guardrail`,
+  current-month private spend,
+  monthly guardrail, remaining credit, and decision-needed copy without exposing
+  model/provider/adapter cost plumbing.
+
+Verification:
+
+- `pnpm exec vitest server/src/__tests__/dearme-paid-beta-access.test.ts packages/shared/src/validators/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
+  passed: 3 files, 64 tests.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+
 ## Known Gaps
 
 - The `Process adapter missing command` blocker is fixed for newly applied Brand OS approvals, not retroactively for old smoke data.
