@@ -180,8 +180,9 @@ export function dearmeRoutes(db: Db) {
       const actor = getActorInfo(req);
       const input = req.body as DearMeChiefOfStaffMessage;
       const access = await paidBetaAccess.getAccess(companyId);
-      if (!access.entitlement.canStartPrivateWork) {
-        throw forbidden(access.entitlement.nextActionDescription);
+      const privateCycleBlocker = describeDearMePrivateCycleBlocker(access);
+      if (privateCycleBlocker) {
+        throw forbidden(privateCycleBlocker);
       }
       const agentRows = await agents.list(companyId);
       const chiefOfStaff = agentRows.find((agent) => {

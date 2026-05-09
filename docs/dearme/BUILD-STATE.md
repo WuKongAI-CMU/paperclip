@@ -5280,6 +5280,9 @@ Thirty-second verified DearMe slice:
 
 - Extended the DM-100 paid-beta guardrail from Brand OS apply requests to output
   review actions that start another private cycle.
+- Hardened the newer Chief of Staff composer to use the same private-cycle
+  blocker, so Brand OS apply requests, output regeneration/revision, and Chief
+  of Staff briefs all share one finance/cost guardrail.
 - Reused the existing Naive/Paperclip finance, cost summary, output review,
   activity log, and issue wakeup rails instead of introducing a new DearMe
   usage ledger or workflow gate.
@@ -5295,7 +5298,12 @@ Thirty-second verified DearMe slice:
 Verification:
 
 - `pnpm exec vitest server/src/__tests__/dearme-paid-beta-access.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts --run --maxWorkers=1`
-  passed: 2 files, 34 tests.
+  passed: 2 files, 30 tests.
+- `pnpm exec vitest packages/shared/src/validators/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
+  passed: 2 files, 30 tests.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
 
 ## Known Gaps
 

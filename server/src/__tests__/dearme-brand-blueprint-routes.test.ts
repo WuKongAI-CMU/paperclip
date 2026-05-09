@@ -540,6 +540,25 @@ describe("DearMe brand blueprint routes", () => {
     expect(mockQueueIssueAssignmentWakeup).not.toHaveBeenCalled();
   });
 
+  it("blocks Chief of Staff private cycles when paid-beta spend reaches the guardrail", async () => {
+    mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("active", "hard_stop"));
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/chief-of-staff/messages")
+      .send({
+        intent: "plan_next",
+        message: "Prepare another paid private cycle.",
+      });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe(
+      "DearMe can keep preparing low-risk drafts, but spending cycles should pause until the guardrail is reviewed.",
+    );
+    expect(mockIssueService.create).not.toHaveBeenCalled();
+    expect(mockAgentService.list).not.toHaveBeenCalled();
+    expect(mockQueueIssueAssignmentWakeup).not.toHaveBeenCalled();
+  });
+
   it("rejects DearMe workbench reads outside the caller scope", async () => {
     const res = await request(await createApp({ companyIds: ["company-2"] }))
       .get("/api/dearme/companies/company-1/workbench");
