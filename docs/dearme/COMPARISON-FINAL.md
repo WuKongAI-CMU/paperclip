@@ -6,6 +6,12 @@
 > the canonical implementation or provenance contract. For current direction,
 > use `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`,
 > `POLSIA-NAIVE-REUSE-PLAN.md`, and `REBRAND-AND-PROVENANCE.md`.
+>
+> 2026-05-09 fact check: §2 "Architecture identical" and §12 "Code-level
+> overlap >95%" describe product-shape parity, not source lineage. DearMe
+> code lineage is `paperclipai/paperclip @ d6d7a7ce` (= Naive's OSS
+> upstream). Verbatim overlap with Polsia source is effectively zero. See
+> `CODE-PROVENANCE-FACT-CHECK.md` for measured evidence.
 
 ---
 

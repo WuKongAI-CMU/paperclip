@@ -4,6 +4,12 @@
 > is `README.md`, `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`,
 > `POLSIA-NAIVE-REUSE-PLAN.md`, and `REBRAND-AND-PROVENANCE.md`. Do not follow
 > clone/verbatim-copy instructions below when they conflict with those files.
+>
+> 2026-05-09 fact check: the "95% identical / Polsia fork" framing in this
+> document is a pre-pivot product-spec analogy, not code truth. DearMe is a
+> fork of `paperclipai/paperclip` (= Naive's OSS upstream). Code-level
+> overlap with Polsia is effectively zero. See
+> `CODE-PROVENANCE-FACT-CHECK.md` for hard evidence and numbers.
 
 > Side-by-side audit. Where we copy verbatim, where we diverge, why.
 

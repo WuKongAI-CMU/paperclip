@@ -22,10 +22,11 @@ narratives, or shipping third-party branding/assets.
 When DearMe docs conflict, use this order:
 
 1. `REBRAND-AND-PROVENANCE.md`
-2. `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`
-3. `POLSIA-NAIVE-REUSE-PLAN.md`
-4. `POLSIA-MARKETING-PACKAGING-GUIDE.md`
-5. Historical comparison, V3/V4 architecture, and backlog docs
+2. `CODE-PROVENANCE-FACT-CHECK.md` (engineering-evidence addendum to this file)
+3. `PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`
+4. `POLSIA-NAIVE-REUSE-PLAN.md`
+5. `POLSIA-MARKETING-PACKAGING-GUIDE.md`
+6. Historical comparison, V3/V4 architecture, and backlog docs
 
 Any older statement that says to copy proprietary prompts/files verbatim, ignore
 IP cleanliness, or describe DearMe as a Polsia clone is superseded. The current
