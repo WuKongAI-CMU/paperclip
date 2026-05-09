@@ -245,6 +245,38 @@ DearMe should use the Naive/Paperclip substrate, Polsia product choreography, an
 the parts of OK Partner that make DearMe more useful. OK Partner is a donor
 codebase and substrate candidate, not a preservation target.
 
+### 9.0 Aggressive-Reuse Doctrine (added 2026-05-09)
+
+The faster the role mechanics, voice rules, state machines, tool sequences,
+and rate limits land in this repo, the faster DearMe can ship. Server-side
+runtime artifacts (system prompts, function definitions, OpenAI tool
+shapes, complexity thresholds, ad-tier tables, lead state machines) are not
+customer-facing brand surfaces. The `REBRAND-AND-PROVENANCE.md` rules
+about donor naming and substrate language apply to the **paid-beta UI** —
+not to internal runtime files the user never sees.
+
+Therefore the standing rule is: **port the production-verified artifact
+verbatim, replace brand identifiers mechanically, preserve everything else
+(numbers, thresholds, voice rules, format rules, error states, recovery
+flows)**. Paraphrasing loses information; the original wording is what
+made the production system work.
+
+Concrete implementations of this doctrine:
+
+| Source | DearMe location | Substitution policy |
+|---|---|---|
+| 12 production agent prompts (50,405 chars total) | `packages/plugins/dearme-agent-prompts/src/prompts/*.ts` | `Polsia` → `DearMe`, `polsia.com`/`polsia.app` → `dearme.app`, `polsia_*` namespaces → `dearme_*`. Voice rules, format rules, state machines, thresholds, rate limits, tool sequences preserved verbatim. |
+| 6 OpenAI native function definitions (line 1031 of captured runloop server.js) | `packages/dearme-ai-proxy/src/functions.ts` | Tool names, descriptions, parameter shapes, `required` lists preserved verbatim. |
+| Dual-protocol AI proxy contract (`lib/dearme-ai.js` shape) | `packages/dearme-ai-proxy/src/contract.ts` | Cost-attribution side-channels (`task` field on OpenAI, `X-Subscription-ID` header on Anthropic), `agent/run` endpoint shape, complexity-based routing all preserved; api key prefix rebranded to `dm_sk_`. |
+| 8-state opportunity lifecycle, 5 ad error states, 4 ad performance tiers, 3 budget tiers, 16 mood faces, 7 SSE event types, complexity 1-10 routing table | `packages/plugins/dearme-agent-prompts/src/state-machines/*.ts` | Field names, transition rules, threshold numbers preserved verbatim; class names rebranded. |
+| Sora 2 UGC video creative template, 5-touch outbound sequence template | `packages/plugins/dearme-agent-prompts/src/templates/*.ts` | Verbatim port. |
+| `opportunities` table schema | `packages/db/src/schema/opportunities.ts` | Column shapes adapted to Drizzle, business semantics preserved. |
+
+This doctrine is the reason the runtime layer is built around plugin-
+imported seed material rather than per-plugin re-derivation.
+
+### 9.1 Topology
+
 ```
 dearme.ai marketing site
   -> DearMe app shell
@@ -295,6 +327,88 @@ Reuse rules:
 - Do not expose Paperclip, OK Partner, setup blueprints, provider evidence, MCP,
   or adapters as product concepts. Users should see DearMe, Brand OS, work,
   decisions, channels, credits, and reports.
+
+### 9.2 Concrete package topology (as of 2026-05-09)
+
+The Sprint 0 seed corpus and AI proxy contract are in this repo. Plugin
+runtime implementation (DM-138 - DM-148) consumes them rather than
+re-deriving the same material.
+
+```
+packages/
+├── db/                                ← Drizzle schema, 75+ tables, MIT-inherited
+│   └── schema/
+│       ├── opportunities.ts (NEW)     ← DM-141 schema slice; 8-state lead
+│       └── ... (74 inherited tables)
+├── shared/                            ← validators, types
+├── plugin-sdk/                        ← Paperclip plugin SDK (manifest, worker, UI)
+├── adapters/                          ← 8 LLM-runtime adapters (claude-local, openclaw, ...)
+├── mcp-server/                        ← MCP host
+├── dearme-ai-proxy/                   ← NEW (DM-145 contract)
+│   └── src/
+│       ├── functions.ts               ← 6 production-verified OpenAI tool defs
+│       ├── contract.ts                ← dm_sk_ keys, dual-protocol headers,
+│       │                                  agent/run shape, CostLedgerEvent
+│       └── index.test.ts              ← 4/4 contract tests pass
+├── plugins/
+│   ├── dearme-agent-prompts/          ← NEW (Sprint 0 弹药库)
+│   │   └── src/
+│   │       ├── prompts/               ← 12 verbatim role prompts (50K chars)
+│   │       │   ├── chief-of-staff.ts
+│   │       │   ├── reporting.ts
+│   │       │   ├── content-producer.ts
+│   │       │   ├── opportunity-hunter.ts
+│   │       │   ├── brand-site-builder.ts
+│   │       │   ├── ads-manager.ts     ← 17K-char Meta Ads, 5 error states,
+│   │       │   │                          4 perf tiers, learning-phase rule,
+│   │       │   │                          Sora 2 template, Meta policy rules
+│   │       │   ├── research-agent.ts
+│   │       │   ├── audience-care.ts
+│   │       │   ├── data-analyst.ts
+│   │       │   ├── health-monitor.ts
+│   │       │   ├── chat.ts
+│   │       │   └── browser-agent.ts
+│   │       ├── state-machines/
+│   │       │   ├── opportunity-state.ts (8 states + transition guard)
+│   │       │   ├── meta-ads.ts         (5 error / 4 perf tiers / 7d learning)
+│   │       │   ├── budget-tier.ts      (3 tiers + picker)
+│   │       │   ├── mood-face-library.ts (16 faces + accent colors)
+│   │       │   ├── model-routing.ts    (1-10 → fast/balanced/deep)
+│   │       │   └── sse-events.ts       (7 event types + payload shapes)
+│   │       └── templates/
+│   │           ├── sora-ugc-video.ts   (UGC video creative)
+│   │           └── outbound-5-touch.ts (day 1/3/6/10/14 sequence)
+│   └── (DM-138 ~ DM-148 to be added: identity-researcher, reporting,
+│        content-producer, opportunity-hunter, brand-site-builder,
+│        meta-ads, audience-graph, voice-profile)
+└── ...
+server/
+└── src/
+    ├── routes/
+    │   ├── dearme.ts                   ← DearMe-only routes
+    │   └── companies.ts                 ← DM-S01 hardened
+    └── services/
+        ├── dearme-workbench.ts          ← first-run + cycle dispatcher
+        └── plugin-managed-routines.ts  ← used to declare 6h cycle in plugin manifests
+```
+
+### 9.3 Sprint timeline (after aggressive port)
+
+The seed corpus eliminates 12 prompt re-derivations × ~3K chars each
+plus the proxy contract. Sprint timelines compress accordingly:
+
+| Sprint | What unlocks | Original estimate | After aggressive port |
+|---|---|---|---|
+| Sprint 1 | First-run shock + Dear-me letter + Voice-gated content | 2-3 weeks | **5-7 days** |
+| Sprint 2 | Outbound + emergency pause + default approval | 1-2 weeks | **3-5 days** |
+| Sprint 3 | AI proxy runtime + cache economics + MCP audit | 2-3 weeks | **5-7 days** |
+| Sprint 4 | Brand site builder + Meta Ads + live feed + 5-touch | 3-4 weeks | **1-2 weeks** |
+| **MVP paid-beta internal dogfood** | aha demo + Dear-me letter + first outbound | 3-4 weeks | **2 weeks** |
+| **Full paid-beta open** | all 4 sprints | 8-12 weeks | **4-5 weeks** |
+
+The compression comes from: state machines, prompts, and proxy contract
+already imported and tested. Each plugin ticket starts at ~70%
+completion instead of 0%.
 
 ## 10. Operator Core vs DearMe Product Layer
 

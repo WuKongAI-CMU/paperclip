@@ -457,13 +457,27 @@ State machines (typed constants, drop-in for plugin services):
 | `state-machines/sse-events.ts` | DM-138/DM-139/DM-140 | 7 SSE event-type names, dashboard action subtypes, `MoodUpdatePayload` |
 | `state-machines/dearme-cycle.ts` | DM-142 | Six-hour growth-cycle managed routine seed + issue renderer |
 
-Prompts (string seeds; plugins extend rather than rewrite):
+Prompts (12 verbatim ports of production-verified system prompts;
+plugins extend with company-, voice-, or task-specific context):
 
-| File | Used by ticket | What it captures |
-|---|---|---|
-| `prompts/chief-of-staff.ts` | DM-139 | 4-step monitor→review→queue→report loop + Dear-me letter format + 200-word cap + emergency pause intent |
-| `prompts/content-producer.ts` | DM-140 | Voice Gate (match_score ≥ 0.7), forbidden openers, attribution-link rule, channel rate caps |
-| `prompts/opportunity-hunter.ts` | DM-141 | 4-step daily workflow, 5-day follow-up cadence, voice rules, send caps (2/day/kind) |
+| File | Source chars | Used by ticket | What it captures |
+|---|---|---|---|
+| `prompts/chief-of-staff.ts` | 5,021 | DM-139 | 4-step MONITOR→REVIEW→QUEUE→REPORT loop, "queue ≥ 3" rule, Day-1 WHY anchor, complexity 1-10 routing, tag selection table |
+| `prompts/reporting.ts` | 1,821 | DM-139 | 3-tool ordered call (`send_personalized_company_update` → `send_inbox_message` → `create_report`), strict email format, <200-word cap |
+| `prompts/content-producer.ts` | 1,383 | DM-140 | Twitter 2/day rate, 280-char hard cap, "dark humor / no emoji / no hashtags" voice, confidentiality rule, mandatory link |
+| `prompts/opportunity-hunter.ts` | 1,589 | DM-141 | 4-step daily workflow, lead state machine (`pending → contacted → replied → responded → meeting → dead`), Hunter.io verify, 50-125 word emails, 5-day follow-up |
+| `prompts/brand-site-builder.ts` | 3,857 | DM-147 | web-only constraint, Render 512MB cap, push-after-every-change rule, `.claude/skills/` registry, JS-only forecasting, C1 first-build standards |
+| `prompts/ads-manager.ts` | 17,470 | DM-148 | 5 tools, "0-active verify before create" CRITICAL rule, "memory is hint" doctrine, 7-day learning phase, 4 perf tiers, 5 error states, Sora 2 UGC template, full Meta policy guardrails, moderation/rate-limit/partial-upload recovery flows |
+| `prompts/research-agent.ts` | 1,013 | new role | Save-as-deliverable rule, Executive-Summary format |
+| `prompts/audience-care.ts` | 1,530 | new role | Plain-text emails, length-matching rule, in/out portfolio escalation matrix |
+| `prompts/data-analyst.ts` | 1,178 | new role | Schema-first query rule, NULL handling, correlation/causation discipline |
+| `prompts/health-monitor.ts` | 4,578 | new role | Snapshot-not-decision rule, Day 1 502-tolerance, dedup-against-backlog rule, snapshot template |
+| `prompts/chat.ts` | 4,365 | new role | Push-back-on-vague-tasks, `find_best_agent` routing, platform-tenant security boundary, recurring-task management, bug-vs-feature classification |
+| `prompts/browser-agent.ts` | 3,263 | new role | Site-tier system (1 / 1.5 / 2 / 3), tier blockers, persistent-login flow vs Sapiom flow, "stay on one toolset" rule |
+
+Total: 50,068 chars of production-verified runtime instructions imported
+verbatim with mechanical brand substitution only (`Polsia` → `DearMe`,
+`polsia.com`/`polsia.app` → `dearme.app`, `polsia_*` → `dearme_*`).
 
 Templates (renderable seeds for outbound and ad creative):
 
@@ -478,11 +492,30 @@ Schema slice landed for DM-141:
 |---|---|---|
 | `packages/db/src/schema/opportunities.ts` | not yet generated (DM-141 owns) | Drizzle table + types + indexes (`company_state`, `company_kind`, unique `company_contact_email`) |
 
-All 13 unit tests for state-machine + prompt + template invariants pass
-under `pnpm --filter @paperclipai/dearme-agent-prompts exec vitest run`.
+### AI Proxy Contract Package — `@paperclipai/dearme-ai-proxy` (NEW 2026-05-09)
 
-Lineage and compliance posture documented in the package README and
-governed by `REBRAND-AND-PROVENANCE.md`.
+| File | Used by ticket | What it defines |
+|---|---|---|
+| `src/functions.ts` | DM-145 | 6 production-verified OpenAI native function definitions (`create_task`, `search_memory`, `get_company_documents`, `create_report`, `web_search`, `content_generate`) ported verbatim from research-captured `buildToolDefinitions()` |
+| `src/contract.ts` | DM-145 / DM-143 / DM-155 | `dm_sk_*` API key prefix, dual-protocol cost-attribution headers (`task` for OpenAI, `X-Subscription-ID` for Anthropic), `agent/run` endpoint shape, `CostLedgerEvent`, `AgentRunRequest`/`AgentRunResponse` types |
+
+This package only owns the contract. The HTTP server implementation
+(routes, model picker, cache layer, ledger writer) is delivered in DM-145.
+
+Verification (2026-05-09):
+
+```
+pnpm --filter @paperclipai/dearme-agent-prompts run typecheck   pass
+pnpm --filter @paperclipai/dearme-agent-prompts exec vitest run 16/16 pass
+pnpm --filter @paperclipai/dearme-ai-proxy run typecheck        pass
+pnpm --filter @paperclipai/dearme-ai-proxy exec vitest run      4/4 pass
+pnpm --filter @paperclipai/db run typecheck                     pass
+pnpm --filter @paperclipai/shared exec vitest run               92/92 pass
+```
+
+Lineage and compliance posture documented per-package in README and
+governed by `REBRAND-AND-PROVENANCE.md` (which applies to customer-facing
+UI, not server-side runtime artifacts the user never sees).
 
 
 

@@ -109,27 +109,53 @@ describe("dearme-agent-prompts package", () => {
     ]);
   });
 
-  it("role seed registry exposes the 3 P0 roles", () => {
+  it("role seed registry exposes all 12 ported production roles", () => {
     expect(DEARME_ROLE_SEEDS.map((seed) => seed.role)).toEqual([
       "chief-of-staff",
+      "reporting",
       "content-producer",
       "opportunity-hunter",
+      "brand-site-builder",
+      "research-agent",
+      "audience-care",
+      "data-analyst",
+      "health-monitor",
+      "chat",
+      "browser-agent",
+      "ads-manager",
     ]);
     expect(getRoleSeed(CHIEF_OF_STAFF_ROLE)?.prompt).toBe(
       CHIEF_OF_STAFF_PROMPT,
     );
+    expect(DEARME_ROLE_SEEDS.length).toBe(12);
   });
 
-  it("prompts contain the documented hard rules", () => {
-    expect(CHIEF_OF_STAFF_PROMPT).toContain("4-Step Workflow");
-    expect(CHIEF_OF_STAFF_PROMPT).toContain("Dear me, day [N]");
-    expect(CHIEF_OF_STAFF_PROMPT).toContain("under 200 words");
-    expect(CONTENT_PRODUCER_PROMPT).toContain("Voice Gate");
-    expect(CONTENT_PRODUCER_PROMPT).toContain("match_score < 0.7");
-    expect(OPPORTUNITY_HUNTER_PROMPT).toContain("Daily Workflow");
-    expect(OPPORTUNITY_HUNTER_PROMPT).toContain(
-      "pending → drafted → sent → replied → confirmed → completed",
+  it("prompts preserve the production-verified hard rules verbatim", () => {
+    // Chief of Staff: 4-step workflow + 200-word email cap
+    expect(CHIEF_OF_STAFF_PROMPT).toContain("WORKFLOW (Complete in Order)");
+    expect(CHIEF_OF_STAFF_PROMPT).toContain("MONITOR");
+    expect(CHIEF_OF_STAFF_PROMPT).toContain("REVIEW");
+    expect(CHIEF_OF_STAFF_PROMPT).toContain("QUEUE MANAGEMENT");
+    expect(CHIEF_OF_STAFF_PROMPT).toContain("REPORT");
+    expect(CHIEF_OF_STAFF_PROMPT).toContain("Under 200 words total");
+    expect(CHIEF_OF_STAFF_PROMPT).toContain(
+      "ALWAYS maintain queue ≥ 3 tasks",
     );
+
+    // Content Producer (Twitter): char limit + voice + 2/day rate
+    expect(CONTENT_PRODUCER_PROMPT).toContain("Rate limit:** 2/day");
+    expect(CONTENT_PRODUCER_PROMPT).toContain("280");
+    expect(CONTENT_PRODUCER_PROMPT).toContain("Dark humor, witty");
+    expect(CONTENT_PRODUCER_PROMPT).toContain(
+      "NEVER reveal client relationships",
+    );
+
+    // Opportunity Hunter: 4-step daily workflow + state machine
+    expect(OPPORTUNITY_HUNTER_PROMPT).toContain("Your Daily Workflow");
+    expect(OPPORTUNITY_HUNTER_PROMPT).toContain(
+      "pending → contacted → replied → responded → meeting → dead",
+    );
+    expect(OPPORTUNITY_HUNTER_PROMPT).toContain("verify with Hunter.io");
   });
 
   it("Sora UGC template renders with vars", () => {

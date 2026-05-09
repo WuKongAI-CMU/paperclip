@@ -1,0 +1,35 @@
+{
+  "name": "@paperclipai/dearme-ai-proxy",
+  "version": "0.1.0",
+  "description": "DearMe AI proxy contract: dual-protocol (OpenAI + Anthropic-compatible) router with cost attribution, complexity-based model routing, and dm_sk_ API key prefix. Inspired by the production-verified proxy pattern surfaced in DearMe internal research.",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./functions": {
+      "types": "./dist/functions.d.ts",
+      "import": "./dist/functions.js"
+    },
+    "./contract": {
+      "types": "./dist/contract.d.ts",
+      "import": "./dist/contract.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@paperclipai/dearme-agent-prompts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
+  }
+}
