@@ -2743,6 +2743,18 @@ function VoiceMemoryPanel({
     setLocalError(null);
   }
 
+  function handleSourceReviewSelect(item: DearMeWorkbenchMemory["sourceReviewQueue"][number]) {
+    const matchingGuide = memorySourceGuideForKind(item.proposedKind);
+    setEditingMemoryId(null);
+    setSourceGuideId(matchingGuide.id);
+    setKind(item.proposedKind);
+    setSourceInputMode("paste");
+    setTitle(item.proposedTitle);
+    setSourceLabel(item.sourceLabel ?? item.sourceTitle);
+    setBody(item.proposedBody);
+    setLocalError(null);
+  }
+
   return (
     <DearMePanel aria-label="Voice & Memory">
       <DearMeWorkbenchSectionHeader
@@ -2833,6 +2845,45 @@ function VoiceMemoryPanel({
           })}
         </div>
       </div>
+
+      {memory.sourceReviewQueue.length > 0 ? (
+        <div className="mt-5 border-t border-border pt-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Source review</p>
+              <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+                Private links and import notes wait here until you turn them into reviewed Voice & Memory facts.
+              </p>
+            </div>
+            <Badge variant="outline">{memory.sourceReviewQueue.length} to review</Badge>
+          </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {memory.sourceReviewQueue.map((item) => (
+              <DearMeActionCard
+                key={item.id}
+                aria-label="Voice & Memory source review"
+                eyebrow={MEMORY_SOURCE_INPUT_MODE_LABELS[item.sourceInputMode]}
+                title={item.sourceTitle}
+                summary={item.summary}
+                chips={[
+                  { label: MEMORY_KIND_LABELS[item.proposedKind], variant: "outline" },
+                  ...(item.sourceLabel
+                    ? [{ label: sourceLabelForChip(item.sourceLabel), variant: "outline" as const }]
+                    : []),
+                  { label: shortDate(item.createdAt), variant: "outline" },
+                ]}
+                calloutLabel="Prepare next"
+                callout={item.nextAction}
+                action={{
+                  label: "Prepare fact",
+                  ariaLabel: `Prepare fact from ${item.sourceTitle}`,
+                  onClick: () => handleSourceReviewSelect(item),
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
         <div>

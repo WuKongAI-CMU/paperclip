@@ -2,6 +2,77 @@
 
 Date: 2026-05-09
 
+## DM-123 Voice & Memory Source Review Queue - 2026-05-09
+
+Implementation slice:
+
+- Added a private `sourceReviewQueue` to the DearMe workbench memory contract
+  for link and import-note sources that still need human review.
+- Projected review candidates from existing DearMe memory activity rows instead
+  of adding a crawler, upload queue, workflow builder, or new memory backend.
+- Suppressed review candidates once an equivalent pasted/reviewed Voice &
+  Memory fact exists.
+- Added a Source review section to the Voice & Memory web panel with compact
+  action cards and a `Prepare fact` action that pre-fills the existing
+  Voice & Memory form.
+- Kept reviewed facts as normal `paste` memory updates so future private work
+  consumes a cleaned, user-approved memory surface rather than raw source
+  references.
+
+Donor reuse:
+
+- Lindy supplies the interaction pattern: source cards wait in a compact review
+  queue, then prefill a focused form for confirmation.
+- Naive/Paperclip supplies the substrate: existing `activity_log` memory events,
+  workbench projection, shared validators, and the DearMe REST/API test path.
+- Polsia supplies the product rhythm: the visible growth team asks the user for
+  a few high-leverage review decisions before the next cycle improves.
+
+Rejected:
+
+- Rejected fetching, crawling, or summarizing source links in this slice.
+- Rejected a separate review-table backend while activity projection can produce
+  the queue safely.
+- Rejected importing a generic Lindy workflow-builder surface.
+- Rejected exposing donor/runtime terms in customer-facing Voice & Memory UI.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 3 files, 45 tests.
+- `pnpm exec vitest run server/src/__tests__/dearme-workbench.test.ts`
+  passed after the review-candidate type narrowing fix: 1 file, 2 tests.
+- `pnpm -r typecheck` passed.
+- `pnpm test:run` passed with exit code 0. The concurrent shard reported
+  162 files passed and 1021 passed / 1 skipped tests before the serialized
+  server shard completed all 81 suites.
+- `pnpm build` passed with the existing Vite MarkdownEditor dynamic/static
+  import and large-chunk warnings.
+- `git diff --check` passed.
+- Customer-surface substrate scan over `ui/src/pages/DearMeOnboarding.tsx`
+  passed with no matches for Paperclip, OpenClaw, OK Partner, provider,
+  adapter, setup payload, control-plane, workflow-builder, GraphQL, Relay, MCP,
+  agent-runtime, routine, cost_event, anthropic, or claude language.
+- `curl -I --max-time 5 http://127.0.0.1:3100/DEAA/dearme` returned
+  `HTTP/1.1 200 OK`.
+- Browser smoke opened `/DEAA/dearme` at
+  `http://127.0.0.1:3100/DEAA/dearme`. Verified page title
+  `Team · DearMe · DearMe`, DearMe content present, no console warn/error logs,
+  and no forbidden substrate terms in the visible body. The current local seed
+  has no pending source-review candidates, so the live browser route does not
+  show `Source review`; that conditional UI is covered by the focused DearMe
+  onboarding test.
+- Mobile visual browser smoke was not run in this slice because the in-app
+  browser surface did not expose viewport control and standalone Playwright was
+  not installed; no new dependency was introduced for verification.
+
+Next:
+
+- Add an output-level source review decision flow only if users need to compare
+  source evidence side-by-side before saving facts.
+- Keep deeper import automation private and approval-safe: no public post, send,
+  deploy, or spend action should happen from source review.
+
 ## DM-122 Voice & Memory Source Import Paths - 2026-05-09
 
 Implementation slice:

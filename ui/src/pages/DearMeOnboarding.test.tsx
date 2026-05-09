@@ -417,6 +417,21 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         nextStep: "Add one more real sample to make voice review stronger before publishing or sending anything.",
       },
       sourcePlan: memorySourcePlanFixture(),
+      sourceReviewQueue: [
+        {
+          id: "source-review:memory-2",
+          sourceMemoryId: "memory-2",
+          sourceInputMode: "link",
+          sourceTitle: "Shipped proof",
+          sourceLabel: "Build log",
+          summary: "Private link saved for proof point: Shipped a working local product.",
+          proposedKind: "proof_point",
+          proposedTitle: "Shipped proof",
+          proposedBody: "Shipped a working local product.",
+          nextAction: "Review this proof point and save the fact once it is ready for future private work.",
+          createdAt: "2026-05-07T13:00:00.000Z",
+        },
+      ],
       latest: [
         {
           id: "memory-1",
@@ -1539,6 +1554,7 @@ describe("DearMeOnboarding", () => {
         nextStep: "Add one real sample so DearMe can protect your tone before public work.",
       },
       sourcePlan: memorySourcePlanFixture({}),
+      sourceReviewQueue: [],
       latest: [],
     };
     mockDearmeApi.getWorkbench.mockResolvedValue(emptyWorkbench);
@@ -1725,6 +1741,61 @@ describe("DearMeOnboarding", () => {
         title: "Source link",
         body: "This source proves the launch narrative should mention the shipped local workflow.",
         sourceLabel: "https://example.com/proof-note",
+      }),
+    );
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("prefills reviewed facts from private source review items", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Source review");
+    expect(container.textContent).toContain("Private links and import notes wait here");
+
+    await act(async () => {
+      buttonByText(container, "Prepare fact")?.click();
+    });
+
+    expect((container.querySelector("#dearme-memory-kind") as HTMLSelectElement).value).toBe("proof_point");
+    expect((container.querySelector("#dearme-memory-title") as HTMLInputElement).value).toBe("Shipped proof");
+    expect((container.querySelector("#dearme-memory-source") as HTMLInputElement).value).toBe("Build log");
+    expect((container.querySelector("#dearme-memory-body") as HTMLTextAreaElement).value).toBe(
+      "Shipped a working local product.",
+    );
+
+    await act(async () => {
+      buttonByText(container, "Add to Voice & Memory")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.recordMemoryUpdate).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        kind: "proof_point",
+        sourceInputMode: "paste",
+        title: "Shipped proof",
+        body: "Shipped a working local product.",
+        sourceLabel: "Build log",
       }),
     );
     expectNoHiddenProductTerms(container.textContent, [

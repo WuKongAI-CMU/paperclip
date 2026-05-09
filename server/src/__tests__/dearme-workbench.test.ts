@@ -393,9 +393,10 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         entityId: "memory-proof-1",
         details: {
           kind: "proof_point",
+          sourceInputMode: "link",
           title: "Shipped proof",
           body: "Shipped a working local product and verified the first private growth cycle.",
-          sourceLabel: "Build log",
+          sourceLabel: "https://example.com/build-log",
         },
         createdAt: new Date("2026-05-07T16:33:00.000Z"),
       },
@@ -567,6 +568,16 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
           }),
         ]),
       }),
+      sourceReviewQueue: expect.arrayContaining([
+        expect.objectContaining({
+          sourceMemoryId: "memory-proof-1",
+          sourceInputMode: "link",
+          sourceTitle: "Shipped proof",
+          sourceLabel: "https://example.com/build-log",
+          proposedKind: "proof_point",
+          proposedBody: "Shipped a working local product and verified the first private growth cycle.",
+        }),
+      ]),
       latest: expect.arrayContaining([
         expect.objectContaining({
           id: "memory-voice-1",
@@ -789,6 +800,14 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
           sourceInputMode: "import_note",
           title: "Revised voice note",
           body: "Sharper revised voice sample for future private drafts.",
+        }),
+      ],
+      sourceReviewQueue: [
+        expect.objectContaining({
+          sourceMemoryId: "memory-active",
+          sourceInputMode: "import_note",
+          proposedKind: "voice_sample",
+          proposedBody: "Sharper revised voice sample for future private drafts.",
         }),
       ],
     }));

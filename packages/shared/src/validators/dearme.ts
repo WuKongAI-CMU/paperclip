@@ -788,6 +788,20 @@ export const dearMeMemoryUpdateItemSchema = z.object({
   createdAt: z.string().datetime(),
 }).strict();
 
+const dearMeMemorySourceReviewItemSchema = z.object({
+  id: z.string().min(1),
+  sourceMemoryId: z.string().min(1),
+  sourceInputMode: z.enum(["link", "import_note"]),
+  sourceTitle: shortTextSchema,
+  sourceLabel: mediumTextSchema.nullable(),
+  summary: mediumTextSchema,
+  proposedKind: z.enum(DEARME_MEMORY_UPDATE_KINDS),
+  proposedTitle: shortTextSchema,
+  proposedBody: longTextSchema,
+  nextAction: mediumTextSchema,
+  createdAt: z.string().datetime(),
+}).strict();
+
 const dearMeMemoryGrowthCyclesSchema = z.object({
   checked: z.number().int().nonnegative(),
   updated: z.number().int().nonnegative(),
@@ -841,6 +855,7 @@ export const dearMeWorkbenchMemorySchema = z.object({
   proofCount: z.number().int().nonnegative(),
   voiceProfile: dearMeWorkbenchVoiceProfileSchema,
   sourcePlan: dearMeWorkbenchMemorySourcePlanSchema,
+  sourceReviewQueue: z.array(dearMeMemorySourceReviewItemSchema).max(6).default([]),
   latest: z.array(dearMeMemoryUpdateItemSchema).max(12),
 }).strict();
 

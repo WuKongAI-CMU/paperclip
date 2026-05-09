@@ -40,6 +40,10 @@ type DearMeBatchKey = NonNullable<DearMeRiskGate> | "review";
 type DearMeReportDigest = Pick<DearMeWorkbenchReport, "accomplished" | "decisions" | "learnings" | "nextBets">;
 type DearMeWorkbenchMemorySourcePlan = DearMeWorkbenchMemory["sourcePlan"];
 type DearMeWorkbenchMemorySourceRequirement = DearMeWorkbenchMemorySourcePlan["required"][number];
+type DearMeWorkbenchMemorySourceReviewItem = DearMeWorkbenchMemory["sourceReviewQueue"][number];
+type DearMeMemorySourceReviewCandidate = DearMeMemoryUpdateItem & {
+  sourceInputMode: DearMeWorkbenchMemorySourceReviewItem["sourceInputMode"];
+};
 type DearMeStreamKind = DearMeWorkbenchStreamItem["kind"];
 type DearMeCycleStage = DearMeWorkbenchStreamItem["cycleStage"];
 
@@ -125,6 +129,14 @@ const MEMORY_KIND_LABELS: Record<DearMeMemoryUpdateKind, string> = {
   constraint: "Boundary",
   relationship: "Relationship",
   preference: "Preference",
+};
+
+const MEMORY_SOURCE_REVIEW_MODE_LABELS: Record<
+  DearMeWorkbenchMemorySourceReviewItem["sourceInputMode"],
+  string
+> = {
+  link: "Private link",
+  import_note: "Import note",
 };
 
 const MEMORY_SOURCE_REQUIREMENTS: Array<Pick<
@@ -758,6 +770,46 @@ function buildMemorySourcePlan(items: DearMeMemoryUpdateItem[]): DearMeWorkbench
     nextSourceKind: nextRequirement?.kind ?? null,
     required,
   };
+}
+
+function sourceReviewKey(item: Pick<DearMeMemoryUpdateItem, "kind" | "sourceLabel" | "title" | "bodyPreview">) {
+  const sourceIdentity = item.sourceLabel ?? item.title ?? item.bodyPreview;
+  return `${item.kind}:${sourceIdentity.replace(/\s+/g, " ").trim().toLocaleLowerCase()}`;
+}
+
+function isMemorySourceReviewCandidate(item: DearMeMemoryUpdateItem): item is DearMeMemorySourceReviewCandidate {
+  return item.sourceInputMode === "link" || item.sourceInputMode === "import_note";
+}
+
+function buildMemorySourceReviewQueue(items: DearMeMemoryUpdateItem[]): DearMeWorkbenchMemorySourceReviewItem[] {
+  const reviewedSourceKeys = new Set(
+    items
+      .filter((item) => item.sourceInputMode === "paste")
+      .map(sourceReviewKey),
+  );
+
+  return items
+    .filter(isMemorySourceReviewCandidate)
+    .filter((item) => !reviewedSourceKeys.has(sourceReviewKey(item)))
+    .slice(0, 6)
+    .map((item) => {
+      const sourceTitle = item.title ?? `${MEMORY_KIND_LABELS[item.kind]} source`;
+      const modeLabel = MEMORY_SOURCE_REVIEW_MODE_LABELS[item.sourceInputMode];
+      const kindLabel = MEMORY_KIND_LABELS[item.kind].toLocaleLowerCase();
+      return {
+        id: `source-review:${item.id}`,
+        sourceMemoryId: item.id,
+        sourceInputMode: item.sourceInputMode,
+        sourceTitle,
+        sourceLabel: item.sourceLabel,
+        summary: previewText(`${modeLabel} saved for ${kindLabel}: ${item.bodyPreview}`, 900),
+        proposedKind: item.kind,
+        proposedTitle: previewText(sourceTitle, 160),
+        proposedBody: item.body,
+        nextAction: `Review this ${kindLabel} and save the fact once it is ready for future private work.`,
+        createdAt: item.createdAt,
+      };
+    });
 }
 
 function digestItems(items: Array<string | null | undefined>, fallback: string) {
@@ -1595,6 +1647,7 @@ export function dearmeWorkbenchService(db: Db) {
         proofCount: latestMemory.filter((item) => item.kind === "proof_point").length,
         voiceProfile: buildMemoryVoiceProfile(latestMemory),
         sourcePlan: buildMemorySourcePlan(latestMemory),
+        sourceReviewQueue: buildMemorySourceReviewQueue(latestMemory),
         latest: latestMemory,
       };
       const reportOutput = outputs.find((output) => output.kind === "weekly_report") ?? null;

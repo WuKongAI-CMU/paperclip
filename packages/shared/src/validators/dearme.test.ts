@@ -747,6 +747,21 @@ describe("DearMe brand blueprint contract", () => {
             },
           ],
         },
+        sourceReviewQueue: [
+          {
+            id: "source-review:memory-2",
+            sourceMemoryId: "memory-2",
+            sourceInputMode: "link",
+            sourceTitle: "Shipped proof",
+            sourceLabel: "https://example.com/proof",
+            summary: "Private link saved for proof point: shipped work should support the launch narrative.",
+            proposedKind: "proof_point",
+            proposedTitle: "Shipped proof",
+            proposedBody: "Shipped work should support the launch narrative.",
+            nextAction: "Review this proof point and save the fact once it is ready for future private work.",
+            createdAt: "2026-05-07T13:00:00.000Z",
+          },
+        ],
         latest: [
           {
             id: "memory-1",
@@ -862,6 +877,13 @@ describe("DearMe brand blueprint contract", () => {
         status: "building",
         nextSourceKind: "voice_sample",
       }),
+      sourceReviewQueue: [
+        expect.objectContaining({
+          sourceMemoryId: "memory-2",
+          sourceInputMode: "link",
+          proposedKind: "proof_point",
+        }),
+      ],
     }));
     expect(response.workStream[0]).toEqual(expect.objectContaining({
       kind: "decision_needed",
