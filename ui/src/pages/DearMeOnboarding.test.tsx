@@ -1107,6 +1107,13 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Brand OS");
     expect(container.textContent).toContain("Your personal brand growth team");
     expect(container.textContent).toContain("Work ready / Decisions needed");
+    expect(container.textContent).toContain("Today's operating focus");
+    expect(container.textContent).toContain("Your team is turning private work into visible proof.");
+    expect(container.textContent).toContain("While you were away");
+    expect(container.textContent).toContain("Decisions waiting");
+    expect(container.textContent).toContain("Team focus");
+    expect(container.textContent).toContain("Weekly letter");
+    expect(container.textContent).toContain("Voice profile");
     expect(container.textContent).toContain("Your brand team today");
     expect(container.textContent).toContain("Dear me, your team has decisions ready");
     expect(container.textContent).toContain("Team operating policy");
@@ -1162,6 +1169,9 @@ describe("DearMeOnboarding", () => {
         '[aria-label="Work ready"] [data-dearme-action-attention="decision_needed"]',
       ),
     ).not.toBeNull();
+    expect(pageText.indexOf("Today's operating focus")).toBeLessThan(
+      pageText.indexOf("Dear me, your team has decisions ready"),
+    );
     expect(pageText.indexOf("Dear me, your team has decisions ready")).toBeLessThan(
       pageText.indexOf("Team operating policy"),
     );

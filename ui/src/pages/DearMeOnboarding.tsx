@@ -2187,6 +2187,113 @@ function TeamSummaryPanel({
   );
 }
 
+function TeamFocusWorkbenchPanel({
+  workbench,
+  paidBetaActive,
+}: {
+  workbench: DearMeWorkbenchResponse;
+  paidBetaActive: boolean;
+}) {
+  const latestProof = workbench.workStream[0] ?? workbench.recentProgress[0] ?? null;
+  const nextMove = workbench.activeWork[0] ?? workbench.workReady[0] ?? null;
+  const nextBatchDecision = workbench.batchDecisions[0] ?? null;
+  const nextApprovalDecision = workbench.decisionsNeeded[0] ?? null;
+  const nextSourceReview = workbench.memory.sourceReviewQueue[0] ?? null;
+  const primaryMember = workbench.team[0] ?? null;
+  const decisionCount =
+    workbench.decisionsNeeded.length +
+    workbench.batchDecisions.length +
+    workbench.memory.sourceReviewQueue.length;
+  const workCount = workbench.workReady.length + workbench.activeWork.length;
+  const nextDecisionTitle =
+    nextBatchDecision?.title ??
+    nextApprovalDecision?.title ??
+    nextSourceReview?.proposedTitle ??
+    "No decision waiting";
+  const nextDecisionSummary =
+    nextBatchDecision?.summary ??
+    nextApprovalDecision?.summary ??
+    nextSourceReview?.nextAction ??
+    "Your team can keep preparing private work.";
+  const reportStatus = workbench.report
+    ? OUTPUT_STATUS_LABELS[workbench.report.status]
+    : "Not ready";
+  const voiceConfidence = `${workbench.memory.voiceProfile.confidence}%`;
+
+  return (
+    <DearMeFocusSurface aria-label="Today's brand team focus" className="space-y-5">
+      <DearMeWorkbenchSectionHeader
+        icon={Sparkles}
+        eyebrow="Today's operating focus"
+        title="Your team is turning private work into visible proof."
+        description="Start with the few moves that need your judgment. Drafts, reports, and opportunities stay private until you approve what represents you."
+        trailing={
+          <Badge variant={paidBetaActive ? "default" : "secondary"}>
+            {paidBetaActive ? "Team working" : "Private work locked"}
+          </Badge>
+        }
+      />
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
+        <DearMeWorkbenchCard
+          eyebrow="While you were away"
+          title={latestProof?.title ?? "Your team is ready to start"}
+          description={latestProof?.summary ?? "Create your Brand OS and the first private cycle will begin here."}
+          badge={<Workflow className="h-4 w-4 text-muted-foreground" />}
+          footer={
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-md border border-border bg-background/70 p-3">
+                <p className="text-xs font-medium text-muted-foreground">Next move</p>
+                <p className="mt-1 text-sm font-medium">{nextMove?.title ?? "Private growth cycle"}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {nextMove?.summary ?? "Your team will prepare the first reviewable assets."}
+                </p>
+              </div>
+              <div className="rounded-md border border-border bg-background/70 p-3">
+                <p className="text-xs font-medium text-muted-foreground">Team focus</p>
+                <p className="mt-1 text-sm font-medium">{primaryMember?.name ?? "Chief of Staff"}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {primaryMember?.currentFocus ?? "Keeping the next brand cycle narrow and reviewable."}
+                </p>
+              </div>
+            </div>
+          }
+        />
+
+        <div className="grid gap-3">
+          <DearMeWorkbenchCard
+            eyebrow="Decisions waiting"
+            title={decisionCount}
+            description={nextDecisionTitle}
+            badge={<ShieldCheck className="h-4 w-4 text-muted-foreground" />}
+            footer={<p className="text-xs text-muted-foreground">{nextDecisionSummary}</p>}
+          />
+          <DearMeWorkbenchCard
+            eyebrow="Work ready"
+            title={workCount}
+            description="Prepared assets and active lanes your team can keep moving privately."
+            badge={<FileText className="h-4 w-4 text-muted-foreground" />}
+          />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            <DearMeWorkbenchCard
+              eyebrow="Weekly letter"
+              title={reportStatus}
+              description={workbench.report?.bodyPreview ?? "Your next Dear me report will summarize what changed."}
+              badge={<MessageSquare className="h-4 w-4 text-muted-foreground" />}
+            />
+            <DearMeWorkbenchCard
+              eyebrow="Voice profile"
+              title={voiceConfidence}
+              description={workbench.memory.voiceProfile.nextStep}
+              badge={<Users className="h-4 w-4 text-muted-foreground" />}
+            />
+          </div>
+        </div>
+      </div>
+    </DearMeFocusSurface>
+  );
+}
+
 function TeamOperatingPolicyPanel({
   workbench,
   paidBetaActive,
@@ -3982,6 +4089,8 @@ function TeamWorkbenchPanel({
           outputReviewState={outputReviewState}
         />
       ) : null}
+
+      <TeamFocusWorkbenchPanel workbench={workbench} paidBetaActive={paidBetaActive} />
 
       <TeamSummaryPanel workbench={workbench} paidBetaActive={paidBetaActive} />
 

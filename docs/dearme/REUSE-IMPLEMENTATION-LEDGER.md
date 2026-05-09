@@ -58,7 +58,7 @@ The right reuse split is:
 
 | DearMe area | Current implementation evidence | Donor reuse status | Next gap |
 | --- | --- | --- | --- |
-| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. Lindy and Littlebird remain visual/polish donors rather than wholesale imports. | Premium web polish pass after focused source and decision review behavior is usable. |
+| Product shell | `ui/src/pages/DearMeOnboarding.tsx`; `ui/src/components/DearMeSidebar.tsx`; `ui/src/components/Layout.tsx` | DearMe-owned shell already hides inherited Paperclip chrome on the customer path. DM-130 now adapts Polsia's "work happened while I was away" choreography, Lindy's two-rail home composition, and Littlebird's focused step/task-row discipline into the first workbench surface. | Browser-polish the new first-screen focus across desktop and mobile, then split only if the page becomes hard to maintain. |
 | Brand OS / `brand_blueprint` | `packages/shared/src/validators/dearme.ts`; `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/routes/dearme.ts` | Naive `setup_payload` pattern has been adapted into a typed DearMe contract and approval-gated apply flow. | Keep extending this contract only when P0 surfaces need it. |
 | Workbench projection | `server/src/services/dearme-workbench.ts`; `server/src/__tests__/dearme-workbench.test.ts` | Naive/Paperclip tables remain the substrate for team, work, decisions, progress, reports, and memory projections. | Do not add a second runtime; enrich read models first. |
 | Action graph and work stream | `docs/dearme/ACTION-GRAPH-ARCHITECTURE.md`; `packages/shared/src/validators/dearme.ts`; `ui/src/components/dearme/DearMeActionCard.tsx` | Polsia cycle/report choreography plus Lindy action-card grammar are already converging into customer-safe work cards. | Add richer detail panels instead of more tabs. |
@@ -70,6 +70,31 @@ The right reuse split is:
 | Development factory | `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` | Symphony-style worker queue is useful for bounded tickets after coordinator updates the queue. | Workers must use this ledger and `BUILD-STATE.md` before selecting old tickets. |
 
 ## Recently Completed
+
+### DM-130: Web Shell Polish From Lindy And Littlebird
+
+Goal: make the customer web shell lead with a premium personal-brand team
+surface instead of an admin-console summary.
+
+Donor grounding:
+
+- Polsia first-screen hierarchy and "work happened while I was away"
+  choreography.
+- Naive/Paperclip workbench projection as the hidden runtime/data substrate.
+- Lindy two-column home dashboard composition and compact assistant status
+  cards.
+- Littlebird onboarding/task-row discipline: one clear current step plus
+  compact supporting work rows.
+
+Completed:
+
+- Added `Today's operating focus` above the team summary.
+- The new surface shows "While you were away", next private move, team focus,
+  decisions waiting, work ready, weekly letter, and voice-profile confidence.
+- The surface reads existing workbench data only; no backend route, database
+  table, runtime service, or new API was added.
+- Focused DearMe onboarding tests assert the new hierarchy and customer-safe
+  copy.
 
 ### DM-129: Automation Reliability And Cost Policy
 
@@ -157,21 +182,23 @@ Completed:
 
 ## Current Worker Queue
 
-### DM-130: Web Shell Polish From Lindy And Littlebird
+### DM-131: Browser Polish For The DearMe Team Workbench
 
-Goal: improve the customer web shell after source/decision detail behavior is
-usable.
+Goal: verify and tune the current DearMe workbench in a live browser after
+DM-130 made the first-screen focus explicit.
 
 Donor grounding:
 
-- Lindy premium assistant UI surfaces.
-- Littlebird customer web shell/onboarding patterns.
-- Polsia first-screen "team is working" hierarchy.
+- Lindy polished home layout density and section rhythm.
+- Littlebird compact web task/onboarding ergonomics.
+- Polsia visible momentum and first-wow hierarchy.
 
 Acceptance:
 
-- First screen feels like a personal brand growth team, not an admin console.
 - Desktop and mobile browser checks pass.
+- No customer-facing donor/runtime terms appear in the DearMe paid-beta path.
+- The first viewport clearly reads as a personal brand growth team with
+  prepared work and decisions, not an operator control plane.
 
 ## Coordination Rules
 
@@ -188,8 +215,6 @@ Acceptance:
 ## Not Complete Yet
 
 DearMe is not release-ready just because these reuse decisions are documented.
-The next meaningful product gain is DM-130, because source review, focused
-decisions, and the initial operating policy now have DearMe-native surfaces.
-The next pass should make the web shell feel more premium and coherent by
-borrowing Lindy/Littlebird interaction polish without exposing donor/runtime
-language.
+The next meaningful product gain is DM-131, because the first-screen focus now
+exists but still needs live desktop/mobile browser verification and visual
+polish against the premium DearMe web direction.

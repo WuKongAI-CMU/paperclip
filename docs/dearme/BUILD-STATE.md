@@ -2,6 +2,60 @@
 
 Date: 2026-05-09
 
+## DM-130 Web Shell Polish From Lindy And Littlebird - 2026-05-09
+
+Implementation slice:
+
+- Added a first-screen `Today's operating focus` surface to the DearMe
+  workbench.
+- The surface leads with "While you were away", the next private move, team
+  focus, decisions waiting, work ready, weekly letter status, and voice-profile
+  confidence.
+- The panel derives entirely from the existing workbench response:
+  `workStream`, `recentProgress`, `activeWork`, `workReady`,
+  `decisionsNeeded`, `batchDecisions`, `memory`, `report`, and `team`.
+- Kept backend routes, database tables, runtime services, and generated
+  portfolio/site provisioning unchanged for this slice.
+
+Donor reuse:
+
+- Polsia supplies the customer choreography: users immediately see that work
+  happened while they were away and only the highest-leverage calls need them.
+- Naive/Paperclip supplies the hidden substrate through the existing workbench
+  projection; no second runtime or API was added.
+- Lindy supplies the premium two-rail home composition and compact assistant
+  status-card pattern.
+- Littlebird supplies the focused onboarding/task-row discipline: one clear
+  current step, compact supporting rows, and trust-first copy.
+
+Rejected:
+
+- Rejected copying Polsia's visual style, public live-feed defaults, or
+  company-factory framing.
+- Rejected waiting for a complete Naive proprietary front-end source drop; the
+  current DearMe/Paperclip workbench is already the reliable substrate.
+- Rejected importing Lindy or Littlebird components wholesale because their
+  routing, stores, product language, and brand surfaces do not match DearMe.
+- Rejected adding a new backend shell endpoint before exhausting the existing
+  workbench projection.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 1 file, 34 tests.
+- `git diff --check` passed.
+- Customer-surface hidden-term scan passed for the touched DearMe onboarding
+  UI/test files.
+- `pnpm -r typecheck` passed across the workspace.
+- `pnpm build` passed across the workspace. Vite emitted the existing
+  MarkdownEditor dynamic/static import notice and chunk-size warning; neither
+  failed the build.
+
+Next:
+
+- Use the next product ticket to make the same first-screen focus work in the
+  live browser across desktop and mobile.
+
 ## DM-129 Automation Reliability And Cost Policy - 2026-05-09
 
 Implementation slice:
