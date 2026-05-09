@@ -2,6 +2,64 @@
 
 Date: 2026-05-09
 
+## DM-122 Voice & Memory Source Import Paths - 2026-05-09
+
+Implementation slice:
+
+- Added typed Voice & Memory source paths: pasted source, private source link,
+  and import note.
+- Kept the source intake path backed by existing DearMe memory activity rows
+  and workbench projection instead of introducing a separate knowledge-base
+  backend.
+- Validated private source links at the shared contract boundary so server and
+  UI behavior stay aligned.
+- Carried `sourceInputMode` through shared validators, server activity details,
+  workbench memory cards, API tests, and the DearMe web panel.
+- Added a Lindy-style compact source-path selector inside the existing
+  Voice & Memory action-card surface while keeping donor/runtime machinery
+  backstage.
+
+Donor reuse:
+
+- Lindy supplies the source-card/form pattern: short source path choices,
+  validation before save, and source context shown as compact chips.
+- Naive/Paperclip supplies the durable substrate through `activity_log`,
+  routine memory context refresh, existing REST route patterns, and workbench
+  projection.
+- Polsia supplies the product interpretation: the visible personal-brand team
+  learns from sources so the next growth cycle improves, rather than exposing a
+  generic source manager.
+
+Rejected:
+
+- Rejected adding a new memory table, upload store, crawler, or workflow-builder
+  engine in this slice.
+- Rejected treating source links as external fetch/scrape jobs; they are private
+  references plus user-approved memory.
+- Rejected exposing donor/runtime terms in customer-facing Voice & Memory UI.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-memory-context.test.ts ui/src/api/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 6 files, 84 tests.
+- `pnpm run typecheck` passed across the workspace.
+- `git diff --check` passed.
+- Customer-surface substrate scan over `ui/src/pages/DearMeOnboarding.tsx`
+  passed with no matches for Paperclip, OpenClaw, OK Partner, provider,
+  adapter, setup payload, control-plane, workflow-builder, GraphQL, Relay, MCP,
+  agent-runtime, routine, cost_event, anthropic, or claude language.
+- Playwright rendered `/dearme` at
+  `http://127.0.0.1:3100/DEAA/dearme` on desktop and 390px mobile. Verified
+  Source path controls, `Source link` switching the source field to URL input,
+  no Vite overlay, no console errors/warnings, no forbidden substrate terms in
+  the body, and no 390px mobile horizontal overflow.
+
+Next:
+
+- Build a focused source-review/import queue that turns stored link/import
+  notes into proposed Voice & Memory facts without crawling, publishing, or
+  exposing donor/runtime language.
+
 ## DM-121 Voice & Memory Source Actions - 2026-05-09
 
 Implementation slice:

@@ -79,6 +79,7 @@ describe("dearmeApi", () => {
   it("posts Voice & Memory updates through the DearMe company endpoint", async () => {
     const payload = {
       kind: "voice_sample" as const,
+      sourceInputMode: "paste" as const,
       title: "Operator note",
       body: "Short, direct operator note.",
       sourceLabel: null,
@@ -95,9 +96,10 @@ describe("dearmeApi", () => {
   it("patches Voice & Memory sources through the DearMe company endpoint", async () => {
     const payload = {
       kind: "voice_sample" as const,
+      sourceInputMode: "link" as const,
       title: "Revised note",
       body: "Sharper operator note.",
-      sourceLabel: "Manual note",
+      sourceLabel: "https://example.com/manual-note",
     };
 
     await dearmeApi.updateMemorySource("company-1", "memory:voice/1", payload);

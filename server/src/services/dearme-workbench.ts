@@ -601,6 +601,10 @@ function memoryFromActivity(input: {
   return {
     id: input.entityId || input.id,
     kind: input.details.kind,
+    sourceInputMode:
+      input.details.sourceInputMode === "link" || input.details.sourceInputMode === "import_note"
+        ? input.details.sourceInputMode
+        : "paste",
     title: optionalStringFromRecord(input.details, "title"),
     body,
     bodyPreview: previewText(body),

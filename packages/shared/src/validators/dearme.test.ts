@@ -340,25 +340,41 @@ describe("DearMe brand blueprint contract", () => {
 
     expect(update).toEqual({
       kind: "voice_sample",
+      sourceInputMode: "paste",
       title: "Operator note",
       body: "Short, specific proof.",
       sourceLabel: "Manual note",
     });
     expect(dearMeMemoryUpdateSchema.parse({
       kind: "proof_point",
+      sourceInputMode: "link",
       body: "Shipped the first private growth cycle.",
+      sourceLabel: "https://example.com/proof",
     })).toEqual({
       kind: "proof_point",
+      sourceInputMode: "link",
       title: null,
       body: "Shipped the first private growth cycle.",
-      sourceLabel: null,
+      sourceLabel: "https://example.com/proof",
     });
+    expect(dearMeMemoryUpdateSchema.safeParse({
+      kind: "proof_point",
+      sourceInputMode: "link",
+      body: "Shipped the first private growth cycle.",
+      sourceLabel: "ftp://example.com/proof",
+    }).success).toBe(false);
+    expect(dearMeMemoryUpdateSchema.safeParse({
+      kind: "proof_point",
+      sourceInputMode: "link",
+      body: "Shipped the first private growth cycle.",
+    }).success).toBe(false);
     expect(dearMeMemoryUpdateResultSchema.parse({
       companyId: "company-1",
       status: "recorded",
       memory: {
         id: "memory-1",
         kind: "voice_sample",
+        sourceInputMode: "import_note",
         title: "Operator note",
         body: "Short, specific proof.",
         bodyPreview: "Short, specific proof.",
@@ -371,7 +387,7 @@ describe("DearMe brand blueprint contract", () => {
         unchanged: 1,
         memorySources: 2,
       },
-    }).memory.kind).toBe("voice_sample");
+    }).memory.sourceInputMode).toBe("import_note");
     expect(dearMeMemoryArchiveResultSchema.parse({
       companyId: "company-1",
       status: "archived",

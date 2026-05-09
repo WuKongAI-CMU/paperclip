@@ -421,6 +421,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         {
           id: "memory-1",
           kind: "voice_sample",
+          sourceInputMode: "paste",
           title: "Voice note",
           body: "Short, direct voice note.",
           bodyPreview: "Short, direct voice note.",
@@ -430,6 +431,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         {
           id: "memory-2",
           kind: "proof_point",
+          sourceInputMode: "link",
           title: "Shipped proof",
           body: "Shipped a working local product.",
           bodyPreview: "Shipped a working local product.",
@@ -913,6 +915,7 @@ describe("DearMeOnboarding", () => {
       memory: {
         id: "memory-3",
         kind: "voice_sample",
+        sourceInputMode: "paste",
         title: "Fresh voice note",
         body: "Fresh direct voice note from today's work.",
         bodyPreview: "Fresh direct voice note from today's work.",
@@ -932,6 +935,7 @@ describe("DearMeOnboarding", () => {
       memory: {
         id: "memory-1",
         kind: "voice_sample",
+        sourceInputMode: "paste",
         title: "Voice note",
         body: "Short, direct revised voice note.",
         bodyPreview: "Short, direct revised voice note.",
@@ -1233,6 +1237,7 @@ describe("DearMeOnboarding", () => {
       "company-1",
       expect.objectContaining({
         kind: "voice_sample",
+        sourceInputMode: "paste",
         title: "Voice note",
         body: "Short, direct voice note.",
         sourceLabel: null,
@@ -1353,6 +1358,7 @@ describe("DearMeOnboarding", () => {
       "memory-1",
       expect.objectContaining({
         kind: "voice_sample",
+        sourceInputMode: "paste",
         title: "Voice note",
         body: "Short, direct revised voice note.",
         sourceLabel: "Manual note",
@@ -1585,6 +1591,7 @@ describe("DearMeOnboarding", () => {
       "company-1",
       expect.objectContaining({
         kind: "voice_sample",
+        sourceInputMode: "paste",
         body: "First real voice sample from a new design partner.",
       }),
     );
@@ -1644,9 +1651,80 @@ describe("DearMeOnboarding", () => {
       "company-1",
       expect.objectContaining({
         kind: "constraint",
+        sourceInputMode: "paste",
         title: "Forbidden phrase",
         body: "Never describe the product as effortless magic.",
         sourceLabel: "Voice review note",
+      }),
+    );
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("records source links as a typed Voice & Memory source path", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Source link")?.click();
+    });
+
+    await act(async () => {
+      setInputValue(
+        container.querySelector("#dearme-memory-source") as HTMLInputElement,
+        "ftp://example.com/proof-note",
+      );
+      setTextareaValue(
+        container.querySelector("#dearme-memory-body") as HTMLTextAreaElement,
+        "This source proves the launch narrative should mention the shipped local workflow.",
+      );
+    });
+
+    await act(async () => {
+      buttonByText(container, "Add to Voice & Memory")?.click();
+    });
+
+    expect(container.textContent).toContain("Use an http or https link for source links.");
+    expect(mockDearmeApi.recordMemoryUpdate).not.toHaveBeenCalled();
+
+    await act(async () => {
+      setInputValue(
+        container.querySelector("#dearme-memory-source") as HTMLInputElement,
+        "https://example.com/proof-note",
+      );
+    });
+
+    await act(async () => {
+      buttonByText(container, "Add to Voice & Memory")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.recordMemoryUpdate).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        kind: "proof_point",
+        sourceInputMode: "link",
+        title: "Source link",
+        body: "This source proves the launch narrative should mention the shipped local workflow.",
+        sourceLabel: "https://example.com/proof-note",
       }),
     );
     expectNoHiddenProductTerms(container.textContent, [

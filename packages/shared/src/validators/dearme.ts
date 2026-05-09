@@ -190,6 +190,11 @@ export const DEARME_MEMORY_UPDATE_KINDS = [
   "relationship",
   "preference",
 ] as const;
+export const DEARME_MEMORY_SOURCE_INPUT_MODES = [
+  "paste",
+  "link",
+  "import_note",
+] as const;
 export const DEARME_CHIEF_OF_STAFF_MESSAGE_INTENTS = [
   "plan_next",
   "draft_content",
@@ -227,6 +232,15 @@ function optionalText(maxLength: number) {
     (value) => (typeof value === "string" && value.trim().length === 0 ? undefined : value),
     z.string().trim().min(1).max(maxLength).optional(),
   );
+}
+
+function isHttpUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 function textList(maxItems: number, maxLength: number) {
@@ -302,11 +316,32 @@ const dearMeMemorySeedSchema = z.object({
 
 export const dearMeMemoryUpdateSchema = z.object({
   kind: z.enum(DEARME_MEMORY_UPDATE_KINDS),
+  sourceInputMode: z.enum(DEARME_MEMORY_SOURCE_INPUT_MODES).default("paste"),
   title: optionalText(160),
   body: longTextSchema,
-  sourceLabel: optionalText(240),
-}).strict().transform((input) => ({
+  sourceLabel: optionalText(1_000),
+}).strict().superRefine((input, ctx) => {
+  if (input.sourceInputMode !== "link") {
+    return;
+  }
+  if (!input.sourceLabel) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["sourceLabel"],
+      message: "Add the private link DearMe should remember.",
+    });
+    return;
+  }
+  if (!isHttpUrl(input.sourceLabel)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["sourceLabel"],
+      message: "Use an http or https source link.",
+    });
+  }
+}).transform((input) => ({
   kind: input.kind,
+  sourceInputMode: input.sourceInputMode,
   title: input.title ?? null,
   body: input.body,
   sourceLabel: input.sourceLabel ?? null,
@@ -745,10 +780,11 @@ export const dearMeWorkbenchStreamItemSchema = z.object({
 export const dearMeMemoryUpdateItemSchema = z.object({
   id: z.string().min(1),
   kind: z.enum(DEARME_MEMORY_UPDATE_KINDS),
+  sourceInputMode: z.enum(DEARME_MEMORY_SOURCE_INPUT_MODES).default("paste"),
   title: shortTextSchema.nullable(),
   body: longTextSchema,
   bodyPreview: mediumTextSchema,
-  sourceLabel: shortTextSchema.nullable(),
+  sourceLabel: mediumTextSchema.nullable(),
   createdAt: z.string().datetime(),
 }).strict();
 
@@ -886,6 +922,7 @@ export type DearMeChiefOfStaffMessageResult = z.infer<typeof dearMeChiefOfStaffM
 export type DearMeMemoryUpdate = z.infer<typeof dearMeMemoryUpdateSchema>;
 export type DearMeMemoryUpdateItem = z.infer<typeof dearMeMemoryUpdateItemSchema>;
 export type DearMeMemoryUpdateKind = z.infer<typeof dearMeMemoryUpdateSchema>["kind"];
+export type DearMeMemorySourceInputMode = z.infer<typeof dearMeMemoryUpdateSchema>["sourceInputMode"];
 export type DearMeMemoryUpdateResult = z.infer<typeof dearMeMemoryUpdateResultSchema>;
 export type DearMeMemoryArchiveResult = z.infer<typeof dearMeMemoryArchiveResultSchema>;
 export type DearMeOutputDetail = z.infer<typeof dearMeOutputDetailSchema>;

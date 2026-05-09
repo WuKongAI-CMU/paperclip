@@ -766,6 +766,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         entityId: "memory-active",
         details: {
           kind: "voice_sample",
+          sourceInputMode: "import_note",
           title: "Revised voice note",
           body: "Sharper revised voice sample for future private drafts.",
           sourceLabel: "Manual note",
@@ -785,6 +786,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         expect.objectContaining({
           id: "memory-active",
           kind: "voice_sample",
+          sourceInputMode: "import_note",
           title: "Revised voice note",
           body: "Sharper revised voice sample for future private drafts.",
         }),

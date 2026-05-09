@@ -207,6 +207,7 @@ export function dearmeRoutes(db: Db) {
     return {
       id: input.memoryId,
       kind: input.update.kind,
+      sourceInputMode: input.update.sourceInputMode,
       title: input.update.title,
       body: input.update.body,
       bodyPreview: memoryBodyPreview(input.update.body),
@@ -383,6 +384,7 @@ export function dearmeRoutes(db: Db) {
         entityId: memoryId,
         details: {
           kind: input.kind,
+          sourceInputMode: input.sourceInputMode,
           title: input.title,
           body: input.body,
           sourceLabel: input.sourceLabel,
@@ -423,6 +425,7 @@ export function dearmeRoutes(db: Db) {
         entityId: memoryId,
         details: {
           kind: input.kind,
+          sourceInputMode: input.sourceInputMode,
           title: input.title,
           body: input.body,
           sourceLabel: input.sourceLabel,

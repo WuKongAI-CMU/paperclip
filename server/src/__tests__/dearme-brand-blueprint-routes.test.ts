@@ -579,6 +579,7 @@ describe("DearMe brand blueprint routes", () => {
       .post("/api/dearme/companies/company-1/memory-updates")
       .send({
         kind: "voice_sample",
+        sourceInputMode: "paste",
         title: "Operator note",
         body: "Short, direct note.",
         sourceLabel: "Manual note",
@@ -588,6 +589,7 @@ describe("DearMe brand blueprint routes", () => {
     expect(res.body.status).toBe("recorded");
     expect(res.body.memory).toEqual(expect.objectContaining({
       kind: "voice_sample",
+      sourceInputMode: "paste",
       title: "Operator note",
       body: "Short, direct note.",
       bodyPreview: "Short, direct note.",
@@ -610,6 +612,7 @@ describe("DearMe brand blueprint routes", () => {
         entityId: expect.any(String),
         details: expect.objectContaining({
           kind: "voice_sample",
+          sourceInputMode: "paste",
           title: "Operator note",
           body: "Short, direct note.",
           sourceLabel: "Manual note",
@@ -626,14 +629,30 @@ describe("DearMe brand blueprint routes", () => {
     );
   });
 
+  it("rejects invalid Voice & Memory source links before writing activity", async () => {
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/memory-updates")
+      .send({
+        kind: "proof_point",
+        sourceInputMode: "link",
+        body: "Launch proof for the next growth cycle.",
+        sourceLabel: "ftp://example.com/proof",
+      });
+
+    expect(res.status).toBe(400);
+    expect(mockLogActivity).not.toHaveBeenCalled();
+    expect(mockDearMeMemoryContextService.refreshRoutineMemoryContext).not.toHaveBeenCalled();
+  });
+
   it("revises a Voice & Memory source through the activity log", async () => {
     const res = await request(await createApp())
       .patch("/api/dearme/companies/company-1/memory-updates/memory-voice-1")
       .send({
         kind: "voice_sample",
+        sourceInputMode: "link",
         title: "Revised operator note",
         body: "Sharper direct note for future drafts.",
-        sourceLabel: "Manual note",
+        sourceLabel: "https://example.com/manual-note",
       });
 
     expect(res.status).toBe(200);
@@ -641,10 +660,11 @@ describe("DearMe brand blueprint routes", () => {
     expect(res.body.memory).toEqual(expect.objectContaining({
       id: "memory-voice-1",
       kind: "voice_sample",
+      sourceInputMode: "link",
       title: "Revised operator note",
       body: "Sharper direct note for future drafts.",
       bodyPreview: "Sharper direct note for future drafts.",
-      sourceLabel: "Manual note",
+      sourceLabel: "https://example.com/manual-note",
     }));
     expect(mockLogActivity).toHaveBeenCalledWith(
       expect.anything(),
@@ -657,9 +677,10 @@ describe("DearMe brand blueprint routes", () => {
         entityId: "memory-voice-1",
         details: expect.objectContaining({
           kind: "voice_sample",
+          sourceInputMode: "link",
           title: "Revised operator note",
           body: "Sharper direct note for future drafts.",
-          sourceLabel: "Manual note",
+          sourceLabel: "https://example.com/manual-note",
           revisionOf: "memory-voice-1",
         }),
       }),

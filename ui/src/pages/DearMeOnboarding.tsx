@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DEARME_BRAND_CADENCES,
   DEARME_BRAND_CHANNELS,
+  DEARME_MEMORY_SOURCE_INPUT_MODES,
   DEARME_MEMORY_UPDATE_KINDS,
   DEARME_PAID_BETA_MIN_PAYMENT_CENTS,
   type DearMeActionGraph,
@@ -12,6 +13,7 @@ import {
   type DearMeChiefOfStaffMessageResult,
   type DearMeFirstCyclePreviewResponse,
   type DearMeMemoryArchiveResult,
+  type DearMeMemorySourceInputMode,
   type DearMeMemoryUpdate,
   type DearMeMemoryUpdateItem,
   type DearMeMemoryUpdateKind,
@@ -982,6 +984,18 @@ const MEMORY_KIND_LABELS: Record<DearMeMemoryUpdateKind, string> = {
   preference: "Preference",
 };
 
+const MEMORY_SOURCE_INPUT_MODE_LABELS: Record<DearMeMemorySourceInputMode, string> = {
+  paste: "Pasted source",
+  link: "Source link",
+  import_note: "Import note",
+};
+
+const MEMORY_SOURCE_INPUT_MODE_HELPERS: Record<DearMeMemorySourceInputMode, string> = {
+  paste: "Paste the source text directly.",
+  link: "Save a private reference link and the useful memory from it.",
+  import_note: "Describe a file, transcript, profile, or backlog item DearMe should fold in next.",
+};
+
 type MemorySourceGuideId =
   | "writing_sample"
   | "proof_point"
@@ -1073,6 +1087,16 @@ const MEMORY_SOURCE_GUIDES: Array<{
   },
 ];
 const DEFAULT_MEMORY_SOURCE_GUIDE = MEMORY_SOURCE_GUIDES[0]!;
+
+function defaultSourceInputModeForGuide(
+  guide: (typeof MEMORY_SOURCE_GUIDES)[number],
+): DearMeMemorySourceInputMode {
+  return guide.id === "source_link" ? "link" : "paste";
+}
+
+function sourceLabelForChip(value: string) {
+  return value.length > 42 ? `${value.slice(0, 39)}...` : value;
+}
 
 const MEMORY_SOURCE_PLAN_STATUS_LABELS: Record<DearMeWorkbenchMemory["sourcePlan"]["status"], string> = {
   needs_sources: "Needs sources",
@@ -2577,6 +2601,7 @@ function VoiceMemoryPanel({
 }) {
   const [kind, setKind] = useState<DearMeMemoryUpdateKind>("voice_sample");
   const [sourceGuideId, setSourceGuideId] = useState<MemorySourceGuideId>("writing_sample");
+  const [sourceInputMode, setSourceInputMode] = useState<DearMeMemorySourceInputMode>("paste");
   const [title, setTitle] = useState("");
   const [sourceLabel, setSourceLabel] = useState("");
   const [body, setBody] = useState("");
@@ -2586,6 +2611,18 @@ function VoiceMemoryPanel({
   const sourcePlan = memory.sourcePlan;
   const selectedGuide =
     MEMORY_SOURCE_GUIDES.find((guide) => guide.id === sourceGuideId) ?? DEFAULT_MEMORY_SOURCE_GUIDE;
+  const sourceLabelText =
+    sourceInputMode === "link"
+      ? "Private link"
+      : sourceInputMode === "import_note"
+        ? "Source to import"
+        : "Source or note";
+  const sourcePlaceholder =
+    sourceInputMode === "link"
+      ? "https://example.com/private-source"
+      : sourceInputMode === "import_note"
+        ? "Resume, transcript, portfolio, call notes, or backlog item"
+        : selectedGuide.sourcePlaceholder;
   const feedback = memoryUpdateFeedback(result);
   const recordedMemory = result?.memory ?? null;
   const recordedMemoryAlreadyLoaded = recordedMemory
@@ -2612,17 +2649,35 @@ function VoiceMemoryPanel({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedBody = body.trim();
+    const trimmedSourceLabel = sourceLabel.trim();
     if (!trimmedBody) {
       setLocalError("Add source material before saving.");
       return;
+    }
+    if (sourceInputMode === "link") {
+      if (!trimmedSourceLabel) {
+        setLocalError("Add the private link DearMe should remember.");
+        return;
+      }
+      try {
+        const parsedUrl = new URL(trimmedSourceLabel);
+        if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+          setLocalError("Use an http or https link for source links.");
+          return;
+        }
+      } catch {
+        setLocalError("Use a valid http or https link for source links.");
+        return;
+      }
     }
 
     setLocalError(null);
     const update = {
       kind,
+      sourceInputMode,
       title: title.trim() || selectedGuide.label,
       body: trimmedBody,
-      sourceLabel: sourceLabel.trim() || null,
+      sourceLabel: trimmedSourceLabel || null,
     };
     if (editingMemoryId) {
       onUpdate(editingMemoryId, update);
@@ -2630,6 +2685,7 @@ function VoiceMemoryPanel({
       onAdd(update);
     }
     setEditingMemoryId(null);
+    setSourceInputMode("paste");
     setTitle("");
     setSourceLabel("");
     setBody("");
@@ -2638,6 +2694,7 @@ function VoiceMemoryPanel({
   function handleGuideSelect(guide: (typeof MEMORY_SOURCE_GUIDES)[number]) {
     setSourceGuideId(guide.id);
     setKind(guide.kind);
+    setSourceInputMode(defaultSourceInputModeForGuide(guide));
     setLocalError(null);
   }
 
@@ -2646,6 +2703,7 @@ function VoiceMemoryPanel({
     setEditingMemoryId(item.id);
     setSourceGuideId(guide.id);
     setKind(item.kind);
+    setSourceInputMode(item.sourceInputMode);
     setTitle(item.title ?? guide.label);
     setSourceLabel(item.sourceLabel ?? "");
     setBody(item.body);
@@ -2654,6 +2712,7 @@ function VoiceMemoryPanel({
 
   function handleCancelRevise() {
     setEditingMemoryId(null);
+    setSourceInputMode("paste");
     setTitle("");
     setSourceLabel("");
     setBody("");
@@ -2672,6 +2731,7 @@ function VoiceMemoryPanel({
     const matchingGuide = MEMORY_SOURCE_GUIDES.find((guide) => guide.kind === nextKind);
     if (matchingGuide) {
       setSourceGuideId(matchingGuide.id);
+      setSourceInputMode(defaultSourceInputModeForGuide(matchingGuide));
     }
   }
 
@@ -2679,6 +2739,7 @@ function VoiceMemoryPanel({
     const matchingGuide = memorySourceGuideForKind(nextKind);
     setSourceGuideId(matchingGuide.id);
     setKind(nextKind);
+    setSourceInputMode(defaultSourceInputModeForGuide(matchingGuide));
     setLocalError(null);
   }
 
@@ -2815,6 +2876,41 @@ function VoiceMemoryPanel({
           </div>
         </div>
 
+        <div>
+          <FieldLabel htmlFor="dearme-memory-source-mode" label="Source path" />
+          <div
+            id="dearme-memory-source-mode"
+            className="mt-2 grid gap-2 sm:grid-cols-3"
+            role="group"
+            aria-label="Voice & Memory source path"
+          >
+            {DEARME_MEMORY_SOURCE_INPUT_MODES.map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                aria-pressed={sourceInputMode === mode}
+                className={cn(
+                  "min-h-20 rounded-md border px-3 py-3 text-left text-sm transition-colors",
+                  sourceInputMode === mode
+                    ? "border-primary bg-primary/5 text-foreground"
+                    : "border-border bg-background text-muted-foreground hover:border-primary/60 hover:text-foreground",
+                )}
+                onClick={() => {
+                  setSourceInputMode(mode);
+                  setLocalError(null);
+                }}
+              >
+                <span className="font-medium text-foreground">
+                  {MEMORY_SOURCE_INPUT_MODE_LABELS[mode]}
+                </span>
+                <span className="mt-1 block text-xs leading-5">
+                  {MEMORY_SOURCE_INPUT_MODE_HELPERS[mode]}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid gap-3 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
           <div className="grid gap-3">
             <div>
@@ -2844,11 +2940,12 @@ function VoiceMemoryPanel({
               />
             </div>
             <div>
-              <FieldLabel htmlFor="dearme-memory-source" label="Source or link" />
+              <FieldLabel htmlFor="dearme-memory-source" label={sourceLabelText} />
               <Input
                 id="dearme-memory-source"
                 value={sourceLabel}
-                placeholder={selectedGuide.sourcePlaceholder}
+                placeholder={sourcePlaceholder}
+                type={sourceInputMode === "link" ? "url" : "text"}
                 onChange={(event) => setSourceLabel(event.target.value)}
               />
             </div>
@@ -2889,11 +2986,12 @@ function VoiceMemoryPanel({
           {visibleLatestMemory.slice(0, 6).map((item) => {
             const justSaved = recordedMemory?.id === item.id;
             const chips = [
+              { label: MEMORY_SOURCE_INPUT_MODE_LABELS[item.sourceInputMode], variant: "outline" as const },
               ...(justSaved
                 ? [{ label: "Just saved", variant: "secondary" as const }]
                 : []),
               ...(item.sourceLabel
-                ? [{ label: item.sourceLabel, variant: "outline" as const }]
+                ? [{ label: sourceLabelForChip(item.sourceLabel), variant: "outline" as const }]
                 : []),
             ];
             return (
