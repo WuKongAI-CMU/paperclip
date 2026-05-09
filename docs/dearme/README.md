@@ -12,6 +12,8 @@
 
 **Current dirty-tree integration plan:** [`WORKTREE-INTEGRATION-PLAN.md`](WORKTREE-INTEGRATION-PLAN.md)
 
+**Current baseline spine manifest:** [`BASELINE-SPINE-MANIFEST.md`](BASELINE-SPINE-MANIFEST.md)
+
 **Marketing packaging guide:** [`POLSIA-MARKETING-PACKAGING-GUIDE.md`](POLSIA-MARKETING-PACKAGING-GUIDE.md)
 
 **Polsia / Naive comparison:** [`POLSIA-NAIVE-COMPARISON.md`](POLSIA-NAIVE-COMPARISON.md)
@@ -75,25 +77,27 @@ public provenance or copy-ready implementation material.
    - current integrated architecture across DearMe, Lindy baseline, Polsia, Naive/Paperclip, and OK Partner-derived mechanics.
 2. [`WORKTREE-INTEGRATION-PLAN.md`](WORKTREE-INTEGRATION-PLAN.md)
    - current dirty-tree integration plan, preservation policy, and next safe implementation slice.
-3. [`PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`](PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md)
+3. [`BASELINE-SPINE-MANIFEST.md`](BASELINE-SPINE-MANIFEST.md)
+   - current recoverable baseline branch, product spine, and branch hygiene rules.
+4. [`PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`](PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md)
    - current product positioning, roadmap, P0 acceptance, and code architecture.
-4. [`POLSIA-MARKETING-PACKAGING-GUIDE.md`](POLSIA-MARKETING-PACKAGING-GUIDE.md)
+5. [`POLSIA-MARKETING-PACKAGING-GUIDE.md`](POLSIA-MARKETING-PACKAGING-GUIDE.md)
    - product packaging rule: sell a personal brand growth team, not AI features.
-5. [`POLSIA-NAIVE-COMPARISON.md`](POLSIA-NAIVE-COMPARISON.md)
+6. [`POLSIA-NAIVE-COMPARISON.md`](POLSIA-NAIVE-COMPARISON.md)
    - donor comparison: Polsia for visible choreography, Naive/Paperclip for
      backstage work and approval substrate.
-6. [`POLSIA-NAIVE-REUSE-PLAN.md`](POLSIA-NAIVE-REUSE-PLAN.md)
+7. [`POLSIA-NAIVE-REUSE-PLAN.md`](POLSIA-NAIVE-REUSE-PLAN.md)
    - reuse contract: Polsia choreography plus Naive/Paperclip control plane.
-7. [`LINDY-ASSISTANT-REUSE-PLAN.md`](LINDY-ASSISTANT-REUSE-PLAN.md)
+8. [`LINDY-ASSISTANT-REUSE-PLAN.md`](LINDY-ASSISTANT-REUSE-PLAN.md)
    - frontend/workflow reuse plan for work stream, action cards, knowledge UI, hidden action graphs, router, and executor patterns.
-8. [`ACTION-GRAPH-ARCHITECTURE.md`](ACTION-GRAPH-ARCHITECTURE.md)
+9. [`ACTION-GRAPH-ARCHITECTURE.md`](ACTION-GRAPH-ARCHITECTURE.md)
    - current bridge that projects Polsia choreography over Naive/Paperclip rows
      and prepares a Lindy-style premium work stream without a new runtime.
-9. [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md)
+10. [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md)
    - governance for competitor-informed work, donor-source language, and assets.
-10. [`BUILD-STATE.md`](BUILD-STATE.md)
+11. [`BUILD-STATE.md`](BUILD-STATE.md)
    - current slice inventory and verification history.
-11. [`AGENCY-AGENTS-REFERENCE.md`](AGENCY-AGENTS-REFERENCE.md)
+12. [`AGENCY-AGENTS-REFERENCE.md`](AGENCY-AGENTS-REFERENCE.md)
    - optional OSS role-library reference for DearMe team-member definitions and
      deliverable standards.
 

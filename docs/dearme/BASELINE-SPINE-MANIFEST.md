@@ -1,37 +1,34 @@
 # DearMe Baseline Spine Manifest
 
-Date: 2026-05-08
+Date: 2026-05-09
 Branch: `codex/dearme-baseline-2026-05-08`
-Baseline commit candidate: `6b322408456318c237834a1ef5ceb08447ec7213`
+Baseline commit at checkpoint start: `2411d12505359ea213c6e0142224eb7581573924`
 
 ## Purpose
 
 This manifest defines the minimum DearMe product spine that future isolated
 workers must preserve before implementing the next product tickets.
 
-It is not a whole-repository cleanup plan. The active checkout is still a mixed
-integration tree with broad Paperclip substrate edits, DearMe product edits, and
-untracked files. Future workers should not infer scope by scanning the whole
-dirty tree.
+It is not a whole-repository cleanup plan. Future workers should not infer scope
+by scanning every historical branch or old mixed-tree warning. Start from the
+current baseline branch, preserve the product spine below, and compare old
+worker refs by content before merging or retiring them.
 
 ## Current Verdict
 
-Status: `PARTIAL BASELINE`
+Status: `RECOVERABLE BASELINE`
 
-`6b322408` is a recoverable DearMe product baseline candidate, but the active
-checkout contains additional DearMe spine changes that are not yet part of that
-commit. The most important untracked source-of-truth files are:
+The old `6b322408` partial-baseline warning is superseded. As of the
+`2411d125` baseline checkpoint, the previously missing DearMe spine files are
+tracked by Git and the worktree is clean. The current baseline branch is a safe
+starting point for issue-sized DearMe work, with the normal rule that shared
+server/UI/product-code slices should use isolated worktrees.
 
-- `docs/dearme/WEB-UI-REUSE-ARCHITECTURE.md`
-- `server/src/services/dearme-memory-context.ts`
-- `server/src/__tests__/dearme-brand-blueprints.test.ts`
-- `server/src/__tests__/dearme-memory-context.test.ts`
-- `ui/src/components/DearMeShell.tsx`
-- `ui/src/components/DearMeShell.test.tsx`
-
-Until these files are deliberately included in a later baseline ref or an
-explicit integration patch, `/Users/peter/dearme` must remain a coordination and
-reference checkout, not a product-code worker base.
+Important branch hygiene caveat: many historical `codex/dearme-dm-*` branches
+are still not merged by Git ancestry. That is not proof that their content is
+missing. Treat those refs as historical worker branches until a
+content-equivalence check proves that a branch contains product code absent from
+the current baseline.
 
 ## Required Docs
 
@@ -135,16 +132,14 @@ ticket proves they are required:
    active checkout.
 6. Resolve conflicts toward the product boundary: UI speaks DearMe, API
    translates, kernel executes, runtime machinery stays backstage.
+7. Start new work from the latest `codex/dearme-baseline-2026-05-08` head, not
+   the old `6b322408` checkpoint.
+8. Do not merge or delete old unmerged worker branches without a branch-specific
+   content-equivalence check against the current baseline.
 
 ## DM-001 Readiness
 
-DM-001 is not blocked by missing tests: the focused baseline checks pass.
-
-DM-001 is still blocked for unsupervised handoff until one of these is true:
-
-- a new explicit baseline ref includes the untracked DearMe spine files named
-  above, or
-- the lead creates a disposable worktree from `6b322408` and applies only the
-  selected manifest files as a reviewable patch.
-
-Do not start DM-001 directly inside `/Users/peter/dearme`.
+DM-001 is no longer blocked by the old partial-baseline warning. Its core output
+review path has already been integrated enough for the paid-beta workbench. Any
+new output-review work should be a follow-on deepening slice from the current
+baseline, not a restart from `6b322408`.

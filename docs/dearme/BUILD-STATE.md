@@ -2,6 +2,53 @@
 
 Date: 2026-05-09
 
+## Branch Integration Checkpoint - 2026-05-09
+
+Integration slice:
+
+- Confirmed `codex/dearme-baseline-2026-05-08` is clean and already includes
+  the Polsia / Naive comparison commit `2411d125`.
+- Confirmed the baseline branch and `codex/dearme-polsia-naive-comparison`
+  point at the same head, so the comparison work is integrated into the local
+  recoverable baseline.
+- Confirmed the previously partial baseline spine is no longer missing the
+  named DearMe source files: the web UI reuse doc, memory-context service/tests,
+  and DearMe shell files are tracked by Git on the current baseline.
+- Recorded the current merged-by-ancestry set as:
+  `codex/dearme-baseline-2026-05-08`,
+  `codex/dearme-chief-guardrail-integration`,
+  `codex/dearme-dm-103-premium-work-stream`,
+  `codex/dearme-dm-104-voice-memory-sources`,
+  `codex/dearme-dm-105-cycle-controls`,
+  `codex/dearme-polnaive-lindy-loop`,
+  `codex/dearme-polsia-naive-comparison`, `dearme`, and `master`.
+- Many older `codex/dearme-dm-*` branches remain not merged by Git ancestry.
+  Do not blindly merge or delete them. Treat them as historical worker refs
+  unless a content-equivalence check proves that a branch contains product code
+  missing from the current baseline.
+- Confirmed the only configured remote is `upstream` at
+  `https://github.com/paperclipai/paperclip.git`; there is no safe DearMe-owned
+  push target in this checkout.
+- Added `doc/plans/2026-05-09-dearme-branch-integration-checkpoint.md` as the
+  current branch hygiene handoff for future Symphony-style workers.
+
+Verification:
+
+- `git status --short --branch` showed a clean baseline at
+  `codex/dearme-baseline-2026-05-08`.
+- `git log --oneline --decorate -5` showed `2411d125` at both the baseline and
+  Polsia / Naive comparison refs.
+- `git branch --merged HEAD --format='%(refname:short)' | sort` produced the
+  merged-by-ancestry set recorded above.
+- `git ls-files` listed the previously missing DearMe spine files from the old
+  partial-baseline warning.
+- `rg -n "Branch Integration Checkpoint|RECOVERABLE BASELINE|BASELINE-SPINE-MANIFEST|dearme-branch-integration-checkpoint|DM-106" docs/dearme doc/plans/2026-05-09-dearme-branch-integration-checkpoint.md`
+  found the new checkpoint, manifest status, README link, and next-slice
+  pointer.
+- `git diff --check` passed for this docs-only checkpoint.
+- `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
+  passed: 1 file, 19 tests.
+
 ## Polsia / Naive Comparison Lock - 2026-05-09
 
 Docs slice:
