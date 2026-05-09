@@ -898,6 +898,11 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Waiting on you");
     expect(container.textContent).toContain("After your call");
     expect(container.textContent).toContain("Approved work can move forward");
+    expect(
+      container.querySelectorAll(
+        '[aria-label="Decisions needed"] [data-dearme-surface="action-card"]',
+      ).length,
+    ).toBeGreaterThan(0);
     expect(container.textContent).toContain("Live team feed");
     expect(container.textContent).toContain("Your call: Review Starter posts");
     expect(container.textContent).toContain("Action needed");

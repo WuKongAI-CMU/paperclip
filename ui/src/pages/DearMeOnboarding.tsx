@@ -1682,32 +1682,31 @@ function DecisionsNeededPanel({
         <div className="mt-4 space-y-3">
           <p className="text-xs font-medium text-muted-foreground">Batch decisions</p>
           {batches.map((batch) => (
-            <DearMeWorkbenchCard
+            <DearMeActionCard
               key={batch.id}
               className="p-4"
               title={batch.title}
-              description={batch.summary}
-              badge={
-                <div className="flex shrink-0 flex-col items-end gap-2">
-                  <Badge variant={batch.riskGate ? "secondary" : "outline"}>
-                    {batch.riskGate ? RISK_GATE_LABELS[batch.riskGate] : "Review"}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {batch.itemCount} item{batch.itemCount === 1 ? "" : "s"}
-                  </span>
-                </div>
-              }
+              summary={batch.summary}
+              statusBadges={[
+                {
+                  label: batch.riskGate ? RISK_GATE_LABELS[batch.riskGate] : "Review",
+                  variant: batch.riskGate ? "secondary" : "outline",
+                },
+              ]}
+              chips={[
+                {
+                  label: `${batch.itemCount} item${batch.itemCount === 1 ? "" : "s"}`,
+                  variant: "outline",
+                },
+              ]}
               footer={`Updated ${shortDate(batch.updatedAt)}`}
               action={
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => onOpenBatch(batch)}
-                  disabled={batch.approvalIds.length === 0 && batch.issueIds.length === 0}
-                >
-                  {batch.actionLabel}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+                {
+                  label: batch.actionLabel,
+                  onClick: () => onOpenBatch(batch),
+                  disabled: batch.approvalIds.length === 0 && batch.issueIds.length === 0,
+                  variant: "default",
+                }
               }
             >
               <DearMeEvidenceGrid>
@@ -1726,7 +1725,7 @@ function DecisionsNeededPanel({
                   <p className="mt-1 text-sm text-foreground/85">{decisionAfterCallLabel(batch.riskGate)}</p>
                 </div>
               </DearMeEvidenceGrid>
-            </DearMeWorkbenchCard>
+            </DearMeActionCard>
           ))}
         </div>
       ) : null}
@@ -1743,30 +1742,42 @@ function DecisionsNeededPanel({
             <p className="text-xs font-medium text-muted-foreground">Individual decisions</p>
           ) : null}
           {decisions.map((decision) => (
-            <DearMeWorkbenchCard
+            <DearMeActionCard
               key={decision.id}
               className="p-4"
               title={decision.title}
-              description={decision.summary}
-              badge={
-                <div className="flex shrink-0 flex-col items-end gap-2">
-                  <Badge variant={decision.riskGate ? "secondary" : "outline"}>
-                    {decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval"}
-                  </Badge>
-                  {decision.reviewLoop ? <ReviewLoopBadges loop={decision.reviewLoop} /> : null}
-                </div>
-              }
+              summary={decision.summary}
+              statusBadges={[
+                {
+                  label: decision.riskGate ? RISK_GATE_LABELS[decision.riskGate] : "Approval",
+                  variant: decision.riskGate ? "secondary" : "outline",
+                },
+                ...(decision.reviewLoop
+                  ? [
+                      { label: reviewLoopLabel(decision.reviewLoop), variant: "outline" as const },
+                      {
+                        label: reviewLoopStateLabel(decision.reviewLoop),
+                        variant: reviewLoopVariant(decision.reviewLoop),
+                      },
+                    ]
+                  : []),
+              ]}
+              chips={[
+                {
+                  label: decision.outputKind
+                    ? OUTPUT_KIND_LABELS[decision.outputKind]
+                    : "Brand OS approval",
+                  variant: "outline",
+                },
+              ]}
               footer={`Updated ${shortDate(decision.updatedAt)}`}
               action={
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => onOpenDecision(decision)}
-                  disabled={!decision.approvalId && !decision.issueIdentifier && !decision.issueId}
-                >
-                  {decision.approvalId ? "Approve" : "Review"}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+                {
+                  label: decision.approvalId ? "Approve" : "Review",
+                  onClick: () => onOpenDecision(decision),
+                  disabled: !decision.approvalId && !decision.issueIdentifier && !decision.issueId,
+                  variant: decision.approvalId ? "default" : "outline",
+                }
               }
             >
               <DearMeEvidenceGrid>
@@ -1792,7 +1803,7 @@ function DecisionsNeededPanel({
                   ) : null}
                 </div>
               </DearMeEvidenceGrid>
-            </DearMeWorkbenchCard>
+            </DearMeActionCard>
           ))}
         </div>
       )}

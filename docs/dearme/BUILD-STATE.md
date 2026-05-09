@@ -2,6 +2,37 @@
 
 Date: 2026-05-09
 
+## DM-112 Decisions Needed Action Card Reuse - 2026-05-09
+
+Implementation slice:
+
+- Reused `DearMeActionCard` for the Decisions Needed surface so batch decisions
+  and individual approval decisions now share the same customer-facing action
+  card primitive as the live feed.
+- Preserved existing Naive/Paperclip-backed routes and state:
+  - `Approve` still opens the DearMe approval-focused decision route.
+  - `Review posts` still opens the DearMe batch decision route.
+  - existing approval, issue, batch, and review-loop projections remain the
+    source of truth.
+- Kept the Polsia product lesson intact: the surface still reads as a short set
+  of high-leverage calls for the user, not a raw task queue.
+- Added DOM-level coverage that the Decisions Needed section now renders
+  `data-dearme-surface="action-card"` cards.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/dearme/DearMeActionCard.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 24 tests.
+- `pnpm -r typecheck` passed.
+- `git diff --check` passed.
+- `rg -n "Paperclip|OpenClaw|adapter|provider|model-provider|setup-payload|setup_payload|control-plane|raw issue" ui/src/pages/DearMeOnboarding.tsx ui/src/components/dearme/DearMeActionCard.tsx ui/src/components/dearme/DearMeActionCard.test.tsx`
+  returned no matches.
+
+Next:
+
+- Reuse `DearMeActionCard` for Work Ready cards before adding paused/retry
+  states or more review UI variants.
+
 ## DM-111 DearMe Action Card Primitive - 2026-05-09
 
 Implementation slice:
