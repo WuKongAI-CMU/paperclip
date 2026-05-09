@@ -868,6 +868,26 @@ function outputsResponse() {
             source: "derived",
           },
         ],
+        sourceEvidence: [
+          {
+            kind: "proof",
+            label: "Proof used",
+            summary: "Refreshed positioning and prepared next bets.",
+            source: "document",
+          },
+          {
+            kind: "approval_boundary",
+            label: "Approval boundary",
+            summary: "Review one public claim before publishing.",
+            source: "derived",
+          },
+          {
+            kind: "private_reference",
+            label: "Private references",
+            summary: "1 private reference used for this review.",
+            source: "document",
+          },
+        ],
       },
     ],
   };
@@ -2294,6 +2314,55 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("surfaces private source reviews as high-leverage decisions", async () => {
+    const sourceReviewWorkbench = workbenchResponse();
+    sourceReviewWorkbench.decisionsNeeded = [];
+    sourceReviewWorkbench.batchDecisions = [];
+    mockDearmeApi.getWorkbench.mockResolvedValue(sourceReviewWorkbench);
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const decisionsSurface = surfaceByLabel(container, "Decisions needed");
+    expect(decisionsSurface.textContent).toContain("Source reviews");
+    expect(decisionsSurface.textContent).toContain("Shipped proof");
+    expect(decisionsSurface.textContent).toContain("Review this proof point");
+    expect(decisionsSurface.textContent).toContain("Review source");
+    expect(decisionsSurface.textContent).not.toContain("No high-leverage decision is waiting right now");
+    expectNoHiddenProductTerms(decisionsSurface.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
+
+    const voiceMemoryTarget = document.getElementById("dearme-voice-memory") as HTMLElement;
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(voiceMemoryTarget, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+
+    await act(async () => {
+      buttonByText(decisionsSurface, "Review source")?.click();
+    });
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("renders a focused private output from DearMe URL params", async () => {
     mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
     mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse());
@@ -2315,6 +2384,8 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Dear me report");
     expect(container.textContent).toContain("Completed work: refreshed positioning");
     expect(container.textContent).toContain("Review one public claim before publishing");
+    expect(container.textContent).toContain("Sources behind this work");
+    expect(container.textContent).toContain("Proof used");
     expect(container.textContent).toContain("Review pass 0/3");
     expect(container.textContent).toContain("Needs your review");
     expect(container.textContent).toContain("1 private reference prepared");
@@ -2579,6 +2650,8 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Completed work: refreshed positioning");
     expect(container.textContent).toContain("Decisions needed");
     expect(container.textContent).toContain("Review one public claim");
+    expect(container.textContent).toContain("Sources behind this work");
+    expect(container.textContent).toContain("Proof used");
     expect(container.textContent).toContain("Ready for review");
     expect(
       container.querySelectorAll(

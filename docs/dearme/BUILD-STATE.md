@@ -2,6 +2,67 @@
 
 Date: 2026-05-09
 
+## DM-124 Source Evidence And Source Review Decisions - 2026-05-09
+
+Implementation slice:
+
+- Added typed `sourceEvidence` to DearMe outputs so prepared work can show the
+  private sources, proof, and approval boundaries behind it without exposing
+  runtime/provider internals.
+- Projected source evidence from existing output details, documents, prepared
+  work products, and latest team notes; no new table, API route, crawler,
+  workflow builder, or importer was added.
+- Rendered source evidence on focused output and private work cards as
+  `Sources behind this work`.
+- Promoted existing `sourceReviewQueue` candidates into the main Decisions
+  surface as high-leverage source review cards.
+- Counted source reviews in the team summary and growth-cycle review stage,
+  and linked `Review source` back to the existing Voice & Memory review flow.
+
+Donor reuse:
+
+- Naive/Paperclip supplies the substrate: existing documents, work products,
+  comments, output handoff, workbench memory projection, and shared validators.
+- Polsia supplies the product choreography: hidden work becomes visible proof
+  and a small number of high-leverage user calls.
+- Lindy supplies the action-needed shape: compact source review cards that move
+  the user into a focused memory review surface.
+
+Rejected:
+
+- Rejected a new source-review backend, separate output provenance table,
+  crawler, importer, or workflow-builder engine.
+- Rejected exposing donor/runtime/provider/adapter terms in customer-facing UI.
+- Rejected auto-publishing or external action from source evidence; this stays
+  private and review-first.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-output-handoff.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-workbench.test.ts ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 5 files, 77 tests.
+- `pnpm -r typecheck` passed.
+- `pnpm test:run` passed with exit code 0. The concurrent shard reported
+  162 files passed and 1021 passed / 1 skipped tests; the serialized server
+  shard completed all 81 suites.
+- `pnpm build` passed with the existing Vite MarkdownEditor dynamic/static
+  import and large-chunk warnings.
+- Customer-surface substrate scan over `ui/src/pages/DearMeOnboarding.tsx`,
+  `ui/src/components/dearme`, and `packages/shared/src/validators/dearme.ts`
+  passed with no matches for Paperclip, OpenClaw, OK Partner, provider,
+  adapter, setup payload, control-plane, workflow-builder, GraphQL, Relay, MCP,
+  agent-runtime, routine, cost_event, anthropic, or claude language.
+- `git diff --check` passed.
+- Manual browser visual smoke was not run in this slice; the new conditional
+  surfaces are covered by focused UI tests, and the broader build/test gates
+  passed before commit.
+
+Next:
+
+- If scroll-to-panel feels indirect, make `Review source` open the exact
+  pending source review card with the proposed fact prefilled.
+- Continue moving Polsia/Lindy-style prepared calls into Work Ready and
+  Decisions before adding deeper automation.
+
 ## DM-123 Voice & Memory Source Review Queue - 2026-05-09
 
 Implementation slice:

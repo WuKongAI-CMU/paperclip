@@ -114,6 +114,12 @@ export const DEARME_OUTPUT_DETAIL_KINDS = [
   "next_bets",
   "report_reference",
 ] as const;
+export const DEARME_OUTPUT_SOURCE_EVIDENCE_KINDS = [
+  "voice_memory",
+  "proof",
+  "approval_boundary",
+  "private_reference",
+] as const;
 export const DEARME_WORKBENCH_DECISION_KINDS = [
   "approve_brand_os",
   "review_output",
@@ -649,6 +655,13 @@ export const dearMeOutputDetailSchema = z.object({
   source: z.enum(["document", "prepared_work", "progress", "derived"]),
 }).strict();
 
+export const dearMeOutputSourceEvidenceSchema = z.object({
+  kind: z.enum(DEARME_OUTPUT_SOURCE_EVIDENCE_KINDS),
+  label: shortTextSchema,
+  summary: mediumTextSchema,
+  source: z.enum(["document", "prepared_work", "progress", "derived"]),
+}).strict();
+
 export const dearMeOutputItemSchema = z.object({
   id: z.string().min(1),
   companyId: z.string().min(1),
@@ -666,6 +679,7 @@ export const dearMeOutputItemSchema = z.object({
   latestUpdate: dearMeOutputUpdateSchema.nullable(),
   reviewLoop: dearMeOutputReviewLoopSchema,
   details: z.array(dearMeOutputDetailSchema).max(12),
+  sourceEvidence: z.array(dearMeOutputSourceEvidenceSchema).max(6),
 }).strict();
 
 export const dearMeOutputsResponseSchema = z.object({
@@ -943,6 +957,7 @@ export type DearMeMemoryArchiveResult = z.infer<typeof dearMeMemoryArchiveResult
 export type DearMeOutputDetail = z.infer<typeof dearMeOutputDetailSchema>;
 export type DearMeOutputDocument = z.infer<typeof dearMeOutputDocumentSchema>;
 export type DearMeOutputItem = z.infer<typeof dearMeOutputItemSchema>;
+export type DearMeOutputSourceEvidence = z.infer<typeof dearMeOutputSourceEvidenceSchema>;
 export type DearMeOutputKind = z.infer<typeof dearMeOutputItemSchema>["kind"];
 export type DearMeOutputContinuationIntent = z.infer<typeof dearMeOutputContinuationRequestSchema>["intent"];
 export type DearMeOutputContinuationRequest = z.infer<typeof dearMeOutputContinuationRequestSchema>;

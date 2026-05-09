@@ -774,6 +774,7 @@ describe("DearMe brand blueprint routes", () => {
           workProducts: [],
           latestUpdate: null,
           details: [],
+          sourceEvidence: [],
         },
       ],
     });
@@ -804,6 +805,7 @@ describe("DearMe brand blueprint routes", () => {
       workProducts: [],
       latestUpdate: null,
       details: [],
+      sourceEvidence: [],
     };
     mockDearMeOutputHandoffService.reviewOutput.mockResolvedValue({
       companyId: "company-1",
@@ -861,6 +863,7 @@ describe("DearMe brand blueprint routes", () => {
       workProducts: [],
       latestUpdate: null,
       details: [],
+      sourceEvidence: [],
     };
     mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("active"));
     mockDearMeOutputHandoffService.reviewOutput.mockResolvedValue({
@@ -918,6 +921,7 @@ describe("DearMe brand blueprint routes", () => {
       workProducts: [],
       latestUpdate: null,
       details: [],
+      sourceEvidence: [],
     };
     mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("active"));
     mockDearMeOutputHandoffService.reviewOutput.mockResolvedValue({

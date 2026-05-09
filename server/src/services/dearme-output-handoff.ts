@@ -56,6 +56,8 @@ type OutputDetailText = {
   source: DearMeOutputDetail["source"];
 };
 
+type DearMeOutputSourceEvidence = DearMeOutputItem["sourceEvidence"][number];
+
 type DearMeReviewComment = {
   body: string;
   createdAt: Date;
@@ -503,6 +505,81 @@ function buildOutputDetails(input: {
   return details.slice(0, 12);
 }
 
+function addSourceEvidenceFromDetail(
+  items: DearMeOutputSourceEvidence[],
+  kind: DearMeOutputSourceEvidence["kind"],
+  label: string,
+  details: DearMeOutputDetail[],
+  detailKinds: DearMeOutputDetail["kind"][],
+) {
+  const detail = detailKinds
+    .map((detailKind) => details.find((candidate) => candidate.kind === detailKind))
+    .find((candidate): candidate is DearMeOutputDetail => Boolean(candidate));
+  const summary = plainPreview(detail?.value, 700);
+  if (!detail || !summary || items.some((item) => item.kind === kind)) return;
+  items.push({
+    kind,
+    label,
+    summary,
+    source: detail.source,
+  });
+}
+
+function countLabel(count: number, singular: string) {
+  return `${count} ${singular}${count === 1 ? "" : "s"}`;
+}
+
+function addPrivateReferenceEvidence(
+  items: DearMeOutputSourceEvidence[],
+  documents: DearMeOutputDocument[],
+  workProducts: DearMeOutputWorkProduct[],
+  latestUpdate: DearMeOutputUpdate | null,
+) {
+  const parts = [
+    documents.length > 0 ? countLabel(documents.length, "private reference") : null,
+    workProducts.length > 0 ? countLabel(workProducts.length, "prepared artifact") : null,
+    latestUpdate ? "latest team note" : null,
+  ].filter((part): part is string => Boolean(part));
+  if (parts.length === 0) return;
+  items.push({
+    kind: "private_reference",
+    label: "Private references",
+    summary: `${parts.join(", ")} used for this review.`,
+    source: documents.length > 0 ? "document" : workProducts.length > 0 ? "prepared_work" : "progress",
+  });
+}
+
+function buildOutputSourceEvidence(input: {
+  details: DearMeOutputDetail[];
+  documents: DearMeOutputDocument[];
+  workProducts: DearMeOutputWorkProduct[];
+  latestUpdate: DearMeOutputUpdate | null;
+}) {
+  const items: DearMeOutputSourceEvidence[] = [];
+
+  addSourceEvidenceFromDetail(items, "voice_memory", "Voice & Memory", input.details, [
+    "voice_guidance",
+    "audience",
+    "positioning",
+    "why_relevant",
+    "hook",
+  ]);
+  addSourceEvidenceFromDetail(items, "proof", "Proof used", input.details, [
+    "proof_used",
+    "proof_source",
+    "completed_work",
+    "report_reference",
+  ]);
+  addSourceEvidenceFromDetail(items, "approval_boundary", "Approval boundary", input.details, [
+    "approval_gate",
+    "deploy_gate",
+    "decisions_needed",
+  ]);
+  addPrivateReferenceEvidence(items, input.documents, input.workProducts, input.latestUpdate);
+
+  return items.slice(0, 6);
+}
+
 function buildOutputItem(input: {
   issue: DearMeIssueRow;
   descriptor: OutputDescriptor;
@@ -516,6 +593,12 @@ function buildOutputItem(input: {
     input.workProducts.length > 0 ||
     !!input.latestUpdate;
   const status = customerStatus(input.issue.status, hasProducedArtifact);
+  const details = buildOutputDetails({
+    descriptor: input.descriptor,
+    documents: input.documents,
+    workProducts: input.workProducts,
+    latestUpdate: input.latestUpdate,
+  });
 
   return {
     id: `${input.issue.id}:${input.descriptor.kind}`,
@@ -536,8 +619,9 @@ function buildOutputItem(input: {
       status,
       reviewComments: input.reviewComments,
     }),
-    details: buildOutputDetails({
-      descriptor: input.descriptor,
+    details,
+    sourceEvidence: buildOutputSourceEvidence({
+      details,
       documents: input.documents,
       workProducts: input.workProducts,
       latestUpdate: input.latestUpdate,

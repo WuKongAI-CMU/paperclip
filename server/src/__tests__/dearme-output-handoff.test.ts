@@ -346,6 +346,23 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
         value: "no public claims without review.",
       }),
     ]));
+    expect(brandOutput.sourceEvidence).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: "voice_memory",
+        label: "Voice & Memory",
+        summary: "Practical AI operator for local first products.",
+      }),
+      expect.objectContaining({
+        kind: "proof",
+        label: "Proof used",
+        summary: "Shipped a local agent runtime.",
+      }),
+      expect.objectContaining({
+        kind: "private_reference",
+        label: "Private references",
+        summary: "2 private references used for this review.",
+      }),
+    ]));
     expect(voiceOutput.documents.map((document) => document.key)).toEqual(["voice-profile"]);
     expect(voiceOutput.details).toEqual(expect.arrayContaining([
       expect.objectContaining({ kind: "voice_guidance", value: expect.stringContaining("Short, direct") }),
@@ -364,6 +381,27 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       expect.objectContaining({ kind: "channel", value: "LinkedIn" }),
       expect.objectContaining({ kind: "hook", value: expect.stringContaining("personal brand") }),
       expect.objectContaining({ kind: "approval_gate", value: expect.stringContaining("publish social") }),
+    ]));
+    expect(contentOutput.sourceEvidence).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: "voice_memory",
+        label: "Voice & Memory",
+        summary: "founders evaluating local AI workflows",
+      }),
+      expect.objectContaining({
+        kind: "proof",
+        label: "Proof used",
+        summary: "shipped a local agent runtime",
+      }),
+      expect.objectContaining({
+        kind: "approval_boundary",
+        label: "Approval boundary",
+        summary: "publish social posts",
+      }),
+      expect.objectContaining({
+        kind: "private_reference",
+        summary: "1 private reference, 1 prepared artifact, latest team note used for this review.",
+      }),
     ]));
     expect(contentOutput.workProducts[0]).toEqual(
       expect.objectContaining({
@@ -386,6 +424,18 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       expect.objectContaining({ kind: "completed_work", value: expect.stringContaining("refreshed positioning") }),
       expect.objectContaining({ kind: "decisions_needed", value: expect.stringContaining("approve the content") }),
       expect.objectContaining({ kind: "next_bets", value: expect.stringContaining("proof cards") }),
+    ]));
+    expect(reportOutput.sourceEvidence).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: "proof",
+        label: "Proof used",
+        summary: expect.stringContaining("refreshed positioning"),
+      }),
+      expect.objectContaining({
+        kind: "approval_boundary",
+        label: "Approval boundary",
+        summary: expect.stringContaining("approve the content"),
+      }),
     ]));
     const serialized = JSON.stringify(result).toLowerCase();
     for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw"]) {

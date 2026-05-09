@@ -1697,6 +1697,49 @@ function FocusedDecisionPanel({
   );
 }
 
+function OutputSourceEvidenceList({
+  output,
+  limit = 3,
+  compact = false,
+  className,
+}: {
+  output: DearMeOutputItem;
+  limit?: number;
+  compact?: boolean;
+  className?: string;
+}) {
+  const evidence = output.sourceEvidence.slice(0, limit);
+  if (evidence.length === 0) return null;
+
+  return (
+    <div
+      className={cn(
+        "rounded-md border border-border bg-background/80",
+        compact ? "p-2" : "p-3",
+        className,
+      )}
+      aria-label="Sources behind prepared work"
+    >
+      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+        <FileText className="h-3.5 w-3.5" />
+        Sources behind this work
+      </div>
+      <div className={cn("mt-2 grid gap-2", !compact && evidence.length > 1 ? "sm:grid-cols-2" : "")}>
+        {evidence.map((item) => (
+          <div key={`${output.id}:source:${item.kind}`} className="min-w-0">
+            <Badge variant="outline" className="max-w-full truncate">
+              {item.label}
+            </Badge>
+            <p className={cn("mt-1 text-foreground/85", compact ? "line-clamp-2 text-xs" : "text-sm")}>
+              {item.summary}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function FocusedOutputPanel({
   output,
   entryIntent,
@@ -1758,6 +1801,8 @@ function FocusedOutputPanel({
           ))}
         </DearMeEvidenceGrid>
       ) : null}
+
+      <OutputSourceEvidenceList output={output} className="mt-4" />
 
       <ReviewLoopNextStep loop={output.reviewLoop} className="mt-4" />
       <ReviewHandoffCard loop={output.reviewLoop} className="mt-4" />
@@ -1883,6 +1928,8 @@ function decisionAfterCallLabel(riskGate?: DearMeWorkbenchDecision["riskGate"] |
   return "Your call updates the private review path so the team knows what to use, revise, or stop.";
 }
 
+type DearMeSourceReviewItem = DearMeWorkbenchMemory["sourceReviewQueue"][number];
+
 function TeamSummaryPanel({
   workbench,
   paidBetaActive,
@@ -1893,10 +1940,17 @@ function TeamSummaryPanel({
     team: DearMeWorkbenchTeamMember[];
     workReady: DearMeWorkbenchWorkItem[];
     decisionsNeeded: DearMeWorkbenchDecision[];
+    batchDecisions: DearMeWorkbenchBatchDecision[];
     activeWork: DearMeWorkbenchWorkItem[];
+    memory: DearMeWorkbenchMemory;
   };
   paidBetaActive: boolean;
 }) {
+  const decisionCount =
+    workbench.decisionsNeeded.length +
+    workbench.batchDecisions.length +
+    workbench.memory.sourceReviewQueue.length;
+
   return (
     <DearMePanel aria-label="Your brand team today">
       <DearMeWorkbenchSectionHeader
@@ -1913,7 +1967,7 @@ function TeamSummaryPanel({
 
       <DearMeMetricStrip className="mt-5">
         <Metric icon={FileText} label="Work ready" value={workbench.workReady.length} />
-        <Metric icon={ShieldCheck} label="Decisions" value={workbench.decisionsNeeded.length} />
+        <Metric icon={ShieldCheck} label="Decisions" value={decisionCount} />
         <Metric icon={Workflow} label="In motion" value={workbench.activeWork.length} />
         <Metric icon={Users} label="Team" value={workbench.team.length} />
       </DearMeMetricStrip>
@@ -2014,14 +2068,20 @@ function WorkReadyPanel({
 function DecisionsNeededPanel({
   batches,
   decisions,
+  sourceReviews,
   onOpenBatch,
   onOpenDecision,
+  onOpenSourceReviews,
 }: {
   batches: DearMeWorkbenchBatchDecision[];
   decisions: DearMeWorkbenchDecision[];
+  sourceReviews: DearMeSourceReviewItem[];
   onOpenBatch: (batch: DearMeWorkbenchBatchDecision) => void;
   onOpenDecision: (decision: DearMeWorkbenchDecision) => void;
+  onOpenSourceReviews: () => void;
 }) {
+  const waitingCount = batches.length + decisions.length + sourceReviews.length;
+
   return (
     <DearMePanel aria-label="Decisions needed">
       <DearMeWorkbenchSectionHeader
@@ -2030,8 +2090,8 @@ function DecisionsNeededPanel({
         title="High-leverage calls"
         description="Approve, request changes, reject, or ask for another private pass on the moves that would represent you."
         trailing={
-          batches.length + decisions.length > 0 ? (
-            <Badge variant="secondary">{batches.length + decisions.length} waiting</Badge>
+          waitingCount > 0 ? (
+            <Badge variant="secondary">{waitingCount} waiting</Badge>
           ) : null
         }
       />
@@ -2091,14 +2151,72 @@ function DecisionsNeededPanel({
           ))}
         </div>
       ) : null}
-      {decisions.length === 0 && batches.length === 0 ? (
+      {sourceReviews.length > 0 ? (
+        <div className="mt-4 space-y-3">
+          <p className="text-xs font-medium text-muted-foreground">Source reviews</p>
+          {sourceReviews.map((item) => (
+            <DearMeActionCard
+              key={item.id}
+              className="p-4"
+              title={item.sourceTitle}
+              summary={item.summary}
+              attention={{
+                kind: "decision_needed",
+                label: "Waiting on your review",
+                detail: item.nextAction,
+              }}
+              statusBadges={[
+                {
+                  label: MEMORY_SOURCE_INPUT_MODE_LABELS[item.sourceInputMode],
+                  variant: "outline",
+                },
+                {
+                  label: MEMORY_KIND_LABELS[item.proposedKind],
+                  variant: "outline",
+                },
+              ]}
+              chips={[
+                ...(item.sourceLabel
+                  ? [{ label: sourceLabelForChip(item.sourceLabel), variant: "outline" as const }]
+                  : []),
+                { label: shortDate(item.createdAt), variant: "outline" },
+              ]}
+              calloutLabel="Why it matters"
+              callout="Your team found a private source it can use, but it should become reviewed memory before guiding future public work."
+              action={{
+                label: "Review source",
+                ariaLabel: `Review source ${item.sourceTitle}`,
+                onClick: onOpenSourceReviews,
+                variant: "default",
+              }}
+            >
+              <DearMeEvidenceGrid>
+                <div className="rounded-md border border-border bg-background/80 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">Prepared source</p>
+                  <p className="mt-1 text-sm">{item.sourceTitle}</p>
+                </div>
+                <div className="rounded-md border border-border bg-background/80 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">Suggested memory</p>
+                  <p className="mt-1 text-sm text-foreground/85">{item.proposedTitle}</p>
+                </div>
+                <div className="rounded-md border border-border bg-background/80 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">Your next step</p>
+                  <p className="mt-1 text-sm text-foreground/85">{item.nextAction}</p>
+                </div>
+              </DearMeEvidenceGrid>
+            </DearMeActionCard>
+          ))}
+        </div>
+      ) : null}
+      {waitingCount === 0 ? (
         <DearMeEmptyState
           className="mt-4"
           icon={ShieldCheck}
           title="No high-leverage decision is waiting right now"
           description="Your team will place prepared public moves here when they need your call."
         />
-      ) : (
+      ) : null}
+      {decisions.length > 0 ? (
         <div className="mt-4 space-y-3">
           {batches.length > 0 ? (
             <p className="text-xs font-medium text-muted-foreground">Individual decisions</p>
@@ -2169,7 +2287,7 @@ function DecisionsNeededPanel({
             </DearMeActionCard>
           ))}
         </div>
-      )}
+      ) : null}
     </DearMePanel>
   );
 }
@@ -2181,7 +2299,10 @@ function OperatingLoopPanel({
   workbench: DearMeWorkbenchResponse;
   paidBetaActive: boolean;
 }) {
-  const decisionCount = workbench.decisionsNeeded.length + workbench.batchDecisions.length;
+  const decisionCount =
+    workbench.decisionsNeeded.length +
+    workbench.batchDecisions.length +
+    workbench.memory.sourceReviewQueue.length;
   const workCount = workbench.workReady.length + workbench.activeWork.length;
   const latestEvent = workbench.workStream[0] ?? null;
   const graph = workbench.actionGraph;
@@ -3371,6 +3492,7 @@ function TeamWorkbenchPanel({
   const readyItems = workbench.workReady.slice(0, 3);
   const decisions = workbench.decisionsNeeded.slice(0, 3);
   const batches = workbench.batchDecisions.slice(0, 3);
+  const sourceReviews = workbench.memory.sourceReviewQueue.slice(0, 3);
   const liveStream = workbench.workStream.slice(0, 6);
   const focusedDecision = decisionFocus
     ? workbench.decisionsNeeded.find((decision) => matchesDecisionFocus(decision, decisionFocus)) ?? null
@@ -3406,6 +3528,14 @@ function TeamWorkbenchPanel({
     if (issueReference) onOpenWorkItem(issueReference, item.id, intent);
   }
 
+  function openSourceReviews() {
+    if (typeof document === "undefined") return;
+    const target = document.getElementById("dearme-voice-memory");
+    if (target && typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
   return (
     <section className="space-y-4" aria-label="DearMe team workbench">
       {decisionFocus ? (
@@ -3439,23 +3569,27 @@ function TeamWorkbenchPanel({
         <DecisionsNeededPanel
           batches={batches}
           decisions={decisions}
+          sourceReviews={sourceReviews}
           onOpenBatch={openBatch}
           onOpenDecision={openDecision}
+          onOpenSourceReviews={openSourceReviews}
         />
       </DearMeCockpitGrid>
 
       <DearMeCockpitGrid variant="primary">
         <DearMeLetterPanel report={workbench.report} onOpenIssue={onOpenIssue} />
-        <VoiceMemoryPanel
-          memory={workbench.memory}
-          isPending={memoryMutation.isPending || memoryUpdateMutation.isPending || memoryArchiveMutation.isPending}
-          error={memoryError}
-          result={memoryUpdateMutation.data ?? memoryMutation.data ?? null}
-          archiveResult={memoryArchiveMutation.data ?? null}
-          onAdd={(input) => memoryMutation.mutate(input)}
-          onUpdate={(memoryId, input) => memoryUpdateMutation.mutate({ memoryId, update: input })}
-          onArchive={(memoryId) => memoryArchiveMutation.mutate(memoryId)}
-        />
+        <div id="dearme-voice-memory">
+          <VoiceMemoryPanel
+            memory={workbench.memory}
+            isPending={memoryMutation.isPending || memoryUpdateMutation.isPending || memoryArchiveMutation.isPending}
+            error={memoryError}
+            result={memoryUpdateMutation.data ?? memoryMutation.data ?? null}
+            archiveResult={memoryArchiveMutation.data ?? null}
+            onAdd={(input) => memoryMutation.mutate(input)}
+            onUpdate={(memoryId, input) => memoryUpdateMutation.mutate({ memoryId, update: input })}
+            onArchive={(memoryId) => memoryArchiveMutation.mutate(memoryId)}
+          />
+        </div>
       </DearMeCockpitGrid>
 
       <DearMeCockpitGrid variant="primary">
@@ -3880,6 +4014,8 @@ function PrivateWorkPanel({
                   <p className="mt-3 rounded-md border border-border bg-background/80 p-2 text-xs text-muted-foreground">
                     {output.reviewLoop.nextStep}
                   </p>
+
+                  <OutputSourceEvidenceList output={output} limit={2} compact className="mt-3" />
 
                   {details.length > 0 ? (
                     <dl className="mt-3 space-y-2 border-t border-border pt-3">

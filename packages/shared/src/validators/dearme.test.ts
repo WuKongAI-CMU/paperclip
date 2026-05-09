@@ -465,6 +465,26 @@ describe("DearMe brand blueprint contract", () => {
               source: "derived",
             },
           ],
+          sourceEvidence: [
+            {
+              kind: "proof",
+              label: "Proof used",
+              summary: "Prepared the weekly report.",
+              source: "document",
+            },
+            {
+              kind: "approval_boundary",
+              label: "Approval boundary",
+              summary: "Review the next public claims before publishing.",
+              source: "derived",
+            },
+            {
+              kind: "private_reference",
+              label: "Private references",
+              summary: "1 private reference and 1 prepared artifact used for this review.",
+              source: "document",
+            },
+          ],
         },
       ],
     });
@@ -585,6 +605,7 @@ describe("DearMe brand blueprint contract", () => {
             },
           }),
           details: [],
+          sourceEvidence: [],
         },
       ],
     }).outputs[0]!;
