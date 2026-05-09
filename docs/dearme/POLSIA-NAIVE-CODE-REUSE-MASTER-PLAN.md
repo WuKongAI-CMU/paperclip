@@ -71,25 +71,25 @@ not a prompt warehouse.
 
 | Mechanism | DearMe target | Integration action | Ticket |
 |---|---|---|---|
-| First-run shock sequence | `server/src/routes/dearme.ts`, `server/src/services/dearme-workbench.ts`, new identity/brand services | Make the first session produce personal proof before the user finishes setup. | DM-120 |
-| Autonomous CEO/reporting posture | `packages/plugins/dearme-reporting/`, report/handoff services | Maintain a non-empty queue, summarize work plainly, and choose tomorrow's next step. | DM-121 |
-| Voice-gated short-form content | `packages/plugins/dearme-content-producer/`, voice services | Draft posts only when they match the user's voice profile and attribution rules. | DM-122 |
-| Opportunity hunter | `packages/db/src/schema/opportunities.ts`, `packages/plugins/dearme-opportunity-hunter/` | Add an opportunity state machine for podcasts, clients, sponsors, jobs, and partnerships. | DM-123 |
-| Six-hour work cycle | existing routines/cron services | Add a DearMe routine type that plans, executes, reviews, and reports. | DM-124 |
-| Model routing economics | `packages/dearme-ai-proxy/`, agent metadata | Route by task complexity and record spend without model/provider setup UI. | DM-125 |
-| Minimal MCP/tool set | `packages/mcp-server/*`, DearMe tool registry | Keep only the tools that matter for paid-beta proof. | DM-126 |
-| OpenAI/Anthropic-compatible AI proxy | `packages/dearme-ai-proxy/` | Add provider-compatible endpoints, DearMe API keys, and cost attribution. | DM-127 |
-| Workspace-mounted skills | `execution-workspaces.ts`, DearMe plugin packages | Mount DearMe build skills into isolated workspaces. | DM-128 |
-| Brand-site builder constraints | `packages/plugins/dearme-brand-site-builder/` | Build one deployable personal-brand site with strict resource and stack limits. | DM-129 |
-| Meta ads/autothrottle | `packages/plugins/dearme-meta-ads/` | Add budget tiers, emergency pause, creative pipeline, and error states. | DM-130 |
-| Emergency pause intent | `server/src/services/dearme-workbench.ts` | Detect stop/pause language and pause active routines/spend immediately. | DM-131 |
-| Best-agent routing | `server/src/services/dearme-agent-routing.ts` | Route by aggregate task outcomes and approval scores. | DM-132 |
-| Live proof feed | `server/src/routes/live.ts`, DearMe live page | Show public/private proof sections without exposing substrate terms. | DM-133 |
-| Post-build brand review | `packages/plugins/dearme-reporting/` | Run async review after site/content generation and create remediation issues. | DM-134 |
-| Default score on silence | approvals service | Auto-close low-risk approval feedback with default score. | DM-135 |
-| CEO/direct plus workers/remote | adapter templates/config | Configure DearMe role templates and heartbeat cadence. | DM-136 |
-| Prompt/tool cache economics | AI proxy cost/cache layer | Add cache markers and measure cache-read tokens through cost events. | DM-137 |
-| Five-touch outbound sequence | opportunity hunter templates | Generate multi-touch opportunity sequences for personal-brand goals. | DM-138 |
+| First-run shock sequence | `server/src/routes/dearme.ts`, `server/src/services/dearme-workbench.ts`, new identity/brand services | Make the first session produce personal proof before the user finishes setup. | DM-138 |
+| Autonomous CEO/reporting posture | `packages/plugins/dearme-reporting/`, report/handoff services | Maintain a non-empty queue, summarize work plainly, and choose tomorrow's next step. | DM-139 |
+| Voice-gated short-form content | `packages/plugins/dearme-content-producer/`, voice services | Draft posts only when they match the user's voice profile and attribution rules. | DM-140 |
+| Opportunity hunter | `packages/db/src/schema/opportunities.ts`, `packages/plugins/dearme-opportunity-hunter/` | Add an opportunity state machine for podcasts, clients, sponsors, jobs, and partnerships. | DM-141 |
+| Six-hour work cycle | existing routines/cron services | Add a DearMe routine type that plans, executes, reviews, and reports. | DM-142 |
+| Model routing economics | `packages/dearme-ai-proxy/`, agent metadata | Route by task complexity and record spend without model/provider setup UI. | DM-143 |
+| Minimal MCP/tool set | `packages/mcp-server/*`, DearMe tool registry | Keep only the tools that matter for paid-beta proof. | DM-144 |
+| OpenAI/Anthropic-compatible AI proxy | `packages/dearme-ai-proxy/` | Add provider-compatible endpoints, DearMe API keys, and cost attribution. | DM-145 |
+| Workspace-mounted skills | `execution-workspaces.ts`, DearMe plugin packages | Mount DearMe build skills into isolated workspaces. | DM-146 |
+| Brand-site builder constraints | `packages/plugins/dearme-brand-site-builder/` | Build one deployable personal-brand site with strict resource and stack limits. | DM-147 |
+| Meta ads/autothrottle | `packages/plugins/dearme-meta-ads/` | Add budget tiers, emergency pause, creative pipeline, and error states. | DM-148 |
+| Emergency pause intent | `server/src/services/dearme-workbench.ts` | Detect stop/pause language and pause active routines/spend immediately. | DM-149 |
+| Best-agent routing | `server/src/services/dearme-agent-routing.ts` | Route by aggregate task outcomes and approval scores. | DM-150 |
+| Live proof feed | `server/src/routes/live.ts`, DearMe live page | Show public/private proof sections without exposing substrate terms. | DM-151 |
+| Post-build brand review | `packages/plugins/dearme-reporting/` | Run async review after site/content generation and create remediation issues. | DM-152 |
+| Default score on silence | approvals service | Auto-close low-risk approval feedback with default score. | DM-153 |
+| CEO/direct plus workers/remote | adapter templates/config | Configure DearMe role templates and heartbeat cadence. | DM-154 |
+| Prompt/tool cache economics | AI proxy cost/cache layer | Add cache markers and measure cache-read tokens through cost events. | DM-155 |
+| Five-touch outbound sequence | opportunity hunter templates | Generate multi-touch opportunity sequences for personal-brand goals. | DM-156 |
 | Company PATCH mass-assignment fix | `server/src/routes/companies.ts` | Strict allow-list board edits and move finance/admin fields behind governed endpoints. | DM-S01 |
 
 ## Bucket C - Naive/Paperclip Extras
@@ -142,36 +142,36 @@ Plugin reuse map:
 ### Sprint 0 - Make the foundation executable
 
 1. DM-S01: fix company mass assignment before paid beta.
-2. DM-124: configure DearMe cycle routine.
-3. DM-128: verify execution-workspace skill mounting.
-4. DM-136: configure CEO/direct and worker/remote role templates.
+2. DM-142: configure DearMe cycle routine.
+3. DM-146: verify execution-workspace skill mounting.
+4. DM-154: configure CEO/direct and worker/remote role templates.
 5. Keep `REBRAND-AND-PROVENANCE.md` aligned with reuse docs.
 
 ### Sprint 1 - Aha moment
 
-1. DM-120: first-run personal proof sequence.
-2. DM-121: autonomous reporting agent.
-3. DM-122: Voice Gate and content producer.
+1. DM-138: first-run personal proof sequence.
+2. DM-139: autonomous reporting agent.
+3. DM-140: Voice Gate and content producer.
 
 ### Sprint 2 - Work keeps moving
 
-1. DM-123: opportunity hunter.
-2. DM-131: emergency pause intent.
-3. DM-135: default approval score on silence.
+1. DM-141: opportunity hunter.
+2. DM-149: emergency pause intent.
+3. DM-153: default approval score on silence.
 
 ### Sprint 3 - Moat and economics
 
-1. DM-125: model routing.
-2. DM-127: AI proxy.
-3. DM-137: cache economics.
+1. DM-143: model routing.
+2. DM-145: AI proxy.
+3. DM-155: cache economics.
 
 ### Sprint 4 - Growth loops
 
-1. DM-130: meta ads/autothrottle.
-2. DM-132: best-agent routing.
-3. DM-133: live proof feed.
-4. DM-134: post-build brand review.
-5. DM-138: five-touch outbound sequence.
+1. DM-148: meta ads/autothrottle.
+2. DM-150: best-agent routing.
+3. DM-151: live proof feed.
+4. DM-152: post-build brand review.
+5. DM-156: five-touch outbound sequence.
 
 ## Acceptance Standard For Every Ticket
 

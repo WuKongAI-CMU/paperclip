@@ -22,22 +22,29 @@ export const createCompanySchema = z.object({
 
 export type CreateCompany = z.infer<typeof createCompanySchema>;
 
-export const updateCompanySchema = createCompanySchema
-  .partial()
-  .extend({
-    status: z.enum(COMPANY_STATUSES).optional(),
-    spentMonthlyCents: z.number().int().nonnegative().optional(),
-    requireBoardApprovalForNewAgents: z.boolean().optional(),
+export const updateCompanySchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    description: z.string().optional().nullable(),
     feedbackDataSharingEnabled: z.boolean().optional(),
-    feedbackDataSharingConsentAt: z.coerce.date().nullable().optional(),
-    feedbackDataSharingConsentByUserId: z.string().min(1).nullable().optional(),
     feedbackDataSharingTermsVersion: feedbackDataSharingTermsVersionSchema,
     brandColor: brandColorSchema,
     logoAssetId: logoAssetIdSchema,
-    attachmentMaxBytes: attachmentMaxBytesSchema.optional(),
-  });
+  })
+  .strict();
 
 export type UpdateCompany = z.infer<typeof updateCompanySchema>;
+
+export const updateCompanyGovernanceSchema = z
+  .object({
+    status: z.enum(COMPANY_STATUSES).optional(),
+    budgetMonthlyCents: z.number().int().nonnegative().optional(),
+    attachmentMaxBytes: attachmentMaxBytesSchema.optional(),
+    requireBoardApprovalForNewAgents: z.boolean().optional(),
+  })
+  .strict();
+
+export type UpdateCompanyGovernance = z.infer<typeof updateCompanyGovernanceSchema>;
 
 export const updateCompanyBrandingSchema = z
   .object({

@@ -7,7 +7,9 @@ import type {
   CompanyPortabilityImportResult,
   CompanyPortabilityPreviewRequest,
   CompanyPortabilityPreviewResult,
+  UpdateCompany,
   UpdateCompanyBranding,
+  UpdateCompanyGovernance,
 } from "@paperclipai/shared";
 import { api } from "./client";
 
@@ -23,23 +25,10 @@ export const companiesApi = {
     budgetMonthlyCents?: number;
   }) =>
     api.post<Company>("/companies", data),
-  update: (
-    companyId: string,
-    data: Partial<
-      Pick<
-        Company,
-        | "name"
-        | "description"
-        | "status"
-        | "budgetMonthlyCents"
-        | "attachmentMaxBytes"
-        | "requireBoardApprovalForNewAgents"
-        | "feedbackDataSharingEnabled"
-        | "brandColor"
-        | "logoAssetId"
-      >
-    >,
-  ) => api.patch<Company>(`/companies/${companyId}`, data),
+  update: (companyId: string, data: UpdateCompany) =>
+    api.patch<Company>(`/companies/${companyId}`, data),
+  updateGovernance: (companyId: string, data: UpdateCompanyGovernance) =>
+    api.patch<Company>(`/companies/${companyId}/governance`, data),
   updateBranding: (companyId: string, data: UpdateCompanyBranding) =>
     api.patch<Company>(`/companies/${companyId}/branding`, data),
   archive: (companyId: string) => api.post<Company>(`/companies/${companyId}/archive`, {}),

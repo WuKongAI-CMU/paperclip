@@ -75,12 +75,36 @@ export function CompanySettings() {
       attachmentMaxBytes !== (selectedCompany.attachmentMaxBytes ?? DEFAULT_COMPANY_ATTACHMENT_MAX_BYTES));
 
   const generalMutation = useMutation({
-    mutationFn: (data: {
+    mutationFn: async (data: {
       name: string;
       description: string | null;
       brandColor: string | null;
       attachmentMaxBytes: number;
-    }) => companiesApi.update(selectedCompanyId!, data),
+    }) => {
+      if (!selectedCompany) throw new Error("No company selected");
+
+      const companyChanged =
+        data.name !== selectedCompany.name ||
+        data.description !== (selectedCompany.description ?? null) ||
+        data.brandColor !== (selectedCompany.brandColor ?? null);
+      const attachmentChanged =
+        data.attachmentMaxBytes !== (selectedCompany.attachmentMaxBytes ?? DEFAULT_COMPANY_ATTACHMENT_MAX_BYTES);
+
+      let company = selectedCompany;
+      if (companyChanged) {
+        company = await companiesApi.update(selectedCompanyId!, {
+          name: data.name,
+          description: data.description,
+          brandColor: data.brandColor,
+        });
+      }
+      if (attachmentChanged) {
+        company = await companiesApi.updateGovernance(selectedCompanyId!, {
+          attachmentMaxBytes: data.attachmentMaxBytes,
+        });
+      }
+      return company;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
     }
@@ -88,7 +112,7 @@ export function CompanySettings() {
 
   const settingsMutation = useMutation({
     mutationFn: (requireApproval: boolean) =>
-      companiesApi.update(selectedCompanyId!, {
+      companiesApi.updateGovernance(selectedCompanyId!, {
         requireBoardApprovalForNewAgents: requireApproval
       }),
     onSuccess: () => {

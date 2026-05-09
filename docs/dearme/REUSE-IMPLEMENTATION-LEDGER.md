@@ -97,6 +97,36 @@ Working rule:
 
 ## Recently Completed
 
+### DM-S01: Company PATCH Mass-Assignment Hardening
+
+Goal: close the inherited Paperclip mass-assignment exposure before any
+paid-beta gate opens.
+
+Donor grounding:
+
+- Naive security probe (recorded in
+  `naive-research-2026-05-05/SECURITY-FINDINGS.md`) showed
+  `PATCH /api/companies/:id` accepted `budgetMonthlyCents`,
+  `spentMonthlyCents`, `requireBoardApprovalForNewAgents`,
+  `attachmentMaxBytes`, and `status` without an allow-list.
+- Paperclip OSS has the same shape upstream, so DearMe inherits the bug
+  through the fork.
+
+Acceptance:
+
+- `updateCompanySchema` is `.strict()` and only accepts safe self-service
+  fields (`name`, `description`, `feedbackDataSharingEnabled`,
+  `feedbackDataSharingTermsVersion`, `brandColor`, `logoAssetId`).
+- `updateCompanyGovernanceSchema` is `.strict()` and accepts
+  `status`, `budgetMonthlyCents`, `attachmentMaxBytes`, and
+  `requireBoardApprovalForNewAgents` only.
+- `PATCH /api/companies/:companyId/governance` enforces `assertBoard(req)`
+  and routes budget changes through `budgets.upsertPolicy(...)`.
+- `spentMonthlyCents` is no longer mutable through any company PATCH path
+  (must be aggregated from `cost_events`).
+- Unit tests in `packages/shared/src/validators/company.test.ts` cover
+  the rejected attack vectors and the accepted safe fields.
+
 ### DM-136: First-Run Sample Demo Proof
 
 Goal: make DearMe's first-run surface understandable before the visitor enters
@@ -399,6 +429,78 @@ Acceptance:
   issue/document/work-product, or agent-runtime terms in customer-facing
   DearMe UI.
 
+## Pending Reuse Roadmap (DM-S01, DM-138 - DM-159)
+
+Source of truth: `POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`. Do not branch
+ticket numbers from anywhere else. Ordering follows the sprint plan in that
+doc.
+
+### Sprint 0 - Foundation executable
+
+| Ticket | Slice | Donor mechanism | Path | Status |
+|---|---|---|---|---|
+| DM-S01 | Mass-assignment fix on `PATCH /api/companies/:id` | Naive security finding | `packages/shared/src/validators/company.ts`, `server/src/routes/companies.ts` | ✅ done (schema split + board-only governance route + tests) |
+| DM-142 | Six-hour DearMe cycle routine (config only, reuses inherited routines/cron) | Polsia cycle every_6_hours | `routines.ts` config + new routine type | pending |
+| DM-146 | Mount DearMe build skills into execution workspaces | Polsia per-execution `.claude/skills/` | `server/src/services/execution-workspaces.ts` | pending |
+| DM-154 | Configure CEO/direct + worker/remote role templates with 2h/8h heartbeat | Naive two-tier agent split | adapter templates/config | pending |
+
+### Sprint 1 - Aha moment
+
+| Ticket | Slice | Donor mechanism | Path |
+|---|---|---|---|
+| DM-138 | First-run personal proof sequence (Identity Researcher; 0-30s dossier, 60-120s audience, 3-5min site live) | Polsia 5-min onboarding shock | `server/src/routes/dearme.ts`, new `packages/plugins/dearme-identity-researcher/` |
+| DM-139 | Autonomous Reporting plugin (queue-always-non-empty, plain-prose updates, next-step driver) | Polsia CEO 4-step prompt | `packages/plugins/dearme-reporting/` |
+| DM-140 | Voice Gate + Content Producer plugin (voice-match score, attribution link rule, rate cap) | Polsia Twitter agent rules | `packages/plugins/dearme-content-producer/` |
+
+### Sprint 2 - Work keeps moving
+
+| Ticket | Slice | Donor mechanism | Path |
+|---|---|---|---|
+| DM-141 | Opportunity Hunter plugin + opportunities schema + 6-state machine | Polsia Cold Outreach + Naive 5-touch deliverable | new `packages/db/src/schema/opportunities.ts`, `packages/plugins/dearme-opportunity-hunter/` |
+| DM-149 | Emergency pause intent in chief-of-staff messaging | Polsia `pause_ads()` highest-priority pattern | `server/src/services/dearme-workbench.ts` |
+| DM-153 | Default approval score on silence + cross-tenant feedback wiring | Polsia score-7 default | approvals service |
+
+### Sprint 3 - Moat and economics
+
+| Ticket | Slice | Donor mechanism | Path |
+|---|---|---|---|
+| DM-143 | Complexity-based model routing in proxy + agent metadata | Polsia complexity 1-3 / 4-6 / 7-10 routing | `packages/dearme-ai-proxy/` |
+| DM-145 | AI proxy: OpenAI/Anthropic-compatible endpoints + `dm_sk_` keys + cost-ledger fields (`task` + `X-Subscription-ID`) | Polsia dual-protocol proxy | new `packages/dearme-ai-proxy/` |
+| DM-155 | Anthropic prompt-cache economics (target ~90% cache-read ratio) | Naive cache utilization measurement | proxy cost/cache layer |
+| DM-144 | Lock MCP set to the proven minimum (audit + remove unused) | Polsia 9-of-22 active MCP | `packages/mcp-server/*`, tool registry |
+
+### Sprint 4 - Growth loops
+
+| Ticket | Slice | Donor mechanism | Path |
+|---|---|---|---|
+| DM-147 | Brand Site Builder plugin with constraint prompt (web-only/single-Express/512MB/push-every-change) | Polsia Engineering agent constraints | `packages/plugins/dearme-brand-site-builder/` |
+| DM-148 | Meta Ads/autothrottle plugin (budget tiers, 5-error states, UGC video pipeline) | Polsia Meta Ads Manager | `packages/plugins/dearme-meta-ads/` |
+| DM-150 | Best-agent cross-tenant routing service | Polsia `find_best_agent` | `server/src/services/dearme-agent-routing.ts` |
+| DM-151 | Live proof feed (public + private sections; no substrate terms) | Polsia `/live` 13-section feed | new `server/src/routes/live.ts` + DearMe live page |
+| DM-152 | Post-build brand-similarity review (async; remediation via issues, not pre-build block) | Polsia `trademark_post_build_review` | `packages/plugins/dearme-reporting/` |
+| DM-156 | Five-touch outbound sequence template wired into Opportunity Hunter | Naive deliverable example | opportunity hunter templates |
+
+### DearMe-original tickets without donor mechanism
+
+These have no donor mechanism — they are DearMe-original capabilities that
+sit alongside the ports above.
+
+| Ticket | Slice | Path |
+|---|---|---|
+| DM-157 | Audience Graph plugin (cross-platform follower index, overlap ranking, DM-target list) | new `packages/plugins/dearme-audience-graph/` |
+| DM-158 | Voice Profile plugin (extraction, signature/forbidden phrases, Voice Gate hook) | new `packages/plugins/dearme-voice-profile/` |
+| DM-159 | Per-customer attribution beacon (footer auto-injection on personal-brand sites) | new `packages/dearme-beacon/` |
+
+### Out of scope (explicitly rejected)
+
+| Item | Why we skip |
+|---|---|
+| Per-tenant Fly.io VM | Cost overrun at idle. Reuse `execution-workspaces` instead. |
+| Worker recursive sub-spawn | Too much complexity for personal-brand surface. |
+| `setTimeout` self-rescheduling | Already supplanted by `heartbeat_runs`. Don't reintroduce fragility. |
+| Parallel app-factory templates | DearMe ships personal-brand sites only; no generic generator. |
+| Public marketing claims of compliance we have not earned | FTC unfair-claim risk. Earn -> claim. |
+
 ## Not Complete Yet
 
 DearMe is not release-ready just because these reuse decisions are documented.
@@ -406,3 +508,8 @@ The next meaningful product gain is DM-137: turn the now-working sample and
 generated first-cycle proof into an aha-first home composition. The product
 should shock the user with visible autonomous work before it asks them to manage
 settings, sources, or approvals.
+
+After DM-137 lands, the next non-negotiable slice is **DM-S01**
+(mass-assignment fix on `PATCH /api/companies/:id`) before any paid-beta
+gate opens. Then Sprint 1 (DM-138 / DM-139 / DM-140) hits the aha moment
+contract end-to-end.

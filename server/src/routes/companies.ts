@@ -10,7 +10,9 @@ import {
   feedbackTraceStatusSchema,
   feedbackVoteValueSchema,
   updateCompanyBrandingSchema,
+  updateCompanyGovernanceSchema,
   updateCompanySchema,
+  type UpdateCompanyGovernance,
 } from "@paperclipai/shared";
 import { badRequest, forbidden } from "../errors.js";
 import { validate } from "../middleware/validate.js";
@@ -347,6 +349,45 @@ export function companyRoutes(db: Db, storage?: StorageService) {
       agentId: actor.agentId,
       runId: actor.runId,
       action: "company.updated",
+      entityType: "company",
+      entityId: companyId,
+      details: body,
+    });
+    res.json(company);
+  });
+
+  router.patch("/:companyId/governance", validate(updateCompanyGovernanceSchema), async (req, res) => {
+    assertBoard(req);
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+
+    const body = req.body as UpdateCompanyGovernance;
+    if (body.budgetMonthlyCents !== undefined) {
+      await budgets.upsertPolicy(
+        companyId,
+        {
+          scopeType: "company",
+          scopeId: companyId,
+          amount: body.budgetMonthlyCents,
+          windowKind: "calendar_month_utc",
+        },
+        req.actor.userId ?? "board",
+      );
+    }
+
+    const company = await svc.update(companyId, body);
+    if (!company) {
+      res.status(404).json({ error: "Company not found" });
+      return;
+    }
+    const actor = getActorInfo(req);
+    await logActivity(db, {
+      companyId,
+      actorType: actor.actorType,
+      actorId: actor.actorId,
+      agentId: actor.agentId,
+      runId: actor.runId,
+      action: "company.governance_updated",
       entityType: "company",
       entityId: companyId,
       details: body,

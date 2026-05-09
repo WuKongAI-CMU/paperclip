@@ -615,6 +615,7 @@ export {
 
 export {
   createCompanySchema,
+  updateCompanyGovernanceSchema,
   updateCompanySchema,
   updateCompanyBrandingSchema,
   feedbackTargetTypeSchema,
@@ -622,6 +623,7 @@ export {
   feedbackVoteValueSchema,
   upsertIssueFeedbackVoteSchema,
   type CreateCompany,
+  type UpdateCompanyGovernance,
   type UpdateCompany,
   type UpdateCompanyBranding,
   DEARME_BRAND_BLUEPRINT_OPERATION_ORDER,

@@ -20,6 +20,12 @@
 
 **Polsia / Naive reuse contract:** [`POLSIA-NAIVE-REUSE-PLAN.md`](POLSIA-NAIVE-REUSE-PLAN.md)
 
+**Polsia / Naive mechanism deep-dive (verbatim production evidence):** [`POLSIA-NAIVE-MECHANISMS-DEEP-DIVE.md`](POLSIA-NAIVE-MECHANISMS-DEEP-DIVE.md)
+
+**Polsia / Naive code reuse master plan (architect's integration directive, DM-S01 + DM-138-159 ticket roadmap):** [`POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`](POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md)
+
+**Polsia / Naive PM analysis (aggressive playbook + 5-min aha-moment design contract):** [`POLSIA-NAIVE-PM-ANALYSIS.md`](POLSIA-NAIVE-PM-ANALYSIS.md)
+
 **Agency Agents role-library reference:** [`AGENCY-AGENTS-REFERENCE.md`](AGENCY-AGENTS-REFERENCE.md)
 
 **Lindy / internal assistant baseline reuse plan:** [`LINDY-ASSISTANT-REUSE-PLAN.md`](LINDY-ASSISTANT-REUSE-PLAN.md)

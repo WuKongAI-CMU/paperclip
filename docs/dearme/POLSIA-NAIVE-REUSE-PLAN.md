@@ -2,6 +2,14 @@
 
 > Goal: make DearMe a maximum-reuse product, not a greenfield rebuild.
 > Decision date: 2026-05-07.
+> 2026-05-09 update: this doc is the **strategic posture**. The
+> mechanism-by-mechanism integration directive (every donor mechanism mapped
+> to a dearme path with PR ticket) lives in
+> [`POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`](POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md).
+> The verbatim production evidence behind each mechanism lives in
+> [`POLSIA-NAIVE-MECHANISMS-DEEP-DIVE.md`](POLSIA-NAIVE-MECHANISMS-DEEP-DIVE.md).
+> When this doc and the master plan disagree, **the master plan is the
+> ticket source of truth** (DM-S01 + DM-138-159).
 
 DearMe should be built as:
 
