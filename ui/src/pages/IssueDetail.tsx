@@ -1503,11 +1503,17 @@ export function IssueDetail() {
   const issueHeaderIdentifier = isDearMeDetailIssue ? null : issue?.identifier ?? issue?.id.slice(0, 8) ?? null;
   const showIssuePluginSurfaces = !isDearMeDetailIssue;
   const canEditIssueHeaderState = !isDearMeDetailIssue;
+  const showIssueRelatedWorkTab = !isDearMeDetailIssue;
   useEffect(() => {
     if (!hasLiveRuns && locallyQueuedCommentRunIds.size > 0) {
       setLocallyQueuedCommentRunIds(new Map());
     }
   }, [hasLiveRuns, locallyQueuedCommentRunIds.size]);
+  useEffect(() => {
+    if (!showIssueRelatedWorkTab && detailTab === "related-work") {
+      setDetailTab("chat");
+    }
+  }, [detailTab, showIssueRelatedWorkTab]);
   const sourceBreadcrumb = useMemo(
     () => readIssueDetailBreadcrumb(issueId, location.state, location.search) ?? { label: "Issues", href: "/issues" },
     [issueId, location.state, location.search],
@@ -4015,10 +4021,12 @@ export function IssueDetail() {
             <ActivityIcon className="h-3.5 w-3.5" />
             Activity
           </TabsTrigger>
-          <TabsTrigger value="related-work" className="gap-1.5">
-            <ListTree className="h-3.5 w-3.5" />
-            Related work
-          </TabsTrigger>
+          {showIssueRelatedWorkTab ? (
+            <TabsTrigger value="related-work" className="gap-1.5">
+              <ListTree className="h-3.5 w-3.5" />
+              Related work
+            </TabsTrigger>
+          ) : null}
           {issuePluginTabItems.map((item) => (
             <TabsTrigger key={item.value} value={item.value}>
               {item.label}
@@ -4103,9 +4111,11 @@ export function IssueDetail() {
           ) : null}
         </TabsContent>
 
-        <TabsContent value="related-work">
-          <IssueRelatedWorkPanel relatedWork={issue.relatedWork} />
-        </TabsContent>
+        {showIssueRelatedWorkTab ? (
+          <TabsContent value="related-work">
+            <IssueRelatedWorkPanel relatedWork={issue.relatedWork} />
+          </TabsContent>
+        ) : null}
 
         {activePluginTab && (
           <TabsContent value={activePluginTab.value}>

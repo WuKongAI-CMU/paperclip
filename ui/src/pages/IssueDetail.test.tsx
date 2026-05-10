@@ -1239,6 +1239,88 @@ describe("IssueDetail", () => {
     expect(container.querySelector('[data-priority-editable="false"]')).toBeTruthy();
   });
 
+  it("preserves related work for generic issues", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({
+      relatedWork: {
+        outbound: [
+          {
+            issue: {
+              id: "issue-2",
+              identifier: "PAP-22",
+              title: "Downstream task",
+              status: "todo",
+              priority: "medium",
+              assigneeAgentId: null,
+              assigneeUserId: null,
+            },
+            mentionCount: 1,
+            sources: [{ kind: "title", sourceRecordId: null, label: "title", matchedText: "PAP-22" }],
+          },
+        ],
+        inbound: [],
+      },
+    }));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(container.textContent).toContain("Related work");
+      expect(container.textContent).toContain("PAP-22");
+    });
+  });
+
+  it("hides related work for DearMe issues", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({
+      originKind: "dearme_brand_blueprint_apply",
+      relatedWork: {
+        outbound: [
+          {
+            issue: {
+              id: "issue-2",
+              identifier: "PAP-22",
+              title: "Downstream task",
+              status: "todo",
+              priority: "medium",
+              assigneeAgentId: null,
+              assigneeUserId: null,
+            },
+            mentionCount: 1,
+            sources: [{ kind: "title", sourceRecordId: null, label: "title", matchedText: "PAP-22" }],
+          },
+        ],
+        inbound: [],
+      },
+    }));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(container.textContent).toContain("Chat thread");
+    });
+
+    expect(container.textContent).not.toContain("Related work");
+    expect(container.textContent).not.toContain("References");
+    expect(container.textContent).not.toContain("PAP-22");
+  });
+
   it("preserves the generic sub-issue list for generic issues", async () => {
     const childIssue = createIssue({
       id: "child-1",
