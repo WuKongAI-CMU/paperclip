@@ -154,9 +154,14 @@ export const DEARME_WORKBENCH_PROGRESS_KINDS = [
   "paid_beta",
   "brand_os_requested",
   "brand_os_applied",
+  "next_move_approved",
+  "execution_handoff_prepared",
   "team_progress",
   "cycle_check_in",
   "spend_checkpoint",
+] as const;
+export const DEARME_WORKBENCH_EXECUTION_READINESS = [
+  "private_handoff_ready",
 ] as const;
 export const DEARME_WORKBENCH_STREAM_STATUSES = [
   "working",
@@ -915,6 +920,14 @@ export const dearMeWorkbenchProgressItemSchema = z.object({
   kind: z.enum(DEARME_WORKBENCH_PROGRESS_KINDS),
   title: shortTextSchema,
   summary: mediumTextSchema,
+  outputKind: z.enum(DEARME_OUTPUT_KINDS).nullable().optional(),
+  outputId: z.string().min(1).nullable().optional(),
+  riskGate: z.enum(DEARME_RISK_GATES).nullable().optional(),
+  approvalId: z.string().min(1).nullable().optional(),
+  issueId: z.string().min(1).nullable().optional(),
+  issueIdentifier: z.string().nullable().optional(),
+  executionReadiness: z.enum(DEARME_WORKBENCH_EXECUTION_READINESS).nullable().optional(),
+  nextStep: mediumTextSchema.nullable().optional(),
   createdAt: z.string().datetime(),
 }).strict();
 

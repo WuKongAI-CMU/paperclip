@@ -28,6 +28,7 @@ const mockSecretService = vi.hoisted(() => ({
 }));
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
+const mockRecordDearMeNextMoveApprovalReceipt = vi.hoisted(() => vi.fn());
 
 function registerModuleMocks() {
   vi.doMock("../services/index.js", () => ({
@@ -36,6 +37,10 @@ function registerModuleMocks() {
     issueApprovalService: () => mockIssueApprovalService,
     logActivity: mockLogActivity,
     secretService: () => mockSecretService,
+  }));
+  vi.doMock("../services/dearme-approval-receipts.js", () => ({
+    DEARME_NEXT_MOVE_APPROVAL_TYPE: "dearme_output_next_move",
+    recordDearMeNextMoveApprovalReceipt: mockRecordDearMeNextMoveApprovalReceipt,
   }));
 }
 
@@ -88,6 +93,7 @@ describe("approval routes idempotent retries", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.doUnmock("../services/index.js");
+    vi.doUnmock("../services/dearme-approval-receipts.js");
     vi.doUnmock("../routes/approvals.js");
     vi.doUnmock("../routes/authz.js");
     vi.doUnmock("../middleware/index.js");
@@ -107,9 +113,11 @@ describe("approval routes idempotent retries", () => {
     mockIssueApprovalService.linkManyForApproval.mockReset();
     mockSecretService.normalizeHireApprovalPayloadForPersistence.mockReset();
     mockLogActivity.mockReset();
+    mockRecordDearMeNextMoveApprovalReceipt.mockReset();
     mockHeartbeatService.wakeup.mockResolvedValue({ id: "wake-1" });
     mockIssueApprovalService.listIssuesForApproval.mockResolvedValue([{ id: "issue-1" }]);
     mockLogActivity.mockResolvedValue(undefined);
+    mockRecordDearMeNextMoveApprovalReceipt.mockResolvedValue(undefined);
   });
 
   it("does not emit duplicate approval side effects when approve is already resolved", async () => {
@@ -141,6 +149,42 @@ describe("approval routes idempotent retries", () => {
     expect(mockIssueApprovalService.listIssuesForApproval).not.toHaveBeenCalled();
     expect(mockHeartbeatService.wakeup).not.toHaveBeenCalled();
     expect(mockLogActivity).not.toHaveBeenCalled();
+    expect(mockRecordDearMeNextMoveApprovalReceipt).not.toHaveBeenCalled();
+  });
+
+  it("records DearMe final approval receipts only when a next-move approval is newly applied", async () => {
+    const approval = {
+      id: "approval-2",
+      companyId: "company-1",
+      type: "dearme_output_next_move",
+      status: "approved",
+      payload: {
+        outputId: "issue-1:content_drafts",
+        issueId: "issue-1",
+        riskGate: "publish_social",
+      },
+      requestedByAgentId: "agent-1",
+    };
+    mockApprovalService.getById.mockResolvedValue({
+      ...approval,
+      status: "pending",
+    });
+    mockApprovalService.approve.mockResolvedValue({ approval, applied: true });
+
+    const res = await request(await createApp())
+      .post("/api/approvals/approval-2/approve")
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(mockRecordDearMeNextMoveApprovalReceipt).toHaveBeenCalledTimes(1);
+    expect(mockRecordDearMeNextMoveApprovalReceipt).toHaveBeenCalledWith(expect.anything(), {
+      approval,
+      actorUserId: "user-1",
+      linkedIssueIds: ["issue-1"],
+    });
+    expect(mockHeartbeatService.wakeup).toHaveBeenCalledWith("agent-1", expect.objectContaining({
+      reason: "approval_approved",
+    }));
   });
 
   it("does not emit duplicate rejection logs when reject is already resolved", async () => {
@@ -231,6 +275,47 @@ describe("approval routes idempotent retries", () => {
 
     expect(res.status).toBe(200);
     expect(mockApprovalService.approve).toHaveBeenCalledWith("approval-4", "user-1", "ship it");
+    expect(mockRecordDearMeNextMoveApprovalReceipt).not.toHaveBeenCalled();
+  });
+
+  it("records a DearMe next-move receipt only when the approval is newly applied", async () => {
+    const approval = {
+      id: "approval-7",
+      companyId: "company-1",
+      type: "dearme_output_next_move",
+      status: "approved",
+      payload: {
+        outputId: "issue-1:content_drafts",
+        outputKind: "content_drafts",
+      },
+      requestedByAgentId: "agent-1",
+    };
+    mockApprovalService.getById.mockResolvedValue({
+      ...approval,
+      status: "pending",
+    });
+    mockApprovalService.approve.mockResolvedValue({
+      approval,
+      applied: true,
+    });
+    mockIssueApprovalService.listIssuesForApproval.mockResolvedValue([
+      { id: "issue-1" },
+      { id: "issue-2" },
+    ]);
+
+    const res = await request(await createApp())
+      .post("/api/approvals/approval-7/approve")
+      .send({ decisionNote: "approved" });
+
+    expect(res.status).toBe(200);
+    expect(mockRecordDearMeNextMoveApprovalReceipt).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        approval,
+        actorUserId: "user-1",
+        linkedIssueIds: ["issue-1", "issue-2"],
+      },
+    );
   });
 
   it("derives approval attribution from the authenticated actor on reject", async () => {

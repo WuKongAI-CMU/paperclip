@@ -114,6 +114,12 @@ useful reuse is the existing output continuation response, shared output schema,
 React Query output cache, and focused prepared-work review UI; do not create a
 second review receipt route, schema, or runtime surface for this loop.
 
+Coordinator note: DM-011 is now absorbed into the current final-approval path.
+Approving a DearMe next move records a customer-safe launch receipt, prepares a
+private execution handoff, hides the stale prepared-work decision, and leaves a
+Workbench trace that says the final approval was captured without claiming that
+anything was published, sent, deployed, or spent.
+
 Coordinator note: DM-183M extends the Output review and decisions boundary into
 server responses and approval preflight, so DearMe auth, validation, and stale
 Brand OS approval failures stay product-safe before state changes.

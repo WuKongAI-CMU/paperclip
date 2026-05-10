@@ -16,6 +16,10 @@ import {
   logActivity,
   secretService,
 } from "../services/index.js";
+import {
+  DEARME_NEXT_MOVE_APPROVAL_TYPE,
+  recordDearMeNextMoveApprovalReceipt,
+} from "../services/dearme-approval-receipts.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { redactEventPayload } from "../redaction.js";
 import type { PluginWorkerManager } from "../services/plugin-worker-manager.js";
@@ -161,6 +165,14 @@ export function approvalRoutes(
           linkedIssueIds,
         },
       });
+
+      if (approval.type === DEARME_NEXT_MOVE_APPROVAL_TYPE) {
+        await recordDearMeNextMoveApprovalReceipt(db, {
+          approval,
+          actorUserId: decidedByUserId,
+          linkedIssueIds,
+        });
+      }
 
       if (approval.requestedByAgentId) {
         try {

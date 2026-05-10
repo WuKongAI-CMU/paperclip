@@ -35,6 +35,11 @@ import {
 } from "@paperclipai/shared";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "./dearme-brand-blueprint-apply.js";
 import { dearmeOutputHandoffService } from "./dearme-output-handoff.js";
+import {
+  DEARME_NEXT_MOVE_APPROVAL_TYPE,
+  DEARME_NEXT_MOVE_APPROVED_ACTIVITY,
+  DEARME_PRIVATE_EXECUTION_HANDOFF_ACTIVITY,
+} from "./dearme-approval-receipts.js";
 
 type DearMeTeamRole = DearMeWorkbenchTeamMember["role"];
 type DearMeRiskGate = DearMeWorkbenchDecision["riskGate"];
@@ -82,7 +87,6 @@ const DEARME_MEMORY_ARCHIVED_ACTION = "dearme.memory_archived";
 const DEARME_MEMORY_ACTIONS = [DEARME_MEMORY_UPDATED_ACTION, DEARME_MEMORY_ARCHIVED_ACTION] as const;
 const DEARME_CHIEF_OF_STAFF_MESSAGE_ACTION = "dearme.chief_of_staff_message";
 const DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND = "dearme_chief_of_staff_message";
-const DEARME_NEXT_MOVE_APPROVAL_TYPE = "dearme_output_next_move";
 const DEARME_ACTION_GRAPH_CYCLE_NODE_ID = "cycle:weekly-growth-loop";
 const DEARME_ACTION_GRAPH_FALLBACK_UPDATED_AT = "1970-01-01T00:00:00.000Z";
 
@@ -716,6 +720,8 @@ function streamKindForProgress(item: DearMeWorkbenchProgressItem): DearMeStreamK
 }
 
 function cycleStageForProgress(item: DearMeWorkbenchProgressItem): DearMeCycleStage {
+  if (item.kind === "next_move_approved") return "review";
+  if (item.kind === "execution_handoff_prepared") return "work";
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "learn";
   if (item.kind === "brand_os_requested" || item.kind === "brand_os_applied") return "plan";
   if (item.kind === "paid_beta") return "plan";
@@ -724,6 +730,8 @@ function cycleStageForProgress(item: DearMeWorkbenchProgressItem): DearMeCycleSt
 }
 
 function sourceLabelForProgress(item: DearMeWorkbenchProgressItem) {
+  if (item.kind === "next_move_approved") return "Launch receipt";
+  if (item.kind === "execution_handoff_prepared") return "Private handoff";
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "Voice & Memory";
   if (item.kind === "brand_os_requested" || item.kind === "brand_os_applied") return "Brand OS";
   if (item.kind === "paid_beta") return "Paid beta access";
@@ -733,6 +741,8 @@ function sourceLabelForProgress(item: DearMeWorkbenchProgressItem) {
 }
 
 function costImpactForProgress(item: DearMeWorkbenchProgressItem) {
+  if (item.kind === "next_move_approved") return "No external action has run";
+  if (item.kind === "execution_handoff_prepared") return "No external action has run";
   if (item.kind === "paid_beta") return "Paid-beta credit recorded";
   if (item.kind === "brand_os_applied") return "Work stays inside paid-beta guardrails";
   if (item.kind === "spend_checkpoint") return "Private spend recorded";
@@ -740,12 +750,16 @@ function costImpactForProgress(item: DearMeWorkbenchProgressItem) {
 }
 
 function roleForProgress(item: DearMeWorkbenchProgressItem): DearMeTeamRole {
+  if (item.outputKind) return OUTPUT_OWNER_ROLE[item.outputKind];
   if (item.kind === "brand_os_applied" || item.kind === "cycle_check_in") return "chief_of_staff";
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "voice_editor";
   return "growth_analyst";
 }
 
 function artifactForProgress(item: DearMeWorkbenchProgressItem) {
+  if (item.outputKind) return OUTPUT_KIND_ARTIFACT_LABELS[item.outputKind];
+  if (item.kind === "next_move_approved") return "Approved next move";
+  if (item.kind === "execution_handoff_prepared") return "Private execution handoff";
   if (item.kind === "brand_os_applied") return "Growth team";
   if (item.kind === "cycle_check_in") return "Cycle check-in";
   if (item.kind === "spend_checkpoint") return "Spend checkpoint";
@@ -753,6 +767,12 @@ function artifactForProgress(item: DearMeWorkbenchProgressItem) {
 }
 
 function nextActionForProgress(item: DearMeWorkbenchProgressItem) {
+  if (item.kind === "next_move_approved") {
+    return "Final approval is recorded; DearMe will prepare the governed handoff before the next external move.";
+  }
+  if (item.kind === "execution_handoff_prepared") {
+    return item.nextStep ?? "DearMe prepared the private execution brief; nothing external runs until the governed next move is ready.";
+  }
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") {
     return "No approval needed; DearMe will use this source in the next private cycle.";
   }
@@ -872,10 +892,10 @@ function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbe
     sourceLabel: sourceLabelForProgress(item),
     costImpact: costImpactForProgress(item),
     nextAction: nextActionForProgress(item),
-    relatedOutputId: null,
-    issueId: null,
-    issueIdentifier: null,
-    approvalId: null,
+    relatedOutputId: item.outputId ?? null,
+    issueId: item.issueId ?? null,
+    issueIdentifier: item.issueIdentifier ?? null,
+    approvalId: item.approvalId ?? null,
     createdAt: item.createdAt,
     reviewLoop: null,
   };
@@ -1713,8 +1733,12 @@ function buildBatchDecisions(decisions: DearMeWorkbenchDecision[]): DearMeWorkbe
 function progressFromActivity(input: {
   id: string;
   action: string;
+  entityId: string | null;
+  details: unknown;
   createdAt: Date;
 }): DearMeWorkbenchProgressItem {
+  const details = isRecord(input.details) ? input.details : {};
+
   if (input.action === "dearme.paid_beta_payment_recorded") {
     return {
       id: input.id,
@@ -1731,6 +1755,54 @@ function progressFromActivity(input: {
       kind: "brand_os_requested",
       title: "Brand OS launch requested",
       summary: "The first growth-team plan is waiting for the launch call.",
+      createdAt: toIso(input.createdAt),
+    };
+  }
+
+  if (input.action === DEARME_NEXT_MOVE_APPROVED_ACTIVITY) {
+    return {
+      id: input.id,
+      kind: "next_move_approved",
+      title: dearMeWorkbenchProjectionTitle(
+        optionalPayloadString(details.receiptTitle),
+        "Final approval recorded",
+      ),
+      summary: dearMeWorkbenchProjectionText(
+        optionalPayloadString(details.receiptSummary),
+        "Your final approval is recorded. Nothing has run outside DearMe yet; the team will prepare the governed handoff before the next move.",
+      ),
+      outputKind: outputKindFromPayload(details.outputKind),
+      outputId: optionalPayloadString(details.outputId),
+      riskGate: riskGateFromPayload(details.riskGate),
+      approvalId: optionalPayloadString(details.approvalId) ?? input.entityId,
+      issueId: optionalPayloadString(details.issueId),
+      issueIdentifier: optionalPayloadString(details.issueIdentifier),
+      createdAt: toIso(input.createdAt),
+    };
+  }
+
+  if (input.action === DEARME_PRIVATE_EXECUTION_HANDOFF_ACTIVITY) {
+    return {
+      id: input.id,
+      kind: "execution_handoff_prepared",
+      title: dearMeWorkbenchProjectionTitle(
+        optionalPayloadString(details.handoffTitle),
+        "Private execution handoff prepared",
+      ),
+      summary: dearMeWorkbenchProjectionText(
+        optionalPayloadString(details.handoffSummary),
+        "DearMe prepared the private execution brief. Nothing external has run yet.",
+      ),
+      outputKind: outputKindFromPayload(details.outputKind),
+      outputId: optionalPayloadString(details.outputId),
+      riskGate: riskGateFromPayload(details.riskGate),
+      approvalId: optionalPayloadString(details.approvalId) ?? input.entityId,
+      issueId: optionalPayloadString(details.issueId),
+      issueIdentifier: optionalPayloadString(details.issueIdentifier),
+      executionReadiness: details.executionReadiness === "private_handoff_ready"
+        ? "private_handoff_ready"
+        : null,
+      nextStep: dearMeWorkbenchProjectionOptionalText(optionalPayloadString(details.handoffNextStep)),
       createdAt: toIso(input.createdAt),
     };
   }
@@ -1921,6 +1993,8 @@ export function dearmeWorkbenchService(db: Db) {
           .select({
             id: activityLog.id,
             action: activityLog.action,
+            entityId: activityLog.entityId,
+            details: activityLog.details,
             createdAt: activityLog.createdAt,
           })
           .from(activityLog)
@@ -2046,6 +2120,13 @@ export function dearmeWorkbenchService(db: Db) {
         .filter((approval) => approval.type === DEARME_NEXT_MOVE_APPROVAL_TYPE)
         .map((approval) => outputIdFromApprovalPayload(approval.payload))
         .filter((outputId): outputId is string => Boolean(outputId)));
+      const approvedNextMoveOutputIds = new Set(activityRows
+        .filter((activity) => activity.action === DEARME_NEXT_MOVE_APPROVED_ACTIVITY)
+        .map((activity) => {
+          const details = isRecord(activity.details) ? activity.details : {};
+          return optionalPayloadString(details.outputId);
+        })
+        .filter((outputId): outputId is string => Boolean(outputId)));
       const approvalDecisions = dearMeApprovalRows
         .map((approval) => decisionFromApproval({
           id: approval.id,
@@ -2057,6 +2138,7 @@ export function dearmeWorkbenchService(db: Db) {
         .map((item) => outputs.find((output) => output.id === item.id))
         .filter((output): output is DearMeOutputItem => Boolean(output))
         .filter((output) => !pendingNextMoveOutputIds.has(output.id))
+        .filter((output) => !approvedNextMoveOutputIds.has(output.id))
         .map(decisionFromOutput);
       const decisionsNeeded = [...approvalDecisions, ...outputDecisions]
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   activityLog,
@@ -21,6 +21,8 @@ import {
   startEmbeddedPostgresTestDatabase,
 } from "./helpers/embedded-postgres.js";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "../services/dearme-brand-blueprint-apply.js";
+import { recordDearMeNextMoveApprovalReceipt } from "../services/dearme-approval-receipts.js";
+import { approvalService } from "../services/approvals.js";
 import { dearmeWorkbenchService } from "../services/dearme-workbench.js";
 
 const DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND = "dearme_chief_of_staff_message";
@@ -1027,6 +1029,182 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     expect(JSON.stringify(result)).not.toContain("provider");
     expect(JSON.stringify(result)).not.toContain("Paperclip");
     expect(JSON.stringify(result)).not.toContain("OpenClaw");
+  });
+
+  it("projects final next-move approval as a customer-safe execution receipt", async () => {
+    const companyId = await seedCompany();
+    const chiefOfStaffId = await seedDearMeAgent({
+      companyId,
+      name: "DearMe Chief of Staff",
+      role: "chief_of_staff",
+      updatedAt: new Date("2026-05-09T10:00:00.000Z"),
+    });
+    const contentIssueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft first content batch",
+      identifier: "WB-43",
+      originFingerprint: "operation-draft_content_batch",
+      status: "done",
+      updatedAt: new Date("2026-05-09T10:20:00.000Z"),
+      assigneeAgentId: chiefOfStaffId,
+    });
+    const outputId = `${contentIssueId}:content_drafts`;
+
+    await attachDocument({
+      companyId,
+      issueId: contentIssueId,
+      key: "starter-posts",
+      title: "Starter posts",
+      body: "Draft body: Three proof-backed posts.\nApproval gate: publish social posts.",
+      updatedAt: new Date("2026-05-09T10:18:00.000Z"),
+    });
+    await db.insert(issueWorkProducts).values({
+      id: randomUUID(),
+      companyId,
+      issueId: contentIssueId,
+      type: "draft",
+      provider: "codex-local",
+      title: "Content draft batch",
+      url: null,
+      status: "ready",
+      reviewState: "approved",
+      summary: "Three private posts are approved as useful and waiting for launch approval.",
+      updatedAt: new Date("2026-05-09T10:19:00.000Z"),
+    });
+    const approvalId = randomUUID();
+    await db.insert(approvals).values({
+      id: approvalId,
+      companyId,
+      type: "dearme_output_next_move",
+      requestedByAgentId: chiefOfStaffId,
+      requestedByUserId: null,
+      status: "pending",
+      payload: {
+        title: "Approve posts for publishing",
+        summary: "The private posts are ready for final approval.",
+        recommendedAction: "Publish the approved posts from this content batch.",
+        nextActionOnApproval: "DearMe will prepare the channel handoff before any post goes live.",
+        riskGate: "publish_social",
+        outputKind: "content_drafts",
+        outputId,
+        issueId: contentIssueId,
+        issueIdentifier: "WB-43",
+        preparedTitle: "Content draft batch",
+        preparedSummary: "Three private posts are approved as useful and waiting for launch approval.",
+      },
+      updatedAt: new Date("2026-05-09T10:21:00.000Z"),
+    });
+
+    const approvalResult = await approvalService(db).approve(approvalId, "user-1", "Final approval.");
+    const receipt = await recordDearMeNextMoveApprovalReceipt(db, {
+      approval: approvalResult.approval,
+      actorUserId: "user-1",
+      linkedIssueIds: [contentIssueId],
+    });
+
+    expect(approvalResult.applied).toBe(true);
+    expect(receipt).toEqual(expect.objectContaining({
+      approvalId,
+      outputId,
+      externalExecutionStatus: "not_run_yet",
+      receiptTitle: "Final approval recorded",
+      receiptSummary: expect.stringContaining("nothing has run outside DearMe yet"),
+      executionReadiness: "private_handoff_ready",
+      handoffTitle: "Private publishing handoff prepared",
+      handoffSummary: expect.stringContaining("private execution brief"),
+      handoffNextStep: expect.stringContaining("channel-ready posting brief"),
+    }));
+
+    const result = await dearmeWorkbenchService(db).getWorkbench(companyId);
+
+    expect(result.decisionsNeeded).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ approvalId }),
+        expect.objectContaining({ id: `output:${outputId}`, kind: "review_output" }),
+      ]),
+    );
+    expect(result.recentProgress).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "next_move_approved",
+          title: "Final approval recorded",
+          summary: expect.stringContaining("nothing has run outside DearMe yet"),
+          outputKind: "content_drafts",
+          outputId,
+          riskGate: "publish_social",
+          approvalId,
+          issueId: contentIssueId,
+          issueIdentifier: "WB-43",
+        }),
+        expect.objectContaining({
+          kind: "execution_handoff_prepared",
+          title: "Private publishing handoff prepared",
+          summary: expect.stringContaining("private execution brief"),
+          outputKind: "content_drafts",
+          outputId,
+          riskGate: "publish_social",
+          approvalId,
+          issueId: contentIssueId,
+          issueIdentifier: "WB-43",
+          executionReadiness: "private_handoff_ready",
+          nextStep: expect.stringContaining("channel-ready posting brief"),
+        }),
+      ]),
+    );
+    expect(result.workStream).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: expect.stringMatching(/^progress:/),
+          kind: "progress_recorded",
+          cycleStage: "review",
+          role: "content_producer",
+          title: "Final approval recorded",
+          summary: expect.stringContaining("nothing has run outside DearMe yet"),
+          artifact: "Content drafts",
+          status: "recorded",
+          needsApproval: false,
+          relatedOutputId: outputId,
+          issueId: contentIssueId,
+          issueIdentifier: "WB-43",
+          approvalId,
+        }),
+        expect.objectContaining({
+          id: expect.stringMatching(/^progress:/),
+          kind: "progress_recorded",
+          cycleStage: "work",
+          role: "content_producer",
+          title: "Private publishing handoff prepared",
+          summary: expect.stringContaining("private execution brief"),
+          artifact: "Content drafts",
+          status: "recorded",
+          needsApproval: false,
+          sourceLabel: "Private handoff",
+          costImpact: "No external action has run",
+          nextAction: expect.stringContaining("channel-ready posting brief"),
+          relatedOutputId: outputId,
+          issueId: contentIssueId,
+          issueIdentifier: "WB-43",
+          approvalId,
+        }),
+      ]),
+    );
+    const receiptComments = await db
+      .select({ body: issueComments.body })
+      .from(issueComments)
+      .where(eq(issueComments.issueId, contentIssueId));
+    expect(receiptComments.map((comment) => comment.body).join("\n")).toContain(
+      "DearMe final approval: recorded the next move.",
+    );
+    expect(receiptComments.map((comment) => comment.body).join("\n")).toContain(
+      "DearMe private handoff: prepared the execution brief.",
+    );
+
+    const customerPathJson = JSON.stringify(result);
+    expect(customerPathJson).not.toContain("codex-local");
+    expect(customerPathJson).not.toContain("provider");
+    expect(customerPathJson).not.toContain("Paperclip");
+    expect(customerPathJson).not.toContain("OpenClaw");
+    expect(customerPathJson).not.toContain("setup_payload");
   });
 
   it("projects only active Voice & Memory sources after revisions and retirements", async () => {

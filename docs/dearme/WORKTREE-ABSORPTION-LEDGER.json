@@ -245,6 +245,39 @@
       ]
     },
     {
+      "ticket": "DM-011",
+      "branch": "codex/dearme-dm-011-execution-receipt",
+      "head": "3194402b69e489d053e03d2e82a511092cc45788",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbed the useful final-approval receipt boundary into the approval route, activity log, issue comments, and workbench projection so approved next moves remain visible without running external execution.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/routes/approvals.ts",
+        "server/src/services/dearme-approval-receipts.ts",
+        "server/src/services/dearme-workbench.ts",
+        "server/src/__tests__/approval-routes-idempotency.test.ts",
+        "server/src/__tests__/dearme-workbench.test.ts",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-011",
+      "branch": "codex/dearme-dm-011-integrated",
+      "head": "b04a2c1dc849e033c925f51a2a465c84a736f0e9",
+      "reviewedAt": "2026-05-10",
+      "reason": "The old DM-011 integration baseline is absorbed by the current DearMe approval receipt service, private handoff activity, and workbench read model; replaying the historical branch would duplicate a narrower version of the same final-approval visibility.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/routes/approvals.ts",
+        "server/src/services/dearme-approval-receipts.ts",
+        "server/src/services/dearme-workbench.ts",
+        "server/src/__tests__/approval-routes-idempotency.test.ts",
+        "server/src/__tests__/dearme-workbench.test.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
       "ticket": "DM-014",
       "branch": "codex/dearme-dm-014-mobile-nav-safe-area",
       "head": "65d7a59938bbf529d69e16a0907f07db3ae5e565",

@@ -2,6 +2,42 @@
 
 Date: 2026-05-10
 
+## DM-183BD DM-011 Final Approval Receipt Absorption - 2026-05-10
+
+Coordination slice:
+
+- Kept Symphony as the cooperation spine and verified the live daemon before
+  absorbing the next not-in-current approval branch.
+- Reviewed exact DM-011 heads `3194402b69e489d053e03d2e82a511092cc45788`
+  and `b04a2c1dc849e033c925f51a2a465c84a736f0e9`.
+- Reused the current `dearme_output_next_move` approval gate instead of
+  replaying the stale branch as another approval/runtime surface.
+- Added a DearMe approval receipt service that records the final approval as
+  customer-safe activity, writes issue comments for the private record, and
+  prepares the internal execution handoff without claiming anything external
+  has been published, sent, deployed, or spent.
+- Projected the approval receipt and private handoff through the existing
+  Workbench progress/work-stream read model, and suppressed the stale prepared
+  work review decision once its final next-move approval is recorded.
+- Recorded both exact DM-011 heads in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so Symphony worktree patrols
+  stop treating them as unresolved development candidates.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status --json` passed with the daemon healthy
+  and no retrying workers.
+- `pnpm exec vitest run server/src/__tests__/approval-routes-idempotency.test.ts server/src/__tests__/dearme-workbench.test.ts --maxWorkers=1`
+  passed the approval route suite; the embedded Postgres workbench suite
+  skipped on this host because its Postgres init script exited with code 1.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('json ok')"`
+  passed.
+- `pnpm run test:dearme-worktrees` passed.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` passed and
+  reported `reviewed_absorbed: 28`, `not_in_current: 85`, and `dirty: 0`.
+
 ## DM-183AS-A Review Receipt API/Cache Proof - 2026-05-10
 
 Product proof slice:
