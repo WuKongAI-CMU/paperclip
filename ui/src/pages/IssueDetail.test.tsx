@@ -1035,6 +1035,72 @@ describe("IssueDetail", () => {
     expect(mockOpenPanel).not.toHaveBeenCalled();
   });
 
+  it("hides tree pause controls for DearMe issues", async () => {
+    const childIssue = createIssue({
+      id: "child-1",
+      parentId: "issue-1",
+      identifier: "PAP-2",
+      issueNumber: 2,
+      title: "Customer-facing child",
+    });
+
+    mockIssuesApi.get.mockResolvedValue(createIssue({
+      originKind: "dearme_brand_blueprint_apply",
+      status: "in_progress",
+      assigneeAgentId: "agent-1",
+      executionRunId: "run-active-1",
+    }));
+    mockIssuesApi.list.mockImplementation((_companyId, filters?: { descendantOf?: string }) =>
+      Promise.resolve(filters?.descendantOf === "issue-1" ? [childIssue] : []),
+    );
+    mockIssuesApi.getTreeControlState.mockResolvedValue({
+      activePauseHold: {
+        holdId: "hold-1",
+        rootIssueId: "issue-1",
+        issueId: "issue-1",
+        isRoot: true,
+        mode: "pause",
+        reason: null,
+        releasePolicy: { strategy: "manual", note: "full_pause" },
+      },
+    });
+    mockIssuesApi.listTreeHolds.mockResolvedValue([createPauseHold()]);
+    mockAgentsApi.list.mockResolvedValue([createAgent()]);
+    mockAuthApi.getSession.mockResolvedValue({
+      session: { userId: "user-1" },
+      user: { id: "user-1" },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(container.textContent).toContain("Chat thread");
+    });
+
+    expect(mockIssuesApi.getTreeControlState).not.toHaveBeenCalled();
+    expect(mockIssuesApi.previewTreeControl).not.toHaveBeenCalled();
+    expect(mockIssuesApi.listTreeHolds).not.toHaveBeenCalled();
+    expect(mockIssueChatThreadRender.mock.calls.at(-1)?.[0].onPauseWorkRun).toBeUndefined();
+
+    const moreButton = container.querySelector('button[aria-label="More issue actions"]') as HTMLButtonElement | null;
+    expect(moreButton).toBeTruthy();
+    await act(async () => {
+      moreButton!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    });
+    await flushReact();
+
+    expect(container.textContent).not.toMatch(/Paused by board|Subtree pause is active|Pause work|Resume work|Pause subtree|Resume subtree|Cancel subtree|Restore subtree|wake|held/i);
+  });
+
   it("routes DearMe linked approval decisions back to DearMe", async () => {
     const dearMeApproval = createApproval();
     mockIssuesApi.get.mockResolvedValue(createIssue());

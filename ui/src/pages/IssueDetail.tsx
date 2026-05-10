@@ -1421,6 +1421,7 @@ export function IssueDetail() {
     enabled: !!issueId,
   });
   const resolvedCompanyId = issue?.companyId ?? selectedCompanyId;
+  const isDearMeDetailIssue = issue ? isDearMeIssue(issue) : false;
   const commentComposerDisabledReason = useMemo(() => {
     if (!issue?.currentExecutionWorkspace || !isClosedIsolatedExecutionWorkspace(issue.currentExecutionWorkspace)) {
       return null;
@@ -1555,7 +1556,9 @@ export function IssueDetail() {
   });
   const canManageTreeControl = Boolean(
     selectedCompanyId
-    && boardAccess?.companyIds?.includes(selectedCompanyId),
+    && boardAccess?.companyIds?.includes(selectedCompanyId)
+    && issue
+    && !isDearMeDetailIssue,
   );
   const { data: feedbackVotes } = useQuery({
     queryKey: queryKeys.issues.feedbackVotes(issueId!),
@@ -1671,7 +1674,6 @@ export function IssueDetail() {
     },
     [issue?.id, rawChildIssues],
   );
-  const isDearMeDetailIssue = issue ? isDearMeIssue(issue) : false;
   const liveIssueIds = useMemo(() => collectLiveIssueIds(companyLiveRuns), [companyLiveRuns]);
   const issuePanelKey = useMemo(
     () => buildIssuePropertiesPanelKey(issue ?? null, childIssues),
@@ -2817,6 +2819,12 @@ export function IssueDetail() {
     panelIssue,
   ]);
 
+  useEffect(() => {
+    if (isDearMeDetailIssue && treeControlOpen) {
+      setTreeControlOpen(false);
+    }
+  }, [isDearMeDetailIssue, treeControlOpen]);
+
   const goToInboxShortcutArmedRef = useRef(false);
   const goToInboxShortcutTimeoutRef = useRef<number | null>(null);
   const canQuickArchiveFromInbox =
@@ -3152,7 +3160,7 @@ export function IssueDetail() {
     },
     [treeControlMode, treeControlPreview],
   );
-  const activePauseHold = treeControlState?.activePauseHold ?? null;
+  const activePauseHold = isDearMeDetailIssue ? null : treeControlState?.activePauseHold ?? null;
   const activeRootPauseHoldsForDisplay = useMemo(
     () => activePauseHold?.isRoot === true ? activeRootPauseHolds : [],
     [activePauseHold?.isRoot, activeRootPauseHolds],
