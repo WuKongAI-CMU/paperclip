@@ -2,6 +2,43 @@
 
 Date: 2026-05-10
 
+## DEA-19 Opportunity Hunter Lane Staged - 2026-05-10
+
+Product/architecture slice:
+
+- Staged Linear `DEA-19` as the next non-overlapping DearMe value lane:
+  Opportunity Hunter private shortlist without send.
+- Kept the lane in `Backlog`, not `In Progress`, so Symphony does not start a
+  second product implementation worker while `DEA-18` still owns the active
+  browser/private-handoff proof lane.
+- Scoped `DEA-19` to the 60-120s aha moment: 5 named targets, fit reasons,
+  outreach angles, and draft first messages, all private and behind a send
+  approval boundary.
+- Anchored the lane to existing Opportunity Hunter assets instead of a new
+  runtime: `DEARME_ROLE_REGISTRY`, `opportunity-hunter.ts`,
+  `opportunity-state.ts`, the `opportunities` schema, and current DearMe
+  output/workbench projection patterns.
+
+Coordination state:
+
+- `DEA-18` remains the single active Symphony worker lane for browser proof.
+  It has not yet posted a terminal handoff or blocker comment in Linear.
+- Current `DEA-18` worker workspace remains code-clean except for a local
+  `.playwright-browsers/` download directory.
+- The coordinator checkout currently has unabsorbed e2e harness edits in
+  `tests/e2e/playwright.config.ts`, `tests/e2e/playwright-database.ts`, and
+  `tests/e2e/playwright.teardown.ts`; these are intentionally left uncommitted
+  until `DEA-18` produces an absorbable proof, patch handoff, or blocker.
+
+Verification:
+
+- Linear `DEA-19` exists in `Backlog` with hard boundaries against touching
+  `DEA-18` browser proof, Playwright harness, onboarding redesign, runtime
+  dashboards, customer-visible substrate language, or unapproved external
+  sends.
+- Linear `DEA-18` comments still contain only the coordinator guardrail; no
+  worker completion or blocker comment is present yet.
+
 ## DEA-17 First-Glance Focus Absorption - 2026-05-10
 
 Product/architecture slice:

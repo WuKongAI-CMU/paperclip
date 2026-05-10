@@ -569,6 +569,16 @@ onto the current shared/server workStream projection. Keep using this event
 metadata as the Symphony-to-product handoff contract; do not add a customer
 queue, runtime dashboard, or parallel event table for the same job.
 
+Coordinator note: DEA-19 is staged in Linear `Backlog` as the next Opportunity
+Hunter private-shortlist lane, not as an active Symphony worker. Start it only
+after DEA-18 produces an absorbable browser-proof commit, explicit no-code
+evidence, or a blocker/patch handoff. The lane should reuse the existing
+Opportunity Hunter registry prompt, opportunity state machine, opportunities
+schema, and current output/workbench projection patterns to produce 5 private
+targets with fit reasons, outreach angles, and draft first messages. Do not use
+it to touch the Playwright/browser proof, redesign onboarding, add another
+first-run contract, or expose hidden substrate terms.
+
 ## Recently Completed
 
 ### DM-183BV: Work Event Contract Port
