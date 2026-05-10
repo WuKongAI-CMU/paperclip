@@ -2,6 +2,28 @@
 
 Date: 2026-05-10
 
+## DM-183AN Voice & Memory Team Preview - 2026-05-10
+
+Implementation slice:
+
+- Adapted the useful DM-091 source-team-preview intent onto the current
+  Symphony spine instead of replaying the stale pre-source-plan form.
+- Added a selected-source `Team preview` to the Voice & Memory source guide so
+  writing samples, proof points, links, corrections, boundaries, audience notes,
+  and offer notes immediately name the DearMe role that will use them.
+- Kept the existing source guide/source path form, source plan, source review
+  queue, and memory mutation contract intact; this is a product-surface
+  explanation only, not a new worker/runtime.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 1 file, 62 tests.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183AM Voice & Memory Source Guardrails - 2026-05-10
 
 Implementation slice:
@@ -42,8 +64,11 @@ Implementation slice:
 Verification:
 
 - `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
-- `pnpm --filter @paperclipai/ui typecheck`
-- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed: 62 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx
+  ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md
+  docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md` passed.
 - Playwright fallback smoke on `http://127.0.0.1:3100/DEAAAAAAAAA/dearme`
   confirmed desktop and mobile render the first payoff as a focus surface with
   three cards, no horizontal overflow, no console/page errors, and no same-origin

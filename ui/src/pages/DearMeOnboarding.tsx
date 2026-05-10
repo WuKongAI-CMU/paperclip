@@ -1486,6 +1486,47 @@ const MEMORY_SOURCE_GUIDES: Array<{
 ];
 const DEFAULT_MEMORY_SOURCE_GUIDE = MEMORY_SOURCE_GUIDES[0]!;
 
+const MEMORY_SOURCE_TEAM_PREVIEWS: Record<
+  MemorySourceGuideId,
+  { role: string; action: string; outcome: string }
+> = {
+  writing_sample: {
+    role: "Voice Editor",
+    action: "will compare future drafts against this sample before they reach you.",
+    outcome: "Improves content drafts, outreach tone, and weekly reports.",
+  },
+  proof_point: {
+    role: "Portfolio Builder",
+    action: "will turn this receipt into proof cards, stronger claims, and opportunity angles.",
+    outcome: "Improves portfolio proof, first-cycle content, and launch calls.",
+  },
+  source_link: {
+    role: "Growth Analyst",
+    action: "will extract the useful private fact before it shapes the next private pass.",
+    outcome: "Improves source review, report notes, and proof-backed recommendations.",
+  },
+  correction: {
+    role: "Voice Editor",
+    action: "will apply this fix before the team prepares another private draft.",
+    outcome: "Improves revisions, next-draft guidance, and voice checks.",
+  },
+  forbidden_phrase: {
+    role: "Chief of Staff",
+    action: "will hold sensitive wording and claims for your decision.",
+    outcome: "Improves approval queues, review notes, and safe next actions.",
+  },
+  audience_note: {
+    role: "Brand Strategist",
+    action: "will use this audience signal to sharpen positioning and channel choices.",
+    outcome: "Improves content angles, opportunity filters, and growth plans.",
+  },
+  offer_note: {
+    role: "Opportunity Scout",
+    action: "will turn this offer shape into prepared asks and collaboration angles.",
+    outcome: "Improves outreach drafts, lead review, and launch opportunities.",
+  },
+};
+
 function defaultSourceInputModeForGuide(
   guide: (typeof MEMORY_SOURCE_GUIDES)[number],
 ): DearMeMemorySourceInputMode {
@@ -4538,6 +4579,7 @@ function VoiceMemoryPanel({
   );
   const selectedGuide =
     MEMORY_SOURCE_GUIDES.find((guide) => guide.id === sourceGuideId) ?? DEFAULT_MEMORY_SOURCE_GUIDE;
+  const sourceTeamPreview = MEMORY_SOURCE_TEAM_PREVIEWS[selectedGuide.id];
   const retireCandidateTitle = retireCandidate
     ? customerProofPackSummary(retireCandidate.title ?? MEMORY_KIND_LABELS[retireCandidate.kind])
     : "this source";
@@ -5009,6 +5051,19 @@ function VoiceMemoryPanel({
                 </button>
               );
             })}
+          </div>
+          <div
+            className="mt-3 rounded-md border border-primary/20 bg-muted/20 px-3 py-3 text-sm"
+            aria-label="How DearMe will use this source"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">Team preview</Badge>
+            </div>
+            <p className="mt-2 text-muted-foreground">
+              <span className="font-medium text-foreground">{sourceTeamPreview.role}</span>{" "}
+              {sourceTeamPreview.action}
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">{sourceTeamPreview.outcome}</p>
           </div>
         </div>
 

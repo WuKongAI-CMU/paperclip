@@ -2010,6 +2010,10 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Forbidden phrase");
     expect(container.textContent).toContain("Audience note");
     expect(container.textContent).toContain("Offer note");
+    expect(container.textContent).toContain("Team preview");
+    expect(container.textContent).toContain("Voice Editor");
+    expect(container.textContent).toContain("will compare future drafts against this sample");
+    expect(container.textContent).toContain("Improves content drafts, outreach tone, and weekly reports.");
     expect(container.textContent).toContain("What do you want to become known for?");
     expect(container.textContent).toContain("Paid beta");
     expect(container.textContent).toContain("Cycle guardrail");
@@ -3103,6 +3107,9 @@ describe("DearMeOnboarding", () => {
     });
 
     expect((container.querySelector("#dearme-memory-kind") as HTMLSelectElement | null)?.value).toBe("constraint");
+    expect(container.textContent).toContain("Chief of Staff");
+    expect(container.textContent).toContain("will hold sensitive wording and claims");
+    expect(container.textContent).toContain("Improves approval queues, review notes, and safe next actions.");
 
     await act(async () => {
       setInputValue(
@@ -3297,6 +3304,14 @@ describe("DearMeOnboarding", () => {
     await act(async () => {
       buttonByText(container, "Source link")?.click();
     });
+
+    expect(container.textContent).toContain("Growth Analyst");
+    expect(container.textContent).toContain(
+      "will extract the useful private fact before it shapes the next private pass.",
+    );
+    expect(container.textContent).toContain(
+      "Improves source review, report notes, and proof-backed recommendations.",
+    );
 
     await act(async () => {
       setInputValue(
