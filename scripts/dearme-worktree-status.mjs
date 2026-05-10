@@ -8,6 +8,7 @@ const DEFAULT_LIMIT = 0;
 const WORKTREE_STATUSES = new Set([
   "current",
   "in_current",
+  "patch_equivalent",
   "not_in_current",
   "detached",
   "prunable",
@@ -94,6 +95,10 @@ export function recommendWorktreeAction({ status, purpose, dirtyFiles }) {
     return "absorbed by current head; close only after owner confirmation";
   }
 
+  if (status === "patch_equivalent") {
+    return "patch-equivalent to current head; close only after owner confirmation";
+  }
+
   if (status === "not_in_current" && purpose === "integration") {
     return "historical integration branch; compare before replay, do not merge blindly";
   }
@@ -119,13 +124,29 @@ function countDirtyFiles(worktreePath, skipDirty) {
   return status ? status.split("\n").length : 0;
 }
 
-function classifyWorktree({ head, detached, prunable }, currentHead, repoRoot) {
+function hasUnabsorbedPatchCommits(head, currentHead, repoRoot) {
+  try {
+    return (
+      runGit(
+        ["log", "--right-only", "--cherry-pick", "--format=%H", `${currentHead}...${head}`],
+        repoRoot,
+      ).length > 0
+    );
+  } catch {
+    return true;
+  }
+}
+
+export function classifyWorktree({ head, detached, prunable }, currentHead, repoRoot) {
   if (prunable) return "prunable";
   if (detached) return "detached";
   if (!head) return "unknown";
   if (head === currentHead) return "current";
-  if (gitSucceeds(["merge-base", "--is-ancestor", head, "HEAD"], repoRoot)) {
+  if (gitSucceeds(["merge-base", "--is-ancestor", head, currentHead], repoRoot)) {
     return "in_current";
+  }
+  if (!hasUnabsorbedPatchCommits(head, currentHead, repoRoot)) {
+    return "patch_equivalent";
   }
   return "not_in_current";
 }
@@ -338,6 +359,7 @@ function printSummary(summary) {
       `DearMe worktrees: ${summary.total}`,
       `current: ${summary.current ?? 0}`,
       `in_current: ${summary.in_current ?? 0}`,
+      `patch_equivalent: ${summary.patch_equivalent ?? 0}`,
       `not_in_current: ${summary.not_in_current ?? 0}`,
       `detached: ${summary.detached ?? 0}`,
       `prunable: ${summary.prunable ?? 0}`,

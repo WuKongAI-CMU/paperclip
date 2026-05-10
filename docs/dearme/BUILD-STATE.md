@@ -574,6 +574,33 @@ Verification:
 - `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/pages/DearMeOnboarding.test.tsx`
   passed: 86 tests.
 
+## DM-183B Symphony Patch-Equivalent Worktree Guard - 2026-05-10
+
+Implementation slice:
+
+- Added `patch_equivalent` as a first-class DearMe worktree status for
+  Symphony coordination.
+- The classifier now checks cherry-pick equivalence after the ancestor test,
+  so a worker branch whose patch is already present on the coordinator head no
+  longer stays in the replay-candidate bucket just because its commit is not an
+  ancestor.
+- Coordinator actions now tell operators to close patch-equivalent worktrees
+  only after owner confirmation, matching the existing `in_current` safety
+  posture.
+
+Verification:
+
+- `pnpm test:dearme-worktrees` passed: 7 tests.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported 116
+  worktrees: 1 current, 2 `in_current`, 0 `patch_equivalent`, 113
+  `not_in_current`, 19 integration branches, and 96 worker branches.
+- `pnpm dearme:worktrees -- --status=patch-equivalent --skip-dirty --limit=20`
+  returned zero records, so the current candidate pool still needs product
+  review rather than automatic closure.
+- `git log --right-only --cherry-pick --format=%H HEAD...codex/dearme-dm-087-work-event-contract`
+  returned right-side commits,
+  confirming DM-087 is not patch-equivalent to the current coordinator head.
+
 ## DM-183 Symphony Worktree Status Contract - 2026-05-10
 
 Implementation slice:

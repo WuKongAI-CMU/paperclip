@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 
 import {
+  classifyWorktree,
   deriveWorktreeTicket,
   enrichWorktreeRecord,
   filterWorktreeRecords,
@@ -9,6 +14,26 @@ import {
   parseWorktrees,
   summarize,
 } from "./dearme-worktree-status.mjs";
+
+function git(repo, args) {
+  return execFileSync("git", args, {
+    cwd: repo,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  }).trim();
+}
+
+function commit(repo, message) {
+  git(repo, [
+    "-c",
+    "user.name=DearMe Test",
+    "-c",
+    "user.email=dearme-test@example.com",
+    "commit",
+    "-m",
+    message,
+  ]);
+}
 
 test("parseWorktrees reads porcelain worktree records", () => {
   assert.deepEqual(
@@ -78,6 +103,18 @@ test("enrichWorktreeRecord adds ticket, purpose, and coordinator action", () => 
     }).nextAction,
     "candidate worker result; inspect diff and replay only still-valuable product slices",
   );
+
+  assert.equal(
+    enrichWorktreeRecord({
+      path: "/private/tmp/dearme-dm-087-work-event-contract",
+      branch: "codex/dearme-dm-087-work-event-contract",
+      head: "fed",
+      status: "patch_equivalent",
+      dirtyFiles: 0,
+      prunable: false,
+    }).nextAction,
+    "patch-equivalent to current head; close only after owner confirmation",
+  );
 });
 
 test("filters support status, ticket, dirty-only, and limits", () => {
@@ -95,6 +132,14 @@ test("filters support status, ticket, dirty-only, and limits", () => {
       branch: "codex/dearme-dm-138-first-run-proof",
       head: "2",
       status: "not_in_current",
+      dirtyFiles: 0,
+      prunable: false,
+    }),
+    enrichWorktreeRecord({
+      path: "/private/tmp/dearme-dm-087-work-event-contract",
+      branch: "codex/dearme-dm-087-work-event-contract",
+      head: "4",
+      status: "patch_equivalent",
       dirtyFiles: 0,
       prunable: false,
     }),
@@ -117,7 +162,7 @@ test("filters support status, ticket, dirty-only, and limits", () => {
 
   assert.deepEqual(
     filterWorktreeRecords(records, options),
-    [records[2]],
+    [records[3]],
   );
 });
 
@@ -127,6 +172,9 @@ test("parseArgs tolerates the pnpm argument separator", () => {
   assert.equal(options.statuses.has("not_in_current"), true);
   assert.equal(options.tickets.has("DM-138"), true);
   assert.equal(options.limit, 2);
+
+  const patchEquivalentOptions = parseArgs(["--status=patch-equivalent"]);
+  assert.equal(patchEquivalentOptions.statuses.has("patch_equivalent"), true);
 });
 
 test("summarize keeps legacy counts and adds purpose/ticket buckets", () => {
@@ -147,22 +195,63 @@ test("summarize keeps legacy counts and adds purpose/ticket buckets", () => {
       dirtyFiles: 0,
       prunable: false,
     }),
+    enrichWorktreeRecord({
+      path: "/private/tmp/dearme-dm-087-work-event-contract",
+      branch: "codex/dearme-dm-087-work-event-contract",
+      head: "3",
+      status: "patch_equivalent",
+      dirtyFiles: 0,
+      prunable: false,
+    }),
   ];
 
   assert.deepEqual(summarize(records), {
-    total: 2,
+    total: 3,
     dirty: 1,
     current: 1,
     not_in_current: 1,
+    patch_equivalent: 1,
     byPurpose: {
       current: 1,
       integration: 1,
+      worker: 1,
     },
     byTicket: {
       "DM-136": 1,
       "DM-086": 1,
+      "DM-087": 1,
     },
   });
+});
+
+test("classifyWorktree marks cherry-pick-equivalent branches as patch_equivalent", () => {
+  const repo = mkdtempSync(join(tmpdir(), "dearme-worktree-status-"));
+
+  try {
+    git(repo, ["init", "--initial-branch=main"]);
+    writeFileSync(join(repo, "brand.md"), "base\n");
+    git(repo, ["add", "brand.md"]);
+    commit(repo, "base");
+
+    git(repo, ["checkout", "-b", "worker"]);
+    writeFileSync(join(repo, "brand.md"), "base\nvoice gate\n");
+    git(repo, ["add", "brand.md"]);
+    commit(repo, "worker slice");
+    const workerHead = git(repo, ["rev-parse", "HEAD"]);
+
+    git(repo, ["checkout", "main"]);
+    writeFileSync(join(repo, "brand.md"), "base\nvoice gate\n");
+    git(repo, ["add", "brand.md"]);
+    commit(repo, "coordinator equivalent slice");
+    const currentHead = git(repo, ["rev-parse", "HEAD"]);
+
+    assert.equal(
+      classifyWorktree({ head: workerHead }, currentHead, repo),
+      "patch_equivalent",
+    );
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
 });
 
 test("deriveWorktreeTicket handles compact and dashed ticket names", () => {

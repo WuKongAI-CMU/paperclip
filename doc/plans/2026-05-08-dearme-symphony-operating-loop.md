@@ -298,27 +298,33 @@ Shared fact command for coordinators and workers:
 pnpm dearme:worktrees
 pnpm dearme:worktrees -- --json
 pnpm dearme:worktrees -- --summary-only --skip-dirty
+pnpm dearme:worktrees -- --status=patch-equivalent --skip-dirty
 pnpm dearme:worktrees -- --not-in-current --ticket=DM-138 --limit=5 --skip-dirty
 ```
 
 Use that command before opening new integration tickets. `in_current` means the
-worktree head is an ancestor of the current integration branch. `not_in_current`
-means the branch needs content review, not automatic merge. `prunable` means the
-worktree record points at a missing checkout and should not be treated as active
-work until the owner confirms it matters. Ticket filters are for finding
-candidate worker branches; an empty result means start a fresh isolated
-worktree from the current coordinator head.
+worktree head is an ancestor of the current integration branch.
+`patch_equivalent` means the branch head is not an ancestor, but its right-side
+patches are already present on the current coordinator head; close only after
+owner confirmation. `not_in_current` means the branch needs content review, not
+automatic merge. `prunable` means the worktree record points at a missing
+checkout and should not be treated as active work until the owner confirms it
+matters. Ticket filters are for finding candidate worker branches; an empty
+result means start a fresh isolated worktree from the current coordinator head.
 
 Latest live audit:
 
-- `pnpm dearme:worktrees -- --json` reported 116 worktree records: 1 current,
-  1 dirty, 2 `in_current`, and 113 `not_in_current`.
+- `pnpm dearme:worktrees -- --json` previously reported 116 worktree records:
+  1 current, 1 dirty, 2 `in_current`, and 113 `not_in_current`.
 - DM-183 upgraded the worktree command into a coordinator report with ticket
   extraction, purpose labels, action buckets, summary-only mode, and focused
   filters for status/ticket/dirty/limit.
 - `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported the same 116
-  records as 1 current, 2 absorbed, 113 not in current, 19 integration-style,
-  and 96 worker-style checkouts.
+  records as 1 current, 2 absorbed, 0 patch-equivalent, 113 not in current, 19
+  integration-style, and 96 worker-style checkouts.
+- `pnpm dearme:worktrees -- --status=patch-equivalent --skip-dirty --limit=20`
+  returned zero records in the latest audit, so no active worker checkout is
+  currently safe to close as patch-equivalent without further review.
 - `pnpm dearme:worktrees -- --not-in-current --ticket=DM-138 --limit=5
   --skip-dirty` returned zero records before DM-138B, so `DEA-5` / `DM-138E`
   should use a fresh isolated worktree from the current integration branch
@@ -378,7 +384,7 @@ Latest live audit:
   before adding any new reporting/content runtime.
 - Latest worktree coordinator audit:
   `pnpm dearme:worktrees -- --summary-only --skip-dirty` still reports 116
-  records: 1 current, 2 absorbed into current, 113 not in current, 19
-  integration-style, and 96 worker-style checkouts. Continue reviewing
-  `not_in_current` branches as candidate product slices; do not merge them
-  mechanically.
+  records: 1 current, 2 absorbed into current, 0 patch-equivalent, 113 not in
+  current, 19 integration-style, and 96 worker-style checkouts. Continue
+  reviewing `not_in_current` branches as candidate product slices; do not merge
+  them mechanically.
