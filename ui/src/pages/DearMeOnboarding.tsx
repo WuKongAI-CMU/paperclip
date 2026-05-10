@@ -2565,6 +2565,102 @@ function TeamSummaryPanel({
   );
 }
 
+function TeamProofPackContinuityRibbon({ workbench }: { workbench: DearMeWorkbenchResponse }) {
+  const nextWork = workbench.workReady[0] ?? workbench.activeWork[0] ?? null;
+  const nextBatchDecision = workbench.batchDecisions[0] ?? null;
+  const nextApprovalDecision = workbench.decisionsNeeded[0] ?? null;
+  const nextSourceReview = workbench.memory.sourceReviewQueue[0] ?? null;
+  const decisionCount =
+    workbench.decisionsNeeded.length +
+    workbench.batchDecisions.length +
+    workbench.memory.sourceReviewQueue.length;
+  const report = workbench.report;
+  const reportIsPacketBacked = report ? isPacketBackedReport(report) : false;
+  const continuitySummary = reportIsPacketBacked
+    ? "One private proof pack is feeding Voice & Memory, prepared work, the weekly letter, and your launch call."
+    : "Voice & Memory, prepared work, the weekly letter, and launch calls stay connected before anything public moves.";
+  const decisionTitle =
+    nextBatchDecision?.title ??
+    nextApprovalDecision?.title ??
+    nextSourceReview?.proposedTitle ??
+    "No launch call waiting";
+  const decisionDetail =
+    nextBatchDecision?.summary ??
+    nextApprovalDecision?.summary ??
+    nextSourceReview?.nextAction ??
+    "Your team can keep preparing private work.";
+  const steps = [
+    {
+      label: "Voice & Memory",
+      value: pluralizeCount(workbench.memory.sourceCount, "source"),
+      detail: workbench.memory.voiceProfile.nextStep,
+      icon: Users,
+    },
+    {
+      label: "Work ready",
+      value: nextWork ? customerProofPackSummary(nextWork.title) : "Private cycle",
+      detail: nextWork
+        ? customerProofPackSummary(nextWork.summary)
+        : "The team will prepare the first reviewable asset.",
+      icon: FileText,
+    },
+    {
+      label: "Weekly letter",
+      value: report ? OUTPUT_STATUS_LABELS[report.status] : "Waiting",
+      detail: report
+        ? customerProofPackSummary(report.bodyPreview || report.summary)
+        : "The next Dear me report will summarize what changed.",
+      icon: MessageSquare,
+    },
+    {
+      label: "Launch call",
+      value: decisionCount > 0 ? pluralizeCount(decisionCount, "call") : "Clear",
+      detail: `${customerProofPackSummary(decisionTitle)}: ${customerProofPackSummary(decisionDetail)}`,
+      icon: ShieldCheck,
+    },
+  ];
+
+  return (
+    <section
+      aria-label="Proof pack continuity"
+      className="rounded-md border border-primary/25 bg-background/80 p-4 shadow-sm"
+    >
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Proof pack continuity
+          </div>
+          <p className="mt-1 max-w-3xl text-sm text-foreground/85">
+            {continuitySummary}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline">Voice to review</Badge>
+          <Badge variant="outline">Private until approved</Badge>
+        </div>
+      </div>
+
+      <DearMeEvidenceGrid className="mt-4 md:grid-cols-2 xl:grid-cols-4">
+        {steps.map((step) => {
+          const Icon = step.icon;
+
+          return (
+            <div key={step.label} className="rounded-md border border-border bg-muted/25 p-3">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <Icon className="h-4 w-4" />
+                {step.label}
+              </div>
+              <p className="mt-2 text-sm font-medium text-foreground">{step.value}</p>
+              <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">{step.detail}</p>
+            </div>
+          );
+        })}
+      </DearMeEvidenceGrid>
+    </section>
+  );
+}
+
 function TeamFocusWorkbenchPanel({
   workbench,
   paidBetaActive,
@@ -2615,6 +2711,8 @@ function TeamFocusWorkbenchPanel({
           </Badge>
         }
       />
+
+      <TeamProofPackContinuityRibbon workbench={workbench} />
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
         <DearMeWorkbenchCard

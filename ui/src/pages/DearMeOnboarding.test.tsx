@@ -1936,6 +1936,23 @@ describe("DearMeOnboarding", () => {
     expect(letter.textContent).toContain("same private proof pack");
     expect(letter.textContent).not.toContain("cycle packet");
     expect(letter.textContent).not.toContain("shared packet");
+
+    const continuity = surfaceByLabel(container, "Proof pack continuity");
+    expect(continuity.textContent).toContain("Proof pack continuity");
+    expect(continuity.textContent).toContain("Voice & Memory");
+    expect(continuity.textContent).toContain("Work ready");
+    expect(continuity.textContent).toContain("Weekly letter");
+    expect(continuity.textContent).toContain("Launch call");
+    expect(continuity.textContent).toContain("same private proof pack");
+    expect(continuity.textContent).toContain("Private until approved");
+    expect(continuity.textContent).not.toMatch(/cycle packet|shared packet/i);
+    expectNoHiddenProductTerms(continuity.textContent, [
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+      "OpenClaw",
+      "Paperclip",
+    ]);
     expectNoHiddenProductTerms(letter.textContent, [
       HIDDEN_PRODUCT_TERMS.bridgeName,
       HIDDEN_PRODUCT_TERMS.vendorName,
@@ -1968,6 +1985,7 @@ describe("DearMeOnboarding", () => {
     [
       "Your brand team today",
       "Today's brand team focus",
+      "Proof pack continuity",
       "Brand team run ledger",
       "Growth cycle plan",
       "Work ready",
