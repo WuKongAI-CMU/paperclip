@@ -71,6 +71,10 @@ vi.mock("./transcript/useLiveRunTranscripts", () => ({
   }),
 }));
 
+vi.mock("@/context/CompanyContext", () => ({
+  useCompany: () => ({ selectedCompany: null }),
+}));
+
 vi.mock("../lib/issue-chat-scroll", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/issue-chat-scroll")>();
   return {
@@ -340,6 +344,93 @@ describe("IssueChatThread", () => {
     expect(viewport).not.toBeNull();
     expect(viewport?.className).not.toContain("overflow-y-auto");
     expect(viewport?.className).not.toContain("max-h-[70vh]");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("renders DearMe run summaries without agent links or run identifiers", () => {
+    const root = createRoot(container);
+    const linkedRuns: IssueChatLinkedRun[] = [
+      {
+        runId: "run-history-2",
+        status: "succeeded",
+        agentId: "agent-1",
+        agentName: "CodexCoder",
+        createdAt: new Date("2026-04-06T12:01:00.000Z"),
+        startedAt: new Date("2026-04-06T12:01:00.000Z"),
+        finishedAt: new Date("2026-04-06T12:03:00.000Z"),
+      },
+    ];
+
+    act(() => {
+      root.render(
+        <MemoryRouter>
+          <IssueChatThread
+            comments={[]}
+            linkedRuns={linkedRuns}
+            timelineEvents={[]}
+            liveRuns={[]}
+            onAdd={async () => {}}
+            showComposer={false}
+            enableLiveTranscriptPolling={false}
+            includeSucceededRunsWithoutOutput
+            hideRunSubstrateDetails
+          />
+        </MemoryRouter>,
+      );
+    });
+
+    expect(container.textContent).toContain("DearMe team");
+    expect(container.textContent).toContain("work update");
+    expect(container.textContent).toContain("succeeded");
+    expect(container.textContent).not.toContain("CodexCoder");
+    expect(container.textContent).not.toContain("run-history-2");
+    expect(container.querySelector('a[href="/agents/agent-1"]')).toBeNull();
+    expect(container.querySelector('a[href="/agents/agent-1/runs/run-history-2"]')).toBeNull();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("keeps generic run summaries linked to their run detail", () => {
+    const root = createRoot(container);
+    const linkedRuns: IssueChatLinkedRun[] = [
+      {
+        runId: "run-history-2",
+        status: "succeeded",
+        agentId: "agent-1",
+        agentName: "CodexCoder",
+        createdAt: new Date("2026-04-06T12:01:00.000Z"),
+        startedAt: new Date("2026-04-06T12:01:00.000Z"),
+        finishedAt: new Date("2026-04-06T12:03:00.000Z"),
+      },
+    ];
+
+    act(() => {
+      root.render(
+        <MemoryRouter>
+          <IssueChatThread
+            comments={[]}
+            linkedRuns={linkedRuns}
+            timelineEvents={[]}
+            liveRuns={[]}
+            onAdd={async () => {}}
+            showComposer={false}
+            enableLiveTranscriptPolling={false}
+            includeSucceededRunsWithoutOutput
+          />
+        </MemoryRouter>,
+      );
+    });
+
+    expect(container.textContent).toContain("CodexCoder");
+    expect(container.textContent).toContain("run");
+    expect(container.textContent).toContain("run-hist");
+    expect(container.querySelector('a[href="/agents/agent-1"]')).not.toBeNull();
+    expect(container.querySelector('a[href="/agents/agent-1/runs/run-history-2"]')).not.toBeNull();
 
     act(() => {
       root.unmount();

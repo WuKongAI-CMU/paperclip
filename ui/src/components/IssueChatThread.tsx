@@ -301,6 +301,7 @@ interface IssueChatThreadProps {
   transcriptsByRunId?: ReadonlyMap<string, readonly IssueChatTranscriptEntry[]>;
   hasOutputForRun?: (runId: string) => boolean;
   includeSucceededRunsWithoutOutput?: boolean;
+  hideRunSubstrateDetails?: boolean;
   onInterruptQueued?: (runId: string) => Promise<void>;
   onCancelQueued?: (commentId: string) => void;
   interruptingQueuedRunId?: string | null;
@@ -1363,6 +1364,7 @@ function IssueChatAssistantMessage({
   const runId = typeof custom.runId === "string" ? custom.runId : null;
   const runAgentId = typeof custom.runAgentId === "string" ? custom.runAgentId : null;
   const runStatus = typeof custom.runStatus === "string" ? custom.runStatus : null;
+  const hideRunSubstrateDetails = custom.hideRunSubstrateDetails === true;
   const agentId = authorAgentId ?? runAgentId;
   const agentIcon = agentId ? agentMap?.get(agentId)?.icon : undefined;
   const commentId = typeof custom.commentId === "string" ? custom.commentId : null;
@@ -1371,7 +1373,7 @@ function IssueChatAssistantMessage({
     : [];
   const waitingText = typeof custom.waitingText === "string" ? custom.waitingText : "";
   const isRunning = message.role === "assistant" && message.status?.type === "running";
-  const runHref = runId && runAgentId ? `/agents/${runAgentId}/runs/${runId}` : null;
+  const runHref = !hideRunSubstrateDetails && runId && runAgentId ? `/agents/${runAgentId}/runs/${runId}` : null;
   const canStopRun = Boolean(runId) && (isRunActive || runStatus === "queued" || runStatus === "running");
   const chainOfThoughtLabel = typeof custom.chainOfThoughtLabel === "string" ? custom.chainOfThoughtLabel : null;
   const hasCoT = message.content.some((p) => p.type === "reasoning" || p.type === "tool-call");
@@ -1918,6 +1920,7 @@ function IssueChatSystemMessage({ message }: { message: ThreadMessage }) {
   const runAgentId = typeof custom.runAgentId === "string" ? custom.runAgentId : null;
   const runAgentName = typeof custom.runAgentName === "string" ? custom.runAgentName : null;
   const runStatus = typeof custom.runStatus === "string" ? custom.runStatus : null;
+  const hideRunSubstrateDetails = custom.hideRunSubstrateDetails === true;
   const actorName = typeof custom.actorName === "string" ? custom.actorName : null;
   const actorType = typeof custom.actorType === "string" ? custom.actorType : null;
   const actorId = typeof custom.actorId === "string" ? custom.actorId : null;
@@ -2055,16 +2058,25 @@ function IssueChatSystemMessage({ message }: { message: ThreadMessage }) {
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs">
-              <Link to={`/agents/${runAgentId}`} className="font-medium text-foreground transition-colors hover:underline">
-                {displayedRunAgentName}
-              </Link>
-              <span className="text-muted-foreground">run</span>
-              <Link
-                to={`/agents/${runAgentId}/runs/${runId}`}
-                className="inline-flex items-center rounded-md border border-border bg-accent/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
-              >
-                {runId.slice(0, 8)}
-              </Link>
+              {hideRunSubstrateDetails ? (
+                <>
+                  <span className="font-medium text-foreground">{displayedRunAgentName}</span>
+                  <span className="text-muted-foreground">work update</span>
+                </>
+              ) : (
+                <>
+                  <Link to={`/agents/${runAgentId}`} className="font-medium text-foreground transition-colors hover:underline">
+                    {displayedRunAgentName}
+                  </Link>
+                  <span className="text-muted-foreground">run</span>
+                  <Link
+                    to={`/agents/${runAgentId}/runs/${runId}`}
+                    className="inline-flex items-center rounded-md border border-border bg-accent/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+                  >
+                    {runId.slice(0, 8)}
+                  </Link>
+                </>
+              )}
               <span className={cn("font-medium", runStatusClass(runStatus))}>
                 {formatRunStatusLabel(runStatus)}
               </span>
@@ -3110,6 +3122,7 @@ export function IssueChatThread({
   transcriptsByRunId,
   hasOutputForRun: hasOutputForRunOverride,
   includeSucceededRunsWithoutOutput = false,
+  hideRunSubstrateDetails = false,
   onInterruptQueued,
   onCancelQueued,
   interruptingQueuedRunId = null,
@@ -3209,6 +3222,7 @@ export function IssueChatThread({
         agentMap,
         currentUserId,
         userLabelMap,
+        hideRunSubstrateDetails,
       }),
     [
       comments,
@@ -3225,6 +3239,7 @@ export function IssueChatThread({
       agentMap,
       currentUserId,
       userLabelMap,
+      hideRunSubstrateDetails,
     ],
   );
   const stableMessagesRef = useRef<readonly ThreadMessage[]>([]);

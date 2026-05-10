@@ -82,6 +82,7 @@ export interface IssueChatTranscriptEntry {
 }
 
 const ISSUE_CHAT_TRANSCRIPT_MAX_VISIBLE_ENTRIES = 30;
+const DEARME_RUN_AUTHOR_LABEL = "DearMe team";
 
 type MessageWithOrder = {
   createdAtMs: number;
@@ -486,7 +487,7 @@ function runDurationLabel(run: {
   startedAt: Date | string | null;
   finishedAt?: Date | string | null;
   resultJson?: Record<string, unknown> | null;
-}) {
+}, hideRunSubstrateDetails = false) {
   const start = run.startedAt ?? run.createdAt;
   const end = run.finishedAt ?? null;
   const durationMs = end ? Math.max(0, toTimestamp(end) - toTimestamp(start)) : null;
@@ -497,14 +498,14 @@ function runDurationLabel(run: {
       return durationText ? `Worked for ${durationText}` : "Finished work";
     case "failed":
     case "error":
-      return durationText ? `Failed after ${durationText}` : "Run failed";
+      return durationText ? `Failed after ${durationText}` : hideRunSubstrateDetails ? "Work failed" : "Run failed";
     case "timed_out":
-      return durationText ? `Timed out after ${durationText}` : "Run timed out";
+      return durationText ? `Timed out after ${durationText}` : hideRunSubstrateDetails ? "Work timed out" : "Run timed out";
     case "cancelled":
       if (stopReason === "paused") {
         return durationText ? `Paused by board after ${durationText}` : "Paused by board";
       }
-      return durationText ? `Cancelled after ${durationText}` : "Run cancelled";
+      return durationText ? `Cancelled after ${durationText}` : hideRunSubstrateDetails ? "Work cancelled" : "Run cancelled";
     case "queued":
       return "Queued";
     case "running":
@@ -514,13 +515,22 @@ function runDurationLabel(run: {
   }
 }
 
-function createHistoricalRunMessage(run: IssueChatLinkedRun, agentMap?: Map<string, Agent>) {
-  const agentName = run.agentName ?? agentMap?.get(run.agentId)?.name ?? run.agentId.slice(0, 8);
+function createHistoricalRunMessage(
+  run: IssueChatLinkedRun,
+  agentMap?: Map<string, Agent>,
+  hideRunSubstrateDetails = false,
+) {
+  const agentName = hideRunSubstrateDetails
+    ? DEARME_RUN_AUTHOR_LABEL
+    : run.agentName ?? agentMap?.get(run.agentId)?.name ?? run.agentId.slice(0, 8);
+  const contentText = hideRunSubstrateDetails
+    ? `${agentName} work update ${formatStatusLabel(run.status)}`
+    : `${agentName} run ${run.runId.slice(0, 8)} ${formatStatusLabel(run.status)}`;
   const message: ThreadSystemMessage = {
     id: `run:${run.runId}`,
     role: "system",
     createdAt: toDate(runTimestamp(run)),
-    content: [{ type: "text", text: `${agentName} run ${run.runId.slice(0, 8)} ${formatStatusLabel(run.status)}` }],
+    content: [{ type: "text", text: contentText }],
     metadata: {
       custom: {
         kind: "run",
@@ -529,6 +539,7 @@ function createHistoricalRunMessage(run: IssueChatLinkedRun, agentMap?: Map<stri
         runAgentId: run.agentId,
         runAgentName: agentName,
         runStatus: run.status,
+        hideRunSubstrateDetails,
       },
     },
   };
@@ -540,12 +551,15 @@ function createHistoricalTranscriptMessage(args: {
   transcript: readonly IssueChatTranscriptEntry[];
   hasOutput: boolean;
   agentMap?: Map<string, Agent>;
+  hideRunSubstrateDetails?: boolean;
 }) {
-  const { run, transcript, hasOutput, agentMap } = args;
-  const agentName = run.agentName ?? agentMap?.get(run.agentId)?.name ?? run.agentId.slice(0, 8);
+  const { run, transcript, hasOutput, agentMap, hideRunSubstrateDetails = false } = args;
+  const agentName = hideRunSubstrateDetails
+    ? DEARME_RUN_AUTHOR_LABEL
+    : run.agentName ?? agentMap?.get(run.agentId)?.name ?? run.agentId.slice(0, 8);
   const compactedTranscript = compactIssueChatTranscript(transcript);
   const { parts, notices, segments } = buildAssistantPartsFromTranscript(compactedTranscript);
-  const waitingText = hasOutput ? "" : "Run finished";
+  const waitingText = hasOutput ? "" : hideRunSubstrateDetails ? "Work finished" : "Run finished";
   const content = parts.length > 0
     ? parts
     : waitingText
@@ -567,7 +581,8 @@ function createHistoricalTranscriptMessage(args: {
       runStatus: run.status,
       notices,
       waitingText,
-      chainOfThoughtLabel: runDurationLabel(run),
+      hideRunSubstrateDetails,
+      chainOfThoughtLabel: runDurationLabel(run, hideRunSubstrateDetails),
       chainOfThoughtSegments: segments,
     }),
   };
@@ -736,8 +751,9 @@ function normalizeLiveRuns(
 function createLiveRunMessage(args: {
   run: LiveRunForIssue;
   transcript: readonly IssueChatTranscriptEntry[];
+  hideRunSubstrateDetails?: boolean;
 }) {
-  const { run, transcript } = args;
+  const { run, transcript, hideRunSubstrateDetails = false } = args;
   const compactedTranscript = compactIssueChatTranscript(transcript);
   const { parts, notices, segments } = buildAssistantPartsFromTranscript(compactedTranscript);
   const waitingText =
@@ -759,12 +775,13 @@ function createLiveRunMessage(args: {
       kind: "live-run",
       runId: run.id,
       runAgentId: run.agentId,
-      runAgentName: run.agentName,
+      runAgentName: hideRunSubstrateDetails ? DEARME_RUN_AUTHOR_LABEL : run.agentName,
       runStatus: run.status,
       adapterType: run.adapterType,
       notices,
       waitingText,
-      chainOfThoughtLabel: runDurationLabel(run),
+      hideRunSubstrateDetails,
+      chainOfThoughtLabel: runDurationLabel(run, hideRunSubstrateDetails),
       chainOfThoughtSegments: segments,
     }),
   };
@@ -787,6 +804,7 @@ export function buildIssueChatMessages(args: {
   agentMap?: Map<string, Agent>;
   currentUserId?: string | null;
   userLabelMap?: ReadonlyMap<string, string> | null;
+  hideRunSubstrateDetails?: boolean;
 }) {
   const {
     comments,
@@ -804,6 +822,7 @@ export function buildIssueChatMessages(args: {
     agentMap,
     currentUserId,
     userLabelMap,
+    hideRunSubstrateDetails = false,
   } = args;
 
   const orderedMessages: MessageWithOrder[] = [];
@@ -847,6 +866,7 @@ export function buildIssueChatMessages(args: {
           transcript,
           hasOutput: hasRunOutput,
           agentMap,
+          hideRunSubstrateDetails,
         }),
       });
       continue;
@@ -855,7 +875,7 @@ export function buildIssueChatMessages(args: {
     orderedMessages.push({
       createdAtMs: toTimestamp(runTimestamp(run)),
       order: 2,
-      message: createHistoricalRunMessage(run, agentMap),
+      message: createHistoricalRunMessage(run, agentMap, hideRunSubstrateDetails),
     });
   }
 
@@ -866,6 +886,7 @@ export function buildIssueChatMessages(args: {
       message: createLiveRunMessage({
         run,
         transcript: transcriptsByRunId?.get(run.id) ?? [],
+        hideRunSubstrateDetails,
       }),
     });
   }

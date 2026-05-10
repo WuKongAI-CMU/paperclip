@@ -40,6 +40,7 @@ import {
   dearMeApprovalDecisionHref,
   isDearMeApprovalType,
 } from "../lib/dearmeApprovals";
+import { isDearMeIssue } from "../lib/dearmeIssues";
 import {
   hasBlockingShortcutDialog,
   resolveIssueDetailGoKeyAction,
@@ -748,6 +749,7 @@ type IssueDetailChatTabProps = {
   executionRunId: string | null;
   blockedBy: Issue["blockedBy"];
   blockerAttention: Issue["blockerAttention"] | null;
+  hideRunSubstrateDetails: boolean;
   comments: IssueDetailComment[];
   locallyQueuedCommentRunIds: ReadonlyMap<string, string>;
   interactions: IssueThreadInteraction[];
@@ -805,6 +807,7 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
   executionRunId,
   blockedBy,
   blockerAttention,
+  hideRunSubstrateDetails,
   comments,
   locallyQueuedCommentRunIds,
   interactions,
@@ -1013,6 +1016,7 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
         currentUserId={currentUserId}
         userLabelMap={userLabelMap}
         userProfileMap={userProfileMap}
+        hideRunSubstrateDetails={hideRunSubstrateDetails}
         draftKey={draftKey}
         enableReassign
         reassignOptions={reassignOptions}
@@ -3917,6 +3921,7 @@ export function IssueDetail() {
               executionRunId={issue.executionRunId ?? null}
               blockedBy={issue.blockedBy ?? []}
               blockerAttention={issue.blockerAttention ?? null}
+              hideRunSubstrateDetails={isDearMeIssue(issue)}
               comments={threadComments}
               locallyQueuedCommentRunIds={locallyQueuedCommentRunIds}
               interactions={interactions}

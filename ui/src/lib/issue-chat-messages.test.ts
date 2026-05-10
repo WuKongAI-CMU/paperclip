@@ -670,6 +670,81 @@ describe("buildIssueChatMessages", () => {
       },
     });
   });
+
+  it("hides run identifiers from DearMe run summaries", () => {
+    const messages = buildIssueChatMessages({
+      comments: [],
+      timelineEvents: [],
+      linkedRuns: [
+        {
+          runId: "run-history-2",
+          status: "succeeded",
+          agentId: "agent-1",
+          agentName: "CodexCoder",
+          createdAt: new Date("2026-04-06T12:01:00.000Z"),
+          startedAt: new Date("2026-04-06T12:01:00.000Z"),
+          finishedAt: new Date("2026-04-06T12:03:00.000Z"),
+        },
+      ],
+      liveRuns: [],
+      includeSucceededRunsWithoutOutput: true,
+      hideRunSubstrateDetails: true,
+      currentUserId: "user-1",
+    });
+
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toMatchObject({
+      id: "run:run-history-2",
+      role: "system",
+      content: [{ text: "DearMe team work update succeeded" }],
+      metadata: {
+        custom: {
+          kind: "run",
+          runId: "run-history-2",
+          runAgentName: "DearMe team",
+          runStatus: "succeeded",
+          hideRunSubstrateDetails: true,
+        },
+      },
+    });
+    expect(JSON.stringify(messages[0]?.content)).not.toContain("run-history-2");
+    expect(JSON.stringify(messages[0]?.content)).not.toContain("CodexCoder");
+  });
+
+  it("hides run wording from DearMe transcript placeholders", () => {
+    const messages = buildIssueChatMessages({
+      comments: [],
+      timelineEvents: [],
+      linkedRuns: [
+        {
+          runId: "run-history-3",
+          status: "failed",
+          agentId: "agent-1",
+          agentName: "CodexCoder",
+          createdAt: new Date("2026-04-06T12:01:00.000Z"),
+          startedAt: new Date("2026-04-06T12:01:00.000Z"),
+          finishedAt: null,
+        },
+      ],
+      liveRuns: [],
+      hideRunSubstrateDetails: true,
+      currentUserId: "user-1",
+    });
+
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toMatchObject({
+      id: "run-assistant:run-history-3",
+      role: "assistant",
+      content: [{ text: "Work finished" }],
+      metadata: {
+        custom: {
+          runAgentName: "DearMe team",
+          chainOfThoughtLabel: "Work failed",
+          hideRunSubstrateDetails: true,
+        },
+      },
+    });
+  });
 });
 
 describe("stabilizeThreadMessages", () => {
