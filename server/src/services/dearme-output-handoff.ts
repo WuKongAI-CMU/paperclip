@@ -1098,6 +1098,12 @@ function renderCycleOutputPacket(input: {
     detailValue(portfolioUpdate, ["proposed_copy"], 500),
     "Pick the strongest draft, revise once from feedback, then prepare the next private proof.",
   );
+  const launchReadyNextStep =
+    "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.";
+  const launchBoundaryReminder =
+    "Publishing, sending, and deployment still wait for explicit approval.";
+  const whyItMatters =
+    "The content draft and report come from the same private proof pack.";
 
   const voiceFit = `${input.voiceFitScore}/100 ${input.voiceFitPassed ? "ready for review" : "needs revision before launch"}`;
   const contentBody = packetLines([
@@ -1108,13 +1114,18 @@ function renderCycleOutputPacket(input: {
     `Proof used: ${proofUsed}`,
     `Voice fit score: ${voiceFit}`,
     `Drafts and Assets Ready for Review: ${contentReady}`,
+    `Next step: ${launchReadyNextStep}`,
+    `Why it matters: ${whyItMatters}`,
     `Launch boundary: ${launchBoundary}`,
+    `Approval boundary: ${launchBoundaryReminder}`,
     "Cycle packet: The content draft and Dear me report now use the same private evidence packet.",
   ]);
   const reportBody = packetLines([
     `Completed work: ${completedWork} are ready in the private review queue.`,
     `Drafts and Assets Ready for Review: ${contentReady}; voice fit ${voiceFit}.`,
-    `Decisions needed: Review, request changes, or regenerate the prepared work. Publishing, sending, and deployment still wait for explicit approval.`,
+    `Next step: ${launchReadyNextStep}`,
+    `Why it matters: ${whyItMatters}`,
+    `Approval boundary: ${launchBoundaryReminder}`,
     `Next bets: ${nextBets}`,
     "Outcomes and Signals: The first cycle has a proof-backed draft, a reviewable report, and a clear next decision.",
     "Budget: No outbound spend, send, publish, or deploy action was triggered by this private packet.",
@@ -1124,8 +1135,8 @@ function renderCycleOutputPacket(input: {
   return {
     contentBody,
     reportBody,
-    contentSummary: `Private content packet ready for review with voice fit ${voiceFit}.`,
-    reportSummary: `Private Dear me report prepared from the same cycle packet; next decision is review or revision.`,
+    contentSummary: launchReadyNextStep,
+    reportSummary: launchReadyNextStep,
   };
 }
 

@@ -5693,7 +5693,7 @@ describe("DearMeOnboarding", () => {
 
     const packetSurface = surfaceByLabel(container, "First proof pack");
     expect(packetSurface.textContent).toContain("First proof pack ready");
-    expect(packetSurface.textContent).toContain("Draft, report, and launch boundary are ready for your call.");
+    expect(packetSurface.textContent).toContain("One launch-ready next step is ready for your call.");
     expect(packetSurface.textContent).toContain("2 ready");
     expect(packetSurface.textContent).toContain("Private until approved");
     expect(packetSurface.textContent).toContain("Starter post draft prepared from the first proof pack");

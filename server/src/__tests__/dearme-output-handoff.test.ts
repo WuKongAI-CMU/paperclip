@@ -1045,21 +1045,24 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     expect(contentOutput.documents.map((document) => document.key)).toEqual(["content-drafts", "starter-posts"]);
     expect(contentOutput.documents[0]?.bodyPreview).toContain("Voice fit score");
     expect(contentOutput.documents[0]?.bodyPreview).toContain("Cycle packet");
+    expect(contentOutput.documents[0]?.bodyPreview).toContain("Next step: One launch-ready next step is ready");
     expect(contentOutput.workProducts).toEqual(expect.arrayContaining([
       expect.objectContaining({
         title: "Cycle content packet",
-        summary: expect.stringContaining("voice fit"),
+        summary: expect.stringContaining("launch-ready next step"),
         reviewState: "pending",
       }),
     ]));
     expect(reportOutput.documents[0]?.key).toBe("dear-me-report");
     expect(reportOutput.documents[0]?.bodyPreview).toContain("Completed work");
-    expect(reportOutput.documents[0]?.bodyPreview).toContain("Decisions needed");
+    expect(reportOutput.documents[0]?.bodyPreview).toContain("Next step: One launch-ready next step is ready");
+    expect(reportOutput.documents[0]?.bodyPreview).toContain("Why it matters");
+    expect(reportOutput.documents[0]?.bodyPreview).toContain("Approval boundary");
     expect(reportOutput.documents[0]?.bodyPreview).toContain("No outbound spend");
     expect(reportOutput.workProducts).toEqual(expect.arrayContaining([
       expect.objectContaining({
         title: "Dear me report packet",
-        summary: expect.stringContaining("same cycle packet"),
+        summary: expect.stringContaining("launch-ready next step"),
       }),
     ]));
 

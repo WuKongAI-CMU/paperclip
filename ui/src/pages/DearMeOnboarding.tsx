@@ -6460,7 +6460,8 @@ function FirstCyclePacketSpotlight({
             First proof pack ready
           </div>
           <p className="mt-1 text-sm text-foreground/85">
-            Draft, report, and launch boundary are ready for your call.
+            One launch-ready next step is ready for your call. The same private proof pack carries the draft, report,
+            proof, and launch boundary.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
