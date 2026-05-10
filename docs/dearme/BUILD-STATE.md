@@ -2,6 +2,43 @@
 
 Date: 2026-05-10
 
+## DEA-7 Packet Aha Browser Proof - 2026-05-10
+
+Implementation slice:
+
+- Used the Symphony-aligned paid-beta local smoke company
+  `DEAAAAAAAAA` (`39391bbc-ffc9-430b-bac5-171de2fbc57f`) as the live
+  proof lane for the packet-backed DearMe aha loop.
+- Generated real private first-cycle outputs through
+  `/api/dearme/companies/:companyId/first-cycle/start`. This stayed local and
+  private: no public posts, outreach, deploys, spend, or external launch action
+  were performed.
+- Proved the existing workbench, Dear me letter, and focused review route all
+  consume the same proof-pack handoff. The `Review proof pack` action landed on
+  `/DEAAAAAAAAA/dearme?view=decisions&issue=DEAAAAAAAAA-2&output=ab74192c-6291-4af8-8251-918ddfd1c545%3Acontent_drafts`.
+- Confirmed the customer-facing surface says `First proof pack ready`,
+  `Review proof pack`, `Dear me letter`, `Voice check`, `Voice 100/100`,
+  `Private until approved`, and `Work Ready` while keeping runtime and donor
+  machinery backstage.
+
+Verification:
+
+- Browser plugin opened `http://127.0.0.1:3100/DEAAAAAAAAA/dearme`, verified
+  the live DOM across workbench, letter, and focused review, and clicked
+  `Review proof pack` into the focused review URL above.
+- Hidden terms were absent from the live DOM: `cycle packet`,
+  `dearme-cycle-output`, `Paperclip`, `OpenClaw`, `adapter`, `provider`,
+  `model`, `setup_payload`, `setup-payload`, and `Voice Gate v0`.
+- Browser plugin screenshot capture timed out at the CDP screenshot step, so
+  screenshots were captured with shell Playwright against the same local page:
+  `/tmp/dearme-ui-verification/packet-aha-desktop-home.png`,
+  `/tmp/dearme-ui-verification/packet-aha-desktop-focused-review.png`,
+  `/tmp/dearme-ui-verification/packet-aha-mobile-home-rerun.png`, and
+  `/tmp/dearme-ui-verification/packet-aha-mobile-focused-review-rerun.png`.
+- Playwright desktop and mobile checks reported no horizontal overflow and a
+  clean diagnostic pass: no business console messages, no page errors, and no
+  failed page requests after excluding long-lived live-channel shutdown noise.
+
 ## DEA-7 OpenClaw Content Skill Drift Correction - 2026-05-10
 
 Implementation slice:
