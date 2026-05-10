@@ -24,6 +24,9 @@ Coordination state:
   `/private/tmp/dearme-symphony-workspaces/_handoffs/DEA-27-107da766288c..399dcd94d810-2026-05-10T20-54-16-488Z.*`.
 - Coordinator absorbed the durable handoff patch after the worker workspace
   returned to a clean tree.
+- Linear `DEA-27` was moved to `Done` only after coordinator absorption,
+  verification, and the coordinator Linear handoff comment.
+- Symphony was idle after absorption: zero running workers and zero retries.
 
 Verification:
 
@@ -33,6 +36,8 @@ Verification:
 - `pnpm --filter @paperclipai/shared typecheck` passed.
 - `pnpm --filter @paperclipai/server typecheck` passed.
 - `pnpm --filter @paperclipai/ui typecheck` passed.
+- `.symphony/bin/dearme-symphony status` reported the daemon healthy with
+  `running: []` and `retrying: []`.
 
 ## DEA-26 Connect-Channel Handoff Receipt Absorbed - 2026-05-10
 

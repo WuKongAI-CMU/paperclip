@@ -67,11 +67,12 @@ The right reuse split is:
   packet -> private approval -> next-move approval payload -> outbound wrapper
   gate. Do not reopen a parallel publisher, direct X sender, or second approval
   channel.
-- With DEA-25 and DEA-26 absorbed, the launch-handoff lane has enough proof to
-  stop adding writers on the same surface. The next useful product worker should
-  move to a disjoint trust/autonomy slice such as DM-149 emergency pause intent
-  or DM-153 default approval score on silence; keep DM-149 first if the goal is
-  a more human-feeling "I can stop it any time" moment.
+- With DEA-25, DEA-26, and DEA-27 absorbed, the launch-handoff and trust-stop
+  lane has enough proof to stop adding writers on the same surface. The next
+  useful product worker should be a disjoint autonomy/quality slice such as
+  DM-153 default approval score on silence, or a read-only browser smoke/QA pass
+  against the now-paused handoff path. Do not add another writer to launch,
+  connect-channel, or pause unless a regression appears.
 - DEA-23 hardens the Symphony development factory after the DEA-21 cleanup
   miss: worker terminal handoff now exports committed changes as durable
   `format-patch`, `git bundle`, and JSON summary artifacts under
