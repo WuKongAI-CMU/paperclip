@@ -21,6 +21,8 @@ const RECONNECT_SUPPRESS_MS = 2000;
 const SOCKET_CONNECTING = 0;
 const SOCKET_OPEN = 1;
 const TERMINAL_RUN_STATUSES = new Set(["succeeded", "failed", "cancelled", "timed_out"]);
+const DEARME_ACTIVITY_PREFIX = "dearme.";
+const DEARME_INTERNAL_PREFIX = "dearme_";
 
 type LiveUpdatesSocketLike = {
   readyState: number;
@@ -38,6 +40,11 @@ function readString(value: unknown): string | null {
 function readRecord(value: unknown): Record<string, unknown> | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
+}
+
+function hasDearMePrefix(value: unknown): boolean {
+  const text = readString(value);
+  return !!text && (text.startsWith(DEARME_ACTIVITY_PREFIX) || text.startsWith(DEARME_INTERNAL_PREFIX));
 }
 
 function shortId(value: string) {
@@ -606,6 +613,47 @@ function buildRunStatusToast(
   };
 }
 
+function isDearMeProductActivity(payload: Record<string, unknown>): boolean {
+  if (hasDearMePrefix(payload.action)) return true;
+
+  const details = readRecord(payload.details);
+  return [
+    details?.type,
+    details?.source,
+    details?.contextSource,
+    details?.mutation,
+    details?.originKind,
+    details?.issueOriginKind,
+  ].some(hasDearMePrefix);
+}
+
+function shouldRefreshDearMeWorkbenchForActivity(payload: Record<string, unknown>): boolean {
+  if (isDearMeProductActivity(payload)) return true;
+
+  const entityType = readString(payload.entityType);
+  const action = readString(payload.action);
+  const details = readRecord(payload.details);
+
+  if (entityType !== "issue") return false;
+
+  // DearMe team updates are projected from issue comments on DearMe-origin issues.
+  // Some live payloads do not carry originKind, so the server-side workbench query
+  // remains the authority on which comments belong on the customer surface.
+  if (action === "issue.comment_added") return true;
+  return action === "issue.updated" && readString(details?.source) === "comment";
+}
+
+function invalidateDearMeWorkbenchQueries(queryClient: QueryClient, companyId: string) {
+  queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(companyId) });
+}
+
+function invalidateDearMeProductQueries(queryClient: QueryClient, companyId: string) {
+  invalidateDearMeWorkbenchQueries(queryClient, companyId);
+  queryClient.invalidateQueries({ queryKey: queryKeys.dearme.brandBlueprint(companyId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.dearme.outputs(companyId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.dearme.paidBetaAccess(companyId) });
+}
+
 function invalidateHeartbeatQueries(
   queryClient: ReturnType<typeof useQueryClient>,
   companyId: string,
@@ -617,6 +665,7 @@ function invalidateHeartbeatQueries(
   queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(companyId) });
   queryClient.invalidateQueries({ queryKey: queryKeys.costs(companyId) });
   queryClient.invalidateQueries({ queryKey: queryKeys.sidebarBadges(companyId) });
+  invalidateDearMeWorkbenchQueries(queryClient, companyId);
 
   const agentId = readString(payload.agentId);
   if (agentId) {
@@ -641,6 +690,11 @@ function invalidateActivityQueries(
   const action = readString(payload.action);
   const actorType = readString(payload.actorType);
   const actorId = readString(payload.actorId);
+  if (isDearMeProductActivity(payload)) {
+    invalidateDearMeProductQueries(queryClient, companyId);
+  } else if (shouldRefreshDearMeWorkbenchForActivity(payload)) {
+    invalidateDearMeWorkbenchQueries(queryClient, companyId);
+  }
 
   if (entityType === "issue") {
     queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(companyId) });
@@ -815,6 +869,7 @@ function handleLiveEvent(
     queryClient.invalidateQueries({ queryKey: queryKeys.agents.list(expectedCompanyId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(expectedCompanyId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.org(expectedCompanyId) });
+    invalidateDearMeWorkbenchQueries(queryClient, expectedCompanyId);
     const agentId = readString(payload.agentId);
     if (agentId) queryClient.invalidateQueries({ queryKey: queryKeys.agents.detail(agentId) });
     const toast = buildAgentStatusToast(payload, nameOf, queryClient, expectedCompanyId);

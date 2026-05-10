@@ -432,6 +432,119 @@ describe("LiveUpdatesProvider issue invalidation", () => {
   });
 });
 
+describe("LiveUpdatesProvider DearMe invalidation", () => {
+  it("refreshes DearMe product queries when a DearMe activity event arrives", () => {
+    const invalidations: unknown[] = [];
+    const queryClient = {
+      invalidateQueries: (input: unknown) => {
+        invalidations.push(input);
+      },
+      getQueryData: () => undefined,
+    };
+
+    __liveUpdatesTestUtils.invalidateActivityQueries(
+      queryClient as never,
+      "company-1",
+      {
+        entityType: "issue_comment",
+        entityId: "comment-1",
+        action: "dearme.output_approved",
+        details: {
+          outputId: "output-1",
+          issueId: "issue-1",
+        },
+      },
+      { userId: null, agentId: null },
+    );
+
+    expect(invalidations).toContainEqual({
+      queryKey: queryKeys.dearme.workbench("company-1"),
+    });
+    expect(invalidations).toContainEqual({
+      queryKey: queryKeys.dearme.brandBlueprint("company-1"),
+    });
+    expect(invalidations).toContainEqual({
+      queryKey: queryKeys.dearme.outputs("company-1"),
+    });
+    expect(invalidations).toContainEqual({
+      queryKey: queryKeys.dearme.paidBetaAccess("company-1"),
+    });
+  });
+
+  it("refreshes DearMe product queries when a DearMe approval decision arrives", () => {
+    const invalidations: unknown[] = [];
+    const queryClient = {
+      invalidateQueries: (input: unknown) => {
+        invalidations.push(input);
+      },
+      getQueryData: () => undefined,
+    };
+
+    __liveUpdatesTestUtils.invalidateActivityQueries(
+      queryClient as never,
+      "company-1",
+      {
+        entityType: "approval",
+        entityId: "approval-1",
+        action: "approval.approved",
+        details: {
+          type: "dearme_next_move",
+          linkedIssueIds: ["issue-1"],
+        },
+      },
+      { userId: null, agentId: null },
+    );
+
+    expect(invalidations).toContainEqual({
+      queryKey: queryKeys.dearme.workbench("company-1"),
+    });
+    expect(invalidations).toContainEqual({
+      queryKey: queryKeys.dearme.outputs("company-1"),
+    });
+    expect(invalidations).toContainEqual({
+      queryKey: queryKeys.approvals.list("company-1"),
+    });
+  });
+
+  it("refreshes the DearMe workbench when issue comments may contain team updates", () => {
+    const invalidations: unknown[] = [];
+    const queryClient = {
+      invalidateQueries: (input: unknown) => {
+        invalidations.push(input);
+      },
+      getQueryData: () => undefined,
+    };
+
+    __liveUpdatesTestUtils.invalidateActivityQueries(
+      queryClient as never,
+      "company-1",
+      {
+        entityType: "issue",
+        entityId: "issue-1",
+        action: "issue.comment_added",
+        actorType: "agent",
+        actorId: "agent-1",
+        details: {
+          identifier: "DM-21",
+          commentId: "comment-1",
+          bodySnippet: "Voice Editor finished comparing the new draft.",
+        },
+      },
+      { userId: null, agentId: null },
+    );
+
+    expect(invalidations).toContainEqual({
+      queryKey: queryKeys.dearme.workbench("company-1"),
+    });
+    expect(invalidations).toContainEqual({
+      queryKey: queryKeys.issues.comments("issue-1"),
+    });
+    expect(invalidations).not.toContainEqual({
+      queryKey: queryKeys.dearme.outputs("company-1"),
+    });
+  });
+});
+
 describe("LiveUpdatesProvider visible issue comment hydration", () => {
   it("hydrates the visible issue comments cache with only the new comment", async () => {
     getCommentMock.mockResolvedValueOnce({
