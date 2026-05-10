@@ -2,6 +2,31 @@
 
 Date: 2026-05-10
 
+## DM-183AE User-Facing Leadership Prompts - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the current Symphony sidecar prompt audit by removing customer-facing
+  CEO, board-update, and owner-email framing from the Chief of Staff and
+  Reporting prompts.
+- Kept the proven Polsia/Naive ordered reporting loop, queue rules, proxy tool
+  names, and `ceo_*` report type identifiers unchanged for compatibility.
+- Rebuilt the generated OpenClaw skills from prompt source so runtime workers
+  receive the same DearMe Chief / Dear-me letter language as the source
+  package.
+
+Verification:
+
+- `pnpm --filter @paperclipai/dearme-openclaw run generate-skills` passed.
+- `pnpm --filter @paperclipai/dearme-agent-prompts test` passed.
+- `pnpm --filter @paperclipai/dearme-openclaw test` passed.
+- `pnpm --filter @paperclipai/dearme-agent-prompts typecheck` passed.
+- `pnpm --filter @paperclipai/dearme-openclaw typecheck` passed.
+- `rg -n "You are the CEO|CEO Briefing|Email owner|board update" packages/plugins/dearme-agent-prompts/src/prompts/chief-of-staff.ts packages/plugins/dearme-agent-prompts/src/prompts/reporting.ts packages/plugins/dearme-openclaw/generated/skills/dearme-chief-of-staff/SKILL.md packages/plugins/dearme-openclaw/generated/skills/dearme-reporting/SKILL.md`
+  returned no matches.
+- `git diff --check -- packages/plugins/dearme-agent-prompts/src/prompts/chief-of-staff.ts packages/plugins/dearme-agent-prompts/src/prompts/reporting.ts packages/plugins/dearme-agent-prompts/src/index.test.ts packages/plugins/dearme-openclaw/generated/skills/dearme-chief-of-staff/SKILL.md packages/plugins/dearme-openclaw/generated/skills/dearme-reporting/SKILL.md docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183AD Workbench Projection Trace Coverage - 2026-05-10
 
 Implementation slice:

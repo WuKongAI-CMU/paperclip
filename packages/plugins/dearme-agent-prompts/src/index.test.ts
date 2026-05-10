@@ -21,6 +21,7 @@ import {
   OPPORTUNITY_HUNTER_PROMPT,
   OPPORTUNITY_STATES,
   OUTBOUND_5_TOUCH,
+  REPORTING_PROMPT,
   SORA_UGC_VIDEO_TEMPLATE,
   SSE_EVENT_TYPES,
   WORK_LOOP_STATES,
@@ -165,6 +166,18 @@ describe("dearme-agent-prompts package", () => {
     expect(CHIEF_OF_STAFF_PROMPT).toContain("Under 200 words total");
     expect(CHIEF_OF_STAFF_PROMPT).toContain(
       "ALWAYS maintain queue ≥ 3 tasks",
+    );
+    expect(CHIEF_OF_STAFF_PROMPT).toContain("DearMe's Chief of Staff");
+    expect(CHIEF_OF_STAFF_PROMPT).toContain("Dear-me letter");
+    expect(CHIEF_OF_STAFF_PROMPT).toContain('type: "ceo_daily_summary"');
+    expect(CHIEF_OF_STAFF_PROMPT).not.toMatch(
+      /You are the CEO|CEO Briefing|Email owner/i,
+    );
+    expect(REPORTING_PROMPT).toContain("DearMe's Reporting specialist");
+    expect(REPORTING_PROMPT).toContain("Dear-me letter");
+    expect(REPORTING_PROMPT).toContain('type: "ceo_cycle_summary"');
+    expect(REPORTING_PROMPT).not.toMatch(
+      /You are the CEO|board update|CEO Briefing|Email owner/i,
     );
 
     // Content Producer: private review packet + Voice Gate + no public action.

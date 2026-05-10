@@ -126,7 +126,51 @@ while absorbing DM-044/DM-045. The current service already owns Voice & Memory
 projection, but review feedback traces now need to stay on the same
 customer-safe path as output titles, summaries, evidence, and review handoffs.
 
+Coordinator note: DM-183AE removes customer-facing CEO, board-update, and
+owner-email wording from the Chief of Staff and Reporting prompts while keeping
+proxy tool names and `ceo_*` report type identifiers stable. Treat those
+identifiers as internal compatibility surfaces until a dedicated contract
+migration exists.
+
 ## Recently Completed
+
+### DM-183AE: User-Facing Leadership Prompts
+
+Goal: make DearMe's leadership/reporting workers sound like a private Chief
+and Dear-me letter loop instead of a CEO/board-update product, without changing
+the runtime contract they rely on.
+
+Donor grounding:
+
+- Symphony: sidecar prompt audit identified the lowest-risk copy layer and the
+  generated skill mirrors that had to be regenerated.
+- Polsia: preserve the daily monitor/review/queue/report rhythm and simple
+  progress-letter ritual.
+- Naive/Paperclip/OpenClaw: keep tool names, report type identifiers, and the
+  generated skill pipeline stable while the product language improves.
+
+Completed:
+
+- Reframed Chief of Staff as DearMe's private Chief writing the Dear-me letter,
+  while keeping queue-management, reporting order, and `ceo_daily_summary`
+  compatibility intact.
+- Reframed Reporting as a DearMe letter sender rather than CEO board update,
+  while keeping the three required tool calls and `ceo_cycle_summary` intact.
+- Regenerated the OpenClaw skill wrappers from source and added prompt
+  regression assertions for the new product language plus the preserved report
+  type contracts.
+
+Verification:
+
+- `pnpm --filter @paperclipai/dearme-openclaw run generate-skills` passed.
+- `pnpm --filter @paperclipai/dearme-agent-prompts test` passed.
+- `pnpm --filter @paperclipai/dearme-openclaw test` passed.
+- `pnpm --filter @paperclipai/dearme-agent-prompts typecheck` passed.
+- `pnpm --filter @paperclipai/dearme-openclaw typecheck` passed.
+- `rg -n "You are the CEO|CEO Briefing|Email owner|board update" packages/plugins/dearme-agent-prompts/src/prompts/chief-of-staff.ts packages/plugins/dearme-agent-prompts/src/prompts/reporting.ts packages/plugins/dearme-openclaw/generated/skills/dearme-chief-of-staff/SKILL.md packages/plugins/dearme-openclaw/generated/skills/dearme-reporting/SKILL.md`
+  returned no matches.
+- `git diff --check -- packages/plugins/dearme-agent-prompts/src/prompts/chief-of-staff.ts packages/plugins/dearme-agent-prompts/src/prompts/reporting.ts packages/plugins/dearme-agent-prompts/src/index.test.ts packages/plugins/dearme-openclaw/generated/skills/dearme-chief-of-staff/SKILL.md packages/plugins/dearme-openclaw/generated/skills/dearme-reporting/SKILL.md docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
 
 ### DM-183AD: Workbench Projection Trace Coverage
 
