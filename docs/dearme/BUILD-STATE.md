@@ -15,6 +15,9 @@ Product/runtime slice:
 - Added a regeneration brief to the hidden heartbeat task context when a
   DearMe brand-blueprint output has a latest `request_changes`, `regenerate`,
   or `not_useful` decision.
+- Reused the output-review loop's stale-feedback and retry-cap semantics so
+  heartbeat does not keep replaying old critique after a newer private draft
+  exists or after the review path should pause for sharper direction.
 - The next worker sees the user feedback, previous private draft context, and a
   product-safe next-draft direction before drafting again; approvals do not
   create regeneration briefs.
@@ -32,7 +35,7 @@ Verification:
 - `pnpm run dearme:worktrees -- --summary-only --skip-dirty` passed and
   reported `reviewed_absorbed: 24`, `not_in_current: 89`, and `dirty: 0`.
 - `pnpm exec vitest run server/src/__tests__/dearme-output-regeneration-brief.test.ts server/src/__tests__/heartbeat-task-markdown.test.ts --maxWorkers=1`
-  passed with 4 tests.
+  passed.
 - `pnpm --filter @paperclipai/server typecheck` passed.
 - `git diff --check -- server/src/services/dearme-output-handoff.ts server/src/services/heartbeat.ts server/src/__tests__/dearme-output-regeneration-brief.test.ts server/src/__tests__/heartbeat-task-markdown.test.ts docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`
   passed.

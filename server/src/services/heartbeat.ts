@@ -132,9 +132,9 @@ import { recoveryService } from "./recovery/service.js";
 import { productivityReviewService } from "./productivity-review.js";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "./dearme-brand-blueprint-apply.js";
 import {
-  buildDearMeOutputRegenerationBrief,
+  buildDearMeOutputRegenerationBriefForReviewLoop,
   dearMeOutputArtifactTitleForOriginFingerprint,
-  parseDearMeOutputReviewDecisionComment,
+  parseDearMeOutputReviewDecisionComments,
 } from "./dearme-output-handoff.js";
 import { withAgentStartLock } from "./agent-start-lock.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
@@ -2000,6 +2000,14 @@ type PaperclipTaskIssueDocument = {
   latestRevisionNumber?: number | null;
 };
 
+function latestDate(values: Array<Date | null | undefined>) {
+  const times = values
+    .map((value) => value?.getTime() ?? null)
+    .filter((time): time is number => time !== null && Number.isFinite(time));
+  if (times.length === 0) return null;
+  return new Date(Math.max(...times));
+}
+
 async function buildDearMeIssueRegenerationBrief(input: {
   db: Db;
   companyId: string;
@@ -2012,7 +2020,7 @@ async function buildDearMeIssueRegenerationBrief(input: {
   const issue = input.issue;
   if (!issue || issue.originKind !== DEARME_BRAND_BLUEPRINT_ORIGIN_KIND) return null;
 
-  const latestDecision = await input.db
+  const reviewDecisions = await input.db
     .select({
       body: issueComments.body,
       createdAt: issueComments.createdAt,
@@ -2024,12 +2032,9 @@ async function buildDearMeIssueRegenerationBrief(input: {
     ))
     .orderBy(desc(issueComments.createdAt))
     .limit(12)
-    .then((rows) =>
-      rows
-        .map((row) => parseDearMeOutputReviewDecisionComment(row))
-        .find((decision) => decision !== null) ?? null,
-    );
+    .then((rows) => parseDearMeOutputReviewDecisionComments(rows));
 
+  const latestDecision = reviewDecisions[0] ?? null;
   if (!latestDecision || latestDecision.action === "approve") return null;
 
   const [latestDocument, latestWorkProduct] = await Promise.all([
@@ -2065,9 +2070,10 @@ async function buildDearMeIssueRegenerationBrief(input: {
       .then((rows) => rows[0] ?? null),
   ]);
 
-  return buildDearMeOutputRegenerationBrief({
-    decision: latestDecision,
+  return buildDearMeOutputRegenerationBriefForReviewLoop({
+    decisions: reviewDecisions,
     artifactTitle: dearMeOutputArtifactTitleForOriginFingerprint(issue.originFingerprint),
+    latestWorkUpdatedAt: latestDate([latestDocument?.updatedAt, latestWorkProduct?.updatedAt]),
     previousDraft: {
       title: latestDocument?.title ?? latestWorkProduct?.title ?? null,
       summary: latestWorkProduct?.summary ?? null,

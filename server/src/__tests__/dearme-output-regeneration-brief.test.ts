@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildDearMeOutputRegenerationBriefForReviewLoop,
   buildDearMeOutputRegenerationBrief,
   dearMeOutputArtifactTitleForOriginFingerprint,
   parseDearMeOutputReviewDecisionComment,
+  parseDearMeOutputReviewDecisionComments,
 } from "../services/dearme-output-handoff.js";
 
 describe("DearMe output regeneration brief", () => {
@@ -81,6 +83,51 @@ describe("DearMe output regeneration brief", () => {
     for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw", "symphony", "runtime"]) {
       expect(serialized).not.toContain(hiddenTerm);
     }
+  });
+
+  it("does not reuse stale critique after newer private work exists", () => {
+    const decisions = parseDearMeOutputReviewDecisionComments([{
+      body: [
+        "DearMe decision: requested changes before this represents me.",
+        "Make the example more concrete.",
+      ].join("\n\n"),
+      createdAt: new Date("2026-05-10T13:00:00.000Z"),
+    }]);
+
+    expect(buildDearMeOutputRegenerationBriefForReviewLoop({
+      decisions,
+      artifactTitle: "Content drafts",
+      latestWorkUpdatedAt: new Date("2026-05-10T13:05:00.000Z"),
+      previousDraft: {
+        title: "Newer private draft",
+        summary: "The critique has already been applied.",
+      },
+    })).toBeNull();
+  });
+
+  it("stops injecting regeneration context when the retry cap is reached", () => {
+    const decisions = parseDearMeOutputReviewDecisionComments([
+      {
+        body: "DearMe decision: regenerate this prepared work before review.",
+        createdAt: new Date("2026-05-10T13:02:00.000Z"),
+      },
+      {
+        body: "DearMe decision: requested changes before this represents me.",
+        createdAt: new Date("2026-05-10T13:01:00.000Z"),
+      },
+      {
+        body: "DearMe decision: marked this prepared work as not useful.",
+        createdAt: new Date("2026-05-10T13:00:00.000Z"),
+      },
+    ]);
+
+    expect(buildDearMeOutputRegenerationBriefForReviewLoop({
+      decisions,
+      artifactTitle: "Content drafts",
+      previousDraft: {
+        title: "Third private attempt",
+      },
+    })).toBeNull();
   });
 
   it("uses stronger direction when prior work was not useful", () => {

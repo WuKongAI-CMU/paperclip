@@ -81,7 +81,7 @@ type OutputDetailText = {
 
 type DearMeOutputSourceEvidence = DearMeOutputItem["sourceEvidence"][number];
 
-type DearMeReviewComment = {
+export type DearMeReviewComment = {
   body: string;
   createdAt: Date;
 };
@@ -94,6 +94,12 @@ export type DearMeParsedReviewDecision = {
 
 export type DearMeOutputReviewFeedback = DearMeParsedReviewDecision & {
   action: Exclude<DearMeOutputReviewAction, "approve">;
+};
+
+type DearMeOutputPreviousDraftContext = {
+  title?: string | null;
+  summary?: string | null;
+  bodyPreview?: string | null;
 };
 
 const BRAND_OS_FINGERPRINT = "brand-os-review";
@@ -358,11 +364,15 @@ export function parseDearMeOutputReviewDecisionComment(input: {
   };
 }
 
-function parseReviewDecisions(reviewComments: DearMeReviewComment[]) {
+export function parseDearMeOutputReviewDecisionComments(reviewComments: DearMeReviewComment[]) {
   return reviewComments
     .map((comment) => parseDearMeOutputReviewDecisionComment(comment))
     .filter((decision): decision is DearMeParsedReviewDecision => Boolean(decision))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+function parseReviewDecisions(reviewComments: DearMeReviewComment[]) {
+  return parseDearMeOutputReviewDecisionComments(reviewComments);
 }
 
 function latestReviewFeedback(decisions: DearMeParsedReviewDecision[]): DearMeOutputReviewFeedback | null {
@@ -389,6 +399,20 @@ function hasFreshWorkAfterFeedback(input: {
   const feedbackAt = input.reviewFeedback.createdAt.getTime();
   return input.documents.some((document) => Date.parse(document.updatedAt) > feedbackAt) ||
     (input.latestUpdate ? Date.parse(input.latestUpdate.createdAt) > feedbackAt : false);
+}
+
+function updatedAtTime(value: Date | string | null | undefined) {
+  if (!value) return null;
+  const time = value instanceof Date ? value.getTime() : Date.parse(value);
+  return Number.isFinite(time) ? time : null;
+}
+
+function hasUpdatedWorkAfterFeedback(input: {
+  reviewFeedback: DearMeOutputReviewFeedback;
+  latestWorkUpdatedAt?: Date | string | null;
+}) {
+  const latestWorkUpdatedAt = updatedAtTime(input.latestWorkUpdatedAt);
+  return latestWorkUpdatedAt !== null && latestWorkUpdatedAt > input.reviewFeedback.createdAt.getTime();
 }
 
 function detailTextFromDetails(
@@ -460,11 +484,7 @@ function regenerationNextDraftDirection(decision: DearMeOutputReviewFeedback) {
 export function buildDearMeOutputRegenerationBrief(input: {
   decision: DearMeParsedReviewDecision;
   artifactTitle: string;
-  previousDraft?: {
-    title?: string | null;
-    summary?: string | null;
-    bodyPreview?: string | null;
-  } | null;
+  previousDraft?: DearMeOutputPreviousDraftContext | null;
 }) {
   if (input.decision.action === "approve") return null;
 
@@ -498,6 +518,46 @@ export function buildDearMeOutputRegenerationBrief(input: {
   );
 
   return lines.join("\n");
+}
+
+export function selectDearMeOutputRegenerationDecision(input: {
+  decisions: DearMeParsedReviewDecision[];
+  latestWorkUpdatedAt?: Date | string | null;
+}) {
+  const decisions = [...input.decisions].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  const latestDecision = decisions[0] ?? null;
+  if (!latestDecision || latestDecision.action === "approve") return null;
+
+  const reviewFeedback = latestDecision as DearMeOutputReviewFeedback;
+  if (hasUpdatedWorkAfterFeedback({
+    reviewFeedback,
+    latestWorkUpdatedAt: input.latestWorkUpdatedAt,
+  })) {
+    return null;
+  }
+
+  const attemptCount = decisions.filter(isReviewFeedbackDecision).length;
+  if (attemptCount >= DEARME_OUTPUT_REVIEW_LOOP_MAX_ATTEMPTS) return null;
+
+  return reviewFeedback;
+}
+
+export function buildDearMeOutputRegenerationBriefForReviewLoop(input: {
+  decisions: DearMeParsedReviewDecision[];
+  artifactTitle: string;
+  previousDraft?: DearMeOutputPreviousDraftContext | null;
+  latestWorkUpdatedAt?: Date | string | null;
+}) {
+  const decision = selectDearMeOutputRegenerationDecision({
+    decisions: input.decisions,
+    latestWorkUpdatedAt: input.latestWorkUpdatedAt,
+  });
+  if (!decision) return null;
+  return buildDearMeOutputRegenerationBrief({
+    decision,
+    artifactTitle: input.artifactTitle,
+    previousDraft: input.previousDraft,
+  });
 }
 
 function buildReviewReceipts(decisions: DearMeParsedReviewDecision[]) {
