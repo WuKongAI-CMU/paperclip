@@ -132,9 +132,12 @@ Operating rules:
    not search old worktrees unless the issue and summary identify a directly
    relevant residual branch.
 4. First-turn execution guard: after the bootstrap and required docs, inspect
-   the current product paths and run the narrow shell smoke or focused test
-   before any broad synthesis. If those checks show no code gap, report the
-   evidence and stop instead of continuing analysis.
+   only the issue-named product paths and run the narrow shell smoke or focused
+   test before any broad synthesis. End turn 1 with one of three outcomes:
+   committed patch, explicit no-code evidence, or blocker/handoff artifact. If
+   the work starts context compaction, or if no diff exists after the narrow
+   inspection and focused check, run the terminal handoff command and stop
+   instead of continuing analysis.
 5. Git readiness guard: the bootstrap runs
    `pnpm dearme:symphony-preflight -- .` before implementation. If it fails,
    stop with the failing command and workspace path instead of continuing to a
