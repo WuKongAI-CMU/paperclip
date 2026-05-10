@@ -69,6 +69,10 @@ import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
 import {
+  buildDearMeSitePreviewPath,
+  writeDearMeFirstCyclePreview,
+} from "../lib/dearme-site-preview";
+import {
   DEFAULT_DEARME_BRAND_BLUEPRINT_FORM,
   buildDearMeBrandBlueprintApplyRequest,
   buildDearMeBrandBlueprintSeed,
@@ -2053,6 +2057,7 @@ function FirstCyclePanel({
   preview,
   isPending,
   canStartPrivateWork,
+  onOpenPreview,
   onIntentChange,
   onPreview,
 }: {
@@ -2060,6 +2065,7 @@ function FirstCyclePanel({
   preview: DearMeFirstCyclePreviewResponse | null;
   isPending: boolean;
   canStartPrivateWork: boolean;
+  onOpenPreview: (handle: string) => void;
   onIntentChange: (value: string) => void;
   onPreview: () => void;
 }) {
@@ -2113,6 +2119,7 @@ function FirstCyclePanel({
       <FirstCycleProofPackage
         preview={preview ?? SAMPLE_FIRST_CYCLE_PREVIEW}
         isSample={!preview}
+        onOpenPreview={onOpenPreview}
       />
     </DearMePanel>
   );
@@ -2170,9 +2177,11 @@ function FirstCyclePayoffStrip({
 function FirstCycleProofPackage({
   preview,
   isSample,
+  onOpenPreview,
 }: {
   preview: DearMeFirstCyclePreviewResponse;
   isSample: boolean;
+  onOpenPreview: (handle: string) => void;
 }) {
   return (
     <div className="mt-5 space-y-4" aria-label={isSample ? "Sample first-cycle proof package" : "First-cycle proof package"}>
@@ -2327,6 +2336,18 @@ function FirstCycleProofPackage({
           title={preview.portfolioProofCard.placement}
           description={preview.portfolioProofCard.proposedCopy}
           badge={<FileText className="h-4 w-4 text-muted-foreground" />}
+          action={
+            !isSample ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onOpenPreview(preview.sitePreview.handle)}
+              >
+                Open private preview
+              </Button>
+            ) : null
+          }
         >
           <div className="space-y-2">
             <Badge variant="outline" className="h-auto max-w-full justify-start whitespace-normal text-left leading-snug">
@@ -6713,6 +6734,7 @@ export function DearMeOnboarding() {
       setPreviewResult(null);
       setPreviewSignature(null);
       setActionError(null);
+      writeDearMeFirstCyclePreview(result);
     },
     onError: (err) => {
       setActionError(
@@ -6936,6 +6958,10 @@ export function DearMeOnboarding() {
     navigate(buildDearMeDecisionRoute({ approvalId }));
   }
 
+  function handleOpenFirstCyclePreview(handle: string) {
+    navigate(buildDearMeSitePreviewPath(handle));
+  }
+
   function handleReviewApproval(
     approvalId: string,
     action: DearMeApprovalReviewAction,
@@ -7068,6 +7094,7 @@ export function DearMeOnboarding() {
         preview={firstCyclePreview}
         isPending={firstCycleMutation.isPending}
         canStartPrivateWork={canStartPrivateWork}
+        onOpenPreview={handleOpenFirstCyclePreview}
         onIntentChange={(value) => {
           setActionError(null);
           setFirstCycleIntent(value);

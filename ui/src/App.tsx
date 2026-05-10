@@ -16,6 +16,7 @@ import { Workspaces } from "./pages/Workspaces";
 import { Issues } from "./pages/Issues";
 import { IssueDetail } from "./pages/IssueDetail";
 import { IssueChatLongThreadPerf } from "./pages/IssueChatLongThreadPerf";
+import { DearMeSitePreview } from "./pages/DearMeSitePreview";
 import { Routines } from "./pages/Routines";
 import { RoutineDetail } from "./pages/RoutineDetail";
 import { UserProfile } from "./pages/UserProfile";
@@ -64,6 +65,7 @@ function boardRoutes() {
       <Route path="dashboard" element={<Dashboard />} />
       <Route path="dashboard/live" element={<DashboardLive />} />
       <Route path="dearme" element={<DearMeOnboarding />} />
+      <Route path="dearme/site-preview/:handle" element={<DearMeSitePreview />} />
       <Route path="onboarding" element={<OnboardingRoutePage />} />
       <Route path="companies" element={<Companies />} />
       <Route path="company/settings" element={<CompanySettings />} />
@@ -284,6 +286,7 @@ export function App() {
           </Route>
           <Route path="companies" element={<UnprefixedBoardRedirect />} />
           <Route path="dearme" element={<UnprefixedBoardRedirect />} />
+          <Route path="dearme/site-preview/:handle" element={<UnprefixedBoardRedirect />} />
           <Route path="issues" element={<UnprefixedBoardRedirect />} />
           <Route path="issues/:issueId" element={<UnprefixedBoardRedirect />} />
           <Route path="routines" element={<UnprefixedBoardRedirect />} />

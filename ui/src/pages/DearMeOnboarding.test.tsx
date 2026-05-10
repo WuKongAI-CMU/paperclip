@@ -19,6 +19,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DearMeOnboarding } from "./DearMeOnboarding";
 import { queryKeys } from "../lib/queryKeys";
+import { readDearMeFirstCyclePreview } from "../lib/dearme-site-preview";
 
 const mockDearmeApi = vi.hoisted(() => ({
   getWorkbench: vi.fn(),
@@ -1623,6 +1624,7 @@ describe("DearMeOnboarding", () => {
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
+    window.sessionStorage.clear();
     mockCompanyContext.selectedCompanyId = "company-1";
     mockCompanyContext.selectedCompany = { id: "company-1", issuePrefix: "PET", name: "Peter Studio" };
     FakeDearMeEventSource.instances = [];
@@ -1795,6 +1797,7 @@ describe("DearMeOnboarding", () => {
   });
 
   afterEach(() => {
+    window.sessionStorage.clear();
     container.remove();
     document.body.innerHTML = "";
     vi.clearAllMocks();
@@ -3005,6 +3008,13 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("dearme.app/peter-studio");
     expect(container.textContent).toContain("Ready for approval");
     expect(container.textContent).not.toContain("Sample team package");
+    expect(readDearMeFirstCyclePreview("company-1", "peter-studio")).not.toBeNull();
+
+    await act(async () => {
+      buttonByText(container, "Open private preview")?.click();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith("/dearme/site-preview/peter-studio");
 
     await act(async () => {
       root.unmount();

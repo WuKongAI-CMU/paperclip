@@ -76,6 +76,24 @@ interface DearMeWorkbenchResponse {
   recentProgress: DearMeWorkbenchProgressItem[];
 }
 
+interface DearMeFirstCyclePreviewResponse {
+  companyId: string;
+  sitePreview: {
+    handle: string;
+    route: string;
+  };
+  portfolioProofCard: {
+    placement: string;
+    proofSource: string;
+    proposedCopy: string;
+  };
+  approvalBoundary: {
+    label: string;
+    summary: string;
+    blockedActions: string[];
+  };
+}
+
 function expectNoHiddenTerms(value: string) {
   const normalized = value.toLowerCase();
   for (const term of HIDDEN_TERMS) {
@@ -157,6 +175,31 @@ test.describe("DearMe private handoff browser smoke", () => {
         },
       );
       expect(firstCycleRes.ok()).toBe(true);
+      const firstCyclePreview = (await firstCycleRes.json()) as DearMeFirstCyclePreviewResponse;
+
+      await page.addInitScript(
+        ({ storageKey, preview }) => {
+          window.sessionStorage.setItem(storageKey, JSON.stringify(preview));
+        },
+        {
+          storageKey: `dearme:first-cycle-preview:${firstCyclePreview.companyId}:${firstCyclePreview.sitePreview.handle}`,
+          preview: firstCyclePreview,
+        },
+      );
+
+      await page.goto(
+        `/${companyPrefix}/dearme/site-preview/${encodeURIComponent(firstCyclePreview.sitePreview.handle)}`,
+      );
+      await expect(page.getByText(`Preview for ${firstCyclePreview.sitePreview.handle}`)).toBeVisible();
+      await expect(page.getByText(`dearme.app/${firstCyclePreview.sitePreview.handle}`)).toBeVisible();
+      await expect(page.getByText(`Source proof: ${firstCyclePreview.portfolioProofCard.proofSource}`)).toBeVisible();
+      await expect(page.getByText(firstCyclePreview.portfolioProofCard.proposedCopy)).toBeVisible();
+      await expect(page.getByText(firstCyclePreview.approvalBoundary.summary)).toBeVisible();
+      await expect(page.getByText("Private address")).toBeVisible();
+      await expect(page.getByText("Private preview path")).toHaveCount(0);
+      await expect(page.getByText(`/${companyPrefix}/dearme/site-preview`, { exact: false })).toHaveCount(0);
+      await expect(page.getByText("Route", { exact: true })).toHaveCount(0);
+      expectNoHiddenTerms((await page.locator("body").textContent()) ?? "");
 
       const outputs = await fetchDearMeOutputs(page.request, company.id);
       const preparedOutput = outputs.outputs.find(
