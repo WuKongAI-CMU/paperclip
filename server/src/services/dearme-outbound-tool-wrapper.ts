@@ -114,7 +114,13 @@ export type CallOutboundOutcome =
       externalUrl?: string;
     }
   | { kind: "pending"; approvalId: string; reason: string }
-  | { kind: "needs_oauth"; channel: string; reason: string }
+  | {
+      kind: "needs_oauth";
+      channel: string;
+      reason: string;
+      gate?: "connect_channel";
+      message?: string;
+    }
   | { kind: "rejected"; reason: string; gate: string }
   | { kind: "errored"; error: string };
 
@@ -207,10 +213,13 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
           channel: binding.channel as "x" | "linkedin" | "resend" | "ses" | "meta_ads",
         });
         if (!connection) {
+          const channelLabel = binding.channel === "x" ? "X" : binding.channel;
           return {
             kind: "needs_oauth",
             channel: binding.channel,
             reason: "no-active-channel-connection",
+            gate: "connect_channel",
+            message: `Connect ${channelLabel} before DearMe can continue this approved handoff.`,
           };
         }
       }

@@ -806,6 +806,7 @@ describe("DearMe brand blueprint contract", () => {
     expect(packet).toEqual(expect.objectContaining({
       title: "Content draft packet",
       summary: null,
+      voiceFingerprintId: null,
       createdByRunId: null,
     }));
     expect(packet.drafts[0]).toEqual(expect.objectContaining({

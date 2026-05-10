@@ -576,12 +576,14 @@ export const dearMeContentDraftPacketSchema = z.object({
   packetId: shortTextSchema,
   title: shortTextSchema.optional().default("Content draft packet"),
   summary: mediumTextSchema.nullable().optional(),
+  voiceFingerprintId: shortTextSchema.nullable().optional(),
   cycleEvidence: z.array(dearMeContentDraftPacketEvidenceSchema).min(1).max(12),
   drafts: z.array(dearMeContentDraftPacketDraftSchema).min(1).max(12),
   createdByRunId: z.string().uuid().optional().nullable(),
 }).strict().transform((value) => ({
   ...value,
   summary: value.summary ?? null,
+  voiceFingerprintId: value.voiceFingerprintId ?? null,
   createdByRunId: value.createdByRunId ?? null,
 }));
 

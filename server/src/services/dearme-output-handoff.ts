@@ -916,6 +916,69 @@ function strictestVoiceGate(packet: DearMeContentDraftPacket) {
     )[0]!;
 }
 
+type DearMeContentDraftLaunchHandoff = {
+  toolName: "post_x";
+  channel: "x";
+  gate: "publish";
+  riskGate: "publish_social";
+  voiceGateRequired: true;
+  voiceGateArtifactKind: "x-tweet";
+  voiceGateText: string;
+  voiceFingerprintId: string;
+  payload: { text: string };
+  publishGate: {
+    gate: "publish";
+    riskGate: "publish_social";
+    requiresApproval: true;
+    requiresActiveConnection: true;
+    connectChannelState: "connect_channel_required";
+    externalExecutionStatus: "not_run_yet";
+  };
+  sourceDraftId: string | null;
+  sourceDraftTitle: string;
+  launchBoundary: string;
+  voiceGate: DearMeVoiceGateResult;
+};
+
+function buildContentDraftLaunchHandoff(
+  packet: DearMeContentDraftPacket,
+): DearMeContentDraftLaunchHandoff | null {
+  if (!packet.voiceFingerprintId) return null;
+  const draft = packet.drafts.find((candidate) => candidate.channel === "x");
+  if (!draft) return null;
+
+  return {
+    toolName: "post_x",
+    channel: "x",
+    gate: "publish",
+    riskGate: "publish_social",
+    voiceGateRequired: true,
+    voiceGateArtifactKind: "x-tweet",
+    voiceGateText: draft.body,
+    voiceFingerprintId: packet.voiceFingerprintId,
+    payload: { text: draft.body },
+    publishGate: {
+      gate: "publish",
+      riskGate: "publish_social",
+      requiresApproval: true,
+      requiresActiveConnection: true,
+      connectChannelState: "connect_channel_required",
+      externalExecutionStatus: "not_run_yet",
+    },
+    sourceDraftId: draft.id ?? null,
+    sourceDraftTitle: draft.title,
+    launchBoundary: draft.launchBoundary,
+    voiceGate: draft.voiceGate,
+  };
+}
+
+function launchHandoffFromMetadata(metadata: unknown): Record<string, unknown> | null {
+  if (!isRecord(metadata)) return null;
+  const dearmeMetadata = isRecord(metadata.dearme) ? metadata.dearme : null;
+  const candidate = dearmeMetadata?.launchHandoff ?? metadata.launchHandoff;
+  return isRecord(candidate) ? candidate : null;
+}
+
 function contentDraftPacketExternalId(packet: DearMeContentDraftPacket) {
   return `content-drafts:${packet.packetId}`;
 }
@@ -1402,6 +1465,7 @@ export function dearmeOutputHandoffService(db: Db) {
     issue: { assigneeAgentId: string | null };
     actor: DearMeOutputReviewActor;
     decisionNote: string | null | undefined;
+    launchHandoff: Record<string, unknown> | null;
     now: Date;
   }) {
     const copy = NEXT_MOVE_APPROVAL_COPY[input.output.kind];
@@ -1447,6 +1511,7 @@ export function dearmeOutputHandoffService(db: Db) {
           preparedTitle: input.output.title,
           preparedSummary: input.output.summary,
           reviewNote: input.decisionNote?.trim() || null,
+          ...(input.launchHandoff ? { launchHandoff: input.launchHandoff } : {}),
         },
         decisionNote: null,
         decidedByUserId: null,
@@ -1476,6 +1541,29 @@ export function dearmeOutputHandoffService(db: Db) {
       .onConflictDoNothing();
 
     return approval;
+  }
+
+  async function latestLaunchHandoffForOutput(input: {
+    companyId: string;
+    issueId: string;
+  }) {
+    const rows = await db
+      .select({ metadata: issueWorkProducts.metadata })
+      .from(issueWorkProducts)
+      .where(and(
+        eq(issueWorkProducts.companyId, input.companyId),
+        eq(issueWorkProducts.issueId, input.issueId),
+        eq(issueWorkProducts.provider, CONTENT_DRAFT_WORK_PRODUCT_PROVIDER),
+      ))
+      .orderBy(desc(issueWorkProducts.updatedAt))
+      .limit(10);
+
+    for (const row of rows) {
+      const handoff = launchHandoffFromMetadata(row.metadata);
+      if (handoff) return handoff;
+    }
+
+    return null;
   }
 
   async function latestIssueDocumentRevisionId(issueId: string, key: string) {
@@ -1794,6 +1882,7 @@ export function dearmeOutputHandoffService(db: Db) {
 
       const now = new Date();
       const voiceGate = strictestVoiceGate(packet);
+      const launchHandoff = buildContentDraftLaunchHandoff(packet);
       const externalId = contentDraftPacketExternalId(packet);
       const summary = formatContentDraftPacket(packet);
       const metadata = {
@@ -1815,6 +1904,7 @@ export function dearmeOutputHandoffService(db: Db) {
             voiceGate: draft.voiceGate,
           })),
           voiceGate,
+          ...(launchHandoff ? { launchHandoff } : {}),
         },
       };
 
@@ -2075,12 +2165,16 @@ export function dearmeOutputHandoffService(db: Db) {
         ));
 
       if (request.action === "approve") {
+        const launchHandoff = output.kind === "content_drafts"
+          ? await latestLaunchHandoffForOutput({ companyId, issueId })
+          : null;
         await ensureNextMoveApproval({
           companyId,
           output,
           issue,
           actor,
           decisionNote: request.decisionNote,
+          launchHandoff,
           now,
         });
       }

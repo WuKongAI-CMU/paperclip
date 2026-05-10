@@ -150,7 +150,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       brand: {
         displayName: "Peter",
         positioning: "Practical AI operator for local-first products.",
-        preferredChannels: ["linkedin"],
+        preferredChannels: ["x"],
         goals: ["Build visible proof."],
         audiences: ["founders evaluating local-first workflows"],
         offers: [],
@@ -166,7 +166,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       },
       artifact: {
         kind: "content_draft",
-        channel: "linkedin",
+        channel: "x",
         title: "Proof-backed post",
         text: "A short proof-backed post about turning private work into public receipts.",
         proofUsed: "shipped a local-first product launch",
@@ -180,6 +180,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
         packetId: "cycle-2026-05-07-content",
         title: "Proof-backed content drafts",
         summary: "One private post is ready for review from this cycle's proof.",
+        voiceFingerprintId: "vf_content_packet",
         cycleEvidence: [
           {
             label: "Proof",
@@ -196,7 +197,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
           {
             id: "proof-post",
             title: "Proof-backed post",
-            channel: "linkedin",
+            channel: "x",
             audience: "Founders evaluating local-first workflows",
             hook: "Your personal brand should show proof while you keep building.",
             body: "A short proof-backed post about turning private work into public receipts.",
@@ -242,6 +243,22 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       dearme: expect.objectContaining({
         outputKind: "content_drafts",
         draftCount: 1,
+        launchHandoff: expect.objectContaining({
+          toolName: "post_x",
+          channel: "x",
+          gate: "publish",
+          riskGate: "publish_social",
+          voiceGateArtifactKind: "x-tweet",
+          voiceGateText: "A short proof-backed post about turning private work into public receipts.",
+          voiceFingerprintId: "vf_content_packet",
+          payload: {
+            text: "A short proof-backed post about turning private work into public receipts.",
+          },
+          publishGate: expect.objectContaining({
+            connectChannelState: "connect_channel_required",
+            externalExecutionStatus: "not_run_yet",
+          }),
+        }),
         cycleEvidence: expect.arrayContaining([
           expect.objectContaining({ label: "Proof" }),
         ]),
@@ -257,7 +274,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       voiceGate: expect.objectContaining({ score: 100 }),
     }));
     expect(contentOutput.details).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: "channel", value: "linkedin" }),
+      expect.objectContaining({ kind: "channel", value: "x" }),
       expect.objectContaining({ kind: "draft_body", value: expect.stringContaining("public receipts") }),
       expect.objectContaining({ kind: "proof_used", value: "shipped a local first product launch" }),
     ]));
@@ -1065,17 +1082,45 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       updatedAt: new Date("2026-05-07T16:01:00.000Z"),
     });
     const workProductId = randomUUID();
+    const launchHandoff = {
+      toolName: "post_x",
+      channel: "x",
+      gate: "publish",
+      riskGate: "publish_social",
+      voiceGateRequired: true,
+      voiceGateArtifactKind: "x-tweet",
+      voiceGateText: "Three proof-backed starter posts.",
+      voiceFingerprintId: "vf_content_packet",
+      payload: { text: "Three proof-backed starter posts." },
+      publishGate: {
+        gate: "publish",
+        riskGate: "publish_social",
+        requiresApproval: true,
+        requiresActiveConnection: true,
+        connectChannelState: "connect_channel_required",
+        externalExecutionStatus: "not_run_yet",
+      },
+      sourceDraftId: "proof-post",
+      sourceDraftTitle: "Starter posts",
+      launchBoundary: "publish social posts",
+    };
     await db.insert(issueWorkProducts).values({
       id: workProductId,
       companyId,
       issueId,
       type: "draft",
-      provider: "codex-local",
+      provider: "dearme",
       title: "Content draft batch",
       url: null,
       status: "ready",
       reviewState: "pending",
       summary: "Three private posts prepared for review.",
+      metadata: {
+        dearme: {
+          outputKind: "content_drafts",
+          launchHandoff,
+        },
+      },
       updatedAt: new Date("2026-05-07T16:02:00.000Z"),
     });
 
@@ -1143,6 +1188,18 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       issueIdentifier: "DME-8",
       preparedTitle: "Content drafts",
       reviewNote: "This sounds like me.",
+      launchHandoff: expect.objectContaining({
+        toolName: "post_x",
+        channel: "x",
+        gate: "publish",
+        voiceGateText: "Three proof-backed starter posts.",
+        voiceFingerprintId: "vf_content_packet",
+        payload: { text: "Three proof-backed starter posts." },
+        publishGate: expect.objectContaining({
+          connectChannelState: "connect_channel_required",
+          externalExecutionStatus: "not_run_yet",
+        }),
+      }),
     }));
 
     const linkedApprovals = await db

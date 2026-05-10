@@ -124,8 +124,8 @@ const baseInput = {
   issueId: "is_test",
   openclawRunId: "oc_run_1",
   agentId: "ag_test",
-  payload: { text: "Shipped DM-S07. Tri-substrate runtime online." },
-  voiceGateText: "Shipped DM-S07. Tri-substrate runtime online.",
+  payload: { text: "A private proof packet is ready for owner-approved publishing." },
+  voiceGateText: "A private proof packet is ready for owner-approved publishing.",
   voiceGateArtifactKind: "x-tweet" as const,
   voiceFingerprintId: "vf_test",
   estimatedUsd: 0,
@@ -134,7 +134,15 @@ const baseInput = {
 
 describe("dearMeOutboundToolWrapper.callOutbound", () => {
   it("delivers via channel dispatch on the happy path", async () => {
-    const { deps, emitted, scoreCalls, resolveCalls, workLoopCalls } = makeDeps();
+    const dispatch = vi.fn(async () => ({
+      kind: "delivered" as const,
+      externalId: "tweet_1",
+      externalUrl: "https://x.com/tester/status/tweet_1",
+      paid: false,
+    }));
+    const { deps, emitted, scoreCalls, resolveCalls, workLoopCalls } = makeDeps({
+      channelDispatch: { post_x: dispatch as ChannelDispatch },
+    });
     const wrapper = dearMeOutboundToolWrapper(deps);
     const result = await wrapper.callOutbound(baseInput);
     expect(result.kind).toBe("delivered");
@@ -142,10 +150,26 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
     expect(result.externalId).toBe("tweet_1");
     expect(result.voiceGateScore).toBe(92);
     expect(scoreCalls).toHaveLength(1);
+    expect(scoreCalls[0]).toMatchObject({
+      fingerprintId: "vf_test",
+      text: baseInput.voiceGateText,
+      kind: "x-tweet",
+      minScore: 70,
+    });
     expect(resolveCalls).toHaveLength(1);
     expect(resolveCalls[0]).toMatchObject({
       requestedByUserId: "u_test",
       requestedByAgentId: "ag_test",
+      toolName: "post_x",
+      channel: "x",
+      gate: "publish",
+      voiceGateScore: 92,
+      reason: "outbound-tool-call-voice-gated",
+    });
+    expect(dispatch).toHaveBeenCalledWith({
+      toolName: "post_x",
+      encryptedCredential: "enc:secret",
+      payload: baseInput.payload,
     });
     expect(workLoopCalls).toHaveLength(1);
     const transition = workLoopCalls[0] as { from: string; to: string };
@@ -156,9 +180,19 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
     const types = emitted.map((e) => e.type);
     expect(types).toContain("voice_gate_scored");
     expect(types).toContain("channel_action_fired");
+    expect(emitted.find((event) => event.type === "channel_action_fired")?.payload).toMatchObject({
+      toolName: "post_x",
+      channel: "x",
+      externalId: "tweet_1",
+    });
   });
 
   it("returns rejected and moves work loop gate->review on rejected approval", async () => {
+    const dispatch = vi.fn(async () => ({
+      kind: "delivered" as const,
+      externalId: "should_not_run",
+      paid: false,
+    }));
     const { deps, workLoopCalls } = makeDeps({
       approvalResolver: {
         resolve: async () => ({
@@ -167,10 +201,12 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
           approvalId: "ap_rej",
         }),
       },
+      channelDispatch: { post_x: dispatch as ChannelDispatch },
     });
     const wrapper = dearMeOutboundToolWrapper(deps);
     const result = await wrapper.callOutbound(baseInput);
     expect(result.kind).toBe("rejected");
+    expect(dispatch).not.toHaveBeenCalled();
     expect(workLoopCalls).toHaveLength(1);
     expect(workLoopCalls[0]).toMatchObject({ from: "gate", to: "review" });
   });
@@ -198,6 +234,11 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
   });
 
   it("returns needs_oauth when no active channel connection exists", async () => {
+    const dispatch = vi.fn(async () => ({
+      kind: "delivered" as const,
+      externalId: "should_not_run",
+      paid: false,
+    }));
     const { deps } = makeDeps({
       channelConnections: {
         getActive: async () => null,
@@ -207,12 +248,17 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
           throw new Error("not used");
         },
       },
+      channelDispatch: { post_x: dispatch as ChannelDispatch },
     });
     const wrapper = dearMeOutboundToolWrapper(deps);
     const result = await wrapper.callOutbound(baseInput);
     expect(result.kind).toBe("needs_oauth");
     if (result.kind !== "needs_oauth") return;
     expect(result.channel).toBe("x");
+    expect(result.reason).toBe("no-active-channel-connection");
+    expect(result.gate).toBe("connect_channel");
+    expect(result.message).toBe("Connect X before DearMe can continue this approved handoff.");
+    expect(dispatch).not.toHaveBeenCalled();
   });
 
   it("flips connection to needs_reauth when channel reports auth-error", async () => {
