@@ -16,20 +16,22 @@ decisions, paid-beta access, and weekly Dear me reports.
 
 For Paperclip-kernel work, the V1 implementation target is still defined in
 `doc/SPEC-implementation.md`. For DearMe product work, the current execution
-source of truth is `docs/dearme/README.md`.
+source of truth is `docs/dearme/README.md`; active multi-agent coordination
+runs through Symphony and `.symphony/WORKFLOW.md`.
 
 ## 2. Read This First
 
 For DearMe product or rebrand work, read in this order:
 
 1. `docs/dearme/README.md`
-2. `docs/dearme/INTEGRATED-ARCHITECTURE.md`
-3. `docs/dearme/WORKTREE-INTEGRATION-PLAN.md`
-4. `docs/dearme/PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`
-5. `docs/dearme/POLSIA-NAIVE-REUSE-PLAN.md`
-6. `docs/dearme/LINDY-ASSISTANT-REUSE-PLAN.md`
-7. `docs/dearme/REBRAND-AND-PROVENANCE.md`
-8. `docs/dearme/BUILD-STATE.md`
+2. `.symphony/WORKFLOW.md`
+3. `docs/dearme/INTEGRATED-ARCHITECTURE.md`
+4. `docs/dearme/WORKTREE-INTEGRATION-PLAN.md`
+5. `docs/dearme/PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`
+6. `docs/dearme/POLSIA-NAIVE-REUSE-PLAN.md`
+7. `docs/dearme/LINDY-ASSISTANT-REUSE-PLAN.md`
+8. `docs/dearme/REBRAND-AND-PROVENANCE.md`
+9. `docs/dearme/BUILD-STATE.md`
 
 For Paperclip-kernel work, read in this order:
 

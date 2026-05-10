@@ -294,7 +294,7 @@ function buildDearMeDecisionRoute(params: {
 }): string {
   const search = new URLSearchParams({ view: "decisions" });
   if (params.approvalId) search.set("approval", params.approvalId);
-  if (params.issueReference) search.set("issue", params.issueReference);
+  if (params.issueReference) search.set("work", params.issueReference);
   if (params.outputId) search.set("output", params.outputId);
   if (params.intent && params.intent !== "review") search.set("intent", params.intent);
   return `/dearme?${search.toString()}`;
@@ -478,7 +478,7 @@ function parseDearMeDecisionFocus(search: string): DearMeDecisionFocus | null {
 
   const focus = {
     approvalId: params.get("approval"),
-    issueReference: params.get("issue"),
+    issueReference: params.get("work") ?? params.get("issue"),
     outputId: params.get("output"),
     intent: parseDearMeReviewEntryIntent(params.get("intent")),
   };
@@ -1006,6 +1006,18 @@ const OUTPUT_KIND_LABELS: Record<DearMeOutputItem["kind"], string> = {
   opportunity_drafts: "Opportunity leads",
   portfolio_update: "Portfolio update",
   weekly_report: "Dear me report",
+};
+
+const OUTPUT_KIND_OWNER_ROLE: Record<
+  DearMeOutputItem["kind"],
+  DearMeWorkbenchWorkItem["ownerRole"]
+> = {
+  brand_os: "brand_strategist",
+  voice_profile: "voice_editor",
+  content_drafts: "content_producer",
+  opportunity_drafts: "opportunity_scout",
+  portfolio_update: "portfolio_builder",
+  weekly_report: "growth_analyst",
 };
 
 const OUTPUT_KIND_VALUE_LABELS: Record<DearMeOutputItem["kind"], string> = {
@@ -5641,6 +5653,12 @@ function PrivateWorkPanel({
                       : []),
                     {
                       label: OUTPUT_KIND_LABELS[output.kind],
+                      variant: "outline",
+                    },
+                  ]}
+                  chips={[
+                    {
+                      label: `Prepared by ${roleLabel(OUTPUT_KIND_OWNER_ROLE[output.kind])}`,
                       variant: "outline",
                     },
                   ]}

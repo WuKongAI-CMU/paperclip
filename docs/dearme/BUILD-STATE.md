@@ -2,6 +2,28 @@
 
 Date: 2026-05-10
 
+## DM-183F Customer-Safe Work Route and Team Attribution - 2026-05-10
+
+Implementation slice:
+
+- Replayed the still-useful product pieces from stale DM-031 and DM-032 worker
+  branches instead of merging their old histories wholesale.
+- DearMe-generated decision links now use `work=` for prepared-work focus, while
+  legacy `issue=` deep links continue to resolve for existing shared links.
+- Private work cards now show the customer-safe team role that prepared each
+  output, so Work Ready scans as a visible growth team rather than a generic
+  artifact list.
+
+Verification:
+
+- `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run` passed: 42
+  tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `rg -n "search\.set\(\"issue\"|view=decisions&issue=|/issues/|/approvals/|Paperclip|OpenClaw|Symphony|Codex|MCP|setup-payload|setup_payload|provider|adapter|workspace" ui/src/pages/DearMeOnboarding.tsx`
+  returned only the customer-safe internal projection helper, not rendered route
+  generation.
+- `git diff --check` passed.
+
 ## DM-183E Subject-Matched Worktree Triage - 2026-05-10
 
 Implementation slice:
@@ -16,7 +38,6 @@ Implementation slice:
   deltas.
 - Applied the same signal to real Symphony workspace repos so Linear worker
   lanes and local worker worktrees share one triage vocabulary.
-
 Verification:
 
 - `pnpm test:dearme-worktrees` passed: 11 tests.

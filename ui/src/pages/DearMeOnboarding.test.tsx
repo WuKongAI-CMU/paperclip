@@ -2832,7 +2832,7 @@ describe("DearMeOnboarding", () => {
       buttonByText(container, "Open private work")?.click();
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=decisions&issue=PET-22");
+    expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=decisions&work=PET-22");
     expect(container.textContent).not.toContain("/issues/");
 
     await act(async () => {
@@ -2937,7 +2937,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report",
+      "/dearme?view=decisions&work=PET-7&output=issue-1%3Aweekly_report",
     );
 
     await act(async () => {
@@ -2945,8 +2945,8 @@ describe("DearMeOnboarding", () => {
     });
   });
 
-  it("reviews a focused work-ready item without leaving the DearMe decision surface", async () => {
-    mockLocation.search = "?view=decisions&issue=PET-7";
+  it("reviews a focused work-ready item from the customer-safe work route", async () => {
+    mockLocation.search = "?view=decisions&work=PET-7";
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -3081,7 +3081,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report&intent=continue",
+      "/dearme?view=decisions&work=PET-7&output=issue-1%3Aweekly_report&intent=continue",
     );
 
     await act(async () => {
@@ -3112,7 +3112,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&issue=PET-8&output=issue-2%3Acontent_drafts",
+      "/dearme?view=decisions&work=PET-8&output=issue-2%3Acontent_drafts",
     );
 
     await act(async () => {
@@ -3332,7 +3332,7 @@ describe("DearMeOnboarding", () => {
       buttonByText(container, "Review posts")?.click();
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=decisions&issue=issue-2");
+    expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=decisions&work=issue-2");
 
     await act(async () => {
       root.unmount();
@@ -3757,7 +3757,7 @@ describe("DearMeOnboarding", () => {
     });
   });
 
-  it("shows generated private work and opens the underlying issue", async () => {
+  it("shows generated private work and opens the customer-safe work route", async () => {
     mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse());
     const root = createRoot(container);
     const queryClient = new QueryClient({
@@ -3781,6 +3781,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Review one public claim");
     expect(container.textContent).toContain("Sources behind this work");
     expect(container.textContent).toContain("Proof used");
+    expect(container.textContent).toContain("Prepared by Growth Analyst");
     expect(container.textContent).toContain("Ready for review");
     expect(
       container.querySelectorAll(
@@ -3800,7 +3801,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report",
+      "/dearme?view=decisions&work=PET-7&output=issue-1%3Aweekly_report",
     );
 
     await act(async () => {
@@ -3839,6 +3840,7 @@ describe("DearMeOnboarding", () => {
     expect(opportunitySurface.textContent).toContain("Opportunities ready / Launch calls");
     expect(opportunitySurface.textContent).toContain("Prepared opportunity drafts");
     expect(opportunitySurface.textContent).toContain("Warm collaboration lead");
+    expect(opportunitySurface.textContent).toContain("Prepared by Opportunity Scout");
     expect(opportunitySurface.textContent).toContain("Practical AI Builders podcast");
     expect(opportunitySurface.textContent).toContain("Outreach angle");
     expect(opportunitySurface.textContent).toContain("No outbound message sends until Peter approves");
@@ -3860,7 +3862,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&issue=PET-9&output=issue-3%3Aopportunity_drafts",
+      "/dearme?view=decisions&work=PET-9&output=issue-3%3Aopportunity_drafts",
     );
 
     await act(async () => {
@@ -3890,6 +3892,7 @@ describe("DearMeOnboarding", () => {
     expect(packetSurface.textContent).toContain("2 ready");
     expect(packetSurface.textContent).toContain("Private until approved");
     expect(packetSurface.textContent).toContain("Starter post draft prepared from the first proof pack");
+    expect(container.textContent).toContain("Prepared by Content Producer");
     expect(packetSurface.textContent).toContain("Report prepared from the same first proof pack");
     expect(packetSurface.textContent).toContain("Voice check");
     expect(packetSurface.textContent).toContain("Voice ");
@@ -3902,7 +3905,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&issue=PET-8&output=issue-2%3Acontent_drafts",
+      "/dearme?view=decisions&work=PET-8&output=issue-2%3Acontent_drafts",
     );
 
     await act(async () => {
