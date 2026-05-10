@@ -2,6 +2,45 @@
 
 Date: 2026-05-10
 
+## DM-141 Opportunity Workbench and Team Skill Rails - 2026-05-10
+
+Implementation slice:
+
+- Integrated the Symphony opportunity scouting slice in `04e0a87b`, adding
+  `?view=opportunities` as a focused opportunity command center on the existing
+  DearMe workbench instead of creating another runtime or outreach product.
+- Reused the current prepared-output review path for `opportunity_drafts`, so
+  opportunity scouts produce private launch-call packets and the customer still
+  approves before any outbound message or public action moves.
+- Hardened generated DearMe team skill wrappers in `7b59a30d`: frontmatter and
+  wrapper sections now use DearMe-facing capabilities, operating rails, and
+  execution language while raw tool, package, runtime, and OpenClaw wrapper
+  terms stay backstage.
+
+Verification:
+
+- `pnpm --filter @paperclipai/dearme-agent-prompts test` passed: 26 tests.
+- `pnpm --filter @paperclipai/dearme-agent-prompts typecheck` passed.
+- `pnpm --filter @paperclipai/dearme-openclaw run generate-skills` regenerated
+  12 skills and 4 bootstrap files.
+- `pnpm --filter @paperclipai/dearme-openclaw test` passed: 18 tests.
+- `pnpm --filter @paperclipai/dearme-openclaw typecheck` passed.
+- `pnpm --filter @paperclipai/dearme-openclaw build` passed.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx
+  --maxWorkers=1` passed: 42 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- Shell Playwright opened
+  `http://127.0.0.1:3100/DEAAAAAAAAA/dearme?view=opportunities` in desktop and
+  390px mobile viewports, verified the opportunity command-center copy,
+  verified no hidden runtime/donor terms in the live DOM, and reported no
+  console messages, page errors, failed page requests, or horizontal overflow.
+  Screenshots:
+  `/tmp/dearme-ui-verification/opportunities-desktop.png` and
+  `/tmp/dearme-ui-verification/opportunities-mobile.png`.
+- `rg` against generated opportunity and browser skills found no stale
+  OpenClaw/proxy/runtime wrapper terms.
+- `git diff --check` passed for the generator, generated skills, and docs.
+
 ## DEA-7 Packet Aha Browser Proof - 2026-05-10
 
 Implementation slice:
