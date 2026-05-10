@@ -771,11 +771,18 @@ Acceptance:
 
 ## Coordination Rules
 
-- The coordinator thread updates this ledger and `BUILD-STATE.md`.
+- Symphony is the default cooperation spine for DearMe work from 2026-05-10
+  forward. Use Linear team `DEA` and `.symphony/WORKFLOW.md` for active worker
+  lanes.
+- The main DearMe checkout is the coordinator/integration surface. Use it to
+  update this ledger and `BUILD-STATE.md`, integrate reviewed worker slices,
+  and verify the product branch.
 - Worker tickets must cite donor paths used, adapted, and rejected.
-- Workers must start from the latest integrated DearMe branch/worktree, not a
-  stale DM-001/DM-103 brief.
-- Product-code workers should use isolated worktrees/branches.
+- Workers must start from the Symphony-selected source branch/workspace, not a
+  stale DM-001/DM-103 brief or an old local worker branch.
+- Product-code workers should use isolated Symphony workspaces. Create ad hoc
+  local worktrees only when Symphony is blocked or the task explicitly needs a
+  local integration lane.
 - Do not expose Paperclip, OpenClaw, OK Partner, provider, adapter, model,
   GraphQL, Relay, MCP, setup payload, control-plane, workflow-builder,
   issue/document/work-product, or agent-runtime terms in customer-facing

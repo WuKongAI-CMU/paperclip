@@ -2,6 +2,28 @@
 
 Date: 2026-05-10
 
+## DM-183G Symphony Cooperation Spine - 2026-05-10
+
+Implementation slice:
+
+- Codified Symphony as the default DearMe cooperation spine now that the Linear
+  queue and local daemon are usable.
+- Made `.symphony/README.md` the operational entry point for future DearMe
+  worker cooperation: Linear team `DEA`, `.symphony/WORKFLOW.md`, isolated
+  Symphony workspaces, and coordinator-only integration in the main checkout.
+- Updated the reuse ledger coordination rules so future product/code work
+  starts from Symphony instead of ad hoc worker branches, while preserving the
+  existing customer-safe language boundary.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status` confirmed the daemon at
+  `http://127.0.0.1:4100/` with no running or retrying workers.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported 117
+  worktrees, 1 Symphony workspace, 3 `subject_matched` records, and 0 dirty
+  records.
+- `git diff --check` passed for the docs-only update.
+
 ## DM-183F Customer-Safe Work Route and Team Attribution - 2026-05-10
 
 Implementation slice:

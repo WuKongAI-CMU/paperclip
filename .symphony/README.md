@@ -1,5 +1,18 @@
 # DearMe Symphony Setup
 
+## Operating Contract
+
+Symphony is the default cooperation spine for DearMe work from 2026-05-10
+forward.
+
+- Use Linear team `DEA` plus `.symphony/WORKFLOW.md` as the live worker queue.
+- Use Symphony workspaces for parallel product/code execution.
+- Keep the main DearMe checkout as the coordinator/integration surface.
+- Direct Codex work in this checkout is for integration, docs, verification,
+  and small fixes that do not need another worker lane.
+- Keep customer-facing DearMe UI/copy free of Symphony, Paperclip, OpenClaw,
+  provider, adapter, model, setup payload, and raw runtime language.
+
 Local Symphony source:
 
 - `/Users/peter/symphony`
@@ -20,17 +33,18 @@ mise exec -- mix specs.check
 Run the DearMe coordinator after setting the Linear token. The DearMe Linear
 workspace currently uses team `DEA` and has no Linear Project, so
 `WORKFLOW.md` routes by `tracker.team_key: "DEA"` plus `tracker.assignee: me`.
+If the daemon is already running, no extra user configuration is needed for
+normal DearMe work.
 
 ```sh
 security add-generic-password -a "$USER" -s dearme-linear-api-key -w '<LINEAR_API_KEY>' -U
 /Users/peter/dearme/.symphony/bin/dearme-symphony start
 ```
 
-The Codex App Linear plugin is useful for this thread: it can read and mutate
-the Linear workspace through Codex tools. That plugin credential is not exposed
-as a raw shell token, so external processes such as the Symphony daemon still
-need `LINEAR_API_KEY` in the environment or the `dearme-linear-api-key` Keychain
-entry above.
+The Codex App Linear plugin is useful for interactive inspection, but Symphony
+owns agent execution. If Symphony is restarted outside the app, the daemon reads
+`LINEAR_API_KEY` from the shell environment first, then from the
+`dearme-linear-api-key` Keychain entry above.
 
 Runtime commands:
 
