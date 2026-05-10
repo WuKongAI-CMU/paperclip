@@ -46,6 +46,17 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DM-028 source-reference-briefs head
+  `dd3f3503b00793e2da8acedcf8bba8d87ee01baf` is absorbed by adapting its
+  private reference-link grounding onto the current `dearme-memory-brief.ts`
+  activity-log memory path. Assignment briefs now include valid http/https
+  source links as private reference lines and suppress non-web links from the
+  worker context.
+- DM-039 output-scoped-memory-brief head
+  `ad7275f9c7362118594205bb761748933ba9e441` is absorbed by routing DearMe
+  issue origin fingerprints into the hidden Voice & Memory assignment brief,
+  so each private worker starts from memory sources prioritized for the output
+  it is drafting.
 - DM-022 workstream-proof-feed head
   `86a3078d6b5079b5b228792f78a8257f72478f9f` is recorded as absorbed because
   the current `Live proof feed` already turns team progress into proof through
@@ -173,6 +184,12 @@ heads plus the exact DM-023 source-context head to the reviewed absorption
 ledger. Treat those heads as no-replay candidates unless they advance; the code
 change in this pass is the review-freshness fix that stops stale
 `changes_requested` work products from hiding newer private work.
+
+Coordinator note: DM-183BM absorbs the exact DM-028 and DM-039 worker heads
+into the current hidden assignment brief path. Keep future Voice & Memory
+worker-grounding changes in `dearme-memory-brief.ts` plus Heartbeat origin
+fingerprint routing rather than restoring the older `dearme-voice-memory`
+source model.
 
 Coordinator note: DM-183BL adds the exact DM-022, DM-027, DM-029, and DM-030
 worker heads to the reviewed absorption ledger. Keep future proof-feed,

@@ -76,4 +76,43 @@ describe("buildDearMeIssueVoiceMemoryBrief", () => {
       /\b(Paperclip|OpenClaw|Symphony|adapter|provider|setup_payload|model provider|workbench|issue route|execution route|API key|token|workspace|runtime)\b/i,
     );
   });
+
+  it("orders hidden assignment memory for the DearMe output being drafted", async () => {
+    const db = dbReturningMemoryRows([
+      {
+        id: "proof-row",
+        action: "dearme.memory_updated",
+        entityId: "proof-source",
+        details: {
+          kind: "proof_point",
+          title: "Case study win",
+          body: "Shipped a reliable private review flow with measurable approval quality.",
+        },
+      },
+      {
+        id: "voice-row",
+        action: "dearme.memory_updated",
+        entityId: "voice-source",
+        details: {
+          kind: "voice_sample",
+          title: "Launch note",
+          body: "Here is what shipped, why it matters, and what I learned.",
+        },
+      },
+    ]);
+
+    const brief = await buildDearMeIssueVoiceMemoryBrief({
+      db: db as never,
+      companyId: "company-1",
+      issue: {
+        originKind: DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
+        originFingerprint: "operation-draft_content_batch",
+      },
+    });
+
+    expect(brief).not.toBeNull();
+    expect(brief!.indexOf("Voice sample: Launch note")).toBeLessThan(
+      brief!.indexOf("Proof point: Case study win"),
+    );
+  });
 });

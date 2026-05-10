@@ -2,6 +2,30 @@
   "updatedAt": "2026-05-10",
   "reviewedAbsorptions": [
     {
+      "ticket": "DM-028",
+      "branch": "codex/dearme-dm-028-source-reference-briefs",
+      "head": "dd3f3503b00793e2da8acedcf8bba8d87ee01baf",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the private source-reference grounding by adapting valid http/https source labels into hidden assignment reference links on the current activity-log Voice & Memory brief path while suppressing non-web links.",
+      "evidence": [
+        "server/src/services/dearme-memory-brief.ts",
+        "server/src/__tests__/dearme-memory-context.test.ts",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
+      "ticket": "DM-039",
+      "branch": "codex/dearme-dm-039-output-scoped-memory-brief",
+      "head": "ad7275f9c7362118594205bb761748933ba9e441",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the output-scoped memory brief by mapping DearMe issue origin fingerprints to output kinds in Heartbeat and ordering the hidden Voice & Memory assignment brief on the current memory-row contract.",
+      "evidence": [
+        "server/src/services/dearme-memory-brief.ts",
+        "server/src/services/heartbeat.ts",
+        "server/src/__tests__/heartbeat-dearme-voice-memory.test.ts"
+      ]
+    },
+    {
       "ticket": "DM-022",
       "branch": "codex/dearme-dm-022-workstream-proof-feed",
       "head": "86a3078d6b5079b5b228792f78a8257f72478f9f",

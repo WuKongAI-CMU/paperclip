@@ -11,6 +11,7 @@ import {
   MODEL_PROFILE_KEYS,
   isEnvironmentDriverSupportedForAdapter,
   type BillingType,
+  type DearMeOutputKind,
   type EnvironmentLeaseStatus,
   type ExecutionWorkspace,
   type ExecutionWorkspaceConfig,
@@ -1993,6 +1994,20 @@ function isTrackedLocalChildProcessAdapter(adapterType: string) {
   return SESSIONED_LOCAL_ADAPTERS.has(adapterType);
 }
 
+const DEARME_OUTPUT_KIND_BY_ORIGIN_FINGERPRINT: Record<string, DearMeOutputKind> = {
+  "brand-os-review": "brand_os",
+  "operation-seed_voice_profile": "voice_profile",
+  "operation-draft_content_batch": "content_drafts",
+  "operation-draft_opportunity_list": "opportunity_drafts",
+  "operation-prepare_portfolio_update": "portfolio_update",
+  "operation-schedule_weekly_report": "weekly_report",
+};
+
+function dearMeOutputKindForOriginFingerprint(originFingerprint: string | null | undefined) {
+  if (!originFingerprint) return null;
+  return DEARME_OUTPUT_KIND_BY_ORIGIN_FINGERPRINT[originFingerprint] ?? null;
+}
+
 const PAPERCLIP_TASK_DOCUMENT_MAX_COUNT = 6;
 const PAPERCLIP_TASK_DOCUMENT_BODY_MAX_CHARS = 12_000;
 
@@ -2092,6 +2107,7 @@ export async function buildDearMeIssueVoiceMemoryBrief(input: {
   companyId: string;
   issue: {
     originKind?: string | null;
+    originFingerprint?: string | null;
   } | null;
 }) {
   const issue = input.issue;
@@ -2109,7 +2125,9 @@ export async function buildDearMeIssueVoiceMemoryBrief(input: {
     .orderBy(desc(activityLog.createdAt))
     .limit(80);
 
-  return buildDearMeVoiceMemoryAssignmentBrief(selectActiveDearMeMemoryRows(memoryRows));
+  return buildDearMeVoiceMemoryAssignmentBrief(selectActiveDearMeMemoryRows(memoryRows), {
+    outputKind: dearMeOutputKindForOriginFingerprint(issue.originFingerprint),
+  });
 }
 
 function isHeartbeatRunTerminalStatus(

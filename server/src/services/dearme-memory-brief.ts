@@ -1,5 +1,6 @@
 import {
   DEARME_MEMORY_UPDATE_KINDS,
+  type DearMeOutputKind,
   type DearMeMemoryUpdateKind,
 } from "@paperclipai/shared";
 
@@ -21,6 +22,87 @@ const MEMORY_KIND_LABELS: Record<DearMeMemoryUpdateKind, string> = {
   relationship: "Relationship",
   preference: "Preference",
   review_feedback: "Review feedback",
+};
+
+const GLOBAL_MEMORY_KIND_PRIORITY: readonly DearMeMemoryUpdateKind[] = [
+  "voice_sample",
+  "proof_point",
+  "constraint",
+  "goal",
+  "audience",
+  "offer",
+  "review_feedback",
+  "preference",
+  "relationship",
+];
+
+const OUTPUT_MEMORY_KIND_PRIORITY: Record<DearMeOutputKind, readonly DearMeMemoryUpdateKind[]> = {
+  brand_os: [
+    "goal",
+    "audience",
+    "proof_point",
+    "offer",
+    "voice_sample",
+    "constraint",
+    "preference",
+    "relationship",
+    "review_feedback",
+  ],
+  voice_profile: [
+    "voice_sample",
+    "preference",
+    "constraint",
+    "review_feedback",
+    "audience",
+    "proof_point",
+    "goal",
+    "offer",
+    "relationship",
+  ],
+  content_drafts: [
+    "voice_sample",
+    "proof_point",
+    "audience",
+    "offer",
+    "constraint",
+    "goal",
+    "review_feedback",
+    "preference",
+    "relationship",
+  ],
+  opportunity_drafts: [
+    "audience",
+    "offer",
+    "proof_point",
+    "relationship",
+    "voice_sample",
+    "constraint",
+    "goal",
+    "preference",
+    "review_feedback",
+  ],
+  portfolio_update: [
+    "proof_point",
+    "voice_sample",
+    "goal",
+    "offer",
+    "audience",
+    "constraint",
+    "preference",
+    "relationship",
+    "review_feedback",
+  ],
+  weekly_report: [
+    "goal",
+    "proof_point",
+    "offer",
+    "audience",
+    "voice_sample",
+    "review_feedback",
+    "constraint",
+    "preference",
+    "relationship",
+  ],
 };
 
 const DEARME_MEMORY_CONTEXT_REPLACEMENTS: Array<[RegExp, string]> = [
@@ -77,17 +159,70 @@ function customerSafeMemoryText(value: string, maxLength = 320) {
   return compactText(safe, maxLength);
 }
 
-function memoryLine(details: unknown) {
+function memoryKind(details: unknown) {
+  if (!isRecord(details) || !isDearMeMemoryKind(details.kind)) return null;
+  return details.kind;
+}
+
+function memoryKindPriority(kind: DearMeMemoryUpdateKind, outputKind: DearMeOutputKind | null | undefined) {
+  const priority = outputKind ? OUTPUT_MEMORY_KIND_PRIORITY[outputKind] : GLOBAL_MEMORY_KIND_PRIORITY;
+  const index = priority.indexOf(kind);
+  return index === -1 ? priority.length : index;
+}
+
+function orderMemoryRowsForAssignment(
+  memoryRows: Array<{ details: unknown }>,
+  outputKind: DearMeOutputKind | null | undefined,
+) {
+  return memoryRows
+    .map((row, index) => ({ row, index, kind: memoryKind(row.details) }))
+    .sort((a, b) => {
+      const leftPriority = a.kind ? memoryKindPriority(a.kind, outputKind) : Number.MAX_SAFE_INTEGER;
+      const rightPriority = b.kind ? memoryKindPriority(b.kind, outputKind) : Number.MAX_SAFE_INTEGER;
+      if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+      return a.index - b.index;
+    })
+    .map(({ row }) => row);
+}
+
+function referenceLink(details: Record<string, unknown>) {
+  const sourceLabel = optionalStringFromRecord(details, "sourceLabel");
+  if (!sourceLabel) return null;
+
+  try {
+    const url = new URL(sourceLabel);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function displaySourceLabel(details: Record<string, unknown>) {
+  const sourceLabel = optionalStringFromRecord(details, "sourceLabel");
+  if (!sourceLabel) return null;
+
+  try {
+    const url = new URL(sourceLabel);
+    return url.protocol === "http:" || url.protocol === "https:" ? sourceLabel : null;
+  } catch {
+    return sourceLabel;
+  }
+}
+
+function memoryLine(details: unknown, options?: { includeReferenceLink?: boolean }) {
   if (!isRecord(details) || !isDearMeMemoryKind(details.kind)) return null;
   const body = optionalStringFromRecord(details, "body");
   if (!body) return null;
 
   const title = optionalStringFromRecord(details, "title");
-  const sourceLabel = optionalStringFromRecord(details, "sourceLabel");
+  const sourceLabel = displaySourceLabel(details);
   const label = MEMORY_KIND_LABELS[details.kind];
   const titlePrefix = title ? `${customerSafeMemoryText(title, 120)}: ` : "";
   const sourceSuffix = sourceLabel ? ` Source: ${customerSafeMemoryText(sourceLabel, 120)}.` : "";
-  return `- ${label}: ${titlePrefix}${customerSafeMemoryText(body)}${sourceSuffix}`;
+  const line = `- ${label}: ${titlePrefix}${customerSafeMemoryText(body)}${sourceSuffix}`;
+  const link = options?.includeReferenceLink ? referenceLink(details) : null;
+  return link ? `${line}\n  Reference link: ${link}` : line;
 }
 
 export function renderLatestMemoryBlock(memoryRows: Array<{ details: unknown }>) {
@@ -96,8 +231,13 @@ export function renderLatestMemoryBlock(memoryRows: Array<{ details: unknown }>)
   return [LATEST_MEMORY_HEADING, ...lines].join("\n");
 }
 
-export function buildDearMeVoiceMemoryAssignmentBrief(memoryRows: Array<{ details: unknown }>) {
-  const lines = memoryRows.map((row) => memoryLine(row.details)).filter((line): line is string => Boolean(line));
+export function buildDearMeVoiceMemoryAssignmentBrief(
+  memoryRows: Array<{ details: unknown }>,
+  options?: { outputKind?: DearMeOutputKind | null },
+) {
+  const lines = orderMemoryRowsForAssignment(memoryRows, options?.outputKind)
+    .map((row) => memoryLine(row.details, { includeReferenceLink: true }))
+    .filter((line): line is string => Boolean(line));
   if (lines.length === 0) return null;
 
   return [

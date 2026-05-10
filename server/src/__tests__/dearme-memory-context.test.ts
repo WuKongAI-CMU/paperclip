@@ -47,6 +47,17 @@ describe("buildDearMeVoiceMemoryAssignmentBrief", () => {
           kind: "proof_point",
           title: "Launch proof",
           body: "Shipped a local AI workbench that turns private logs into reviewable outputs.",
+          sourceInputMode: "link",
+          sourceLabel: "https://example.com/proof-note",
+        },
+      },
+      {
+        details: {
+          kind: "preference",
+          title: "Private note",
+          body: "Keep the final edit practical.",
+          sourceInputMode: "import_note",
+          sourceLabel: "file:///tmp/private-note",
         },
       },
     ]);
@@ -55,6 +66,8 @@ describe("buildDearMeVoiceMemoryAssignmentBrief", () => {
     expect(brief).toContain("- Use these active private sources before drafting or revising.");
     expect(brief).toContain("Voice sample: Operator note: Short, direct note. Source: Manual note.");
     expect(brief).toContain("Proof point: Launch proof: Shipped a local AI team progress view");
+    expect(brief).toContain("Reference link: https://example.com/proof-note");
+    expect(brief).not.toContain("file:///tmp/private-note");
     expect(brief).toContain("Keep the next version private until the user reviews it.");
   });
 
@@ -75,6 +88,48 @@ describe("buildDearMeVoiceMemoryAssignmentBrief", () => {
     expect(brief).toContain("Source: DearMe private action links private credentials.");
     expect(brief).not.toMatch(
       /\b(Paperclip|OpenClaw|Symphony|adapter|provider|setup_payload|model provider|workbench|issue route|execution route|API key|token|workspace|runtime)\b/i,
+    );
+  });
+
+  it("prioritizes hidden assignment memory by DearMe output kind", () => {
+    const memoryRows = [
+      {
+        details: {
+          kind: "proof_point",
+          title: "Case study win",
+          body: "Shipped a reliable private review flow with measurable approval quality.",
+        },
+      },
+      {
+        details: {
+          kind: "goal",
+          title: "Weekly signal",
+          body: "Turn recent team progress into a practical weekly report.",
+        },
+      },
+      {
+        details: {
+          kind: "voice_sample",
+          title: "Launch note",
+          body: "Here is what shipped, why it matters, and what I learned.",
+        },
+      },
+    ];
+
+    const contentBrief = buildDearMeVoiceMemoryAssignmentBrief(memoryRows, {
+      outputKind: "content_drafts",
+    });
+    const weeklyBrief = buildDearMeVoiceMemoryAssignmentBrief(memoryRows, {
+      outputKind: "weekly_report",
+    });
+
+    expect(contentBrief).not.toBeNull();
+    expect(weeklyBrief).not.toBeNull();
+    expect(contentBrief!.indexOf("Voice sample: Launch note")).toBeLessThan(
+      contentBrief!.indexOf("Proof point: Case study win"),
+    );
+    expect(weeklyBrief!.indexOf("Goal: Weekly signal")).toBeLessThan(
+      weeklyBrief!.indexOf("Proof point: Case study win"),
     );
   });
 

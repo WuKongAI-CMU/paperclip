@@ -2,6 +2,36 @@
 
 Date: 2026-05-10
 
+## DM-183BM DM-028/039 Voice & Memory Assignment Brief Absorption - 2026-05-10
+
+Product/architecture slice:
+
+- Kept Symphony as the cooperation spine and compared the exact DM-028 and
+  DM-039 worker heads against the coordinator checkout before replaying code.
+- Absorbed DM-028 source-reference-briefs head
+  `dd3f3503b00793e2da8acedcf8bba8d87ee01baf` onto the current
+  `dearme-memory-brief.ts` architecture. Hidden DearMe assignment briefs now
+  carry valid http/https private source links as reference lines while dropping
+  non-web links from the worker context.
+- Absorbed DM-039 output-scoped-memory-brief head
+  `ad7275f9c7362118594205bb761748933ba9e441` onto the current activity-log
+  memory path. Heartbeat now maps DearMe issue origin fingerprints to output
+  kinds so content drafts, weekly reports, opportunity drafts, and other
+  private assignments receive the most relevant Voice & Memory first.
+- Kept the change private to worker task context. No customer-facing UI,
+  schema, route, or Symphony runtime surface changed.
+- Recorded both exact heads in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so future Symphony patrols
+  close them as reviewed absorption candidates unless the branches advance.
+
+Verification:
+
+- `pnpm exec vitest server/src/__tests__/dearme-memory-context.test.ts server/src/__tests__/heartbeat-dearme-voice-memory.test.ts --run`
+  passed: 2 files, 7 tests passed, 4 embedded-Postgres tests skipped because
+  the host init script exited with code 1.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `git diff --check` passed.
+
 ## DM-183BL DM-022/027/029/030 UI Worker Absorption - 2026-05-10
 
 Product/architecture slice:
