@@ -2,15 +2,15 @@
 
 Date: 2026-05-10
 
-## DEA-22 Private Site Launch Decision Active - 2026-05-10
+## DEA-21 Private Site Host Smoke Active - 2026-05-10
 
 Product/architecture slice:
 
-- Opened Linear `DEA-22` as the next single product implementation lane after
+- Linear `DEA-21` is the next single product implementation lane after
   `DEA-19` and `DEA-20` absorption.
 - The lane targets the weakest remaining first-session aha window: turn the
-  3-5 minute private site proof from a placeholder proof card into a clear,
-  private launch-decision package.
+  3-5 minute private site proof from a placeholder proof card into a concrete,
+  handle-specific private site preview or host smoke.
 - The intended customer-visible package should tie together page section, proof
   source, proposed copy, audience, CTA or offer, and deploy boundary while
   staying private behind `deploy_public_site`.
@@ -22,8 +22,10 @@ Product/architecture slice:
 
 Coordination state:
 
-- Symphony is idle before `DEA-22` starts; this should become the only active
-  DearMe product writer lane.
+- Symphony started `DEA-21` before the coordinator noticed it; a briefly opened
+  overlapping `DEA-22` launch-decision ticket was closed as duplicate of
+  `DEA-21`.
+- `DEA-21` is the only active DearMe product writer lane.
 - Use additional Codex help only for read-only architecture/product review or
   coordinator absorption while this ticket is active.
 - Keep the DEA-19 opportunity shortlist and DEA-20 Chief pairing proof stable
