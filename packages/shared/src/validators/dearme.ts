@@ -846,6 +846,8 @@ export const dearMeOutputReviewLoopSchema = z.object({
   lastAction: z.enum(DEARME_OUTPUT_REVIEW_ACTIONS).nullable(),
   lastDecisionAt: z.string().datetime().nullable(),
   lastDecisionNotePreview: mediumTextSchema.nullable(),
+  defaultApprovalScore: z.literal(DEARME_SILENCE_DEFAULT_REVIEW_SCORE).nullable().optional(),
+  defaultedBySilence: z.boolean().optional(),
   nextStep: mediumTextSchema,
   reviewHandoff: dearMeOutputReviewHandoffSchema.nullable(),
   feedbackTrace: dearMeOutputFeedbackTraceSchema.nullable().default(null),

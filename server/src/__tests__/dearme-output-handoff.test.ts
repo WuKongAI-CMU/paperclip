@@ -50,6 +50,8 @@ describe("DearMe output review decision parsing", () => {
     expect(decision).toEqual({
       action: "approve",
       createdAt: new Date("2026-05-08T09:03:00.000Z"),
+      defaultApprovalScore: 7,
+      defaultedBySilence: true,
       notePreview: expect.stringContaining("default review score of 7/10"),
     });
   });
@@ -1308,7 +1310,10 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     expect(result.output.reviewLoop).toEqual(expect.objectContaining({
       state: "approved",
       lastAction: "approve",
+      defaultApprovalScore: 7,
+      defaultedBySilence: true,
       lastDecisionNotePreview: expect.stringContaining("default review score of 7/10"),
+      nextStep: expect.stringContaining("default review score of 7/10"),
     }));
 
     const nextMoveApprovals = await db

@@ -738,7 +738,21 @@ function reviewLoopLabel(loop: DearMeOutputReviewLoop) {
 }
 
 function reviewLoopStateLabel(loop: DearMeOutputReviewLoop) {
+  const defaultScore = reviewLoopDefaultApprovalScore(loop);
+  if (defaultScore !== null) return `Private score ${defaultScore}/10`;
   return REVIEW_LOOP_STATE_LABELS[loop.state];
+}
+
+function reviewLoopDefaultApprovalScore(loop: DearMeOutputReviewLoop) {
+  return loop.defaultedBySilence && typeof loop.defaultApprovalScore === "number"
+    ? loop.defaultApprovalScore
+    : null;
+}
+
+function reviewLoopDefaultBoundaryCopy(loop: DearMeOutputReviewLoop) {
+  return reviewLoopDefaultApprovalScore(loop) !== null
+    ? "Public posts, sends, deploys, and spend still wait for your approval."
+    : null;
 }
 
 function reviewLoopVariant(loop: DearMeOutputReviewLoop) {
@@ -976,10 +990,14 @@ function ReviewLoopNextStep({
   loop: DearMeOutputReviewLoop;
   className?: string;
 }) {
+  const defaultBoundaryCopy = reviewLoopDefaultBoundaryCopy(loop);
   return (
     <div className={cn("rounded-md border border-border bg-background/80 p-3", className)}>
       <p className="text-xs font-medium text-muted-foreground">Team follow-through</p>
       <p className="mt-1 text-sm text-foreground/85">{customerProofPackSummary(loop.nextStep)}</p>
+      {defaultBoundaryCopy ? (
+        <p className="mt-2 text-xs text-muted-foreground">{defaultBoundaryCopy}</p>
+      ) : null}
       {loop.lastDecisionNotePreview ? (
         <p className="mt-2 text-xs text-muted-foreground">Last call: {loop.lastDecisionNotePreview}</p>
       ) : null}
@@ -3806,6 +3824,7 @@ function WorkReadyPanel({
             const outputKind = item.outputKind ?? "brand_os";
             const issueReference = workItemTarget(item);
             const routeIntent = reviewLoopRouteIntent(item.reviewLoop);
+            const defaultBoundaryCopy = reviewLoopDefaultBoundaryCopy(item.reviewLoop);
             const focused = decisionFocus ? matchesWorkItemFocus(item, decisionFocus) : false;
             const isReviewable =
               item.status === "ready_for_review" || item.reviewLoop.state === "needs_user_review";
@@ -3860,6 +3879,11 @@ function WorkReadyPanel({
                     <p className="mt-1 text-sm text-foreground/85">
                       {customerProofPackSummary(item.reviewLoop.nextStep)}
                     </p>
+                    {defaultBoundaryCopy ? (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {defaultBoundaryCopy}
+                      </p>
+                    ) : null}
                     <p className="mt-2 text-xs text-muted-foreground">{workReadyNextStepLabel(item.status)}</p>
                   </div>
                 </DearMeEvidenceGrid>

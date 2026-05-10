@@ -98,6 +98,8 @@ export type DearMeParsedReviewDecision = {
   action: DearMeOutputReviewAction;
   createdAt: Date;
   notePreview: string | null;
+  defaultApprovalScore: typeof DEARME_SILENCE_DEFAULT_REVIEW_SCORE | null;
+  defaultedBySilence: boolean;
 };
 
 export type DearMeOutputReviewFeedback = DearMeParsedReviewDecision & {
@@ -356,6 +358,10 @@ function parseReviewAction(body: string): DearMeOutputReviewAction | null {
   return null;
 }
 
+function isSilenceDefaultReviewDecision(body: string) {
+  return body.toLowerCase().startsWith("dearme decision: kept this private work moving after no response.");
+}
+
 function reviewDecisionNotePreview(body: string) {
   const [, ...parts] = body.split(/\n\n/);
   return plainPreview(parts.join("\n\n"), 240) || null;
@@ -367,10 +373,13 @@ export function parseDearMeOutputReviewDecisionComment(input: {
 }): DearMeParsedReviewDecision | null {
   const action = parseReviewAction(input.body);
   if (!action) return null;
+  const defaultedBySilence = action === "approve" && isSilenceDefaultReviewDecision(input.body);
   return {
     action,
     createdAt: input.createdAt,
     notePreview: reviewDecisionNotePreview(input.body),
+    defaultApprovalScore: defaultedBySilence ? DEARME_SILENCE_DEFAULT_REVIEW_SCORE : null,
+    defaultedBySilence,
   };
 }
 
@@ -730,9 +739,13 @@ function buildReviewLoop(input: {
     lastAction: lastDecision?.action ?? null,
     lastDecisionAt: lastDecision ? toIso(lastDecision.createdAt) : null,
     lastDecisionNotePreview: lastDecision?.notePreview ?? null,
-    nextStep: feedbackApplied
-      ? "Review this updated private work; your last feedback is reflected below before anything goes public."
-      : reviewLoopNextStep(state),
+    defaultApprovalScore: lastDecision?.defaultApprovalScore ?? null,
+    defaultedBySilence: lastDecision?.defaultedBySilence ?? false,
+    nextStep: lastDecision?.defaultedBySilence
+      ? `This private work kept moving with a default review score of ${DEARME_SILENCE_DEFAULT_REVIEW_SCORE}/10.`
+      : feedbackApplied
+        ? "Review this updated private work; your last feedback is reflected below before anything goes public."
+        : reviewLoopNextStep(state),
     reviewHandoff: feedbackApplied ? null : buildReviewHandoff(lastDecision, state),
     feedbackTrace: input.feedbackTrace,
   };

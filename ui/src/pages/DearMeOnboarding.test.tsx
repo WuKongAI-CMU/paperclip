@@ -4,6 +4,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  DEARME_SILENCE_DEFAULT_REVIEW_SCORE,
   buildDearMeBrandBlueprintExecutionPlan,
   createDearMeBrandBlueprint,
   createDearMeFirstCyclePreview,
@@ -3964,6 +3965,53 @@ describe("DearMeOnboarding", () => {
     expect(mockNavigate).toHaveBeenCalledWith(
       "/dearme?view=decisions&work=PET-7&artifact=issue-1%3Aweekly_report",
     );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("surfaces quiet private review progress without weakening launch boundaries", async () => {
+    const response = workbenchResponse();
+    response.workReady[0] = {
+      ...response.workReady[0]!,
+      status: "complete",
+      reviewLoop: reviewLoopFixture(
+        "approved",
+        `This private work kept moving with a default review score of ${DEARME_SILENCE_DEFAULT_REVIEW_SCORE}/10.`,
+        {
+          isRetriable: false,
+          lastAction: "approve",
+          lastDecisionAt: "2026-05-07T14:05:00.000Z",
+          lastDecisionNotePreview:
+            `No response came in, so DearMe kept this private work moving with a default review score of ${DEARME_SILENCE_DEFAULT_REVIEW_SCORE}/10.`,
+          defaultApprovalScore: DEARME_SILENCE_DEFAULT_REVIEW_SCORE,
+          defaultedBySilence: true,
+        },
+      ),
+    };
+    mockDearmeApi.getWorkbench.mockResolvedValue(response);
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const workReady = surfaceByLabel(container, "Work ready");
+    const text = workReady.textContent ?? "";
+    expect(text).toContain(`Private score ${DEARME_SILENCE_DEFAULT_REVIEW_SCORE}/10`);
+    expect(text).toContain(`default review score of ${DEARME_SILENCE_DEFAULT_REVIEW_SCORE}/10`);
+    expect(text).toContain("Public posts, sends, deploys, and spend still wait for your approval.");
+    expect(text).not.toContain("Launched");
+    expectNoHiddenProductTerms(text, Object.values(HIDDEN_PRODUCT_TERMS));
 
     await act(async () => {
       root.unmount();

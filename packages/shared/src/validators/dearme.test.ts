@@ -3,6 +3,7 @@ import {
   DEARME_BRAND_BLUEPRINT_OPERATION_ORDER,
   DEARME_DIRECT_HEARTBEAT_CADENCE_HOURS,
   DEARME_FIRST_CYCLE_CONCERN_GATES,
+  DEARME_SILENCE_DEFAULT_REVIEW_SCORE,
   DEARME_WORKER_HEARTBEAT_CADENCE_HOURS,
   buildDearMeBrandBlueprintExecutionPlan,
   collectDearMeBrandBlueprintWarnings,
@@ -932,6 +933,28 @@ describe("DearMe brand blueprint contract", () => {
       changes: expect.arrayContaining(["Still private until you approve it."]),
       receipts: ["Another pass requested: Make it sharper."],
     }));
+    const quietDefaultOutput = dearMeOutputsResponseSchema.parse({
+      companyId: "company-1",
+      outputs: [
+        {
+          ...output,
+          status: "complete",
+          reviewLoop: {
+            ...output.reviewLoop,
+            state: "approved",
+            lastAction: "approve",
+            lastDecisionNotePreview: "No response came in, so DearMe kept this private work moving with a default review score of 7/10.",
+            defaultApprovalScore: DEARME_SILENCE_DEFAULT_REVIEW_SCORE,
+            defaultedBySilence: true,
+            nextStep: "This private work kept moving with a default review score of 7/10.",
+            reviewHandoff: null,
+            feedbackTrace: null,
+          },
+        },
+      ],
+    }).outputs[0]!;
+    expect(quietDefaultOutput.reviewLoop.defaultApprovalScore).toBe(DEARME_SILENCE_DEFAULT_REVIEW_SCORE);
+    expect(quietDefaultOutput.reviewLoop.defaultedBySilence).toBe(true);
     const result = dearMeOutputReviewResultSchema.parse({
       companyId: "company-1",
       outputId: "issue-1:weekly_report",
