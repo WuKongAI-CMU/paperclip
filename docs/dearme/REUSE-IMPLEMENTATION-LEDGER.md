@@ -121,7 +121,40 @@ Content Producer prompt rails. Keep `post_x`, tweet-shaped payload fields, and
 OAuth platform naming unchanged until a dedicated outbound-contract migration
 exists.
 
+Coordinator note: DM-183AD closes the current workbench projection gap found
+while absorbing DM-044/DM-045. The current service already owns Voice & Memory
+projection, but review feedback traces now need to stay on the same
+customer-safe path as output titles, summaries, evidence, and review handoffs.
+
 ## Recently Completed
+
+### DM-183AD: Workbench Projection Trace Coverage
+
+Goal: keep the current DearMe workbench response customer-safe even when nested
+review feedback traces contain Symphony/OpenClaw/Paperclip/provider language.
+
+Donor grounding:
+
+- DM-044/DM-045: keep the projection boundary and hidden-substrate regression
+  idea, not the retired service/file layout.
+- Symphony: treat worker output as evidence to map onto the current workbench
+  response contract.
+- Paperclip/OpenClaw: preserve the internal substrate while keeping the paid
+  beta workbench framed as DearMe team progress.
+
+Completed:
+
+- Projected output review feedback trace headline, summary, user feedback, and
+  changes through the shared DearMe workbench projection helper.
+- Added fast unit coverage for helper text and deeply nested output payloads.
+- Left routes, schemas, activity storage, and embedded Postgres service flow
+  unchanged.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-workbench-projection.test.ts --run`
+  passed: 2 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
 
 ### DM-183AC: Channel-Neutral Prompt Rails
 

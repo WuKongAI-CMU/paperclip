@@ -354,6 +354,20 @@ function projectDearMeReviewLoop(
           ),
         }
       : null,
+    feedbackTrace: reviewLoop.feedbackTrace
+      ? {
+          ...reviewLoop.feedbackTrace,
+          headline: dearMeWorkbenchProjectionTitle(reviewLoop.feedbackTrace.headline, "Review feedback"),
+          summary: dearMeWorkbenchProjectionText(
+            reviewLoop.feedbackTrace.summary,
+            "DearMe captured the review feedback for the next private draft.",
+          ),
+          userFeedback: dearMeWorkbenchProjectionOptionalText(reviewLoop.feedbackTrace.userFeedback),
+          changes: reviewLoop.feedbackTrace.changes.map((change) =>
+            dearMeWorkbenchProjectionText(change, "Private revision recorded."),
+          ),
+        }
+      : null,
   };
 }
 
