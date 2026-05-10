@@ -51,6 +51,17 @@ The right reuse split is:
   real approval path from prepared output review to final launch-call approval,
   then verifies the private handoff panel and `work=` / `artifact=` brief
   navigation without exposing hidden substrate terms.
+- DM-048 route/auth safety head
+  `e9ff182462daed1076112700985056c39984ac55` is recorded as absorbed by the
+  current DearMe route error boundary for auth, access, and validation failures.
+- DM-049 approval-preflight head
+  `235a5d04bb1c8ac81cc1ef03509e2e65712217ae` is recorded as absorbed by the
+  current Brand OS approval validator and approval-service preflight, so
+  malformed DearMe approvals stay pending before mutation.
+- DM-050 profile-selection copy head
+  `08068692545c9f17e44c5133f23e06f0a6e29efb` is recorded as absorbed by the
+  current onboarding profile guard and regression coverage, keeping missing
+  profile copy DearMe-owned instead of company-owned.
 - DM-043 memory-label safety head
   `f3b3f7420c556aa6103c32c4b31654bd515edce6` is recorded as absorbed by the
   current Voice & Memory context normalization path, without restoring the

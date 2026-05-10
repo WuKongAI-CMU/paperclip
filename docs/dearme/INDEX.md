@@ -142,11 +142,14 @@ against this proof and either closed or replayed as a strictly smaller slice.
 
 After DEA-11 is closed, inspect the remaining `not_in_current` worker group in
 small batches. DM-043 through DM-047 are now recorded as reviewed absorptions on
-the current customer-safe memory, workbench, and error-boundary paths. The next
-likely batch starts at DM-048 through DM-050 because it continues the same
-customer-safe route/auth/profile theme. Reuse only still-valuable product
-surfaces; do not add another first-run contract, packet schema, runtime
-dashboard, queue system, or customer-visible substrate surface.
+the current customer-safe memory, workbench, and error-boundary paths. DM-048
+through DM-050 are now recorded as reviewed absorptions on the current
+route/auth, approval-preflight, and profile-selection boundaries. The next
+likely batch starts at DM-051, DM-052, and DM-058 because current DM-183O
+already references their approval/profile UI residue; then continue the
+remaining not-in-current worker group in small exact-head batches. Reuse only
+still-valuable product surfaces; do not add another first-run contract, packet
+schema, runtime dashboard, queue system, or customer-visible substrate surface.
 
 ### Roadmap (compressed by aggressive port + tri-substrate integration)
 

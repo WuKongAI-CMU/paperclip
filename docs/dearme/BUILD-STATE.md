@@ -2,6 +2,42 @@
 
 Date: 2026-05-10
 
+## DM-183BQ DM-048/050 Route/Profile Boundary Absorption - 2026-05-10
+
+Product/architecture slice:
+
+- Kept Symphony as the cooperation spine and treated DM-048 through DM-050 as
+  current-head absorption work, not fresh replay targets.
+- Recorded exact-head reviewed absorptions for DM-048, DM-049, and DM-050 in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`.
+- Mapped DM-048 to the live DearMe route error boundary, which converts shared
+  auth, access, and validation failures into DearMe-owned messages before they
+  reach the customer.
+- Mapped DM-049 to the live Brand OS approval preflight path, which validates
+  DearMe approval payloads before mutation and keeps malformed approvals
+  pending with a refresh message.
+- Mapped DM-050 to the current onboarding profile guard, where missing profile
+  state says `Choose a DearMe profile first.` instead of inherited company
+  selection copy.
+- Left the active DEA-11 Symphony workspace untouched; it remains a separate
+  daemon-owned lane.
+
+Verification:
+
+- `rg -n "dearMeRouteErrorBoundary|normalizeDearMeRouteError|This DearMe profile is not available|This DearMe approval needs to be refreshed|validateDearMeBrandBlueprintApplyPayload|Choose a DearMe profile first|Select a company first" server/src ui/src docs/dearme tests`
+  confirmed the current route, approval, and onboarding boundaries are already
+  present.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
+  passed.
+- `pnpm run dearme:worktrees -- --status=reviewed-absorbed --skip-dirty --limit=95`
+  showed the exact DM-048, DM-049, and DM-050 heads as `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` reported
+  `reviewed_absorbed: 70`, `not_in_current: 43`, and `dirty: 0`.
+- `.symphony/bin/dearme-symphony status --json` reported Symphony running with
+  one active DEA-11 worker and no retrying workers.
+- `git diff --check -- docs/dearme/BUILD-STATE.md docs/dearme/INDEX.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`
+  passed.
+
 ## DM-183BP DM-043/047 Customer-Safe Projection Absorption - 2026-05-10
 
 Product/architecture slice:

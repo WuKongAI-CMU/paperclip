@@ -933,6 +933,46 @@
         "docs/dearme/BUILD-STATE.md",
         "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
       ]
+    },
+    {
+      "ticket": "DM-048",
+      "branch": "codex/dearme-dm-048-customer-safe-route-auth",
+      "head": "e9ff182462daed1076112700985056c39984ac55",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the route/auth customer-safety worker through the live DearMe route error boundary, which maps shared auth, access, and validation failures into DearMe-owned messages without leaking raw validation details.",
+      "evidence": [
+        "server/src/routes/dearme.ts",
+        "server/src/__tests__/dearme-brand-blueprint-routes.test.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-049",
+      "branch": "codex/dearme-dm-049-approval-preflight",
+      "head": "235a5d04bb1c8ac81cc1ef03509e2e65712217ae",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the malformed-approval preflight worker through the live Brand OS approval payload validator and approval-service preflight, keeping invalid DearMe approvals pending before state mutation.",
+      "evidence": [
+        "server/src/services/dearme-brand-blueprint-apply.ts",
+        "server/src/services/approvals.ts",
+        "server/src/__tests__/approvals-service.test.ts",
+        "server/src/__tests__/dearme-brand-blueprint-apply.test.ts",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
+      "ticket": "DM-050",
+      "branch": "codex/dearme-dm-050-profile-selection-copy",
+      "head": "08068692545c9f17e44c5133f23e06f0a6e29efb",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the profile-selection copy worker through the DearMe-owned onboarding profile guard, which says to choose a DearMe profile and avoids inherited company-selection language on the customer path.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
     }
   ]
 }
