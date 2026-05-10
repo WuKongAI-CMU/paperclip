@@ -1312,11 +1312,33 @@ function cyclePacketWorkProducts(output: DearMeOutputItem) {
 }
 
 function customerProofPackSummary(text: string) {
-  return text.replace(/\bcycle packet\b/gi, "first proof pack");
+  return text
+    .replace(/\bsame private cycle packet\b/gi, "same private proof pack")
+    .replace(/\bsame private evidence packet\b/gi, "same private proof pack")
+    .replace(/\bshared packet\b/gi, "shared proof pack")
+    .replace(/\bcycle packet\b/gi, "first proof pack");
 }
 
 function cyclePacketSummary(output: DearMeOutputItem) {
   return customerProofPackSummary(cyclePacketWorkProducts(output)[0]?.summary || outputPreview(output) || output.summary);
+}
+
+function reportEvidenceText(report: DearMeWorkbenchReport) {
+  return [
+    report.summary,
+    report.bodyPreview,
+    ...report.accomplished,
+    ...report.decisions,
+    ...report.learnings,
+    ...report.nextBets,
+  ].join(" ");
+}
+
+function isPacketBackedReport(report: DearMeWorkbenchReport) {
+  const evidence = reportEvidenceText(report);
+  return /\bcycle packet\b/i.test(evidence) ||
+    /\bsame private evidence packet\b/i.test(evidence) ||
+    /\bshared packet\b/i.test(evidence);
 }
 
 function VoiceGatePanel({ gate }: { gate: DearMeVoiceGateResult }) {
@@ -1356,7 +1378,7 @@ function TeamWorkstreamPanel({
   previewReady: boolean;
   paidBetaActive: boolean;
 }) {
-  const statusLabel = paidBetaActive ? "Working now" : previewReady ? "Ready to activate" : "Waiting for your brief";
+  const statusLabel = paidBetaActive ? "Team working" : previewReady ? "Ready to start" : "Needs one brief";
 
   return (
     <section className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]">
@@ -1364,7 +1386,7 @@ function TeamWorkstreamPanel({
         <DearMeWorkbenchSectionHeader
           icon={Users}
           eyebrow="Your personal brand growth team"
-          description="Team visible, machinery hidden. DearMe starts planning, drafting, scouting, and packaging proof before you manage settings."
+          description="Dear me, your team is working: planning the week, drafting in your voice, scouting opportunities, and packaging proof before you manage settings."
           trailing={<Badge variant={paidBetaActive ? "default" : "secondary"}>{statusLabel}</Badge>}
         />
 
@@ -1383,14 +1405,14 @@ function TeamWorkstreamPanel({
       <aside className="rounded-lg border border-border p-5">
         <DearMeWorkbenchSectionHeader
           icon={Sparkles}
-          eyebrow="Work ready / Launch boundary"
-          description="Private work moves by default. Public posts, outbound messages, spend, and page changes come back as one launch call."
+          eyebrow="Launch boundary"
+          description="The team keeps preparing private work. Public posts, outbound messages, spend, and page changes return as one launch call."
         />
         <DearMeChecklist
           className="mt-4"
           icon={CheckCircle2}
           items={FIRST_CYCLE_ARTIFACTS}
-          aria-label="First-cycle approval artifacts"
+          aria-label="First-cycle launch artifacts"
         />
       </aside>
     </section>
@@ -1561,7 +1583,10 @@ function FirstCycleProofPackage({
             description={post.body}
             badge={<Badge variant="outline">{CHANNEL_LABELS[post.channel]}</Badge>}
           >
-            <p className="text-sm font-medium text-foreground/80">{post.hook}</p>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-foreground/80">{post.hook}</p>
+              <Badge variant="outline">Source proof: {post.proofUsed}</Badge>
+            </div>
           </DearMeWorkbenchCard>
         ))}
       </section>
@@ -1578,7 +1603,9 @@ function FirstCycleProofPackage({
           title={preview.portfolioProofCard.placement}
           description={preview.portfolioProofCard.proposedCopy}
           badge={<FileText className="h-4 w-4 text-muted-foreground" />}
-        />
+        >
+          <Badge variant="outline">Source proof: {preview.portfolioProofCard.proofSource}</Badge>
+        </DearMeWorkbenchCard>
         <DearMeWorkbenchCard
           eyebrow="First growth plan"
           title="First growth plan"
@@ -2456,8 +2483,8 @@ function TeamFocusWorkbenchPanel({
       <DearMeWorkbenchSectionHeader
         icon={Sparkles}
         eyebrow="Today's operating focus"
-        title="Your team is turning private work into visible proof."
-        description="Start with visible work: drafts, reports, opportunities, and proof your team already moved forward, plus the few decisions that matter."
+        title="Dear me, your team is working."
+        description="The team keeps preparing private work: drafts, reports, opportunities, and proof it already moved forward. Public posts, outbound messages, spend, and page changes return as one launch call."
         trailing={
           <Badge variant={paidBetaActive ? "default" : "secondary"}>
             {paidBetaActive ? "Team working" : "Private work locked"}
@@ -2509,7 +2536,11 @@ function TeamFocusWorkbenchPanel({
             <DearMeWorkbenchCard
               eyebrow="Weekly letter"
               title={reportStatus}
-              description={workbench.report?.bodyPreview ?? "Your next Dear me report will summarize what changed."}
+              description={
+                workbench.report?.bodyPreview
+                  ? customerProofPackSummary(workbench.report.bodyPreview)
+                  : "Your next Dear me report will summarize what changed."
+              }
               badge={<MessageSquare className="h-4 w-4 text-muted-foreground" />}
             />
             <DearMeWorkbenchCard
@@ -3277,6 +3308,10 @@ function DearMeLetterPanel({
   report: DearMeWorkbenchReport | null;
   onOpenIssue: (issueReference: string) => void;
 }) {
+  const packetBackedReport = report ? isPacketBackedReport(report) : false;
+  const reportSummary = report ? customerProofPackSummary(report.summary) : "";
+  const reportBodyPreview = report ? customerProofPackSummary(report.bodyPreview) : "";
+
   return (
     <DearMePanel aria-label="Dear me letter">
       <DearMeWorkbenchSectionHeader
@@ -3289,7 +3324,7 @@ function DearMeLetterPanel({
         <DearMeWorkbenchCard
           className="mt-4"
           title={report.title}
-          description={report.summary}
+          description={reportSummary}
           badge={
             <Badge variant={outputStatusVariant(report.status)}>
               {OUTPUT_STATUS_LABELS[report.status]}
@@ -3307,7 +3342,21 @@ function DearMeLetterPanel({
             </Button>
           }
         >
-          <p className="line-clamp-3 text-sm text-foreground/80">{report.bodyPreview}</p>
+          <p className="line-clamp-3 text-sm text-foreground/80">{reportBodyPreview}</p>
+          {packetBackedReport ? (
+            <section
+              className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-3"
+              aria-label="Proof pack report review"
+            >
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Proof pack review
+              </div>
+              <p className="mt-1 text-sm text-foreground/80">
+                DearMe prepared the draft and this report from one private proof pack. Review once; nothing public moves until you approve it.
+              </p>
+            </section>
+          ) : null}
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {REPORT_DIGEST_SECTIONS.map((section) => {
               const items = report[section.key];
@@ -3325,7 +3374,7 @@ function DearMeLetterPanel({
                     {items.map((item) => (
                       <li key={item} className="flex gap-2">
                         <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-primary" />
-                        <span>{item}</span>
+                        <span>{customerProofPackSummary(item)}</span>
                       </li>
                     ))}
                   </ul>
@@ -4830,7 +4879,7 @@ function FirstCyclePacketSpotlight({
   return (
     <div
       className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-4"
-      aria-label="First cycle packet"
+      aria-label="First proof pack"
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
@@ -5344,7 +5393,7 @@ export function DearMeOnboarding() {
         title="Your personal brand growth team"
         description={
           <>
-            Your personal brand growth team turns work, voice, proof, and relationships into posts,
+            Dear me, your team is already working: planning, drafting, scouting, and packaging proof into posts,
             opportunities, portfolio updates, and weekly direction. It starts with usable work and brings you the few decisions that matter.
           </>
         }

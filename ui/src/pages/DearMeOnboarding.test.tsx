@@ -843,6 +843,29 @@ function workbenchResponse(): DearMeWorkbenchResponse {
   };
 }
 
+function workbenchResponseWithPacketReport(): DearMeWorkbenchResponse {
+  const response = workbenchResponse();
+  if (!response.report) {
+    return response;
+  }
+
+  return {
+    ...response,
+    report: {
+      ...response.report,
+      summary:
+        "DearMe prepared the report and content drafts from the same private cycle packet. Voice fit 97/100. Review once, then launch, revise, or regenerate.",
+      bodyPreview: "Completed work: the same private cycle packet has a draft and report ready.",
+      accomplished: [
+        "Content draft and Dear me report came from the same private cycle packet.",
+      ],
+      decisions: ["Shared packet review: review once before public moves."],
+      learnings: ["Voice fit 97/100 ready for review."],
+      nextBets: ["Pick one launch move from the single review surface."],
+    },
+  };
+}
+
 function workbenchResponseWithChiefBrief() {
   const response = workbenchResponse();
   const chiefUpdatedAt = "2026-05-07T16:30:00.000Z";
@@ -1358,9 +1381,14 @@ describe("DearMeOnboarding", () => {
     expect(mockDearmeApi.getWorkbench).toHaveBeenCalledWith("company-1");
     expect(container.textContent).toContain("Brand OS");
     expect(container.textContent).toContain("Your personal brand growth team");
+    expect(container.textContent).toContain("Dear me, your team is working");
+    expect(container.textContent).toContain("Team working");
+    expect(container.textContent).toContain("Launch boundary");
+    expect(container.textContent).toContain("The team keeps preparing private work: drafts, reports, opportunities");
+    expect(container.textContent).toContain("Public posts, outbound messages, spend, and page changes return as one launch call.");
     expect(container.textContent).toContain("Work ready / Decisions needed");
     expect(container.textContent).toContain("Today's operating focus");
-    expect(container.textContent).toContain("Your team is turning private work into visible proof.");
+    expect(container.textContent).toContain("It starts with usable work and brings you the few decisions that matter.");
     expect(container.textContent).toContain("While you were away");
     expect(container.textContent).toContain("Decisions waiting");
     expect(container.textContent).toContain("Team focus");
@@ -1637,6 +1665,45 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("renders packet-backed Dear me reports as one proof pack review", async () => {
+    mockDearmeApi.getWorkbench.mockResolvedValue(workbenchResponseWithPacketReport());
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const letter = surfaceByLabel(container, "Dear me letter");
+    expect(letter.textContent).toContain("Proof pack review");
+    expect(letter.textContent).toContain(
+      "DearMe prepared the draft and this report from one private proof pack.",
+    );
+    expect(letter.textContent).toContain("Review once");
+    expect(letter.textContent).toContain("Voice fit 97/100");
+    expect(letter.textContent).toContain("same private proof pack");
+    expect(letter.textContent).not.toContain("cycle packet");
+    expect(letter.textContent).not.toContain("shared packet");
+    expectNoHiddenProductTerms(letter.textContent, [
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+      "OpenClaw",
+      "Paperclip",
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("revises saved Voice & Memory sources without creating a new source table", async () => {
     const root = createRoot(container);
     const queryClient = new QueryClient({
@@ -1782,6 +1849,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Portfolio proof card");
     expect(container.textContent).toContain("First growth plan");
     expect(container.textContent).toContain("Ready to launch, with you in control");
+    expect(container.textContent).toContain("Source proof: Ran 42 customer interviews that changed a pricing launch");
     expect(container.textContent).not.toContain("Approval-gated by default");
     expect(mockDearmeApi.previewFirstCycle).not.toHaveBeenCalled();
     expect(mockDearmeApi.startFirstCycle).not.toHaveBeenCalled();
@@ -1862,6 +1930,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Portfolio proof card");
     expect(container.textContent).toContain("First growth plan");
     expect(container.textContent).toContain("Ready to launch, with you in control");
+    expect(container.textContent).toContain("Source proof: Shipped a working local product");
     expect(container.textContent).toContain("Post publicly");
     expect(container.textContent).toContain("Update the public page");
     expect(container.textContent).not.toContain("Approval-gated by default");
@@ -3415,7 +3484,7 @@ describe("DearMeOnboarding", () => {
     });
   });
 
-  it("spotlights the first cycle packet when generated draft and report artifacts are ready", async () => {
+  it("spotlights the first proof pack when generated draft and report artifacts are ready", async () => {
     mockDearmeApi.getOutputs.mockResolvedValue(outputsWithFirstCyclePacket());
     const root = createRoot(container);
     const queryClient = new QueryClient({
@@ -3431,7 +3500,7 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
-    const packetSurface = surfaceByLabel(container, "First cycle packet");
+    const packetSurface = surfaceByLabel(container, "First proof pack");
     expect(packetSurface.textContent).toContain("First proof pack ready");
     expect(packetSurface.textContent).toContain("Draft, report, and launch boundary are ready for your call.");
     expect(packetSurface.textContent).toContain("2 ready");
