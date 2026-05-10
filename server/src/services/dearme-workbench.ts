@@ -36,6 +36,10 @@ import {
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "./dearme-brand-blueprint-apply.js";
 import { dearmeOutputHandoffService } from "./dearme-output-handoff.js";
 import {
+  compactDearMeCustomerText,
+  dearMeCustomerSafeText,
+} from "./dearme-customer-text.js";
+import {
   DEARME_NEXT_MOVE_APPROVAL_TYPE,
   DEARME_NEXT_MOVE_APPROVED_ACTIVITY,
   DEARME_PRIVATE_EXECUTION_HANDOFF_ACTIVITY,
@@ -295,11 +299,7 @@ function previewText(value: string, maxLength = 700) {
 }
 
 function compactProjectionText(value: string | null | undefined) {
-  if (!value) return "";
-  return value
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return compactDearMeCustomerText(value);
 }
 
 export function dearMeWorkbenchProjectionText(
@@ -307,35 +307,7 @@ export function dearMeWorkbenchProjectionText(
   fallback: string,
   maxLength = 1_000,
 ) {
-  let safe = compactProjectionText(value);
-  for (const [pattern, replacement] of [
-    [/\bOpenClaw\b/gi, "DearMe"],
-    [/\bSymphony\b/gi, "DearMe"],
-    [/\bPaperclip\b/gi, "DearMe"],
-    [/\bOK Partner\b/gi, "DearMe"],
-    [/\bsetup[_ -]?payload\b/gi, "setup details"],
-    [/\badapter[_ -]?type\b|\badapterType\b/gi, "connector type"],
-    [/\bmodel[- ]providers?\b/gi, "services"],
-    [/\bmodels?\b/gi, "private checks"],
-    [/\badapters?\b/gi, "connectors"],
-    [/\bproviders?\b/gi, "services"],
-    [/\bruntimes?\b/gi, "private work area"],
-    [/\broutines?\b/gi, "cycle checks"],
-    [/\bworkbench\b/gi, "team progress"],
-    [/\bworkstreams?\b/gi, "team updates"],
-    [/\bwork streams?\b/gi, "team updates"],
-    [/\bissue comments?\b/gi, "review notes"],
-    [/\bissue routes?\b/gi, "private review links"],
-    [/\bapproval routes?\b/gi, "review links"],
-    [/\bwork products?\b/gi, "prepared work"],
-    [/\bworkspaces?\b/gi, "private work areas"],
-    [/\bagents?\b/gi, "teammates"],
-  ] as const) {
-    safe = safe.replace(pattern, replacement);
-  }
-
-  safe = safe.replace(/\s+/g, " ").trim();
-  return previewText(safe || fallback, maxLength);
+  return dearMeCustomerSafeText(value, fallback, maxLength);
 }
 
 function dearMeWorkbenchProjectionTitle(
@@ -1964,7 +1936,14 @@ export function dearmeWorkbenchService(db: Db) {
   return {
     getWorkbench: async (companyId: string) => {
       const outputsResponse = await outputHandoff.listOutputs(companyId);
-      const [agentRows, approvalRows, activityRows, memoryRows, chiefBriefRows] = await Promise.all([
+      const [
+        agentRows,
+        approvalRows,
+        activityRows,
+        approvedNextMoveReceiptRows,
+        memoryRows,
+        chiefBriefRows,
+      ] = await Promise.all([
         db
           .select({
             id: agents.id,
@@ -2001,6 +1980,16 @@ export function dearmeWorkbenchService(db: Db) {
           .where(eq(activityLog.companyId, companyId))
           .orderBy(desc(activityLog.createdAt))
           .limit(25),
+        db
+          .select({
+            details: activityLog.details,
+          })
+          .from(activityLog)
+          .where(and(
+            eq(activityLog.companyId, companyId),
+            eq(activityLog.action, DEARME_NEXT_MOVE_APPROVED_ACTIVITY),
+          ))
+          .orderBy(desc(activityLog.createdAt)),
         db
           .select({
             id: activityLog.id,
@@ -2120,8 +2109,7 @@ export function dearmeWorkbenchService(db: Db) {
         .filter((approval) => approval.type === DEARME_NEXT_MOVE_APPROVAL_TYPE)
         .map((approval) => outputIdFromApprovalPayload(approval.payload))
         .filter((outputId): outputId is string => Boolean(outputId)));
-      const approvedNextMoveOutputIds = new Set(activityRows
-        .filter((activity) => activity.action === DEARME_NEXT_MOVE_APPROVED_ACTIVITY)
+      const approvedNextMoveOutputIds = new Set(approvedNextMoveReceiptRows
         .map((activity) => {
           const details = isRecord(activity.details) ? activity.details : {};
           return optionalPayloadString(details.outputId);

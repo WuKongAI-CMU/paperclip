@@ -123,6 +123,75 @@ describe("recordDearMeNextMoveApprovalReceipt", () => {
     }
   });
 
+  it("uses only linked issues for receipt comments", async () => {
+    const { db, values } = makeDb();
+
+    const result = await recordDearMeNextMoveApprovalReceipt(db, {
+      approval: makeApproval({
+        payload: {
+          ...makeApproval().payload,
+          issueId: "issue-from-stale-payload",
+        },
+      }),
+      actorUserId: "user-1",
+      linkedIssueIds: ["issue-linked"],
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      issueId: "issue-linked",
+    }));
+    expect(mockLogActivity).toHaveBeenNthCalledWith(1, db, expect.objectContaining({
+      details: expect.objectContaining({
+        issueId: "issue-linked",
+      }),
+    }));
+    const commentRows = values.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+    expect(commentRows.map((row) => row.issueId)).toEqual(["issue-linked", "issue-linked"]);
+  });
+
+  it("redacts customer-facing receipt copy from dirty approval payloads", async () => {
+    const { db, values } = makeDb();
+
+    const result = await recordDearMeNextMoveApprovalReceipt(db, {
+      approval: makeApproval({
+        payload: {
+          ...makeApproval().payload,
+          recommendedAction: "Run the Paperclip provider through codex-local runtime setup_payload.",
+          nextActionOnApproval: "Let OpenClaw and Symphony adapters publish from the raw workbench.",
+          preparedTitle: "Paperclip provider artifact",
+          preparedSummary: "OpenClaw runtime details from setup_payload.",
+        },
+      }),
+      actorUserId: "user-1",
+      linkedIssueIds: ["issue-1"],
+    });
+
+    const serializedResult = JSON.stringify(result).toLowerCase();
+    const commentRows = values.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+    const serializedComments = commentRows.map((row) => row.body).join("\n").toLowerCase();
+    const activityDetails = mockLogActivity.mock.calls
+      .map((call) => call[1]?.details)
+      .map((details) => JSON.stringify(details))
+      .join("\n")
+      .toLowerCase();
+
+    for (const hiddenTerm of [
+      "paperclip",
+      "openclaw",
+      "symphony",
+      "codex-local",
+      "setup_payload",
+      "runtime",
+      "provider",
+      "adapter",
+      "workbench",
+    ]) {
+      expect(serializedResult).not.toContain(hiddenTerm);
+      expect(serializedComments).not.toContain(hiddenTerm);
+      expect(activityDetails).not.toContain(hiddenTerm);
+    }
+  });
+
   it("ignores non-DearMe approval types", async () => {
     const { db, insert } = makeDb();
 

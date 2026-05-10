@@ -1,6 +1,7 @@
 import type { Db } from "@paperclipai/db";
 import { approvals, issueComments } from "@paperclipai/db";
 import { logActivity } from "./activity-log.js";
+import { dearMeCustomerSafeText } from "./dearme-customer-text.js";
 
 export const DEARME_NEXT_MOVE_APPROVAL_TYPE = "dearme_output_next_move";
 export const DEARME_NEXT_MOVE_APPROVED_ACTIVITY = "dearme.next_move_approved";
@@ -19,19 +20,32 @@ function payloadText(payload: Record<string, unknown>, key: string) {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
+function customerSafePayloadText(payload: Record<string, unknown>, key: string, fallback: string) {
+  return dearMeCustomerSafeText(payloadText(payload, key), fallback);
+}
+
 function clippedText(value: string, maxLength: number) {
   if (value.length <= maxLength) return value;
   return `${value.slice(0, maxLength - 3).trimEnd()}...`;
 }
 
+function verifiedLinkedIssueId(payloadIssueId: string | null, linkedIssueIds: string[]) {
+  const linkedIds = linkedIssueIds.filter((issueId) => issueId.trim().length > 0);
+  if (payloadIssueId && linkedIds.includes(payloadIssueId)) {
+    return payloadIssueId;
+  }
+  return linkedIds[0] ?? null;
+}
+
 function buildReceiptDetails(approval: ApprovalRecord) {
   const payload = isRecord(approval.payload) ? approval.payload : {};
   const recommendedAction =
-    payloadText(payload, "recommendedAction") ??
-    payloadText(payload, "title") ??
+    customerSafePayloadText(payload, "recommendedAction", "") ||
+    customerSafePayloadText(payload, "title", "") ||
     "Continue with the approved DearMe next move.";
   const nextActionOnApproval =
-    payloadText(payload, "nextActionOnApproval") ??
+    customerSafePayloadText(payload, "nextActionOnApproval",
+      "DearMe will prepare the next governed handoff before anything external runs.") ||
     "DearMe will prepare the next governed handoff before anything external runs.";
   const receiptSummary = [
     `Approved: ${recommendedAction}`,
@@ -46,8 +60,8 @@ function buildReceiptDetails(approval: ApprovalRecord) {
     issueId: payloadText(payload, "issueId"),
     issueIdentifier: payloadText(payload, "issueIdentifier"),
     riskGate: payloadText(payload, "riskGate"),
-    preparedTitle: payloadText(payload, "preparedTitle"),
-    preparedSummary: payloadText(payload, "preparedSummary"),
+    preparedTitle: customerSafePayloadText(payload, "preparedTitle", ""),
+    preparedSummary: customerSafePayloadText(payload, "preparedSummary", ""),
     recommendedAction,
     nextActionOnApproval,
     externalExecutionStatus: "not_run_yet",
@@ -136,9 +150,13 @@ export async function recordDearMeNextMoveApprovalReceipt(
     return null;
   }
 
-  const receiptDetails = buildReceiptDetails(input.approval);
+  const rawReceiptDetails = buildReceiptDetails(input.approval);
+  const issueId = verifiedLinkedIssueId(rawReceiptDetails.issueId, input.linkedIssueIds);
+  const receiptDetails = {
+    ...rawReceiptDetails,
+    issueId,
+  };
   const handoffDetails = buildPrivateExecutionHandoffDetails(receiptDetails);
-  const issueId = receiptDetails.issueId ?? input.linkedIssueIds[0] ?? null;
 
   await logActivity(db, {
     companyId: input.approval.companyId,
