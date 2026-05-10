@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dearMeOutputItemSchema, type DearMeOutputItem } from "@paperclipai/shared";
 import {
+  dearmeWorkbenchProgressFromActivity,
   dearMeWorkbenchProjectionOutput,
   dearMeWorkbenchProjectionText,
 } from "../services/dearme-workbench.js";
@@ -100,5 +101,34 @@ describe("DearMe workbench projection helpers", () => {
     expect(projected.title).toContain("DearMe");
     expect(projected.reviewLoop.feedbackTrace?.summary).toContain("services feedback summary");
     expect(projected.sourceEvidence[0]?.summary).toContain("DearMe");
+  });
+
+  it("projects connect-channel readiness through the private handoff progress item", () => {
+    const projected = dearmeWorkbenchProgressFromActivity({
+      id: "activity-private-handoff",
+      action: "dearme.private_execution_handoff_prepared",
+      entityId: "approval-1",
+      details: {
+        approvalId: "approval-1",
+        issueId: "issue-1",
+        issueIdentifier: "PET-8",
+        outputId: "issue-1:content_drafts",
+        outputKind: "content_drafts",
+        riskGate: "publish_social",
+        executionReadiness: "private_handoff_ready",
+        handoffTitle: "Private X handoff prepared",
+        handoffSummary: "The final approval is recorded and DearMe prepared the private X execution brief. External action: still not run. Next: Connect X before DearMe can continue this approved handoff.",
+        handoffNextStep: "Connect X before DearMe can continue this approved handoff.",
+      },
+      createdAt: new Date("2026-05-08T12:00:00.000Z"),
+    });
+
+    expect(projected).toEqual(expect.objectContaining({
+      kind: "execution_handoff_prepared",
+      title: "Private X handoff prepared",
+      summary: expect.stringContaining("Connect X before DearMe can continue this approved handoff."),
+      nextStep: "Connect X before DearMe can continue this approved handoff.",
+    }));
+    expect(JSON.stringify(projected)).not.toMatch(HIDDEN_SUBSTRATE_PATTERN);
   });
 });

@@ -1825,7 +1825,7 @@ function buildBatchDecisions(decisions: DearMeWorkbenchDecision[]): DearMeWorkbe
     .slice(0, 8);
 }
 
-function progressFromActivity(input: {
+export function dearmeWorkbenchProgressFromActivity(input: {
   id: string;
   action: string;
   entityId: string | null;
@@ -2259,7 +2259,7 @@ export function dearmeWorkbenchService(db: Db) {
         .filter((activity) =>
           activity.action.startsWith("dearme.") &&
           activity.action !== DEARME_CHIEF_OF_STAFF_MESSAGE_ACTION)
-        .map(progressFromActivity);
+        .map(dearmeWorkbenchProgressFromActivity);
       const spendProgress = progressFromSpendCheckpoint(spendCheckpointRows[0] ?? {
         eventCount: 0,
         totalCents: 0,

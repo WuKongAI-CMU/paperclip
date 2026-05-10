@@ -123,6 +123,53 @@ describe("recordDearMeNextMoveApprovalReceipt", () => {
     }
   });
 
+  it("surfaces connect-channel readiness in the private handoff receipt", async () => {
+    const { db, insert, values } = makeDb();
+    const approval = makeApproval({
+      payload: {
+        ...makeApproval().payload,
+        launchHandoff: {
+          channel: "x",
+          publishGate: {
+            connectChannelState: "connect_channel_required",
+          },
+        },
+      },
+    });
+
+    const result = await recordDearMeNextMoveApprovalReceipt(db, {
+      approval,
+      actorUserId: "user-1",
+      linkedIssueIds: ["issue-1"],
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      launchChannel: "x",
+      launchChannelLabel: "X",
+      connectChannelState: "connect_channel_required",
+      connectChannelNextStep: "Connect X before DearMe can continue this approved handoff.",
+      handoffTitle: "Private X handoff prepared",
+      handoffNextStep: "Connect X before DearMe can continue this approved handoff.",
+      nextActionOnApproval: "Connect X before DearMe can continue this approved handoff.",
+    }));
+    expect(mockLogActivity).toHaveBeenNthCalledWith(2, db, expect.objectContaining({
+      details: expect.objectContaining({
+        launchChannel: "x",
+        launchChannelLabel: "X",
+        connectChannelState: "connect_channel_required",
+        connectChannelNextStep: "Connect X before DearMe can continue this approved handoff.",
+      }),
+    }));
+
+    expect(insert).toHaveBeenCalledTimes(1);
+    const commentRows = values.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+    const serializedComments = commentRows.map((row) => row.body).join("\n");
+    expect(serializedComments).toContain("Connect X before DearMe can continue this approved handoff.");
+    for (const hiddenTerm of ["launchHandoff", "connect_channel_required", "paperclip", "openclaw", "symphony"]) {
+      expect(serializedComments).not.toContain(hiddenTerm);
+    }
+  });
+
   it("uses only linked issues for receipt comments", async () => {
     const { db, values } = makeDb();
 

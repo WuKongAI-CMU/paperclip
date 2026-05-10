@@ -15,6 +15,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function recordField(record: Record<string, unknown>, key: string) {
+  const value = record[key];
+  return isRecord(value) ? value : null;
+}
+
+function stringField(record: Record<string, unknown>, key: string) {
+  const value = record[key];
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
 function payloadText(payload: Record<string, unknown>, key: string) {
   const value = payload[key];
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
@@ -22,6 +32,48 @@ function payloadText(payload: Record<string, unknown>, key: string) {
 
 function customerSafePayloadText(payload: Record<string, unknown>, key: string, fallback: string) {
   return dearMeCustomerSafeText(payloadText(payload, key), fallback);
+}
+
+const CHANNEL_LABELS: Record<string, string> = {
+  linkedin: "LinkedIn",
+  x: "X",
+  newsletter: "Newsletter",
+  blog: "Blog",
+  portfolio: "Portfolio",
+  email: "Email",
+  community: "Community",
+  website: "Website",
+};
+
+function channelLabel(value: string | null) {
+  if (!value) return null;
+  return CHANNEL_LABELS[value] ?? value.replace(/(^|-)([a-z])/g, (_match, _separator: string, letter: string) => letter.toUpperCase());
+}
+
+function launchHandoffFromPayload(payload: Record<string, unknown>) {
+  const launchHandoff = recordField(payload, "launchHandoff");
+  if (!launchHandoff) return null;
+
+  const publishGate = recordField(launchHandoff, "publishGate");
+  const connectChannelState = publishGate ? stringField(publishGate, "connectChannelState") : null;
+  const channel = stringField(launchHandoff, "channel");
+  const label = channelLabel(channel);
+
+  if (connectChannelState !== "connect_channel_required" || !label) {
+    return {
+      channel,
+      channelLabel: label,
+      connectChannelState: connectChannelState ?? null,
+      connectChannelNextStep: null,
+    };
+  }
+
+  return {
+    channel,
+    channelLabel: label,
+    connectChannelState: "connect_channel_required" as const,
+    connectChannelNextStep: `Connect ${label} before DearMe can continue this approved handoff.`,
+  };
 }
 
 function clippedText(value: string, maxLength: number) {
@@ -39,13 +91,19 @@ function verifiedLinkedIssueId(payloadIssueId: string | null, linkedIssueIds: st
 
 function buildReceiptDetails(approval: ApprovalRecord) {
   const payload = isRecord(approval.payload) ? approval.payload : {};
+  const launchHandoff = launchHandoffFromPayload(payload);
   const recommendedAction =
     customerSafePayloadText(payload, "recommendedAction", "") ||
     customerSafePayloadText(payload, "title", "") ||
     "Continue with the approved DearMe next move.";
+  const payloadNextAction = customerSafePayloadText(
+    payload,
+    "nextActionOnApproval",
+    "DearMe will prepare the next governed handoff before anything external runs.",
+  );
   const nextActionOnApproval =
-    customerSafePayloadText(payload, "nextActionOnApproval",
-      "DearMe will prepare the next governed handoff before anything external runs.") ||
+    launchHandoff?.connectChannelNextStep ??
+    payloadNextAction ??
     "DearMe will prepare the next governed handoff before anything external runs.";
   const receiptSummary = [
     `Approved: ${recommendedAction}`,
@@ -64,6 +122,10 @@ function buildReceiptDetails(approval: ApprovalRecord) {
     preparedSummary: customerSafePayloadText(payload, "preparedSummary", ""),
     recommendedAction,
     nextActionOnApproval,
+    launchChannel: launchHandoff?.channel ?? null,
+    launchChannelLabel: launchHandoff?.channelLabel ?? null,
+    connectChannelState: launchHandoff?.connectChannelState ?? null,
+    connectChannelNextStep: launchHandoff?.connectChannelNextStep ?? null,
     externalExecutionStatus: "not_run_yet",
     receiptTitle: "Final approval recorded",
     receiptSummary: clippedText(receiptSummary, 1_000),
@@ -71,6 +133,14 @@ function buildReceiptDetails(approval: ApprovalRecord) {
 }
 
 function handoffCopyFor(details: ReceiptDetails) {
+  if (details.connectChannelState === "connect_channel_required" && details.launchChannelLabel) {
+    return {
+      title: `Private ${details.launchChannelLabel} handoff prepared`,
+      nextStep:
+        details.connectChannelNextStep ??
+        `Connect ${details.launchChannelLabel} before DearMe can continue this approved handoff.`,
+    };
+  }
   if (details.riskGate === "publish_social") {
     return {
       title: "Private publishing handoff prepared",

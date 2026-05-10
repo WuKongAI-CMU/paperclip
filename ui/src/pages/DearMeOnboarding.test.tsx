@@ -4325,6 +4325,72 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("surfaces connect-channel readiness without raw substrate terms", async () => {
+    const response = workbenchResponse();
+    response.recentProgress = [
+      {
+        id: "activity-private-handoff-connect",
+        kind: "execution_handoff_prepared",
+        title: "Private X handoff prepared",
+        summary: "The final approval is recorded and DearMe prepared the private X execution brief. External action: still not run. Next: Connect X before DearMe can continue this approved handoff.",
+        outputKind: "content_drafts",
+        outputId: "issue-2:content_drafts",
+        riskGate: "publish_social",
+        approvalId: "approval-publish",
+        issueId: "issue-2",
+        issueIdentifier: "PET-8",
+        executionReadiness: "private_handoff_ready",
+        nextStep: "Connect X before DearMe can continue this approved handoff.",
+        createdAt: "2026-05-07T14:06:00.000Z",
+      },
+      ...response.recentProgress,
+    ];
+    mockDearmeApi.getWorkbench.mockResolvedValue(response);
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const handoffPanel = surfaceByLabel(container, "Private handoff ready");
+    expect(handoffPanel.textContent).toContain("Private X handoff prepared");
+    expect(handoffPanel.textContent).toContain("Connect X before DearMe can continue this approved handoff.");
+    expect(handoffPanel.textContent).toContain("External action not run");
+    expect(handoffPanel.textContent).not.toContain("connect_channel_required");
+    expect(handoffPanel.textContent).not.toContain("launchHandoff");
+    expectNoHiddenProductTerms(handoffPanel.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.orchestrationName,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+      HIDDEN_PRODUCT_TERMS.modelName,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+      HIDDEN_PRODUCT_TERMS.workbenchName,
+      HIDDEN_PRODUCT_TERMS.workspaceName,
+    ]);
+
+    await act(async () => {
+      buttonByText(handoffPanel, "Open brief")?.click();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/dearme?view=decisions&work=PET-8&artifact=issue-2%3Acontent_drafts",
+    );
+    expect(container.textContent).not.toContain("/issues/");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("renders a DearMe-owned approval decision detail from URL params", async () => {
     mockLocation.search = "?view=decisions&approval=approval-ready";
     const root = createRoot(container);
