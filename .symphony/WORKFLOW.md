@@ -39,7 +39,7 @@ agent:
     In Progress: 4
     In Review: 2
 codex:
-  command: codex --config shell_environment_policy.inherit=all --config 'model="gpt-5.5"' --config model_reasoning_effort=medium app-server
+  command: codex --config shell_environment_policy.inherit=all --config 'model="gpt-5.4-mini"' --config model_reasoning_effort=high app-server
   approval_policy: never
   thread_sandbox: workspace-write
   # Workers need localhost access for DearMe dev-server and Playwright smokes.
@@ -64,7 +64,17 @@ DearMe is the customer-facing personal brand growth team. Keep the team visible
 and the machinery hidden: do not expose Paperclip, OpenClaw, Symphony, adapter,
 provider, setup payload, model, or raw runtime language in paid-beta UI/copy.
 
-Start every run by reading:
+Start every run with bootstrap evidence before any product analysis. Your first
+assistant action must be a shell command that runs:
+
+- `git log -1 --oneline`
+- `git status --short --branch`
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty`
+
+If the DearMe worktree script is missing, record the exact failure and run
+`pnpm paperclipai worktree:list --json` instead.
+
+Then read:
 
 - `AGENTS.md`
 - `docs/dearme/README.md`
@@ -96,16 +106,12 @@ Operating rules:
 2. Use existing DearMe, Polsia, Naive, Lindy, Littlebird, Cofounder, and
    OpenClaw patterns where they fit. Record donor paths used, adapted, or
    rejected.
-3. Before new worktree decisions, run
-   `pnpm dearme:worktrees -- --summary-only --skip-dirty` when available. If
-   that root script is missing on the selected branch, record the exact failure
-   and use `pnpm paperclipai worktree:list --json` instead. Do not block the
-   issue on this compatibility gap.
-4. First-turn execution guard: after reading the required docs, run
-   `git log -1 --oneline`, `git status --short --branch`, and the worktree
-   summary before any broad synthesis. For proof/smoke issues, inspect the
-   current product paths and run the narrow shell smoke or focused test before
-   searching old worktrees. If those checks show no code gap, report the
+3. Treat the bootstrap worktree summary as the only default worktree pass. Do
+   not search old worktrees unless the issue and summary identify a directly
+   relevant residual branch.
+4. First-turn execution guard: after the bootstrap and required docs, inspect
+   the current product paths and run the narrow shell smoke or focused test
+   before any broad synthesis. If those checks show no code gap, report the
    evidence and stop instead of continuing analysis.
 5. Keep code edits scoped to the issue. Stage explicit paths only; never use
    `git add -A` or broad cleanup commands.
