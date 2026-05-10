@@ -84,6 +84,7 @@ const mockSetMobileToolbar = vi.hoisted(() => vi.fn());
 const mockPushToast = vi.hoisted(() => vi.fn());
 const mockIssuesListRender = vi.hoisted(() => vi.fn());
 const mockIssueChatThreadRender = vi.hoisted(() => vi.fn());
+const mockIssueRunLedgerRender = vi.hoisted(() => vi.fn());
 const mockTabsOnValueChange = vi.hoisted(() => ({
   current: null as ((value: string) => void) | null,
 }));
@@ -248,7 +249,10 @@ vi.mock("../components/IssueProperties", () => ({
 }));
 
 vi.mock("../components/IssueRunLedger", () => ({
-  IssueRunLedger: () => <div>Runs</div>,
+  IssueRunLedger: (props: { hideRunSubstrateDetails?: boolean }) => {
+    mockIssueRunLedgerRender(props);
+    return <div>{props.hideRunSubstrateDetails ? "DearMe work ledger" : "Runs"}</div>;
+  },
 }));
 
 vi.mock("../components/IssueWorkspaceCard", () => ({
@@ -921,6 +925,7 @@ describe("IssueDetail", () => {
     mockTabsOnValueChange.current = null;
     mockIssuesListRender.mockClear();
     mockIssueChatThreadRender.mockClear();
+    mockIssueRunLedgerRender.mockClear();
   });
 
   afterEach(async () => {
@@ -1004,6 +1009,44 @@ describe("IssueDetail", () => {
         { replace: true },
       );
     });
+  });
+
+  it("keeps DearMe activity run metadata and usage details product-safe", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({ originKind: "dearme_brand_blueprint_apply" }));
+    mockIssuesApi.getCostSummary.mockResolvedValue({
+      inputTokens: 1200,
+      outputTokens: 340,
+      cachedInputTokens: 80,
+      costCents: 42,
+      issueCount: 2,
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const activityButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.trim() === "Activity");
+    expect(activityButton).toBeTruthy();
+
+    await act(async () => {
+      activityButton!.click();
+    });
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("DearMe work ledger");
+      expect(mockIssueRunLedgerRender.mock.calls.at(-1)?.[0]).toMatchObject({
+        hideRunSubstrateDetails: true,
+      });
+    });
+    expect(container.textContent).not.toContain("Cost Summary");
+    expect(container.textContent).not.toContain("Tokens");
+    expect(container.textContent).not.toContain("$0.4200");
   });
 
   it("keeps generic linked approval decisions on the issue detail", async () => {

@@ -25,6 +25,7 @@ type IssueRunLedgerProps = {
   childIssues: Issue[];
   agentMap: ReadonlyMap<string, Agent>;
   hasLiveRuns: boolean;
+  hideRunSubstrateDetails?: boolean;
   activityEvents?: ActivityEvent[];
   renderActivityEvent?: (event: ActivityEvent) => ReactNode;
 };
@@ -36,6 +37,7 @@ type IssueRunLedgerContentProps = {
   issueStatus: Issue["status"];
   childIssues: Issue[];
   agentMap: ReadonlyMap<string, Pick<Agent, "name">>;
+  hideRunSubstrateDetails?: boolean;
   activityEvents?: ActivityEvent[];
   renderActivityEvent?: (event: ActivityEvent) => ReactNode;
   pendingWatchdogDecision?: WatchdogDecisionInput["decision"] | null;
@@ -295,6 +297,13 @@ function runSummary(run: LedgerRun, agentMap: ReadonlyMap<string, Pick<Agent, "n
   return `${statusLabel(run.status)} by ${agentName}`;
 }
 
+function dearMeRunSummary(run: LedgerRun) {
+  if (run.status === "running") return "DearMe team is working now.";
+  if (run.status === "queued") return "DearMe team work is queued.";
+  if (run.status === "scheduled_retry") return "DearMe team will retry this work.";
+  return `DearMe team work update: ${statusLabel(run.status)}.`;
+}
+
 function livenessCopyForRun(run: LedgerRun) {
   if (run.status === "scheduled_retry") return RETRY_PENDING_LIVENESS_COPY;
   if (run.livenessState) return LIVENESS_COPY[run.livenessState];
@@ -329,6 +338,18 @@ function stopStatusLabel(run: LedgerRun, stopReason: string | null) {
   if (run.status === "running") return "Still running";
   if (!run.livenessState) return "Unavailable";
   return "No stop reason";
+}
+
+function dearMeStopStatusLabel(run: LedgerRun, stopReason: string | null) {
+  if (run.status === "scheduled_retry") return "Retry pending";
+  if (run.status === "queued") return "Waiting to start";
+  if (run.status === "running") return "Still working";
+  if (!stopReason) return run.livenessState ? "Finished" : "Unavailable";
+  if (stopReason.startsWith("timeout")) return "Timed out";
+  if (stopReason === "cancelled") return "Cancelled";
+  if (stopReason === "paused by board" || stopReason === "budget paused") return "Paused";
+  if (stopReason === "completed") return "Completed";
+  return "Needs attention";
 }
 
 function lastUsefulActionLabel(run: LedgerRun) {
@@ -404,6 +425,7 @@ export function IssueRunLedger({
   childIssues,
   agentMap,
   hasLiveRuns,
+  hideRunSubstrateDetails = false,
   activityEvents,
   renderActivityEvent,
 }: IssueRunLedgerProps) {
@@ -466,6 +488,7 @@ export function IssueRunLedger({
       issueStatus={issueStatus}
       childIssues={childIssues}
       agentMap={agentMap}
+      hideRunSubstrateDetails={hideRunSubstrateDetails}
       activityEvents={activityEvents}
       renderActivityEvent={renderActivityEvent}
       pendingWatchdogDecision={watchdogDecision.variables?.decision ?? null}
@@ -483,6 +506,7 @@ export function IssueRunLedgerContent({
   issueStatus,
   childIssues,
   agentMap,
+  hideRunSubstrateDetails = false,
   activityEvents,
   renderActivityEvent,
   pendingWatchdogDecision,
@@ -502,6 +526,22 @@ export function IssueRunLedgerContent({
   );
   const children = childIssueSummary(childIssues);
   const canRenderActivityEvents = Boolean(renderActivityEvent);
+  const latestRunSummary = latestRun
+    ? hideRunSubstrateDetails
+      ? dearMeRunSummary(latestRun)
+      : runSummary(latestRun, agentMap)
+    : issueStatus === "in_progress"
+      ? hideRunSubstrateDetails
+        ? "Waiting for the first work update."
+        : "Waiting for the first run record."
+      : hideRunSubstrateDetails
+        ? "No work updates yet."
+        : "No runs linked yet.";
+  const emptyFeedMessage = hideRunSubstrateDetails
+    ? "Work updates and activity will appear here once this issue has history."
+    : renderActivityEvent
+      ? "Runs and activity will appear here once this issue has history."
+      : "Historical runs without liveness metadata will appear here once linked to this issue.";
   const feedItems = useMemo<LedgerFeedItem[]>(() => {
     const items: LedgerFeedItem[] = [];
     for (const run of ledgerRuns) {
@@ -534,19 +574,17 @@ export function IssueRunLedgerContent({
   }, [activityEvents, canRenderActivityEvents, ledgerRuns]);
 
   return (
-    <section className="space-y-3" aria-label="Issue run ledger">
+    <section className="space-y-3" aria-label={hideRunSubstrateDetails ? "DearMe work history" : "Issue run ledger"}>
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="text-sm font-medium text-muted-foreground">Run ledger</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">
+            {hideRunSubstrateDetails ? "Work history" : "Run ledger"}
+          </h3>
           <p className="text-xs text-muted-foreground">
-            {latestRun
-              ? runSummary(latestRun, agentMap)
-              : issueStatus === "in_progress"
-                ? "Waiting for the first run record."
-                : "No runs linked yet."}
+            {latestRunSummary}
           </p>
         </div>
-        {latestRun ? (
+        {latestRun && !hideRunSubstrateDetails ? (
           <Link
             to={`/agents/${latestRun.agentId}/runs/${latestRun.runId}`}
             className="shrink-0 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
@@ -599,12 +637,14 @@ export function IssueRunLedgerContent({
           )}
         >
           <p className="font-medium">
-            {latestSilentRun.outputSilence.level === "critical"
-              ? "Stale-run watchdog alert"
-              : "Output silence watchdog warning"}
+            {hideRunSubstrateDetails
+              ? "Work attention needed"
+              : latestSilentRun.outputSilence.level === "critical"
+                ? "Stale-run watchdog alert"
+                : "Output silence watchdog warning"}
           </p>
           <p className="mt-1">
-            Latest active run has been silent for{" "}
+            {hideRunSubstrateDetails ? "The latest active work update has been quiet for " : "Latest active run has been silent for "}
             {formatSilenceAge(latestSilentRun.outputSilence.silenceAgeMs) ?? "an extended period"}.
             {latestSilentRun.outputSilence.evaluationIssueIdentifier ? (
               <>
@@ -633,7 +673,7 @@ export function IssueRunLedgerContent({
                   })}
                 disabled={pendingWatchdogDecision != null}
               >
-                Continue monitoring
+                {hideRunSubstrateDetails ? "Keep watching" : "Continue monitoring"}
               </button>
               <button
                 type="button"
@@ -648,7 +688,7 @@ export function IssueRunLedgerContent({
                   })}
                 disabled={pendingWatchdogDecision != null}
               >
-                Snooze 1h
+                {hideRunSubstrateDetails ? "Remind me later" : "Snooze 1h"}
               </button>
               <button
                 type="button"
@@ -662,7 +702,7 @@ export function IssueRunLedgerContent({
                   })}
                 disabled={pendingWatchdogDecision != null}
               >
-                Mark false positive
+                {hideRunSubstrateDetails ? "Dismiss" : "Mark false positive"}
               </button>
             </div>
           ) : null}
@@ -676,9 +716,7 @@ export function IssueRunLedgerContent({
 
       {feedItems.length === 0 ? (
         <div className="rounded-md border border-dashed border-border px-3 py-3 text-sm text-muted-foreground">
-          {renderActivityEvent
-            ? "Runs and activity will appear here once this issue has history."
-            : "Historical runs without liveness metadata will appear here once linked to this issue."}
+          {emptyFeedMessage}
         </div>
       ) : (
         <div className="space-y-1.5">
@@ -694,6 +732,50 @@ export function IssueRunLedgerContent({
             const continuation = continuationLabel(run);
             const retryState = describeRunRetryState(run);
             const agentName = compactAgentName(run, agentMap);
+            if (hideRunSubstrateDetails) {
+              return (
+                <article
+                  key={`run:${run.runId}`}
+                  className="space-y-1.5 rounded-lg border border-border/60 px-3 py-2 text-xs text-muted-foreground"
+                >
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="font-medium text-foreground">DearMe team work update</span>
+                    <span className="rounded-md border border-border px-1.5 py-0.5 text-[11px] capitalize text-muted-foreground">
+                      {statusLabel(run.status)}
+                    </span>
+                    {run.isLive ? (
+                      <span className="inline-flex items-center gap-1 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[11px] text-cyan-700 dark:text-cyan-300">
+                        <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
+                        active
+                      </span>
+                    ) : null}
+                    <span className="ml-auto shrink-0">{relativeTime(item.timestamp)}</span>
+                  </div>
+
+                  <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+                    <div className="min-w-0">
+                      <span className="text-foreground">Elapsed</span>{" "}
+                      {duration ?? "unknown"}
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-foreground">Last useful update</span>{" "}
+                      {lastUsefulActionLabel(run)}
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-foreground">State</span>{" "}
+                      {dearMeStopStatusLabel(run, stopReason)}
+                    </div>
+                  </div>
+
+                  {run.nextAction ? (
+                    <div className="min-w-0 rounded-md bg-accent/40 px-2 py-1.5 text-xs leading-5">
+                      <span className="font-medium text-foreground">Next move: </span>
+                      <span className="break-words text-muted-foreground">{run.nextAction}</span>
+                    </div>
+                  ) : null}
+                </article>
+              );
+            }
             return (
               <article
                 key={`run:${run.runId}`}

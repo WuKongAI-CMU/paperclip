@@ -156,6 +156,7 @@ function renderLedger(props: Partial<ComponentProps<typeof IssueRunLedgerContent
       issueStatus={props.issueStatus ?? "in_progress"}
       childIssues={props.childIssues ?? []}
       agentMap={props.agentMap ?? new Map([["agent-1", { name: "CodexCoder" }]])}
+      hideRunSubstrateDetails={props.hideRunSubstrateDetails}
       activityEvents={props.activityEvents}
       renderActivityEvent={props.renderActivityEvent}
       pendingWatchdogDecision={props.pendingWatchdogDecision}
@@ -220,6 +221,45 @@ describe("IssueRunLedger", () => {
     expect(container.textContent).toContain("No liveness data");
     expect(container.textContent).toContain("Stop Unavailable");
     expect(container.textContent).toContain("Last useful action Unavailable");
+  });
+
+  it("renders DearMe work history without run links, agent names, or model-profile details", () => {
+    renderLedger({
+      hideRunSubstrateDetails: true,
+      runs: [
+        createRun({
+          runId: "run-secret-123456",
+          status: "failed",
+          resultJson: {
+            stopReason: "adapter_failed",
+            modelProfile: {
+              requested: "cheap",
+              applied: null,
+              configSource: "agent_runtime",
+              fallbackReason: "agent_runtime_profile_disabled",
+            },
+          },
+          livenessReason: "OpenClaw adapter failed while reading a provider token.",
+          nextAction: "Review the launch copy before the next customer-facing update.",
+        }),
+      ],
+    });
+
+    expect(container.textContent).toContain("Work history");
+    expect(container.textContent).toContain("DearMe team work update");
+    expect(container.textContent).toContain("State Needs attention");
+    expect(container.textContent).toContain("Next move:");
+    expect(container.textContent).toContain("Review the launch copy");
+    expect(container.textContent).not.toContain("Run ledger");
+    expect(container.textContent).not.toContain("Latest run");
+    expect(container.textContent).not.toContain("CodexCoder");
+    expect(container.textContent).not.toContain("run-secret");
+    expect(container.innerHTML).not.toContain("/agents/");
+    expect(container.textContent).not.toContain("Profile:");
+    expect(container.textContent).not.toContain("agent_runtime");
+    expect(container.textContent).not.toContain("OpenClaw");
+    expect(container.textContent).not.toContain("provider token");
+    expect(container.textContent).not.toContain("adapter");
   });
 
   it("renders adapter stop reasons with runner language", () => {

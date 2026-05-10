@@ -1172,8 +1172,10 @@ function IssueDetailActivityTab({
       || issueTreeCostTokens > 0
       || issueTreeCostSummary.cachedInputTokens > 0
       || issueTreeCostSummary.issueCount > 1);
+  const hideRunSubstrateDetails = isDearMeIssue(issue);
   const shouldShowCostSummary =
-    (linkedRuns && linkedRuns.length > 0) || hasIssueTreeCost;
+    !hideRunSubstrateDetails
+    && ((linkedRuns && linkedRuns.length > 0) || hasIssueTreeCost);
 
   if (initialLoading) {
     return <IssueSectionSkeleton titleWidth="w-20" rows={4} />;
@@ -1238,6 +1240,7 @@ function IssueDetailActivityTab({
           childIssues={childIssues}
           agentMap={agentMap}
           hasLiveRuns={hasLiveRuns}
+          hideRunSubstrateDetails={hideRunSubstrateDetails}
           activityEvents={activity ?? []}
           renderActivityEvent={(evt) => (
             <div className="space-y-1.5 rounded-lg border border-border/60 px-3 py-2 text-xs text-muted-foreground">
