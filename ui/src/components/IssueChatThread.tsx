@@ -113,6 +113,7 @@ import { IssueBlockedNotice } from "./IssueBlockedNotice";
 interface IssueChatMessageContext {
   feedbackDataSharingPreference: FeedbackDataSharingPreference;
   feedbackTermsUrl: string | null;
+  linkIssueReferences: boolean;
   agentMap?: Map<string, Agent>;
   currentUserId?: string | null;
   userLabelMap?: ReadonlyMap<string, string> | null;
@@ -149,6 +150,7 @@ interface IssueChatMessageContext {
 const IssueChatCtx = createContext<IssueChatMessageContext>({
   feedbackDataSharingPreference: "prompt",
   feedbackTermsUrl: null,
+  linkIssueReferences: true,
 });
 
 export function resolveAssistantMessageFoldedState(args: {
@@ -302,6 +304,7 @@ interface IssueChatThreadProps {
   hasOutputForRun?: (runId: string) => boolean;
   includeSucceededRunsWithoutOutput?: boolean;
   hideRunSubstrateDetails?: boolean;
+  linkIssueReferences?: boolean;
   onInterruptQueued?: (runId: string) => Promise<void>;
   onCancelQueued?: (commentId: string) => void;
   interruptingQueuedRunId?: string | null;
@@ -336,6 +339,7 @@ type IssueChatErrorBoundaryProps = {
   messages: readonly ThreadMessage[];
   emptyMessage: string;
   variant: "full" | "embedded";
+  linkIssueReferences: boolean;
   children: ReactNode;
 };
 
@@ -370,6 +374,7 @@ class IssueChatErrorBoundary extends Component<IssueChatErrorBoundaryProps, Issu
           messages={this.props.messages}
           emptyMessage={this.props.emptyMessage}
           variant={this.props.variant}
+          linkIssueReferences={this.props.linkIssueReferences}
         />
       );
     }
@@ -434,10 +439,12 @@ function IssueChatFallbackThread({
   messages,
   emptyMessage,
   variant,
+  linkIssueReferences,
 }: {
   messages: readonly ThreadMessage[];
   emptyMessage: string;
   variant: "full" | "embedded";
+  linkIssueReferences: boolean;
 }) {
   return (
     <div className={cn(variant === "embedded" ? "space-y-3" : "space-y-4")}>
@@ -478,7 +485,9 @@ function IssueChatFallbackThread({
                 </div>
                 <div className="space-y-2">
                   {lines.length > 0 ? lines.map((line, index) => (
-                    <MarkdownBody key={`${message.id}:fallback:${index}`}>{line}</MarkdownBody>
+                    <MarkdownBody key={`${message.id}:fallback:${index}`} linkIssueReferences={linkIssueReferences}>
+                      {line}
+                    </MarkdownBody>
                   )) : (
                     <p className="text-sm text-muted-foreground">No message content.</p>
                   )}
@@ -584,12 +593,13 @@ function commentDateLabel(date: Date | string | undefined): string {
 }
 
 const IssueChatTextPart = memo(function IssueChatTextPart({ text, recessed }: { text: string; recessed?: boolean }) {
-  const { onImageClick } = useContext(IssueChatCtx);
+  const { linkIssueReferences, onImageClick } = useContext(IssueChatCtx);
   return (
     <MarkdownBody
       className="text-sm leading-6"
       style={recessed ? { opacity: 0.55 } : undefined}
       softBreaks
+      linkIssueReferences={linkIssueReferences}
       onImageClick={onImageClick}
     >
       {text}
@@ -3123,6 +3133,7 @@ export function IssueChatThread({
   hasOutputForRun: hasOutputForRunOverride,
   includeSucceededRunsWithoutOutput = false,
   hideRunSubstrateDetails = false,
+  linkIssueReferences,
   onInterruptQueued,
   onCancelQueued,
   interruptingQueuedRunId = null,
@@ -3592,11 +3603,13 @@ export function IssueChatThread({
   const stableOnRejectInteraction = useStableEvent(onRejectInteraction);
   const stableOnSubmitInteractionAnswers = useStableEvent(onSubmitInteractionAnswers);
   const stableOnCancelInteraction = useStableEvent(onCancelInteraction);
+  const resolvedLinkIssueReferences = linkIssueReferences ?? !hideRunSubstrateDetails;
 
   const chatCtx = useMemo<IssueChatMessageContext>(
     () => ({
       feedbackDataSharingPreference,
       feedbackTermsUrl,
+      linkIssueReferences: resolvedLinkIssueReferences,
       agentMap,
       currentUserId,
       userLabelMap,
@@ -3617,6 +3630,7 @@ export function IssueChatThread({
     [
       feedbackDataSharingPreference,
       feedbackTermsUrl,
+      resolvedLinkIssueReferences,
       agentMap,
       currentUserId,
       userLabelMap,
@@ -3670,6 +3684,7 @@ export function IssueChatThread({
           messages={messages}
           emptyMessage={resolvedEmptyMessage}
           variant={variant}
+          linkIssueReferences={resolvedLinkIssueReferences}
         >
           <div data-testid="thread-root">
             <div

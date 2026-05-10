@@ -23,6 +23,8 @@ const markdownEditorMockState = vi.hoisted(() => ({
   emitMountEmptyChange: false,
 }));
 
+const markdownBodyRenderMock = vi.hoisted(() => vi.fn());
+
 vi.mock("../api/issues", () => ({
   issuesApi: mockIssuesApi,
 }));
@@ -41,9 +43,18 @@ vi.mock("@/lib/router", () => ({
 }));
 
 vi.mock("./MarkdownBody", () => ({
-  MarkdownBody: ({ children, className }: { children: string; className?: string }) => (
-    <div className={className}>{children}</div>
-  ),
+  MarkdownBody: ({
+    children,
+    className,
+    linkIssueReferences,
+  }: {
+    children: string;
+    className?: string;
+    linkIssueReferences?: boolean;
+  }) => {
+    markdownBodyRenderMock({ children, linkIssueReferences });
+    return <div className={className}>{children}</div>;
+  },
 }));
 
 vi.mock("./MarkdownEditor", async () => {
@@ -298,6 +309,49 @@ describe("IssueDocumentsSection", () => {
     expect(container.textContent).toContain("# Plan");
     expect(container.textContent).not.toContain("# Handoff");
     expect(container.querySelector(`#document-${ISSUE_CONTINUATION_SUMMARY_DOCUMENT_KEY}`)).toBeNull();
+
+    await act(async () => {
+      root.unmount();
+    });
+    queryClient.clear();
+  });
+
+  it("passes issue reference linkification opt-out to read-only document previews", async () => {
+    const issue = createIssue();
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+        },
+        mutations: {
+          retry: false,
+        },
+      },
+    });
+
+    mockIssuesApi.listDocuments.mockResolvedValue([
+      createIssueDocument({ key: "draft", title: "Draft", body: "Review PAP-1723 before publishing." }),
+    ]);
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDocumentsSection
+            issue={issue}
+            canDeleteDocuments={false}
+            linkIssueReferences={false}
+          />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+    await flush();
+
+    expect(markdownBodyRenderMock.mock.calls.some(([entry]) => (
+      entry.children === "Review PAP-1723 before publishing."
+      && entry.linkIssueReferences === false
+    ))).toBe(true);
 
     await act(async () => {
       root.unmount();

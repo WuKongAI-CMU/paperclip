@@ -71,12 +71,18 @@ function saveFoldedDocumentKeys(issueId: string, keys: string[]) {
   window.localStorage.setItem(getFoldedDocumentsStorageKey(issueId), JSON.stringify(keys));
 }
 
-function renderFoldableBody(body: string, className?: string, issueReferencePrefixes?: readonly string[]) {
+function renderFoldableBody(
+  body: string,
+  className: string | undefined,
+  linkIssueReferences: boolean,
+  issueReferencePrefixes?: readonly string[],
+) {
   return (
     <FoldCurtain>
       <MarkdownBody
         className={className}
         softBreaks={false}
+        linkIssueReferences={linkIssueReferences}
         issueReferencePrefixes={issueReferencePrefixes}
       >
         {body}
@@ -153,6 +159,7 @@ export function IssueDocumentsSection({
   feedbackTermsUrl = null,
   mentions,
   imageUploadHandler,
+  linkIssueReferences = true,
   onVote,
   extraActions,
 }: {
@@ -163,6 +170,7 @@ export function IssueDocumentsSection({
   feedbackTermsUrl?: string | null;
   mentions?: MentionOption[];
   imageUploadHandler?: (file: File) => Promise<string>;
+  linkIssueReferences?: boolean;
   onVote?: (
     revisionId: string,
     vote: FeedbackVoteValue,
@@ -796,7 +804,12 @@ export function IssueDocumentsSection({
               PLAN
             </span>
           </div>
-          {renderFoldableBody(issue.legacyPlanDocument.body, documentBodyContentClassName, issueReferencePrefixes)}
+          {renderFoldableBody(
+            issue.legacyPlanDocument.body,
+            documentBodyContentClassName,
+            linkIssueReferences,
+            issueReferencePrefixes,
+          )}
         </div>
       ) : null}
 
@@ -1082,7 +1095,12 @@ export function IssueDocumentsSection({
                           {!isPlanKey(doc.key) && activeConflict.serverDocument.title ? (
                             <p className="mb-2 text-sm font-medium">{activeConflict.serverDocument.title}</p>
                           ) : null}
-                          {renderFoldableBody(activeConflict.serverDocument.body, "text-[14px] leading-7", issueReferencePrefixes)}
+                          {renderFoldableBody(
+                            activeConflict.serverDocument.body,
+                            "text-[14px] leading-7",
+                            linkIssueReferences,
+                            issueReferencePrefixes,
+                          )}
                         </div>
                       )}
                     </div>
@@ -1103,7 +1121,12 @@ export function IssueDocumentsSection({
                     }`}
                   >
                     {isHistoricalPreview ? (
-                      renderFoldableBody(displayedBody, documentBodyContentClassName, issueReferencePrefixes)
+                      renderFoldableBody(
+                        displayedBody,
+                        documentBodyContentClassName,
+                        linkIssueReferences,
+                        issueReferencePrefixes,
+                      )
                     ) : activeDraft ? (
                       <MarkdownEditor
                         value={displayedBody}
@@ -1125,7 +1148,12 @@ export function IssueDocumentsSection({
                         onSubmit={() => void commitDraft(activeDraft ?? draft, { clearAfterSave: false, trackAutosave: true })}
                       />
                     ) : (
-                      renderFoldableBody(displayedBody, documentBodyContentClassName, issueReferencePrefixes)
+                      renderFoldableBody(
+                        displayedBody,
+                        documentBodyContentClassName,
+                        linkIssueReferences,
+                        issueReferencePrefixes,
+                      )
                     )}
                   </div>
                   <div className="flex min-h-4 items-center justify-end px-1">

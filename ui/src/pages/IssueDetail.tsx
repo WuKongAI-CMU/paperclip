@@ -1085,6 +1085,7 @@ const IssueDetailChatTab = memo(function IssueDetailChatTab({
         userLabelMap={userLabelMap}
         userProfileMap={userProfileMap}
         hideRunSubstrateDetails={hideRunSubstrateDetails}
+        linkIssueReferences={!hideRunSubstrateDetails}
         draftKey={draftKey}
         enableReassign
         reassignOptions={reassignOptions}
@@ -3737,6 +3738,7 @@ export function IssueDetail() {
           multiline
           foldable
           mentions={mentionOptions}
+          linkIssueReferences={!isDearMeDetailIssue}
           imageUploadHandler={async (file) => {
             const attachment = await uploadAttachment.mutateAsync(file);
             return attachment.contentPath;
@@ -3833,6 +3835,7 @@ export function IssueDetail() {
         feedbackDataSharingPreference={feedbackDataSharingPreference}
         feedbackTermsUrl={FEEDBACK_TERMS_URL}
         mentions={mentionOptions}
+        linkIssueReferences={!isDearMeDetailIssue}
         imageUploadHandler={async (file) => {
           const attachment = await uploadAttachment.mutateAsync(file);
           return attachment.contentPath;

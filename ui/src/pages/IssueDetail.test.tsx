@@ -84,7 +84,9 @@ const mockSetBreadcrumbs = vi.hoisted(() => vi.fn());
 const mockSetMobileToolbar = vi.hoisted(() => vi.fn());
 const mockPushToast = vi.hoisted(() => vi.fn());
 const mockIssuesListRender = vi.hoisted(() => vi.fn());
+const mockInlineEditorRender = vi.hoisted(() => vi.fn());
 const mockIssueChatThreadRender = vi.hoisted(() => vi.fn());
+const mockIssueDocumentsSectionRender = vi.hoisted(() => vi.fn());
 const mockIssueRunLedgerRender = vi.hoisted(() => vi.fn());
 const mockPluginSlotOutletRender = vi.hoisted(() => vi.fn());
 const mockPluginSlotMountRender = vi.hoisted(() => vi.fn());
@@ -218,9 +220,14 @@ vi.mock("@/plugins/launchers", () => ({
 }));
 
 vi.mock("../components/InlineEditor", () => ({
-  InlineEditor: ({ value, placeholder }: { value?: string; placeholder?: string }) => (
-    <div>{value || placeholder}</div>
-  ),
+  InlineEditor: (props: {
+    value?: string;
+    placeholder?: string;
+    linkIssueReferences?: boolean;
+  }) => {
+    mockInlineEditorRender(props);
+    return <div>{props.value || props.placeholder}</div>;
+  },
 }));
 
 vi.mock("../components/IssueChatThread", () => ({
@@ -228,6 +235,8 @@ vi.mock("../components/IssueChatThread", () => ({
     onStopRun?: (runId: string) => Promise<void>;
     stopRunLabel?: string;
     stoppingRunLabel?: string;
+    hideRunSubstrateDetails?: boolean;
+    linkIssueReferences?: boolean;
   }) => {
     mockIssueChatThreadRender(props);
     return (
@@ -244,7 +253,10 @@ vi.mock("../components/IssueChatThread", () => ({
 }));
 
 vi.mock("../components/IssueDocumentsSection", () => ({
-  IssueDocumentsSection: () => <div>Documents</div>,
+  IssueDocumentsSection: (props: { linkIssueReferences?: boolean }) => {
+    mockIssueDocumentsSectionRender(props);
+    return <div>Documents</div>;
+  },
 }));
 
 vi.mock("../components/IssuesList", () => ({
@@ -1019,7 +1031,9 @@ describe("IssueDetail", () => {
     mockSetBreadcrumbs.mockClear();
     mockSetMobileToolbar.mockClear();
     mockIssuesListRender.mockClear();
+    mockInlineEditorRender.mockClear();
     mockIssueChatThreadRender.mockClear();
+    mockIssueDocumentsSectionRender.mockClear();
     mockIssueRunLedgerRender.mockClear();
     mockPluginSlotOutletRender.mockClear();
     mockPluginSlotMountRender.mockClear();
@@ -1140,6 +1154,75 @@ describe("IssueDetail", () => {
       expect(container.textContent).toContain("Chat thread");
     });
     expect(container.textContent).not.toContain("PAP-1");
+  });
+
+  it("preserves issue reference linkification for generic issue detail markdown", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({
+      description: "Coordinate with PAP-1723.",
+    }));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(mockIssueChatThreadRender).toHaveBeenCalled();
+      expect(mockIssueDocumentsSectionRender).toHaveBeenCalled();
+    });
+
+    const descriptionEditorProps = mockInlineEditorRender.mock.calls
+      .map(([props]) => props)
+      .find((props) => props.placeholder === "Add a description...");
+    expect(descriptionEditorProps).toMatchObject({ linkIssueReferences: true });
+    expect(mockIssueDocumentsSectionRender.mock.calls.at(-1)?.[0]).toMatchObject({
+      linkIssueReferences: true,
+    });
+    expect(mockIssueChatThreadRender.mock.calls.at(-1)?.[0]).toMatchObject({
+      hideRunSubstrateDetails: false,
+      linkIssueReferences: true,
+    });
+  });
+
+  it("disables issue reference linkification for DearMe issue detail markdown", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({
+      originKind: "dearme_brand_blueprint_apply",
+      description: "Coordinate with PAP-1723.",
+    }));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(mockIssueChatThreadRender).toHaveBeenCalled();
+      expect(mockIssueDocumentsSectionRender).toHaveBeenCalled();
+    });
+
+    const descriptionEditorProps = mockInlineEditorRender.mock.calls
+      .map(([props]) => props)
+      .find((props) => props.placeholder === "Add a description...");
+    expect(descriptionEditorProps).toMatchObject({ linkIssueReferences: false });
+    expect(mockIssueDocumentsSectionRender.mock.calls.at(-1)?.[0]).toMatchObject({
+      linkIssueReferences: false,
+    });
+    expect(mockIssueChatThreadRender.mock.calls.at(-1)?.[0]).toMatchObject({
+      hideRunSubstrateDetails: true,
+      linkIssueReferences: false,
+    });
   });
 
   it("preserves generic issue plugin surfaces", async () => {

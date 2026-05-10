@@ -16,6 +16,7 @@ interface InlineEditorProps {
   /** Called when a non-image file is dropped onto the editor. */
   onDropFile?: (file: File) => Promise<void>;
   mentions?: MentionOption[];
+  linkIssueReferences?: boolean;
   nullable?: boolean;
   /** When true, long display-mode markdown is clipped with a fade curtain that expands on click. */
   foldable?: boolean;
@@ -54,6 +55,7 @@ export function InlineEditor({
   imageUploadHandler,
   onDropFile,
   mentions,
+  linkIssueReferences = true,
   foldable = false,
 }: InlineEditorProps) {
   const [editing, setEditing] = useState(false);
@@ -288,12 +290,18 @@ export function InlineEditor({
         >
           {foldable ? (
             <FoldCurtain>
-              <MarkdownBody className={cn("paperclip-edit-in-place-content", className)}>
+              <MarkdownBody
+                className={cn("paperclip-edit-in-place-content", className)}
+                linkIssueReferences={linkIssueReferences}
+              >
                 {previewValue}
               </MarkdownBody>
             </FoldCurtain>
           ) : (
-            <MarkdownBody className={cn("paperclip-edit-in-place-content", className)}>
+            <MarkdownBody
+              className={cn("paperclip-edit-in-place-content", className)}
+              linkIssueReferences={linkIssueReferences}
+            >
               {previewValue}
             </MarkdownBody>
           )}

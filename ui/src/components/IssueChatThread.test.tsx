@@ -86,8 +86,14 @@ vi.mock("../lib/issue-chat-scroll", async (importOriginal) => {
 });
 
 vi.mock("./MarkdownBody", () => ({
-  MarkdownBody: ({ children }: { children: ReactNode }) => {
-    markdownBodyRenderMock(children);
+  MarkdownBody: ({
+    children,
+    linkIssueReferences,
+  }: {
+    children: ReactNode;
+    linkIssueReferences?: boolean;
+  }) => {
+    markdownBodyRenderMock({ children, linkIssueReferences });
     return <div>{children}</div>;
   },
 }));
@@ -1280,6 +1286,83 @@ describe("IssueChatThread", () => {
     });
 
     expect(markdownBodyRenderMock).not.toHaveBeenCalled();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("preserves issue reference linkification for generic issue comments", () => {
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <MemoryRouter>
+          <IssueChatThread
+            comments={[{
+              id: "comment-reference-generic",
+              companyId: "company-1",
+              issueId: "issue-1",
+              authorAgentId: null,
+              authorUserId: "user-1",
+              body: "Follow PAP-1723 before release.",
+              createdAt: new Date("2026-04-06T12:00:00.000Z"),
+              updatedAt: new Date("2026-04-06T12:00:00.000Z"),
+            }]}
+            linkedRuns={[]}
+            timelineEvents={[]}
+            liveRuns={[]}
+            onAdd={async () => {}}
+            showComposer={false}
+            enableLiveTranscriptPolling={false}
+          />
+        </MemoryRouter>,
+      );
+    });
+
+    expect(markdownBodyRenderMock.mock.calls.some(([entry]) => (
+      entry.children === "Follow PAP-1723 before release."
+      && entry.linkIssueReferences === true
+    ))).toBe(true);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("disables issue reference linkification when substrate details are hidden", () => {
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <MemoryRouter>
+          <IssueChatThread
+            comments={[{
+              id: "comment-reference-dearme",
+              companyId: "company-1",
+              issueId: "issue-1",
+              authorAgentId: null,
+              authorUserId: "user-1",
+              body: "Review PAP-1723 before publishing.",
+              createdAt: new Date("2026-04-06T12:00:00.000Z"),
+              updatedAt: new Date("2026-04-06T12:00:00.000Z"),
+            }]}
+            linkedRuns={[]}
+            timelineEvents={[]}
+            liveRuns={[]}
+            onAdd={async () => {}}
+            showComposer={false}
+            enableLiveTranscriptPolling={false}
+            hideRunSubstrateDetails
+          />
+        </MemoryRouter>,
+      );
+    });
+
+    expect(markdownBodyRenderMock.mock.calls.some(([entry]) => (
+      entry.children === "Review PAP-1723 before publishing."
+      && entry.linkIssueReferences === false
+    ))).toBe(true);
 
     act(() => {
       root.unmount();
