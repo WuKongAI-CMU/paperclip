@@ -2074,6 +2074,31 @@ function liveFeedActionLabel(item: DearMeWorkbenchStreamItem) {
   return null;
 }
 
+function liveFeedStateGuidance(item: DearMeWorkbenchStreamItem) {
+  if (item.needsApproval || item.status === "decision_needed" || item.status === "ready_for_review") {
+    return "A launch call is ready before anything represents you.";
+  }
+  if (item.status === "working" || item.kind === "work_in_motion") {
+    return "The team is preparing this privately before it asks for your call.";
+  }
+  if (item.kind === "memory_recorded") {
+    return "DearMe is saving what should guide future private work.";
+  }
+  if (item.kind === "report_ready") {
+    return "A concise update is ready to read.";
+  }
+  if (item.status === "recorded" || item.kind === "progress_recorded") {
+    return "This update is recorded for the next private cycle.";
+  }
+  if (item.status === "blocked") {
+    return "The team needs a clearer path before this can continue.";
+  }
+  if (item.status === "cancelled") {
+    return "This private move has stopped and will not represent you.";
+  }
+  return "DearMe keeps this work private until a decision is needed.";
+}
+
 function liveFeedReviewableOutputId(item: DearMeWorkbenchStreamItem) {
   if (!item.relatedOutputId) return null;
   if (
@@ -4342,7 +4367,12 @@ function LiveTeamFeedPanel({
                       { label: shortDate(item.createdAt), variant: "outline" },
                     ]}
                     calloutLabel="Next action"
-                    callout={customerProofPackSummary(item.nextAction)}
+                    callout={
+                      <div className="space-y-2">
+                        <p>{customerProofPackSummary(item.nextAction)}</p>
+                        <p className="text-xs text-muted-foreground">{liveFeedStateGuidance(item)}</p>
+                      </div>
+                    }
                     action={
                       !reviewableOutputId && actionLabel
                         ? {

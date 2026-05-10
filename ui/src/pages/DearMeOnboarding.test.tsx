@@ -1907,6 +1907,9 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Action needed");
     expect(container.textContent).toContain("Prepared output");
     expect(container.textContent).toContain("Next action");
+    expect(container.textContent).toContain("A launch call is ready before anything represents you.");
+    expect(container.textContent).toContain("The team is preparing this privately before it asks for your call.");
+    expect(container.textContent).toContain("This update is recorded for the next private cycle.");
     expect(container.textContent).toContain("Decision ready");
     expect(
       container.querySelectorAll(

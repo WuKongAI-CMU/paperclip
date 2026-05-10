@@ -2,6 +2,26 @@
 
 Date: 2026-05-10
 
+## DM-183AA Live Feed State Guidance - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the useful DM-088 live-progress explanation idea onto the current
+  `LiveTeamFeedPanel` instead of restoring the stale replacement card.
+- Each live team item now pairs its next action with a short customer-safe state
+  explanation, so review-ready, in-motion, and recorded updates make sense while
+  scanning.
+- Reused the existing `workStream` fields and `DearMeActionCard` shell; no
+  schema, route, query-key, or runtime changes.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183Z Memory Context Term Safety - 2026-05-10
 
 Implementation slice:
