@@ -2,25 +2,39 @@
 
 Date: 2026-05-10
 
-## DEA-20 Chief Pairing Smoke Active - 2026-05-10
+## DEA-20 Chief Pairing Smoke Absorbed - 2026-05-10
 
 Product/architecture slice:
 
-- Opened Linear `DEA-20` as the next non-overlapping Symphony product lane:
-  OpenClaw Chief pairing smoke without customer-visible substrate.
-- Scope is deliberately narrow: prove the backstage Chief/OpenClaw pairing
-  assets can support DearMe's resident-team promise through manifest,
-  bootstrap, skill, and approval-gate smoke evidence.
-- This lane must not touch the first-cycle opportunity shortlist, onboarding
-  proof package, Playwright e2e harness, broad UI routes, or customer-facing
-  substrate language.
+- Closed Linear `DEA-20` as a no-code Symphony proof lane: the existing
+  `@paperclipai/dearme-openclaw` package already proves the backstage
+  Chief/OpenClaw pairing assets are coherent enough for DearMe's resident-team
+  promise.
+- Kept the proof narrow: manifest, generated skills, bootstrap files, required
+  config, and outbound approval gates were verified without touching the
+  opportunity shortlist, onboarding proof package, Playwright e2e harness, or
+  broad UI routes.
+- Preserved the product boundary: OpenClaw remains an install/pairing substrate
+  behind DearMe, not a customer-visible surface.
 
 Coordination state:
 
-- Symphony has picked up `DEA-20` in
-  `/private/tmp/dearme-symphony-workspaces/DEA-20`.
-- Do not add a second customer-facing product writer while `DEA-20` is active;
-  use extra help only for read-only review or coordinator-side absorption.
+- The worker reported no file changes and explicit no-code evidence; the
+  workspace was already cleaned before coordinator inspection, so the
+  coordinator reran the verification on the current checkout.
+- Symphony is idle after `DEA-20`; the next ticket can start from the
+  coordinator checkout.
+
+Verification:
+
+- `pnpm --filter @paperclipai/dearme-openclaw test` passed with 1 file and 18
+  tests.
+- Coordinator manifest/bootstrap smoke confirmed `openclaw.plugin.json`
+  includes `./generated/skills`, 12 generated skill folders contain
+  `SKILL.md`, `generated/bootstrap/{AGENTS,SOUL,IDENTITY,USER}.md` are
+  present, `configSchema.required` is `apiKey` plus `handle`, and outbound
+  bindings still cover `publish`, `send`, `deploy`, and `spend` gates.
+- Linear `DEA-20` is `Done` with no file changes.
 
 ## DEA-19 Opportunity Shortlist Absorbed - 2026-05-10
 
@@ -88,7 +102,7 @@ Verification:
 - A cleanup query against local Postgres returned no remaining
   `paperclip_e2e_%` databases after teardown.
 
-## DEA-19 Opportunity Hunter Lane Active - 2026-05-10
+## DEA-19 Opportunity Hunter Lane Activation - 2026-05-10
 
 Product/architecture slice:
 
@@ -116,10 +130,9 @@ Coordination state:
 
 Verification:
 
-- Linear `DEA-19` is `In Progress`, assigned to the coordinator user, with hard
-  boundaries against touching `DEA-18` browser proof, Playwright harness,
-  onboarding redesign, runtime dashboards, customer-visible substrate language,
-  or unapproved external sends.
+- This section is historical activation context. The lane later absorbed as
+  `DEA-19 Opportunity Shortlist Absorbed` above; do not treat it as an active
+  Symphony ticket.
 
 ## DEA-17 First-Glance Focus Absorption - 2026-05-10
 

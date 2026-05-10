@@ -46,11 +46,11 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
-- DEA-20 is the current Symphony lane after DEA-19 absorption: OpenClaw Chief
-  pairing smoke without customer-visible substrate. This is the right next
-  reuse move because it exercises the backstage OpenClaw/Chief bridge without
-  competing with the Opportunity Hunter shortlist or first-run onboarding
-  surface.
+- DEA-20 is absorbed as a no-code OpenClaw Chief pairing smoke: the existing
+  plugin package already proves the manifest, generated skills, bootstrap
+  files, required config, and outbound approval-gate bindings. This keeps
+  OpenClaw as backstage install/pairing substrate and avoids competing with the
+  Opportunity Hunter shortlist or first-run onboarding surface.
 - DEA-19 is coordinator-absorbed as the Opportunity Hunter private shortlist
   slice. The first-cycle proof package now carries five private targets with
   fit reasons, relevance scores, outreach angles, and draft first messages
