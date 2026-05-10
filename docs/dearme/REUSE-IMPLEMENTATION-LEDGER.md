@@ -51,10 +51,11 @@ The right reuse split is:
   terminal claim is acceptable. This keeps Linear state from becoming a proxy
   for integration truth and protects the coordinator from cleaned workspaces
   with no absorbable artifact.
-- DEA-13 is the only active product proof lane right now. Do not add another
-  product-writing Symphony agent until DEA-13 leaves an absorbable handoff; use
-  native Codex subagents only for read-only architecture or QA review while it
-  runs.
+- DEA-13 closed as a no-code proof lane: the existing first-cycle start,
+  private handoff, Chief of Staff brief, and focused decision surfaces already
+  produce the intended private-run path. The worker left explicit no-code plus
+  API-smoke evidence, and the coordinator reran focused route/UI coverage on
+  the current head.
 - DEA-12 was marked Done in Linear/Symphony without leaving an absorbable
   branch or live workspace on the coordination head, so the coordinator
   recovered the useful Voice Gate slice directly: the current scorer now passes
@@ -2963,10 +2964,8 @@ issue/document handoff. DM-138E live-smoked the same path, fixed stale
 cancelled output history so current proof issues project as `ready_for_review`,
 and kept the customer surface free of donor/runtime vocabulary.
 
-DM-S01, DM-138A-E, DM-139 / DM-140, DEA-7, DEA-8, DEA-9, DEA-11, and DEA-12
-have landed or been recovered on the current coordination head. The current
-non-negotiable slice is DEA-13 / DM-139A: turn the existing first-cycle start
-flow into one private DearMe chief-of-staff letter plus one simple review
-decision card. Do not add another customer-facing runtime contract or parallel
-product-writing lane to solve this; let DEA-13 return an absorbable handoff
-first.
+DM-S01, DM-138A-E, DM-139 / DM-140, DEA-7, DEA-8, DEA-9, DEA-11, DEA-12, and
+DEA-13 have landed, been recovered, or been verified on the current
+coordination head. The next non-negotiable slice should build on the existing
+first-cycle/private-handoff proof instead of adding another customer-facing
+runtime contract.
