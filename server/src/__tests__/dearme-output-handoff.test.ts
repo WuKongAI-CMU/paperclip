@@ -1305,7 +1305,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       title: "DearMe Draft: Prepare content batch",
       identifier: "DME-13",
       originFingerprint: "operation-draft_content_batch",
-      status: "in_review",
+      status: "todo",
       assigneeAgentId: agentId,
       updatedAt: new Date("2026-05-07T19:00:00.000Z"),
     });
@@ -1316,6 +1316,20 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       title: "Content drafts",
       body: "Hook: From messy work to public proof.\nDraft body: Here is the first private draft.",
       updatedAt: new Date("2026-05-07T19:01:00.000Z"),
+    });
+    await db.insert(issueWorkProducts).values({
+      id: randomUUID(),
+      companyId,
+      issueId,
+      type: "draft",
+      provider: "dearme-cycle-output",
+      externalId: "cycle-output-packet:content_drafts",
+      title: "Content draft packet",
+      url: null,
+      status: "ready",
+      reviewState: "changes_requested",
+      summary: "The previous private draft was waiting on user feedback.",
+      updatedAt: new Date("2026-05-07T19:02:10.000Z"),
     });
     await db.insert(issueComments).values({
       id: randomUUID(),

@@ -556,11 +556,11 @@
       "branch": "codex/dearme-dm-021-team-work-stream-events",
       "head": "71f954430914ac8682d830e27d615002afe29152",
       "reviewedAt": "2026-05-10",
-      "reason": "The live-events worker value is adapted into the current LiveUpdatesProvider: DearMe product events now refresh Workbench, outputs, Voice & Memory, Brand OS, and paid-beta queries, while generic team comments still only refresh the workbench through the existing server-side filter.",
+      "reason": "The live-events worker value is already carried by the current LiveUpdatesProvider: DearMe product events refresh Workbench, outputs, Brand OS, and paid-beta queries, while Voice & Memory is projected inside the Workbench memory surface and generic team comments still only refresh through the existing server-side filter.",
       "evidence": [
         "ui/src/context/LiveUpdatesProvider.tsx",
         "ui/src/context/LiveUpdatesProvider.test.ts",
-        "ui/src/lib/queryKeys.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
         "docs/dearme/BUILD-STATE.md",
         "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
       ]
@@ -570,11 +570,11 @@
       "branch": "codex/dearme-dm-021-voice-memory-source-restore",
       "head": "1b0309ae16d7687371637259a1d3ac08cdcb87da",
       "reviewedAt": "2026-05-10",
-      "reason": "Current Voice & Memory already carries the customer-controlled retired-source restore path through shared contracts, server routes/services, API client, and onboarding UI/tests, so the stale worker branch should not be replayed.",
+      "reason": "Current Voice & Memory already carries the customer-controlled retired-source restore path through the Workbench memory contract, activity-log memory update route, API client, and onboarding UI/tests, so the stale voice-memory worker branch should not be replayed.",
       "evidence": [
         "packages/shared/src/validators/dearme.ts",
         "server/src/routes/dearme.ts",
-        "server/src/services/dearme-voice-memory.ts",
+        "server/src/services/dearme-workbench.ts",
         "ui/src/api/dearme.ts",
         "ui/src/pages/DearMeOnboarding.tsx",
         "ui/src/pages/DearMeOnboarding.test.tsx"
@@ -585,7 +585,7 @@
       "branch": "codex/dearme-dm-023-output-card-source-context",
       "head": "0d8c71b9da2e57816696a813b93be3d23ec05adf",
       "reviewedAt": "2026-05-10",
-      "reason": "Current prepared-work cards already expose source context through the richer OutputSourceEvidenceList/sourceEvidence path with focused-work and card coverage, superseding the worker's smaller source-context preview without touching the dirty output-handoff follow-up.",
+      "reason": "Current prepared-work cards already expose source context through the richer OutputSourceEvidenceList/sourceEvidence path with focused-work and card coverage, superseding the worker's smaller source-context preview.",
       "evidence": [
         "ui/src/pages/DearMeOnboarding.tsx",
         "ui/src/pages/DearMeOnboarding.test.tsx",

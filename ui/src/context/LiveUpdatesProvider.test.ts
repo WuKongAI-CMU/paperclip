@@ -467,9 +467,6 @@ describe("LiveUpdatesProvider DearMe invalidation", () => {
       queryKey: queryKeys.dearme.outputs("company-1"),
     });
     expect(invalidations).toContainEqual({
-      queryKey: queryKeys.dearme.voiceMemory("company-1"),
-    });
-    expect(invalidations).toContainEqual({
       queryKey: queryKeys.dearme.paidBetaAccess("company-1"),
     });
   });

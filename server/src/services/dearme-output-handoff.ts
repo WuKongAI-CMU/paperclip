@@ -1213,10 +1213,19 @@ function buildOutputItem(input: {
   const hasRevisionRequest = input.workProducts.some((workProduct) =>
     workProduct.reviewState === "changes_requested" || workProduct.reviewState === "not_useful"
   );
+  const reviewDecisions = parseReviewDecisions(input.reviewComments);
+  const reviewFeedback = latestReviewFeedback(reviewDecisions);
+  const feedbackHasFreshWork = reviewFeedback
+    ? hasFreshWorkAfterFeedback({
+        reviewFeedback,
+        documents: input.documents,
+        latestUpdate: input.latestUpdate,
+      })
+    : false;
   const status = deriveDearMeOutputStatus({
     issueStatus: input.issue.status,
     hasProducedArtifact,
-    hasRevisionRequest,
+    hasRevisionRequest: hasRevisionRequest && !feedbackHasFreshWork,
   });
   const details = buildOutputDetails({
     descriptor: input.descriptor,
@@ -1224,9 +1233,8 @@ function buildOutputItem(input: {
     workProducts: input.workProducts,
     latestUpdate: input.latestUpdate,
   });
-  const reviewDecisions = parseReviewDecisions(input.reviewComments);
   const feedbackTrace = buildFeedbackTrace({
-    reviewFeedback: latestReviewFeedback(reviewDecisions),
+    reviewFeedback,
     decisions: reviewDecisions,
     details,
     documents: input.documents,

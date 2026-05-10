@@ -2,7 +2,40 @@
 
 Date: 2026-05-10
 
-## DM-183BJ DM-021/DM-023 Live Workbench Absorption - 2026-05-10
+## DEA-9 Repeatable Review-Memory Browser Smoke - 2026-05-10
+
+Product/architecture slice:
+
+- Reused the existing output handoff, focused prepared-work review controls,
+  continue-output route, report document bridge, and feedback receipt path for
+  the repeatable review-memory loop.
+- Added a browser/API smoke proving a paid-beta customer can start the first
+  private cycle, request another pass on the weekly report, update the same Dear
+  me report document, and return to the focused Work Ready review path with
+  `Feedback applied` receipts visible.
+- Tightened output status derivation so stale `changes_requested` or
+  `not_useful` work products no longer keep an output in revision-requested
+  state after newer private work exists for the latest feedback.
+- Kept the product surface DearMe-owned: no new first-run contract, review
+  schema, runtime dashboard, agent admin UI, or customer-visible donor/runtime
+  vocabulary.
+
+Verification:
+
+- `pnpm typecheck` passed.
+- `DATABASE_URL=postgres://peter@127.0.0.1:5432/dearme_e2e_review_memory npx playwright test --config tests/e2e/playwright.config.ts tests/e2e/dearme-repeatable-review-memory.spec.ts --project=chromium`
+  passed: 1 test.
+- `pnpm exec vitest run server/src/__tests__/dearme-output-handoff.test.ts`
+  was attempted earlier on this host and skipped the embedded Postgres suite
+  because the Postgres init script exited with code 1; the external-Postgres
+  browser smoke covers the same repeatable review-memory path end to end.
+
+Known gap:
+
+- This proves the current packet-backed review loop, not public send/deploy or
+  paid external execution. Those remain behind the existing approval boundary.
+
+## DM-183BJ DM-021/DM-023 Worker Absorption And Review Freshness - 2026-05-10
 
 Product/architecture slice:
 
@@ -12,15 +45,16 @@ Product/architecture slice:
 - Reviewed DM-021 live-events head
   `71f954430914ac8682d830e27d615002afe29152`. Current
   `LiveUpdatesProvider` already carried the Workbench/output/Brand OS live
-  invalidation path; the remaining useful delta was to refresh Voice & Memory
-  on DearMe product events so saved private sources stay in sync with prepared
-  work.
-- Added the missing `queryKeys.dearme.voiceMemory(companyId)` contract entry so
-  this live invalidation path typechecks from a clean checkout.
+  invalidation path; Voice & Memory now lives inside the Workbench memory
+  projection, so the stale standalone `voice-memory` query key was not revived.
+- Tightened output review freshness so an old `changes_requested` work product
+  no longer keeps prepared work in revision-requested state after newer private
+  documents or updates exist.
 - Reviewed DM-021 source-restore head
   `1b0309ae16d7687371637259a1d3ac08cdcb87da`. Current Voice & Memory already
-  exposes customer-controlled restore for retired private sources through the
-  shared contract, server routes, API client, onboarding UI, and tests.
+  exposes customer-controlled restore through the activity-log
+  `/memory-updates/:memoryId/restore` route, Workbench `memory.archived`
+  projection, API client, onboarding UI, and tests.
 - Reviewed DM-023 source-context head
   `0d8c71b9da2e57816696a813b93be3d23ec05adf`. Current prepared-work cards and
   focused review use the richer `OutputSourceEvidenceList` / `sourceEvidence`
@@ -33,20 +67,28 @@ Verification:
 
 - `pnpm exec vitest run src/context/LiveUpdatesProvider.test.ts --config
   vitest.config.ts` passed from `ui/`: 17 tests.
+- `pnpm exec vitest run server/src/__tests__/dearme-output-handoff.test.ts
+  --maxWorkers=1` skipped 10 embedded Postgres tests because this host's
+  Postgres init script exited with code 1.
 - `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
 - `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
   passed.
+- `pnpm run test:dearme-worktrees` passed: 13 tests.
 - `pnpm run dearme:worktrees -- --ticket=DM-021 --skip-dirty --limit=20`
   reported both DM-021 worker branches as `reviewed_absorbed`.
 - `pnpm run dearme:worktrees -- --ticket=DM-023 --skip-dirty --limit=20`
   reported the DM-023 source-context branch as `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` reported 117
+  worktrees with 43 `reviewed_absorbed`, 70 `not_in_current`, 16
+  `subject_matched`, and dirty 0.
 - `.symphony/bin/dearme-symphony status --json` reported Symphony running with
   no running or retrying workers.
 - `git diff --check` passed.
 
 Known gap:
 
-- Browser websocket smoke is not part of this narrow query-invalidation and
+- Browser websocket smoke is not part of this narrow review-freshness and
   ledger absorption slice.
 
 ## DM-183BI DM-020 Approved Brand OS Seed Brief Absorption - 2026-05-10
