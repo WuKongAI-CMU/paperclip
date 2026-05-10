@@ -1499,6 +1499,7 @@ export function IssueDetail() {
   });
   const resolvedHasActiveRun = issue ? shouldTrackIssueActiveRun(issue) && hasActiveRun : hasActiveRun;
   const hasLiveRuns = liveRunCount > 0 || resolvedHasActiveRun;
+  const showIssueLiveRunIndicator = hasLiveRuns && !isDearMeDetailIssue;
   useEffect(() => {
     if (!hasLiveRuns && locallyQueuedCommentRunIds.size > 0) {
       setLocallyQueuedCommentRunIds(new Map());
@@ -1675,6 +1676,7 @@ export function IssueDetail() {
     [issue?.id, rawChildIssues],
   );
   const liveIssueIds = useMemo(() => collectLiveIssueIds(companyLiveRuns), [companyLiveRuns]);
+  const visibleLiveIssueIds = isDearMeDetailIssue ? undefined : liveIssueIds;
   const issuePanelKey = useMemo(
     () => buildIssuePropertiesPanelKey(issue ?? null, childIssues),
     [childIssues, issue],
@@ -2746,12 +2748,12 @@ export function IssueDetail() {
   useEffect(() => {
     setBreadcrumbs([
       sourceBreadcrumb,
-      { label: hasLiveRuns ? `🔵 ${breadcrumbTitle}` : breadcrumbTitle },
+      { label: showIssueLiveRunIndicator ? `🔵 ${breadcrumbTitle}` : breadcrumbTitle },
     ]);
   }, [
     breadcrumbTitle,
-    hasLiveRuns,
     setBreadcrumbs,
+    showIssueLiveRunIndicator,
     sourceBreadcrumb.href,
     sourceBreadcrumb.label,
   ]);
@@ -3448,7 +3450,7 @@ export function IssueDetail() {
           />
           <span className="text-sm font-mono text-muted-foreground shrink-0">{issue.identifier ?? issue.id.slice(0, 8)}</span>
 
-          {hasLiveRuns && (
+          {showIssueLiveRunIndicator && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 text-[10px] font-medium text-cyan-600 dark:text-cyan-400 shrink-0">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
@@ -3778,7 +3780,7 @@ export function IssueDetail() {
             isLoading={childIssuesLoading}
             agents={agents}
             projects={projects}
-            liveIssueIds={liveIssueIds}
+            liveIssueIds={visibleLiveIssueIds}
             mutedIssueIds={mutedChildIssueIds}
             issueBadgeById={childPauseBadgeById}
             projectId={issue.projectId ?? undefined}

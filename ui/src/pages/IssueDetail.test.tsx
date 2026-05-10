@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ActivityEvent, Agent, Approval, Issue, IssueComment, IssueTreeControlPreview, IssueTreeHold } from "@paperclipai/shared";
+import type { ActiveRunForIssue, LiveRunForIssue } from "../api/heartbeats";
 import { act, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -231,7 +232,7 @@ vi.mock("../components/IssueDocumentsSection", () => ({
 }));
 
 vi.mock("../components/IssuesList", () => ({
-  IssuesList: (props: { issueBadgeById?: Map<string, string> }) => {
+  IssuesList: (props: { issueBadgeById?: Map<string, string>; liveIssueIds?: Set<string> }) => {
     mockIssuesListRender(props);
     return (
       <div>
@@ -459,6 +460,40 @@ function createIssue(overrides: Partial<Issue> = {}): Issue {
     documentSummaries: [],
     ...overrides,
   } as Issue;
+}
+
+function createLiveRun(overrides: Partial<LiveRunForIssue> = {}): LiveRunForIssue {
+  return {
+    id: "run-live-1",
+    status: "running",
+    invocationSource: "manual",
+    triggerDetail: null,
+    startedAt: "2026-04-21T00:00:00.000Z",
+    finishedAt: null,
+    createdAt: "2026-04-21T00:00:00.000Z",
+    agentId: "agent-1",
+    agentName: "CodexCoder",
+    adapterType: "codex",
+    issueId: "issue-1",
+    ...overrides,
+  };
+}
+
+function createActiveRun(overrides: Partial<ActiveRunForIssue> = {}): ActiveRunForIssue {
+  return {
+    id: "run-active-1",
+    status: "running",
+    invocationSource: "manual",
+    triggerDetail: null,
+    startedAt: "2026-04-21T00:00:00.000Z",
+    finishedAt: null,
+    createdAt: "2026-04-21T00:00:00.000Z",
+    agentId: "agent-1",
+    agentName: "CodexCoder",
+    adapterType: "codex",
+    issueId: "issue-1",
+    ...overrides,
+  };
 }
 
 function createAgent(overrides: Partial<Agent> = {}): Agent {
@@ -953,6 +988,8 @@ describe("IssueDetail", () => {
     mockTabsOnValueChange.current = null;
     mockOpenPanel.mockClear();
     mockClosePanel.mockClear();
+    mockSetBreadcrumbs.mockClear();
+    mockSetMobileToolbar.mockClear();
     mockIssuesListRender.mockClear();
     mockIssueChatThreadRender.mockClear();
     mockIssueRunLedgerRender.mockClear();
@@ -1099,6 +1136,90 @@ describe("IssueDetail", () => {
     await flushReact();
 
     expect(container.textContent).not.toMatch(/Paused by board|Subtree pause is active|Pause work|Resume work|Pause subtree|Resume subtree|Cancel subtree|Restore subtree|wake|held/i);
+  });
+
+  it("preserves generic issue live indicators", async () => {
+    const childIssue = createIssue({
+      id: "child-1",
+      parentId: "issue-1",
+      identifier: "PAP-2",
+      issueNumber: 2,
+      title: "Live child",
+    });
+
+    mockIssuesApi.get.mockResolvedValue(createIssue({
+      status: "in_progress",
+      executionRunId: "run-active-1",
+    }));
+    mockIssuesApi.list.mockImplementation((_companyId, filters?: { descendantOf?: string }) =>
+      Promise.resolve(filters?.descendantOf === "issue-1" ? [childIssue] : []),
+    );
+    mockHeartbeatsApi.liveRunsForIssue.mockResolvedValue([createLiveRun()]);
+    mockHeartbeatsApi.activeRunForIssue.mockResolvedValue(createActiveRun());
+    mockHeartbeatsApi.liveRunsForCompany.mockResolvedValue([
+      createLiveRun({ id: "run-live-child", issueId: "child-1" }),
+    ]);
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Live");
+      expect(mockSetBreadcrumbs.mock.calls.some(([items]) =>
+        items.some((item: { label: string }) => item.label === "🔵 Issue detail smoke"),
+      )).toBe(true);
+      expect(mockIssuesListRender.mock.calls.at(-1)?.[0].liveIssueIds?.has("child-1")).toBe(true);
+    });
+  });
+
+  it("hides live indicators for DearMe issues", async () => {
+    const childIssue = createIssue({
+      id: "child-1",
+      parentId: "issue-1",
+      identifier: "PAP-2",
+      issueNumber: 2,
+      title: "Customer-facing child",
+    });
+
+    mockIssuesApi.get.mockResolvedValue(createIssue({
+      originKind: "dearme_brand_blueprint_apply",
+      status: "in_progress",
+      executionRunId: "run-active-1",
+    }));
+    mockIssuesApi.list.mockImplementation((_companyId, filters?: { descendantOf?: string }) =>
+      Promise.resolve(filters?.descendantOf === "issue-1" ? [childIssue] : []),
+    );
+    mockHeartbeatsApi.liveRunsForIssue.mockResolvedValue([createLiveRun()]);
+    mockHeartbeatsApi.activeRunForIssue.mockResolvedValue(createActiveRun());
+    mockHeartbeatsApi.liveRunsForCompany.mockResolvedValue([
+      createLiveRun({ id: "run-live-child", issueId: "child-1" }),
+    ]);
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(mockIssuesListRender.mock.calls.at(-1)?.[0].liveIssueIds).toBeUndefined();
+    });
+    expect(container.textContent).not.toContain("Live");
+    expect(mockSetBreadcrumbs.mock.calls.some(([items]) =>
+      items.some((item: { label: string }) => item.label === "🔵 Issue detail smoke"),
+    )).toBe(false);
   });
 
   it("routes DearMe linked approval decisions back to DearMe", async () => {
