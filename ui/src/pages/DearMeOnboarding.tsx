@@ -1158,6 +1158,36 @@ const WORKSTREAM_STAGE_LABELS: Record<DearMeWorkbenchStreamItem["cycleStage"], s
   report: "Report",
 };
 
+type LiveFeedSectionId = "needs_call" | "in_motion" | "recent";
+
+type LiveFeedSection = {
+  id: LiveFeedSectionId;
+  title: string;
+  summary: string;
+  items: DearMeWorkbenchStreamItem[];
+};
+
+const LIVE_FEED_SECTIONS: LiveFeedSection[] = [
+  {
+    id: "needs_call",
+    title: "Needs your call",
+    summary: "Reviewable work and launch calls stay first.",
+    items: [],
+  },
+  {
+    id: "in_motion",
+    title: "In motion",
+    summary: "Private work the team is preparing before it asks for a decision.",
+    items: [],
+  },
+  {
+    id: "recent",
+    title: "Recent updates",
+    summary: "Completed setup, spend checkpoints, and cycle notes from the team.",
+    items: [],
+  },
+];
+
 const ACTION_GRAPH_KIND_LABELS: Record<DearMeActionGraphNode["kind"], string> = {
   cycle: "Growth cycle",
   role: "Team role",
@@ -2035,6 +2065,27 @@ function liveFeedActionLabel(item: DearMeWorkbenchStreamItem) {
     return item.kind === "cycle_brief" ? "Open private work" : "Open work";
   }
   return null;
+}
+
+function liveFeedSectionId(item: DearMeWorkbenchStreamItem): LiveFeedSectionId {
+  if (item.needsApproval || item.status === "decision_needed" || item.status === "ready_for_review") {
+    return "needs_call";
+  }
+  if (item.status === "working" || item.kind === "cycle_brief" || item.kind === "work_in_motion") {
+    return "in_motion";
+  }
+  return "recent";
+}
+
+function buildLiveFeedSections(items: DearMeWorkbenchStreamItem[]): LiveFeedSection[] {
+  const sections: LiveFeedSection[] = LIVE_FEED_SECTIONS.map((section) => ({ ...section, items: [] }));
+  const sectionsById = new Map(sections.map((section) => [section.id, section]));
+
+  for (const item of items) {
+    sectionsById.get(liveFeedSectionId(item))?.items.push(item);
+  }
+
+  return sections.filter((section) => section.items.length > 0);
 }
 
 function matchesIssueReference(
@@ -4185,83 +4236,114 @@ function LiveTeamFeedPanel({
 }) {
   if (liveStream.length === 0) return null;
 
+  const liveFeedSections = buildLiveFeedSections(liveStream);
+  const needsCallCount = liveFeedSections.find((section) => section.id === "needs_call")?.items.length ?? 0;
+  const movingCount = liveFeedSections.find((section) => section.id === "in_motion")?.items.length ?? 0;
+
   return (
     <DearMePanel aria-label="Live team feed">
       <DearMeWorkbenchSectionHeader
         icon={Workflow}
         eyebrow="Live team feed"
         description="Watch the team turn private work into reviewable moves. The machinery stays backstage."
-        trailing={<Badge variant="outline">While you were away</Badge>}
+        trailing={
+          <div className="flex flex-wrap gap-2 sm:justify-end">
+            <Badge variant={needsCallCount > 0 ? "default" : "outline"}>
+              {needsCallCount > 0 ? `${needsCallCount} needs your call` : "Review-ready first"}
+            </Badge>
+            <Badge variant={movingCount > 0 ? "secondary" : "outline"}>
+              {movingCount > 0 ? `${movingCount} in motion` : "While you were away"}
+            </Badge>
+          </div>
+        }
       />
-      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {liveStream.map((item, index) => {
-          const issueReference = streamItemIssueTarget(item);
-          const canOpen = Boolean(item.approvalId || issueReference);
-          const actionLabel = canOpen ? liveFeedActionLabel(item) : null;
-          return (
-            <DearMeActionCard
-              key={`${item.id}:${item.role}:${item.createdAt}:${index}`}
-              eyebrow={
-                <span className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline">{WORKSTREAM_STAGE_LABELS[item.cycleStage]}</Badge>
-                  <span>{roleLabel(item.role)}</span>
-                </span>
-              }
-              title={customerProofPackSummary(item.title)}
-              summary={customerProofPackSummary(item.summary)}
-              attention={streamActionAttention(item)}
-              statusBadges={[
-                { label: WORKSTREAM_KIND_LABELS[item.kind], variant: "outline" },
-                {
-                  label: WORKSTREAM_STATUS_LABELS[item.status],
-                  variant: item.needsApproval ? "secondary" : "outline",
-                },
-                ...(item.reviewLoop
-                  ? [
-                      { label: reviewLoopLabel(item.reviewLoop), variant: "outline" as const },
-                      {
-                        label: reviewLoopStateLabel(item.reviewLoop),
-                        variant: reviewLoopVariant(item.reviewLoop),
-                      },
-                    ]
-                  : []),
-              ]}
-              chips={[
-                { label: customerProofPackSummary(item.artifact), variant: "outline" },
-                { label: sourceLabelForChip(item.sourceLabel), variant: "outline" },
-                ...(item.needsApproval
-                  ? [{ label: "Decision ready", variant: "default" as const }]
-                  : []),
-                ...(item.costImpact
-                  ? [{ label: customerProofPackSummary(item.costImpact), variant: "secondary" as const }]
-                  : []),
-                { label: shortDate(item.createdAt), variant: "outline" },
-              ]}
-              calloutLabel="Next action"
-              callout={customerProofPackSummary(item.nextAction)}
-              action={
-                actionLabel
-                  ? {
-                      label: actionLabel,
-                      variant: item.needsApproval ? "default" : "outline",
-                      ariaLabel: `${actionLabel}: ${customerProofPackSummary(item.title)}`,
-                      onClick: () => {
-                        if (item.approvalId) {
-                          onOpenApproval(item.approvalId);
-                          return;
-                        }
-                        if (issueReference && item.relatedOutputId) {
-                          onOpenWorkItem(issueReference, item.relatedOutputId, reviewLoopRouteIntent(item.reviewLoop));
-                          return;
-                        }
-                        if (issueReference) onOpenIssue(issueReference);
-                      },
+      <div className="mt-4 space-y-5">
+        {liveFeedSections.map((section) => (
+          <section key={section.id} aria-label={`${section.title} live team items`}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h3 className="text-sm font-medium">{section.title}</h3>
+                <p className="mt-1 text-xs text-muted-foreground">{section.summary}</p>
+              </div>
+              <Badge variant="outline" className="w-fit">
+                {pluralizeCount(section.items.length, "item")}
+              </Badge>
+            </div>
+            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {section.items.map((item, index) => {
+                const issueReference = streamItemIssueTarget(item);
+                const canOpen = Boolean(item.approvalId || issueReference);
+                const actionLabel = canOpen ? liveFeedActionLabel(item) : null;
+                const isLatest = section.id === liveFeedSections[0]?.id && index === 0;
+
+                return (
+                  <DearMeActionCard
+                    key={`${item.id}:${item.role}:${item.createdAt}:${index}`}
+                    eyebrow={
+                      <span className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline">{WORKSTREAM_STAGE_LABELS[item.cycleStage]}</Badge>
+                        <span>{roleLabel(item.role)}</span>
+                      </span>
                     }
-                  : null
-              }
-            />
-          );
-        })}
+                    title={customerProofPackSummary(item.title)}
+                    summary={customerProofPackSummary(item.summary)}
+                    attention={streamActionAttention(item)}
+                    statusBadges={[
+                      { label: WORKSTREAM_KIND_LABELS[item.kind], variant: "outline" },
+                      {
+                        label: WORKSTREAM_STATUS_LABELS[item.status],
+                        variant: item.needsApproval ? "secondary" : "outline",
+                      },
+                      ...(item.reviewLoop
+                        ? [
+                            { label: reviewLoopLabel(item.reviewLoop), variant: "outline" as const },
+                            {
+                              label: reviewLoopStateLabel(item.reviewLoop),
+                              variant: reviewLoopVariant(item.reviewLoop),
+                            },
+                          ]
+                        : []),
+                    ]}
+                    chips={[
+                      ...(isLatest ? [{ label: "Latest", variant: "secondary" as const }] : []),
+                      { label: customerProofPackSummary(item.artifact), variant: "outline" },
+                      { label: sourceLabelForChip(item.sourceLabel), variant: "outline" },
+                      ...(item.needsApproval
+                        ? [{ label: "Decision ready", variant: "default" as const }]
+                        : []),
+                      ...(item.costImpact
+                        ? [{ label: customerProofPackSummary(item.costImpact), variant: "secondary" as const }]
+                        : []),
+                      { label: shortDate(item.createdAt), variant: "outline" },
+                    ]}
+                    calloutLabel="Next action"
+                    callout={customerProofPackSummary(item.nextAction)}
+                    action={
+                      actionLabel
+                        ? {
+                            label: actionLabel,
+                            variant: item.needsApproval ? "default" : "outline",
+                            ariaLabel: `${actionLabel}: ${customerProofPackSummary(item.title)}`,
+                            onClick: () => {
+                              if (item.approvalId) {
+                                onOpenApproval(item.approvalId);
+                                return;
+                              }
+                              if (issueReference && item.relatedOutputId) {
+                                onOpenWorkItem(issueReference, item.relatedOutputId, reviewLoopRouteIntent(item.reviewLoop));
+                                return;
+                              }
+                              if (issueReference) onOpenIssue(issueReference);
+                            },
+                          }
+                        : null
+                    }
+                  />
+                );
+              })}
+            </div>
+          </section>
+        ))}
       </div>
     </DearMePanel>
   );

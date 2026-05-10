@@ -1867,6 +1867,13 @@ describe("DearMeOnboarding", () => {
       ),
     ).not.toBeNull();
     expect(container.textContent).toContain("Live team feed");
+    expect(container.textContent).toContain("1 needs your call");
+    expect(container.textContent).toContain("1 in motion");
+    expect(container.textContent).toContain("Reviewable work and launch calls stay first.");
+    expect(container.textContent).toContain("Private work the team is preparing before it asks for a decision.");
+    expect(container.textContent).toContain("Recent updates");
+    expect(container.textContent).toContain("Completed setup, spend checkpoints, and cycle notes from the team.");
+    expect(container.textContent).toContain("Latest");
     expect(container.textContent).toContain("Your call: Review Starter posts");
     expect(container.textContent).toContain("Cycle check-in completed");
     expect(container.textContent).toContain("Weekly content cycle checked in");

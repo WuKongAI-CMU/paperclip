@@ -112,6 +112,39 @@ Brand OS approval failures stay product-safe before state changes.
 
 ## Recently Completed
 
+### DM-183S: Decision-First Live Team Feed
+
+Goal: carry forward DM-088's decision-first team progress value without
+reverting the newer DearMe workbench architecture.
+
+Donor grounding:
+
+- Polsia: progress should show the customer what needs a call before showing
+  background motion.
+- Lindy: operational feeds should group actionable work instead of presenting
+  a flat event list.
+- Naive/Paperclip/Symphony: reuse the current workbench stream projection,
+  action cards, review-loop labels, and DearMe decision routing; do not add a
+  second feed contract or expose hidden work machinery.
+
+Completed:
+
+- Grouped the existing live team feed into `Needs your call`, `In motion`, and
+  `Recent updates`.
+- Added counts for calls waiting and private work in motion in the live-feed
+  header.
+- Preserved current proof-pack continuity, growth map, run ledger, Work Ready,
+  and Decisions Needed surfaces instead of replaying the stale DM-088 component
+  shape.
+- Added focused page coverage for the new grouping and kept raw issue/approval
+  routes hidden from the DearMe surface.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `git diff --check`
+
 ### DEA-8: Live Proof Pack Handoff v0
 
 Goal: prove the first-run DearMe aha moment with real prepared proof flowing

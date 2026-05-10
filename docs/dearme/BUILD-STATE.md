@@ -2,6 +2,28 @@
 
 Date: 2026-05-10
 
+## DM-183S Decision-First Live Team Feed - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the still-useful DM-088 decision-first team progress idea onto the
+  current DearMe workbench instead of raw-merging the stale worker branch.
+- Kept the newer proof-pack continuity, growth map, run ledger, and action-card
+  surfaces intact.
+- Grouped the existing live team feed into `Needs your call`, `In motion`, and
+  `Recent updates` so reviewable work and launch calls are visually first.
+- Added live-feed counters for calls waiting and private work in motion.
+- Reused the existing workbench stream item contract, action-card component,
+  deep links, review-loop labels, and decision routing; no new route, schema,
+  worker, or customer-facing runtime surface was added.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 49 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check` passed.
+
 ## DM-183R DearMe Live Refresh Invalidation - 2026-05-10
 
 Implementation slice:
