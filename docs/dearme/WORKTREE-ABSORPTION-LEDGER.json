@@ -312,6 +312,42 @@
       ]
     },
     {
+      "ticket": "DM-013",
+      "branch": "codex/dearme-dm-013-handoff-brief-surface",
+      "head": "2673975d3d30d7ee11c2a8384b358b887e5f1d56",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbed the useful private handoff readiness UI into the shared schema/export, Workbench read model, focused customer panel, and DearMe-owned brief routing without adding another execution surface.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "packages/shared/src/validators/dearme.test.ts",
+        "packages/shared/src/index.ts",
+        "packages/shared/src/validators/index.ts",
+        "server/src/services/dearme-workbench.ts",
+        "server/src/__tests__/dearme-workbench.test.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-013",
+      "branch": "codex/dearme-dm-013-integrated",
+      "head": "39480533a8a26db86858cc053edd0ec8f77ff04c",
+      "reviewedAt": "2026-05-10",
+      "reason": "The old DM-013 integration baseline is absorbed by the current private handoff readiness contract and Workbench panel; replaying it would duplicate a narrower branch-era UI patch.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "packages/shared/src/validators/dearme.test.ts",
+        "packages/shared/src/index.ts",
+        "packages/shared/src/validators/index.ts",
+        "server/src/services/dearme-workbench.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
       "ticket": "DM-014",
       "branch": "codex/dearme-dm-014-mobile-nav-safe-area",
       "head": "65d7a59938bbf529d69e16a0907f07db3ae5e565",

@@ -1007,6 +1007,21 @@ describe("DearMe brand blueprint contract", () => {
           summary: "DearMe created the team, cycles, Brand OS documents, and first private work lanes.",
           createdAt: "2026-05-07T14:00:00.000Z",
         },
+        {
+          id: "activity-2",
+          kind: "execution_handoff_prepared",
+          title: "Private publishing handoff prepared",
+          summary: "DearMe prepared the private execution brief. Nothing external has run yet.",
+          outputKind: "content_drafts",
+          outputId: "issue-2:content_drafts",
+          riskGate: "publish_social",
+          approvalId: "approval-2",
+          issueId: "issue-2",
+          issueIdentifier: "PET-8",
+          executionReadiness: "private_handoff_ready",
+          nextStep: "DearMe will prepare the channel-ready posting brief before any post goes live.",
+          createdAt: "2026-05-07T14:06:00.000Z",
+        },
       ],
       memory: {
         summary: "2 recent Voice & Memory sources are available. Latest: Voice sample.",
@@ -1197,6 +1212,11 @@ describe("DearMe brand blueprint contract", () => {
 
     expect(response.team[0]!.role).toBe("chief_of_staff");
     expect(response.decisionsNeeded[0]!.approvalId).toBe("approval-1");
+    expect(response.recentProgress[1]).toEqual(expect.objectContaining({
+      kind: "execution_handoff_prepared",
+      executionReadiness: "private_handoff_ready",
+      nextStep: "DearMe will prepare the channel-ready posting brief before any post goes live.",
+    }));
     expect(response.batchDecisions[0]).toEqual(expect.objectContaining({
       actionLabel: "Review work",
       approvalIds: ["approval-1"],

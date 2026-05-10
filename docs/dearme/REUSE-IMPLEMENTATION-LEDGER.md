@@ -126,6 +126,12 @@ after final approval. The Workbench reads the existing
 panel with the artifact, next step, and private brief link; keep this on the
 current workbench/read-model path instead of adding a separate execution queue.
 
+Coordinator note: DM-013 is now absorbed as the typed handoff-readiness UI
+contract. The current shared schema/export and Workbench panel cover
+`private_handoff_ready`, next-step copy, and DearMe-owned brief routing, so do
+not replay the old branch as a new route, runtime surface, or customer-facing
+execution queue.
+
 Coordinator note: DM-183M extends the Output review and decisions boundary into
 server responses and approval preflight, so DearMe auth, validation, and stale
 Brand OS approval failures stay product-safe before state changes.

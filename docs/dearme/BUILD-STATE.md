@@ -2,6 +2,53 @@
 
 Date: 2026-05-10
 
+## DM-183BF DM-013 Private Handoff Readiness Absorption - 2026-05-10
+
+Product/UI slice:
+
+- Kept Symphony as the cooperation spine and verified the live daemon before
+  closing the next handoff-surface worktree.
+- Reviewed exact DM-013 heads `2673975d3d30d7ee11c2a8384b358b887e5f1d56`
+  and `39480533a8a26db86858cc053edd0ec8f77ff04c`.
+- Reused the current `execution_handoff_prepared` Workbench progress item and
+  the existing DearMe decision/brief route instead of adding another execution
+  route, queue, or runtime surface.
+- Added shared schema coverage for `private_handoff_ready`, next-step copy,
+  output/approval references, and customer-safe handoff progress.
+- Kept the compact Workbench handoff panel on the current page surface: it
+  shows the artifact, next step, private brief link, and `External action not
+  run` boundary.
+- Recorded both exact DM-013 heads in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so Symphony patrols stop
+  treating them as unresolved development candidates.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status --json` passed with daemon pid `89569`,
+  dashboard `http://127.0.0.1:4100/`, and no running or retrying workers.
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed, 82 tests.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('json ok')"`
+  passed.
+- `pnpm run test:dearme-worktrees` passed, 13 tests.
+- `pnpm run dearme:worktrees -- --ticket=DM-013 --skip-dirty --limit=20`
+  passed and showed both DM-013 worktrees as `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` passed and
+  reported `reviewed_absorbed: 32`, `not_in_current: 81`, and `dirty: 0`.
+- `git diff --check` passed.
+- `pnpm exec vitest run server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-output-handoff.test.ts --maxWorkers=1`
+  was attempted, but both embedded Postgres suites skipped on this host because
+  their Postgres init script exited with code 1.
+
+Not run:
+
+- Full `pnpm test:run`.
+- Full `pnpm build`.
+- Browser smoke.
+
 ## DM-183BE DM-012 Private Handoff Surface Absorption - 2026-05-10
 
 Product/UI slice:
