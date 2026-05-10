@@ -11,12 +11,14 @@ import {
   evaluateDearMeVoiceGate,
   summarizeDearMeBrandBlueprint,
   type DearMeMemoryUpdateKind,
+  type DearMeOutputsResponse,
   type DearMeWorkbenchResponse,
   type DearMeWorkbenchStreamItem,
   type DearMeOutputReviewLoop,
 } from "@paperclipai/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DearMeOnboarding } from "./DearMeOnboarding";
+import { queryKeys } from "../lib/queryKeys";
 
 const mockDearmeApi = vi.hoisted(() => ({
   getWorkbench: vi.fn(),
@@ -3961,7 +3963,26 @@ describe("DearMeOnboarding", () => {
 
   it("requests another private pass from focused private output without exposing issue route", async () => {
     mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
-    mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse());
+    const initialOutputs = outputsResponse() as DearMeOutputsResponse;
+    const reviewedOutput: DearMeOutputsResponse["outputs"][number] = {
+      ...initialOutputs.outputs[0],
+      status: "working",
+      isReviewable: false,
+      updatedAt: "2026-05-07T14:05:00.000Z",
+    };
+    mockDearmeApi.getOutputs.mockResolvedValueOnce(initialOutputs);
+    mockDearmeApi.continueOutput.mockResolvedValueOnce({
+      companyId: "company-1",
+      outputId: reviewedOutput.id,
+      action: "regenerate",
+      status: "queued",
+      comment: {
+        id: "comment-2",
+        bodyPreview: "DearMe decision: prepare another private pass before review.",
+        createdAt: "2026-05-07T14:05:00.000Z",
+      },
+      output: reviewedOutput,
+    });
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -3982,6 +4003,10 @@ describe("DearMeOnboarding", () => {
     expect(prepareAnotherPassButton).toBeDefined();
     expect(prepareAnotherPassButton?.disabled).toBe(false);
 
+    mockDearmeApi.getOutputs.mockImplementation(
+      () => new Promise<DearMeOutputsResponse>(() => {}),
+    );
+
     await act(async () => {
       setTextareaValue(
         container.querySelector("#dearme-focused-output-note") as HTMLTextAreaElement,
@@ -3997,6 +4022,16 @@ describe("DearMeOnboarding", () => {
       { intent: "prepare_another_pass", decisionNote: "Make it sharper before review." },
     );
     expect(mockDearmeApi.reviewOutput).not.toHaveBeenCalled();
+    const cachedOutputs = queryClient.getQueryData<DearMeOutputsResponse>(
+      queryKeys.dearme.outputs("company-1"),
+    );
+    expect(cachedOutputs?.outputs[0]).toEqual(
+      expect.objectContaining({
+        id: "issue-1:weekly_report",
+        status: "working",
+        isReviewable: false,
+      }),
+    );
     expect(container.textContent).not.toContain("/issues/");
 
     await act(async () => {

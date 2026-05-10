@@ -23,6 +23,7 @@ import {
   type DearMeOutputContinuationIntent,
   type DearMeOutputDetail,
   type DearMeOutputItem,
+  type DearMeOutputsResponse,
   type DearMeOutputReviewAction,
   type DearMeOutputReviewLoop,
   type DearMeOutputStatus,
@@ -1582,6 +1583,21 @@ function outputPreview(output: DearMeOutputItem) {
     output.workProducts[0]?.summary ||
     ""
   );
+}
+
+function replaceDearMeOutputInResponse(
+  current: DearMeOutputsResponse | undefined,
+  nextOutput: DearMeOutputItem,
+): DearMeOutputsResponse | undefined {
+  if (!current) return current;
+  let didReplace = false;
+  const outputs = current.outputs.map((output) => {
+    if (output.id !== nextOutput.id) return output;
+    didReplace = true;
+    return nextOutput;
+  });
+  if (!didReplace) return current;
+  return { ...current, outputs };
 }
 
 function isCyclePacketWorkProduct(workProduct: DearMeOutputItem["workProducts"][number]) {
@@ -6105,6 +6121,10 @@ export function DearMeOnboarding() {
     onSuccess: (result) => {
       setActionError(null);
       if (selectedCompanyId) {
+        queryClient.setQueryData<DearMeOutputsResponse>(
+          queryKeys.dearme.outputs(selectedCompanyId),
+          (current) => replaceDearMeOutputInResponse(current, result.output),
+        );
         queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(selectedCompanyId) });
         queryClient.invalidateQueries({ queryKey: queryKeys.dearme.outputs(selectedCompanyId) });
         queryClient.invalidateQueries({ queryKey: queryKeys.activity(selectedCompanyId) });
