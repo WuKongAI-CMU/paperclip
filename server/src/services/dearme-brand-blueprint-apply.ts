@@ -10,6 +10,7 @@ import {
   dearMeBrandBlueprintApplyPayloadSchema,
   type DearMeBrandBlueprint,
   type DearMeBrandBlueprintApplyPayload,
+  type DearMeOutputKind,
 } from "@paperclipai/shared";
 import { unprocessable } from "../errors.js";
 import { agentService } from "./agents.js";
@@ -24,11 +25,28 @@ type DearMeTeamRole = DearMeBrandBlueprint["team"][number]["role"];
 type DearMeRiskGate = DearMeBrandBlueprint["gates"][number];
 type DearMeMemorySeedKind = DearMeBrandBlueprint["memorySeeds"][number]["kind"];
 type DearMeOperationId = DearMeBrandBlueprintApplyPayload["executionPlan"]["operations"][number]["id"];
+type DearMeVoiceMemorySectionKey = "goals" | "audiences" | "offers" | "proof" | "voice" | "constraints";
 
 export const DEARME_BRAND_BLUEPRINT_ORIGIN_KIND = "dearme_brand_blueprint_apply";
 export const DEARME_BRAND_BLUEPRINT_AGENT_ADAPTER_TYPE = "codex_local";
 const DEARME_BRAND_BLUEPRINT_AUTO_START_OPERATION_ID = "draft_content_batch" satisfies DearMeOperationId;
 const DEARME_WEEKLY_REPORT_DOCUMENT_KEY = "dear-me-report";
+const DEARME_OUTPUT_KIND_BY_OPERATION_ID: Partial<Record<DearMeOperationId, DearMeOutputKind>> = {
+  seed_voice_profile: "voice_profile",
+  draft_content_batch: "content_drafts",
+  draft_opportunity_list: "opportunity_drafts",
+  prepare_portfolio_update: "portfolio_update",
+  schedule_weekly_report: "weekly_report",
+};
+
+const DEARME_VOICE_MEMORY_SECTION_ORDER_BY_OUTPUT_KIND: Record<DearMeOutputKind, DearMeVoiceMemorySectionKey[]> = {
+  brand_os: ["goals", "audiences", "proof", "offers", "voice", "constraints"],
+  voice_profile: ["voice", "constraints", "audiences", "goals", "proof", "offers"],
+  content_drafts: ["voice", "proof", "audiences", "offers", "goals", "constraints"],
+  opportunity_drafts: ["audiences", "offers", "proof", "goals", "voice", "constraints"],
+  portfolio_update: ["proof", "voice", "goals", "offers", "audiences", "constraints"],
+  weekly_report: ["goals", "proof", "offers", "audiences", "voice", "constraints"],
+};
 
 const DEARME_BRAND_BLUEPRINT_CODEX_SANDBOX_ARGS = [
   "--sandbox",
@@ -141,6 +159,10 @@ function listPreviewLines(values: string[], maxItems = 6, maxLength = 360) {
 
 function memorySeedValues(blueprint: DearMeBrandBlueprint, kind: DearMeMemorySeedKind) {
   return blueprint.memorySeeds.filter((seed) => seed.kind === kind).map((seed) => seed.value);
+}
+
+function outputKindForOperation(operationId: DearMeOperationId) {
+  return DEARME_OUTPUT_KIND_BY_OPERATION_ID[operationId] ?? null;
 }
 
 function voiceProfileStatusLabel(status: DearMeBrandBlueprint["voiceProfile"]["status"]) {
@@ -296,29 +318,49 @@ function renderDearMeReportDocument(payload: DearMeBrandBlueprintApplyPayload) {
   ].join("\n");
 }
 
-function renderVoiceAndMemoryTaskContext(blueprint: DearMeBrandBlueprint) {
+function renderVoiceAndMemoryTaskContext(blueprint: DearMeBrandBlueprint, outputKind?: DearMeOutputKind | null) {
   const voiceSamples = memorySeedValues(blueprint, "voice");
+  const sections: Array<{ key: DearMeVoiceMemorySectionKey; lines: string[] }> = [
+    {
+      key: "goals",
+      lines: ["Goals to serve:", listPreviewLines(blueprint.brand.goals, 6, 240)],
+    },
+    {
+      key: "audiences",
+      lines: ["Audiences to write for:", listPreviewLines(blueprint.brand.audiences, 6, 240)],
+    },
+    {
+      key: "offers",
+      lines: ["Offers to keep available:", listPreviewLines(blueprint.brand.offers, 6, 240)],
+    },
+    {
+      key: "proof",
+      lines: ["Proof to use:", listPreviewLines(blueprint.brand.proofPoints, 6, 240)],
+    },
+    {
+      key: "voice",
+      lines: ["Voice samples for tone review:", listPreviewLines(voiceSamples, 4, 360)],
+    },
+    {
+      key: "constraints",
+      lines: ["Constraints and boundaries:", listPreviewLines(blueprint.brand.constraints, 6, 240)],
+    },
+  ];
+  const sectionOrder = outputKind
+    ? DEARME_VOICE_MEMORY_SECTION_ORDER_BY_OUTPUT_KIND[outputKind]
+    : (["goals", "audiences", "offers", "proof", "voice", "constraints"] as const);
+  const sectionsByKey = new Map(sections.map((section) => [section.key, section]));
+
   return [
     "",
     "Voice & Memory context:",
     `- Voice profile: ${voiceProfileStatusLabel(blueprint.voiceProfile.status)}`,
     `- Voice guidance: ${compactLine(blueprint.voiceProfile.guidance, 320)}`,
     `- Voice samples supplied: ${blueprint.voiceProfile.sampleCount}`,
-    "",
-    "Goals to serve:",
-    listPreviewLines(blueprint.brand.goals, 6, 240),
-    "",
-    "Audiences to write for:",
-    listPreviewLines(blueprint.brand.audiences, 6, 240),
-    "",
-    "Offers to keep available:",
-    listPreviewLines(blueprint.brand.offers, 6, 240),
-    "",
-    "Voice samples for tone review:",
-    listPreviewLines(voiceSamples, 4, 360),
-    "",
-    "Constraints and boundaries:",
-    listPreviewLines(blueprint.brand.constraints, 6, 240),
+    ...sectionOrder.flatMap((key) => {
+      const section = sectionsByKey.get(key);
+      return section ? ["", ...section.lines] : [];
+    }),
   ];
 }
 
@@ -456,10 +498,7 @@ function renderDraftIssueDescription(
     "",
     "Content pillars:",
     listLines(payload.brandBlueprint.contentPillars.slice(0, 6)),
-    "",
-    "Relevant proof points:",
-    listLines(payload.brandBlueprint.brand.proofPoints.slice(0, 6)),
-    ...renderVoiceAndMemoryTaskContext(payload.brandBlueprint),
+    ...renderVoiceAndMemoryTaskContext(payload.brandBlueprint, outputKindForOperation(operation.id)),
     ...contentScope,
     ...opportunityScope,
     ...portfolioScope,

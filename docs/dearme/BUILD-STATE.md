@@ -2,6 +2,24 @@
 
 Date: 2026-05-10
 
+## DM-183I Output-Scoped Voice & Memory Task Context - 2026-05-10
+
+Implementation slice:
+
+- Replayed the useful `DM-039` idea onto the current DearMe apply path instead
+  of merging the stale worker branch shape.
+- Added an output-kind map for seeded DearMe draft operations so content,
+  opportunity, portfolio, voice-profile, and weekly-report tasks receive the
+  same Voice & Memory sections in the order most relevant to that output.
+- Kept the change inside generated private task context: no customer UI,
+  schema, route, or approval-boundary behavior changed.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-apply.test.ts --maxWorkers=1`
+  passed: 2 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+
 ## DM-183H Focused Work Voice Context Guard - 2026-05-10
 
 Implementation slice:

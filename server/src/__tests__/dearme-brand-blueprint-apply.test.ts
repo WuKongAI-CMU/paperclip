@@ -47,6 +47,13 @@ function issuePrefix(id: string) {
   return `DM${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
 }
 
+function expectTextBefore(text: string | null | undefined, first: string, second: string) {
+  const body = text ?? "";
+  expect(body).toContain(first);
+  expect(body).toContain(second);
+  expect(body.indexOf(first)).toBeLessThan(body.indexOf(second));
+}
+
 describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
   let db!: ReturnType<typeof createDb>;
   let tempDb: Awaited<ReturnType<typeof startEmbeddedPostgresTestDatabase>> | null = null;
@@ -320,6 +327,7 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(draftIssues.every((issue) => issue.description?.includes("Offers to keep available:") ?? false)).toBe(
       true,
     );
+    expect(draftIssues.every((issue) => issue.description?.includes("Proof to use:") ?? false)).toBe(true);
     expect(draftIssues.every((issue) => issue.description?.includes("Voice samples for tone review:") ?? false)).toBe(
       true,
     );
@@ -332,6 +340,7 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(contentIssue?.description).toContain("Direct and precise.");
     expect(contentIssue?.description).toContain("Evidence first.");
     expect(contentIssue?.description).toContain("No public posts without approval");
+    expectTextBefore(contentIssue?.description, "Voice samples for tone review:", "Proof to use:");
     expect(
       artifacts.issues
         .filter((issue) => issue.title.startsWith("DearMe Draft:"))
@@ -364,9 +373,11 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(portfolioIssue?.description).toContain("Portfolio scope:");
     expect(portfolioIssue?.description).toContain("6-page personal portfolio draft structure");
     expect(portfolioIssue?.description).toContain("Keep tone and claims aligned with the brand voice guidance");
+    expectTextBefore(portfolioIssue?.description, "Proof to use:", "Voice samples for tone review:");
     const opportunityIssue = artifacts.issues.find((issue) => issue.title === "DearMe Draft: Draft opportunity list");
     expect(opportunityIssue?.description).toContain("Opportunity scope:");
     expect(opportunityIssue?.description).toContain("Identify and prioritize outbound opportunities");
+    expectTextBefore(opportunityIssue?.description, "Audiences to write for:", "Offers to keep available:");
     const reportIssue = artifacts.issues.find((issue) => issue.title === "DearMe Draft: Draft weekly Dear me report");
     expect(reportIssue).toBeTruthy();
     expect(reportIssue?.description).toContain("Weekly report scope:");
@@ -380,6 +391,7 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
       "issue thread, attached documents, or agent workspace",
     );
     expect(reportIssue?.description).toContain("completed work, draft deliverables, decisions needed");
+    expectTextBefore(reportIssue?.description, "Goals to serve:", "Proof to use:");
 
     const brandOsIssue = artifacts.issues.find((issue) => issue.title === "DearMe: Review Brand OS for Peter");
     expect(brandOsIssue).toBeTruthy();
