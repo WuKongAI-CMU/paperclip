@@ -38,12 +38,15 @@ vi.mock("./ApprovalCard", () => ({
     approval,
     onApprove,
     onReject,
+    detailLink,
   }: {
     approval: Approval;
     onApprove?: () => void;
     onReject?: () => void;
+    detailLink?: string;
   }) => (
     <div>
+      {detailLink ? <a href={detailLink}>Open decision</a> : null}
       <div>{approval.type}</div>
       <div>{String(approval.payload.title ?? "")}</div>
       {onApprove ? <button type="button" onClick={onApprove}>Approve</button> : null}
@@ -396,10 +399,55 @@ describe("CommentThread", () => {
 
     const approvalRow = container.querySelector("#approval-approval-1") as HTMLDivElement | null;
     expect(approvalRow).not.toBeNull();
+    expect(container.querySelector('a[href="/approvals/approval-1"]')).not.toBeNull();
     expect(container.textContent).toContain("request_board_approval");
     expect(container.textContent).toContain("Approve hosting spend");
     expect(container.textContent).toContain("Approve");
     expect(container.textContent).toContain("Reject");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("routes linked DearMe approvals to the DearMe decisions surface", () => {
+    const root = createRoot(container);
+    const approval: Approval = {
+      id: "approval-dearme-1",
+      companyId: "company-1",
+      type: "dearme_output_next_move",
+      requestedByAgentId: null,
+      requestedByUserId: null,
+      status: "pending",
+      payload: {
+        title: "Approve next move",
+        text: "Ready to move.",
+      },
+      decisionNote: null,
+      decidedByUserId: null,
+      decidedAt: null,
+      createdAt: new Date("2026-03-11T09:00:00.000Z"),
+      updatedAt: new Date("2026-03-11T09:00:00.000Z"),
+    };
+
+    act(() => {
+      root.render(
+        <MemoryRouter>
+          <CommentThread
+            comments={[]}
+            linkedApprovals={[approval]}
+            agentMap={new Map()}
+            onAdd={async () => {}}
+          />
+        </MemoryRouter>,
+      );
+    });
+
+    const hrefs = Array.from(container.querySelectorAll("a")).map((anchor) =>
+      anchor.getAttribute("href"),
+    );
+    expect(hrefs).toContain("/dearme?view=decisions&approval=approval-dearme-1");
+    expect(hrefs).not.toContain("/approvals/approval-dearme-1");
 
     act(() => {
       root.unmount();

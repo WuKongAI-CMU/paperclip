@@ -12,7 +12,13 @@ import { Tabs } from "@/components/ui/tabs";
 import { ShieldCheck } from "lucide-react";
 import { ApprovalCard } from "../components/ApprovalCard";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { approvalResolvedHref } from "@/lib/dearmeApprovals";
+import {
+  approvalDetailHref,
+  approvalListActionErrorMessage,
+  approvalResolvedHref,
+  dearMeApprovalDecisionHref,
+  isDearMeApprovalType,
+} from "@/lib/dearmeApprovals";
 
 type StatusFilter = "pending" | "all";
 
@@ -49,19 +55,38 @@ export function Approvals() {
       queryClient.invalidateQueries({ queryKey: queryKeys.approvals.list(selectedCompanyId!) });
       navigate(approvalResolvedHref(_approval?.type, id));
     },
-    onError: (err) => {
-      setActionError(err instanceof Error ? err.message : "Failed to approve");
+    onError: (err, id) => {
+      setActionError(
+        approvalListActionErrorMessage(
+          err,
+          "Failed to approve",
+          data ?? [],
+          id,
+          "Failed to approve the DearMe decision.",
+        ),
+      );
     },
   });
 
   const rejectMutation = useMutation({
     mutationFn: (id: string) => approvalsApi.reject(id),
-    onSuccess: () => {
+    onSuccess: (approval, id) => {
       setActionError(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.approvals.list(selectedCompanyId!) });
+      if (isDearMeApprovalType(approval?.type)) {
+        navigate(dearMeApprovalDecisionHref(id));
+      }
     },
-    onError: (err) => {
-      setActionError(err instanceof Error ? err.message : "Failed to reject");
+    onError: (err, id) => {
+      setActionError(
+        approvalListActionErrorMessage(
+          err,
+          "Failed to reject",
+          data ?? [],
+          id,
+          "Failed to send the DearMe decision back.",
+        ),
+      );
     },
   });
 
@@ -122,7 +147,7 @@ export function Approvals() {
               requesterAgent={approval.requestedByAgentId ? (agents ?? []).find((a) => a.id === approval.requestedByAgentId) ?? null : null}
               onApprove={() => approveMutation.mutate(approval.id)}
               onReject={() => rejectMutation.mutate(approval.id)}
-              detailLink={`/approvals/${approval.id}`}
+              detailLink={approvalDetailHref(approval.type, approval.id)}
               isPending={approveMutation.isPending || rejectMutation.isPending}
               pendingAction={
                 approveMutation.isPending ? "approve" : rejectMutation.isPending ? "reject" : null

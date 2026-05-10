@@ -34,6 +34,8 @@ import {
   withIssueDetailHeaderSeed,
 } from "../lib/issueDetailBreadcrumb";
 import {
+  approvalDetailHref,
+  approvalListActionErrorMessage,
   approvalResolvedHref,
   dearMeApprovalDecisionHref,
   isDearMeApprovalType,
@@ -416,9 +418,7 @@ function ApprovalInboxRow({
   const Icon = typeIcon[approval.type] ?? defaultTypeIcon;
   const label = approvalLabel(approval.type, approval.payload as Record<string, unknown> | null);
   const isDearMeApproval = isDearMeApprovalType(approval.type);
-  const approvalHref = isDearMeApproval
-    ? dearMeApprovalDecisionHref(approval.id)
-    : `/approvals/${approval.id}`;
+  const approvalHref = approvalDetailHref(approval.type, approval.id);
   const showResolutionButtons =
     approval.type !== "budget_override_required" &&
     ACTIONABLE_APPROVAL_STATUSES.has(approval.status);
@@ -1330,19 +1330,38 @@ export function Inbox() {
       queryClient.invalidateQueries({ queryKey: queryKeys.approvals.list(selectedCompanyId!) });
       navigate(approvalResolvedHref(approval?.type, id));
     },
-    onError: (err) => {
-      setActionError(err instanceof Error ? err.message : "Failed to approve");
+    onError: (err, id) => {
+      setActionError(
+        approvalListActionErrorMessage(
+          err,
+          "Failed to approve",
+          approvals ?? [],
+          id,
+          "Failed to approve the DearMe decision.",
+        ),
+      );
     },
   });
 
   const rejectMutation = useMutation({
     mutationFn: (id: string) => approvalsApi.reject(id),
-    onSuccess: () => {
+    onSuccess: (approval, id) => {
       setActionError(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.approvals.list(selectedCompanyId!) });
+      if (isDearMeApprovalType(approval?.type)) {
+        navigate(dearMeApprovalDecisionHref(id));
+      }
     },
-    onError: (err) => {
-      setActionError(err instanceof Error ? err.message : "Failed to reject");
+    onError: (err, id) => {
+      setActionError(
+        approvalListActionErrorMessage(
+          err,
+          "Failed to reject",
+          approvals ?? [],
+          id,
+          "Failed to send the DearMe decision back.",
+        ),
+      );
     },
   });
 
@@ -1807,11 +1826,7 @@ export function Inbox() {
               void prefetchIssueDetail(queryClient, pathId, { issue: item.issue });
               act.navigate(createIssueDetailPath(pathId), { state: detailState });
             } else if (item.kind === "approval") {
-              act.navigate(
-                isDearMeApprovalType(item.approval.type)
-                  ? dearMeApprovalDecisionHref(item.approval.id)
-                  : `/approvals/${item.approval.id}`,
-              );
+              act.navigate(approvalDetailHref(item.approval.type, item.approval.id));
             } else if (item.kind === "failed_run") {
               act.navigate(`/agents/${item.run.agentId}/runs/${item.run.id}`);
             }

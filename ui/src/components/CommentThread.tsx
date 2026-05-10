@@ -24,6 +24,7 @@ import type { IssueTimelineAssignee, IssueTimelineEvent } from "../lib/issue-tim
 import { timeAgo } from "../lib/timeAgo";
 import { cn, formatDateTime } from "../lib/utils";
 import { restoreSubmittedCommentDraft } from "../lib/comment-submit-draft";
+import { approvalDetailHref } from "../lib/dearmeApprovals";
 import { PluginSlotOutlet } from "@/plugins/slots";
 
 interface CommentWithRunMeta extends IssueComment {
@@ -606,7 +607,7 @@ const TimelineList = memo(function TimelineList({
                 requesterAgent={approval.requestedByAgentId ? agentMap?.get(approval.requestedByAgentId) ?? null : null}
                 onApprove={onApproveApproval ? () => void onApproveApproval(approval.id) : undefined}
                 onReject={onRejectApproval ? () => void onRejectApproval(approval.id) : undefined}
-                detailLink={`/approvals/${approval.id}`}
+                detailLink={approvalDetailHref(approval.type, approval.id)}
                 isPending={isPending}
                 pendingAction={isPending ? pendingApprovalAction?.action ?? null : null}
               />

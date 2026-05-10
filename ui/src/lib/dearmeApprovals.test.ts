@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  approvalActionErrorMessage,
+  approvalDetailHref,
+  approvalListActionErrorMessage,
   approvalResolvedHref,
   dearMeApprovalDecisionHref,
   isDearMeApprovalType,
@@ -21,11 +24,46 @@ describe("dearmeApprovals", () => {
   });
 
   it("keeps generic approvals on the shared approval route", () => {
+    expect(approvalDetailHref("dearme_output_next_move", "approval-1")).toBe(
+      "/dearme?view=decisions&approval=approval-1",
+    );
+    expect(approvalDetailHref("request_board_approval", "approval-1")).toBe(
+      "/approvals/approval-1",
+    );
     expect(approvalResolvedHref("dearme_output_next_move", "approval-1")).toBe(
       "/dearme?view=decisions&approval=approval-1",
     );
     expect(approvalResolvedHref("request_board_approval", "approval-1")).toBe(
       "/approvals/approval-1?resolved=approved",
     );
+  });
+
+  it("sanitizes internal approval errors only for DearMe decisions", () => {
+    const internalError = new Error("Provider token rejected in /approvals/approval-1");
+
+    expect(
+      approvalActionErrorMessage(
+        internalError,
+        "Failed to approve",
+        "dearme_output_next_move",
+        "Failed to approve the DearMe decision.",
+      ),
+    ).toBe("Failed to approve the DearMe decision.");
+    expect(
+      approvalActionErrorMessage(
+        internalError,
+        "Failed to approve",
+        "request_board_approval",
+      ),
+    ).toBe("Provider token rejected in /approvals/approval-1");
+    expect(
+      approvalListActionErrorMessage(
+        internalError,
+        "Failed to reject",
+        [{ id: "approval-1", type: "dearme_brand_blueprint_apply" }],
+        "approval-1",
+        "Failed to send the DearMe decision back.",
+      ),
+    ).toBe("Failed to send the DearMe decision back.");
   });
 });

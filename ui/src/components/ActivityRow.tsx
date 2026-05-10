@@ -6,14 +6,31 @@ import { cn } from "../lib/utils";
 import { formatActivityVerb } from "../lib/activity-format";
 import { deriveProjectUrlKey, type ActivityEvent, type Agent } from "@paperclipai/shared";
 import type { CompanyUserProfile } from "../lib/company-members";
+import { dearMeApprovalDecisionHref, isDearMeApprovalType } from "../lib/dearmeApprovals";
 
-function entityLink(entityType: string, entityId: string, name?: string | null): string | null {
-  switch (entityType) {
-    case "issue": return `/issues/${name ?? entityId}`;
-    case "agent": return `/agents/${entityId}`;
-    case "project": return `/projects/${deriveProjectUrlKey(name, entityId)}`;
-    case "goal": return `/goals/${entityId}`;
-    case "approval": return `/approvals/${entityId}`;
+function detailString(details: Record<string, unknown> | null, key: string) {
+  const value = details?.[key];
+  return typeof value === "string" ? value : null;
+}
+
+function isDearMeApprovalActivity(event: ActivityEvent) {
+  if (event.entityType !== "approval") return false;
+  return (
+    isDearMeApprovalType(detailString(event.details, "type")) ||
+    event.action.startsWith("dearme.")
+  );
+}
+
+function entityLink(event: ActivityEvent, name?: string | null): string | null {
+  switch (event.entityType) {
+    case "issue": return `/issues/${name ?? event.entityId}`;
+    case "agent": return `/agents/${event.entityId}`;
+    case "project": return `/projects/${deriveProjectUrlKey(name, event.entityId)}`;
+    case "goal": return `/goals/${event.entityId}`;
+    case "approval":
+      return isDearMeApprovalActivity(event)
+        ? dearMeApprovalDecisionHref(event.entityId)
+        : `/approvals/${event.entityId}`;
     default: return null;
   }
 }
@@ -43,7 +60,7 @@ export function ActivityRow({ event, agentMap, userProfileMap, entityNameMap, en
 
   const link = isHeartbeatEvent && heartbeatAgentId
     ? `/agents/${heartbeatAgentId}/runs/${event.entityId}`
-    : entityLink(event.entityType, event.entityId, name);
+    : entityLink(event, name);
 
   const actor = event.actorType === "agent" ? agentMap.get(event.actorId) : null;
   const userProfile = event.actorType === "user" ? userProfileMap?.get(event.actorId) : null;

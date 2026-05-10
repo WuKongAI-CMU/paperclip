@@ -35,6 +35,12 @@ import {
 import { resolveIssueActiveRun, shouldTrackIssueActiveRun } from "../lib/issueActiveRun";
 import { getIssueDetailQueryOptions } from "../lib/issueDetailCache";
 import {
+  approvalActionErrorMessage,
+  approvalDetailHref,
+  dearMeApprovalDecisionHref,
+  isDearMeApprovalType,
+} from "../lib/dearmeApprovals";
+import {
   hasBlockingShortcutDialog,
   resolveIssueDetailGoKeyAction,
   resolveInboxQuickArchiveKeyAction,
@@ -135,6 +141,7 @@ import {
   type AskUserQuestionsInteraction,
   type ActivityEvent,
   type Agent,
+  type Approval,
   type FeedbackVote,
   type Issue,
   type IssueAttachment,
@@ -1249,7 +1256,7 @@ function IssueDetailActivityTab({
               requesterAgent={approval.requestedByAgentId ? agentMap.get(approval.requestedByAgentId) ?? null : null}
               onApprove={() => onApprovalAction(approval.id, "approve")}
               onReject={() => onApprovalAction(approval.id, "reject")}
-              detailLink={`/approvals/${approval.id}`}
+              detailLink={approvalDetailHref(approval.type, approval.id)}
               isPending={pendingApprovalAction?.approvalId === approval.id}
               pendingAction={
                 pendingApprovalAction?.approvalId === approval.id
@@ -2022,7 +2029,7 @@ export function IssueDetail() {
     onMutate: ({ approvalId, action }) => {
       setPendingApprovalAction({ approvalId, action });
     },
-    onSuccess: (_approval, variables) => {
+    onSuccess: (approval, variables) => {
       invalidateIssueDetail();
       queryClient.invalidateQueries({ queryKey: queryKeys.issues.approvals(issueId!) });
       invalidateIssueCollections();
@@ -2030,15 +2037,25 @@ export function IssueDetail() {
       if (resolvedCompanyId) {
         queryClient.invalidateQueries({ queryKey: queryKeys.approvals.list(resolvedCompanyId) });
       }
+      const isDearMeApproval = isDearMeApprovalType(approval?.type);
+      const toastTitle = variables.action === "approve"
+        ? (isDearMeApproval ? "Decision approved" : "Approval approved")
+        : (isDearMeApproval ? "Decision sent back" : "Approval rejected");
       pushToast({
-        title: variables.action === "approve" ? "Approval approved" : "Approval rejected",
+        title: toastTitle,
         tone: "success",
       });
+      if (isDearMeApproval) {
+        navigate(dearMeApprovalDecisionHref(variables.approvalId), { replace: true });
+      }
     },
     onError: (err, variables) => {
+      const approvalType = queryClient
+        .getQueryData<Approval[]>(queryKeys.issues.approvals(issueId!))
+        ?.find((approval) => approval.id === variables.approvalId)?.type;
       pushToast({
         title: variables.action === "approve" ? "Approval failed" : "Rejection failed",
-        body: err instanceof Error ? err.message : "Unable to update approval",
+        body: approvalActionErrorMessage(err, "Unable to update approval", approvalType),
         tone: "error",
       });
     },

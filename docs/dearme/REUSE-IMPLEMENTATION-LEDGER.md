@@ -145,6 +145,39 @@ Verification:
 - DEA-8 local API health check and shell API smoke against `/first-cycle/start`,
   `/outputs`, and `/workbench`
 
+### DM-183P: DearMe Approval Entry Routes
+
+Goal: keep every approval entry point that can surface a DearMe decision inside
+the DearMe decisions surface, while leaving generic approvals untouched.
+
+Donor grounding:
+
+- Polsia: decisions should feel like a small number of product moves, not an
+  admin approval list.
+- Lindy: users should land directly in the context where a decision can be made
+  or corrected.
+- Naive/Paperclip/Symphony: keep the durable approval/comment/activity
+  substrate backstage; DearMe owns routing, copy, and error translation.
+
+Completed:
+
+- Added `approvalDetailHref(...)` plus DearMe-only approval action error
+  filtering to the shared DearMe approval helper.
+- Routed DearMe approval activity rows and linked comment-thread approvals to
+  `/dearme?view=decisions&approval=...`.
+- Routed issue-detail linked approvals, approval list cards, inbox rows, and
+  inbox keyboard navigation through the same helper.
+- Kept generic approvals on `/approvals/:id` and preserved generic raw error
+  behavior.
+- After DearMe reject/approve actions, kept users on the DearMe decision
+  surface with short product-safe completion wording.
+
+Verified:
+
+- `pnpm exec vitest run ui/src/lib/dearmeApprovals.test.ts ui/src/components/ActivityRow.test.tsx ui/src/components/CommentThread.test.tsx ui/src/pages/Inbox.test.tsx ui/src/pages/IssueDetail.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `git diff --check`
+
 ### DM-183O: DearMe Approval/Profile UI Boundaries
 
 Goal: keep shared UI approval/profile entry points inside the DearMe product

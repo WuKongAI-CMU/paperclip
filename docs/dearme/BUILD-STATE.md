@@ -2,6 +2,29 @@
 
 Date: 2026-05-10
 
+## DM-183P DearMe Approval Entry Routes - 2026-05-10
+
+Implementation slice:
+
+- Replayed the still-useful Symphony DM-054/DM-055/DM-060/DM-062 approval
+  entry residue onto the current UI instead of merging stale worker branches.
+- Centralized DearMe approval detail links and action-error filtering in the
+  shared DearMe approval helper.
+- Routed DearMe approval activity rows, linked comment-thread approvals,
+  issue-detail linked approvals, approval list cards, inbox rows, and keyboard
+  approval navigation back to `/dearme?view=decisions&approval=...`.
+- Kept generic approvals on the shared approvals routes and preserved their raw
+  error behavior.
+- Kept reject/approve completion for DearMe decisions inside the DearMe
+  decisions surface with short product-safe success/error language.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/lib/dearmeApprovals.test.ts ui/src/components/ActivityRow.test.tsx ui/src/components/CommentThread.test.tsx ui/src/pages/Inbox.test.tsx ui/src/pages/IssueDetail.test.tsx --maxWorkers=1`
+  passed: 36 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check` passed for the touched UI approval-entry files.
+
 ## DEA-8 Live Proof Pack Handoff v0 - 2026-05-10
 
 Implementation slice:
