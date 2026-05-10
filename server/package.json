@@ -55,6 +55,8 @@
     "@paperclipai/adapter-utils": "workspace:*",
     "@paperclipai/db": "workspace:*",
     "@paperclipai/dearme-agent-prompts": "workspace:*",
+    "@paperclipai/dearme-ai-proxy": "workspace:*",
+    "@paperclipai/dearme-openclaw": "workspace:*",
     "@paperclipai/plugin-sdk": "workspace:*",
     "@paperclipai/shared": "workspace:*",
     "ajv": "^8.18.0",

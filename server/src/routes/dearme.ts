@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { Router } from "express";
+import { Router, type Response } from "express";
 import type { Db } from "@paperclipai/db";
 import {
+  dearMeApprovalResolveRequestSchema,
+  dearMeApprovalResolveResultSchema,
   dearMeBrandBlueprintApplyRequestSchema,
   dearMeBrandBlueprintPreviewSchema,
   dearMeChiefOfStaffMessageResultSchema,
@@ -23,6 +25,7 @@ import {
 import { validate } from "../middleware/validate.js";
 import {
   agentService,
+  dearMeApprovalResolverService,
   dearmeBrandBlueprintService,
   dearmeMemoryContextService,
   dearmeOutputHandoffService,
@@ -32,6 +35,10 @@ import {
   logActivity,
 } from "../services/index.js";
 import { describeDearMePrivateCycleBlocker } from "../services/dearme-paid-beta-access.js";
+import {
+  getDearMeSseBus,
+  type DearMeSseEvent,
+} from "../services/dearme-sse-bus.js";
 import { forbidden } from "../errors.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { heartbeatService } from "../services/heartbeat.js";
@@ -42,6 +49,7 @@ function memoryBodyPreview(body: string) {
 }
 
 const CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND = "dearme_chief_of_staff_message";
+const FIRST_CYCLE_START_ORIGIN_KIND = "dearme_first_cycle_start";
 const DEARME_MEMORY_UPDATED_ACTION = "dearme.memory_updated";
 const DEARME_MEMORY_ARCHIVED_ACTION = "dearme.memory_archived";
 const CHIEF_OF_STAFF_INTENT_LABELS: Record<DearMeChiefOfStaffMessageIntent, string> = {
@@ -51,6 +59,11 @@ const CHIEF_OF_STAFF_INTENT_LABELS: Record<DearMeChiefOfStaffMessageIntent, stri
   refresh_portfolio: "Refresh portfolio",
   prepare_report: "Prepare report",
 };
+
+function writeDearMeSseEvent(res: Response, event: DearMeSseEvent) {
+  res.write(`event: ${event.type}\n`);
+  res.write(`data: ${JSON.stringify(event)}\n\n`);
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -73,6 +86,21 @@ function renderChiefOfStaffIssueDescription(input: DearMeChiefOfStaffMessage) {
     input.message,
     "Private-work boundary:",
     "Prepare the next useful move privately. Drafts, outreach, public claims, spend, publishing, or site changes still need explicit user approval before leaving DearMe.",
+  ].join("\n\n");
+}
+
+function renderFirstCycleIssueDescription(input: {
+  positioning: string;
+  artifacts: string[];
+}) {
+  return [
+    "DearMe first-cycle start",
+    "User positioning:",
+    input.positioning,
+    "Private proof order:",
+    ...input.artifacts.map((artifact, index) => `${index + 1}. ${artifact}`),
+    "Launch boundary:",
+    "Prepare the private proof package first. Public posts, outbound messages, spend, and site changes still need explicit user approval.",
   ].join("\n\n");
 }
 
@@ -121,6 +149,8 @@ export function dearmeRoutes(db: Db) {
   const paidBetaAccess = dearmePaidBetaAccessService(db);
   const workbench = dearmeWorkbenchService(db);
   const heartbeat = heartbeatService(db);
+  const sseBus = getDearMeSseBus();
+  const approvalResolver = dearMeApprovalResolverService(db, sseBus);
 
   async function recordDearMeOutputReview(input: {
     companyId: string;
@@ -217,11 +247,117 @@ export function dearmeRoutes(db: Db) {
   }
 
   router.get(
+    "/companies/:companyId/events",
+    async (req, res) => {
+      const companyId = req.params.companyId as string;
+      assertCompanyAccess(req, companyId);
+
+      const snapshot = await workbench.getWorkbench(companyId);
+
+      let unsubscribed = false;
+      let unsubscribe = () => {};
+      const safeUnsubscribe = () => {
+        if (unsubscribed) return;
+        unsubscribed = true;
+        unsubscribe();
+      };
+
+      unsubscribe = sseBus.subscribe(companyId, (event) => {
+        if (unsubscribed || !res.writable) return;
+        try {
+          writeDearMeSseEvent(res, event);
+        } catch {
+          safeUnsubscribe();
+        }
+      });
+
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
+      });
+      res.flushHeaders();
+      res.write(":ok\n\n");
+
+      writeDearMeSseEvent(res, {
+        type: "sync",
+        emittedAt: new Date().toISOString(),
+        scope: { companyId },
+        payload: {
+          workbench: snapshot,
+        },
+      } as DearMeSseEvent);
+
+      req.on("close", safeUnsubscribe);
+      res.on("error", safeUnsubscribe);
+    },
+  );
+
+  router.get(
     "/companies/:companyId/workbench",
     async (req, res) => {
       const companyId = req.params.companyId as string;
       assertCompanyAccess(req, companyId);
       res.json(await workbench.getWorkbench(companyId));
+    },
+  );
+
+  router.post(
+    "/companies/:companyId/approvals/resolve",
+    validate(dearMeApprovalResolveRequestSchema),
+    async (req, res) => {
+      const companyId = req.params.companyId as string;
+      assertCompanyAccess(req, companyId);
+      const issue = await issues.getById(req.body.issueId);
+      if (!issue || issue.companyId !== companyId) {
+        res.status(404).json({ error: "Issue not found" });
+        return;
+      }
+
+      const actor = getActorInfo(req);
+      const result = await approvalResolver.resolve({
+        companyId,
+        requestedByUserId: actor.actorType === "user" ? actor.actorId : null,
+        requestedByAgentId: actor.actorType === "agent" ? actor.agentId : null,
+        issueId: issue.id,
+        toolName: req.body.toolName,
+        channel: req.body.channel,
+        gate: req.body.gate,
+        estimatedUsd: req.body.estimatedUsd,
+        voiceGateScore: req.body.voiceGateScore,
+        reason: req.body.reason,
+        config: req.body.config,
+      });
+
+      await logActivity(db, {
+        companyId,
+        actorType: actor.actorType,
+        actorId: actor.actorId,
+        agentId: actor.agentId,
+        runId: actor.runId,
+        action: "dearme.approval_resolved",
+        entityType: "approval",
+        entityId: result.approvalId,
+        details: {
+          issueId: issue.id,
+          issueIdentifier: issue.identifier ?? null,
+          gate: req.body.gate,
+          decision: result.decision,
+          channel: req.body.channel,
+          toolName: req.body.toolName,
+        },
+      });
+
+      const responseBody = dearMeApprovalResolveResultSchema.parse({
+        companyId,
+        issueId: issue.id,
+        issueIdentifier: issue.identifier ?? null,
+        approvalId: result.approvalId,
+        decision: result.decision,
+        reason: result.reason,
+      });
+      res.status(result.decision === "pending" ? 202 : 200).json(responseBody);
     },
   );
 
@@ -528,6 +664,126 @@ export function dearmeRoutes(db: Db) {
       const companyId = req.params.companyId as string;
       assertCompanyAccess(req, companyId);
       res.json(await brandBlueprints.previewFirstCycle(companyId, req.body));
+    },
+  );
+
+  router.post(
+    "/companies/:companyId/first-cycle/start",
+    validate(dearMeFirstCyclePreviewSchema),
+    async (req, res) => {
+      const companyId = req.params.companyId as string;
+      assertCompanyAccess(req, companyId);
+      assertBoard(req);
+      const actor = getActorInfo(req);
+      const access = await paidBetaAccess.getAccess(companyId);
+      const privateCycleBlocker = describeDearMePrivateCycleBlocker(access);
+      if (privateCycleBlocker) {
+        throw forbidden(privateCycleBlocker);
+      }
+
+      const preview = await brandBlueprints.prepareFirstCycleProofOutputs(companyId, req.body, actor);
+      const agentRows = await agents.list(companyId);
+      const chiefOfStaff = agentRows.find((agent) => {
+        const metadata = agent.metadata;
+        return isRecord(metadata) && metadata.dearmeRole === "chief_of_staff";
+      }) ?? null;
+      const artifacts = preview.proofSequence.map((step) => {
+        const source = step.sourceLabel ? ` (${step.sourceLabel})` : "";
+        return `${step.window} ${step.title}: ${step.preparedArtifact}${source}`;
+      });
+      const issue = await issues.create(companyId, {
+        title: `DearMe: First 5-minute proof - ${trimTitleFragment(preview.positioning)}`,
+        description: renderFirstCycleIssueDescription({
+          positioning: preview.positioning,
+          artifacts,
+        }),
+        status: chiefOfStaff ? "todo" : "backlog",
+        priority: "high",
+        assigneeAgentId: chiefOfStaff?.id ?? null,
+        createdByAgentId: actor.agentId,
+        createdByUserId: actor.actorType === "user" ? actor.actorId : null,
+        originKind: FIRST_CYCLE_START_ORIGIN_KIND,
+        originId: randomUUID(),
+      });
+
+      await logActivity(db, {
+        companyId,
+        actorType: actor.actorType,
+        actorId: actor.actorId,
+        agentId: actor.agentId,
+        runId: actor.runId,
+        action: "dearme.first_cycle_started",
+        entityType: "issue",
+        entityId: issue.id,
+        details: {
+          positioning: preview.positioning,
+          title: issue.title,
+          identifier: issue.identifier,
+          assigned: Boolean(chiefOfStaff),
+          artifactOrder: artifacts,
+        },
+      });
+
+      const emittedAt = new Date().toISOString();
+      sseBus.emit({
+        type: "task_created",
+        emittedAt,
+        scope: {
+          companyId,
+          issueId: issue.id,
+          agentId: chiefOfStaff?.id,
+          workLoopState: "intake",
+        },
+        payload: {
+          kind: "first_cycle_started",
+          title: issue.title,
+          issueIdentifier: issue.identifier ?? null,
+          artifactOrder: artifacts,
+        },
+      });
+      sseBus.emit({
+        type: "thinking_stream",
+        emittedAt,
+        scope: {
+          companyId,
+          issueId: issue.id,
+          agentId: chiefOfStaff?.id,
+          workLoopState: "triage",
+        },
+        payload: {
+          role: "chief_of_staff",
+          message: "Shaping the private dossier, audience shortlist, starter posts, proof card, and launch boundary.",
+        },
+      });
+      sseBus.emit({
+        type: "agent_completed",
+        emittedAt,
+        scope: {
+          companyId,
+          issueId: issue.id,
+          agentId: chiefOfStaff?.id,
+          workLoopState: "review",
+        },
+        payload: {
+          role: "chief_of_staff",
+          artifact: "first_cycle_proof_package",
+          status: "ready_for_private_review",
+        },
+      });
+
+      if (chiefOfStaff) {
+        void queueIssueAssignmentWakeup({
+          heartbeat,
+          issue,
+          reason: "dearme_first_cycle_start",
+          mutation: "dearme.first_cycle_started",
+          contextSource: "dearme.first_cycle_started",
+          requestedByActorType: actor.actorType,
+          requestedByActorId: actor.actorId,
+        });
+      }
+
+      res.status(201).json(preview);
     },
   );
 

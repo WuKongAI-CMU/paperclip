@@ -26,16 +26,27 @@ If anything in this folder contradicts `INDEX.md`, `INDEX.md` wins.
 ## Canonical docs (only these affect runtime decisions)
 
 1. [`INDEX.md`](INDEX.md) — orientation
-2. [`PRODUCT-ARCHITECTURE.md`](PRODUCT-ARCHITECTURE.md) — surface, packages, doctrine, sprint timing
-3. [`POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`](POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md) — ticket-level work breakdown
-4. [`REUSE-IMPLEMENTATION-LEDGER.md`](REUSE-IMPLEMENTATION-LEDGER.md) — what is actually built and verified
-5. [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md) — what's safe to port, what isn't
+2. [`TRI-SUBSTRATE-ARCHITECTURE.md`](TRI-SUBSTRATE-ARCHITECTURE.md) — integration contract: OpenClaw + Naive + Polsia
+3. [`OPENCLAW-INTEGRATION-ARCHITECTURE.md`](OPENCLAW-INTEGRATION-ARCHITECTURE.md) — DearMe runs on OpenClaw; OpenClaw-specific contract
+4. [`PRODUCT-ARCHITECTURE.md`](PRODUCT-ARCHITECTURE.md) — surface, packages, doctrine, sprint timing
+5. [`POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`](POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md) — ticket-level work breakdown
+6. [`REUSE-IMPLEMENTATION-LEDGER.md`](REUSE-IMPLEMENTATION-LEDGER.md) — what is actually built and verified
+7. [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md) — what's safe to port, what isn't
 
 ## Runtime source of truth (code, not docs)
 
-- [`packages/plugins/dearme-agent-prompts/src/registry.ts`](../../packages/plugins/dearme-agent-prompts/src/registry.ts) — `DEARME_ROLE_REGISTRY`. The 12 roles, pinned to prompts, state machines, proxy tools, plugin packages, and tickets. **Single typed source of truth.**
+- [`packages/plugins/dearme-agent-prompts/src/registry.ts`](../../packages/plugins/dearme-agent-prompts/src/registry.ts) — `DEARME_ROLE_REGISTRY`. 12 roles × prompt × state machines × proxy tools × **substrate** × ticket × plugin package. **Single typed source of truth.**
+- [`packages/plugins/dearme-agent-prompts/src/state-machines/`](../../packages/plugins/dearme-agent-prompts/src/state-machines/) — 8 state machines: opportunity, meta-ads, budget-tier, dearme-cycle, mood-face-library, model-routing, sse-events, **work-loop**, **approval-gates**.
+- [`packages/plugins/dearme-openclaw/openclaw.plugin.json`](../../packages/plugins/dearme-openclaw/openclaw.plugin.json) — OpenClaw plugin manifest (config schema, skill folder, UI hints).
+- [`packages/plugins/dearme-openclaw/src/skill-generator.ts`](../../packages/plugins/dearme-openclaw/src/skill-generator.ts) — pure registry-to-SKILL.md projection.
+- [`packages/plugins/dearme-openclaw/src/tools/types.ts`](../../packages/plugins/dearme-openclaw/src/tools/types.ts) — 5 outbound tool interfaces (post_x / send_linkedin_dm / send_email / deploy_site / create_meta_campaign) + `(gate, channel, voiceGateRequired)` bindings.
+- [`packages/plugins/dearme-openclaw/generated/skills/`](../../packages/plugins/dearme-openclaw/generated/skills/) — 12 generated SKILL.md files OpenClaw loads. Do not edit by hand.
+- [`packages/shared/src/validators/dearme.ts`](../../packages/shared/src/validators/dearme.ts) — Brand OS and first-cycle preview contracts, including `autonomyPlan` and `DEARME_FIRST_CYCLE_CONCERN_GATES` for the launch-boundary-only first-run UX.
 - [`packages/dearme-ai-proxy/src/contract.ts`](../../packages/dearme-ai-proxy/src/contract.ts) — wire contract: `dm_sk_` keys, dual-protocol cost-attribution headers, agent-run shape.
 - [`packages/dearme-ai-proxy/src/functions.ts`](../../packages/dearme-ai-proxy/src/functions.ts) — 6 OpenAI native function definitions ported verbatim.
+- [`packages/dearme-ai-proxy/src/voice-gate.ts`](../../packages/dearme-ai-proxy/src/voice-gate.ts) — voice-gate scoring wire (`POST /v1/voice/score`).
+- [`packages/db/src/schema/channel_connections.ts`](../../packages/db/src/schema/channel_connections.ts) — per-user OAuth tokens (DM-175).
+- [`packages/db/src/schema/opportunities.ts`](../../packages/db/src/schema/opportunities.ts) — opportunities lifecycle (DM-141).
 
 ## Reference / research (read on demand)
 
@@ -49,9 +60,12 @@ Banner-marked at the top of each file: `BACKLOG.md`, `BACKLOG-PART-2.md`, `COMPA
 
 ```bash
 pnpm install
-pnpm dev                                                 # API + UI
-pnpm --filter @paperclipai/dearme-agent-prompts test     # 21 tests
-pnpm --filter @paperclipai/dearme-ai-proxy test          # 4 tests
+pnpm dev                                                              # API + UI
+pnpm --filter @paperclipai/dearme-agent-prompts test                  # 25 tests (registry, state machines, work-loop, approvals)
+pnpm --filter @paperclipai/dearme-ai-proxy test                       # 6 tests (wire contract, voice-gate)
+pnpm --filter @paperclipai/dearme-openclaw test                       # 16 tests (skills, bootstrap, outbound tools)
+pnpm --filter @paperclipai/dearme-openclaw run generate-skills        # 12 SKILL.md from registry
+pnpm --filter @paperclipai/db typecheck                               # Drizzle (channel_connections, opportunities)
 ```
 
 ## Source material

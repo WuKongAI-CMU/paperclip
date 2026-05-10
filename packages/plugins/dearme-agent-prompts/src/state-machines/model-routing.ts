@@ -58,5 +58,9 @@ export function pickModelForComplexity(
       return row;
     }
   }
-  return MODEL_ROUTING_TABLE[0];
+  // MODEL_ROUTING_TABLE is a non-empty const array spanning 1-10; this
+  // fallback is unreachable, but the type system needs the assertion.
+  const fallback = MODEL_ROUTING_TABLE[0];
+  if (!fallback) throw new Error("MODEL_ROUTING_TABLE is empty");
+  return fallback;
 }

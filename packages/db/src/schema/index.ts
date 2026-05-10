@@ -37,6 +37,15 @@ export {
   type Opportunity,
   type NewOpportunity,
 } from "./opportunities.js";
+export {
+  channelConnections,
+  CHANNEL_CONNECTION_CHANNELS,
+  CHANNEL_CONNECTION_STATUSES,
+  type ChannelConnection,
+  type ChannelConnectionChannel,
+  type ChannelConnectionStatus,
+  type NewChannelConnection,
+} from "./channel_connections.js";
 export { issueWorkProducts } from "./issue_work_products.js";
 export { labels } from "./labels.js";
 export { issueLabels } from "./issue_labels.js";

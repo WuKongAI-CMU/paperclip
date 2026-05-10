@@ -5,3 +5,5 @@ export * from "./dearme-cycle.js";
 export * from "./mood-face-library.js";
 export * from "./model-routing.js";
 export * from "./sse-events.js";
+export * from "./work-loop.js";
+export * from "./approval-gates.js";

@@ -23,6 +23,20 @@ import type {
 } from "@paperclipai/shared";
 import { api } from "./client";
 
+export const dearmeWorkbenchRefreshEventTypes = [
+  "work_loop_transition",
+  "approval_pending",
+  "approval_resolved",
+  "voice_gate_scored",
+  "channel_action_fired",
+  "cost_recorded",
+  "openclaw_lifecycle",
+  "openclaw_stream",
+  "agent_completed",
+  "task_created",
+  "task_updated",
+] as const;
+
 export interface DearMeBrandBlueprintPreviewResult {
   companyId: string;
   status: "preview";
@@ -51,6 +65,10 @@ export interface DearMePaidBetaRecordResult {
 export const dearmeApi = {
   getWorkbench: (companyId: string) =>
     api.get<DearMeWorkbenchResponse>(`/dearme/companies/${companyId}/workbench`),
+  openWorkbenchEvents: (companyId: string) =>
+    new EventSource(`/api/dearme/companies/${encodeURIComponent(companyId)}/events`, {
+      withCredentials: true,
+    }),
   sendChiefOfStaffMessage: (companyId: string, data: DearMeChiefOfStaffMessage) =>
     api.post<DearMeChiefOfStaffMessageResult>(
       `/dearme/companies/${companyId}/chief-of-staff/messages`,
@@ -87,6 +105,11 @@ export const dearmeApi = {
   previewFirstCycle: (companyId: string, data: DearMeFirstCyclePreview) =>
     api.post<DearMeFirstCyclePreviewResponse>(
       `/dearme/companies/${companyId}/first-cycle/preview`,
+      data,
+    ),
+  startFirstCycle: (companyId: string, data: DearMeFirstCyclePreview) =>
+    api.post<DearMeFirstCyclePreviewResponse>(
+      `/dearme/companies/${companyId}/first-cycle/start`,
       data,
     ),
   recordPaidBetaPayment: (companyId: string, data: DearMePaidBetaRecord) =>

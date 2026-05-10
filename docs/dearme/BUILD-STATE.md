@@ -1,6 +1,454 @@
 # DearMe Build State
 
-Date: 2026-05-09
+Date: 2026-05-10
+
+## DM-139 / DM-140 Cycle Packet Workbench Projection - 2026-05-10
+
+Implementation slice:
+
+- Extended the existing DearMe workbench projection so the shared private cycle
+  packet now appears as one customer-safe review surface across Work Ready,
+  Decisions, report digest, work stream, run ledger, and action graph nodes.
+- Reused the output handoff documents and work products already written by the
+  packet bridge; no new shared schema, API route, runtime dashboard, or
+  provider-facing customer copy was added.
+- Packet-backed decisions now carry the voice-fit signal and private review
+  boundary, so the user sees "review the shared packet once" instead of
+  separate report/content loops.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-workbench.test.ts --maxWorkers=1`
+  passed: 3 tests.
+- `pnpm exec vitest run server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-output-handoff.test.ts server/src/__tests__/dearme-brand-blueprints.test.ts --maxWorkers=1`
+  passed: 3 files, 12 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `git diff --check -- server/src/services/dearme-workbench.ts
+  server/src/__tests__/dearme-workbench.test.ts` passed.
+
+## DM-139 / DM-140 Cycle Packet UI Spotlight - 2026-05-10
+
+Implementation slice:
+
+- Reused the existing DearMe outputs/workProducts projection from the cycle
+  packet bridge; no new API, runtime, or customer-facing substrate surface was
+  added.
+- Added a private-work spotlight that appears only when the generated content
+  draft/report work products are present, summarizes the content draft and Dear
+  me report together, and keeps the launch boundary visible.
+- Customer-facing copy translates the internal cycle packet into a first proof
+  pack, so the backend bridge can keep its durable provider/work-product
+  contract while the UI stays product-native.
+- `Review proof pack` opens the content draft first when both packet artifacts are
+  ready, preserving the existing review-route model and keeping the hidden
+  `dearme-cycle-output` provider name out of UI copy.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 39 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx
+  ui/src/pages/DearMeOnboarding.test.tsx` passed.
+- Browser plugin opened the real local DearMe page at
+  `http://127.0.0.1:3100/DEAA/dearme`; DOM loaded as DearMe and console had no
+  errors/warnings. The plugin surface could not route-mock outputs and CDP
+  screenshot timed out, so the packet-state check used shell Playwright.
+- Shell Playwright route-mocked only the `/outputs` response, verified the
+  spotlight text, verified no hidden provider-name or internal `cycle packet`
+  wording leaked in the spotlight, clicked `Review proof pack`, and landed on
+  `/DEAA/dearme?view=decisions&issue=PET-8&output=issue-2%3Acontent_drafts`.
+  Component screenshot:
+  `/tmp/dearme-ui-verification/first-proof-pack-spotlight.png`.
+
+## DM-139 / DM-140 Cycle Output Packet Bridge - 2026-05-10
+
+Implementation slice:
+
+- Added a shared private cycle output packet to the existing DearMe output
+  handoff service instead of introducing a second reporting/content runtime.
+- `prepareCycleOutputPacket(...)` now reads the current prepared outputs,
+  scores the content draft with the existing Voice Gate, writes a
+  `content-drafts` document, writes/refreshes the `dear-me-report` document,
+  marks both output issues back to `in_review`, and records primary
+  `dearme-cycle-output` work products for the content draft and report.
+- First-cycle start now calls the packet bridge after preparing the five known
+  output-handoff issues, so the initial proof package can immediately produce a
+  voice-scored draft plus a private Dear me report from the same evidence.
+- The bridge deliberately reuses Paperclip/Naive substrate primitives that are
+  already in the tree: issues, documents, issue documents, issue work products,
+  and service-layer projections. It does not expose substrate, worker, provider,
+  or Symphony vocabulary to the customer surface.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-output-handoff.test.ts server/src/__tests__/dearme-brand-blueprints.test.ts --maxWorkers=1`
+  passed: 2 files, 9 tests.
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprints.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-output-handoff.test.ts --maxWorkers=1`
+  passed: 3 files, 43 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+
+Remaining:
+
+- `DEA-6` and `DEA-7` are now the Linear/Symphony continuation tickets for
+  deeper autonomous reporting and voice-gated content production. Future
+  workers should extend this packet bridge and the existing workbench/output
+  projection rather than adding another report/content surface.
+
+## Symphony Browser Smoke Runtime Hardening - 2026-05-10
+
+Implementation slice:
+
+- Treat Symphony as the default DearMe coordination surface from this point
+  forward: Linear issue work should run through the DearMe Symphony daemon and
+  its isolated workspaces unless a task explicitly needs a direct local edit.
+- Tightened the Symphony worker browser-smoke rule so workers stay shell-only
+  and, when Playwright is installed but the managed Chromium binary is missing,
+  install Chromium once with `pnpm exec playwright install chromium` before
+  falling back to API/DOM evidence.
+- Installed the local Playwright Chromium cache for this machine, including
+  `chromium_headless_shell-1208`, so shell Playwright can launch for DearMe
+  browser checks without using Chrome MCP/browser elicitation surfaces.
+
+Verification:
+
+- `pnpm exec playwright install chromium` downloaded Chromium, FFmpeg, and
+  Chromium Headless Shell into `/Users/peter/Library/Caches/ms-playwright`.
+- A direct shell Playwright probe launched Chromium and loaded
+  `http://127.0.0.1:3100/api/health`, returning the DearMe health payload with
+  `status: "ok"` and `deploymentMode: "local_trusted"`.
+- The real Symphony API on `http://127.0.0.1:4100/api/v1/state` still reports
+  `DEA-5` running in `/private/tmp/dearme-symphony-workspaces/DEA-5`.
+- The `DEA-5` worker used shell commands only. It hit the missing Playwright
+  Chromium cache, recorded the exact blocker, created a fresh smoke company
+  `DEAAAAAAAA`, verified the first-cycle preview API payload, and then began a
+  temporary `/private/tmp` Playwright Chromium install for the real browser
+  smoke path.
+
+Operational note:
+
+- Symphony clones the committed source branch into isolated workspaces. Parent
+  checkout changes that are still uncommitted are invisible to workers, so
+  future cooperation needs branch/commit discipline before handing work to the
+  queue.
+
+## Symphony Team Queue Correction - 2026-05-10
+
+Implementation slice:
+
+- Updated the local Symphony tracker support so DearMe can route by Linear
+  team `DEA` instead of requiring a Linear Project slug.
+- Switched `.symphony/WORKFLOW.md` to `team_key: "DEA"` and `assignee: me`.
+  The DearMe Linear workspace currently has the team/issue prefix `DEA` but no
+  Project, so the old `project_slug: "dearme"` path could not see the real
+  worker queue.
+- Assigned `DEA-5` to Peter so the assignee filter picks up the intended live
+  worker/browser smoke while leaving Linear's default onboarding issues
+  unassigned and ignored.
+
+Verification:
+
+- Symphony targeted tests passed: `mix test test/symphony_elixir/core_test.exs
+  test/symphony_elixir/workspace_and_config_test.exs` reported 86 tests, 0
+  failures.
+- `mix build` regenerated `/Users/peter/symphony/elixir/bin/symphony`.
+- `.symphony/bin/dearme-symphony smoke` returned a valid state payload.
+- The real daemon on `http://127.0.0.1:4100/` now reports one running issue:
+  `DEA-5`, workspace `/private/tmp/dearme-symphony-workspaces/DEA-5`, and a
+  live Codex session.
+
+## DM-138E Trial First-Cycle Proof Smoke And Symphony Credential Check - 2026-05-10
+
+Implementation slice:
+
+- Trial users now call the existing first-cycle preview path from the
+  90-second first-cycle CTA, while active paid-beta users still call the
+  private start path.
+- The CTA labels the distinction directly: `Preview first cycle` during trial,
+  `Start first cycle` when `canStartPrivateWork` is true.
+- Added UI regression coverage for both branches so trial preview cannot
+  silently try to start paid private work again.
+- Hardened the DearMe Symphony wrapper so it can read the Linear token from the
+  existing Keychain `LINEAR_API_KEY` service when the default
+  `dearme-linear-api-key` service is not present.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 38 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- .symphony/bin/dearme-symphony ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed.
+- Browser smoke on `http://127.0.0.1:3100/DEAA/dearme` in trial state posted
+  to `/api/dearme/companies/:companyId/first-cycle/preview` with HTTP 200,
+  removed `Sample team package`, and rendered `First-run proof sequence`,
+  `From: Prepared from private Brand OS work and voice work`, and `Waits:`.
+- Browser console had no `error` or `warn` messages during the smoke. Chrome
+  still reports two pre-existing form-label accessibility issues on the page.
+- `env -u LINEAR_API_KEY .symphony/bin/dearme-symphony start` read the Linear
+  token from Keychain and returned a valid state payload.
+
+Live closure update:
+
+- Re-hardened `.symphony/bin/dearme-symphony` so status/start/stop recover
+  from stale PID files by asking the live API for the actual listener process;
+  current daemon status reports `pid=48151`, dashboard
+  `http://127.0.0.1:4100/`, and `DEA-5` running in
+  `/private/tmp/dearme-symphony-workspaces/DEA-5`.
+- Fixed a stale-output bug found during the live smoke: first-cycle start now
+  reopens the known proof-output issues to `in_review` when they already
+  exist, and the output handoff keeps the newest issue per fingerprint instead
+  of letting older cancelled history overwrite the current proof.
+- Live API smoke for company `60334302-c360-4e9f-8e98-d6e42815217e` now
+  returns `brand_os`, `voice_profile`, `content_drafts`,
+  `opportunity_drafts`, `portfolio_update`, and `weekly_report` as
+  `ready_for_review` with identifiers `DEAA-110`, `DEAA-112`, `DEAA-113`,
+  `DEAA-114`, and `DEAA-115`; no output is `cancelled`.
+- Browser smoke on `http://127.0.0.1:3100/DEAA/dearme` filled the first-cycle
+  intent, clicked `Preview first cycle` and then `Start first cycle`, rendered
+  `Prepared from private Brand OS work and voice work`, showed
+  `Ready for review`, had zero console errors, and leaked none of
+  `paperclip`, `naive`, `openclaw`, `polsia`, or `symphony` into the customer
+  surface.
+- Server regression coverage now passes:
+  `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprints.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-output-handoff.test.ts --maxWorkers=1`
+  reported 3 files and 42 tests passing.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `git diff --check` passed for the DM-138E service/test/docs/Symphony wrapper
+  slice.
+
+Remaining:
+
+- The old zero-worker state was caused by Project-only routing against a
+  Project-less Linear workspace. The daemon now routes by team `DEA` and is
+  running `DEA-5`; the coordinator should treat the product path as locally
+  smoke-passed and let the Symphony worker report any independent follow-up
+  instead of duplicating the same first-cycle contract again.
+
+## DM-138D Start-Route Proof Output Write - 2026-05-10
+
+Implementation slice:
+
+- `POST /api/dearme/companies/:companyId/first-cycle/start` now prepares the
+  first proof package before returning the preview, instead of only echoing a
+  mocked prepared sequence in route coverage.
+- Reused the existing DearMe output handoff path by creating/updating private
+  Brand Blueprint output issues with the known fingerprints:
+  `brand-os-review`, `operation-draft_content_batch`,
+  `operation-draft_opportunity_list`, `operation-prepare_portfolio_update`,
+  and `operation-schedule_weekly_report`.
+- Wrote the actual markdown artifacts through the existing document service:
+  Brand OS, Voice Profile, approval gates, starter posts, opportunity list,
+  portfolio update, and Dear me report. Re-running the start path updates the
+  same five output issues rather than creating duplicates.
+- Kept the customer contract singular: the route still returns the existing
+  `DearMeFirstCyclePreviewResponse`, and prepared worker proof stays inside
+  `proofSequence` rather than a second first-run payload.
+- Kept route propagation covered: the prepared sequence still flows into the
+  private first-cycle issue description, activity-log `artifactOrder`, and live
+  `task_created` event payload.
+
+Verification:
+
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprints.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts --maxWorkers=1`
+  passed: 37 tests.
+
+Remaining:
+
+- `DEA-5` / `DM-138E` is now the Linear/Symphony ticket for the live
+  worker/browser smoke. The local code path is covered; the next check should
+  run the first-cycle aha path through Symphony where available, or record the
+  exact daemon/token blocker and execute the same browser smoke locally.
+
+## DM-138C First-Run Proof Hydration - 2026-05-10
+
+Implementation slice:
+
+- Hydrated the existing `DearMeFirstCyclePreviewResponse.proofSequence` from
+  prepared DearMe output handoff records instead of adding a second first-run
+  payload.
+- `previewFirstCycle(...)` now maps prepared Brand OS / voice, content,
+  opportunity, portfolio, and report documents or work products into the same
+  three proof windows: 0-30s identity dossier, 60-120s audience map, and
+  3-5min private site proof.
+- The customer contract stays singular: UI, first-cycle start, and coordinator
+  work order continue to speak through `proofSequence`.
+- Tightened the proof signal so ordinary progress comments do not masquerade
+  as first-run proof; only prepared `documents` or `workProducts` can override
+  deterministic preview copy.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprints.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts`
+  passed: 36 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- Customer-surface hidden-term scan over `ui/src/pages/DearMeOnboarding.tsx`
+  returned no matches.
+- `git diff --check` passed for the service/test/docs slice.
+
+Next:
+
+- DM-138D now writes proof artifacts on start. The remaining live check is the
+  real Linear/Symphony worker/browser run tracked as `DEA-5`.
+
+## DM-138B First-Run Proof Sequence Contract - 2026-05-10
+
+Implementation slice:
+
+- Added `proofSequence` to the existing `DearMeFirstCyclePreviewResponse`
+  contract instead of creating a second first-run payload.
+- The shared preview builder now emits the three product proof windows:
+  0-30s identity dossier, 60-120s audience map, and 3-5min private site proof.
+- The first-cycle start route now creates its private issue from the same
+  `proofSequence`, so coordinator work order and UI proof cards stay aligned.
+- The onboarding proof package renders `proofSequence` directly for both the
+  sample package and the generated package while keeping donor/runtime terms
+  out of the customer surface.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 86 tests.
+
+## DM-183 Symphony Worktree Status Contract - 2026-05-10
+
+Implementation slice:
+
+- Promoted `scripts/dearme-worktree-status.mjs` from a raw worktree lister into
+  a coordinator report for the Symphony-style DearMe development loop.
+- The report now annotates each checkout with ticket id, purpose
+  (`current`, `integration`, or `worker`), and an explicit coordinator action,
+  so old worker branches become review candidates instead of automatic merge
+  targets.
+- Added filters for `--status`, `--not-in-current`, `--ticket`, `--dirty-only`,
+  `--limit`, `--summary-only`, and `--skip-dirty`, while preserving the
+  documented `pnpm dearme:worktrees -- --json` style argument separator.
+- Added a focused Node test suite and `pnpm test:dearme-worktrees` so future
+  coordinator edits do not break the shared worktree fact command.
+
+Verification:
+
+- `pnpm test:dearme-worktrees` passed: 6 tests.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported 116
+  worktrees: 1 current, 2 `in_current`, 113 `not_in_current`, 19 integration
+  branches, and 96 worker branches.
+- `pnpm dearme:worktrees -- --not-in-current --ticket=DM-138 --limit=5
+  --skip-dirty` returned zero records, so the active DM-138 slice should start
+  from a fresh isolated worktree rather than reuse a stale DM-138 checkout.
+
+## DM-180 Approval Resolver API Boundary - 2026-05-10
+
+Implementation slice:
+
+- Added shared request/result validators and
+  `POST /api/dearme/companies/:companyId/approvals/resolve` over the existing
+  approval resolver service.
+- The route enforces company access, rejects cross-company issue references,
+  normalizes issue identifiers before resolving, and logs the decision through
+  the existing activity log.
+- The resolver now preserves user/agent attribution on both `approvals` and
+  `issue_approvals`, and the outbound tool wrapper calls the same service path.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts`
+  passed: 41 tests.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+
+## DM-182 OpenClaw Passthrough Workbench Refresh - 2026-05-10
+
+Implementation slice:
+
+- Folded `openclaw_lifecycle` and `openclaw_stream` into the existing DearMe
+  workbench EventSource consumer instead of adding a second runtime view.
+- The UI now treats execution lifecycle / stream passthroughs like other
+  runtime movement: debounce the event and refetch the customer-safe workbench
+  projection from the existing React Query cache key.
+- Added regression coverage proving a lifecycle passthrough refreshes the
+  rendered Team workbench while the customer surface stays free of donor /
+  runtime vocabulary.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx` passed:
+  37 tests.
+- Customer-surface hidden-term scan over `ui/src/pages/DearMeOnboarding.tsx`,
+  `ui/src/api/dearme.ts`, and `packages/shared/src/validators/dearme.ts`
+  returned no matches.
+
+## DM-181 DearMe Live Workbench UI Consumer - 2026-05-09
+
+Implementation slice:
+
+- Added the DearMe workbench EventSource consumer to the existing onboarding /
+  workbench page instead of creating another runtime dashboard.
+- The UI opens the company-scoped workbench stream, applies `sync` payloads
+  directly into the existing React Query workbench cache, and debounces the
+  broader runtime event types into a normal workbench invalidation.
+- Kept the customer surface simple: the page updates as the team moves, while
+  runtime/provider/substrate names remain inside API and architecture layers.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx` passed:
+  36 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+
+## DM-179 DearMe Live Workbench SSE Route - 2026-05-09
+
+Implementation slice:
+
+- Added `GET /api/dearme/companies/:companyId/events` as the first HTTP edge
+  over `dearme-sse-bus`.
+- The route enforces company access before opening the stream, sends an initial
+  `sync` event with the existing DearMe workbench projection, then forwards
+  typed runtime events scoped to that company only.
+- Kept the product surface customer-safe: the stream exposes the live team /
+  workbench state and runtime events without adding a donor/runtime dashboard or
+  customer-visible substrate vocabulary.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts`
+  passed: 29 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+
+## DM-136 First-Run Autopilot Plan Contract - 2026-05-09
+
+Implementation slice:
+
+- Added a typed first-cycle `autonomyPlan` to the shared preview response so
+  the UI, server mocks, and OpenClaw-facing contract all describe the same
+  private work loop.
+- Kept the plan customer-safe: DearMe continues positioning capture, draft
+  preparation, opportunity/proof staging, voice review, and the next private
+  pass without asking, and waits only for public posts, outbound messages,
+  public page changes, or spend.
+- Rendered the plan inside the existing first-cycle proof package instead of
+  adding a new setup screen, runtime dashboard, or donor-facing control plane.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts` passed:
+  15 tests.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx` passed:
+  35 tests.
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts`
+  passed: 27 tests.
+- `pnpm exec vitest run server/src/services/dearme-outbound-tool-wrapper.test.ts`
+  passed: 9 tests.
+- `pnpm --filter @paperclipai/shared typecheck`,
+  `pnpm --filter @paperclipai/ui typecheck`, and
+  `pnpm --filter @paperclipai/server typecheck` passed.
+- Customer-surface hidden-term scan over `ui/src/pages/DearMeOnboarding.tsx`
+  and `packages/shared/src/validators/dearme.ts` returned no donor/runtime
+  term matches.
+- Playwright browser check on `http://127.0.0.1:3100/DEAA/dearme` confirmed
+  the Autopilot card renders, `ONLY WAITS HERE` is visible, no donor/runtime
+  terms appear in body text, and screenshot evidence was saved to
+  `/tmp/dearme-dm136-autopilot-plan.png`.
 
 ## DM-136 First-Run Sample Demo Proof - 2026-05-09
 

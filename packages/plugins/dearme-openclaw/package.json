@@ -1,0 +1,46 @@
+{
+  "name": "@paperclipai/dearme-openclaw",
+  "version": "0.1.0",
+  "description": "DearMe runs on OpenClaw. This package wires the typed DEARME_ROLE_REGISTRY into an OpenClaw plugin: 12 personal-brand growth-team skills, bootstrap files (AGENTS.md/SOUL.md/IDENTITY.md), and outbound channel tools that OpenClaw doesn't ship (X/LinkedIn/Email/Meta).",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./skill-generator": "./src/skill-generator.ts",
+    "./bootstrap": "./src/bootstrap.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./skill-generator": {
+        "types": "./dist/skill-generator.d.ts",
+        "import": "./dist/skill-generator.js"
+      },
+      "./bootstrap": {
+        "types": "./dist/bootstrap.d.ts",
+        "import": "./dist/bootstrap.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist generated",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "generate-skills": "tsx src/cli/generate-skills.ts"
+  },
+  "dependencies": {
+    "@paperclipai/dearme-agent-prompts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
+  }
+}

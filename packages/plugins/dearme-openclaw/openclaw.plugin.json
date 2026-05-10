@@ -1,0 +1,103 @@
+{
+  "id": "dearme",
+  "name": "DearMe",
+  "description": "Your private AI growth team. 12 specialist roles (Chief of Staff, Content Producer, Opportunity Hunter, Brand Site Builder, Ads Manager, Research, Audience Care, Data Analyst, Health Monitor, Reporting, Chat, Browser) that turn one person's work, voice, proof, and relationships into shipped content, real opportunities, a live personal site, and a daily Dear-me letter.",
+  "skills": ["./generated/skills"],
+  "uiHints": {
+    "apiBaseUrl": {
+      "label": "DearMe API base URL",
+      "help": "Base URL of the DearMe cloud (AI proxy + voice fingerprint + opportunities + brand site host). Defaults to https://api.dearme.app for production."
+    },
+    "apiKey": {
+      "label": "DearMe API key",
+      "help": "Personal DearMe API key (dm_sk_*). Issued during onboarding at https://dearme.app/onboard."
+    },
+    "handle": {
+      "label": "DearMe handle",
+      "help": "Your dearme.app handle (e.g. peterc). The brand site lives at dearme.app/<handle>."
+    },
+    "defaults.dailyLetterChannel": {
+      "label": "Where to deliver the daily Dear-me letter",
+      "help": "Pick the inbound OpenClaw channel that should receive your morning Dear-me letter (iMessage / Telegram / WhatsApp / Slack / etc)."
+    },
+    "defaults.voiceGate.minScore": {
+      "label": "Minimum voice-gate score",
+      "help": "Drafts scored below this threshold are revised before reaching you. 92 is a strong default; lower for more output, higher for tighter voice."
+    },
+    "defaults.budget.dailyUsdCap": {
+      "label": "Daily AI spend cap",
+      "help": "Hard cap on combined model + ads daily spend. Hits will pause autonomous work until you approve."
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "apiBaseUrl": {
+        "type": "string",
+        "format": "uri",
+        "default": "https://api.dearme.app"
+      },
+      "apiKey": {
+        "type": "string",
+        "pattern": "^dm_sk_[a-zA-Z0-9_-]{16,}$"
+      },
+      "handle": {
+        "type": "string",
+        "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+      },
+      "defaults": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dailyLetterChannel": {
+            "type": "string",
+            "enum": [
+              "imessage",
+              "telegram",
+              "whatsapp",
+              "slack",
+              "discord",
+              "signal",
+              "email"
+            ],
+            "default": "imessage"
+          },
+          "voiceGate": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "minScore": {
+                "type": "number",
+                "minimum": 50,
+                "maximum": 100,
+                "default": 92
+              }
+            }
+          },
+          "budget": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "dailyUsdCap": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000,
+                "default": 5
+              }
+            }
+          }
+        }
+      }
+    },
+    "required": ["apiKey", "handle"]
+  },
+  "metadata": {
+    "openclaw": {
+      "lineage": "DearMe runtime corpus (verbatim ports + typed registry). Source of truth: packages/plugins/dearme-agent-prompts/src/registry.ts.",
+      "skillsAreGenerated": true,
+      "skillSource": "packages/plugins/dearme-openclaw/src/skill-generator.ts",
+      "regenerate": "pnpm --filter @paperclipai/dearme-openclaw run generate-skills"
+    }
+  }
+}

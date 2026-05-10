@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mockDearMeBrandBlueprintService = vi.hoisted(() => ({
   preview: vi.fn(),
   previewFirstCycle: vi.fn(),
+  prepareFirstCycleProofOutputs: vi.fn(),
   createApplyRequest: vi.fn(),
 }));
 
@@ -17,6 +18,10 @@ const mockDearMePaidBetaAccessService = vi.hoisted(() => ({
 const mockDearMeOutputHandoffService = vi.hoisted(() => ({
   listOutputs: vi.fn(),
   reviewOutput: vi.fn(),
+}));
+
+const mockDearMeApprovalResolverService = vi.hoisted(() => ({
+  resolve: vi.fn(),
 }));
 
 const mockDearMeMemoryContextService = vi.hoisted(() => ({
@@ -33,6 +38,7 @@ const mockAgentService = vi.hoisted(() => ({
 
 const mockIssueService = vi.hoisted(() => ({
   create: vi.fn(),
+  getById: vi.fn(),
 }));
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
@@ -41,6 +47,7 @@ const mockQueueIssueAssignmentWakeup = vi.hoisted(() => vi.fn());
 function registerModuleMocks() {
   vi.doMock("../services/index.js", () => ({
     agentService: () => mockAgentService,
+    dearMeApprovalResolverService: () => mockDearMeApprovalResolverService,
     dearmeBrandBlueprintService: () => mockDearMeBrandBlueprintService,
     dearmeMemoryContextService: () => mockDearMeMemoryContextService,
     dearmeOutputHandoffService: () => mockDearMeOutputHandoffService,
@@ -78,6 +85,83 @@ async function createApp(actorOverrides: Record<string, unknown> = {}) {
   app.use("/api/dearme", dearmeRoutes({} as any));
   app.use(errorHandler);
   return app;
+}
+
+async function collectDearMeSseText(input: {
+  app: express.Express;
+  path: string;
+  afterOpen?: () => void;
+  done: (text: string) => boolean;
+}) {
+  const { createServer } = await vi.importActual<typeof import("node:http")>("node:http");
+  const server = createServer(input.app);
+  const controller = new AbortController();
+  let reader: any = null;
+
+  try {
+    await new Promise<void>((resolve) => {
+      server.listen(0, "127.0.0.1", resolve);
+    });
+    const address = server.address();
+    if (!address || typeof address === "string") {
+      throw new Error("Expected HTTP server to listen on a TCP port");
+    }
+
+    const response = await fetch(`http://127.0.0.1:${address.port}${input.path}`, {
+      headers: { accept: "text/event-stream" },
+      signal: controller.signal,
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/event-stream");
+
+    reader = response.body?.getReader();
+    if (!reader) throw new Error("Expected SSE response body");
+
+    input.afterOpen?.();
+
+    const decoder = new TextDecoder();
+    let text = "";
+    while (!input.done(text)) {
+      const chunk = await Promise.race([
+        reader.read(),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error(`Timed out waiting for SSE frame: ${text}`)), 1_000);
+        }),
+      ]);
+      if (chunk.done) break;
+      text += decoder.decode(chunk.value, { stream: true });
+    }
+    return text;
+  } finally {
+    controller.abort();
+    if (reader) await reader.cancel().catch(() => undefined);
+    if (server.listening) {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) reject(error);
+          else resolve();
+        });
+      });
+    }
+  }
+}
+
+function makeWorkLoopSseEvent(companyId: string) {
+  return {
+    type: "work_loop_transition",
+    emittedAt: "2026-05-09T12:00:00.000Z",
+    scope: {
+      companyId,
+      issueId: "issue-1",
+      workLoopState: "work",
+    },
+    payload: {
+      from: "triage",
+      to: "work",
+      role: "chief_of_staff",
+      reason: "private-cycle-started",
+    },
+  } as const;
 }
 
 function makeVoiceGateResult() {
@@ -211,6 +295,30 @@ function makeFirstCycleResult() {
         approvalGate: "publish_social",
       },
     ],
+    proofSequence: [
+      {
+        window: "0-30s",
+        title: "Identity dossier",
+        summary: "Peter is positioned around practical AI products.",
+        preparedArtifact: "Voice profile and known-for line",
+        sourceLabel: "Prepared from private Brand OS work",
+        approvalBoundary: "Sensitive or public claims wait for review.",
+      },
+      {
+        window: "60-120s",
+        title: "Audience map",
+        summary: "Founders are the first audience to map.",
+        preparedArtifact: "Audience shortlist and first opportunity",
+        approvalBoundary: "Outreach drafts stay private until approval.",
+      },
+      {
+        window: "3-5min",
+        title: "Private site proof",
+        summary: "The first proof page move packages the strongest proof.",
+        preparedArtifact: "Private proof page move",
+        approvalBoundary: "Page changes wait for one launch decision.",
+      },
+    ],
     opportunityLead: {
       title: "First opportunity lead",
       target: "Founders",
@@ -236,11 +344,54 @@ function makeFirstCycleResult() {
       ownerRole: "chief_of_staff",
       approvalGate: "public_claim",
     },
+    autonomyPlan: {
+      label: "Autopilot until launch",
+      summary:
+        "DearMe keeps researching, drafting, staging, checking voice, recording memory, and preparing the next private pass without asking. It only waits before publishing, sending, deploying, or spending.",
+      autonomousSteps: [
+        {
+          id: "capture-positioning",
+          title: "Capture the positioning",
+          phase: "plan",
+          ownerRole: "chief_of_staff",
+          summary: "Turn the user's one-line intent into a private first-cycle brief.",
+        },
+        {
+          id: "prepare-private-drafts",
+          title: "Prepare private drafts",
+          phase: "work",
+          ownerRole: "content_producer",
+          summary: "Draft starter posts from the positioning, audience, proof, and offer signals.",
+        },
+        {
+          id: "stage-opportunity-and-proof",
+          title: "Stage opportunity and proof work",
+          phase: "work",
+          ownerRole: "opportunity_scout",
+          summary: "Prepare one outreach angle and one portfolio proof card without contacting anyone or changing the public site.",
+        },
+        {
+          id: "check-voice-and-boundary",
+          title: "Check voice and boundary",
+          phase: "review",
+          ownerRole: "voice_editor",
+          summary: "Score the starter drafts and keep anything public behind the launch decision.",
+        },
+        {
+          id: "queue-next-private-pass",
+          title: "Queue the next private pass",
+          phase: "report",
+          ownerRole: "chief_of_staff",
+          summary: "Write the first plan and next actions so the team can continue privately after the preview.",
+        },
+      ],
+      waitsFor: ["publish_social", "send_email", "deploy_public_site", "spend_money"],
+    },
     voiceGate: makeVoiceGateResult(),
     approvalBoundary: {
       label: "Launch boundary",
-      summary: "Public posts, sends, spend, and page changes wait for one launch call.",
-      blockedActions: ["Publish social posts", "Send outreach messages", "Deploy public page changes"],
+      summary: "Public posts, sends, page changes, and spend wait for one launch call.",
+      blockedActions: ["Publish social posts", "Send outreach messages", "Deploy public page changes", "Spend budget"],
     },
     warnings: [],
   };
@@ -306,12 +457,14 @@ describe("DearMe brand blueprint routes", () => {
     vi.clearAllMocks();
     mockDearMeBrandBlueprintService.preview.mockReset();
     mockDearMeBrandBlueprintService.previewFirstCycle.mockReset();
+    mockDearMeBrandBlueprintService.prepareFirstCycleProofOutputs.mockReset();
     mockDearMeBrandBlueprintService.createApplyRequest.mockReset();
     mockDearMePaidBetaAccessService.getAccess.mockReset();
     mockDearMePaidBetaAccessService.recordPayment.mockReset();
     mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("active"));
     mockDearMeOutputHandoffService.listOutputs.mockReset();
     mockDearMeOutputHandoffService.reviewOutput.mockReset();
+    mockDearMeApprovalResolverService.resolve.mockReset();
     mockDearMeMemoryContextService.refreshRoutineMemoryContext.mockReset();
     mockDearMeMemoryContextService.refreshRoutineMemoryContext.mockResolvedValue({
       memoryCount: 2,
@@ -322,6 +475,12 @@ describe("DearMe brand blueprint routes", () => {
     mockDearMeWorkbenchService.getWorkbench.mockReset();
     mockAgentService.list.mockReset();
     mockIssueService.create.mockReset();
+    mockIssueService.getById.mockReset();
+    mockIssueService.getById.mockResolvedValue({
+      id: "issue-1",
+      companyId: "company-1",
+      identifier: "PET-1",
+    });
     mockAgentService.list.mockResolvedValue([
       {
         id: "agent-chief-1",
@@ -474,6 +633,48 @@ describe("DearMe brand blueprint routes", () => {
     expect(mockLogActivity).not.toHaveBeenCalled();
   });
 
+  it("streams the scoped DearMe live workbench snapshot and runtime events", async () => {
+    const { createDearMeSseBus, setDearMeSseBusForTest } = await import("../services/dearme-sse-bus.js");
+    const bus = createDearMeSseBus();
+    setDearMeSseBusForTest(bus);
+    mockDearMeWorkbenchService.getWorkbench.mockResolvedValue({
+      companyId: "company-1",
+      headline: "Your team is preparing the next private move.",
+      team: [{ role: "chief_of_staff", name: "Chief of Staff" }],
+      workStream: [],
+      batchDecisions: [],
+      runLedger: [],
+      report: null,
+      outputs: [],
+    });
+
+    const text = await collectDearMeSseText({
+      app: await createApp(),
+      path: "/api/dearme/companies/company-1/events",
+      afterOpen: () => {
+        bus.emit(makeWorkLoopSseEvent("company-2") as any);
+        bus.emit(makeWorkLoopSseEvent("company-1") as any);
+      },
+      done: (body) => body.includes("event: sync") && body.includes("private-cycle-started"),
+    });
+
+    expect(text).toContain("event: sync");
+    expect(text).toContain("event: work_loop_transition");
+    expect(text).toContain('"companyId":"company-1"');
+    expect(text).not.toContain("company-2");
+    expect(text).not.toContain("OpenClaw");
+    expect(text).not.toContain("Paperclip");
+    expect(mockDearMeWorkbenchService.getWorkbench).toHaveBeenCalledWith("company-1");
+  });
+
+  it("rejects live workbench streams for callers without company access", async () => {
+    const res = await request(await createApp({ companyIds: ["company-2"] }))
+      .get("/api/dearme/companies/company-1/events");
+
+    expect(res.status).toBe(403);
+    expect(mockDearMeWorkbenchService.getWorkbench).not.toHaveBeenCalled();
+  });
+
   it("records a Chief of Staff brief as private DearMe work and wakes the team member", async () => {
     const res = await request(await createApp())
       .post("/api/dearme/companies/company-1/chief-of-staff/messages")
@@ -591,6 +792,146 @@ describe("DearMe brand blueprint routes", () => {
 
     expect(res.status).toBe(403);
     expect(mockDearMeWorkbenchService.getWorkbench).not.toHaveBeenCalled();
+  });
+
+  it("resolves a pending approval request through the normalized issue boundary", async () => {
+    mockDearMeApprovalResolverService.resolve.mockResolvedValue({
+      approvalId: "approval-1",
+      decision: "pending",
+      reason: "first_n_publishes_user_approved",
+    });
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/approvals/resolve")
+      .send({
+        issueId: "PET-1",
+        toolName: "post_x",
+        channel: "x",
+        gate: "publish",
+        estimatedUsd: 0,
+        voiceGateScore: 96,
+        reason: "first publish to x",
+        config: {
+          minVoiceGateScore: 92,
+          dailyUsdCap: 5,
+        },
+      });
+
+    expect(res.status).toBe(202);
+    expect(res.body).toEqual({
+      companyId: "company-1",
+      issueId: "issue-1",
+      issueIdentifier: "PET-1",
+      approvalId: "approval-1",
+      decision: "pending",
+      reason: "first_n_publishes_user_approved",
+    });
+    expect(mockIssueService.getById).toHaveBeenCalledWith("PET-1");
+    expect(mockDearMeApprovalResolverService.resolve).toHaveBeenCalledWith(
+      expect.objectContaining({
+        companyId: "company-1",
+        requestedByUserId: "user-1",
+        requestedByAgentId: null,
+        issueId: "issue-1",
+        toolName: "post_x",
+        channel: "x",
+        gate: "publish",
+        estimatedUsd: 0,
+        voiceGateScore: 96,
+        reason: "first publish to x",
+        config: {
+          minVoiceGateScore: 92,
+          dailyUsdCap: 5,
+        },
+      }),
+    );
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: "dearme.approval_resolved",
+        entityType: "approval",
+        entityId: "approval-1",
+      }),
+    );
+  });
+
+  it("rejects approval resolution for an issue outside the company", async () => {
+    mockIssueService.getById.mockResolvedValue({
+      id: "issue-2",
+      companyId: "company-2",
+      identifier: "OTH-2",
+    });
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/approvals/resolve")
+      .send({
+        issueId: "OTH-2",
+        toolName: "post_x",
+        channel: "x",
+        gate: "publish",
+        estimatedUsd: 0,
+        voiceGateScore: 96,
+        reason: "cross company attempt",
+        config: {
+          minVoiceGateScore: 92,
+          dailyUsdCap: 5,
+        },
+      });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe("Issue not found");
+    expect(mockDearMeApprovalResolverService.resolve).not.toHaveBeenCalled();
+    expect(mockLogActivity).not.toHaveBeenCalled();
+  });
+
+  it("preserves agent attribution when an agent resolves an approval", async () => {
+    const agentId = "00000000-0000-4000-8000-000000000001";
+    mockDearMeApprovalResolverService.resolve.mockResolvedValue({
+      approvalId: "approval-2",
+      decision: "approved",
+      reason: "auto_approved_after_prior_review",
+    });
+
+    const res = await request(await createApp({
+      type: "agent",
+      companyId: "company-1",
+      agentId,
+      runId: "run-1",
+    }))
+      .post("/api/dearme/companies/company-1/approvals/resolve")
+      .send({
+        issueId: "issue-1",
+        toolName: "post_x",
+        channel: "x",
+        gate: "publish",
+        estimatedUsd: 0,
+        voiceGateScore: 98,
+        reason: "approved repeat publish",
+        config: {
+          minVoiceGateScore: 92,
+          dailyUsdCap: 5,
+        },
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.decision).toBe("approved");
+    expect(mockDearMeApprovalResolverService.resolve).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestedByUserId: null,
+        requestedByAgentId: agentId,
+        issueId: "issue-1",
+      }),
+    );
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        actorType: "agent",
+        actorId: agentId,
+        agentId,
+        runId: "run-1",
+        action: "dearme.approval_resolved",
+      }),
+    );
   });
 
   it("records a Voice & Memory update through the activity log", async () => {
@@ -1150,6 +1491,11 @@ describe("DearMe brand blueprint routes", () => {
     expect(res.status).toBe(200);
     expect(res.body.prompt).toBe("What do you want to become known for?");
     expect(res.body.starterPosts).toHaveLength(3);
+    expect(res.body.proofSequence.map((step: { title: string }) => step.title)).toEqual([
+      "Identity dossier",
+      "Audience map",
+      "Private site proof",
+    ]);
     expect(res.body.opportunityLead.approvalGate).toBe("send_email");
     expect(res.body.voiceGate.approvalGate).toBe("publish_social");
     expect(mockDearMeBrandBlueprintService.previewFirstCycle).toHaveBeenCalledWith(
@@ -1164,6 +1510,152 @@ describe("DearMe brand blueprint routes", () => {
       }),
     );
     expect(mockLogActivity).not.toHaveBeenCalled();
+  });
+
+  it("starts first cycle work from prepared proof sequence by creating a private issue and emitting live events", async () => {
+    const { createDearMeSseBus, setDearMeSseBusForTest } = await import("../services/dearme-sse-bus.js");
+    const bus = createDearMeSseBus();
+    setDearMeSseBusForTest(bus);
+    const events: Array<{ type: string; payload: unknown }> = [];
+    bus.subscribe("company-1", (event) => events.push(event));
+    const basePreview = makeFirstCycleResult();
+    const preparedPreview = {
+      ...basePreview,
+      proofSequence: [
+        {
+          ...basePreview.proofSequence[0],
+          summary: "Prepared Brand OS and voice evidence are ready for review.",
+          preparedArtifact: "Brand OS dossier + Voice profile",
+          sourceLabel: "Prepared from private Brand OS work",
+        },
+        {
+          ...basePreview.proofSequence[1],
+          summary: "Prepared audience research points at founder operators first.",
+          preparedArtifact: "Audience shortlist + opportunity brief",
+          sourceLabel: "Prepared from audience research",
+        },
+        {
+          ...basePreview.proofSequence[2],
+          summary: "Prepared proof packaging can become the private page review.",
+          preparedArtifact: "Portfolio proof card + launch boundary",
+          sourceLabel: "Prepared from portfolio proof work",
+        },
+      ],
+    };
+    const artifactOrder = [
+      "0-30s Identity dossier: Brand OS dossier + Voice profile (Prepared from private Brand OS work)",
+      "60-120s Audience map: Audience shortlist + opportunity brief (Prepared from audience research)",
+      "3-5min Private site proof: Portfolio proof card + launch boundary (Prepared from portfolio proof work)",
+    ];
+    mockDearMeBrandBlueprintService.prepareFirstCycleProofOutputs.mockResolvedValue(preparedPreview);
+    mockIssueService.create.mockResolvedValue({
+      id: "issue-first-cycle-1",
+      identifier: "PET-31",
+      title: "DearMe: First 5-minute proof - Known for practical AI products",
+      assigneeAgentId: "agent-chief-1",
+    });
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/first-cycle/start")
+      .send({
+        brand: {
+          displayName: "Peter",
+          positioning: "Known for practical AI products",
+          goals: ["Build visible proof"],
+          audiences: ["founders"],
+          proofPoints: ["shipped local runtime"],
+          offers: [],
+          voiceSamples: [],
+          preferredChannels: ["linkedin"],
+          constraints: [],
+        },
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe("first_cycle_preview");
+    expect(res.body.proofSequence).toMatchObject(preparedPreview.proofSequence);
+    expect(mockDearMeBrandBlueprintService.prepareFirstCycleProofOutputs).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        brand: expect.objectContaining({
+          positioning: "Known for practical AI products",
+          budgetMonthlyCents: 25_000,
+        }),
+      }),
+      expect.objectContaining({
+        actorType: "user",
+        actorId: "user-1",
+      }),
+    );
+    expect(mockDearMeBrandBlueprintService.previewFirstCycle).not.toHaveBeenCalled();
+    expect(mockIssueService.create).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        title: "DearMe: First 5-minute proof - Known for practical AI products",
+        status: "todo",
+        priority: "high",
+        assigneeAgentId: "agent-chief-1",
+        originKind: "dearme_first_cycle_start",
+      }),
+    );
+    artifactOrder.forEach((artifact) => {
+      expect(mockIssueService.create.mock.calls[0][1].description).toContain(artifact);
+    });
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: "dearme.first_cycle_started",
+        entityType: "issue",
+        entityId: "issue-first-cycle-1",
+        details: expect.objectContaining({
+          artifactOrder,
+        }),
+      }),
+    );
+    expect(mockQueueIssueAssignmentWakeup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        issue: expect.objectContaining({ id: "issue-first-cycle-1" }),
+        reason: "dearme_first_cycle_start",
+      }),
+    );
+    expect(events.map((event) => event.type)).toEqual([
+      "task_created",
+      "thinking_stream",
+      "agent_completed",
+    ]);
+    expect(events[0]).toMatchObject({
+      type: "task_created",
+      payload: expect.objectContaining({
+        artifactOrder,
+      }),
+    });
+    expect(JSON.stringify(events)).not.toContain("Paperclip");
+  });
+
+  it("keeps first cycle starts locked during trial preview", async () => {
+    mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("trial"));
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/first-cycle/start")
+      .send({
+        brand: {
+          displayName: "Peter",
+          positioning: "Known for practical AI products",
+          goals: [],
+          audiences: [],
+          proofPoints: [],
+          offers: [],
+          voiceSamples: [],
+          preferredChannels: ["linkedin"],
+          constraints: [],
+        },
+      });
+
+    expect(res.status).toBe(403);
+    expect(mockDearMeBrandBlueprintService.previewFirstCycle).not.toHaveBeenCalled();
+    expect(mockDearMeBrandBlueprintService.prepareFirstCycleProofOutputs).not.toHaveBeenCalled();
+    expect(mockIssueService.create).not.toHaveBeenCalled();
+    expect(mockQueueIssueAssignmentWakeup).not.toHaveBeenCalled();
   });
 
   it("rejects first cycle previews outside the caller scope", async () => {

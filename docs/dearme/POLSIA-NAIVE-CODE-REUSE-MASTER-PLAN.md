@@ -1,6 +1,6 @@
 # Polsia x Naive code reuse master plan
 
-Date: 2026-05-09
+Date: 2026-05-10
 Owner: DearMe product architect thread
 Status: active execution plan
 Governing rule: `REBRAND-AND-PROVENANCE.md`
@@ -71,9 +71,9 @@ not a prompt warehouse.
 
 | Mechanism | DearMe target | Integration action | Ticket |
 |---|---|---|---|
-| First-run shock sequence | `server/src/routes/dearme.ts`, `server/src/services/dearme-workbench.ts`, new identity/brand services | Make the first session produce personal proof before the user finishes setup. | DM-138 |
-| Autonomous CEO/reporting posture | `packages/plugins/dearme-reporting/`, report/handoff services | Maintain a non-empty queue, summarize work plainly, and choose tomorrow's next step. | DM-139 |
-| Voice-gated short-form content | `packages/plugins/dearme-content-producer/`, voice services | Draft posts only when they match the user's voice profile and attribution rules. | DM-140 |
+| First-run shock sequence | `server/src/routes/dearme.ts`, `server/src/services/dearme-workbench.ts`, identity/brand worker services | DM-138A now starts the first private cycle through the existing preview contract, issue queue, activity log, wakeup, and workbench stream. DM-138B makes the 0-30s / 60-120s / 3-5min proof order first-class in that same response. DM-138C hydrates it from prepared DearMe output documents and work products. DM-138D writes those output-handoff artifacts during first-cycle start and returns the same source-labelled proof contract. DM-138E live-smoked the paid-beta path, reopened stale proof issues, and made output handoff prefer the newest proof issue per fingerprint so old cancelled history cannot hide current work. | DM-138 |
+| Autonomous CEO/reporting posture | `packages/plugins/dearme-reporting/`, report/handoff services | DM-139/DM-140 now share a private cycle output packet in `dearme-output-handoff`: first-cycle start writes a Dear me report from prepared outputs and keeps the report coupled to the same voice-scored content evidence. Keep extending this projection before adding a new reporting runtime. | DM-139 |
+| Voice-gated short-form content | `packages/plugins/dearme-content-producer/`, voice services | DM-139/DM-140 now scores the prepared content draft with the existing Voice Gate and writes a synchronized `content-drafts` document plus primary work product. Draft posts should continue through this packet and approval boundary. | DM-140 |
 | Opportunity hunter | `packages/db/src/schema/opportunities.ts`, `packages/plugins/dearme-opportunity-hunter/` | Add an opportunity state machine for podcasts, clients, sponsors, jobs, and partnerships. | DM-141 |
 | Six-hour work cycle | existing routines/cron services | Add a DearMe routine type that plans, executes, reviews, and reports. | DM-142 |
 | Model routing economics | `packages/dearme-ai-proxy/`, agent metadata | Route by task complexity and record spend without model/provider setup UI. | DM-143 |
@@ -175,9 +175,11 @@ moving into Sprint 1's first-run proof sequence.
 
 ### Sprint 1 - Aha moment
 
-1. DM-138: first-run personal proof sequence.
-2. DM-139: autonomous reporting agent.
-3. DM-140: Voice Gate and content producer.
+1. DM-138: first-run personal proof sequence. (DM-138A start bridge,
+   DM-138B proof-sequence contract, DM-138C proof hydration, and DM-138D
+   proof-output write plus live browser/API proof done locally.)
+2. DM-139: autonomous reporting agent. (cycle output packet bridge done; deeper recurring report loop remains)
+3. DM-140: Voice Gate and content producer. (voice-scored packet bridge done; deeper producer loop remains)
 
 ### Sprint 2 - Work keeps moving
 
@@ -212,6 +214,27 @@ Each ticket must end with:
 
 ## Current Next Slice
 
-DM-S01 is the next non-negotiable engineering slice after this doc cleanup:
-lock down `PATCH /api/companies/:id` with a strict allow-list and move
-finance/admin fields to governed board-only paths.
+DM-138A has shipped the start bridge: one positioning answer now reuses the
+existing `DearMeFirstCyclePreviewResponse` contract, creates the private first
+cycle issue, logs activity, wakes the chief-of-staff lane, and emits the
+customer-safe workbench stream events without a second first-run data shape.
+DM-138B adds `proofSequence` to the same response and makes UI plus private
+issue creation share the same identity/audience/private-site proof order.
+DM-138C hydrates that sequence from prepared DearMe output documents and work
+products, while ordinary progress comments do not count as proof. DM-138D now
+writes those proof outputs during first-cycle start through the existing
+issue/document handoff and returns the same source-labelled proof sequence.
+
+The live `DEA-5` / `DM-138E` path has now been smoke-tested locally against the
+same start bridge. Symphony routes DearMe by Linear team `DEA` plus
+`assignee: me`, and `DEA-5` remains the active worker lane for independent
+handoff, but the product path is proven: the onboarding proof package projects
+current `ready_for_review` output handoffs and keeps the same
+`DearMeFirstCyclePreviewResponse.proofSequence`.
+
+DM-139 / DM-140 now have a first server-side bridge: first-cycle start calls
+`prepareCycleOutputPacket(...)`, which reuses output handoff, documents, work
+products, and Voice Gate to produce a synchronized `content-drafts` document
+and Dear me report from the same private evidence. Keep the same customer
+contract and continue extending the packet/workbench projection; do not invent
+a second first-run data shape, reporting runtime, or content-review surface.

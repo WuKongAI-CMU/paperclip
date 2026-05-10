@@ -41,6 +41,18 @@ export const DEARME_RISK_GATES = [
   "destructive_change",
 ] as const;
 
+export const DEARME_FIRST_CYCLE_CONCERN_GATES = [
+  "publish_social",
+  "send_email",
+  "deploy_public_site",
+  "spend_money",
+] as const;
+
+export const DEARME_FIRST_CYCLE_PROOF_WINDOWS = ["0-30s", "60-120s", "3-5min"] as const;
+
+export const DEARME_APPROVAL_GATES = ["publish", "send", "deploy", "spend"] as const;
+export const DEARME_APPROVAL_DECISIONS = ["pending", "approved", "rejected"] as const;
+
 export const DEARME_BRAND_BLUEPRINT_OPERATION_ORDER = [
   "create_brand_os",
   "create_growth_team",
@@ -522,6 +534,15 @@ const dearMeFirstCycleStarterPostSchema = z.object({
   approvalGate: z.literal("publish_social"),
 }).strict();
 
+const dearMeFirstCycleProofSequenceItemSchema = z.object({
+  window: z.enum(DEARME_FIRST_CYCLE_PROOF_WINDOWS),
+  title: shortTextSchema,
+  summary: mediumTextSchema,
+  preparedArtifact: shortTextSchema,
+  sourceLabel: optionalText(240),
+  approvalBoundary: mediumTextSchema,
+}).strict();
+
 const dearMeFirstCycleOpportunityLeadSchema = z.object({
   title: shortTextSchema,
   target: shortTextSchema,
@@ -550,6 +571,21 @@ const dearMeFirstCycleGrowthPlanSchema = z.object({
   approvalGate: z.literal("public_claim"),
 }).strict();
 
+const dearMeFirstCycleAutonomyStepSchema = z.object({
+  id: shortTextSchema,
+  title: shortTextSchema,
+  phase: z.enum(DEARME_WORKBENCH_CYCLE_STAGES),
+  ownerRole: z.enum(DEARME_TEAM_ROLES),
+  summary: mediumTextSchema,
+}).strict();
+
+const dearMeFirstCycleAutonomyPlanSchema = z.object({
+  label: shortTextSchema,
+  summary: mediumTextSchema,
+  autonomousSteps: z.array(dearMeFirstCycleAutonomyStepSchema).min(4).max(8),
+  waitsFor: z.array(z.enum(DEARME_FIRST_CYCLE_CONCERN_GATES)).length(4),
+}).strict();
+
 export const dearMeFirstCyclePreviewResponseSchema = z.object({
   companyId: z.string().min(1),
   status: z.literal("first_cycle_preview"),
@@ -557,9 +593,11 @@ export const dearMeFirstCyclePreviewResponseSchema = z.object({
   positioning: mediumTextSchema,
   voiceProfile: dearMeFirstCycleVoiceProfileSchema,
   starterPosts: z.array(dearMeFirstCycleStarterPostSchema).length(3),
+  proofSequence: z.array(dearMeFirstCycleProofSequenceItemSchema).length(3),
   opportunityLead: dearMeFirstCycleOpportunityLeadSchema,
   portfolioProofCard: dearMeFirstCyclePortfolioProofCardSchema,
   growthPlan: dearMeFirstCycleGrowthPlanSchema,
+  autonomyPlan: dearMeFirstCycleAutonomyPlanSchema,
   voiceGate: dearMeVoiceGateResultSchema,
   approvalBoundary: z.object({
     label: shortTextSchema,
@@ -633,6 +671,37 @@ export const dearMeChiefOfStaffMessageResultSchema = z.object({
   issueIdentifier: z.string().nullable(),
   title: shortTextSchema,
   nextStep: mediumTextSchema,
+}).strict();
+
+const dearMeApprovalResolverConfigSchema = z.object({
+  minVoiceGateScore: z.number().int().min(0).max(100).default(92),
+  dailyUsdCap: z.number().min(0).max(100_000).default(5),
+}).strict();
+
+export const dearMeApprovalResolveRequestSchema = z.object({
+  issueId: z.string().trim().min(1).max(120),
+  toolName: z.string().trim().min(1).max(160),
+  channel: z.string().trim().min(1).max(80),
+  gate: z.enum(DEARME_APPROVAL_GATES),
+  estimatedUsd: z.number().min(0).max(1_000_000).default(0),
+  voiceGateScore: z.number().min(0).max(100).nullable().default(null),
+  reason: optionalText(1_000),
+  config: dearMeApprovalResolverConfigSchema.default({
+    minVoiceGateScore: 92,
+    dailyUsdCap: 5,
+  }),
+}).strict().transform((value) => ({
+  ...value,
+  reason: value.reason ?? "approval_requested",
+}));
+
+export const dearMeApprovalResolveResultSchema = z.object({
+  companyId: z.string().min(1),
+  issueId: z.string().min(1),
+  issueIdentifier: z.string().nullable(),
+  approvalId: z.string().min(1),
+  decision: z.enum(DEARME_APPROVAL_DECISIONS),
+  reason: z.string().min(1),
 }).strict();
 
 export const dearMeOutputDocumentSchema = z.object({
@@ -1002,6 +1071,8 @@ export type DearMeVoiceGateResult = z.infer<typeof dearMeVoiceGateResultSchema>;
 export type DearMeChiefOfStaffMessage = z.infer<typeof dearMeChiefOfStaffMessageSchema>;
 export type DearMeChiefOfStaffMessageIntent = z.infer<typeof dearMeChiefOfStaffMessageSchema>["intent"];
 export type DearMeChiefOfStaffMessageResult = z.infer<typeof dearMeChiefOfStaffMessageResultSchema>;
+export type DearMeApprovalResolveRequest = z.infer<typeof dearMeApprovalResolveRequestSchema>;
+export type DearMeApprovalResolveResult = z.infer<typeof dearMeApprovalResolveResultSchema>;
 export type DearMeMemoryUpdate = z.infer<typeof dearMeMemoryUpdateSchema>;
 export type DearMeMemoryUpdateItem = z.infer<typeof dearMeMemoryUpdateItemSchema>;
 export type DearMeMemoryUpdateKind = z.infer<typeof dearMeMemoryUpdateSchema>["kind"];
@@ -1628,6 +1699,29 @@ export function createDearMeFirstCyclePreview(
   const primaryOffer = firstPresent(blueprint.brand.offers, "a useful next conversation", 160);
   const warnings = collectDearMeBrandBlueprintWarnings(blueprint);
   const suppliedProof = blueprint.brand.proofPoints[0];
+  const proofSequence: DearMeFirstCyclePreviewResponse["proofSequence"] = [
+    {
+      window: "0-30s",
+      title: "Identity dossier",
+      summary: `${displayName} is positioned around ${positioning}. The first pass captures the known-for line, voice stance, proof, and launch constraints before any public move.`,
+      preparedArtifact: "Voice profile and known-for line",
+      approvalBoundary: "Private research and drafting continue automatically; sensitive or public claims wait for review.",
+    },
+    {
+      window: "60-120s",
+      title: "Audience map",
+      summary: `${primaryAudience} is the first audience to map because they are likely to care about ${primaryGoal}. DearMe prepares starter posts and one opportunity angle for this lane.`,
+      preparedArtifact: "Audience shortlist and first opportunity",
+      approvalBoundary: "Outreach drafts stay private until you approve sending.",
+    },
+    {
+      window: "3-5min",
+      title: "Private site proof",
+      summary: `The first proof page move packages ${primaryProof} into a private card for ${primaryAudience}, then ties it to ${primaryOffer}.`,
+      preparedArtifact: "Private proof page move",
+      approvalBoundary: "Page changes are prepared privately and wait for one launch decision.",
+    },
+  ];
   const starterPosts: DearMeFirstCyclePreviewResponse["starterPosts"] = [
     {
       id: "starter-post-positioning",
@@ -1692,6 +1786,7 @@ export function createDearMeFirstCyclePreview(
       approvalGate: "sensitive_material",
     },
     starterPosts,
+    proofSequence,
     opportunityLead: {
       title: "First opportunity lead",
       target: primaryAudience,
@@ -1726,16 +1821,58 @@ export function createDearMeFirstCyclePreview(
       ownerRole: "chief_of_staff",
       approvalGate: "public_claim",
     },
+    autonomyPlan: {
+      label: "Autopilot until launch",
+      summary:
+        "DearMe keeps researching, drafting, staging, checking voice, recording memory, and preparing the next private pass without asking. It only waits before publishing, sending, deploying, or spending.",
+      autonomousSteps: [
+        {
+          id: "capture-positioning",
+          title: "Capture the positioning",
+          phase: "plan",
+          ownerRole: "chief_of_staff",
+          summary: "Turn the user's one-line intent into a private first-cycle brief.",
+        },
+        {
+          id: "prepare-private-drafts",
+          title: "Prepare private drafts",
+          phase: "work",
+          ownerRole: "content_producer",
+          summary: "Draft starter posts from the positioning, audience, proof, and offer signals.",
+        },
+        {
+          id: "stage-opportunity-and-proof",
+          title: "Stage opportunity and proof work",
+          phase: "work",
+          ownerRole: "opportunity_scout",
+          summary: "Prepare one outreach angle and one portfolio proof card without contacting anyone or changing the public site.",
+        },
+        {
+          id: "check-voice-and-boundary",
+          title: "Check voice and boundary",
+          phase: "review",
+          ownerRole: "voice_editor",
+          summary: "Score the starter drafts and keep anything public behind the launch decision.",
+        },
+        {
+          id: "queue-next-private-pass",
+          title: "Queue the next private pass",
+          phase: "report",
+          ownerRole: "chief_of_staff",
+          summary: "Write the first plan and next actions so the team can continue privately after the preview.",
+        },
+      ],
+      waitsFor: [...DEARME_FIRST_CYCLE_CONCERN_GATES],
+    },
     voiceGate,
     approvalBoundary: {
       label: "Ready to launch, with you in control",
-      summary: "Your team keeps preparing the work automatically. Public posts, outreach, spend, and page changes wait for one launch decision.",
+      summary: "Your team keeps preparing the work automatically. Public posts, outreach, page changes, and spend wait for one launch decision.",
       blockedActions: [
         "Post publicly",
         "Send outreach",
         "Update the public page",
         "Spend budget",
-        "Use sensitive proof",
       ],
     },
     warnings,

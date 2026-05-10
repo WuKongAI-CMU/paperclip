@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   AD_ERROR_STATES,
   AD_PERFORMANCE_RULES,
+  APPROVAL_GATES,
+  APPROVAL_GATE_CONFIG,
   BUDGET_TIERS,
   CHIEF_OF_STAFF_PROMPT,
   CHIEF_OF_STAFF_ROLE,
@@ -19,16 +21,22 @@ import {
   OUTBOUND_5_TOUCH,
   SORA_UGC_VIDEO_TEMPLATE,
   SSE_EVENT_TYPES,
+  WORK_LOOP_STATES,
+  WORK_LOOP_SUBSTRATE_BINDINGS,
+  WORK_LOOP_TO_CYCLE_STAGE,
   canTransitionOpportunity,
+  canTransitionWorkLoop,
   getMoodFace,
   getRoleSeed,
   getRoleSpec,
   getRolesByGroup,
   getShippedRoles,
+  getSubstrateDistribution,
   pickBudgetTier,
   pickModelForComplexity,
   renderDearMeSixHourCycleIssue,
   renderSoraUgcVideoPrompt,
+  resolveApproval,
   validateRegistry,
 } from "./index.js";
 
@@ -102,8 +110,9 @@ describe("dearme-agent-prompts package", () => {
     expect(MODEL_ROUTING_TABLE.length).toBe(3);
   });
 
-  it("SSE event names are stable and include the 7 documented types", () => {
+  it("SSE event names are stable and include the 14 documented types (7 v1 + 7 tri-substrate v2)", () => {
     expect(SSE_EVENT_TYPES).toEqual([
+      // v1 baseline (Polsia /live + Naive activity_log)
       "sync",
       "thinking_stream",
       "thinking_stream_delta",
@@ -111,6 +120,15 @@ describe("dearme-agent-prompts package", () => {
       "task_created",
       "task_updated",
       "agent_completed",
+      // v2 tri-substrate additions (DM-S06 — work-loop / approvals / OpenClaw passthrough)
+      "work_loop_transition",
+      "approval_pending",
+      "approval_resolved",
+      "voice_gate_scored",
+      "channel_action_fired",
+      "cost_recorded",
+      "openclaw_lifecycle",
+      "openclaw_stream",
     ]);
   });
 
@@ -280,6 +298,8 @@ describe("dearme-agent-prompts package", () => {
       "mood-face-library",
       "model-routing",
       "sse-events",
+      "work-loop",
+      "approval-gates",
     ]);
     const validTemplates = new Set(["sora-ugc-video", "outbound-5-touch"]);
     const validProxyTools = new Set([
@@ -301,5 +321,125 @@ describe("dearme-agent-prompts package", () => {
         expect(validProxyTools.has(tool)).toBe(true);
       }
     }
+  });
+
+  it("work-loop has 8 states and Polsia-cycle rollup covers all of them", () => {
+    expect(WORK_LOOP_STATES).toEqual([
+      "intake",
+      "triage",
+      "work",
+      "gate",
+      "deliver",
+      "audit",
+      "review",
+      "archive",
+    ]);
+    for (const state of WORK_LOOP_STATES) {
+      expect(WORK_LOOP_TO_CYCLE_STAGE[state]).toBeDefined();
+      expect(WORK_LOOP_SUBSTRATE_BINDINGS[state].openclaw.length).toBeGreaterThan(0);
+      expect(WORK_LOOP_SUBSTRATE_BINDINGS[state].naive.length).toBeGreaterThan(0);
+      expect(WORK_LOOP_SUBSTRATE_BINDINGS[state].polsia.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("work-loop transitions enforce no-reverse and shortcuts", () => {
+    expect(canTransitionWorkLoop("intake", "triage")).toBe(true);
+    expect(canTransitionWorkLoop("intake", "archive")).toBe(true);
+    expect(canTransitionWorkLoop("triage", "work")).toBe(true);
+    expect(canTransitionWorkLoop("work", "gate")).toBe(true);
+    expect(canTransitionWorkLoop("work", "review")).toBe(true);
+    expect(canTransitionWorkLoop("gate", "deliver")).toBe(true);
+    expect(canTransitionWorkLoop("gate", "review")).toBe(true);
+    expect(canTransitionWorkLoop("deliver", "audit")).toBe(true);
+    expect(canTransitionWorkLoop("audit", "review")).toBe(true);
+    expect(canTransitionWorkLoop("review", "archive")).toBe(true);
+    // Reverse and bypass should be rejected
+    expect(canTransitionWorkLoop("triage", "intake")).toBe(false);
+    expect(canTransitionWorkLoop("archive", "triage")).toBe(false);
+    expect(canTransitionWorkLoop("work", "deliver")).toBe(false);
+    expect(canTransitionWorkLoop("intake", "work")).toBe(false);
+  });
+
+  it("approval gates: spend hard-rejects on cap, voice-gated rejects below floor, auto-approves after threshold", () => {
+    expect(APPROVAL_GATES).toEqual(["publish", "send", "deploy", "spend"]);
+    expect(APPROVAL_GATE_CONFIG.spend.autoApproveAfter).toBe(Number.POSITIVE_INFINITY);
+    expect(APPROVAL_GATE_CONFIG.publish.voiceGateRequired).toBe(true);
+    expect(APPROVAL_GATE_CONFIG.deploy.voiceGateRequired).toBe(false);
+
+    const baseReq = {
+      issueId: "iss_1",
+      toolName: "post_x",
+      channel: "x",
+      estimatedUsd: 0,
+      voiceGateScore: 95,
+      reason: "first publish",
+      createdAt: new Date().toISOString(),
+    };
+
+    // publish below voice floor -> rejected
+    expect(
+      resolveApproval(
+        { ...baseReq, gate: "publish", voiceGateScore: 70 },
+        { pastApprovedCount: 99, dailyUsdSpent: 0, dailyUsdCap: 5, minVoiceGateScore: 92 },
+      ).decision,
+    ).toBe("rejected");
+
+    // publish above floor with > autoApproveAfter -> approved
+    expect(
+      resolveApproval(
+        { ...baseReq, gate: "publish" },
+        { pastApprovedCount: 99, dailyUsdSpent: 0, dailyUsdCap: 5, minVoiceGateScore: 92 },
+      ).decision,
+    ).toBe("approved");
+
+    // first publish (count = 0) -> pending even if voice OK
+    expect(
+      resolveApproval(
+        { ...baseReq, gate: "publish" },
+        { pastApprovedCount: 0, dailyUsdSpent: 0, dailyUsdCap: 5, minVoiceGateScore: 92 },
+      ).decision,
+    ).toBe("pending");
+
+    // spend over cap -> rejected
+    expect(
+      resolveApproval(
+        { ...baseReq, gate: "spend", estimatedUsd: 10 },
+        { pastApprovedCount: 99, dailyUsdSpent: 0, dailyUsdCap: 5, minVoiceGateScore: 92 },
+      ).decision,
+    ).toBe("rejected");
+
+    // spend under cap -> always pending (never auto)
+    expect(
+      resolveApproval(
+        { ...baseReq, gate: "spend", estimatedUsd: 1 },
+        { pastApprovedCount: 99, dailyUsdSpent: 0, dailyUsdCap: 5, minVoiceGateScore: 92 },
+      ).decision,
+    ).toBe("pending");
+
+    // deploy after autoApproveAfter:1 with no voice required -> approved
+    expect(
+      resolveApproval(
+        { ...baseReq, gate: "deploy", voiceGateScore: null },
+        { pastApprovedCount: 1, dailyUsdSpent: 0, dailyUsdCap: 5, minVoiceGateScore: 92 },
+      ).decision,
+    ).toBe("approved");
+  });
+
+  it("substrate distribution: 12 roles across 3 substrates with leadership shells + cron drivers", () => {
+    const dist = getSubstrateDistribution();
+    const totalOpenclaw = Object.values(dist.openclaw).reduce((a, b) => a + b, 0);
+    const totalNaive = Object.values(dist.naive).reduce((a, b) => a + b, 0);
+    const totalPolsia = Object.values(dist.polsia).reduce((a, b) => a + b, 0);
+    expect(totalOpenclaw).toBe(12);
+    expect(totalNaive).toBe(12);
+    expect(totalPolsia).toBe(12);
+    // Two session-shell roles (chief-of-staff + chat) own the user-facing surface
+    expect(dist.openclaw["session-shell"]).toBe(2);
+    // Two cron-driven roles (reporting + health-monitor)
+    expect(dist.openclaw["cron-driven"]).toBe(2);
+    // One sandbox-non-main role (browser-agent)
+    expect(dist.openclaw["sandbox-non-main"]).toBe(1);
+    // The remaining 7 are skill-call
+    expect(dist.openclaw["skill-call"]).toBe(7);
   });
 });

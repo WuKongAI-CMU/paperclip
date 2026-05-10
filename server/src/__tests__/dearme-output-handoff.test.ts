@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   agents,
@@ -444,6 +444,200 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
 
     const allIssueRows = await db.select().from(issues).where(eq(issues.companyId, companyId));
     expect(allIssueRows).toHaveLength(7);
+  });
+
+  it("prefers the active output issue when a fingerprint has newer cancelled history", async () => {
+    const companyId = await seedCompany();
+    const staleIssueId = await seedIssue({
+      companyId,
+      title: "DearMe: Old cancelled Brand OS",
+      identifier: "DME-OLD",
+      originFingerprint: "brand-os-review",
+      status: "cancelled",
+      updatedAt: new Date("2026-05-09T08:00:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: staleIssueId,
+      key: "brand-os",
+      title: "Old Brand OS",
+      body: "Positioning: Old cancelled proof.",
+      updatedAt: new Date("2026-05-07T08:01:00.000Z"),
+    });
+    const freshIssueId = await seedIssue({
+      companyId,
+      title: "DearMe: Current first-cycle Brand OS",
+      identifier: "DME-NEW",
+      originFingerprint: "brand-os-review",
+      status: "in_review",
+      updatedAt: new Date("2026-05-08T08:00:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: freshIssueId,
+      key: "brand-os",
+      title: "Current Brand OS",
+      body: "Positioning: Current private proof ready for review.",
+      updatedAt: new Date("2026-05-08T08:01:00.000Z"),
+    });
+
+    const result = await dearmeOutputHandoffService(db).listOutputs(companyId);
+    const brandOutput = result.outputs.find((output) => output.kind === "brand_os")!;
+
+    expect(brandOutput.issueIdentifier).toBe("DME-NEW");
+    expect(brandOutput.status).toBe("ready_for_review");
+    expect(brandOutput.documents[0]?.bodyPreview).toContain("Current private proof");
+    expect(JSON.stringify(brandOutput)).not.toContain("Old cancelled proof");
+  });
+
+  it("persists a shared private cycle packet for content drafts and the Dear me report", async () => {
+    const companyId = await seedCompany();
+    const brandIssueId = await seedIssue({
+      companyId,
+      title: "DearMe: Review Brand OS for Peter",
+      identifier: "DME-20",
+      originFingerprint: "brand-os-review",
+      status: "in_review",
+      updatedAt: new Date("2026-05-09T14:00:00.000Z"),
+    });
+    const contentIssueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft first content batch",
+      identifier: "DME-21",
+      originFingerprint: "operation-draft_content_batch",
+      status: "todo",
+      updatedAt: new Date("2026-05-09T14:10:00.000Z"),
+    });
+    const opportunityIssueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft opportunity list",
+      identifier: "DME-22",
+      originFingerprint: "operation-draft_opportunity_list",
+      status: "in_review",
+      updatedAt: new Date("2026-05-09T14:20:00.000Z"),
+    });
+    const portfolioIssueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Prepare portfolio update",
+      identifier: "DME-23",
+      originFingerprint: "operation-prepare_portfolio_update",
+      status: "in_review",
+      updatedAt: new Date("2026-05-09T14:30:00.000Z"),
+    });
+    const reportIssueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Prepare report",
+      identifier: "DME-24",
+      originFingerprint: "operation-schedule_weekly_report",
+      status: "todo",
+      updatedAt: new Date("2026-05-09T14:40:00.000Z"),
+    });
+
+    await attachDocument({
+      companyId,
+      issueId: brandIssueId,
+      key: "brand-os",
+      title: "Brand OS",
+      body: [
+        "Positioning: practical AI operator for local-first builders",
+        "Proof Points: shipped a local agent runtime with approval gates",
+      ].join("\n"),
+      updatedAt: new Date("2026-05-09T14:01:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: contentIssueId,
+      key: "starter-posts",
+      title: "Starter posts",
+      body: [
+        "Channel: LinkedIn",
+        "Audience: founders evaluating local AI workflows",
+        "Hook: Your personal brand should show proof while you keep building.",
+        "Draft body: A short proof-backed post about shipping local AI products.",
+        "Proof used: shipped a local agent runtime",
+        "Launch boundary: publish social posts only after approval",
+      ].join("\n"),
+      updatedAt: new Date("2026-05-09T14:11:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: opportunityIssueId,
+      key: "opportunity-list",
+      title: "Opportunity list",
+      body: "Target: founders evaluating local AI workflows\nOutreach angle: offer a teardown of a real workflow",
+      updatedAt: new Date("2026-05-09T14:21:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: portfolioIssueId,
+      key: "portfolio-update",
+      title: "Portfolio update",
+      body: "Proof source: local-agent runtime launch notes\nProposed copy: Built a local-first AI operating layer.",
+      updatedAt: new Date("2026-05-09T14:31:00.000Z"),
+    });
+
+    const service = dearmeOutputHandoffService(db);
+    const result = await service.prepareCycleOutputPacket(companyId, {
+      actorType: "user",
+      actorId: "user-1",
+      agentId: null,
+      runId: "not-a-uuid-run",
+    });
+
+    const contentOutput = result.outputs.find((output) => output.kind === "content_drafts")!;
+    const reportOutput = result.outputs.find((output) => output.kind === "weekly_report")!;
+
+    expect(contentOutput.status).toBe("ready_for_review");
+    expect(reportOutput.status).toBe("ready_for_review");
+    expect(contentOutput.documents.map((document) => document.key)).toEqual(["content-drafts", "starter-posts"]);
+    expect(contentOutput.documents[0]?.bodyPreview).toContain("Voice fit score");
+    expect(contentOutput.documents[0]?.bodyPreview).toContain("Cycle packet");
+    expect(contentOutput.workProducts).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        title: "Cycle content packet",
+        summary: expect.stringContaining("voice fit"),
+        reviewState: "pending",
+      }),
+    ]));
+    expect(reportOutput.documents[0]?.key).toBe("dear-me-report");
+    expect(reportOutput.documents[0]?.bodyPreview).toContain("Completed work");
+    expect(reportOutput.documents[0]?.bodyPreview).toContain("Decisions needed");
+    expect(reportOutput.documents[0]?.bodyPreview).toContain("No outbound spend");
+    expect(reportOutput.workProducts).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        title: "Dear me report packet",
+        summary: expect.stringContaining("same cycle packet"),
+      }),
+    ]));
+
+    const readyIssues = await db
+      .select({ id: issues.id, status: issues.status, completedAt: issues.completedAt, cancelledAt: issues.cancelledAt })
+      .from(issues)
+      .where(inArray(issues.id, [contentIssueId, reportIssueId]));
+    expect(readyIssues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: contentIssueId, status: "in_review", completedAt: null, cancelledAt: null }),
+      expect.objectContaining({ id: reportIssueId, status: "in_review", completedAt: null, cancelledAt: null }),
+    ]));
+
+    await service.prepareCycleOutputPacket(companyId, {
+      actorType: "user",
+      actorId: "user-1",
+      agentId: null,
+      runId: null,
+    });
+    const packetWorkProducts = await db
+      .select({ id: issueWorkProducts.id })
+      .from(issueWorkProducts)
+      .where(and(
+        eq(issueWorkProducts.companyId, companyId),
+        eq(issueWorkProducts.provider, "dearme-cycle-output"),
+      ));
+    expect(packetWorkProducts).toHaveLength(2);
+
+    const serialized = JSON.stringify(result).toLowerCase();
+    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw"]) {
+      expect(serialized).not.toContain(hiddenTerm);
+    }
   });
 
   it("records an output approval on the existing issue and prepared work", async () => {

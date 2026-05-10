@@ -48,6 +48,12 @@ type DearMeMemorySourceReviewCandidate = DearMeMemoryUpdateItem & {
 };
 type DearMeStreamKind = DearMeWorkbenchStreamItem["kind"];
 type DearMeCycleStage = DearMeWorkbenchStreamItem["cycleStage"];
+type DearMeCyclePacketEvidence = {
+  voiceFit: string | null;
+  summary: string;
+  reportSummary: string;
+  nextAction: string;
+};
 
 type DearMeRoutineRunRow = {
   id: string;
@@ -260,6 +266,63 @@ function previewText(value: string, maxLength = 700) {
   return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
 }
 
+function outputEvidenceText(output: DearMeOutputItem) {
+  return [
+    output.summary,
+    ...output.documents.map((document) => document.bodyPreview),
+    ...output.workProducts.flatMap((workProduct) => [workProduct.title, workProduct.summary ?? ""]),
+    output.latestUpdate?.bodyPreview ?? "",
+    ...output.details.flatMap((detail) => [detail.label, detail.value]),
+    ...output.sourceEvidence.flatMap((item) => [item.label, item.summary]),
+  ].join(" ");
+}
+
+function voiceFitFromOutputText(value: string) {
+  const match = value.match(/\bvoice fit(?: score)?\s*:?\s*([0-9]{1,3}\/100(?:\s+(?:ready for review|needs revision before launch))?)/i);
+  return match?.[1] ? `Voice fit ${match[1].replace(/\s+/g, " ").trim()}` : null;
+}
+
+function cyclePacketEvidence(output: DearMeOutputItem): DearMeCyclePacketEvidence | null {
+  const evidenceText = outputEvidenceText(output);
+  const isCyclePacket =
+    /\bcycle output packet\b/i.test(evidenceText) ||
+    /\bsame private evidence packet\b/i.test(evidenceText) ||
+    /\bsame private cycle packet\b/i.test(evidenceText) ||
+    /\bcycle content packet\b/i.test(evidenceText) ||
+    /\bDear me report packet\b/i.test(evidenceText) ||
+    /\bprivate content packet ready for review with voice fit\b/i.test(evidenceText);
+  if (!isCyclePacket) return null;
+
+  const voiceFit = voiceFitFromOutputText(evidenceText);
+  const voiceClause = voiceFit ? ` ${voiceFit}.` : "";
+  const reviewBoundary = "Publishing, sending, spending, and deployment still wait for your launch call.";
+
+  return {
+    voiceFit,
+    summary: previewText(
+      `Prepared from the same private cycle packet as the Dear me report.${voiceClause} ${reviewBoundary}`,
+      900,
+    ),
+    reportSummary: previewText(
+      `DearMe prepared the report and content drafts from the same private cycle packet.${voiceClause} Review once, then launch, revise, or regenerate.`,
+      900,
+    ),
+    nextAction: "Review the shared packet once; DearMe can launch, revise, or regenerate without letting any public move happen by accident.",
+  };
+}
+
+function outputSummaryForWorkbench(output: DearMeOutputItem) {
+  const packet = cyclePacketEvidence(output);
+  if (!packet) return output.summary;
+  return output.kind === "weekly_report" ? packet.reportSummary : packet.summary;
+}
+
+function decisionHasCyclePacketEvidence(decision: Pick<DearMeWorkbenchDecision, "summary">) {
+  return /\bsame private cycle packet\b/i.test(decision.summary) ||
+    /\bsame private evidence packet\b/i.test(decision.summary) ||
+    /\bshared packet\b/i.test(decision.summary);
+}
+
 function moneyFromCents(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -295,7 +358,7 @@ function workItemFromOutput(output: DearMeOutputItem): DearMeWorkbenchWorkItem {
   return {
     id: output.id,
     title: output.title,
-    summary: output.summary,
+    summary: outputSummaryForWorkbench(output),
     status: output.status,
     ownerRole: OUTPUT_OWNER_ROLE[output.kind],
     outputKind: output.kind,
@@ -421,11 +484,20 @@ function sourceLabelForWork(input: {
 }
 
 function nextActionForDecision(decision: DearMeWorkbenchDecision) {
-  if (decision.reviewLoop?.nextStep) return decision.reviewLoop.nextStep;
   if (decision.kind === "approve_brand_os") {
     return "Launch Brand OS when the first cycle and launch boundaries match how you want to be represented.";
   }
+  if (decisionHasCyclePacketEvidence(decision)) {
+    return "Review the shared packet once; DearMe can launch, revise, or regenerate without letting any public move happen by accident.";
+  }
+  if (decision.reviewLoop?.nextStep) return decision.reviewLoop.nextStep;
   return "Review this call so the team can continue the private growth cycle.";
+}
+
+function sourceLabelForDecision(decision: DearMeWorkbenchDecision) {
+  if (decision.approvalId) return "Launch queue";
+  if (decisionHasCyclePacketEvidence(decision)) return "Private cycle packet";
+  return "Prepared output";
 }
 
 function streamKindForProgress(item: DearMeWorkbenchProgressItem): DearMeStreamKind {
@@ -541,7 +613,7 @@ function streamItemFromDecision(decision: DearMeWorkbenchDecision): DearMeWorkbe
     artifact: artifactForDecision(decision),
     status: "decision_needed",
     needsApproval: true,
-    sourceLabel: decision.approvalId ? "Launch queue" : "Prepared output",
+    sourceLabel: sourceLabelForDecision(decision),
     costImpact: decision.riskGate === "spend_money" ? "Spend waits for the launch call" : null,
     nextAction: nextActionForDecision(decision),
     relatedOutputId: decision.outputKind ? decision.id.replace(/^output:/, "") : null,
@@ -838,9 +910,11 @@ function buildReportDigest(input: {
   decisionsNeeded: DearMeWorkbenchDecision[];
   recentProgress: DearMeWorkbenchProgressItem[];
   memory: DearMeWorkbenchMemory;
+  cyclePacket: DearMeCyclePacketEvidence | null;
 }): DearMeReportDigest {
   const accomplished = digestItems(
     [
+      input.cyclePacket?.reportSummary,
       ...input.recentProgress.map((item) => `${item.title}: ${item.summary}`),
       ...input.workReady.map((item) =>
         `${artifactLabelForWork(item)} is ready for your review: ${item.summary}`),
@@ -848,7 +922,12 @@ function buildReportDigest(input: {
     "Your team is preparing the first private growth cycle so the weekly letter has real work to close.",
   );
   const decisions = digestItems(
-    input.decisionsNeeded.map((decision) => `${decision.title}: ${decision.summary}`),
+    [
+      input.cyclePacket
+        ? `Shared packet review: ${input.cyclePacket.nextAction}`
+        : null,
+      ...input.decisionsNeeded.map((decision) => `${decision.title}: ${decision.summary}`),
+    ],
     "No public, send, deploy, or spend move needs your call right now.",
   );
   const learnings = digestItems(
@@ -865,6 +944,9 @@ function buildReportDigest(input: {
         `${TEAM_ROLE_PUBLIC_LABELS[item.ownerRole]} is moving ${movingLabelForWork(item)} forward.`),
       input.workReady.length > 0
         ? "Review the prepared work and decide what can represent you publicly."
+        : null,
+      input.cyclePacket
+        ? "Use the shared packet as the single review surface before the next cycle starts."
         : null,
       input.decisionsNeeded.length > 0
         ? "Make the waiting high-leverage calls so the team can continue the cycle."
@@ -1128,7 +1210,7 @@ function buildActionGraph(input: {
       id: nodeId,
       kind: "artifact",
       label: output.title,
-      summary: output.summary,
+      summary: outputSummaryForWorkbench(output),
       role: ownerRole,
       status: output.status,
       source: "artifact",
@@ -1265,11 +1347,12 @@ function buildActionGraph(input: {
 }
 
 function decisionFromOutput(output: DearMeOutputItem): DearMeWorkbenchDecision {
+  const packet = cyclePacketEvidence(output);
   return {
     id: `output:${output.id}`,
     kind: "review_output",
     title: `Review ${output.title}`,
-    summary: "Your team prepared this private artifact. Approve the next move only if it represents you.",
+    summary: packet?.summary ?? "Your team prepared this private artifact. Approve the next move only if it represents you.",
     riskGate: OUTPUT_DECISION_GATE[output.kind],
     status: "needed",
     outputKind: output.kind,
@@ -1731,17 +1814,19 @@ export function dearmeWorkbenchService(db: Db) {
         latest: latestMemory,
       };
       const reportOutput = outputs.find((output) => output.kind === "weekly_report") ?? null;
+      const reportPacket = reportOutput ? cyclePacketEvidence(reportOutput) : null;
       const reportDigest = buildReportDigest({
         activeWork,
         workReady,
         decisionsNeeded,
         recentProgress,
         memory,
+        cyclePacket: reportPacket,
       });
       const report = reportOutput
         ? {
             title: reportOutput.title,
-            summary: reportOutput.summary,
+            summary: reportPacket?.reportSummary ?? reportOutput.summary,
             status: reportOutput.status,
             outputId: reportOutput.id,
             issueId: reportOutput.issueId,

@@ -1,11 +1,20 @@
 import { randomUUID } from "node:crypto";
-import { sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { activityLog, companies, createDb } from "@paperclipai/db";
+import {
+  activityLog,
+  companies,
+  createDb,
+  documents,
+  issueDocuments,
+  issues,
+  issueWorkProducts,
+} from "@paperclipai/db";
 import {
   getEmbeddedPostgresTestSupport,
   startEmbeddedPostgresTestDatabase,
 } from "./helpers/embedded-postgres.js";
+import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "../services/dearme-brand-blueprint-apply.js";
 import { dearmeBrandBlueprintService } from "../services/dearme-brand-blueprints.js";
 
 const embeddedPostgresSupport = await getEmbeddedPostgresTestSupport();
@@ -47,6 +56,56 @@ describeEmbeddedPostgres("DearMe brand blueprint service", () => {
       requireBoardApprovalForNewAgents: false,
     });
     return companyId;
+  }
+
+  async function seedDearMeIssue(input: {
+    companyId: string;
+    title: string;
+    identifier: string;
+    originFingerprint: string;
+    status: string;
+    updatedAt: Date;
+  }) {
+    const issueId = randomUUID();
+    await db.insert(issues).values({
+      id: issueId,
+      companyId: input.companyId,
+      title: input.title,
+      identifier: input.identifier,
+      originKind: DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
+      originFingerprint: input.originFingerprint,
+      status: input.status,
+      updatedAt: input.updatedAt,
+    });
+    return issueId;
+  }
+
+  async function attachDocument(input: {
+    companyId: string;
+    issueId: string;
+    key: string;
+    title: string;
+    body: string;
+    updatedAt: Date;
+  }) {
+    const documentId = randomUUID();
+    await db.insert(documents).values({
+      id: documentId,
+      companyId: input.companyId,
+      title: input.title,
+      format: "markdown",
+      latestBody: input.body,
+      latestRevisionNumber: 1,
+      updatedAt: input.updatedAt,
+    });
+    await db.insert(issueDocuments).values({
+      companyId: input.companyId,
+      issueId: input.issueId,
+      documentId,
+      key: input.key,
+      updatedAt: input.updatedAt,
+    });
+    return documentId;
   }
 
   it("uses saved Voice & Memory context in the first-cycle preview", async () => {
@@ -209,5 +268,281 @@ describeEmbeddedPostgres("DearMe brand blueprint service", () => {
     expect(result.warnings).not.toContain("No proof points were supplied; the first cycle should collect proof before public claims.");
     expect(JSON.stringify(result)).not.toContain("This other company's memory");
     expect(JSON.stringify(result)).not.toContain("ignored event");
+  });
+
+  it("hydrates first-cycle proof sequence from prepared worker outputs", async () => {
+    const companyId = await seedCompany();
+    const brandIssueId = await seedDearMeIssue({
+      companyId,
+      title: "DearMe: Review Brand OS for Peter",
+      identifier: "DME-1",
+      originFingerprint: "brand-os-review",
+      status: "done",
+      updatedAt: new Date("2026-05-09T10:00:00.000Z"),
+    });
+    const contentIssueId = await seedDearMeIssue({
+      companyId,
+      title: "DearMe Draft: Draft first content batch",
+      identifier: "DME-2",
+      originFingerprint: "operation-draft_content_batch",
+      status: "in_review",
+      updatedAt: new Date("2026-05-09T10:10:00.000Z"),
+    });
+    const opportunityIssueId = await seedDearMeIssue({
+      companyId,
+      title: "DearMe Draft: Draft opportunity list",
+      identifier: "DME-3",
+      originFingerprint: "operation-draft_opportunity_list",
+      status: "in_review",
+      updatedAt: new Date("2026-05-09T10:20:00.000Z"),
+    });
+    const portfolioIssueId = await seedDearMeIssue({
+      companyId,
+      title: "DearMe Draft: Prepare portfolio update",
+      identifier: "DME-4",
+      originFingerprint: "operation-prepare_portfolio_update",
+      status: "in_review",
+      updatedAt: new Date("2026-05-09T10:30:00.000Z"),
+    });
+    const reportIssueId = await seedDearMeIssue({
+      companyId,
+      title: "DearMe Draft: Prepare report",
+      identifier: "DME-5",
+      originFingerprint: "operation-schedule_weekly_report",
+      status: "done",
+      updatedAt: new Date("2026-05-09T10:40:00.000Z"),
+    });
+
+    await attachDocument({
+      companyId,
+      issueId: brandIssueId,
+      key: "brand-os",
+      title: "Brand OS",
+      body: [
+        "Positioning: practical AI operator for local-first builders",
+        "Proof Points: shipped a local agent runtime with approval gates",
+        "Approval boundaries: no public claims without review.",
+      ].join("\n"),
+      updatedAt: new Date("2026-05-09T10:01:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: brandIssueId,
+      key: "voice-profile",
+      title: "Voice profile",
+      body: "Guidance: short, direct, evidence-first notes before any public copy.",
+      updatedAt: new Date("2026-05-09T10:02:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: contentIssueId,
+      key: "starter-posts",
+      title: "Starter posts",
+      body: [
+        "Audience: founders evaluating local AI workflows",
+        "Hook: Your personal brand should show proof while you keep building.",
+        "Proof used: shipped a local agent runtime",
+      ].join("\n"),
+      updatedAt: new Date("2026-05-09T10:11:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: opportunityIssueId,
+      key: "opportunity-list",
+      title: "Opportunity list",
+      body: [
+        "Target: practical AI operators podcast host",
+        "Outreach angle: offer a teardown of a real local-agent workflow",
+      ].join("\n"),
+      updatedAt: new Date("2026-05-09T10:21:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: portfolioIssueId,
+      key: "portfolio-update",
+      title: "Portfolio update",
+      body: [
+        "Proof source: local-agent runtime launch notes",
+        "Proposed copy: Built a local-first AI operating layer with approval gates.",
+      ].join("\n"),
+      updatedAt: new Date("2026-05-09T10:31:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: reportIssueId,
+      key: "dear-me-report",
+      title: "Dear me report",
+      body: "Next bets: turn proof cards into one private site update.",
+      updatedAt: new Date("2026-05-09T10:41:00.000Z"),
+    });
+    await db.insert(issueWorkProducts).values({
+      id: randomUUID(),
+      companyId,
+      issueId: contentIssueId,
+      type: "draft",
+      provider: "dearme-local",
+      title: "Starter content draft batch",
+      status: "ready",
+      reviewState: "pending",
+      summary: "Three private starter posts prepared for review.",
+      updatedAt: new Date("2026-05-09T10:12:00.000Z"),
+    });
+
+    const result = await dearmeBrandBlueprintService(db).previewFirstCycle(companyId, {
+      brand: {
+        displayName: "Peter",
+        positioning: "Build local-first AI products with public proof.",
+        goals: ["turn shipped work into paid beta conversations"],
+        audiences: ["founders evaluating local AI workflows"],
+        proofPoints: ["manual proof should be replaced by prepared output"],
+        offers: ["a paid beta personal brand growth cycle"],
+        voiceSamples: ["I write in short, concrete notes with proof first."],
+        preferredChannels: ["linkedin"],
+        constraints: [],
+        cadence: "weekly",
+        budgetMonthlyCents: 25_000,
+        autoDraftEnabled: true,
+      },
+    });
+
+    expect(result.proofSequence.map((step) => step.window)).toEqual(["0-30s", "60-120s", "3-5min"]);
+    expect(result.proofSequence[0]?.preparedArtifact).toBe("Brand OS dossier + Voice profile");
+    expect(result.proofSequence[0]?.sourceLabel).toBe("Prepared from private Brand OS work and voice work");
+    expect(result.proofSequence[0]?.summary).toContain("Identity Researcher turned the private Brand OS");
+    expect(result.proofSequence[0]?.summary).toContain("Voice Editor attached voice guidance");
+    expect(result.proofSequence[1]?.preparedArtifact).toBe("Starter content drafts + Opportunity shortlist");
+    expect(result.proofSequence[1]?.sourceLabel).toBe(
+      "Prepared from private content drafts and opportunity work",
+    );
+    expect(result.proofSequence[1]?.summary).toContain("Audience Mapper found the first lane");
+    expect(result.proofSequence[1]?.summary).toContain("Opportunity Scout staged the first private angle");
+    expect(result.proofSequence[2]?.preparedArtifact).toBe("Private site proof draft + Dear me report note");
+    expect(result.proofSequence[2]?.sourceLabel).toBe("Prepared from private site proof and Dear me report");
+    expect(result.proofSequence[2]?.summary).toContain("Brand Site Builder staged private site copy");
+    expect(result.proofSequence[2]?.summary).toContain("turn proof cards into one private site update");
+    expect(JSON.stringify(result.proofSequence)).not.toContain("worker output");
+  });
+
+  it("prepares first-cycle proof outputs through the existing output handoff path", async () => {
+    const companyId = await seedCompany();
+    const service = dearmeBrandBlueprintService(db);
+    const firstCycleInput = {
+      brand: {
+        displayName: "Peter",
+        positioning: "Build local-first AI products with public proof.",
+        goals: ["turn shipped work into paid beta conversations"],
+        audiences: ["founders evaluating local AI workflows"],
+        proofPoints: ["shipped a local agent runtime with approval gates"],
+        offers: ["a paid beta personal brand growth cycle"],
+        voiceSamples: ["I write in short, concrete notes with proof first."],
+        preferredChannels: ["linkedin"],
+        constraints: [],
+        cadence: "weekly",
+        budgetMonthlyCents: 25_000,
+        autoDraftEnabled: true,
+      },
+    };
+
+    const result = await service.prepareFirstCycleProofOutputs(companyId, firstCycleInput, {
+      actorType: "user",
+      actorId: "user-1",
+      agentId: null,
+      runId: "run-first-cycle-1",
+    });
+
+    expect(result.proofSequence[0]?.preparedArtifact).toBe("Brand OS dossier + Voice profile");
+    expect(result.proofSequence[0]?.sourceLabel).toBe("Prepared from private Brand OS work and voice work");
+    expect(result.proofSequence[1]?.preparedArtifact).toBe("Starter content drafts + Opportunity shortlist");
+    expect(result.proofSequence[1]?.sourceLabel).toBe(
+      "Prepared from private content drafts and opportunity work",
+    );
+    expect(result.proofSequence[2]?.preparedArtifact).toBe("Private site proof draft + Dear me report note");
+    expect(result.proofSequence[2]?.sourceLabel).toBe("Prepared from private site proof and Dear me report");
+
+    const outputIssues = await db
+      .select({
+        id: issues.id,
+        originFingerprint: issues.originFingerprint,
+        originKind: issues.originKind,
+        status: issues.status,
+      })
+      .from(issues)
+      .where(and(
+        eq(issues.companyId, companyId),
+        eq(issues.originKind, DEARME_BRAND_BLUEPRINT_ORIGIN_KIND),
+      ));
+    expect(outputIssues.map((issue) => issue.originFingerprint).sort()).toEqual([
+      "brand-os-review",
+      "operation-draft_content_batch",
+      "operation-draft_opportunity_list",
+      "operation-prepare_portfolio_update",
+      "operation-schedule_weekly_report",
+    ]);
+    expect(outputIssues.every((issue) => issue.status === "in_review")).toBe(true);
+
+    const outputIssueIds = outputIssues.map((issue) => issue.id);
+    const outputDocuments = await db
+      .select({ key: issueDocuments.key })
+      .from(issueDocuments)
+      .where(inArray(issueDocuments.issueId, outputIssueIds));
+    expect(outputDocuments.map((document) => document.key).sort()).toEqual([
+      "approval-gates",
+      "brand-os",
+      "content-drafts",
+      "dear-me-report",
+      "opportunity-list",
+      "portfolio-update",
+      "starter-posts",
+      "voice-profile",
+    ]);
+
+    await service.prepareFirstCycleProofOutputs(companyId, firstCycleInput, {
+      actorType: "user",
+      actorId: "user-1",
+      agentId: null,
+      runId: "run-first-cycle-2",
+    });
+    const issueCountAfterRetry = await db
+      .select({ id: issues.id })
+      .from(issues)
+      .where(and(
+        eq(issues.companyId, companyId),
+        eq(issues.originKind, DEARME_BRAND_BLUEPRINT_ORIGIN_KIND),
+      ));
+    expect(issueCountAfterRetry).toHaveLength(5);
+    const packetWorkProductsAfterRetry = await db
+      .select({ id: issueWorkProducts.id })
+      .from(issueWorkProducts)
+      .where(and(
+        eq(issueWorkProducts.companyId, companyId),
+        eq(issueWorkProducts.provider, "dearme-cycle-output"),
+      ));
+    expect(packetWorkProductsAfterRetry).toHaveLength(2);
+
+    await db
+      .update(issues)
+      .set({ status: "cancelled", cancelledAt: new Date() })
+      .where(inArray(issues.id, outputIssueIds));
+
+    const restoredResult = await service.prepareFirstCycleProofOutputs(companyId, firstCycleInput, {
+      actorType: "user",
+      actorId: "user-1",
+      agentId: null,
+      runId: "run-first-cycle-3",
+    });
+
+    expect(restoredResult.proofSequence[0]?.sourceLabel).toBe(
+      "Prepared from private Brand OS work and voice work",
+    );
+    const restoredOutputIssues = await db
+      .select({ id: issues.id, status: issues.status, cancelledAt: issues.cancelledAt })
+      .from(issues)
+      .where(and(
+        eq(issues.companyId, companyId),
+        eq(issues.originKind, DEARME_BRAND_BLUEPRINT_ORIGIN_KIND),
+      ));
+    expect(restoredOutputIssues).toHaveLength(5);
+    expect(restoredOutputIssues.every((issue) => issue.status === "in_review")).toBe(true);
+    expect(restoredOutputIssues.every((issue) => issue.cancelledAt === null)).toBe(true);
   });
 });

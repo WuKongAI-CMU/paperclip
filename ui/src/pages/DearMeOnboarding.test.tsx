@@ -20,6 +20,7 @@ import { DearMeOnboarding } from "./DearMeOnboarding";
 
 const mockDearmeApi = vi.hoisted(() => ({
   getWorkbench: vi.fn(),
+  openWorkbenchEvents: vi.fn(),
   getOutputs: vi.fn(),
   getPaidBetaAccess: vi.fn(),
   sendChiefOfStaffMessage: vi.fn(),
@@ -28,6 +29,7 @@ const mockDearmeApi = vi.hoisted(() => ({
   archiveMemorySource: vi.fn(),
   recordPaidBetaPayment: vi.fn(),
   previewFirstCycle: vi.fn(),
+  startFirstCycle: vi.fn(),
   previewBrandBlueprint: vi.fn(),
   createBrandBlueprintApplyRequest: vi.fn(),
   reviewOutput: vi.fn(),
@@ -49,6 +51,19 @@ const mockLocation = vi.hoisted(() => ({
 
 vi.mock("../api/dearme", () => ({
   dearmeApi: mockDearmeApi,
+  dearmeWorkbenchRefreshEventTypes: [
+    "work_loop_transition",
+    "approval_pending",
+    "approval_resolved",
+    "voice_gate_scored",
+    "channel_action_fired",
+    "cost_recorded",
+    "openclaw_lifecycle",
+    "openclaw_stream",
+    "agent_completed",
+    "task_created",
+    "task_updated",
+  ],
 }));
 
 vi.mock("../api/approvals", () => ({
@@ -73,6 +88,32 @@ vi.mock("../context/BreadcrumbContext", () => ({
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+
+class FakeDearMeEventSource {
+  static instances: FakeDearMeEventSource[] = [];
+
+  readonly listeners = new Map<string, Set<EventListener>>();
+  close = vi.fn();
+
+  constructor() {
+    FakeDearMeEventSource.instances.push(this);
+  }
+
+  addEventListener(type: string, listener: EventListener) {
+    const listeners = this.listeners.get(type) ?? new Set<EventListener>();
+    listeners.add(listener);
+    this.listeners.set(type, listeners);
+  }
+
+  removeEventListener(type: string, listener: EventListener) {
+    this.listeners.get(type)?.delete(listener);
+  }
+
+  emit(type: string, payload: unknown) {
+    const event = new MessageEvent(type, { data: JSON.stringify(payload) });
+    this.listeners.get(type)?.forEach((listener) => listener(event));
+  }
+}
 
 function hiddenTerm(parts: string[], separator = "") {
   return parts.join(separator);
@@ -132,7 +173,7 @@ function createPreview() {
 }
 
 function createFirstCyclePreview() {
-  return createDearMeFirstCyclePreview("company-1", {
+  const preview = createDearMeFirstCyclePreview("company-1", {
     brand: {
       displayName: "Peter Studio",
       positioning: "Known for turning research into practical AI products",
@@ -148,6 +189,17 @@ function createFirstCyclePreview() {
       autoDraftEnabled: true,
     },
   });
+  return {
+    ...preview,
+    proofSequence: [
+      {
+        ...preview.proofSequence[0]!,
+        sourceLabel: "Prepared from private Brand OS work",
+      },
+      preview.proofSequence[1]!,
+      preview.proofSequence[2]!,
+    ],
+  };
 }
 
 function paidBetaStatus(status: "trial" | "active") {
@@ -978,6 +1030,79 @@ function outputsResponse() {
   };
 }
 
+function outputsWithFirstCyclePacket() {
+  const reportOutput = outputsResponse().outputs[0];
+  return {
+    companyId: "company-1",
+    outputs: [
+      {
+        ...reportOutput,
+        workProducts: [
+          {
+            id: "work-product-report",
+            type: "report",
+            title: "Dear me report packet",
+            url: null,
+            status: "ready_for_review",
+            reviewState: "pending",
+            summary: "Report prepared from the same cycle packet, including decisions and next bets.",
+            updatedAt: "2026-05-07T14:00:00.000Z",
+          },
+        ],
+      },
+      {
+        ...reportOutput,
+        id: "issue-2:content_drafts",
+        kind: "content_drafts",
+        title: "Starter post batch",
+        summary: "A private proof-backed starter draft is ready for review.",
+        issueId: "issue-2",
+        issueIdentifier: "PET-8",
+        issueTitle: "DearMe Draft: Prepare starter posts",
+        documents: [
+          {
+            id: "doc-2",
+            key: "content-drafts",
+            title: "Content drafts",
+            format: "markdown",
+            revisionNumber: 2,
+            bodyPreview: "Voice fit score: 95. Cycle packet: starter post from private proof.",
+            updatedAt: "2026-05-07T14:00:00.000Z",
+          },
+        ],
+        workProducts: [
+          {
+            id: "work-product-content",
+            type: "draft",
+            title: "Cycle content packet",
+            url: null,
+            status: "ready_for_review",
+            reviewState: "pending",
+            summary: "Starter post draft prepared from the cycle packet with voice fit 95.",
+            updatedAt: "2026-05-07T14:00:00.000Z",
+          },
+        ],
+        details: [
+          {
+            kind: "draft_body",
+            label: "Draft body",
+            value: "Starter post from private proof.",
+            source: "document",
+          },
+        ],
+        sourceEvidence: [
+          {
+            kind: "proof",
+            label: "Proof used",
+            summary: "Private proof from the first cycle.",
+            source: "document",
+          },
+        ],
+      },
+    ],
+  };
+}
+
 async function flushReact() {
   await act(async () => {
     await Promise.resolve();
@@ -1059,7 +1184,11 @@ describe("DearMeOnboarding", () => {
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
+    FakeDearMeEventSource.instances = [];
     mockDearmeApi.getWorkbench.mockResolvedValue(workbenchResponse());
+    mockDearmeApi.openWorkbenchEvents.mockImplementation(
+      () => new FakeDearMeEventSource() as unknown as EventSource,
+    );
     mockDearmeApi.getOutputs.mockResolvedValue({
       companyId: "company-1",
       outputs: [],
@@ -1130,6 +1259,7 @@ describe("DearMeOnboarding", () => {
       access: paidBetaStatus("active"),
     });
     mockDearmeApi.previewFirstCycle.mockResolvedValue(createFirstCyclePreview());
+    mockDearmeApi.startFirstCycle.mockResolvedValue(createFirstCyclePreview());
     mockDearmeApi.previewBrandBlueprint.mockResolvedValue(createPreview());
     mockDearmeApi.createBrandBlueprintApplyRequest.mockResolvedValue({
       ...createPreview(),
@@ -1636,7 +1766,17 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain(
       "Known for turning messy customer research into calm B2B product decisions",
     );
+    expect(container.textContent).toContain("First-run proof sequence");
+    expect(container.textContent).toContain("Identity dossier");
+    expect(container.textContent).toContain("Audience map");
+    expect(container.textContent).toContain("Private site proof");
+    expect(container.textContent).toContain("Voice profile and known-for line");
+    expect(container.textContent).toContain("Audience shortlist and first opportunity");
+    expect(container.textContent).toContain("Private proof page move");
     expect(container.textContent).toContain("Draft Voice Profile");
+    expect(container.textContent).toContain("Autopilot until launch");
+    expect(container.textContent).toContain("Capture the positioning");
+    expect(container.textContent).toContain("Only waits here");
     expect(container.textContent).toContain("Starter post: point of view");
     expect(container.textContent).toContain("Opportunity lead");
     expect(container.textContent).toContain("Portfolio proof card");
@@ -1644,6 +1784,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Ready to launch, with you in control");
     expect(container.textContent).not.toContain("Approval-gated by default");
     expect(mockDearmeApi.previewFirstCycle).not.toHaveBeenCalled();
+    expect(mockDearmeApi.startFirstCycle).not.toHaveBeenCalled();
     expectNoHiddenProductTerms(container.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
       HIDDEN_PRODUCT_TERMS.setupRecord,
@@ -1656,6 +1797,7 @@ describe("DearMeOnboarding", () => {
   });
 
   it("starts a 90-second first cycle from one positioning answer", async () => {
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -1686,7 +1828,7 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
-    expect(mockDearmeApi.previewFirstCycle).toHaveBeenCalledWith(
+    expect(mockDearmeApi.startFirstCycle).toHaveBeenCalledWith(
       "company-1",
       expect.objectContaining({
         brand: expect.objectContaining({
@@ -1696,8 +1838,23 @@ describe("DearMeOnboarding", () => {
         }),
       }),
     );
+    expect(mockDearmeApi.previewFirstCycle).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("First-run proof sequence");
+    expect(container.textContent).toContain("0-30s");
+    expect(container.textContent).toContain("60-120s");
+    expect(container.textContent).toContain("3-5min");
+    expect(container.textContent).toContain("Identity dossier");
+    expect(container.textContent).toContain("Audience map");
+    expect(container.textContent).toContain("Private site proof");
+    expect(container.textContent).toContain("Voice profile and known-for line");
+    expect(container.textContent).toContain("Prepared from private Brand OS work");
+    expect(container.textContent).toContain("Audience shortlist and first opportunity");
+    expect(container.textContent).toContain("Private proof page move");
     expect(container.textContent).toContain("Draft Voice Profile");
     expect(container.textContent).toContain("Voice Gate v0");
+    expect(container.textContent).toContain("Autopilot until launch");
+    expect(container.textContent).toContain("Queue the next private pass");
+    expect(container.textContent).toContain("Only waits here");
     expect(container.textContent).toContain("Starter post: point of view");
     expect(container.textContent).toContain("Starter post: proof of work");
     expect(container.textContent).toContain("Starter post: useful opening");
@@ -1716,6 +1873,57 @@ describe("DearMeOnboarding", () => {
       HIDDEN_PRODUCT_TERMS.setupRecord,
       HIDDEN_PRODUCT_TERMS.vendorName,
     ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("previews the first cycle during trial without starting private work", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("90-second first cycle");
+    expect(container.textContent).toContain("Preview first cycle");
+    expect(container.textContent).toContain("Sample team package");
+
+    await act(async () => {
+      setTextareaValue(
+        container.querySelector("#dearme-first-cycle-intent") as HTMLTextAreaElement,
+        "Known for turning private agent work into clear public proof",
+      );
+    });
+
+    await act(async () => {
+      buttonByText(container, "Preview first cycle")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.previewFirstCycle).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        brand: expect.objectContaining({
+          displayName: "Peter Studio",
+          positioning: "Known for turning private agent work into clear public proof",
+          preferredChannels: ["linkedin", "newsletter", "portfolio"],
+        }),
+      }),
+    );
+    expect(mockDearmeApi.startFirstCycle).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("First-run proof sequence");
+    expect(container.textContent).toContain("Prepared from private Brand OS work");
+    expect(container.textContent).not.toContain("Sample team package");
 
     await act(async () => {
       root.unmount();
@@ -2084,6 +2292,101 @@ describe("DearMeOnboarding", () => {
     await act(async () => {
       root.unmount();
     });
+  });
+
+  it("renders live workbench sync updates from the DearMe event stream", async () => {
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.openWorkbenchEvents).toHaveBeenCalledWith("company-1");
+    const stream = FakeDearMeEventSource.instances[0];
+    expect(stream).toBeDefined();
+
+    const liveWorkbench = workbenchResponse();
+    liveWorkbench.headline = "Dear me, your team moved again";
+    liveWorkbench.summary = "The private cycle just refreshed with new prepared work.";
+
+    await act(async () => {
+      stream?.emit("sync", {
+        type: "sync",
+        emittedAt: "2026-05-09T12:00:00.000Z",
+        scope: { companyId: "company-1" },
+        payload: { workbench: liveWorkbench },
+      });
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Dear me, your team moved again");
+    expect(container.textContent).toContain("The private cycle just refreshed with new prepared work.");
+
+    await act(async () => {
+      root.unmount();
+    });
+    expect(stream?.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("refreshes the team workbench when execution lifecycle events arrive", async () => {
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
+    const initialWorkbench = workbenchResponse();
+    const refreshedWorkbench = workbenchResponse();
+    refreshedWorkbench.headline = "Dear me, your team has fresh runner progress";
+    refreshedWorkbench.summary = "The private cycle pulled in new execution progress for review.";
+    mockDearmeApi.getWorkbench
+      .mockResolvedValueOnce(initialWorkbench)
+      .mockResolvedValue(refreshedWorkbench);
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const stream = FakeDearMeEventSource.instances[0];
+    expect(stream).toBeDefined();
+    expect(container.textContent).toContain("Dear me, your team has decisions ready");
+
+    await act(async () => {
+      stream?.emit("openclaw_lifecycle", {
+        type: "openclaw_lifecycle",
+        emittedAt: "2026-05-10T12:00:00.000Z",
+        scope: { companyId: "company-1" },
+        payload: {
+          phase: "running",
+          runId: "run-1",
+          message: "Private execution advanced.",
+        },
+      });
+      await new Promise((resolve) => window.setTimeout(resolve, 300));
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.getWorkbench).toHaveBeenCalledTimes(2);
+    expect(container.textContent).toContain("Dear me, your team has fresh runner progress");
+    expect(container.textContent).toContain("The private cycle pulled in new execution progress for review.");
+
+    await act(async () => {
+      root.unmount();
+    });
+    expect(stream?.close).toHaveBeenCalledTimes(1);
   });
 
   it("sends a Chief of Staff brief without exposing the work queue substrate", async () => {
@@ -3105,6 +3408,45 @@ describe("DearMeOnboarding", () => {
 
     expect(mockNavigate).toHaveBeenCalledWith(
       "/dearme?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report",
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("spotlights the first cycle packet when generated draft and report artifacts are ready", async () => {
+    mockDearmeApi.getOutputs.mockResolvedValue(outputsWithFirstCyclePacket());
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const packetSurface = surfaceByLabel(container, "First cycle packet");
+    expect(packetSurface.textContent).toContain("First proof pack ready");
+    expect(packetSurface.textContent).toContain("Draft, report, and launch boundary are ready for your call.");
+    expect(packetSurface.textContent).toContain("2 ready");
+    expect(packetSurface.textContent).toContain("Private until approved");
+    expect(packetSurface.textContent).toContain("Starter post draft prepared from the first proof pack");
+    expect(packetSurface.textContent).toContain("Report prepared from the same first proof pack");
+    expect(packetSurface.textContent).not.toContain("cycle packet");
+    expect(container.textContent).not.toContain("dearme-cycle-output");
+
+    await act(async () => {
+      buttonByText(packetSurface, "Review proof pack")?.click();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/dearme?view=decisions&issue=PET-8&output=issue-2%3Acontent_drafts",
     );
 
     await act(async () => {

@@ -4,6 +4,10 @@ import {
   DEARME_TOOL_NAMES,
   DM_API_KEY_PREFIX,
   DM_PROXY_HEADERS,
+  VOICE_GATE_ARTIFACT_KINDS,
+  VOICE_GATE_DEFAULT_FLOOR,
+  VOICE_GATE_PATH,
+  buildVoiceGateUrl,
   getFunctionDefinition,
   isDearMeApiKey,
 } from "./index.js";
@@ -59,5 +63,32 @@ describe("dearme-ai-proxy contract", () => {
       modelTier: "X-DearMe-Model-Tier",
       correlationId: "X-DearMe-Correlation-Id",
     });
+  });
+
+  it("voice-gate path / floor / artifact kinds are stable", () => {
+    expect(VOICE_GATE_PATH).toBe("/v1/voice/score");
+    expect(VOICE_GATE_DEFAULT_FLOOR).toBe(92);
+    expect(VOICE_GATE_ARTIFACT_KINDS).toEqual([
+      "x-tweet",
+      "x-thread",
+      "linkedin-post",
+      "linkedin-dm",
+      "newsletter-issue",
+      "site-bio",
+      "site-page",
+      "outbound-email",
+    ]);
+  });
+
+  it("buildVoiceGateUrl trims trailing slashes and appends the path", () => {
+    expect(buildVoiceGateUrl("https://api.dearme.app")).toBe(
+      "https://api.dearme.app/v1/voice/score",
+    );
+    expect(buildVoiceGateUrl("https://api.dearme.app/")).toBe(
+      "https://api.dearme.app/v1/voice/score",
+    );
+    expect(buildVoiceGateUrl("https://api.dearme.app///")).toBe(
+      "https://api.dearme.app/v1/voice/score",
+    );
   });
 });

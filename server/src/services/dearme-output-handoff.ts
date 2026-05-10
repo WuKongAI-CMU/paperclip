@@ -20,6 +20,8 @@ import {
 } from "@paperclipai/shared";
 import { notFound } from "../errors.js";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "./dearme-brand-blueprint-apply.js";
+import { dearMeVoiceGateService } from "./dearme-voice-gate.js";
+import { documentService } from "./documents.js";
 
 type DearMeIssueRow = {
   id: string;
@@ -37,6 +39,13 @@ type DearMeOutputReviewActor = {
   actorId: string;
   agentId: string | null;
   runId: string | null;
+};
+
+type DearMeOutputPacketActor = {
+  actorType: "user" | "agent";
+  actorId: string;
+  agentId: string | null;
+  runId?: string | null;
 };
 
 type DearMeOutputReviewServiceResult = DearMeOutputReviewResult & {
@@ -71,6 +80,7 @@ type DearMeParsedReviewDecision = {
 
 const BRAND_OS_FINGERPRINT = "brand-os-review";
 const VOICE_OPERATION_FINGERPRINT = "operation-seed_voice_profile";
+const CYCLE_OUTPUT_WORK_PRODUCT_PROVIDER = "dearme-cycle-output";
 const DEARME_OUTPUT_REVIEW_LOOP_MAX_ATTEMPTS = 3;
 const outputKindSet = new Set<string>(DEARME_OUTPUT_KINDS);
 
@@ -145,6 +155,8 @@ const DETAIL_EXTRACTION_LABELS = [
   "Approval gate",
   "Approval boundaries",
   "Boundaries",
+  "Voice fit score",
+  "Voice fit",
   "Target",
   "Contact",
   "Opportunity",
@@ -171,6 +183,7 @@ const DETAIL_EXTRACTION_LABELS = [
   "Next bet",
   "Outcomes and Signals",
   "Budget",
+  "Cycle packet",
   "Report reference",
 ] as const;
 
@@ -187,6 +200,13 @@ function plainPreview(value: string | null | undefined, maxLength = 700) {
     .trim();
   if (compact.length <= maxLength) return compact;
   return `${compact.slice(0, maxLength - 3).trimEnd()}...`;
+}
+
+function optionalUuid(value: string | null | undefined) {
+  if (!value) return null;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+    ? value
+    : null;
 }
 
 function customerStatus(issueStatus: string, hasProducedArtifact: boolean): DearMeOutputStatus {
@@ -220,6 +240,25 @@ function latestUpdateByIssue(rows: Array<DearMeOutputUpdate & { issueId: string 
     }
   }
   return grouped;
+}
+
+function shouldReplaceIssueForOutput(candidate: DearMeIssueRow, current: DearMeIssueRow | undefined) {
+  if (!current) return true;
+  const candidateActive = candidate.status !== "cancelled";
+  const currentActive = current.status !== "cancelled";
+  if (candidateActive !== currentActive) return candidateActive;
+  return candidate.updatedAt.getTime() > current.updatedAt.getTime();
+}
+
+function issueByOutputFingerprint(issueRows: DearMeIssueRow[]) {
+  const byFingerprint = new Map<string, DearMeIssueRow>();
+  for (const issue of issueRows) {
+    const current = byFingerprint.get(issue.originFingerprint);
+    if (shouldReplaceIssueForOutput(issue, current)) {
+      byFingerprint.set(issue.originFingerprint, issue);
+    }
+  }
+  return byFingerprint;
 }
 
 function parseReviewAction(body: string): DearMeOutputReviewAction | null {
@@ -439,6 +478,148 @@ function derivedText(value: string) {
   return { value, source: "derived" } satisfies OutputDetailText;
 }
 
+function outputByKind(outputs: DearMeOutputItem[], kind: DearMeOutputKind) {
+  return outputs.find((output) => output.kind === kind) ?? null;
+}
+
+function detailValue(
+  output: DearMeOutputItem | null,
+  kinds: DearMeOutputDetail["kind"][],
+  maxLength = 500,
+) {
+  if (!output) return null;
+  for (const kind of kinds) {
+    const detail = output.details.find((candidate) => candidate.kind === kind);
+    if (detail?.value) return plainPreview(detail.value, maxLength);
+  }
+  return null;
+}
+
+function evidenceSummary(
+  output: DearMeOutputItem | null,
+  kinds: DearMeOutputSourceEvidence["kind"][],
+  maxLength = 500,
+) {
+  if (!output) return null;
+  for (const kind of kinds) {
+    const evidence = output.sourceEvidence.find((candidate) => candidate.kind === kind);
+    if (evidence?.summary) return plainPreview(evidence.summary, maxLength);
+  }
+  return null;
+}
+
+function firstNonEmpty(...values: Array<string | null | undefined>) {
+  return values.find((value): value is string => Boolean(value && value.trim().length > 0)) ?? null;
+}
+
+function compactList(values: Array<string | null | undefined>, fallback: string) {
+  const normalized = values
+    .map((value) => plainPreview(value, 220))
+    .filter((value): value is string => Boolean(value));
+  return normalized.length > 0 ? normalized.join("; ") : fallback;
+}
+
+function packetLines(lines: Array<string | null | undefined>) {
+  return lines.filter((line): line is string => Boolean(line && line.trim().length > 0)).join("\n");
+}
+
+function voiceGateKindForChannel(channel: string | null) {
+  const normalized = channel?.toLowerCase() ?? "";
+  if (normalized.includes("linkedin")) return "linkedin-post" as const;
+  if (normalized.includes("newsletter")) return "newsletter-issue" as const;
+  if (normalized.includes("email")) return "outbound-email" as const;
+  return "x-tweet" as const;
+}
+
+function renderCycleOutputPacket(input: {
+  outputs: DearMeOutputItem[];
+  voiceFitScore: number;
+  voiceFitPassed: boolean;
+}) {
+  const brandOs = outputByKind(input.outputs, "brand_os");
+  const voiceProfile = outputByKind(input.outputs, "voice_profile");
+  const contentDrafts = outputByKind(input.outputs, "content_drafts");
+  const opportunityDrafts = outputByKind(input.outputs, "opportunity_drafts");
+  const portfolioUpdate = outputByKind(input.outputs, "portfolio_update");
+  const weeklyReport = outputByKind(input.outputs, "weekly_report");
+
+  const channel = detailValue(contentDrafts, ["channel"], 120) ?? "LinkedIn";
+  const audience = firstNonEmpty(
+    detailValue(contentDrafts, ["audience"], 260),
+    detailValue(opportunityDrafts, ["target"], 260),
+    detailValue(brandOs, ["positioning"], 260),
+    "the first audience lane selected from private brand work",
+  );
+  const hook = firstNonEmpty(
+    detailValue(contentDrafts, ["hook"], 260),
+    detailValue(brandOs, ["positioning"], 260),
+    "Turn private work into visible proof without publishing before review.",
+  );
+  const draftBody = firstNonEmpty(
+    detailValue(contentDrafts, ["draft_body"], 700),
+    hook,
+    "A private proof-backed starter post is ready for review.",
+  );
+  const proofUsed = firstNonEmpty(
+    detailValue(contentDrafts, ["proof_used"], 500),
+    detailValue(portfolioUpdate, ["proof_source"], 500),
+    detailValue(brandOs, ["proof_used"], 500),
+    evidenceSummary(brandOs, ["proof"], 500),
+    "the strongest private proof captured so far",
+  );
+  const launchBoundary = firstNonEmpty(
+    detailValue(contentDrafts, ["approval_gate"], 360),
+    evidenceSummary(contentDrafts, ["approval_boundary"], 360),
+    "This stays private until the user approves publish.",
+  );
+  const contentReady = compactList([
+    contentDrafts ? "content draft packet" : null,
+    opportunityDrafts ? "opportunity angle" : null,
+    portfolioUpdate ? "site proof draft" : null,
+  ], "private draft packet");
+  const completedWork = compactList([
+    brandOs ? "Brand OS" : null,
+    voiceProfile ? "voice profile" : null,
+    contentDrafts ? "starter content" : null,
+    opportunityDrafts ? "opportunity angle" : null,
+    portfolioUpdate ? "private site proof" : null,
+  ], "private brand work");
+  const nextBets = firstNonEmpty(
+    detailValue(weeklyReport, ["next_bets"], 500),
+    detailValue(portfolioUpdate, ["proposed_copy"], 500),
+    "Pick the strongest draft, revise once from feedback, then prepare the next private proof.",
+  );
+
+  const voiceFit = `${input.voiceFitScore}/100 ${input.voiceFitPassed ? "ready for review" : "needs revision before launch"}`;
+  const contentBody = packetLines([
+    `Channel: ${channel}`,
+    `Audience: ${audience}`,
+    `Hook: ${hook}`,
+    `Draft body: ${draftBody}`,
+    `Proof used: ${proofUsed}`,
+    `Voice fit score: ${voiceFit}`,
+    `Drafts and Assets Ready for Review: ${contentReady}`,
+    `Launch boundary: ${launchBoundary}`,
+    "Cycle packet: The content draft and Dear me report now use the same private evidence packet.",
+  ]);
+  const reportBody = packetLines([
+    `Completed work: ${completedWork} are ready in the private review queue.`,
+    `Drafts and Assets Ready for Review: ${contentReady}; voice fit ${voiceFit}.`,
+    `Decisions needed: Review, request changes, or regenerate the prepared work. Publishing, sending, and deployment still wait for explicit approval.`,
+    `Next bets: ${nextBets}`,
+    "Outcomes and Signals: The first cycle has a proof-backed draft, a reviewable report, and a clear next decision.",
+    "Budget: No outbound spend, send, publish, or deploy action was triggered by this private packet.",
+    "Report reference: Cycle output packet",
+  ]);
+
+  return {
+    contentBody,
+    reportBody,
+    contentSummary: `Private content packet ready for review with voice fit ${voiceFit}.`,
+    reportSummary: `Private Dear me report prepared from the same cycle packet; next decision is review or revision.`,
+  };
+}
+
 function addOutputDetail(
   details: DearMeOutputDetail[],
   kind: DearMeOutputDetail["kind"],
@@ -638,7 +819,7 @@ function buildOutputItems(input: {
   latestUpdateByIssue: Map<string, DearMeOutputUpdate>;
   reviewCommentsByIssue: Map<string, DearMeReviewComment[]>;
 }) {
-  const byFingerprint = new Map(input.issues.map((issue) => [issue.originFingerprint, issue]));
+  const byFingerprint = issueByOutputFingerprint(input.issues);
   const items: Array<DearMeOutputItem & { order: number }> = [];
 
   const brandOsIssue = byFingerprint.get(BRAND_OS_FINGERPRINT);
@@ -738,6 +919,126 @@ function outputDecisionCopy(action: DearMeOutputReviewAction, decisionNote: stri
 }
 
 export function dearmeOutputHandoffService(db: Db) {
+  const documentsSvc = documentService(db);
+  const voiceGate = dearMeVoiceGateService();
+
+  async function latestIssueDocumentRevisionId(issueId: string, key: string) {
+    return db
+      .select({ latestRevisionId: documents.latestRevisionId })
+      .from(issueDocuments)
+      .innerJoin(documents, eq(issueDocuments.documentId, documents.id))
+      .where(and(eq(issueDocuments.issueId, issueId), eq(issueDocuments.key, key)))
+      .limit(1)
+      .then((rows) => rows[0]?.latestRevisionId ?? null);
+  }
+
+  async function upsertPacketDocument(input: {
+    issueId: string;
+    key: string;
+    title: string;
+    body: string;
+    actor: DearMeOutputPacketActor;
+  }) {
+    const baseRevisionId = await latestIssueDocumentRevisionId(input.issueId, input.key);
+    await documentsSvc.upsertIssueDocument({
+      issueId: input.issueId,
+      key: input.key,
+      title: input.title,
+      format: "markdown",
+      body: input.body,
+      changeSummary: "Prepared from DearMe cycle output packet",
+      createdByAgentId: input.actor.agentId,
+      createdByUserId: input.actor.actorType === "user" ? input.actor.actorId : null,
+      createdByRunId: optionalUuid(input.actor.runId),
+      ...(baseRevisionId ? { baseRevisionId } : {}),
+    });
+  }
+
+  async function markOutputIssueReady(companyId: string, issueId: string, now: Date) {
+    await db
+      .update(issues)
+      .set({
+        status: "in_review",
+        completedAt: null,
+        cancelledAt: null,
+        updatedAt: now,
+      })
+      .where(and(
+        eq(issues.companyId, companyId),
+        eq(issues.id, issueId),
+        eq(issues.originKind, DEARME_BRAND_BLUEPRINT_ORIGIN_KIND),
+        isNull(issues.hiddenAt),
+      ));
+  }
+
+  async function upsertCycleWorkProduct(input: {
+    companyId: string;
+    issueId: string;
+    type: string;
+    externalId: string;
+    title: string;
+    summary: string;
+    metadata: Record<string, unknown>;
+    actor: DearMeOutputPacketActor;
+    now: Date;
+  }) {
+    const existing = await db
+      .select({ id: issueWorkProducts.id })
+      .from(issueWorkProducts)
+      .where(and(
+        eq(issueWorkProducts.companyId, input.companyId),
+        eq(issueWorkProducts.issueId, input.issueId),
+        eq(issueWorkProducts.provider, CYCLE_OUTPUT_WORK_PRODUCT_PROVIDER),
+        eq(issueWorkProducts.externalId, input.externalId),
+      ))
+      .orderBy(desc(issueWorkProducts.updatedAt))
+      .limit(1)
+      .then((rows) => rows[0] ?? null);
+
+    await db
+      .update(issueWorkProducts)
+      .set({ isPrimary: false, updatedAt: input.now })
+      .where(and(
+        eq(issueWorkProducts.companyId, input.companyId),
+        eq(issueWorkProducts.issueId, input.issueId),
+        eq(issueWorkProducts.type, input.type),
+      ));
+
+    const values = {
+      type: input.type,
+      provider: CYCLE_OUTPUT_WORK_PRODUCT_PROVIDER,
+      externalId: input.externalId,
+      title: input.title,
+      url: null,
+      status: "ready",
+      reviewState: "pending",
+      isPrimary: true,
+      healthStatus: "healthy",
+      summary: input.summary,
+      metadata: input.metadata,
+      createdByRunId: optionalUuid(input.actor.runId),
+      updatedAt: input.now,
+    };
+
+    if (existing) {
+      await db
+        .update(issueWorkProducts)
+        .set(values)
+        .where(and(
+          eq(issueWorkProducts.companyId, input.companyId),
+          eq(issueWorkProducts.id, existing.id),
+        ));
+      return;
+    }
+
+    await db.insert(issueWorkProducts).values({
+      ...values,
+      companyId: input.companyId,
+      issueId: input.issueId,
+      createdAt: input.now,
+    });
+  }
+
   const service = {
     listOutputs: async (companyId: string) => {
       const issueRows = await db
@@ -891,6 +1192,92 @@ export function dearmeOutputHandoffService(db: Db) {
           reviewCommentsByIssue,
         }),
       });
+    },
+
+    prepareCycleOutputPacket: async (
+      companyId: string,
+      actor: DearMeOutputPacketActor,
+    ) => {
+      const current = await service.listOutputs(companyId);
+      const contentOutput = outputByKind(current.outputs, "content_drafts");
+      const reportOutput = outputByKind(current.outputs, "weekly_report");
+      if (!contentOutput || !reportOutput) return current;
+
+      const draftText = firstNonEmpty(
+        detailValue(contentOutput, ["draft_body"], 3_000),
+        detailValue(contentOutput, ["hook"], 1_000),
+        contentOutput.documents[0]?.bodyPreview,
+        contentOutput.latestUpdate?.bodyPreview,
+        "A private proof-backed starter draft is ready for review.",
+      )!;
+      const channel = detailValue(contentOutput, ["channel"], 120);
+      const voiceFit = await voiceGate.scoreVoice({
+        fingerprintId: `company:${companyId}:cycle-output`,
+        text: draftText,
+        kind: voiceGateKindForChannel(channel),
+        minScore: 92,
+      });
+      const packet = renderCycleOutputPacket({
+        outputs: current.outputs,
+        voiceFitScore: voiceFit.score,
+        voiceFitPassed: voiceFit.passed,
+      });
+      const now = new Date();
+      const sharedMetadata = {
+        kind: "cycle_output_packet",
+        voiceFitScore: voiceFit.score,
+        voiceFitPassed: voiceFit.passed,
+        voiceFitFloor: voiceFit.floor,
+        generatedAt: now.toISOString(),
+      };
+
+      await markOutputIssueReady(companyId, contentOutput.issueId, now);
+      await markOutputIssueReady(companyId, reportOutput.issueId, now);
+      await upsertPacketDocument({
+        issueId: contentOutput.issueId,
+        key: "content-drafts",
+        title: "Content drafts",
+        body: packet.contentBody,
+        actor,
+      });
+      await upsertPacketDocument({
+        issueId: reportOutput.issueId,
+        key: "dear-me-report",
+        title: "Dear me report",
+        body: packet.reportBody,
+        actor,
+      });
+      await upsertCycleWorkProduct({
+        companyId,
+        issueId: contentOutput.issueId,
+        type: "draft",
+        externalId: "cycle-output-packet:content_drafts",
+        title: "Cycle content packet",
+        summary: packet.contentSummary,
+        metadata: {
+          ...sharedMetadata,
+          outputKind: "content_drafts",
+          voiceFitReasons: voiceFit.reasons.slice(0, 5),
+        },
+        actor,
+        now,
+      });
+      await upsertCycleWorkProduct({
+        companyId,
+        issueId: reportOutput.issueId,
+        type: "report",
+        externalId: "cycle-output-packet:weekly_report",
+        title: "Dear me report packet",
+        summary: packet.reportSummary,
+        metadata: {
+          ...sharedMetadata,
+          outputKind: "weekly_report",
+        },
+        actor,
+        now,
+      });
+
+      return service.listOutputs(companyId);
     },
 
     reviewOutput: async (

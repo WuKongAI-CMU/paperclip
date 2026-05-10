@@ -33,5 +33,9 @@ export function pickBudgetTier(dailyUsd: number): BudgetTier {
   for (const tier of BUDGET_TIERS) {
     if (dailyUsd <= tier.dailyUsdMax) return tier;
   }
-  return BUDGET_TIERS[BUDGET_TIERS.length - 1];
+  // BUDGET_TIERS is a non-empty const array; the last entry has Infinity cap
+  // so this fallback is unreachable, but the type system needs the assertion.
+  const fallback = BUDGET_TIERS[BUDGET_TIERS.length - 1];
+  if (!fallback) throw new Error("BUDGET_TIERS is empty");
+  return fallback;
 }

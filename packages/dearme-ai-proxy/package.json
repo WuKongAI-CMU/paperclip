@@ -5,17 +5,24 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./functions": {
-      "types": "./dist/functions.d.ts",
-      "import": "./dist/functions.js"
-    },
-    "./contract": {
-      "types": "./dist/contract.d.ts",
-      "import": "./dist/contract.js"
+    ".": "./src/index.ts",
+    "./functions": "./src/functions.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./functions": {
+        "types": "./dist/functions.d.ts",
+        "import": "./dist/functions.js"
+      },
+      "./contract": {
+        "types": "./dist/contract.d.ts",
+        "import": "./dist/contract.js"
+      }
     }
   },
   "scripts": {

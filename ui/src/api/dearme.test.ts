@@ -157,6 +157,17 @@ describe("dearmeApi", () => {
     );
   });
 
+  it("starts first cycle work through the DearMe company endpoint", async () => {
+    const payload = { brand };
+
+    await dearmeApi.startFirstCycle("company-1", payload);
+
+    expect(mockApi.post).toHaveBeenCalledWith(
+      "/dearme/companies/company-1/first-cycle/start",
+      payload,
+    );
+  });
+
   it("posts Brand OS apply requests through the DearMe company endpoint", async () => {
     const payload = {
       brand,

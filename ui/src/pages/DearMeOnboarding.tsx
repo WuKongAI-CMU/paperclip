@@ -7,6 +7,7 @@ import {
   DEARME_MEMORY_UPDATE_KINDS,
   DEARME_PAID_BETA_MIN_PAYMENT_CENTS,
   createDearMeFirstCyclePreview,
+  dearMeWorkbenchResponseSchema,
   type DearMeActionGraph,
   type DearMeActionGraphNode,
   type DearMeBrandBlueprintExecutionPlan,
@@ -38,7 +39,11 @@ import {
 } from "@paperclipai/shared";
 import { useLocation, useNavigate } from "@/lib/router";
 import { approvalsApi } from "../api/approvals";
-import { dearmeApi, type DearMeBrandBlueprintPreviewResult } from "../api/dearme";
+import {
+  dearmeApi,
+  dearmeWorkbenchRefreshEventTypes,
+  type DearMeBrandBlueprintPreviewResult,
+} from "../api/dearme";
 import {
   DearMeChecklist,
   DearMeCockpitGrid,
@@ -285,6 +290,24 @@ interface DearMeOutputReviewState {
   outputId: string | null;
   action: DearMeOutputReviewAction | null;
   isPending: boolean;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseDearMeWorkbenchSyncEvent(event: Event): DearMeWorkbenchResponse | null {
+  if (!(event instanceof MessageEvent) || typeof event.data !== "string") return null;
+
+  try {
+    const parsed = JSON.parse(event.data) as unknown;
+    const payload = isRecord(parsed) ? parsed.payload : null;
+    const workbench = isRecord(payload) ? payload.workbench : null;
+    const result = dearMeWorkbenchResponseSchema.safeParse(workbench);
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
 }
 
 function parseDearMeDecisionFocus(search: string): DearMeDecisionFocus | null {
@@ -1276,6 +1299,26 @@ function outputPreview(output: DearMeOutputItem) {
   );
 }
 
+function isCyclePacketWorkProduct(workProduct: DearMeOutputItem["workProducts"][number]) {
+  const title = workProduct.title.toLowerCase();
+  const summary = workProduct.summary?.toLowerCase() ?? "";
+  return title.includes("cycle content packet") ||
+    title.includes("dear me report packet") ||
+    summary.includes("cycle packet");
+}
+
+function cyclePacketWorkProducts(output: DearMeOutputItem) {
+  return output.workProducts.filter(isCyclePacketWorkProduct);
+}
+
+function customerProofPackSummary(text: string) {
+  return text.replace(/\bcycle packet\b/gi, "first proof pack");
+}
+
+function cyclePacketSummary(output: DearMeOutputItem) {
+  return customerProofPackSummary(cyclePacketWorkProducts(output)[0]?.summary || outputPreview(output) || output.summary);
+}
+
 function VoiceGatePanel({ gate }: { gate: DearMeVoiceGateResult }) {
   return (
     <section className="rounded-md border border-border p-4" aria-label="Voice Gate v0">
@@ -1358,12 +1401,14 @@ function FirstCyclePanel({
   intent,
   preview,
   isPending,
+  canStartPrivateWork,
   onIntentChange,
   onPreview,
 }: {
   intent: string;
   preview: DearMeFirstCyclePreviewResponse | null;
   isPending: boolean;
+  canStartPrivateWork: boolean;
   onIntentChange: (value: string) => void;
   onPreview: () => void;
 }) {
@@ -1391,7 +1436,7 @@ function FirstCyclePanel({
             />
             <Button type="submit" disabled={isPending}>
               {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              Start first cycle
+              {canStartPrivateWork ? "Start first cycle" : "Preview first cycle"}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </form>
@@ -1444,6 +1489,29 @@ function FirstCycleProofPackage({
       ) : null}
 
       <DearMeWorkbenchCard
+        title="First-run proof sequence"
+        description="One sentence becomes an identity dossier, audience map, and private site proof before DearMe asks you to manage settings."
+        badge={<Sparkles className="h-4 w-4 text-muted-foreground" />}
+      >
+        <div className="grid gap-3 md:grid-cols-3">
+          {preview.proofSequence.map((moment) => (
+            <div key={moment.window} className="rounded-md border border-border bg-muted/20 p-3">
+              <Badge variant="outline">{moment.window}</Badge>
+              <p className="mt-3 text-sm font-medium">{moment.title}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{moment.summary}</p>
+              <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+                <p><span className="font-medium text-foreground/80">Prepared:</span> {moment.preparedArtifact}</p>
+                {moment.sourceLabel ? (
+                  <p><span className="font-medium text-foreground/80">From:</span> {moment.sourceLabel}</p>
+                ) : null}
+                <p><span className="font-medium text-foreground/80">Waits:</span> {moment.approvalBoundary}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </DearMeWorkbenchCard>
+
+      <DearMeWorkbenchCard
         title={preview.voiceProfile.title}
         description={preview.voiceProfile.guidance}
         badge={
@@ -1460,6 +1528,30 @@ function FirstCycleProofPackage({
       </DearMeWorkbenchCard>
 
       <VoiceGatePanel gate={preview.voiceGate} />
+
+      <DearMeWorkbenchCard
+        title={preview.autonomyPlan.label}
+        description={preview.autonomyPlan.summary}
+        badge={<Workflow className="h-4 w-4 text-muted-foreground" />}
+      >
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.5fr)]">
+          <DearMeChecklist
+            className="sm:grid-cols-2"
+            icon={CheckCircle2}
+            items={preview.autonomyPlan.autonomousSteps.map((step) => step.title)}
+            itemClassName="bg-background/60"
+            aria-label="Autonomous first-cycle steps"
+          />
+          <div className="rounded-md border border-border bg-muted/20 p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Only waits here</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {preview.autonomyPlan.waitsFor.map((gate) => (
+                <Badge key={gate} variant="outline">{RISK_GATE_LABELS[gate]}</Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      </DearMeWorkbenchCard>
 
       <section className="grid gap-3 lg:grid-cols-3">
         {preview.starterPosts.map((post) => (
@@ -4184,6 +4276,38 @@ function TeamWorkbenchPanel({
     queryKey: queryKeys.dearme.workbench(companyId),
     queryFn: () => dearmeApi.getWorkbench(companyId),
   });
+  useEffect(() => {
+    const workbenchKey = queryKeys.dearme.workbench(companyId);
+    const stream = dearmeApi.openWorkbenchEvents(companyId);
+    let refreshTimer: number | null = null;
+
+    const handleSync: EventListener = (event) => {
+      const nextWorkbench = parseDearMeWorkbenchSyncEvent(event);
+      if (!nextWorkbench) return;
+      queryClient.setQueryData(workbenchKey, nextWorkbench);
+    };
+    const scheduleWorkbenchRefresh: EventListener = () => {
+      if (refreshTimer !== null) return;
+      refreshTimer = window.setTimeout(() => {
+        refreshTimer = null;
+        void queryClient.invalidateQueries({ queryKey: workbenchKey });
+      }, 250);
+    };
+
+    stream.addEventListener("sync", handleSync);
+    dearmeWorkbenchRefreshEventTypes.forEach((eventType) => {
+      stream.addEventListener(eventType, scheduleWorkbenchRefresh);
+    });
+
+    return () => {
+      stream.removeEventListener("sync", handleSync);
+      dearmeWorkbenchRefreshEventTypes.forEach((eventType) => {
+        stream.removeEventListener(eventType, scheduleWorkbenchRefresh);
+      });
+      if (refreshTimer !== null) window.clearTimeout(refreshTimer);
+      stream.close();
+    };
+  }, [companyId, queryClient]);
   const chiefOfStaffMutation = useMutation({
     mutationFn: (input: { intent: DearMeChiefOfStaffMessageIntent; message: string }) =>
       dearmeApi.sendChiefOfStaffMessage(companyId, input),
@@ -4688,6 +4812,80 @@ function PaidBetaAccessPanel({
   );
 }
 
+function FirstCyclePacketSpotlight({
+  outputs,
+  onOpenOutput,
+}: {
+  outputs: DearMeOutputItem[];
+  onOpenOutput: (output: DearMeOutputItem, intent?: DearMeReviewEntryIntent | null) => void;
+}) {
+  const packetOutputs = outputs.filter((output) => cyclePacketWorkProducts(output).length > 0);
+  if (packetOutputs.length === 0) return null;
+
+  const contentOutput = packetOutputs.find((output) => output.kind === "content_drafts");
+  const reportOutput = packetOutputs.find((output) => output.kind === "weekly_report");
+  const primaryOutput = contentOutput ?? reportOutput ?? packetOutputs[0];
+  const readyCount = packetOutputs.filter((output) => output.status === "ready_for_review").length;
+
+  return (
+    <div
+      className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-4"
+      aria-label="First cycle packet"
+    >
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Sparkles className="h-4 w-4" />
+            First proof pack ready
+          </div>
+          <p className="mt-1 text-sm text-foreground/85">
+            Draft, report, and launch boundary are ready for your call.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline">
+            {readyCount || packetOutputs.length} ready
+          </Badge>
+          <Badge variant="outline">Private until approved</Badge>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        {contentOutput ? (
+          <div className="rounded-md border border-border bg-background/80 p-3">
+            <p className="text-xs font-medium text-muted-foreground">Content draft</p>
+            <p className="mt-1 line-clamp-3 text-sm text-foreground/85">
+              {cyclePacketSummary(contentOutput)}
+            </p>
+          </div>
+        ) : null}
+        {reportOutput ? (
+          <div className="rounded-md border border-border bg-background/80 p-3">
+            <p className="text-xs font-medium text-muted-foreground">Dear me report</p>
+            <p className="mt-1 line-clamp-3 text-sm text-foreground/85">
+              {cyclePacketSummary(reportOutput)}
+            </p>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+          Nothing public moves until you approve it.
+        </p>
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => onOpenOutput(primaryOutput, reviewLoopRouteIntent(primaryOutput.reviewLoop))}
+        >
+          Review proof pack
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function PrivateWorkPanel({
   companyId,
   decisionFocus,
@@ -4746,6 +4944,7 @@ function PrivateWorkPanel({
         />
       ) : (
         <>
+          <FirstCyclePacketSpotlight outputs={outputs} onOpenOutput={onOpenOutput} />
           {focusedOutput ? (
             <FocusedOutputPanel
               output={focusedOutput}
@@ -4883,6 +5082,7 @@ export function DearMeOnboarding() {
   const paidBetaStatus = paidBetaAccessQuery.data ?? null;
   const paidBetaEntitlement = paidBetaStatus?.entitlement ?? null;
   const canRequestPaidBetaWork = paidBetaEntitlement?.canRequestBrandOsApproval === true;
+  const canStartPrivateWork = paidBetaEntitlement?.canStartPrivateWork === true;
 
   function updateField<K extends keyof DearMeBrandBlueprintFormState>(
     key: K,
@@ -4897,11 +5097,13 @@ export function DearMeOnboarding() {
     mutationFn: (input: {
       brand: ReturnType<typeof buildDearMeBrandBlueprintSeed>;
       nextForm: DearMeBrandBlueprintFormState;
+      startPrivateWork: boolean;
     }) => {
       if (!selectedCompanyId) throw new Error("Select a company first.");
-      return dearmeApi.previewFirstCycle(selectedCompanyId, {
-        brand: input.brand,
-      });
+      const firstCycleRequest = { brand: input.brand };
+      return input.startPrivateWork
+        ? dearmeApi.startFirstCycle(selectedCompanyId, firstCycleRequest)
+        : dearmeApi.previewFirstCycle(selectedCompanyId, firstCycleRequest);
     },
     onSuccess: (result, input) => {
       setForm(input.nextForm);
@@ -5058,6 +5260,7 @@ export function DearMeOnboarding() {
     firstCycleMutation.mutate({
       brand: buildDearMeBrandBlueprintSeed(nextForm, selectedCompany?.name),
       nextForm,
+      startPrivateWork: canStartPrivateWork,
     });
   }
 
@@ -5206,6 +5409,7 @@ export function DearMeOnboarding() {
         intent={firstCycleIntent}
         preview={firstCyclePreview}
         isPending={firstCycleMutation.isPending}
+        canStartPrivateWork={canStartPrivateWork}
         onIntentChange={(value) => {
           setActionError(null);
           setFirstCycleIntent(value);

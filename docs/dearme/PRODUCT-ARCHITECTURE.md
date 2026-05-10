@@ -208,6 +208,12 @@ agents and to the reporting system.
 DearMe should copy Polsia's high-automation feel. Approval is not the center of
 the product.
 
+V1 concern budget: keep exactly four hard gates in the user's path — publish,
+send, deploy, and spend. Everything else should become autonomous work with a
+receipt, a private draft, or a batch decision surface. Do not add new
+confirmation steps for internal planning, research, drafting, staging, queue
+refills, memory updates, or report writing.
+
 Automatic by default:
 
 - research
@@ -221,16 +227,17 @@ Automatic by default:
 - internal memory updates
 - low-risk site preview builds
 
-Batch-gated:
+Launch-gated in the first-run product path:
 
 - publish a social post
 - send an email or DM
 - update a public website
 - spend money
-- make a price / contract / employment claim
-- use sensitive personal material in public
-- connect or change a customer-owned channel
-- destructive data changes
+
+Other risk types such as sensitive material, public claims, customer-owned
+channel changes, or destructive data changes remain internal policy checks and
+escalations. They should not become extra first-run consent screens unless they
+are bundled into one of the four launch decisions above.
 
 The default decision UX is a batch review:
 
@@ -451,6 +458,62 @@ This makes the team **mechanically extensible**: any future "add a role" / "chan
 The product surface, ticket assignments, and read-this-first orientation
 all live in [`INDEX.md`](INDEX.md), which derives its team table from
 this registry.
+
+### 9.5 OpenClaw runtime substrate (added 2026-05-09, DM-S05)
+
+DearMe **runs on OpenClaw**. The 12 roles defined in `DEARME_ROLE_REGISTRY` are projected into OpenClaw's skill system by a deterministic generator, and DearMe ships as an OpenClaw plugin (`packages/plugins/dearme-openclaw/`).
+
+**Why this is in the architecture doc, not just an integration note:** it changes which layer owns several capabilities the architecture previously implied DearMe would own end-to-end (channel inbound, voice capture, sandbox, cron). The result is a stateless DearMe cloud + OpenClaw on the user device.
+
+**Layer ownership after DM-S05:**
+
+| Capability | Owner |
+|---|---|
+| Channel inbound (iMessage, Telegram, WhatsApp, Slack, Discord, Signal, Email, SMS, Voice) | OpenClaw |
+| Voice capture / wake word / talk mode | OpenClaw |
+| Browser tool sandbox (Docker, per-session workspaces) | OpenClaw |
+| Cron + webhooks (every-6h cycle engine, daily letter trigger) | OpenClaw |
+| Skill loading + multi-agent routing primitives | OpenClaw |
+| 12 prompts, state machines, proxy tools, registry | DearMe (`dearme-agent-prompts`) |
+| AI proxy contract (`dm_sk_*`, dual-protocol attribution, 6 fns) | DearMe (`dearme-ai-proxy`) |
+| OpenClaw plugin shape: SKILL.md generator, bootstrap files | DearMe (`dearme-openclaw`) |
+| Outbound publishing tools (post_x, send_linkedin_dm, send_email, deploy_site, create_meta_campaign) | DearMe (`dearme-openclaw` tools) |
+| Voice fingerprint capture + scoring | DearMe cloud |
+| Opportunities database + Hunter.io verification | DearMe cloud |
+| `dearme.app/<handle>` site host | DearMe cloud |
+| Stripe billing + per-user $ caps | DearMe cloud |
+
+**Generator contract.** `packages/plugins/dearme-openclaw/src/skill-generator.ts` is a pure function from `DEARME_ROLE_REGISTRY` to 12 SKILL.md files. The generated tree under `generated/skills/` is committed to git so reviewers see the diff when the registry changes. Tests assert each generated SKILL.md embeds the verbatim production prompt (no paraphrasing) and surfaces the registry's tier, state machines, templates, and proxy tools as routing metadata.
+
+**Bootstrap files.** `packages/plugins/dearme-openclaw/src/bootstrap.ts` ships templates for `AGENTS.md` (operating instructions encoding the 4 doctrine rules), `SOUL.md` (persona), `IDENTITY.md` (team name), `USER.md` (stub the onboarding fills). OpenClaw injects these into every session's system prompt on first turn.
+
+**Full contract** (the runtime-affecting one): see [`OPENCLAW-INTEGRATION-ARCHITECTURE.md`](OPENCLAW-INTEGRATION-ARCHITECTURE.md). That document is now canonical alongside this one and `INDEX.md`.
+
+### 9.6 Tri-substrate integration (added 2026-05-09, DM-S06)
+
+DearMe is the integration of **three substrates**, not one stack:
+
+| Substrate | Provides | Source |
+|---|---|---|
+| **OpenClaw** | Edge runtime: 24+ channels, voice, sandbox, cron, skill loader, bootstrap files. | MIT, `github.com/openclaw/openclaw` |
+| **Naive/Paperclip** | Cloud substrate: 76 Drizzle tables (issues, heartbeat_runs, approvals, cost_events, routines, channel_connections, opportunities), 41 routes, 100+ services, plugin SDK. | MIT-fork, this repo |
+| **Polsia** | Choreography: 12 system prompts, 6 OpenAI fns, 8 state machines, 4 approval gates, 5-stage cycle, voice-gate doctrine. | Verbatim port from research; runtime-port doctrine §9.0 |
+
+The integration ships these glue artifacts (DM-S06):
+
+- **Unified work loop** — 8-state machine (`intake → triage → work → gate → deliver → audit → review → archive`) with explicit per-state substrate bindings (`state-machines/work-loop.ts`).
+- **4 approval gates** — `publish` / `send` / `deploy` / `spend`, with a pure-function resolver (`state-machines/approval-gates.ts`). Spend has a hard cap, never auto-approves; publish and send require voice-gate pass.
+- **15-event SSE stream** — covers Polsia /live + Naive activity_log + OpenClaw stream lifecycle in one schema (`state-machines/sse-events.ts`). Every event carries `scope.{companyId, issueId, executionId, agentId, openclawSessionId, workLoopState}`.
+- **Per-role substrate map** — `DEARME_ROLE_REGISTRY.substrate: { openclaw, naive, polsia }` on every entry, validated at boot. Helper `getSubstrateDistribution()` for audit.
+- **5 outbound tool TS interfaces** — `post_x` / `send_linkedin_dm` / `send_email` / `deploy_site` / `create_meta_campaign` with `(gate, channel, voiceGateRequired)` bindings (`packages/plugins/dearme-openclaw/src/tools/types.ts`).
+- **`channel_connections` Drizzle schema** — per-user OAuth tokens for outbound channels (`packages/db/src/schema/channel_connections.ts`). DM-175.
+- **Voice-gate wire contract** — `POST /v1/voice/score` request/response shape, 8 artifact kinds, default floor 92 (`packages/dearme-ai-proxy/src/voice-gate.ts`).
+
+**Layer ownership.** Every capability belongs to exactly one substrate column. The full matrix is in [`TRI-SUBSTRATE-ARCHITECTURE.md`](TRI-SUBSTRATE-ARCHITECTURE.md) §2.
+
+**Distribution after DM-S06.** 12 roles split across substrates as: OpenClaw (`session-shell` × 2, `cron-driven` × 2, `sandbox-non-main` × 1, `skill-call` × 7), Naive (`routines` × 3, `heartbeat_runs` × 5, `documents` × 2, `issues` × 2), Polsia cycle (`plan` × 2, `work` × 6, `review` × 1, `learn` × 2, `report` × 1).
+
+**What we save** by integrating instead of building: ~75+ eng-weeks and $15K of Gmail CASA audit cost. Itemized in [`TRI-SUBSTRATE-ARCHITECTURE.md`](TRI-SUBSTRATE-ARCHITECTURE.md) §10.
 
 ## 10. Operator Core vs DearMe Product Layer
 

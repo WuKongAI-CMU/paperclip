@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEARME_BRAND_BLUEPRINT_OPERATION_ORDER,
   DEARME_DIRECT_HEARTBEAT_CADENCE_HOURS,
+  DEARME_FIRST_CYCLE_CONCERN_GATES,
   DEARME_WORKER_HEARTBEAT_CADENCE_HOURS,
   buildDearMeBrandBlueprintExecutionPlan,
   collectDearMeBrandBlueprintWarnings,
@@ -203,6 +204,29 @@ describe("DearMe brand blueprint contract", () => {
     expect(firstCycle.prompt).toBe("What do you want to become known for?");
     expect(firstCycle.voiceProfile.title).toBe("Draft Voice Profile");
     expect(firstCycle.starterPosts).toHaveLength(3);
+    expect(firstCycle.proofSequence.map((step) => step.window)).toEqual(["0-30s", "60-120s", "3-5min"]);
+    expect(firstCycle.proofSequence.map((step) => step.title)).toEqual([
+      "Identity dossier",
+      "Audience map",
+      "Private site proof",
+    ]);
+    expect(firstCycle.proofSequence[0]?.preparedArtifact).toBe("Voice profile and known-for line");
+    expect(firstCycle.proofSequence[1]?.preparedArtifact).toBe("Audience shortlist and first opportunity");
+    expect(firstCycle.proofSequence[2]?.preparedArtifact).toBe("Private proof page move");
+    expect(firstCycle.proofSequence[0]?.sourceLabel).toBeUndefined();
+    expect(
+      dearMeFirstCyclePreviewResponseSchema.parse({
+        ...firstCycle,
+        proofSequence: [
+          {
+            ...firstCycle.proofSequence[0]!,
+            sourceLabel: "Prepared from private Brand OS work",
+          },
+          firstCycle.proofSequence[1],
+          firstCycle.proofSequence[2],
+        ],
+      }).proofSequence[0]?.sourceLabel,
+    ).toBe("Prepared from private Brand OS work");
     expect(firstCycle.starterPosts.map((post) => post.approvalGate)).toEqual([
       "publish_social",
       "publish_social",
@@ -213,8 +237,30 @@ describe("DearMe brand blueprint contract", () => {
     expect(firstCycle.growthPlan.approvalGate).toBe("public_claim");
     expect(firstCycle.voiceGate.status).toBe("ready_for_review");
     expect(firstCycle.voiceGate.approvalGate).toBe("publish_social");
+    expect(firstCycle.autonomyPlan.label).toBe("Autopilot until launch");
+    expect(firstCycle.autonomyPlan.autonomousSteps.map((step) => step.phase)).toEqual([
+      "plan",
+      "work",
+      "work",
+      "review",
+      "report",
+    ]);
+    expect(firstCycle.autonomyPlan.autonomousSteps.map((step) => step.ownerRole)).toEqual([
+      "chief_of_staff",
+      "content_producer",
+      "opportunity_scout",
+      "voice_editor",
+      "chief_of_staff",
+    ]);
+    expect(firstCycle.autonomyPlan.waitsFor).toEqual(DEARME_FIRST_CYCLE_CONCERN_GATES);
     expect(firstCycle.approvalBoundary.label).toBe("Ready to launch, with you in control");
     expect(firstCycle.approvalBoundary.summary).toContain("one launch decision");
+    expect(firstCycle.approvalBoundary.blockedActions).toEqual([
+      "Post publicly",
+      "Send outreach",
+      "Update the public page",
+      "Spend budget",
+    ]);
 
     const serialized = JSON.stringify(firstCycle).toLocaleLowerCase();
     for (const hiddenTerm of ["provider", "adapter", "setup_payload", "mcp", "paperclip", "openclaw"]) {

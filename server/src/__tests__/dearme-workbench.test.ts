@@ -752,6 +752,156 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     expect(customerPathJson).not.toContain(DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND);
   });
 
+  it("projects shared cycle packets as one private review surface", async () => {
+    const companyId = await seedCompany();
+    const chiefOfStaffId = await seedDearMeAgent({
+      companyId,
+      name: "DearMe Chief of Staff",
+      role: "chief_of_staff",
+      updatedAt: new Date("2026-05-08T11:00:00.000Z"),
+    });
+    const contentIssueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft first content batch",
+      identifier: "WB-20",
+      originFingerprint: "operation-draft_content_batch",
+      status: "in_review",
+      updatedAt: new Date("2026-05-08T11:10:00.000Z"),
+      assigneeAgentId: chiefOfStaffId,
+    });
+    const reportIssueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft weekly Dear me report",
+      identifier: "WB-21",
+      originFingerprint: "operation-schedule_weekly_report",
+      status: "in_review",
+      updatedAt: new Date("2026-05-08T11:12:00.000Z"),
+      assigneeAgentId: chiefOfStaffId,
+    });
+
+    await attachDocument({
+      companyId,
+      issueId: contentIssueId,
+      key: "content-drafts",
+      title: "Content drafts",
+      body: [
+        "Channel: LinkedIn",
+        "Hook: Turn the private build into proof.",
+        "Draft body: A proof-backed post is ready for review.",
+        "Voice fit score: 97/100 ready for review",
+        "Cycle packet: The content draft and Dear me report now use the same private evidence packet.",
+      ].join("\n"),
+      updatedAt: new Date("2026-05-08T11:13:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId: reportIssueId,
+      key: "dear-me-report",
+      title: "Dear me report",
+      body: [
+        "Completed work: content draft packet and private report are ready in the review queue.",
+        "Drafts and Assets Ready for Review: content draft packet; voice fit 97/100 ready for review.",
+        "Decisions needed: Review, request changes, or regenerate the prepared work.",
+        "Next bets: Pick the strongest draft and revise once from feedback.",
+        "Report reference: Cycle output packet",
+      ].join("\n"),
+      updatedAt: new Date("2026-05-08T11:14:00.000Z"),
+    });
+    await db.insert(issueWorkProducts).values([
+      {
+        id: randomUUID(),
+        companyId,
+        issueId: contentIssueId,
+        type: "draft",
+        provider: "dearme-cycle-output",
+        title: "Cycle content packet",
+        url: null,
+        status: "ready",
+        reviewState: "pending",
+        summary: "Private content packet ready for review with voice fit 97/100 ready for review.",
+        updatedAt: new Date("2026-05-08T11:15:00.000Z"),
+      },
+      {
+        id: randomUUID(),
+        companyId,
+        issueId: reportIssueId,
+        type: "report",
+        provider: "dearme-cycle-output",
+        title: "Dear me report packet",
+        url: null,
+        status: "ready",
+        reviewState: "pending",
+        summary: "Private Dear me report prepared from the same cycle packet; next decision is review or revision.",
+        updatedAt: new Date("2026-05-08T11:16:00.000Z"),
+      },
+    ]);
+
+    const result = await dearmeWorkbenchService(db).getWorkbench(companyId);
+    const contentOutputId = `${contentIssueId}:content_drafts`;
+    const reportOutputId = `${reportIssueId}:weekly_report`;
+    const contentDecision = result.decisionsNeeded.find((decision) => decision.outputKind === "content_drafts");
+    const reportDecision = result.decisionsNeeded.find((decision) => decision.outputKind === "weekly_report");
+    const contentStreamItem = result.workStream.find((item) => item.relatedOutputId === contentOutputId);
+    const contentLedgerEntry = result.runLedger.find((entry) => entry.relatedOutputId === contentOutputId);
+
+    expect(result.workReady).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: contentOutputId,
+          summary: expect.stringContaining("same private cycle packet"),
+        }),
+        expect.objectContaining({
+          id: reportOutputId,
+          summary: expect.stringContaining("same private cycle packet"),
+        }),
+      ]),
+    );
+    expect(contentDecision).toEqual(expect.objectContaining({
+      summary: expect.stringContaining("Voice fit 97/100 ready for review"),
+    }));
+    expect(reportDecision).toEqual(expect.objectContaining({
+      summary: expect.stringContaining("same private cycle packet"),
+    }));
+    expect(result.report).toEqual(expect.objectContaining({
+      summary: expect.stringContaining("same private cycle packet"),
+      bodyPreview: expect.stringContaining("voice fit 97/100"),
+      accomplished: expect.arrayContaining([
+        expect.stringContaining("same private cycle packet"),
+      ]),
+      decisions: expect.arrayContaining([
+        expect.stringContaining("Shared packet review"),
+      ]),
+      nextBets: expect.arrayContaining([
+        expect.stringContaining("single review surface"),
+      ]),
+    }));
+    expect(contentStreamItem).toEqual(expect.objectContaining({
+      sourceLabel: "Private cycle packet",
+      nextAction: expect.stringContaining("shared packet"),
+    }));
+    expect(contentLedgerEntry).toEqual(expect.objectContaining({
+      evidenceLabel: "Private cycle packet / Content drafts",
+      nextAction: expect.stringContaining("public move"),
+    }));
+    expect(result.actionGraph.nodes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: `artifact:${contentOutputId}`,
+          summary: expect.stringContaining("same private cycle packet"),
+        }),
+        expect.objectContaining({
+          id: `report:${reportOutputId}`,
+          summary: expect.stringContaining("same private cycle packet"),
+        }),
+      ]),
+    );
+
+    const customerPathJson = JSON.stringify(result);
+    expect(customerPathJson).not.toContain("dearme-cycle-output");
+    expect(customerPathJson).not.toContain("provider");
+    expect(customerPathJson).not.toContain("Paperclip");
+  });
+
   it("projects only active Voice & Memory sources after revisions and retirements", async () => {
     const companyId = await seedCompany();
 

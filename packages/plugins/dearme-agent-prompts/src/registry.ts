@@ -88,6 +88,8 @@ export interface DearMeRoleSpec {
     | "mood-face-library"
     | "model-routing"
     | "sse-events"
+    | "work-loop"
+    | "approval-gates"
   >;
   /** Reusable template module names this role uses. */
   templates: ReadonlyArray<"sora-ugc-video" | "outbound-5-touch">;
@@ -110,6 +112,40 @@ export interface DearMeRoleSpec {
   group: RoleGroup;
   /** One-sentence product surface description (PM copy). */
   description: string;
+  /**
+   * Tri-substrate binding (TRI-SUBSTRATE-ARCHITECTURE.md).
+   *
+   * Documents which OpenClaw mechanism, which Naive table-of-record, and
+   * which Polsia choreography step this role plugs into. This is read by
+   * route authors to know which integration glue to write.
+   */
+  substrate: {
+    /**
+     * OpenClaw mechanism that hosts this role at the edge:
+     *   - "session-shell"    role IS the conversational front-of-house
+     *   - "skill-call"       routed to via find_best_agent inside a session
+     *   - "cron-driven"      fires from OpenClaw Gateway cron, not user-facing
+     *   - "sandbox-non-main" runs in a sandboxed non-main session (Docker)
+     */
+    openclaw:
+      | "session-shell"
+      | "skill-call"
+      | "cron-driven"
+      | "sandbox-non-main";
+    /**
+     * Naive table this role's record-of-truth lives on:
+     *   - "issues"          one issue per work item (most roles)
+     *   - "heartbeat_runs"  durable execution row (specialists)
+     *   - "routines"        recurring schedule (chief-of-staff, health-monitor, reporting)
+     *   - "documents"       knowledge artifacts (research-agent)
+     */
+    naive: "issues" | "heartbeat_runs" | "routines" | "documents";
+    /**
+     * Polsia choreography step this role corresponds to (from the
+     * captured 5-stage cycle: plan → work → review → learn → report).
+     */
+    polsia: "plan" | "work" | "review" | "learn" | "report";
+  };
 }
 
 export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
@@ -134,6 +170,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     group: "leadership",
     description:
       "Always-on private team lead: monitors state, reviews shipped work, keeps the queue full, writes the Dear-me letter.",
+    substrate: { openclaw: "session-shell", naive: "routines", polsia: "plan" },
   },
   {
     role: REPORTING_ROLE,
@@ -151,6 +188,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     group: "leadership",
     description:
       "Sends the Dear-me daily letter (3 ordered tools, conversational prose, under 200 words).",
+    substrate: { openclaw: "cron-driven", naive: "routines", polsia: "report" },
   },
   {
     role: CONTENT_PRODUCER_ROLE,
@@ -168,6 +206,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     group: "growth",
     description:
       "Composes voice-gated short-form content (Twitter/X 2/day, 280 char hard cap, dark-humor voice, mandatory attribution link).",
+    substrate: { openclaw: "skill-call", naive: "heartbeat_runs", polsia: "work" },
   },
   {
     role: OPPORTUNITY_HUNTER_ROLE,
@@ -185,6 +224,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     group: "growth",
     description:
       "Finds podcasts, sponsorships, paid clients, retainers, partnerships; runs the 5-touch outbound and 8-state lifecycle.",
+    substrate: { openclaw: "skill-call", naive: "heartbeat_runs", polsia: "work" },
   },
   {
     role: BRAND_SITE_BUILDER_ROLE,
@@ -202,6 +242,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     group: "build",
     description:
       "Owns the personal site: writes code, fixes bugs, deploys. Web-only, single-Express, 512MB RAM, push-after-each-change.",
+    substrate: { openclaw: "skill-call", naive: "heartbeat_runs", polsia: "work" },
   },
   {
     role: ADS_MANAGER_ROLE,
@@ -219,6 +260,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     group: "growth",
     description:
       "Runs Meta ads end-to-end: 5 tools, 7-day learning phase, 4 perf tiers, 5 error states, Sora 2 UGC creative, hard Meta-policy guardrails.",
+    substrate: { openclaw: "skill-call", naive: "heartbeat_runs", polsia: "work" },
   },
   {
     role: RESEARCH_AGENT_ROLE,
@@ -236,6 +278,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     group: "intelligence",
     description:
       "Web search, competitive analysis, market intel; every task ends with a saved report.",
+    substrate: { openclaw: "skill-call", naive: "documents", polsia: "learn" },
   },
   {
     role: AUDIENCE_CARE_ROLE,
@@ -253,6 +296,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     group: "ops",
     description:
       "Inbound replies and support: plain-text, length-matched, escalation matrix for billing / security / angry users.",
+    substrate: { openclaw: "skill-call", naive: "issues", polsia: "work" },
   },
   {
     role: DATA_ANALYST_ROLE,
@@ -270,6 +314,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     group: "intelligence",
     description:
       "SQL queries, metrics, BI; schema-first queries, NULL handling, correlation-vs-causation discipline.",
+    substrate: { openclaw: "skill-call", naive: "documents", polsia: "learn" },
   },
   {
     role: HEALTH_MONITOR_ROLE,
@@ -287,6 +332,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     group: "ops",
     description:
       "Periodic factual snapshots of business state. Reports, never recommends. Dedupes against the task backlog.",
+    substrate: { openclaw: "cron-driven", naive: "routines", polsia: "review" },
   },
   {
     role: CHAT_ROLE,
@@ -306,6 +352,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     ticket: "DM-138",
     status: "planned",
     group: "interface",
+    substrate: { openclaw: "session-shell", naive: "issues", polsia: "plan" },
     description:
       "User-facing cofounder chat: pushes back on vague tasks, routes via find_best_agent, manages recurring tasks.",
   },
@@ -325,6 +372,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     group: "build",
     description:
       "Web automation: forms, accounts, posting on Tier 2/3 community sites; respects 4-tier site policy.",
+    substrate: { openclaw: "sandbox-non-main", naive: "heartbeat_runs", polsia: "work" },
   },
 ];
 
@@ -350,6 +398,19 @@ export function validateRegistry(
 ): { ok: boolean; problems: ReadonlyArray<string> } {
   const problems: string[] = [];
   const seen = new Set<string>();
+  const validOpenclaw = new Set([
+    "session-shell",
+    "skill-call",
+    "cron-driven",
+    "sandbox-non-main",
+  ]);
+  const validNaive = new Set([
+    "issues",
+    "heartbeat_runs",
+    "routines",
+    "documents",
+  ]);
+  const validPolsia = new Set(["plan", "work", "review", "learn", "report"]);
   for (const spec of registry) {
     if (seen.has(spec.role)) problems.push(`duplicate role: ${spec.role}`);
     seen.add(spec.role);
@@ -377,6 +438,61 @@ export function validateRegistry(
         `${spec.role}: promptSourceChars out of range (got ${spec.promptSourceChars})`,
       );
     }
+    if (!validOpenclaw.has(spec.substrate.openclaw)) {
+      problems.push(
+        `${spec.role}: substrate.openclaw invalid (got ${spec.substrate.openclaw})`,
+      );
+    }
+    if (!validNaive.has(spec.substrate.naive)) {
+      problems.push(
+        `${spec.role}: substrate.naive invalid (got ${spec.substrate.naive})`,
+      );
+    }
+    if (!validPolsia.has(spec.substrate.polsia)) {
+      problems.push(
+        `${spec.role}: substrate.polsia invalid (got ${spec.substrate.polsia})`,
+      );
+    }
   }
   return { ok: problems.length === 0, problems };
+}
+
+/**
+ * Distribution helper for the workbench / docs: how many roles are in each
+ * substrate-binding bucket. Useful for auditing the team's center of mass.
+ */
+export function getSubstrateDistribution(
+  registry: ReadonlyArray<DearMeRoleSpec> = DEARME_ROLE_REGISTRY,
+): {
+  openclaw: Record<DearMeRoleSpec["substrate"]["openclaw"], number>;
+  naive: Record<DearMeRoleSpec["substrate"]["naive"], number>;
+  polsia: Record<DearMeRoleSpec["substrate"]["polsia"], number>;
+} {
+  const distribution = {
+    openclaw: {
+      "session-shell": 0,
+      "skill-call": 0,
+      "cron-driven": 0,
+      "sandbox-non-main": 0,
+    } as Record<DearMeRoleSpec["substrate"]["openclaw"], number>,
+    naive: {
+      issues: 0,
+      heartbeat_runs: 0,
+      routines: 0,
+      documents: 0,
+    } as Record<DearMeRoleSpec["substrate"]["naive"], number>,
+    polsia: {
+      plan: 0,
+      work: 0,
+      review: 0,
+      learn: 0,
+      report: 0,
+    } as Record<DearMeRoleSpec["substrate"]["polsia"], number>,
+  };
+  for (const spec of registry) {
+    distribution.openclaw[spec.substrate.openclaw]++;
+    distribution.naive[spec.substrate.naive]++;
+    distribution.polsia[spec.substrate.polsia]++;
+  }
+  return distribution;
 }
