@@ -973,6 +973,115 @@
         "docs/dearme/BUILD-STATE.md",
         "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
       ]
+    },
+    {
+      "ticket": "DM-051",
+      "branch": "codex/dearme-dm-051-approval-detail-safe",
+      "head": "564131252e7d9754ad6dd096fc581b1de243071a",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the approval-detail safety worker through the shared DearMe approval helper, product-owned ApprovalDetail breadcrumbs, hidden requester/raw-payload/linked-issue mechanics, and structured DearMe approval payload rendering.",
+      "evidence": [
+        "ui/src/pages/ApprovalDetail.tsx",
+        "ui/src/pages/ApprovalDetail.test.tsx",
+        "ui/src/components/ApprovalPayload.tsx",
+        "ui/src/components/ApprovalPayload.test.tsx",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-052",
+      "branch": "codex/dearme-dm-052-approval-card-safe",
+      "head": "f6441c89389dea97c8382c8b157ca89f56db62a5",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the approval-card safety worker by routing DearMe approval cards and resolved decisions through the shared DearMe decision helper while preserving generic approval-card behavior.",
+      "evidence": [
+        "ui/src/lib/dearmeApprovals.ts",
+        "ui/src/lib/dearmeApprovals.test.ts",
+        "ui/src/components/ApprovalCard.tsx",
+        "ui/src/components/ApprovalCard.test.tsx",
+        "ui/src/pages/Approvals.tsx",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-053",
+      "branch": "codex/dearme-dm-053-inbox-approval-safe",
+      "head": "f52e16cd0c0eb00efc9f873c03826d48d446d98c",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the inbox approval safety worker by using DearMe approval helpers for inbox approval rows, keyboard navigation, post-decision navigation, requester hiding, and product-label-only search that does not match raw DearMe approval types.",
+      "evidence": [
+        "ui/src/pages/Inbox.tsx",
+        "ui/src/pages/Inbox.test.tsx",
+        "ui/src/lib/dearmeApprovals.ts",
+        "ui/src/lib/dearmeApprovals.test.ts",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-054",
+      "branch": "codex/dearme-dm-054-activity-approval-route-safe",
+      "head": "214fcf4659480079a0027ab411bec250c727be48",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the activity approval route worker by routing DearMe approval activity back to the DearMe decisions view when the event carries a DearMe approval type or DearMe product action.",
+      "evidence": [
+        "ui/src/components/ActivityRow.tsx",
+        "ui/src/components/ActivityRow.test.tsx",
+        "ui/src/lib/dearmeApprovals.ts",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-055",
+      "branch": "codex/dearme-dm-055-issue-approval-decision-safe",
+      "head": "e352490604d805c4a5ca630372285275e97be5e4",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the issue approval decision worker by routing linked DearMe approvals and successful issue-detail approval decisions back to the DearMe decision surface with product-owned toast copy.",
+      "evidence": [
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx",
+        "ui/src/lib/dearmeApprovals.ts",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-056",
+      "branch": "codex/dearme-dm-056-approvals-list-decision-safe",
+      "head": "3a98a8d663028bcc5f0c1b83426abddaa18da791",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the approvals-list decision worker by routing DearMe approval list detail, approval, and rejection success paths through the shared DearMe decision helper.",
+      "evidence": [
+        "ui/src/pages/Approvals.tsx",
+        "ui/src/pages/Approvals.test.tsx",
+        "ui/src/lib/dearmeApprovals.ts",
+        "ui/src/lib/dearmeApprovals.test.ts",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-057",
+      "branch": "codex/dearme-dm-057-approval-detail-actions-safe",
+      "head": "ffd060e73a2873f1a018b01c0d867debcda7ecdc",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the approval-detail action worker by returning DearMe approve, reject, revision, resubmit, and comment actions to DearMe-owned decision handling while generic approval details stay unchanged.",
+      "evidence": [
+        "ui/src/pages/ApprovalDetail.tsx",
+        "ui/src/pages/ApprovalDetail.test.tsx",
+        "ui/src/lib/dearmeApprovals.ts",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-058",
+      "branch": "codex/dearme-dm-058-error-boundary-hardening",
+      "head": "1926aa9ec4550509535e53041ec1773803e7ebfd",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the error-boundary hardening worker through the DearMe-only internal error sanitizer and regression coverage for Codex, Symphony, model, token, execution-route, Claude, OMX, API-key, and decision-route failures.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "ui/src/lib/dearmeApprovals.ts",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
     }
   ]
 }

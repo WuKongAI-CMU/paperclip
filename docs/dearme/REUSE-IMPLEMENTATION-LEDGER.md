@@ -62,6 +62,21 @@ The right reuse split is:
   `08068692545c9f17e44c5133f23e06f0a6e29efb` is recorded as absorbed by the
   current onboarding profile guard and regression coverage, keeping missing
   profile copy DearMe-owned instead of company-owned.
+- DM-051 and DM-052 approval-surface heads are recorded as absorbed by the
+  current shared DearMe approval helper, structured approval payload rendering,
+  product-owned ApprovalDetail breadcrumbs, and DearMe approval-card decision
+  routing.
+- DM-053 through DM-057 approval routing/action heads are recorded as absorbed
+  by the current inbox, activity, issue-detail, approvals-list, and
+  approval-detail flows, so DearMe approval decisions return to DearMe-owned
+  surfaces while generic approval behavior stays shared. DM-053's remaining
+  inbox-search gap is closed by matching DearMe approval rows on product labels
+  instead of raw DearMe approval type identifiers.
+- DM-058 error-boundary hardening head
+  `1926aa9ec4550509535e53041ec1773803e7ebfd` is recorded as absorbed by the
+  current DearMe-only internal error sanitizer and regression coverage for
+  inherited substrate names, model/token wording, execution routes, API key
+  wording, and decision routes.
 - DM-043 memory-label safety head
   `f3b3f7420c556aa6103c32c4b31654bd515edce6` is recorded as absorbed by the
   current Voice & Memory context normalization path, without restoring the

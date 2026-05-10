@@ -3,7 +3,7 @@
 import { act } from "react";
 import type { ComponentProps } from "react";
 import { createRoot } from "react-dom/client";
-import type { Issue } from "@paperclipai/shared";
+import type { Approval, Issue } from "@paperclipai/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CompanyJoinRequest } from "../api/access";
 import {
@@ -13,6 +13,7 @@ import {
   InboxIssueTrailingColumns,
   JoinRequestInboxRow,
   formatJoinRequestInboxLabel,
+  matchesInboxApprovalSearch,
 } from "./Inbox";
 
 vi.mock("@/lib/router", () => ({
@@ -70,6 +71,28 @@ function createIssue(overrides: Partial<Issue> = {}): Issue {
   };
 }
 
+function createApproval(overrides: Partial<Approval> = {}): Approval {
+  return {
+    id: "approval-dearme-1",
+    companyId: "company-1",
+    type: "dearme_output_next_move",
+    requestedByAgentId: "agent-secret-1",
+    requestedByUserId: null,
+    status: "pending",
+    payload: {
+      title: "Approve a private LinkedIn draft",
+      summary: "DearMe prepared a short draft for your personal profile.",
+      recommendedAction: "Approve after checking tone.",
+    },
+    decisionNote: null,
+    decidedByUserId: null,
+    decidedAt: null,
+    createdAt: new Date("2026-05-08T12:00:00.000Z"),
+    updatedAt: new Date("2026-05-08T12:00:00.000Z"),
+    ...overrides,
+  };
+}
+
 function createJoinRequest(
   overrides: Partial<CompanyJoinRequest> = {},
 ): CompanyJoinRequest {
@@ -107,6 +130,27 @@ function createJoinRequest(
     ...overrides,
   };
 }
+
+describe("matchesInboxApprovalSearch", () => {
+  it("matches DearMe approvals by product label without matching raw approval types", () => {
+    const dearMeApproval = createApproval();
+
+    expect(matchesInboxApprovalSearch(dearMeApproval, "linkedin")).toBe(true);
+    expect(matchesInboxApprovalSearch(dearMeApproval, "dearme_output_next_move")).toBe(false);
+  });
+
+  it("keeps raw type search available for generic approvals", () => {
+    expect(
+      matchesInboxApprovalSearch(
+        createApproval({
+          id: "approval-generic-1",
+          type: "request_board_approval",
+        }),
+        "request_board_approval",
+      ),
+    ).toBe(true);
+  });
+});
 
 describe("FailedRunInboxRow", () => {
   let container: HTMLDivElement;

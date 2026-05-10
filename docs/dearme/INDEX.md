@@ -144,12 +144,14 @@ After DEA-11 is closed, inspect the remaining `not_in_current` worker group in
 small batches. DM-043 through DM-047 are now recorded as reviewed absorptions on
 the current customer-safe memory, workbench, and error-boundary paths. DM-048
 through DM-050 are now recorded as reviewed absorptions on the current
-route/auth, approval-preflight, and profile-selection boundaries. The next
-likely batch starts at DM-051, DM-052, and DM-058 because current DM-183O
-already references their approval/profile UI residue; then continue the
-remaining not-in-current worker group in small exact-head batches. Reuse only
-still-valuable product surfaces; do not add another first-run contract, packet
-schema, runtime dashboard, queue system, or customer-visible substrate surface.
+route/auth, approval-preflight, and profile-selection boundaries. DM-051
+through DM-058 are now recorded as reviewed absorptions on the current shared
+DearMe approval helper, approval-surface routing, and internal-error sanitizer.
+The next likely batch starts at DM-059 through DM-066 because the residual
+group now shifts from approval routing into error/comment/chat safety, but
+inspect exact heads before recording any closure. Reuse only still-valuable
+product surfaces; do not add another first-run contract, packet schema, runtime
+dashboard, queue system, or customer-visible substrate surface.
 
 ### Roadmap (compressed by aggressive port + tri-substrate integration)
 

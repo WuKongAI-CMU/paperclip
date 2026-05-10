@@ -183,6 +183,14 @@ function approvalStatusLabel(status: Approval["status"]): string {
   return status.replaceAll("_", " ");
 }
 
+export function matchesInboxApprovalSearch(approval: Approval, query: string): boolean {
+  const q = query.toLowerCase();
+  const label = approvalLabel(approval.type, approval.payload as Record<string, unknown> | null);
+  if (label.toLowerCase().includes(q)) return true;
+  if (!isDearMeApprovalType(approval.type) && approval.type.toLowerCase().includes(q)) return true;
+  return false;
+}
+
 function readIssueIdFromRun(run: HeartbeatRun): string | null {
   const context = run.contextSnapshot;
   if (!context) return null;
@@ -1073,11 +1081,7 @@ export function Inbox() {
         });
       }
       if (item.kind === "approval") {
-        const a = item.approval;
-        const label = approvalLabel(a.type, a.payload as Record<string, unknown> | null);
-        if (label.toLowerCase().includes(q)) return true;
-        if (a.type.toLowerCase().includes(q)) return true;
-        return false;
+        return matchesInboxApprovalSearch(item.approval, q);
       }
       if (item.kind === "failed_run") {
         const run = item.run;
