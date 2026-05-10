@@ -56,7 +56,10 @@ The right reuse split is:
 - DEA-18 is the only active follow-up Symphony lane. Its job is browser-level
   proof for the first private outcome by reproducing or fixing the
   Playwright/private-handoff embedded PostgreSQL blocker. It should not
-  redesign onboarding or add another visible work queue.
+  redesign onboarding or add another visible work queue. The coordinator left a
+  Linear guardrail comment requiring exact changed files, pass/fail evidence,
+  absorption status, and the smallest reproducible blocker if the lane remains
+  blocked.
 - The current worktree inventory has no unabsorbed queue: 117 DearMe
   worktrees, 0 `not_in_current`, 0 dirty, 0 prunable, and 113
   `reviewed_absorbed`. Remaining old worktrees are audit/owner-confirmation

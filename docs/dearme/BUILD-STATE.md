@@ -31,6 +31,10 @@ Coordination state:
   proof. Its scope is limited to reproducing and unblocking the
   Playwright/private-handoff embedded PostgreSQL blocker, not broad UI
   redesign.
+- Added a coordinator guardrail comment to `DEA-18`: keep it as the single
+  active browser proof lane, prefer harness/env/bootstrap fixes, leave
+  onboarding/proof-pack/workbench copy alone unless required for the proof, and
+  post a Linear blocker comment before making large speculative changes.
 
 Verification:
 
