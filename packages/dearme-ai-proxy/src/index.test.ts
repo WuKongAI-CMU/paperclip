@@ -1,12 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildDearMeCostLedgerEvent,
+  buildDearMeProxyCacheAccounting,
   DEARME_TOOL_DEFINITIONS,
   DEARME_TOOL_NAMES,
+  DEARME_PROMPT_CACHE_CONTROL_1H,
+  DEARME_PROMPT_CACHE_CONTROL_5M,
+  DEARME_PROMPT_CACHE_READ_RATIO_TARGET,
+  DEARME_PROXY_CACHE_READ_TARGET_RATIO,
   DEARME_PROXY_MODEL_ROUTING_TABLE,
   DM_API_KEY_PREFIX,
   DM_PROXY_HEADERS,
+  markDearMePromptCacheBreakpoint,
+  normalizeDearMeProxyUsage,
   pickDearMeProxyModelForComplexity,
   resolveDearMeProxyModelRouting,
+  summarizeDearMeProxyCacheEconomics,
   VOICE_GATE_ARTIFACT_KINDS,
   VOICE_GATE_DEFAULT_FLOOR,
   VOICE_GATE_PATH,
@@ -19,6 +28,14 @@ import {
   pickDearMeProxyModelForComplexity as pickDearMeProxyModelForComplexitySubpath,
   resolveDearMeProxyModelRouting as resolveDearMeProxyModelRoutingSubpath,
 } from "@paperclipai/dearme-ai-proxy/model-routing";
+import {
+  buildDearMeCostLedgerEvent as buildDearMeCostLedgerEventSubpath,
+  buildDearMeProxyCacheAccounting as buildDearMeProxyCacheAccountingSubpath,
+  DEARME_PROMPT_CACHE_CONTROL_1H as DEARME_PROMPT_CACHE_CONTROL_1H_SUBPATH,
+  markDearMePromptCacheBreakpoint as markDearMePromptCacheBreakpointSubpath,
+  normalizeDearMeProxyUsage as normalizeDearMeProxyUsageSubpath,
+  summarizeDearMeProxyCacheEconomics as summarizeDearMeProxyCacheEconomicsSubpath,
+} from "@paperclipai/dearme-ai-proxy/cache-economics";
 
 describe("dearme-ai-proxy contract", () => {
   it("exposes the 6 production-verified tool definitions", () => {
@@ -157,6 +174,126 @@ describe("dearme-ai-proxy contract", () => {
       complexity: 1,
       tier: "fast",
       model: "gemini-2.0-flash-lite",
+    });
+  });
+
+  it("exports prompt-cache breakpoints and normalizes provider cache usage", () => {
+    expect(DEARME_PROMPT_CACHE_READ_RATIO_TARGET).toBe(0.9);
+    expect(DEARME_PROXY_CACHE_READ_TARGET_RATIO).toBe(0.9);
+    expect(DEARME_PROMPT_CACHE_CONTROL_5M).toEqual({ type: "ephemeral" });
+    expect(DEARME_PROMPT_CACHE_CONTROL_1H).toEqual({
+      type: "ephemeral",
+      ttl: "1h",
+    });
+    expect(DEARME_PROMPT_CACHE_CONTROL_1H).toBe(DEARME_PROMPT_CACHE_CONTROL_1H_SUBPATH);
+    expect(markDearMePromptCacheBreakpoint).toBe(markDearMePromptCacheBreakpointSubpath);
+    expect(normalizeDearMeProxyUsage).toBe(normalizeDearMeProxyUsageSubpath);
+    expect(buildDearMeCostLedgerEvent).toBe(buildDearMeCostLedgerEventSubpath);
+    expect(buildDearMeProxyCacheAccounting).toBe(buildDearMeProxyCacheAccountingSubpath);
+    expect(summarizeDearMeProxyCacheEconomics).toBe(
+      summarizeDearMeProxyCacheEconomicsSubpath,
+    );
+
+    const block = { type: "text", text: "Stable DearMe system prompt" };
+    expect(markDearMePromptCacheBreakpoint(block)).toEqual({
+      ...block,
+      cache_control: { type: "ephemeral" },
+    });
+    expect(markDearMePromptCacheBreakpoint(block, { ttl: "1h" })).toEqual({
+      ...block,
+      cache_control: { type: "ephemeral", ttl: "1h" },
+    });
+
+    expect(
+      normalizeDearMeProxyUsage({
+        input_tokens: 50,
+        cache_creation_input_tokens: 250,
+        cache_read_input_tokens: 700,
+        output_tokens: 25,
+      }),
+    ).toEqual({
+      inputTokens: 50,
+      outputTokens: 25,
+      cacheCreateTokens: 250,
+      cacheCreate5mTokens: 0,
+      cacheCreate1hTokens: 0,
+      cacheReadTokens: 700,
+      totalInputTokens: 1000,
+      cacheHit: true,
+      cacheReadRatio: 0.7,
+      cacheWriteRatio: 0.25,
+    });
+
+    expect(
+      normalizeDearMeProxyUsage({
+        prompt_tokens: 12.9,
+        completion_tokens: 4.4,
+        prompt_tokens_details: { cached_tokens: 8.8 },
+      }),
+    ).toMatchObject({
+      inputTokens: 12,
+      outputTokens: 4,
+      cacheReadTokens: 8,
+      totalInputTokens: 20,
+      cacheHit: true,
+    });
+
+    expect(
+      buildDearMeProxyCacheAccounting({
+        cacheCreateTokens: 120.9,
+        cacheReadTokens: 1080.3,
+      }),
+    ).toEqual({
+      cacheCreateTokens: 120,
+      cacheReadTokens: 1080,
+    });
+
+    expect(
+      summarizeDearMeProxyCacheEconomics({
+        cacheCreateTokens: 120,
+        cacheReadTokens: 1080,
+      }),
+    ).toEqual({
+      cacheCreateTokens: 120,
+      cacheReadTokens: 1080,
+      cacheReadRatio: 0.9,
+      cacheSavingsTokens: 1080,
+    });
+  });
+
+  it("builds a DearMe cost-ledger event from normalized cache usage", () => {
+    expect(
+      buildDearMeCostLedgerEvent({
+        correlationId: "dm-run-1",
+        occurredAt: "2026-05-10T21:40:00.000Z",
+        companyId: "company-1",
+        task: "chief-of-staff-cycle",
+        tier: "deep",
+        model: "claude-sonnet-4-6",
+        blendedUsdMicros: 1234.9,
+        usage: {
+          input_tokens: 40,
+          output_tokens: 10,
+          cache_creation: {
+            ephemeral_5m_input_tokens: 100,
+            ephemeral_1h_input_tokens: 50,
+          },
+          cache_read_input_tokens: 810,
+        },
+      }),
+    ).toEqual({
+      correlationId: "dm-run-1",
+      occurredAt: "2026-05-10T21:40:00.000Z",
+      companyId: "company-1",
+      task: "chief-of-staff-cycle",
+      tier: "deep",
+      model: "claude-sonnet-4-6",
+      inputTokens: 40,
+      outputTokens: 10,
+      cacheCreateTokens: 150,
+      cacheReadTokens: 810,
+      blendedUsdMicros: 1234,
+      cacheHit: true,
     });
   });
 

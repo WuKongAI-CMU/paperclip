@@ -30,6 +30,9 @@ import {
   DEARME_TOOL_DEFINITIONS, // 6 production-verified OpenAI function defs
   DEARME_TOOL_NAMES,
   getFunctionDefinition,
+  markDearMePromptCacheBreakpoint,
+  normalizeDearMeProxyUsage,
+  buildDearMeCostLedgerEvent,
   DM_API_KEY_PREFIX,         // "dm_sk_"
   DM_PROXY_HEADERS,          // { task, subscriptionId, ... }
   isDearMeApiKey,

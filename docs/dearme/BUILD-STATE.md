@@ -2,6 +2,43 @@
 
 Date: 2026-05-10
 
+## DEA-31 Prompt-Cache Economics Contract Absorbed - 2026-05-10
+
+Product/architecture slice:
+
+- Absorbed the Symphony worker direction from `e820cdd3` while keeping the
+  final implementation in `@paperclipai/dearme-ai-proxy`'s package boundary
+  instead of adding server runtime, DB migration, or UI changes.
+- The proxy package now exports a `./cache-economics` subpath plus root helpers
+  for prompt-cache breakpoints, provider usage normalization, cache accounting
+  summaries, and `CostLedgerEvent` construction.
+- `markDearMePromptCacheBreakpoint()` creates Anthropic-compatible
+  `cache_control` markers for stable prompt blocks; `normalizeDearMeProxyUsage()`
+  accepts Anthropic cache-create/cache-read fields and OpenAI cached-token
+  fields; `buildDearMeCostLedgerEvent()` maps the result onto the existing
+  DearMe cost-ledger shape.
+- Donor reuse: Naive/Paperclip cost-ledger fields remain the storage target,
+  while Polsia-style steady-state economics are represented as a 90% cache-read
+  ratio target. Future DM-145 runtime code should consume these helpers instead
+  of re-parsing provider usage inline.
+- Rejected: full HTTP proxy route, credential runtime, DB schema change,
+  customer-facing cache/provider/model UI, or another cost-accounting model.
+
+Coordination state:
+
+- Symphony `DEA-31` produced the parallel worker proof; the coordinator compared
+  it against the local package-boundary implementation and absorbed the contract
+  without adding a second writer to the already-settled model-routing lane.
+- Linear `DEA-31` was moved to `Done` only after coordinator absorption,
+  verification, and a closeout comment. The next Symphony poll reported
+  `running: []` and `retrying: []`.
+
+Verification:
+
+- `pnpm --filter @paperclipai/dearme-ai-proxy test -- src/index.test.ts`
+- `pnpm --filter @paperclipai/dearme-ai-proxy typecheck`
+- `git diff --check`
+
 ## DEA-30 Proxy Model Routing Contract Absorbed - 2026-05-10
 
 Product/architecture slice:

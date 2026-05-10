@@ -46,6 +46,14 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DEA-31 is coordinator-absorbed as the DM-155 prompt-cache economics contract.
+  The worker proved the narrow cache-accounting shape; the coordinator kept the
+  final cut at the proxy package boundary with a `./cache-economics` subpath,
+  prompt-cache breakpoint helper, provider usage normalizer, cache economics
+  summary, and `CostLedgerEvent` builder. This advances the remaining
+  moat/economics lane without touching HTTP runtime, DB schema, UI, or
+  customer-facing provider/model language. Future DM-145 runtime code should
+  call these helpers instead of copying Anthropic/OpenAI usage parsing inline.
 - DEA-30 is coordinator-absorbed as the DM-143A proxy model-routing contract at
   `3af18fc4`. The proxy package now exposes a customer-contract-facing
   `./model-routing` subpath and root exports for complexity `1-10` to
@@ -85,15 +93,15 @@ The right reuse split is:
   packet -> private approval -> next-move approval payload -> outbound wrapper
   gate. Do not reopen a parallel publisher, direct X sender, or second approval
   channel.
-- With DEA-25, DEA-26, DEA-27, DEA-28, and DEA-30 absorbed, the
-  launch-handoff, trust-stop, private-silence autonomy, and proxy
-  model-routing-contract lanes have enough proof to stop adding writers on
-  those surfaces. The next useful product worker should be a disjoint
-  autonomy/quality slice, a read-only browser smoke/QA pass against the
-  now-paused/defaulted handoff paths, or the remaining moat/economics slices
-  beyond the already-exported routing contract. Do not add another writer to
-  launch, connect-channel, pause, silence-default review, or proxy
-  model-routing unless a regression appears.
+- With DEA-25, DEA-26, DEA-27, DEA-28, DEA-30, and DEA-31 absorbed, the
+  launch-handoff, trust-stop, private-silence autonomy, proxy
+  model-routing-contract, and prompt-cache-contract lanes have enough proof to
+  stop adding writers on those surfaces. The next useful product worker should
+  be a disjoint autonomy/quality slice, a read-only browser smoke/QA pass
+  against the now-paused/defaulted handoff paths, or the DM-145 HTTP proxy
+  runtime that consumes the settled routing/cache contracts. Do not add another
+  writer to launch, connect-channel, pause, silence-default review, proxy
+  model-routing, or prompt-cache accounting unless a regression appears.
 - DEA-23 hardens the Symphony development factory after the DEA-21 cleanup
   miss: worker terminal handoff now exports committed changes as durable
   `format-patch`, `git bundle`, and JSON summary artifacts under

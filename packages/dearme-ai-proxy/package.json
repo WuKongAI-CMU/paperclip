@@ -6,6 +6,7 @@
   "private": true,
   "exports": {
     ".": "./src/index.ts",
+    "./cache-economics": "./src/cache-economics.ts",
     "./functions": "./src/functions.ts",
     "./contract": "./src/contract.ts",
     "./model-routing": "./src/model-routing.ts"
@@ -15,6 +16,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./cache-economics": {
+        "types": "./dist/cache-economics.d.ts",
+        "import": "./dist/cache-economics.js"
       },
       "./functions": {
         "types": "./dist/functions.d.ts",
