@@ -1377,6 +1377,74 @@ function outputsWithFirstCyclePacket() {
   };
 }
 
+function outputsWithScannableFirstWeekDetails() {
+  const reportOutput = outputsResponse().outputs[0];
+  return {
+    companyId: "company-1",
+    outputs: [
+      {
+        ...reportOutput,
+        id: "issue-2:content_drafts",
+        kind: "content_drafts",
+        title: "LinkedIn starter post",
+        summary: "A first private post grounded in shipped proof.",
+        issueId: "issue-2",
+        issueIdentifier: "PET-8",
+        issueTitle: "DearMe Draft: Starter content batch",
+        documents: [
+          {
+            id: "doc-content-1",
+            key: "linkedin-starter-post",
+            title: "LinkedIn starter post",
+            format: "markdown",
+            revisionNumber: 1,
+            bodyPreview: "Draft body: I turned a messy private tool loop into a working product rhythm.",
+            updatedAt: "2026-05-07T14:00:00.000Z",
+          },
+        ],
+        details: [
+          {
+            kind: "approval_gate",
+            label: "Launch boundary",
+            value: "Approve before publishing.",
+            source: "derived",
+          },
+          {
+            kind: "proof_used",
+            label: "Proof used",
+            value: "Shipped a working local product.",
+            source: "document",
+          },
+          {
+            kind: "draft_body",
+            label: "Draft body",
+            value: "I turned a messy private tool loop into a working product rhythm.",
+            source: "document",
+          },
+          {
+            kind: "channel",
+            label: "Channel",
+            value: "LinkedIn",
+            source: "document",
+          },
+          {
+            kind: "audience",
+            label: "Audience",
+            value: "Founder-operators",
+            source: "document",
+          },
+          {
+            kind: "hook",
+            label: "Hook",
+            value: "The clearest operator stories start with shipped proof.",
+            source: "document",
+          },
+        ],
+      },
+    ],
+  };
+}
+
 async function flushReact() {
   await act(async () => {
     await Promise.resolve();
@@ -2988,6 +3056,40 @@ describe("DearMeOnboarding", () => {
     expect(mockNavigate).toHaveBeenCalledWith(
       "/dearme?view=decisions&work=PET-7&output=issue-1%3Aweekly_report",
     );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("surfaces first-week value fields on private output cards", async () => {
+    mockDearmeApi.getOutputs.mockResolvedValue(outputsWithScannableFirstWeekDetails());
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const privateWork = surfaceByLabel(container, "Private work ready");
+    const text = privateWork.textContent ?? "";
+    expect(text).toContain("LinkedIn starter post");
+    expect(text).toContain("Channel");
+    expect(text).toContain("LinkedIn");
+    expect(text).toContain("Audience");
+    expect(text).toContain("Founder-operators");
+    expect(text).toContain("Hook");
+    expect(text).toContain("Draft body");
+    expect(text).toContain("Proof used");
+    expect(text).toContain("Launch boundary");
+    expect(text).toContain("Approve before publishing.");
 
     await act(async () => {
       root.unmount();

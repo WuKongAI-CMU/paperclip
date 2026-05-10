@@ -2,6 +2,32 @@
 
 Date: 2026-05-10
 
+## DM-183N Scannable First-Week Output Details - 2026-05-10
+
+Implementation slice:
+
+- Replayed the still-useful DM-015 first-week output detail idea onto the
+  current packet-backed DearMe review surface instead of merging the stale
+  branch.
+- Reused the existing server `details` contract for content, opportunity,
+  portfolio, Brand OS, voice profile, and weekly-report outputs, adding only a
+  UI ordering helper so the most useful first-week fields stay visible.
+- Expanded private-work cards from a raw first-three detail slice into a
+  compact two-column detail grid, and made focused prepared-work review use the
+  same ordered detail selection.
+- Kept the change UI-only: no new schema, route, runtime, data model, or
+  Symphony product surface.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 46 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check` passed.
+- `.symphony/bin/dearme-symphony status` confirmed the daemon at
+  `http://127.0.0.1:4100/`; `DEA-8` was running in an isolated Symphony
+  workspace.
+
 ## DM-183M DearMe Server Safe Boundaries - 2026-05-10
 
 Implementation slice:

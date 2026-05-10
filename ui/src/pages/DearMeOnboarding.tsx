@@ -21,6 +21,7 @@ import {
   type DearMeMemoryUpdateKind,
   type DearMeMemoryUpdateResult,
   type DearMeOutputContinuationIntent,
+  type DearMeOutputDetail,
   type DearMeOutputItem,
   type DearMeOutputReviewAction,
   type DearMeOutputReviewLoop,
@@ -1063,6 +1064,48 @@ const OUTPUT_KIND_LABELS: Record<DearMeOutputItem["kind"], string> = {
   portfolio_update: "Portfolio update",
   weekly_report: "Dear me report",
 };
+
+const OUTPUT_DETAIL_DISPLAY_LIMIT = 6;
+
+const OUTPUT_DETAIL_DISPLAY_ORDER: Record<
+  DearMeOutputItem["kind"],
+  DearMeOutputDetail["kind"][]
+> = {
+  brand_os: ["positioning", "proof_used", "approval_gate"],
+  voice_profile: ["voice_guidance", "approval_gate"],
+  content_drafts: ["channel", "audience", "hook", "draft_body", "proof_used", "approval_gate"],
+  opportunity_drafts: [
+    "target",
+    "why_relevant",
+    "relevance_score",
+    "outreach_angle",
+    "draft_message",
+    "approval_gate",
+  ],
+  portfolio_update: ["page_section", "proof_source", "proposed_copy", "deploy_gate"],
+  weekly_report: ["completed_work", "decisions_needed", "next_bets", "report_reference"],
+};
+
+function outputReviewDetails(output: DearMeOutputItem) {
+  const detailsByKind = new Map(output.details.map((detail) => [detail.kind, detail]));
+  const usedKinds = new Set<DearMeOutputDetail["kind"]>();
+  const orderedDetails: DearMeOutputDetail[] = [];
+
+  for (const kind of OUTPUT_DETAIL_DISPLAY_ORDER[output.kind]) {
+    const detail = detailsByKind.get(kind);
+    if (!detail) continue;
+    usedKinds.add(kind);
+    orderedDetails.push(detail);
+  }
+
+  for (const detail of output.details) {
+    if (usedKinds.has(detail.kind)) continue;
+    usedKinds.add(detail.kind);
+    orderedDetails.push(detail);
+  }
+
+  return orderedDetails.slice(0, OUTPUT_DETAIL_DISPLAY_LIMIT);
+}
 
 const OUTPUT_KIND_OWNER_ROLE: Record<
   DearMeOutputItem["kind"],
@@ -2483,7 +2526,7 @@ function FocusedOutputPanel({
   onReviewOutput: (outputId: string, action: DearMeOutputReviewAction, decisionNote: string) => void;
 }) {
   const preview = outputPreview(output);
-  const details = output.details.slice(0, 4);
+  const details = outputReviewDetails(output);
   const voiceGate = primaryOutputVoiceGate(output);
   const entryGuidance = reviewEntryGuidance(entryIntent, output.reviewLoop);
   const [decisionNote, setDecisionNote] = useState("");
@@ -5746,7 +5789,7 @@ function PrivateWorkPanel({
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {outputs.map((output) => {
               const preview = outputPreview(output);
-              const details = output.details.slice(0, 3);
+              const details = outputReviewDetails(output);
               const voiceGate = primaryOutputVoiceGate(output);
               const routeIntent = reviewLoopRouteIntent(output.reviewLoop);
               const focused = decisionFocus ? matchesOutputFocus(output, decisionFocus) : false;
@@ -5818,13 +5861,13 @@ function PrivateWorkPanel({
                   {voiceGate ? <VoiceCheckPanel gate={voiceGate} compact className="mt-3" /> : null}
 
                   {details.length > 0 ? (
-                    <dl className="mt-3 space-y-2 border-t border-border pt-3">
+                    <dl className="mt-3 grid gap-2 border-t border-border pt-3 sm:grid-cols-2">
                       {details.map((detail) => (
                         <div key={`${output.id}:${detail.kind}`} className="grid gap-1">
                           <dt className="text-xs font-medium text-muted-foreground">
                             {customerProofPackSummary(detail.label)}
                           </dt>
-                          <dd className="line-clamp-2 text-sm text-foreground/85">
+                          <dd className="line-clamp-3 text-sm text-foreground/85">
                             {customerProofPackSummary(detail.value)}
                           </dd>
                         </div>
