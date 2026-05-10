@@ -20,6 +20,11 @@ Verification:
 - `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
 - `pnpm --filter @paperclipai/ui typecheck`
 - `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+- Playwright fallback smoke on `http://127.0.0.1:3100/DEAAAAAAAAA/dearme`
+  confirmed desktop and mobile render the first payoff as a focus surface with
+  three cards, no horizontal overflow, no console/page errors, and no same-origin
+  request failures. Screenshots: `/tmp/dearme-dm183al-desktop.png`,
+  `/tmp/dearme-dm183al-mobile.png`, `/tmp/dearme-dm183al-mobile-viewport.png`.
 
 ## DM-183AK First Payoff Strip - 2026-05-10
 

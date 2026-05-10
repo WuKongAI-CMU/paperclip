@@ -192,6 +192,10 @@ Verification:
 - `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
 - `pnpm --filter @paperclipai/ui typecheck`
 - `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+- Playwright fallback smoke on `http://127.0.0.1:3100/DEAAAAAAAAA/dearme`
+  confirmed desktop and mobile render the rail as a focus surface with three
+  payoff cards, no horizontal overflow, no console/page errors, and no
+  same-origin request failures.
 
 ### DM-183AK: First Payoff Strip
 
