@@ -92,7 +92,9 @@ describe("dearme-openclaw skill generation", () => {
 
     const oh = DEARME_ROLE_REGISTRY.find((r) => r.role === "opportunity-hunter")!;
     const ohSkill = generateSkillForRole(oh);
-    expect(ohSkill.content).toContain("verify with Hunter.io");
+    expect(ohSkill.content).toContain("draft only until the user approves the send");
+    expect(ohSkill.content).toContain("5 touches max");
+    expect(ohSkill.content).not.toMatch(/Hunter\.io|get_leads|add_lead|contacted → responded → meeting/i);
   });
 });
 
@@ -127,6 +129,13 @@ describe("dearme-openclaw bootstrap files", () => {
     const user = getBootstrapFile("USER.md");
     expect(user).toBeDefined();
     expect(user!.content).toMatch(/walk the user through the\s*DearMe onboarding ritual/);
+  });
+
+  it("bootstrap prompt copy stays on customer-safe DearMe rails", () => {
+    const combined = DEARME_BOOTSTRAP_FILES.map((file) => file.content).join("\n");
+    expect(combined).not.toMatch(/Twitter|280-char|Naive\/Paperclip|OpenClaw|adapters|provider/i);
+    expect(combined).toContain("channel-specific length limits");
+    expect(combined).toContain("social post or thread");
   });
 });
 

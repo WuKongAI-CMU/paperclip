@@ -1212,6 +1212,90 @@ function outputsResponse() {
   };
 }
 
+function outputsWithOpportunityDraft() {
+  const reportOutput = outputsResponse().outputs[0];
+  return {
+    companyId: "company-1",
+    outputs: [
+      reportOutput,
+      {
+        ...reportOutput,
+        id: "issue-3:opportunity_drafts",
+        kind: "opportunity_drafts",
+        title: "Warm collaboration lead",
+        summary: "A relevant podcast host and customer intro are prepared for review.",
+        issueId: "issue-3",
+        issueIdentifier: "PET-9",
+        issueTitle: "DearMe Draft: Prepare opportunity leads",
+        documents: [
+          {
+            id: "doc-3",
+            key: "opportunity-leads",
+            title: "Opportunity leads",
+            format: "markdown",
+            revisionNumber: 1,
+            bodyPreview:
+              "Target: Practical AI Builders podcast. Why relevant: audience matches Peter's proof. Outreach angle: share a local AI operator story. Draft message: Saw your workflow episode and have a concrete follow-up.",
+            updatedAt: "2026-05-07T14:00:00.000Z",
+          },
+        ],
+        workProducts: [
+          {
+            id: "work-product-opportunity",
+            type: "draft",
+            title: "Opportunity packet",
+            url: null,
+            status: "ready_for_review",
+            reviewState: "pending",
+            summary: "Target, fit reason, outreach angle, and first message are staged behind the launch call.",
+            updatedAt: "2026-05-07T14:00:00.000Z",
+          },
+        ],
+        details: [
+          {
+            kind: "target",
+            label: "Target",
+            value: "Practical AI Builders podcast",
+            source: "document",
+          },
+          {
+            kind: "why_relevant",
+            label: "Why relevant",
+            value: "Audience matches Peter's proof and current positioning.",
+            source: "document",
+          },
+          {
+            kind: "outreach_angle",
+            label: "Outreach angle",
+            value: "Share a local AI operator story with one useful takeaway.",
+            source: "document",
+          },
+          {
+            kind: "draft_message",
+            label: "Draft message",
+            value: "Saw your workflow episode and have a concrete follow-up.",
+            source: "document",
+          },
+        ],
+        sourceEvidence: [
+          {
+            kind: "proof",
+            label: "Proof used",
+            summary: "Shipped a working local product.",
+            source: "document",
+          },
+          {
+            kind: "approval_boundary",
+            label: "Launch boundary",
+            summary: "No outbound message sends until Peter approves the target, angle, and draft.",
+            source: "derived",
+          },
+        ],
+      },
+    ],
+  };
+}
+
 function outputsWithFirstCyclePacket() {
   const reportOutput = outputsResponse().outputs[0];
   return {
@@ -3680,6 +3764,61 @@ describe("DearMeOnboarding", () => {
 
     expect(mockNavigate).toHaveBeenCalledWith(
       "/dearme?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report",
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("focuses the opportunities view on reviewable leads and the launch boundary", async () => {
+    mockLocation.search = "?view=opportunities";
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
+    mockDearmeApi.getOutputs.mockResolvedValue(outputsWithOpportunityDraft());
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const commandCenter = surfaceByLabel(container, "Opportunity command center");
+    expect(commandCenter.textContent).toContain("Opportunities, ready before outreach.");
+    expect(commandCenter.textContent).toContain("No outbound message sends until you approve.");
+    expect(commandCenter.textContent).toContain("Opportunity Scout is working on Opportunity leads");
+    expect(commandCenter.textContent).toContain("Target, fit reason, outreach angle, first message, and follow-up plan.");
+
+    const opportunitySurface = surfaceByLabel(container, "Opportunity work ready");
+    expect(opportunitySurface.textContent).toContain("Opportunities ready / Launch calls");
+    expect(opportunitySurface.textContent).toContain("Warm collaboration lead");
+    expect(opportunitySurface.textContent).toContain("Practical AI Builders podcast");
+    expect(opportunitySurface.textContent).toContain("Outreach angle");
+    expect(opportunitySurface.textContent).toContain("No outbound message sends until Peter approves");
+    expect(opportunitySurface.textContent).not.toContain("Dear me report");
+    expect(
+      opportunitySurface.querySelectorAll('[data-dearme-surface="action-card"]').length,
+    ).toBe(1);
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
+
+    await act(async () => {
+      [...opportunitySurface.querySelectorAll("button")]
+        .find((button) => button.textContent?.trim() === "Review")
+        ?.click();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/dearme?view=decisions&issue=PET-9&output=issue-3%3Aopportunity_drafts",
     );
 
     await act(async () => {

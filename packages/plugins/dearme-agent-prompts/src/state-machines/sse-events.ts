@@ -133,7 +133,7 @@ export interface VoiceGateScoredPayload {
   score: number;
   /** Cloud voice-fingerprint id used to score the draft. */
   fingerprintId: string;
-  /** What kind of artifact was scored (e.g. "x-tweet", "linkedin-post"). */
+  /** What kind of artifact was scored (e.g. "x-post", "linkedin-post"). */
   artifactKind: string;
   /** Whether the score passed the configured floor. */
   passed: boolean;
@@ -145,7 +145,7 @@ export interface VoiceGateScoredPayload {
 export interface ChannelActionFiredPayload {
   toolName: string;
   channel: string;
-  /** External id (X tweet id, LinkedIn URN, Resend message id, etc). */
+  /** External id (X post id, LinkedIn URN, Resend message id, etc). */
   externalId: string;
   /** Public URL if applicable. */
   externalUrl?: string;

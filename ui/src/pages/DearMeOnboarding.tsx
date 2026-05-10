@@ -98,6 +98,7 @@ import {
   Send,
   ShieldCheck,
   Sparkles,
+  Telescope,
   Users,
   Workflow,
   XCircle,
@@ -256,6 +257,34 @@ const DEARME_REVIEW_ENTRY_INTENTS = new Set<DearMeReviewEntryIntent>([
   "blocked",
   "progress",
 ]);
+
+type DearMePageView =
+  | "home"
+  | "decisions"
+  | "work-ready"
+  | "voice"
+  | "brand-os"
+  | "content"
+  | "opportunities"
+  | "portfolio"
+  | "reports";
+
+const DEARME_PAGE_VIEWS = new Set<DearMePageView>([
+  "decisions",
+  "work-ready",
+  "voice",
+  "brand-os",
+  "content",
+  "opportunities",
+  "portfolio",
+  "reports",
+]);
+
+function parseDearMePageView(search: string): DearMePageView {
+  const view = new URLSearchParams(search).get("view");
+  if (!view) return "home";
+  return DEARME_PAGE_VIEWS.has(view as DearMePageView) ? (view as DearMePageView) : "home";
+}
 
 function buildDearMeDecisionRoute(params: {
   approvalId?: string;
@@ -2659,6 +2688,139 @@ function TeamFocusWorkbenchPanel({
   );
 }
 
+function isOpportunityWorkItem(item: DearMeWorkbenchWorkItem): boolean {
+  return item.outputKind === "opportunity_drafts" || item.ownerRole === "opportunity_scout";
+}
+
+function isOpportunityStreamItem(item: DearMeWorkbenchStreamItem): boolean {
+  return item.role === "opportunity_scout" || item.relatedOutputId?.includes("opportunity_drafts") === true;
+}
+
+function OpportunityWorkbenchPanel({
+  workbench,
+  paidBetaActive,
+  onOpenWorkItem,
+}: {
+  workbench: DearMeWorkbenchResponse;
+  paidBetaActive: boolean;
+  onOpenWorkItem: (item: DearMeWorkbenchWorkItem, intent?: DearMeReviewEntryIntent | null) => void;
+}) {
+  const opportunityItems = [...workbench.workReady, ...workbench.activeWork].filter(isOpportunityWorkItem);
+  const currentItem = opportunityItems[0] ?? null;
+  const readyItems = opportunityItems.filter((item) => item.status === "ready_for_review");
+  const activeItems = opportunityItems.filter((item) => item.status !== "ready_for_review");
+  const opportunityFeed = workbench.workStream.filter(isOpportunityStreamItem).slice(0, 3);
+  const sendDecisions = [
+    ...workbench.batchDecisions.filter((batch) => batch.riskGate === "send_email"),
+    ...workbench.decisionsNeeded.filter((decision) => decision.riskGate === "send_email"),
+  ];
+  const canOpenCurrent = currentItem ? Boolean(workItemTarget(currentItem)) : false;
+  const currentIntent = currentItem ? reviewLoopRouteIntent(currentItem.reviewLoop) : null;
+
+  return (
+    <DearMeFocusSurface aria-label="Opportunity command center" className="space-y-5">
+      <DearMeWorkbenchSectionHeader
+        icon={Telescope}
+        eyebrow="Opportunity Scout"
+        title="Opportunities, ready before outreach."
+        description="DearMe turns memory, proof, and public signals into prepared targets, angles, and first messages. No outbound message sends until you approve."
+        trailing={
+          <Badge variant={paidBetaActive ? "default" : "secondary"}>
+            {paidBetaActive ? "Scouting now" : "Private work locked"}
+          </Badge>
+        }
+      />
+
+      <DearMeMetricStrip>
+        <Metric icon={Telescope} label="Lead packets" value={opportunityItems.length} />
+        <Metric icon={CheckCircle2} label="Ready" value={readyItems.length} />
+        <Metric icon={Workflow} label="In motion" value={activeItems.length} />
+        <Metric icon={ShieldCheck} label="Launch calls" value={sendDecisions.length} />
+      </DearMeMetricStrip>
+
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]">
+        <DearMeWorkbenchCard
+          eyebrow="Current opportunity packet"
+          title={currentItem ? customerProofPackSummary(currentItem.title) : "Scout the next practical opening"}
+          description={
+            currentItem
+              ? customerProofPackSummary(currentItem.summary)
+              : "Ask the Chief of Staff to find customers, collaborators, podcasts, jobs, or warm introductions for this week."
+          }
+          badge={<Telescope className="h-4 w-4 text-muted-foreground" />}
+          footer={
+            currentItem ? (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  {customerProofPackSummary(currentItem.reviewLoop.nextStep)}
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={currentItem.status === "ready_for_review" ? "default" : "outline"}
+                  disabled={!canOpenCurrent}
+                  onClick={() => onOpenWorkItem(currentItem, currentIntent)}
+                >
+                  {workReadyActionLabel(currentItem.status, currentItem.reviewLoop)}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : null
+          }
+        >
+          <DearMeEvidenceGrid>
+            <div className="rounded-md border border-border bg-background/80 p-3">
+              <p className="text-xs font-medium text-muted-foreground">What the scout prepares</p>
+              <p className="mt-1 text-sm text-foreground/85">
+                Target, fit reason, outreach angle, first message, and follow-up plan.
+              </p>
+            </div>
+            <div className="rounded-md border border-border bg-background/80 p-3">
+              <p className="text-xs font-medium text-muted-foreground">Launch boundary</p>
+              <p className="mt-1 text-sm text-foreground/85">
+                No message sends until you approve the prepared target, angle, and draft.
+              </p>
+            </div>
+          </DearMeEvidenceGrid>
+        </DearMeWorkbenchCard>
+
+        <div className="grid gap-3">
+          <DearMeWorkbenchCard
+            eyebrow="Why it matters"
+            title="Openings become next moves"
+            description={OUTPUT_KIND_VALUE_LABELS.opportunity_drafts}
+            badge={<Users className="h-4 w-4 text-muted-foreground" />}
+          />
+          <DearMeWorkbenchCard
+            eyebrow="Default ask"
+            title="One useful reason to talk"
+            description="Each draft ties the recipient signal to your proof and leaves one small next step for review."
+            badge={<MessageSquare className="h-4 w-4 text-muted-foreground" />}
+          />
+        </div>
+      </div>
+
+      {opportunityFeed.length > 0 ? (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {opportunityFeed.map((item) => (
+            <DearMeWorkbenchCard
+              key={item.id}
+              eyebrow={roleLabel(item.role)}
+              title={customerProofPackSummary(item.title)}
+              description={customerProofPackSummary(item.summary)}
+              badge={<Badge variant="outline">{WORKSTREAM_STATUS_LABELS[item.status]}</Badge>}
+            >
+              <p className="rounded-md border border-border bg-background/80 p-2 text-xs text-muted-foreground">
+                {customerProofPackSummary(item.nextAction)}
+              </p>
+            </DearMeWorkbenchCard>
+          ))}
+        </div>
+      ) : null}
+    </DearMeFocusSurface>
+  );
+}
+
 function TeamOperatingPolicyPanel({
   workbench,
   paidBetaActive,
@@ -4403,6 +4565,7 @@ function ChiefOfStaffComposerPanel({
 function TeamWorkbenchPanel({
   companyId,
   paidBetaActive,
+  selectedView,
   decisionFocus,
   onOpenApproval,
   onOpenIssue,
@@ -4414,6 +4577,7 @@ function TeamWorkbenchPanel({
 }: {
   companyId: string;
   paidBetaActive: boolean;
+  selectedView: DearMePageView;
   decisionFocus: DearMeDecisionFocus | null;
   onOpenApproval: (approvalId: string) => void;
   onOpenIssue: (issueReference: string) => void;
@@ -4619,6 +4783,14 @@ function TeamWorkbenchPanel({
       ) : null}
 
       <TeamFocusWorkbenchPanel workbench={workbench} paidBetaActive={paidBetaActive} />
+
+      {selectedView === "opportunities" ? (
+        <OpportunityWorkbenchPanel
+          workbench={workbench}
+          paidBetaActive={paidBetaActive}
+          onOpenWorkItem={openWorkItem}
+        />
+      ) : null}
 
       <TeamSummaryPanel workbench={workbench} paidBetaActive={paidBetaActive} />
 
@@ -5056,12 +5228,14 @@ function FirstCyclePacketSpotlight({
 
 function PrivateWorkPanel({
   companyId,
+  outputKindFilter,
   decisionFocus,
   onOpenOutput,
   outputReviewState,
   onReviewOutput,
 }: {
   companyId: string;
+  outputKindFilter?: DearMeOutputItem["kind"] | null;
   decisionFocus: DearMeDecisionFocus | null;
   onOpenOutput: (output: DearMeOutputItem, intent?: DearMeReviewEntryIntent | null) => void;
   outputReviewState: DearMeOutputReviewState;
@@ -5071,24 +5245,34 @@ function PrivateWorkPanel({
     queryKey: queryKeys.dearme.outputs(companyId),
     queryFn: () => dearmeApi.getOutputs(companyId),
   });
-  const outputs = outputsQuery.data?.outputs ?? [];
+  const allOutputs = outputsQuery.data?.outputs ?? [];
+  const outputs = outputKindFilter
+    ? allOutputs.filter((output) => output.kind === outputKindFilter)
+    : allOutputs;
+  const isOpportunityView = outputKindFilter === "opportunity_drafts";
   const focusedOutput = decisionFocus
     ? outputs.find((output) => matchesOutputFocus(output, decisionFocus)) ?? null
     : null;
 
   return (
-    <DearMePanel aria-label="Private work ready">
+    <DearMePanel aria-label={isOpportunityView ? "Opportunity work ready" : "Private work ready"}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm font-medium">
-            <FileText className="h-4 w-4" />
-            Work ready / Decisions needed
+            {isOpportunityView ? <Telescope className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+            {isOpportunityView ? "Opportunities ready / Launch calls" : "Work ready / Decisions needed"}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Private work ready for review: reports, drafts, voice guidance, and portfolio work DearMe has prepared.
+            {isOpportunityView
+              ? "Prepared opportunity packets: targets, fit reasons, outreach angles, draft messages, and launch boundaries."
+              : "Private work ready for review: reports, drafts, voice guidance, and portfolio work DearMe has prepared."}
           </p>
         </div>
-        {outputs.length > 0 ? <Badge variant="outline">{outputs.length} surfaces</Badge> : null}
+        {outputs.length > 0 ? (
+          <Badge variant="outline">
+            {isOpportunityView ? `${outputs.length} opportunity${outputs.length === 1 ? "" : "ies"}` : `${outputs.length} surfaces`}
+          </Badge>
+        ) : null}
       </div>
 
       {outputsQuery.isError ? (
@@ -5106,13 +5290,13 @@ function PrivateWorkPanel({
       ) : outputs.length === 0 ? (
         <DearMeEmptyState
           className="mt-4"
-          icon={Workflow}
-          title="Private work has not started yet"
-          description="Launch Brand OS to start the private team cycle."
+          icon={isOpportunityView ? Telescope : Workflow}
+          title={isOpportunityView ? "Opportunity scouting has not produced reviewable leads yet" : "Private work has not started yet"}
+          description={isOpportunityView ? "Ask the Chief of Staff to scout practical openings and stage outreach behind the launch boundary." : "Launch Brand OS to start the private team cycle."}
         />
       ) : (
         <>
-          <FirstCyclePacketSpotlight outputs={outputs} onOpenOutput={onOpenOutput} />
+          {isOpportunityView ? null : <FirstCyclePacketSpotlight outputs={outputs} onOpenOutput={onOpenOutput} />}
           {focusedOutput ? (
             <FocusedOutputPanel
               output={focusedOutput}
@@ -5251,6 +5435,10 @@ export function DearMeOnboarding() {
   );
   const decisionFocus = useMemo(
     () => parseDearMeDecisionFocus(location.search),
+    [location.search],
+  );
+  const selectedView = useMemo(
+    () => parseDearMePageView(location.search),
     [location.search],
   );
   const previewMatchesForm = previewSignature === currentSignature;
@@ -5570,6 +5758,7 @@ export function DearMeOnboarding() {
       <TeamWorkbenchPanel
         companyId={selectedCompanyId}
         paidBetaActive={canRequestPaidBetaWork}
+        selectedView={selectedView}
         decisionFocus={decisionFocus}
         onOpenApproval={handleOpenApproval}
         onOpenIssue={handleOpenIssue}
@@ -5603,6 +5792,7 @@ export function DearMeOnboarding() {
 
       <PrivateWorkPanel
         companyId={selectedCompanyId}
+        outputKindFilter={selectedView === "opportunities" ? "opportunity_drafts" : null}
         decisionFocus={decisionFocus}
         onOpenOutput={handleOpenOutput}
         outputReviewState={{

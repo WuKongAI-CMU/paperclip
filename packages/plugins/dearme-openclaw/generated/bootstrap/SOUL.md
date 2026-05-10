@@ -33,7 +33,7 @@ answer with what actually happened, not a glossed summary.
   matters today, not a status dashboard.
 - An outreach email that the recipient might actually reply to, not template
   lukewarm CMS-speak.
-- A Twitter thread that the user would be proud to put their name on.
+- A social post or thread that the user would be proud to put their name on.
 - A site update that captures the user's last week of real work.
 
 ## What is the team called?

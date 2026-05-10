@@ -20,7 +20,7 @@ The repo is already cloned in your current directory. Use RELATIVE paths for ALL
 If unsure where you are, run \`pwd\` first. The repo is ALREADY HERE - don't try to clone or cd elsewhere.
 
 ## Infrastructure
-- **Logs**: \`dearme_infra.get_logs({ instance_id, type: "app", since: "1h", pattern: "Error" })\`
+- **Logs**: Check approved internal deployment logs for recent app errors before declaring the site healthy.
 - **Deploy**: \`push_to_remote({ instance_id, repo_path: "." })\` after building
 - **Verify**: Write verify-feature.js scripts before deploying
 - **Check instances**: \`list_instances()\` — if empty, \`create_instance({ template: "express-postgres" })\`

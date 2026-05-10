@@ -4,6 +4,8 @@ import {
   AD_PERFORMANCE_RULES,
   APPROVAL_GATES,
   APPROVAL_GATE_CONFIG,
+  BRAND_SITE_BUILDER_PROMPT,
+  BROWSER_AGENT_PROMPT,
   BUDGET_TIERS,
   CHIEF_OF_STAFF_PROMPT,
   CHIEF_OF_STAFF_ROLE,
@@ -175,12 +177,14 @@ describe("dearme-agent-prompts package", () => {
     );
     expect(CONTENT_PRODUCER_PROMPT).not.toMatch(/Paperclip|OpenClaw|Symphony|adapter|provider|setup payload|setup_payload|model|runtime/i);
 
-    // Opportunity Hunter: 4-step daily workflow + state machine
+    // Opportunity Hunter: private opportunity packets + 8-state machine.
     expect(OPPORTUNITY_HUNTER_PROMPT).toContain("Your Daily Workflow");
     expect(OPPORTUNITY_HUNTER_PROMPT).toContain(
-      "pending → contacted → replied → responded → meeting → dead",
+      "pending → drafted → sent → replied → confirmed → completed",
     );
-    expect(OPPORTUNITY_HUNTER_PROMPT).toContain("verify with Hunter.io");
+    expect(OPPORTUNITY_HUNTER_PROMPT).toContain("draft only until the user approves the send");
+    expect(OPPORTUNITY_HUNTER_PROMPT).toContain("5 touches max");
+    expect(OPPORTUNITY_HUNTER_PROMPT).not.toMatch(/Hunter\.io|get_leads|add_lead|contacted → responded → meeting/i);
   });
 
   it("Sora UGC template renders with vars", () => {
@@ -323,6 +327,15 @@ describe("dearme-agent-prompts package", () => {
         expect(validProxyTools.has(tool)).toBe(true);
       }
     }
+  });
+
+  it("keeps browser and chief prompts on DearMe channel rails", () => {
+    expect(BROWSER_AGENT_PROMPT).not.toMatch(/Twitter|Twitter MCP|Twitter agent/i);
+    expect(CHIEF_OF_STAFF_PROMPT).not.toMatch(/\btweets?\b|dearme_infra MCP|Twitter/i);
+    expect(BRAND_SITE_BUILDER_PROMPT).not.toMatch(/dearme_infra/i);
+    expect(BROWSER_AGENT_PROMPT).toContain("channel-specific publishing gate");
+    expect(CHIEF_OF_STAFF_PROMPT).toContain("social content");
+    expect(BRAND_SITE_BUILDER_PROMPT).toContain("approved internal deployment logs");
   });
 
   it("work-loop has 8 states and Polsia-cycle rollup covers all of them", () => {

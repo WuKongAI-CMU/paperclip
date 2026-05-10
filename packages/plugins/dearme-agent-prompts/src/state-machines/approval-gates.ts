@@ -39,7 +39,7 @@ export interface ApprovalGateConfig {
    * Auto-approve threshold semantics:
    *   - For `publish` / `send`: number of past approved instances after which
    *     subsequent same-channel actions auto-approve. (E.g. after 5 approved
-   *     X tweets, auto-approve future X tweets if voice-gate ≥ minScore.)
+   *     X posts, auto-approve future X posts if voice-gate >= minScore.)
    *   - For `deploy`: 1 means "first deploy gated; subsequent same-domain
    *     deploys auto".
    *   - For `spend`: never auto-approves; a hard cap is the only relaxation.
