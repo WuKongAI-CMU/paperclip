@@ -335,6 +335,13 @@ describe.sequential("agent cross-tenant route authorization", () => {
         untouched: [mockAgentService.createApiKey],
       },
       {
+        label: "create dearme key",
+        request: (app: express.Express) =>
+          requestApp(app, (baseUrl) =>
+            request(baseUrl).post(`/api/agents/${agentId}/keys/dearme-proxy`).send({ name: "exploit" })),
+        untouched: [mockAgentService.createApiKey],
+      },
+      {
         label: "revoke key",
         request: (app: express.Express) =>
           requestApp(app, (baseUrl) => request(baseUrl).delete(`/api/agents/${agentId}/keys/${keyId}`)),

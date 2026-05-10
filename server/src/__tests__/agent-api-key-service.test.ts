@@ -1,7 +1,8 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { agentService } from "../services/agents.ts";
 
-function createDb() {
+function createDb(agentStatus: "idle" | "pending_approval" | "terminated" = "idle") {
   const createdAt = new Date("2026-05-10T00:00:00.000Z");
   let lastInserted: Record<string, unknown> | null = null;
   const agentRow = {
@@ -19,7 +20,7 @@ function createDb() {
     spentMonthlyCents: 0,
     metadata: null,
     permissions: null,
-    status: "idle",
+    status: agentStatus,
     pauseReason: null,
     pausedAt: null,
     createdAt,
@@ -97,11 +98,46 @@ describe("agent api key issuance", () => {
     const dmKey = await service.createApiKey("agent-1", "dearme-proxy", { prefix: "dm_sk_" });
     expect(dmKey.token).toMatch(/^dm_sk_/);
     expect(dmKey.name).toBe("dearme-proxy");
-    expect(getLastInserted()).toMatchObject({
+    const dmInserted = getLastInserted();
+    expect(dmInserted).toMatchObject({
       agentId: "agent-1",
       companyId: "company-1",
       name: "dearme-proxy",
       keyHash: expect.any(String),
+    });
+    expect(dmInserted).not.toHaveProperty("token");
+    expect(dmInserted?.keyHash).toBe(createHash("sha256").update(dmKey.token).digest("hex"));
+  });
+
+  it("blocks pending approval agents from issuing any api key family", async () => {
+    const { db } = createDb("pending_approval");
+    const service = agentService(db);
+
+    await expect(service.createApiKey("agent-1", "default")).rejects.toMatchObject({
+      status: 409,
+      message: "Cannot create keys for pending approval agents",
+    });
+    await expect(
+      service.createApiKey("agent-1", "dearme-proxy", { prefix: "dm_sk_" }),
+    ).rejects.toMatchObject({
+      status: 409,
+      message: "Cannot create keys for pending approval agents",
+    });
+  });
+
+  it("blocks terminated agents from issuing any api key family", async () => {
+    const { db } = createDb("terminated");
+    const service = agentService(db);
+
+    await expect(service.createApiKey("agent-1", "default")).rejects.toMatchObject({
+      status: 409,
+      message: "Cannot create keys for terminated agents",
+    });
+    await expect(
+      service.createApiKey("agent-1", "dearme-proxy", { prefix: "dm_sk_" }),
+    ).rejects.toMatchObject({
+      status: 409,
+      message: "Cannot create keys for terminated agents",
     });
   });
 });

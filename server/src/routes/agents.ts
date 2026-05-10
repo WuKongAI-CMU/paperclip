@@ -2849,6 +2849,28 @@ export function agentRoutes(
     res.status(201).json(key);
   });
 
+  router.post("/agents/:id/keys/dearme-proxy", validate(createAgentKeySchema), async (req, res) => {
+    assertBoard(req);
+    const id = req.params.id as string;
+    const agent = await getAccessibleAgent(req, res, id);
+    if (!agent) {
+      return;
+    }
+    const key = await svc.createApiKey(id, req.body.name, { prefix: "dm_sk_" });
+
+    await logActivity(db, {
+      companyId: agent.companyId,
+      actorType: "user",
+      actorId: req.actor.userId ?? "board",
+      action: "agent.key_created",
+      entityType: "agent",
+      entityId: agent.id,
+      details: { keyId: key.id, name: key.name },
+    });
+
+    res.status(201).json(key);
+  });
+
   router.delete("/agents/:id/keys/:keyId", async (req, res) => {
     assertBoard(req);
     const id = req.params.id as string;

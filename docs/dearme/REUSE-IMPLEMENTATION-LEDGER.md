@@ -15,6 +15,16 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-10
 
+- DEA-34 now closes the missing issuance half of DM-145C with a dedicated
+  admin route at `POST /agents/:id/keys/dearme-proxy`. The route reuses the
+  existing `agent_api_keys` table and `agentService.createApiKey(...,
+  { prefix: "dm_sk_" })`, while the normal `POST /agents/:id/keys` route
+  stays on the default `pcp_*` family. This keeps prefix selection out of the
+  public/admin payload shape and preserves the current revocation/storage
+  model.
+- Remaining gap for the reuse lane: DearMe onboarding still needs to call the
+  new route. No customer-facing key-management surface or second auth store was
+  introduced.
 - DM-145B is now anchored on the existing `agent_api_keys` substrate rather
   than a second DearMe key store. The proxy runtime should resolve `dm_sk_*`
   bearer tokens to authenticated company/agent context from that table, then

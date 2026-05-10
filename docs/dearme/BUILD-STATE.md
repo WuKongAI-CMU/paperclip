@@ -2,6 +2,37 @@
 
 Date: 2026-05-10
 
+## DEA-34 DM-145C Proxy-Key Issuance Absorbed - 2026-05-10
+
+Product/architecture slice:
+
+- DearMe now has a fixed issuance path for proxy keys that reuses the
+  existing agent API-key store and revocation model. `POST
+  /agents/:id/keys/dearme-proxy` calls `agentService.createApiKey(...,
+  { prefix: "dm_sk_" })` and keeps the normal `POST /agents/:id/keys`
+  path on the default `pcp_*` family.
+- The dedicated DearMe path is intentionally narrow: callers can choose the
+  human-readable key name, but they cannot request arbitrary prefixes through
+  the public/admin route. The service still rejects pending-approval and
+  terminated agents before any token is minted.
+- Reuse decision: keep a single `agent_api_keys` substrate for both `pcp_*`
+  and `dm_sk_*` families. Do not add a second DearMe key store or a parallel
+  auth model.
+- Remaining gap: this is backstage issuance only. DearMe onboarding still
+  needs product wiring to call the new route; no customer-facing key management
+  surface was added here.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/agent-api-key-service.test.ts
+  server/src/__tests__/dearme-ai-proxy-routes.test.ts
+  server/src/__tests__/agent-permissions-routes.test.ts
+  server/src/__tests__/agent-cross-tenant-authz-routes.test.ts --maxWorkers=1`
+  passed: 4 files, 54 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/dearme-ai-proxy typecheck` passed.
+- `git diff --check` passed.
+
 ## DEA-33 DM-145B Proxy Auth Boundary Absorbed - 2026-05-10
 
 Product/architecture slice:

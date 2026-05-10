@@ -42,6 +42,7 @@ const mockAgentService = vi.hoisted(() => ({
   getById: vi.fn(),
   list: vi.fn(),
   create: vi.fn(),
+  createApiKey: vi.fn(),
   activatePendingApproval: vi.fn(),
   update: vi.fn(),
   updatePermissions: vi.fn(),
@@ -296,6 +297,7 @@ describe.sequential("agent permission routes", () => {
     mockAgentService.getById.mockReset();
     mockAgentService.list.mockReset();
     mockAgentService.create.mockReset();
+    mockAgentService.createApiKey.mockReset();
     mockAgentService.activatePendingApproval.mockReset();
     mockAgentService.update.mockReset();
     mockAgentService.updatePermissions.mockReset();
@@ -335,6 +337,12 @@ describe.sequential("agent permission routes", () => {
     mockAgentService.getChainOfCommand.mockResolvedValue([]);
     mockAgentService.resolveByReference.mockResolvedValue({ ambiguous: false, agent: baseAgent });
     mockAgentService.create.mockResolvedValue(baseAgent);
+    mockAgentService.createApiKey.mockResolvedValue({
+      id: "33333333-3333-4333-8333-333333333333",
+      name: "default",
+      token: "pcp_test_token",
+      createdAt: new Date("2026-04-11T00:00:00.000Z"),
+    });
     mockAgentService.activatePendingApproval.mockResolvedValue({
       agent: baseAgent,
       activated: false,
@@ -459,6 +467,53 @@ describe.sequential("agent permission routes", () => {
       .send({ name: "backdoor" }));
 
     expect(res.status).toBe(403);
+  });
+
+  it("ignores caller-supplied prefixes on the public agent key route", async () => {
+    const app = await createApp({
+      type: "board",
+      userId: "board-user",
+      source: "local_implicit",
+      isInstanceAdmin: true,
+      companyIds: [companyId],
+    });
+
+    const res = await requestApp(app, (baseUrl) => request(baseUrl)
+      .post(`/api/agents/${agentId}/keys`)
+      .send({ name: "backdoor", prefix: "dm_sk_" }));
+
+    expect(res.status).toBe(201);
+    expect(res.body.token).toBe("pcp_test_token");
+    expect(mockAgentService.createApiKey).toHaveBeenCalledWith(agentId, "backdoor");
+  });
+
+  it("issues a DearMe proxy key only through the dedicated admin route", async () => {
+    mockAgentService.createApiKey.mockImplementation(async (_id, name, options) => ({
+      id: "33333333-3333-4333-8333-333333333333",
+      name,
+      token: options?.prefix === "dm_sk_" ? "dm_sk_test_token" : "pcp_test_token",
+      createdAt: new Date("2026-04-11T00:00:00.000Z"),
+    }));
+
+    const app = await createApp({
+      type: "board",
+      userId: "board-user",
+      source: "local_implicit",
+      isInstanceAdmin: true,
+      companyIds: [companyId],
+    });
+
+    const res = await requestApp(app, (baseUrl) => request(baseUrl)
+      .post(`/api/agents/${agentId}/keys/dearme-proxy`)
+      .send({ name: "dearme-proxy", prefix: "pcp_" }));
+
+    expect(res.status).toBe(201);
+    expect(res.body.token).toBe("dm_sk_test_token");
+    expect(mockAgentService.createApiKey).toHaveBeenCalledWith(
+      agentId,
+      "dearme-proxy",
+      { prefix: "dm_sk_" },
+    );
   });
 
   it("blocks wakeups for authenticated company members without agent admin permission", async () => {
