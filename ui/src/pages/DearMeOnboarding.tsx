@@ -558,36 +558,38 @@ function reviewLoopVariant(loop: DearMeOutputReviewLoop) {
 function reviewLoopAttention(loop: DearMeOutputReviewLoop | null | undefined): DearMeActionCardAttention | null {
   if (!loop) return null;
 
+  const nextStep = customerProofPackSummary(loop.nextStep);
+
   switch (loop.state) {
     case "needs_user_review":
       return {
         kind: "decision_needed",
         label: "Waiting on your decision",
-        detail: loop.nextStep,
+        detail: nextStep,
       };
     case "revision_requested":
       return {
         kind: "retry",
         label: "Changes requested",
-        detail: loop.nextStep,
+        detail: nextStep,
       };
     case "regeneration_requested":
       return {
         kind: "retry",
         label: "Another pass is in motion",
-        detail: loop.nextStep,
+        detail: nextStep,
       };
     case "not_useful":
       return {
         kind: "paused",
         label: "New direction needed",
-        detail: loop.nextStep,
+        detail: nextStep,
       };
     case "retry_limit_reached":
       return {
         kind: "blocked",
         label: "Needs clearer direction",
-        detail: loop.nextStep,
+        detail: nextStep,
       };
     case "approved":
     case "fresh":
@@ -699,14 +701,18 @@ function outputActionAttention(
     return {
       kind: "decision_needed",
       label: "Ready for your review",
-      detail: loop?.nextStep ?? "Open it, then launch, request changes, ask for another pass, or choose a new direction.",
+      detail: loop?.nextStep
+        ? customerProofPackSummary(loop.nextStep)
+        : "Open it, then launch, request changes, ask for another pass, or choose a new direction.",
     };
   }
   if (status === "blocked") {
     return {
       kind: "blocked",
       label: "Needs attention",
-      detail: loop?.nextStep ?? "Give the team a clearer direction before this can continue.",
+      detail: loop?.nextStep
+        ? customerProofPackSummary(loop.nextStep)
+        : "Give the team a clearer direction before this can continue.",
     };
   }
   if (status === "cancelled") {
@@ -724,7 +730,9 @@ function decisionActionAttention(decision: DearMeWorkbenchDecision): DearMeActio
   return reviewLoopAttention(decision.reviewLoop) ?? {
     kind: "decision_needed",
     label: "Waiting on your decision",
-    detail: decision.reviewLoop?.nextStep ?? decisionAfterCallLabel(decision.riskGate),
+    detail: decision.reviewLoop?.nextStep
+      ? customerProofPackSummary(decision.reviewLoop.nextStep)
+      : decisionAfterCallLabel(decision.riskGate),
   };
 }
 
@@ -736,7 +744,7 @@ function streamActionAttention(item: DearMeWorkbenchStreamItem): DearMeActionCar
     return {
       kind: "decision_needed",
       label: "Waiting on your decision",
-      detail: item.nextAction,
+      detail: customerProofPackSummary(item.nextAction),
     };
   }
 
@@ -745,14 +753,14 @@ function streamActionAttention(item: DearMeWorkbenchStreamItem): DearMeActionCar
     return {
       kind: "blocked",
       label: "Needs attention",
-      detail: item.nextAction,
+      detail: customerProofPackSummary(item.nextAction),
     };
   }
   if (status.includes("paused") || status.includes("waiting")) {
     return {
       kind: "paused",
       label: "Paused",
-      detail: item.nextAction,
+      detail: customerProofPackSummary(item.nextAction),
     };
   }
 
@@ -778,7 +786,7 @@ function ReviewLoopNextStep({
   return (
     <div className={cn("rounded-md border border-border bg-background/80 p-3", className)}>
       <p className="text-xs font-medium text-muted-foreground">Team follow-through</p>
-      <p className="mt-1 text-sm text-foreground/85">{loop.nextStep}</p>
+      <p className="mt-1 text-sm text-foreground/85">{customerProofPackSummary(loop.nextStep)}</p>
       {loop.lastDecisionNotePreview ? (
         <p className="mt-2 text-xs text-muted-foreground">Last call: {loop.lastDecisionNotePreview}</p>
       ) : null}
@@ -801,12 +809,12 @@ function ReviewHandoffCard({
         <MessageSquare className="h-4 w-4 text-muted-foreground" />
         <p className="text-xs font-medium text-muted-foreground">Private handoff</p>
       </div>
-      <p className="mt-2 text-sm font-medium text-foreground">{handoff.title}</p>
-      <p className="mt-1 text-sm text-foreground/85">{handoff.summary}</p>
+      <p className="mt-2 text-sm font-medium text-foreground">{customerProofPackSummary(handoff.title)}</p>
+      <p className="mt-1 text-sm text-foreground/85">{customerProofPackSummary(handoff.summary)}</p>
       {handoff.userDirection ? (
         <p className="mt-2 text-xs text-muted-foreground">Your note: {handoff.userDirection}</p>
       ) : null}
-      <p className="mt-2 text-xs text-muted-foreground">{handoff.nextDraftDirection}</p>
+      <p className="mt-2 text-xs text-muted-foreground">{customerProofPackSummary(handoff.nextDraftDirection)}</p>
     </div>
   );
 }
@@ -1158,7 +1166,8 @@ function defaultSourceInputModeForGuide(
 }
 
 function sourceLabelForChip(value: string) {
-  return value.length > 42 ? `${value.slice(0, 39)}...` : value;
+  const customerLabel = customerProofPackSummary(value);
+  return customerLabel.length > 42 ? `${customerLabel.slice(0, 39)}...` : customerLabel;
 }
 
 const MEMORY_SOURCE_PLAN_STATUS_LABELS: Record<DearMeWorkbenchMemory["sourcePlan"]["status"], string> = {
@@ -1313,9 +1322,11 @@ function cyclePacketWorkProducts(output: DearMeOutputItem) {
 
 function customerProofPackSummary(text: string) {
   return text
-    .replace(/\bsame private cycle packet\b/gi, "same private proof pack")
-    .replace(/\bsame private evidence packet\b/gi, "same private proof pack")
+    .replace(/\bsame private (?:cycle output|cycle|evidence) packet\b/gi, "same private proof pack")
+    .replace(/\bprivate (?:cycle output|cycle|evidence) packet\b/gi, "private proof pack")
+    .replace(/\bshared (?:cycle output|cycle|evidence) packet\b/gi, "shared proof pack")
     .replace(/\bshared packet\b/gi, "shared proof pack")
+    .replace(/\bcycle output packet\b/gi, "proof pack")
     .replace(/\bcycle packet\b/gi, "first proof pack");
 }
 
@@ -1585,7 +1596,9 @@ function FirstCycleProofPackage({
           >
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground/80">{post.hook}</p>
-              <Badge variant="outline">Source proof: {post.proofUsed}</Badge>
+              <Badge variant="outline" className="h-auto max-w-full justify-start whitespace-normal text-left leading-snug">
+                Source proof: {post.proofUsed}
+              </Badge>
             </div>
           </DearMeWorkbenchCard>
         ))}
@@ -1604,7 +1617,9 @@ function FirstCycleProofPackage({
           description={preview.portfolioProofCard.proposedCopy}
           badge={<FileText className="h-4 w-4 text-muted-foreground" />}
         >
-          <Badge variant="outline">Source proof: {preview.portfolioProofCard.proofSource}</Badge>
+          <Badge variant="outline" className="h-auto max-w-full justify-start whitespace-normal text-left leading-snug">
+            Source proof: {preview.portfolioProofCard.proofSource}
+          </Badge>
         </DearMeWorkbenchCard>
         <DearMeWorkbenchCard
           eyebrow="First growth plan"
@@ -1853,8 +1868,8 @@ function FocusedDecisionPanel({
         <DearMeWorkbenchSectionHeader
           icon={ShieldCheck}
           eyebrow="Decision focused"
-          title={decision.title}
-          description={decision.summary}
+          title={customerProofPackSummary(decision.title)}
+          description={customerProofPackSummary(decision.summary)}
           trailing={
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={decision.riskGate ? "secondary" : "outline"}>
@@ -1973,8 +1988,8 @@ function FocusedDecisionPanel({
         <DearMeWorkbenchSectionHeader
           icon={ShieldCheck}
           eyebrow="Decision focused"
-          title={batch.title}
-          description={batch.summary}
+          title={customerProofPackSummary(batch.title)}
+          description={customerProofPackSummary(batch.summary)}
           trailing={
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={batch.riskGate ? "secondary" : "outline"}>
@@ -1989,7 +2004,7 @@ function FocusedDecisionPanel({
         <DearMeEvidenceGrid className="mt-4">
           <div className="rounded-md border border-border bg-background/80 p-3">
             <p className="text-xs font-medium text-muted-foreground">Next move</p>
-            <p className="mt-1 text-sm">{batch.actionLabel}</p>
+            <p className="mt-1 text-sm">{customerProofPackSummary(batch.actionLabel)}</p>
           </div>
           <div className="rounded-md border border-border bg-background/80 p-3">
             <p className="text-xs font-medium text-muted-foreground">Updated</p>
@@ -2016,7 +2031,7 @@ function FocusedDecisionPanel({
               className={FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME}
               onClick={() => onOpenBatch(batch)}
             >
-              {batch.actionLabel}
+              {customerProofPackSummary(batch.actionLabel)}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
@@ -2031,8 +2046,8 @@ function FocusedDecisionPanel({
         <DearMeWorkbenchSectionHeader
           icon={FileText}
           eyebrow="Work focused"
-          title={workItem.title}
-          description={workItem.summary}
+          title={customerProofPackSummary(workItem.title)}
+          description={customerProofPackSummary(workItem.summary)}
           trailing={
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={outputStatusVariant(workItem.status)}>
@@ -2118,10 +2133,10 @@ function OutputSourceEvidenceList({
         {evidence.map((item) => (
           <div key={`${output.id}:source:${item.kind}`} className="min-w-0">
             <Badge variant="outline" className="max-w-full truncate">
-              {item.label}
+              {customerProofPackSummary(item.label)}
             </Badge>
             <p className={cn("mt-1 text-foreground/85", compact ? "line-clamp-2 text-xs" : "text-sm")}>
-              {item.summary}
+              {customerProofPackSummary(item.summary)}
             </p>
           </div>
         ))}
@@ -2162,8 +2177,8 @@ function FocusedOutputPanel({
       <DearMeWorkbenchSectionHeader
         icon={FileText}
         eyebrow="Focused work"
-        title={output.title}
-        description={output.summary}
+        title={customerProofPackSummary(output.title)}
+        description={customerProofPackSummary(output.summary)}
         trailing={
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline">{OUTPUT_KIND_LABELS[output.kind]}</Badge>
@@ -2177,7 +2192,7 @@ function FocusedOutputPanel({
 
       {preview ? (
         <p className="mt-4 rounded-md border border-border bg-background/80 p-3 text-sm text-foreground/85">
-          {preview}
+          {customerProofPackSummary(preview)}
         </p>
       ) : null}
 
@@ -2185,8 +2200,8 @@ function FocusedOutputPanel({
         <DearMeEvidenceGrid className="mt-4" columns="two">
           {details.map((detail) => (
             <div key={`${output.id}:focused:${detail.kind}`} className="rounded-md border border-border bg-background/80 p-3">
-              <p className="text-xs font-medium text-muted-foreground">{detail.label}</p>
-              <p className="mt-1 text-sm text-foreground/85">{detail.value}</p>
+              <p className="text-xs font-medium text-muted-foreground">{customerProofPackSummary(detail.label)}</p>
+              <p className="mt-1 text-sm text-foreground/85">{customerProofPackSummary(detail.value)}</p>
             </div>
           ))}
         </DearMeEvidenceGrid>
@@ -2351,7 +2366,9 @@ function SourceReviewDetailPanel({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase text-muted-foreground">Source detail</p>
-          <h3 className="mt-1 text-base font-semibold leading-snug">{item.sourceTitle}</h3>
+          <h3 className="mt-1 text-base font-semibold leading-snug">
+            {customerProofPackSummary(item.sourceTitle)}
+          </h3>
         </div>
         <Button type="button" size="sm" variant="ghost" onClick={onClose}>
           Close
@@ -2369,18 +2386,18 @@ function SourceReviewDetailPanel({
 
       <div className="mt-4 rounded-md border border-border bg-muted/20 p-3">
         <p className="text-xs font-medium text-muted-foreground">What DearMe found</p>
-        <p className="mt-1 text-sm text-foreground/85">{item.summary}</p>
+        <p className="mt-1 text-sm text-foreground/85">{customerProofPackSummary(item.summary)}</p>
       </div>
 
       <div className="mt-3 grid gap-3">
         <div className="rounded-md border border-border bg-background/80 p-3">
           <p className="text-xs font-medium text-muted-foreground">Prepared fact</p>
-          <p className="mt-1 text-sm font-medium">{item.proposedTitle}</p>
-          <p className="mt-2 text-sm text-foreground/85">{item.proposedBody}</p>
+          <p className="mt-1 text-sm font-medium">{customerProofPackSummary(item.proposedTitle)}</p>
+          <p className="mt-2 text-sm text-foreground/85">{customerProofPackSummary(item.proposedBody)}</p>
         </div>
         <div className="rounded-md border border-border bg-background/80 p-3">
           <p className="text-xs font-medium text-muted-foreground">Your call</p>
-          <p className="mt-1 text-sm text-foreground/85">{item.nextAction}</p>
+          <p className="mt-1 text-sm text-foreground/85">{customerProofPackSummary(item.nextAction)}</p>
         </div>
       </div>
 
@@ -2427,7 +2444,7 @@ function TeamSummaryPanel({
         icon={Users}
         eyebrow="Your brand team today"
         title={workbench.headline}
-        description={workbench.summary}
+        description={customerProofPackSummary(workbench.summary)}
         trailing={
           <Badge variant={paidBetaActive ? "default" : "secondary"}>
             {paidBetaActive ? "Working now" : "Private work locked"}
@@ -2464,15 +2481,19 @@ function TeamFocusWorkbenchPanel({
     workbench.memory.sourceReviewQueue.length;
   const workCount = workbench.workReady.length + workbench.activeWork.length;
   const nextDecisionTitle =
-    nextBatchDecision?.title ??
-    nextApprovalDecision?.title ??
-    nextSourceReview?.proposedTitle ??
-    "No decision waiting";
+    customerProofPackSummary(
+      nextBatchDecision?.title ??
+        nextApprovalDecision?.title ??
+        nextSourceReview?.proposedTitle ??
+        "No decision waiting",
+    );
   const nextDecisionSummary =
-    nextBatchDecision?.summary ??
-    nextApprovalDecision?.summary ??
-    nextSourceReview?.nextAction ??
-    "Your team can keep preparing private work.";
+    customerProofPackSummary(
+      nextBatchDecision?.summary ??
+        nextApprovalDecision?.summary ??
+        nextSourceReview?.nextAction ??
+        "Your team can keep preparing private work.",
+    );
   const reportStatus = workbench.report
     ? OUTPUT_STATUS_LABELS[workbench.report.status]
     : "Not ready";
@@ -2495,16 +2516,24 @@ function TeamFocusWorkbenchPanel({
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
         <DearMeWorkbenchCard
           eyebrow="While you were away"
-          title={latestProof?.title ?? "Your team is ready to start"}
-          description={latestProof?.summary ?? "Create your Brand OS and the first private cycle will begin here."}
+          title={latestProof ? customerProofPackSummary(latestProof.title) : "Your team is ready to start"}
+          description={
+            latestProof
+              ? customerProofPackSummary(latestProof.summary)
+              : "Create your Brand OS and the first private cycle will begin here."
+          }
           badge={<Workflow className="h-4 w-4 text-muted-foreground" />}
           footer={
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-md border border-border bg-background/70 p-3">
                 <p className="text-xs font-medium text-muted-foreground">Next move</p>
-                <p className="mt-1 text-sm font-medium">{nextMove?.title ?? "Private growth cycle"}</p>
+                <p className="mt-1 text-sm font-medium">
+                  {nextMove ? customerProofPackSummary(nextMove.title) : "Private growth cycle"}
+                </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {nextMove?.summary ?? "Your team will prepare the first reviewable assets."}
+                  {nextMove
+                    ? customerProofPackSummary(nextMove.summary)
+                    : "Your team will prepare the first reviewable assets."}
                 </p>
               </div>
               <div className="rounded-md border border-border bg-background/70 p-3">
@@ -2713,8 +2742,8 @@ function WorkReadyPanel({
                 className="p-4"
                 focused={focused}
                 eyebrow={roleLabel(item.ownerRole)}
-                title={item.title}
-                summary={item.summary}
+                title={customerProofPackSummary(item.title)}
+                summary={customerProofPackSummary(item.summary)}
                 attention={outputActionAttention(item.status, item.reviewLoop)}
                 statusBadges={[
                   {
@@ -2755,7 +2784,9 @@ function WorkReadyPanel({
                   </div>
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">Your next step</p>
-                    <p className="mt-1 text-sm text-foreground/85">{item.reviewLoop.nextStep}</p>
+                    <p className="mt-1 text-sm text-foreground/85">
+                      {customerProofPackSummary(item.reviewLoop.nextStep)}
+                    </p>
                     <p className="mt-2 text-xs text-muted-foreground">{workReadyNextStepLabel(item.status)}</p>
                   </div>
                 </DearMeEvidenceGrid>
@@ -2811,8 +2842,8 @@ function DecisionsNeededPanel({
                 key={batch.id}
                 className="p-4"
                 focused={focused}
-                title={batch.title}
-                summary={batch.summary}
+                title={customerProofPackSummary(batch.title)}
+                summary={customerProofPackSummary(batch.summary)}
                 attention={{
                   kind: "decision_needed",
                   label: "Waiting on your decision",
@@ -2833,7 +2864,7 @@ function DecisionsNeededPanel({
                 footer={`Updated ${shortDate(batch.updatedAt)}`}
                 action={
                   {
-                    label: batch.actionLabel,
+                    label: customerProofPackSummary(batch.actionLabel),
                     onClick: () => onOpenBatch(batch),
                     disabled: batch.approvalIds.length === 0 && batch.issueIds.length === 0,
                     variant: "default",
@@ -2868,12 +2899,12 @@ function DecisionsNeededPanel({
             <DearMeActionCard
               key={item.id}
               className="p-4"
-              title={item.sourceTitle}
-              summary={item.summary}
+              title={customerProofPackSummary(item.sourceTitle)}
+              summary={customerProofPackSummary(item.summary)}
               attention={{
                 kind: "decision_needed",
                 label: "Waiting on your review",
-                detail: item.nextAction,
+                detail: customerProofPackSummary(item.nextAction),
               }}
               statusBadges={[
                 {
@@ -2903,15 +2934,17 @@ function DecisionsNeededPanel({
               <DearMeEvidenceGrid>
                 <div className="rounded-md border border-border bg-background/80 p-3">
                   <p className="text-xs font-medium text-muted-foreground">Prepared source</p>
-                  <p className="mt-1 text-sm">{item.sourceTitle}</p>
+                  <p className="mt-1 text-sm">{customerProofPackSummary(item.sourceTitle)}</p>
                 </div>
                 <div className="rounded-md border border-border bg-background/80 p-3">
                   <p className="text-xs font-medium text-muted-foreground">Suggested memory</p>
-                  <p className="mt-1 text-sm text-foreground/85">{item.proposedTitle}</p>
+                  <p className="mt-1 text-sm text-foreground/85">
+                    {customerProofPackSummary(item.proposedTitle)}
+                  </p>
                 </div>
                 <div className="rounded-md border border-border bg-background/80 p-3">
                   <p className="text-xs font-medium text-muted-foreground">Your next step</p>
-                  <p className="mt-1 text-sm text-foreground/85">{item.nextAction}</p>
+                  <p className="mt-1 text-sm text-foreground/85">{customerProofPackSummary(item.nextAction)}</p>
                 </div>
               </DearMeEvidenceGrid>
             </DearMeActionCard>
@@ -2938,8 +2971,8 @@ function DecisionsNeededPanel({
                 key={decision.id}
                 className="p-4"
                 focused={focused}
-                title={decision.title}
-                summary={decision.summary}
+                title={customerProofPackSummary(decision.title)}
+                summary={customerProofPackSummary(decision.summary)}
                 attention={decisionActionAttention(decision)}
                 statusBadges={[
                   {
@@ -2988,7 +3021,9 @@ function DecisionsNeededPanel({
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">After your call</p>
                     <p className="mt-1 text-sm text-foreground/85">
-                      {decision.reviewLoop?.nextStep ?? decisionAfterCallLabel(decision.riskGate)}
+                      {decision.reviewLoop?.nextStep
+                        ? customerProofPackSummary(decision.reviewLoop.nextStep)
+                        : decisionAfterCallLabel(decision.riskGate)}
                     </p>
                     {decision.reviewLoop?.lastDecisionNotePreview ? (
                       <p className="mt-2 text-xs text-muted-foreground">
@@ -3095,8 +3130,10 @@ function OperatingLoopPanel({
           <p className="text-xs font-medium uppercase text-muted-foreground">Latest signal</p>
           {latestEvent ? (
             <>
-              <p className="mt-2 text-sm font-medium">{latestEvent.title}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{latestEvent.summary}</p>
+              <p className="mt-2 text-sm font-medium">{customerProofPackSummary(latestEvent.title)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {customerProofPackSummary(latestEvent.summary)}
+              </p>
             </>
           ) : (
             <p className="mt-2 text-sm text-muted-foreground">
@@ -3167,8 +3204,8 @@ function OperatingLoopPanel({
                         {node.role ? <span className="text-xs text-muted-foreground">{roleLabel(node.role)}</span> : null}
                       </span>
                     }
-                    title={node.label}
-                    description={node.summary}
+                    title={customerProofPackSummary(node.label)}
+                    description={customerProofPackSummary(node.summary)}
                     badge={
                       <div className="flex items-center gap-2">
                         <span className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground">
@@ -3181,13 +3218,15 @@ function OperatingLoopPanel({
                     <div className="space-y-3">
                       <div>
                         <p className="text-xs font-medium uppercase text-muted-foreground">Next move</p>
-                        <p className="mt-1 line-clamp-3 text-sm text-foreground/85">{actionGraphNextMove(node)}</p>
+                        <p className="mt-1 line-clamp-3 text-sm text-foreground/85">
+                          {customerProofPackSummary(actionGraphNextMove(node))}
+                        </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <Badge variant="outline">Updated {shortDate(node.updatedAt)}</Badge>
                         {connectionLabels.map((label) => (
                           <Badge key={`${node.id}:${label}`} variant="secondary">
-                            {titleizeStatus(label)}
+                            {customerProofPackSummary(titleizeStatus(label))}
                           </Badge>
                         ))}
                       </div>
@@ -3260,8 +3299,8 @@ function BrandTeamRunLedgerPanel({ entries }: { entries: DearMeWorkbenchRunLedge
                     <span className="text-xs text-muted-foreground">{shortDate(entry.createdAt)}</span>
                   </span>
                 }
-                title={entry.title}
-                description={entry.summary}
+                title={customerProofPackSummary(entry.title)}
+                description={customerProofPackSummary(entry.summary)}
                 badge={
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground">
                     <Icon className="h-5 w-5" />
@@ -3278,11 +3317,13 @@ function BrandTeamRunLedgerPanel({ entries }: { entries: DearMeWorkbenchRunLedge
                 <div className="grid gap-3 sm:grid-cols-2" data-dearme-run-ledger-entry={entry.kind}>
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium uppercase text-muted-foreground">Evidence</p>
-                    <p className="mt-1 text-sm text-foreground">{entry.evidenceLabel}</p>
+                    <p className="mt-1 text-sm text-foreground">
+                      {customerProofPackSummary(entry.evidenceLabel)}
+                    </p>
                   </div>
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium uppercase text-muted-foreground">Next</p>
-                    <p className="mt-1 text-sm text-foreground">{entry.nextAction}</p>
+                    <p className="mt-1 text-sm text-foreground">{customerProofPackSummary(entry.nextAction)}</p>
                   </div>
                 </div>
               </DearMeWorkbenchCard>
@@ -3471,8 +3512,8 @@ function LiveTeamFeedPanel({
                   <span>{roleLabel(item.role)}</span>
                 </span>
               }
-              title={item.title}
-              summary={item.summary}
+              title={customerProofPackSummary(item.title)}
+              summary={customerProofPackSummary(item.summary)}
               attention={streamActionAttention(item)}
               statusBadges={[
                 { label: WORKSTREAM_KIND_LABELS[item.kind], variant: "outline" },
@@ -3491,24 +3532,24 @@ function LiveTeamFeedPanel({
                   : []),
               ]}
               chips={[
-                { label: item.artifact, variant: "outline" },
-                { label: item.sourceLabel, variant: "outline" },
+                { label: customerProofPackSummary(item.artifact), variant: "outline" },
+                { label: sourceLabelForChip(item.sourceLabel), variant: "outline" },
                 ...(item.needsApproval
                   ? [{ label: "Decision ready", variant: "default" as const }]
                   : []),
                 ...(item.costImpact
-                  ? [{ label: item.costImpact, variant: "secondary" as const }]
+                  ? [{ label: customerProofPackSummary(item.costImpact), variant: "secondary" as const }]
                   : []),
                 { label: shortDate(item.createdAt), variant: "outline" },
               ]}
               calloutLabel="Next action"
-              callout={item.nextAction}
+              callout={customerProofPackSummary(item.nextAction)}
               action={
                 actionLabel
                   ? {
                       label: actionLabel,
                       variant: item.needsApproval ? "default" : "outline",
-                      ariaLabel: `${actionLabel}: ${item.title}`,
+                      ariaLabel: `${actionLabel}: ${customerProofPackSummary(item.title)}`,
                       onClick: () => {
                         if (item.approvalId) {
                           onOpenApproval(item.approvalId);
@@ -3875,8 +3916,8 @@ function VoiceMemoryPanel({
                     <DearMeActionCard
                       aria-label="Voice & Memory source review"
                       eyebrow={MEMORY_SOURCE_INPUT_MODE_LABELS[item.sourceInputMode]}
-                      title={item.sourceTitle}
-                      summary={item.summary}
+                      title={customerProofPackSummary(item.sourceTitle)}
+                      summary={customerProofPackSummary(item.summary)}
                       chips={[
                         { label: MEMORY_KIND_LABELS[item.proposedKind], variant: "outline" },
                         ...(item.sourceLabel
@@ -3885,10 +3926,10 @@ function VoiceMemoryPanel({
                         { label: shortDate(item.createdAt), variant: "outline" },
                       ]}
                       calloutLabel="Prepare next"
-                      callout={item.nextAction}
+                      callout={customerProofPackSummary(item.nextAction)}
                       action={{
                         label: "Prepare fact",
-                        ariaLabel: `Prepare fact from ${item.sourceTitle}`,
+                        ariaLabel: `Prepare fact from ${customerProofPackSummary(item.sourceTitle)}`,
                         onClick: () => handleSourceReviewSelect(item),
                         variant: selected ? "default" : "outline",
                       }}
@@ -4075,13 +4116,13 @@ function VoiceMemoryPanel({
                 key={item.id}
                 aria-label="Voice & Memory source"
                 eyebrow={MEMORY_KIND_LABELS[item.kind]}
-                title={item.title ?? "Untitled memory"}
-                summary={item.bodyPreview}
+                title={customerProofPackSummary(item.title ?? "Untitled memory")}
+                summary={customerProofPackSummary(item.bodyPreview)}
                 chips={chips}
                 footer={shortDate(item.createdAt)}
                 action={{
                   label: "Revise",
-                  ariaLabel: `Revise ${item.title ?? MEMORY_KIND_LABELS[item.kind]}`,
+                  ariaLabel: `Revise ${customerProofPackSummary(item.title ?? MEMORY_KIND_LABELS[item.kind])}`,
                   icon: RefreshCw,
                   onClick: () => handleReviseSource(item),
                 }}
@@ -5018,8 +5059,8 @@ function PrivateWorkPanel({
                   key={output.id}
                   className="flex min-h-44 flex-col p-4"
                   focused={focused}
-                  title={output.title}
-                  summary={output.summary}
+                  title={customerProofPackSummary(output.title)}
+                  summary={customerProofPackSummary(output.summary)}
                   attention={outputActionAttention(output.status, output.reviewLoop)}
                   statusBadges={[
                     {
@@ -5047,13 +5088,15 @@ function PrivateWorkPanel({
                   }}
                 >
                   {preview ? (
-                    <p className="line-clamp-3 text-sm text-foreground/80">{preview}</p>
+                    <p className="line-clamp-3 text-sm text-foreground/80">
+                      {customerProofPackSummary(preview)}
+                    </p>
                   ) : (
                     <p className="text-sm text-muted-foreground">Waiting for the first private draft.</p>
                   )}
 
                   <p className="mt-3 rounded-md border border-border bg-background/80 p-2 text-xs text-muted-foreground">
-                    {output.reviewLoop.nextStep}
+                    {customerProofPackSummary(output.reviewLoop.nextStep)}
                   </p>
 
                   <OutputSourceEvidenceList output={output} limit={2} compact className="mt-3" />
@@ -5062,8 +5105,12 @@ function PrivateWorkPanel({
                     <dl className="mt-3 space-y-2 border-t border-border pt-3">
                       {details.map((detail) => (
                         <div key={`${output.id}:${detail.kind}`} className="grid gap-1">
-                          <dt className="text-xs font-medium text-muted-foreground">{detail.label}</dt>
-                          <dd className="line-clamp-2 text-sm text-foreground/85">{detail.value}</dd>
+                          <dt className="text-xs font-medium text-muted-foreground">
+                            {customerProofPackSummary(detail.label)}
+                          </dt>
+                          <dd className="line-clamp-2 text-sm text-foreground/85">
+                            {customerProofPackSummary(detail.value)}
+                          </dd>
                         </div>
                       ))}
                     </dl>

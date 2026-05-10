@@ -377,30 +377,29 @@ export function Layout() {
         )}
 
         {isMobile ? (
-          <div
-            className={cn(
-              "fixed inset-y-0 left-0 z-50 flex flex-col overflow-hidden pt-[env(safe-area-inset-top)] transition-transform duration-100 ease-out",
-              sidebarOpen ? "translate-x-0" : "-translate-x-full"
-            )}
-          >
-            <div className="flex flex-1 min-h-0 overflow-hidden">
-              {!isDearMeRoute && <CompanyRail />}
-              <div className="w-60 shrink-0 overflow-hidden">
-                {isInstanceSettingsRoute ? (
-                  <InstanceSidebar />
-                ) : isCompanySettingsRoute ? (
-                  <CompanySettingsSidebar />
-                ) : (
-                  companySidebar
-                )}
+          sidebarOpen ? (
+            <div
+              className="fixed inset-y-0 left-0 z-50 flex flex-col overflow-hidden pt-[env(safe-area-inset-top)]"
+            >
+              <div className="flex flex-1 min-h-0 overflow-hidden">
+                {!isDearMeRoute && <CompanyRail />}
+                <div className="w-60 shrink-0 overflow-hidden">
+                  {isInstanceSettingsRoute ? (
+                    <InstanceSidebar />
+                  ) : isCompanySettingsRoute ? (
+                    <CompanySettingsSidebar />
+                  ) : (
+                    companySidebar
+                  )}
+                </div>
               </div>
+              <SidebarAccountMenu
+                deploymentMode={health?.deploymentMode}
+                instanceSettingsTarget={instanceSettingsTarget}
+                version={health?.version}
+              />
             </div>
-            <SidebarAccountMenu
-              deploymentMode={health?.deploymentMode}
-              instanceSettingsTarget={instanceSettingsTarget}
-              version={health?.version}
-            />
-          </div>
+          ) : null
         ) : (
           <div className="flex h-full flex-col shrink-0">
             <div className="flex flex-1 min-h-0">

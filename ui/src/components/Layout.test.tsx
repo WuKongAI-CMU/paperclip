@@ -452,6 +452,9 @@ describe("Layout", () => {
     await flushReact();
 
     expect(container.textContent).toContain("DearMe mobile nav");
+    expect(container.textContent).not.toContain("DearMe customer nav");
+    expect(container.textContent).not.toContain("Account menu");
+    expect(container.textContent).not.toContain("Close sidebar");
     expect(container.textContent).not.toContain("Generic mobile nav");
     expect(mockMobileBottomNav).not.toHaveBeenCalled();
 

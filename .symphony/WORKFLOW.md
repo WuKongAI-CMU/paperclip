@@ -22,7 +22,8 @@ hooks:
     SOURCE_REPO="${DEARME_SYMPHONY_SOURCE_REPO:-/Users/peter/dearme}"
     # Coordinator target as of 2026-05-10: DM-139/DM-140 should extend the
     # shared cycle output packet path through output handoff and the existing
-    # workbench/report projection, not fork a second reporting/content runtime.
+    # workbench/report projection plus Dear me letter proof-pack review, not
+    # fork a second reporting/content runtime.
     # Override this after the next reviewed integration branch lands.
     SOURCE_BRANCH="${DEARME_SYMPHONY_SOURCE_BRANCH:-codex/dearme-dm-136-sample-demo-proof}"
     git clone --no-hardlinks "$SOURCE_REPO" .

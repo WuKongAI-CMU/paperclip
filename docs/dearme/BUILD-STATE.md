@@ -2,6 +2,70 @@
 
 Date: 2026-05-10
 
+## DM-141 Frontstage Team Workstream Polish - 2026-05-10
+
+Implementation slice:
+
+- Re-centered the DearMe workbench first screen around the customer promise:
+  "Dear me, your team is working." The hero and today's operating focus now
+  describe a visible personal-brand team preparing private work, instead of
+  reading like a backstage control panel.
+- Kept the launch boundary frontstage: public posts, outbound messages, spend,
+  and page changes are still returned as one launch call while private work
+  keeps moving.
+- Normalized inherited packet/workbench wording across Work Ready, Decisions,
+  report digest, run ledger, live feed, Voice & Memory, and focused detail
+  surfaces so customers see one private proof pack instead of internal packet
+  language.
+- Fixed two mobile layout regressions found during real-page smoke: the closed
+  mobile drawer no longer remains offscreen in the DOM, and long sample proof
+  badges wrap instead of widening first-cycle preview cards.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/Layout.test.tsx
+  ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1` passed: 2 files, 49
+  tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/components/Layout.tsx
+  ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed.
+- Shell Playwright opened the real local page at
+  `http://127.0.0.1:3100/DEAA/dearme` in desktop and 390px mobile viewports,
+  verified the new team-working copy, verified no console/page errors, and
+  verified no horizontal overflow. Screenshots:
+  `/tmp/dearme-ui-verification/team-workstream-desktop.png` and
+  `/tmp/dearme-ui-verification/team-workstream-mobile.png`.
+
+## DM-139 / DM-140 Packet-Backed Dear Me Report UI - 2026-05-10
+
+Implementation slice:
+
+- Extended the existing DearMe letter panel to recognize packet-backed reports
+  from the workbench projection and render them as one private proof pack
+  review, not separate content/report loops.
+- Kept the shared schema and API unchanged; the UI consumes the existing report
+  digest fields and maps internal packet wording into customer-facing proof pack
+  language.
+- The report surface now makes the launch boundary explicit: review once,
+  nothing public moves until approval.
+- The weekly focus card and report digest copy now sanitize internal packet
+  wording on this path, keeping the DearMe customer surface product-native.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 40 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm exec vitest run server/src/__tests__/dearme-workbench.test.ts
+  server/src/__tests__/dearme-output-handoff.test.ts
+  server/src/__tests__/dearme-brand-blueprints.test.ts
+  ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1` passed: 4 files, 52
+  tests.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx
+  ui/src/pages/DearMeOnboarding.test.tsx server/src/services/dearme-workbench.ts
+  server/src/__tests__/dearme-workbench.test.ts` passed.
+
 ## DM-139 / DM-140 Cycle Packet Workbench Projection - 2026-05-10
 
 Implementation slice:
@@ -46,7 +110,7 @@ Implementation slice:
 Verification:
 
 - `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
-  passed: 39 tests.
+  passed: 40 tests.
 - `pnpm --filter @paperclipai/ui typecheck` passed.
 - `git diff --check -- ui/src/pages/DearMeOnboarding.tsx
   ui/src/pages/DearMeOnboarding.test.tsx` passed.

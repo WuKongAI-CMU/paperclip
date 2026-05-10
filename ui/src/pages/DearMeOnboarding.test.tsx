@@ -866,6 +866,101 @@ function workbenchResponseWithPacketReport(): DearMeWorkbenchResponse {
   };
 }
 
+function workbenchResponseWithPacketWorkbench(): DearMeWorkbenchResponse {
+  const response = workbenchResponseWithPacketReport();
+  const packetSummary =
+    "DearMe prepared this draft, report, and decision from the same private cycle packet. Review the shared packet once before public moves.";
+  const packetNextStep = "Review the shared packet once before DearMe launches, revises, or regenerates anything.";
+  const packetLoop = reviewLoopFixture("needs_user_review", packetNextStep, {
+    reviewHandoff: {
+      action: "request_changes",
+      title: "Shared packet handoff",
+      summary: "The same private cycle packet carries the next private revision.",
+      userDirection: null,
+      nextDraftDirection: "Revise the shared packet before asking for approval again.",
+    },
+  });
+
+  return {
+    ...response,
+    summary: "The same private cycle packet is ready across work, decisions, reports, and the live feed.",
+    activeWork: [
+      {
+        ...response.activeWork[0]!,
+        title: "Private cycle packet lane",
+        summary: packetSummary,
+        reviewLoop: packetLoop,
+      },
+      ...response.activeWork.slice(1),
+    ],
+    workReady: [
+      {
+        ...response.workReady[0]!,
+        title: "Shared packet report",
+        summary: packetSummary,
+        reviewLoop: packetLoop,
+      },
+      ...response.workReady.slice(1),
+    ],
+    decisionsNeeded: [
+      {
+        ...response.decisionsNeeded[0]!,
+        title: "Shared packet launch call",
+        summary: packetSummary,
+        reviewLoop: packetLoop,
+      },
+      ...response.decisionsNeeded.slice(1),
+    ],
+    batchDecisions: [
+      {
+        ...response.batchDecisions[0]!,
+        title: "Shared packet batch",
+        summary: packetSummary,
+        actionLabel: "Review shared packet",
+      },
+      ...response.batchDecisions.slice(1),
+    ],
+    workStream: [
+      {
+        ...response.workStream[0]!,
+        title: "Shared packet ready",
+        summary: packetSummary,
+        artifact: "Private cycle packet",
+        sourceLabel: "Private cycle packet",
+        costImpact: "Shared packet prepared privately",
+        nextAction: packetNextStep,
+        reviewLoop: packetLoop,
+      },
+      ...response.workStream.slice(1),
+    ],
+    runLedger: [
+      {
+        ...response.runLedger[0]!,
+        title: "Shared packet run",
+        summary: packetSummary,
+        evidenceLabel: "Private cycle packet / Shared packet report",
+        nextAction: packetNextStep,
+      },
+      ...response.runLedger.slice(1),
+    ],
+    actionGraph: {
+      ...response.actionGraph,
+      nodes: response.actionGraph.nodes.map((node, index) => (
+        index === 0
+          ? {
+              ...node,
+              label: "Shared packet cycle",
+              summary: packetSummary,
+            }
+          : node
+      )),
+      edges: response.actionGraph.edges.map((edge, index) => (
+        index === 0 ? { ...edge, label: "shared packet link" } : edge
+      )),
+    },
+  };
+}
+
 function workbenchResponseWithChiefBrief() {
   const response = workbenchResponse();
   const chiefUpdatedAt = "2026-05-07T16:30:00.000Z";
@@ -1698,6 +1793,42 @@ describe("DearMeOnboarding", () => {
       "OpenClaw",
       "Paperclip",
     ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("sanitizes packet-backed workbench cards outside the Dear me letter", async () => {
+    mockDearmeApi.getWorkbench.mockResolvedValue(workbenchResponseWithPacketWorkbench());
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    [
+      "Your brand team today",
+      "Today's brand team focus",
+      "Brand team run ledger",
+      "Growth cycle plan",
+      "Work ready",
+      "Decisions needed",
+      "Live team feed",
+    ].forEach((label) => {
+      const surfaceText = surfaceByLabel(container, label).textContent ?? "";
+      expect(surfaceText).toContain("proof pack");
+      expect(surfaceText).not.toMatch(/cycle packet|shared packet/i);
+    });
+    expect(container.textContent ?? "").not.toMatch(/cycle packet|shared packet/i);
 
     await act(async () => {
       root.unmount();
