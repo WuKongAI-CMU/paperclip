@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-10 (post DM-138D start-route proof smoke)
+Last updated: 2026-05-10 (post DEA-8 live handoff and DEA-9 coordination handoff)
 
 ---
 
@@ -124,30 +124,32 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-138B** — first-run proof sequence contract: the same shared preview response now includes `proofSequence`, and both the onboarding proof cards and private first-cycle issue consume the same 0-30s identity dossier, 60-120s audience map, and 3-5min private site proof order.
 - **DM-138C** — first-run proof hydration: `previewFirstCycle(...)` now reuses prepared DearMe output handoff records to hydrate the existing `proofSequence` with real documents and work products, while progress comments alone cannot count as proof.
 - **DM-138D route proof smoke** — first-cycle start route coverage now proves prepared `proofSequence` content is returned to the customer contract and copied into the private issue, activity log, and live `task_created` payload; onboarding coverage proves the same package renders without exposing substrate terms.
+- **DM-138E / DEA-8 live proof handoff** — the live paid-beta smoke proved the same first-cycle path returns identity, audience, private-site, content, opportunity, and report proof through output handoff and workbench projection without hidden donor/runtime terms.
+- **DM-139 / DM-140 / DEA-7 packet-backed work** — private Dear me report and content draft packets now reuse output handoff, work products, Voice Gate, workbench projection, and focused review instead of creating a second report/content runtime.
+- **DM-183AR review-memory surface** — Work Ready and focused review now preserve customer-safe review receipts through `feedbackTrace.receipts`, so repeated review decisions become visible product memory rather than raw queue history.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)
 
-**DM-138E — Live first-run worker proof smoke.**
+**DEA-9 / DM-183AS — Repeatable packet review-memory browser smoke.**
 
-The product contract, service hydration path, start-route propagation, and UI
-rendering proof are now in place. The next aha step is the live external-queue
-run: Symphony now routes DearMe through Linear team `DEA` plus `assignee: me`,
-and `DEA-5` is the active worker/browser smoke. Use
-`.symphony/bin/dearme-symphony status` to inspect the daemon, then browser-smoke
-the onboarding proof package showing worker-produced identity, audience, and
-private-site proof through the exact same
-`DearMeFirstCyclePreviewResponse.proofSequence` shape. Once that ships, you can
-DM the URL to one real person and see if they say "wait, you actually built me
-one?"
+DM-138E and DEA-8 already proved the first proof package. The next aha step is
+repeatability: prove a customer can see packet-backed prepared work, request or
+record another pass, and then see the review-memory receipt on the same Work
+Ready / focused review path without exposing the queue beneath it.
 
-DM-138D reuses:
-- `RESEARCH_AGENT_PROMPT` (registry id `research-agent`) for the dossier
-- `CHAT_PROMPT` (registry id `chat`) for the conversational shell
-- `dearme-ai-proxy` `web_search` + `create_report` for the proxy contract
-- `BRAND_SITE_BUILDER_PROMPT` (registry id `brand-site-builder`) staged for the 3–5min site step
-- the DM-136/DM-138B/DM-138C first-cycle preview contract as the customer-facing proof
-  package; do not build a second first-run data shape.
+Use Linear issue `DEA-9` as the bounded Symphony lane. It should reuse:
+
+- `prepareCycleOutputPacket(...)`, output handoff, work products, and workbench
+  projection for the packet-backed evidence.
+- The content-draft packet route and Voice Gate result from DM-140 / DEA-7.
+- The existing focused prepared-work review controls and
+  `feedbackTrace.receipts` from DM-183AR.
+- The current paid-beta/browser smoke path.
+
+Do not create a new first-run contract, packet schema, report runtime, worker
+dashboard, or customer-visible substrate surface. If the smoke exposes a real
+gap, fix the smallest product-facing slice on the existing packet/review path.
 
 ### Roadmap (compressed by aggressive port + tri-substrate integration)
 

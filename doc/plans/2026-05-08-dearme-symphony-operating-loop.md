@@ -27,6 +27,11 @@ Symphony is treated as an execution factory, not as the product brain. The DearM
   customer path instead of starting a second runtime or report surface. DEA-7
   extends the same lane with a persistable private content draft packet and
   customer-safe Voice check surfaces on prepared work/proof-pack cards.
+- 2026-05-10 coordinator update: DEA-8 proved the live first-cycle handoff
+  without requiring another first-run schema. DEA-9 is now the next Symphony
+  lane: repeat the packet-backed loop through review-memory receipts and a
+  browser/API smoke, using the existing output handoff, workbench projection,
+  focused review controls, and `feedbackTrace.receipts`.
 
 ## Operating Split
 
