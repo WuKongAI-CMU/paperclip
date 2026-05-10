@@ -4290,11 +4290,11 @@ function LiveTeamFeedPanel({
   const movingCount = liveFeedSections.find((section) => section.id === "in_motion")?.items.length ?? 0;
 
   return (
-    <DearMePanel aria-label="Live team feed">
+    <DearMePanel aria-label="Live proof feed">
       <DearMeWorkbenchSectionHeader
         icon={Workflow}
-        eyebrow="Live team feed"
-        description="Watch the team turn private work into reviewable moves. The machinery stays backstage."
+        eyebrow="Live proof feed"
+        description="A live proof feed for the work your team prepared, updated, or held for your call. The machinery stays backstage."
         trailing={
           <div className="flex flex-wrap gap-2 sm:justify-end">
             <Badge variant={needsCallCount > 0 ? "default" : "outline"}>
@@ -6554,19 +6554,6 @@ export function DearMeOnboarding() {
         }}
       />
 
-      <FirstCyclePanel
-        intent={firstCycleIntent}
-        preview={firstCyclePreview}
-        isPending={firstCycleMutation.isPending}
-        canStartPrivateWork={canStartPrivateWork}
-        onIntentChange={(value) => {
-          setActionError(null);
-          setFirstCycleIntent(value);
-          setFirstCyclePreview(null);
-        }}
-        onPreview={handleFirstCyclePreview}
-      />
-
       <PrivateWorkPanel
         companyId={selectedCompanyId}
         outputKindFilter={selectedView === "opportunities" ? "opportunity_drafts" : null}
@@ -6578,6 +6565,19 @@ export function DearMeOnboarding() {
           isPending: outputReviewMutation.isPending,
         }}
         onReviewOutput={handleReviewOutput}
+      />
+
+      <FirstCyclePanel
+        intent={firstCycleIntent}
+        preview={firstCyclePreview}
+        isPending={firstCycleMutation.isPending}
+        canStartPrivateWork={canStartPrivateWork}
+        onIntentChange={(value) => {
+          setActionError(null);
+          setFirstCycleIntent(value);
+          setFirstCyclePreview(null);
+        }}
+        onPreview={handleFirstCyclePreview}
       />
 
       <PaidBetaAccessPanel

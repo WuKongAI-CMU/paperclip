@@ -1871,6 +1871,12 @@ describe("DearMeOnboarding", () => {
       "Decisions needed",
       "Dear me letter",
       "Voice & Memory",
+      "Live proof feed",
+    ]);
+    expectSurfacesInOrder(container, [
+      "DearMe team board",
+      "Private work ready",
+      "90-second first cycle",
     ]);
     expect(container.textContent).toContain("Launch Brand OS for Peter Studio");
     expect(container.textContent).toContain("Batch decisions");
@@ -1889,7 +1895,10 @@ describe("DearMeOnboarding", () => {
         '[aria-label="Decisions needed"] [data-dearme-action-attention="decision_needed"]',
       ),
     ).not.toBeNull();
-    expect(container.textContent).toContain("Live team feed");
+    expect(container.textContent).toContain("Live proof feed");
+    expect(container.textContent).toContain(
+      "A live proof feed for the work your team prepared, updated, or held for your call.",
+    );
     expect(container.textContent).toContain("1 needs your call");
     expect(container.textContent).toContain("1 in motion");
     expect(container.textContent).toContain("Reviewable work and launch calls stay first.");
@@ -1913,12 +1922,12 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Decision ready");
     expect(
       container.querySelectorAll(
-        '[aria-label="Live team feed"] [data-dearme-surface="action-card"]',
+        '[aria-label="Live proof feed"] [data-dearme-surface="action-card"]',
       ).length,
     ).toBeGreaterThan(0);
     expect(
       container.querySelector(
-        '[aria-label="Live team feed"] [data-dearme-action-attention="decision_needed"]',
+        '[aria-label="Live proof feed"] [data-dearme-action-attention="decision_needed"]',
       ),
     ).not.toBeNull();
     expect(container.textContent).toContain("Weekly Dear me");
@@ -2066,7 +2075,7 @@ describe("DearMeOnboarding", () => {
     });
   });
 
-  it("reviews live team feed work without leaving DearMe", async () => {
+  it("reviews live proof feed work without leaving DearMe", async () => {
     const contentOutput = outputsWithFirstCyclePacket().outputs[1]!;
     mockDearmeApi.continueOutput.mockResolvedValueOnce({
       companyId: "company-1",
@@ -2108,7 +2117,7 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
-    const liveFeed = surfaceByLabel(container, "Live team feed");
+    const liveFeed = surfaceByLabel(container, "Live proof feed");
     expect(liveFeed.textContent).toContain("Review this private work here.");
     expect(liveFeed.textContent).toContain("Launch this work");
     expect(liveFeed.textContent).toContain("Request changes");
@@ -2264,7 +2273,7 @@ describe("DearMeOnboarding", () => {
       "Growth cycle plan",
       "Work ready",
       "Decisions needed",
-      "Live team feed",
+      "Live proof feed",
     ].forEach((label) => {
       const surfaceText = surfaceByLabel(container, label).textContent ?? "";
       expect(surfaceText).toContain("proof pack");
@@ -3732,7 +3741,7 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
-    const liveFeed = surfaceByLabel(container, "Live team feed");
+    const liveFeed = surfaceByLabel(container, "Live proof feed");
     const launchButton = buttonByText(liveFeed, "Launch this work");
     expect(launchButton).toBeTruthy();
 

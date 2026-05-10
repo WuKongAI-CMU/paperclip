@@ -132,7 +132,40 @@ proxy tool names and `ceo_*` report type identifiers stable. Treat those
 identifiers as internal compatibility surfaces until a dedicated contract
 migration exists.
 
+Coordinator note: DM-183AF absorbs the useful DM-020/DM-022 worker residue as
+frontstage ordering and language only. Keep the current workbench stream and
+review runtime intact; the customer surface should say "live proof feed" and
+show prepared private work before setup/forms.
+
 ## Recently Completed
+
+### DM-183AF: Live Proof Feed and Prepared Work Ordering
+
+Goal: make the current DearMe workbench feel more like proof is arriving from
+an autonomous team, while avoiding a stale DM-020/DM-022 service/schema replay.
+
+Donor grounding:
+
+- Polsia: preserve the live proof-feed / work-happened-while-away choreography.
+- Lindy: keep reviewable action cards and inline decisions as the scan pattern.
+- Naive/Paperclip/OpenClaw: keep the existing workbench stream, outputs, review,
+  and Voice & Memory contracts backstage.
+- Symphony: use worker branches as candidate evidence, not wholesale merges.
+
+Completed:
+
+- Renamed the current live team feed to a live proof feed and grounded its helper
+  copy in prepared, updated, or held work that waits for the user's call.
+- Kept Private Work ahead of the 90-second first-cycle form after the main team
+  board so reviewable work stays ahead of setup.
+- Added UI regression coverage for the new proof-feed label and prepared-work
+  ordering.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
 
 ### DM-183AE: User-Facing Leadership Prompts
 
