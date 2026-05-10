@@ -1683,6 +1683,11 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Chief of Staff sets the cycle");
     expect(container.textContent).toContain("The team prepares assets");
     expect(container.textContent).toContain("You make the high-leverage calls");
+    expect(container.textContent).toContain("Voice & Memory improves the next pass");
+    expect(container.textContent).toContain(
+      "Feedback, proof sources, and report learnings shape the next private cycle automatically.",
+    );
+    expect(container.textContent).toContain("4 learning signals");
     expect(container.textContent).toContain(
       "Private work keeps moving. Public posts, outbound messages, page changes, and spend come back as one launch call.",
     );

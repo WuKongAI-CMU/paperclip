@@ -3681,6 +3681,12 @@ function OperatingLoopPanel({
   const assetNodeCount = graph.nodes.filter((node) => node.kind === "artifact" || node.kind === "report").length;
   const memorySignalCount = graph.nodes.filter((node) => node.kind === "memory_signal").length;
   const guardrailNodeCount = graph.nodes.filter((node) => node.kind === "guardrail").length;
+  const learningSignalCount = Math.max(
+    memorySignalCount,
+    workbench.memory.latest.length +
+      workbench.memory.sourceReviewQueue.length +
+      (workbench.report?.learnings.length ?? 0),
+  );
   const loopStages = [
     {
       key: "plan",
@@ -3706,6 +3712,14 @@ function OperatingLoopPanel({
       summary: "Prepared posts, outreach, pages, and claims wait for your decision before they represent you.",
       signal: decisionCount > 0 ? pluralizeCount(decisionCount, "call") : "No call waiting",
     },
+    {
+      key: "learn",
+      icon: Sparkles,
+      label: "Learn",
+      title: "Voice & Memory improves the next pass",
+      summary: "Feedback, proof sources, and report learnings shape the next private cycle automatically.",
+      signal: learningSignalCount > 0 ? pluralizeCount(learningSignalCount, "learning signal") : "Ready after feedback",
+    },
   ];
 
   return (
@@ -3722,7 +3736,7 @@ function OperatingLoopPanel({
         }
       />
 
-      <div className="mt-5 grid gap-3 lg:grid-cols-3">
+      <div className="mt-5 grid gap-3 lg:grid-cols-4">
         {loopStages.map((stage) => {
           const Icon = stage.icon;
           return (

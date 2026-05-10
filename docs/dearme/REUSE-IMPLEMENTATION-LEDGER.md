@@ -97,6 +97,38 @@ Working rule:
 
 ## Recently Completed
 
+### DM-183L: Visible Learning Loop
+
+Goal: make the operating rhythm read as a full autonomous loop by showing
+learning as an explicit customer-visible stage, not only as words in the Growth
+cycle heading.
+
+Donor grounding:
+
+- Polsia: plan/work/review/learn should feel like a compounding growth rhythm,
+  not a one-pass task board.
+- Lindy: keep the learning signal inside the existing action-card grammar
+  instead of adding a separate admin-style memory panel.
+- Naive/Paperclip/Symphony: reuse Voice & Memory, source review, report
+  learnings, and the existing action graph; do not expose runtime or worker
+  details.
+
+Completed:
+
+- Added a Learn card to the Growth cycle panel using existing workbench facts.
+- Derived the visible signal from current memory, pending source review, report
+  learnings, and action-graph memory nodes.
+- Updated regression coverage so the paid-beta shell proves the visible
+  learning loop stays present.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `.symphony/bin/dearme-symphony status`
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty`
+- `git diff --check`
+
 ### DM-183K: Feedback-Applied Review Trace
 
 Goal: make repeated private revisions feel trustworthy by showing the user what
