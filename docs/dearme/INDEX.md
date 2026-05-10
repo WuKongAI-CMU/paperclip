@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-10 (post DEA-9 review-memory proof and DEA-11 private launch-handoff proof)
+Last updated: 2026-05-10 (post DEA-11 private launch-handoff proof and DM-064/070 absorption)
 
 ---
 
@@ -148,10 +148,13 @@ route/auth, approval-preflight, and profile-selection boundaries. DM-051
 through DM-058 are now recorded as reviewed absorptions on the current shared
 DearMe approval helper, approval-surface routing, and internal-error sanitizer.
 DM-059 through DM-063 are now recorded as reviewed absorptions on the current
-approval error, comment-link, and rejection-route helpers. The next likely
-batch starts at DM-064 through DM-066 because the residual group now shifts
-from approval routing into issue-chat run/transcript/activity safety, but
-inspect exact heads before recording any closure. Reuse only still-valuable
+approval error, comment-link, and rejection-route helpers. DM-064 through
+DM-070 are now recorded as reviewed absorptions on the current issue-chat
+run/transcript projection, work-history surface, activity-event projection,
+scheduled follow-up card, and generic issue-control boundaries. The next likely
+batch starts at DM-071 because the residual group now shifts into remaining
+issue sidebar and markdown safety, but inspect exact heads before recording any
+closure. Reuse only still-valuable
 product surfaces; do not add another first-run contract, packet schema,
 runtime dashboard, queue system, or customer-visible substrate surface.
 

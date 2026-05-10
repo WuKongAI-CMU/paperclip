@@ -2,6 +2,60 @@
 
 Date: 2026-05-10
 
+## DM-183BT DM-064/070 Chat/Sidebar Safety Absorption - 2026-05-10
+
+Product/architecture slice:
+
+- Kept Symphony as the cooperation spine and treated DM-064 through DM-070 as
+  issue-chat, activity-history, and issue-sidebar absorption work, not fresh
+  replay targets.
+- Recorded exact-head reviewed absorptions for DM-064 through DM-070 in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`.
+- Mapped DM-064 to the current DearMe issue-chat run projection: linked runs
+  render as DearMe team work updates, DearMe issues do not link customers to
+  shared run routes, and generic issue-chat behavior stays unchanged.
+- Mapped DM-065 to the current DearMe transcript projection: hidden run
+  transcripts collapse to assistant-visible text and DearMe-owned placeholders
+  instead of exposing tool, reasoning, run, or metadata surfaces.
+- Mapped DM-066 to the current DearMe work-history surface: activity and run
+  history hides raw run ids, agent links, model-profile details, liveness
+  substrate failures, and issue cost summaries for DearMe issues.
+- Mapped DM-067 to the current activity-event projection: DearMe activity rows
+  use DearMe team language instead of agent ids, raw action names, run ids, or
+  substrate details.
+- Mapped DM-068 to the current issue-detail workspace boundary: DearMe issues
+  do not show the generic workspace control card while generic issues still do.
+- Mapped DM-069 to the current scheduled follow-up card: DearMe issues show
+  product-owned review language and hide monitor notes, service names, attempt
+  counts, and check-now wording.
+- Mapped DM-070 to the current issue properties boundary: DearMe issues hide
+  the generic properties panel, mobile drawer, and toolbar entries until a
+  DearMe-owned settings surface exists.
+- Left the active DEA-11 Symphony workspace untouched; it remains stale against
+  the current branch until closed and rebuilt from the live head.
+
+Verification:
+
+- `git log --oneline --max-count=80`
+  showed the live same-subject commits `83e2bc13`, `bf608910`, `3f169c53`,
+  `e484dc6c`, `9a9b833d`, `e4c4b589`, and `c2586e6e` on the current branch.
+- `rg -n "dearMeRunPlaceholderText|buildAssistantPartsFromTranscript|createHistoricalRunMessage|createHistoricalTranscriptMessage|createLiveRunMessage|hideRunSubstrateDetails|DearMe team|work update|work history|modelProfileForRun|runDurationLabel" ui/src/lib/issue-chat-messages.ts ui/src/lib/issue-chat-messages.test.ts ui/src/components/IssueChatThread.tsx ui/src/components/IssueChatThread.test.tsx ui/src/components/IssueRunLedger.tsx ui/src/components/IssueRunLedger.test.tsx ui/src/pages/IssueDetail.tsx ui/src/pages/IssueDetail.test.tsx`
+  confirmed the current chat, transcript, and activity-history safety surfaces
+  are present.
+- `rg -n "formatDearMeActivityAction|hideSubstrateDetails=\\{hideRunSubstrateDetails\\}|Follow-up scheduled|Next review|DearMe will review this again automatically|Refresh now|IssueWorkspaceCard|showIssuePluginSurfaces|showIssueRelatedWorkTab|showProperties=\\{!isDearMeDetailIssue\\}|button\\[title=\\\"Properties\\\"\\]|button\\[title=\\\"Show properties\\\"\\]" ui/src/pages/IssueDetail.tsx ui/src/pages/IssueDetail.test.tsx ui/src/components/IssueMonitorActivityCard.tsx ui/src/components/IssueMonitorActivityCard.test.tsx`
+  confirmed the current activity-event, workspace-card, follow-up-card, related
+  work, plugin, and properties boundaries are present.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
+  passed.
+- `pnpm exec vitest run ui/src/lib/issue-chat-messages.test.ts ui/src/components/IssueChatThread.test.tsx ui/src/components/IssueRunLedger.test.tsx ui/src/components/IssueMonitorActivityCard.test.tsx ui/src/pages/IssueDetail.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm run dearme:worktrees -- --status=reviewed-absorbed --skip-dirty --limit=120`
+  showed the exact DM-064 through DM-070 heads as `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` reported
+  `reviewed_absorbed: 90`, `not_in_current: 23`, and `dirty: 0`.
+- `git diff --check -- docs/dearme/BUILD-STATE.md docs/dearme/INDEX.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`
+  passed.
+
 ## DM-183BS DM-059/063 Approval Error/Reject Absorption - 2026-05-10
 
 Product/architecture slice:

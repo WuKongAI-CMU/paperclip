@@ -1147,6 +1147,92 @@
         "ui/src/lib/dearmeApprovals.ts",
         "ui/src/lib/dearmeApprovals.test.ts"
       ]
+    },
+    {
+      "ticket": "DM-064",
+      "branch": "codex/dearme-dm-064-issue-chat-run-safe",
+      "head": "39afb7e8b6b114d121fd82847a1b1ae8e619531d",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the issue-chat run worker through the later same-subject run-message path that projects linked runs as DearMe team work updates, hides run links for DearMe issues, and keeps generic issue chat behavior unchanged.",
+      "evidence": [
+        "ui/src/lib/issue-chat-messages.ts",
+        "ui/src/lib/issue-chat-messages.test.ts",
+        "ui/src/components/IssueChatThread.tsx",
+        "ui/src/components/IssueChatThread.test.tsx",
+        "ui/src/pages/IssueDetail.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-065",
+      "branch": "codex/dearme-dm-065-issue-chat-transcript-safe",
+      "head": "999fdb602b524dc4cba9a2e3946038648f040e69",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the issue-chat transcript worker by collapsing hidden run transcripts to assistant-visible DearMe text parts and DearMe-owned placeholders while keeping tool, reasoning, and run metadata out of the customer path.",
+      "evidence": [
+        "ui/src/lib/issue-chat-messages.ts",
+        "ui/src/lib/issue-chat-messages.test.ts",
+        "ui/src/components/IssueChatThread.tsx",
+        "ui/src/components/IssueChatThread.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-066",
+      "branch": "codex/dearme-dm-066-comment-thread-run-safe",
+      "head": "fc8b6952cad62d5e037d3425885e2baf05664123",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the activity/run-ledger worker through the later same-subject work-history surface that hides run ids, agent links, model-profile details, liveness substrate failures, and cost summaries for DearMe issues.",
+      "evidence": [
+        "ui/src/components/IssueRunLedger.tsx",
+        "ui/src/components/IssueRunLedger.test.tsx",
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-067",
+      "branch": "codex/dearme-dm-067-activity-event-safe",
+      "head": "33ee1f05e7efa57c83b4a3068253493a403836ce",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the activity-event worker through the live same-subject event projection that renders DearMe activity as DearMe team progress and hides agent ids, run ids, raw action names, and substrate details.",
+      "evidence": [
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-068",
+      "branch": "codex/dearme-dm-068-workspace-card-safe",
+      "head": "95f9c174ddc6a1f5d2c68abe85b9ab0b0b4e438b",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the workspace-card worker by hiding the generic workspace control card for DearMe issues while preserving it for generic issues.",
+      "evidence": [
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-069",
+      "branch": "codex/dearme-dm-069-monitor-card-safe",
+      "head": "63a7331178305c0c276e937a84e448cd1d6c4e17",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the monitor-card worker by projecting scheduled follow-ups with product-owned review language and hiding monitor notes, service names, attempt counts, and check-now wording.",
+      "evidence": [
+        "ui/src/components/IssueMonitorActivityCard.tsx",
+        "ui/src/components/IssueMonitorActivityCard.test.tsx",
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-070",
+      "branch": "codex/dearme-dm-070-properties-safe",
+      "head": "476f09058ae2b15c8a5eb3223d77e3995d7ee3ac",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the properties-control worker by keeping generic properties panel, mobile drawer, and toolbar controls off DearMe issue detail until a DearMe-owned settings surface exists.",
+      "evidence": [
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx"
+      ]
     }
   ]
 }
