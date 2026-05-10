@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Agent, Issue, IssueComment, IssueTreeControlPreview, IssueTreeHold } from "@paperclipai/shared";
+import type { Agent, Approval, Issue, IssueComment, IssueTreeControlPreview, IssueTreeHold } from "@paperclipai/shared";
 import { act, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -13,8 +13,11 @@ const mockIssuesApi = vi.hoisted(() => ({
   listComments: vi.fn(),
   listAttachments: vi.fn(),
   listFeedbackVotes: vi.fn(),
+  listApprovals: vi.fn(),
   markRead: vi.fn(),
   update: vi.fn(),
+  getDocument: vi.fn(),
+  getCostSummary: vi.fn(),
   previewTreeControl: vi.fn(),
   getTreeControlState: vi.fn(),
   listTreeHolds: vi.fn(),
@@ -38,6 +41,11 @@ const mockIssuesApi = vi.hoisted(() => ({
 const mockActivityApi = vi.hoisted(() => ({
   forIssue: vi.fn(),
   runsForIssue: vi.fn(),
+}));
+
+const mockApprovalsApi = vi.hoisted(() => ({
+  approve: vi.fn(),
+  reject: vi.fn(),
 }));
 
 const mockHeartbeatsApi = vi.hoisted(() => ({
@@ -76,6 +84,9 @@ const mockSetMobileToolbar = vi.hoisted(() => vi.fn());
 const mockPushToast = vi.hoisted(() => vi.fn());
 const mockIssuesListRender = vi.hoisted(() => vi.fn());
 const mockIssueChatThreadRender = vi.hoisted(() => vi.fn());
+const mockTabsOnValueChange = vi.hoisted(() => ({
+  current: null as ((value: string) => void) | null,
+}));
 
 vi.mock("../api/issues", () => ({
   issuesApi: mockIssuesApi,
@@ -90,10 +101,7 @@ vi.mock("../api/heartbeats", () => ({
 }));
 
 vi.mock("../api/approvals", () => ({
-  approvalsApi: {
-    approve: vi.fn(),
-    reject: vi.fn(),
-  },
+  approvalsApi: mockApprovalsApi,
 }));
 
 vi.mock("../api/agents", () => ({
@@ -266,7 +274,30 @@ vi.mock("../components/PriorityIcon", () => ({
 }));
 
 vi.mock("../components/ApprovalCard", () => ({
-  ApprovalCard: () => <div>Approval</div>,
+  ApprovalCard: ({
+    detailLink,
+    onApprove,
+    onReject,
+  }: {
+    detailLink?: string;
+    onApprove?: () => void;
+    onReject?: () => void;
+  }) => (
+    <div>
+      Approval
+      {detailLink ? <a href={detailLink}>Approval detail</a> : null}
+      {onApprove ? (
+        <button type="button" onClick={onApprove}>
+          Approve linked approval
+        </button>
+      ) : null}
+      {onReject ? (
+        <button type="button" onClick={onReject}>
+          Reject linked approval
+        </button>
+      ) : null}
+    </div>
+  ),
 }));
 
 vi.mock("../components/Identity", () => ({
@@ -327,10 +358,28 @@ vi.mock("@/components/ui/skeleton", () => ({
 }));
 
 vi.mock("@/components/ui/tabs", () => ({
-  Tabs: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+  Tabs: ({
+    children,
+    onValueChange,
+  }: {
+    children?: ReactNode;
+    onValueChange?: (value: string) => void;
+  }) => {
+    mockTabsOnValueChange.current = onValueChange ?? null;
+    return <div>{children}</div>;
+  },
   TabsContent: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
   TabsList: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
-  TabsTrigger: ({ children }: { children?: ReactNode }) => <button type="button">{children}</button>,
+  TabsTrigger: ({ children, value }: { children?: ReactNode; value?: string }) => (
+    <button
+      type="button"
+      onClick={() => {
+        if (value) mockTabsOnValueChange.current?.(value);
+      }}
+    >
+      {children}
+    </button>
+  ),
 }));
 
 vi.mock("@/components/ui/textarea", () => ({
@@ -421,6 +470,29 @@ function createAgent(overrides: Partial<Agent> = {}): Agent {
     metadata: null,
     createdAt: new Date("2026-04-21T00:00:00.000Z"),
     updatedAt: new Date("2026-04-21T00:00:00.000Z"),
+    ...overrides,
+  };
+}
+
+function createApproval(overrides: Partial<Approval> = {}): Approval {
+  return {
+    id: "approval-dearme-1",
+    companyId: "company-1",
+    type: "dearme_output_next_move",
+    requestedByAgentId: "agent-secret-123456",
+    requestedByUserId: null,
+    status: "pending",
+    payload: {
+      title: "Approve a private LinkedIn draft",
+      summary: "DearMe prepared a short draft for your personal profile.",
+      recommendedAction: "Approve after checking tone.",
+      nextActionOnApproval: "DearMe will keep it ready for your next review.",
+    },
+    decisionNote: null,
+    decidedByUserId: null,
+    decidedAt: null,
+    createdAt: new Date("2026-05-08T12:00:00.000Z"),
+    updatedAt: new Date("2026-05-08T12:00:00.000Z"),
     ...overrides,
   };
 }
@@ -811,15 +883,20 @@ describe("IssueDetail", () => {
     mockIssuesApi.listInteractions.mockResolvedValue([]);
     mockIssuesApi.listAttachments.mockResolvedValue([]);
     mockIssuesApi.listFeedbackVotes.mockResolvedValue([]);
+    mockIssuesApi.listApprovals.mockResolvedValue([]);
     mockIssuesApi.markRead.mockResolvedValue({ id: "issue-1", lastReadAt: new Date().toISOString() });
     mockIssuesApi.update.mockImplementation((_id: string, data: Partial<Issue>) =>
       Promise.resolve(createIssue(data)),
     );
+    mockIssuesApi.getDocument.mockResolvedValue(null);
+    mockIssuesApi.getCostSummary.mockResolvedValue(null);
     mockIssuesApi.getTreeControlState.mockResolvedValue({ activePauseHold: null });
     mockIssuesApi.listTreeHolds.mockResolvedValue([]);
     mockIssuesApi.checkMonitorNow.mockResolvedValue({ ok: true });
     mockActivityApi.forIssue.mockResolvedValue([]);
     mockActivityApi.runsForIssue.mockResolvedValue([]);
+    mockApprovalsApi.approve.mockResolvedValue(createApproval({ status: "approved" }));
+    mockApprovalsApi.reject.mockResolvedValue(createApproval({ status: "rejected" }));
     mockHeartbeatsApi.liveRunsForIssue.mockResolvedValue([]);
     mockHeartbeatsApi.liveRunsForCompany.mockResolvedValue([]);
     mockHeartbeatsApi.activeRunForIssue.mockResolvedValue(null);
@@ -839,6 +916,9 @@ describe("IssueDetail", () => {
       keyboardShortcuts: false,
       feedbackDataSharingPreference: "prompt",
     });
+    mockNavigate.mockClear();
+    mockPushToast.mockClear();
+    mockTabsOnValueChange.current = null;
     mockIssuesListRender.mockClear();
     mockIssueChatThreadRender.mockClear();
   });
@@ -872,6 +952,113 @@ describe("IssueDetail", () => {
     expect(container.textContent).toContain("Issue detail smoke");
     expect(container.textContent).toContain("Chat thread");
     expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it("routes DearMe linked approval decisions back to DearMe", async () => {
+    const dearMeApproval = createApproval();
+    mockIssuesApi.get.mockResolvedValue(createIssue());
+    mockIssuesApi.listApprovals.mockResolvedValue([dearMeApproval]);
+    mockApprovalsApi.approve.mockResolvedValue(createApproval({ status: "approved" }));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const activityButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.trim() === "Activity");
+    expect(activityButton).toBeTruthy();
+
+    await act(async () => {
+      activityButton!.click();
+    });
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Approve linked approval");
+    });
+
+    const detailLink = Array.from(container.querySelectorAll("a"))
+      .find((link) => link.textContent?.trim() === "Approval detail");
+    expect(detailLink?.getAttribute("href")).toBe("/dearme?view=decisions&approval=approval-dearme-1");
+
+    mockNavigate.mockClear();
+    const approveButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.trim() === "Approve linked approval");
+    expect(approveButton).toBeTruthy();
+
+    await act(async () => {
+      approveButton!.click();
+    });
+
+    await waitForAssertion(() => {
+      expect(mockApprovalsApi.approve).toHaveBeenCalledWith("approval-dearme-1");
+      expect(mockPushToast).toHaveBeenCalledWith(expect.objectContaining({
+        title: "Decision approved",
+        tone: "success",
+      }));
+      expect(mockNavigate).toHaveBeenCalledWith(
+        "/dearme?view=decisions&approval=approval-dearme-1",
+        { replace: true },
+      );
+    });
+  });
+
+  it("keeps generic linked approval decisions on the issue detail", async () => {
+    const genericApproval = createApproval({
+      id: "approval-generic-1",
+      type: "request_board_approval",
+    });
+    mockIssuesApi.get.mockResolvedValue(createIssue());
+    mockIssuesApi.listApprovals.mockResolvedValue([genericApproval]);
+    mockApprovalsApi.reject.mockResolvedValue(createApproval({
+      ...genericApproval,
+      status: "rejected",
+    }));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const activityButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.trim() === "Activity");
+    expect(activityButton).toBeTruthy();
+
+    await act(async () => {
+      activityButton!.click();
+    });
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Reject linked approval");
+    });
+
+    const detailLink = Array.from(container.querySelectorAll("a"))
+      .find((link) => link.textContent?.trim() === "Approval detail");
+    expect(detailLink?.getAttribute("href")).toBe("/approvals/approval-generic-1");
+
+    mockNavigate.mockClear();
+    const rejectButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.trim() === "Reject linked approval");
+    expect(rejectButton).toBeTruthy();
+
+    await act(async () => {
+      rejectButton!.click();
+    });
+
+    await waitForAssertion(() => {
+      expect(mockApprovalsApi.reject).toHaveBeenCalledWith("approval-generic-1");
+      expect(mockPushToast).toHaveBeenCalledWith(expect.objectContaining({
+        title: "Approval rejected",
+        tone: "success",
+      }));
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
   });
 
   it("passes blocker attention to the issue detail header status icon", async () => {
