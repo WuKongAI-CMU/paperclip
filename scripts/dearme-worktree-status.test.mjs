@@ -108,6 +108,20 @@ test("enrichWorktreeRecord adds ticket, purpose, and coordinator action", () => 
 
   assert.equal(
     enrichWorktreeRecord({
+      path: "/private/tmp/dearme-dm-101-cycle-guardrail-enforcement",
+      branch: "codex/dearme-dm-101-cycle-guardrail-enforcement",
+      head: "abc",
+      status: "not_in_current",
+      dirtyFiles: 0,
+      prunable: false,
+      headSubject: "Reuse paid-beta guardrails before DearMe regeneration cycles",
+      headSubjectInCurrent: true,
+    }).nextAction,
+    "tip subject already exists in current head; inspect residual diff before replay or close",
+  );
+
+  assert.equal(
+    enrichWorktreeRecord({
       path: "/private/tmp/dearme-dm-087-work-event-contract",
       branch: "codex/dearme-dm-087-work-event-contract",
       head: "fed",
@@ -230,6 +244,7 @@ test("summarize keeps legacy counts and adds purpose/ticket buckets", () => {
       status: "not_in_current",
       dirtyFiles: 0,
       prunable: false,
+      headSubjectInCurrent: true,
     }),
     enrichWorktreeRecord({
       path: "/private/tmp/dearme-dm-087-work-event-contract",
@@ -255,6 +270,7 @@ test("summarize keeps legacy counts and adds purpose/ticket buckets", () => {
     current: 1,
     not_in_current: 2,
     patch_equivalent: 1,
+    subject_matched: 1,
     byPurpose: {
       current: 1,
       integration: 1,
@@ -373,6 +389,48 @@ test("classifyWorktree marks cherry-pick-equivalent branches as patch_equivalent
       "patch_equivalent",
     );
   } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test("collectWorktreeStatus flags stale branches whose tip subject already landed", () => {
+  const repo = mkdtempSync(join(tmpdir(), "dearme-worktree-status-"));
+  const workerPath = mkdtempSync(join(tmpdir(), "dearme-worktree-status-worker-"));
+
+  try {
+    git(repo, ["init", "--initial-branch=main"]);
+    writeFileSync(join(repo, "brand.md"), "base\n");
+    git(repo, ["add", "brand.md"]);
+    commit(repo, "base");
+
+    git(repo, ["checkout", "-b", "worker"]);
+    writeFileSync(join(repo, "brand.md"), "base\nworker variant\n");
+    git(repo, ["add", "brand.md"]);
+    commit(repo, "reuse guardrail slice");
+
+    git(repo, ["checkout", "main"]);
+    writeFileSync(join(repo, "brand.md"), "base\ncoordinator variant\n");
+    git(repo, ["add", "brand.md"]);
+    commit(repo, "reuse guardrail slice");
+
+    rmSync(workerPath, { recursive: true, force: true });
+    git(repo, ["worktree", "add", workerPath, "worker"]);
+
+    const workerRecord = collectWorktreeStatus({
+      cwd: repo,
+      skipDirty: true,
+      includeSymphony: false,
+    }).find((record) => record.branch === "worker");
+
+    assert.equal(workerRecord?.status, "not_in_current");
+    assert.equal(workerRecord?.headSubject, "reuse guardrail slice");
+    assert.equal(workerRecord?.headSubjectInCurrent, true);
+    assert.equal(
+      workerRecord?.nextAction,
+      "tip subject already exists in current head; inspect residual diff before replay or close",
+    );
+  } finally {
+    rmSync(workerPath, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });

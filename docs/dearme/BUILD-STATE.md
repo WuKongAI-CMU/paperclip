@@ -2,6 +2,30 @@
 
 Date: 2026-05-10
 
+## DM-183E Subject-Matched Worktree Triage - 2026-05-10
+
+Implementation slice:
+
+- Extended the DearMe worktree inventory with a conservative
+  `subject_matched` signal for stale branches whose tip commit subject already
+  appears in the current integration head.
+- Kept the status as `not_in_current`; this does not mark old branches safe to
+  close. It changes the coordinator action to inspect residual diff before
+  replay or closure, which is the right path for branches like DM-101 where the
+  core guardrail intent has already landed but old history still carries noisy
+  deltas.
+- Applied the same signal to real Symphony workspace repos so Linear worker
+  lanes and local worker worktrees share one triage vocabulary.
+
+Verification:
+
+- `pnpm test:dearme-worktrees` passed: 11 tests.
+- `pnpm dearme:worktrees -- --ticket=DM-101 --limit=20 --skip-dirty` reported
+  2 DM-101 worktrees and 1 `subject_matched` worker action.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported 117
+  worktrees, 3 `subject_matched` records, 1 Symphony workspace, and 0 dirty
+  records.
+
 ## DM-183D Customer-Safe Workbench Projection - 2026-05-10
 
 Implementation slice:

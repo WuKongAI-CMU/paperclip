@@ -92,7 +92,7 @@ export function classifyWorktreePurpose({ branch = "", path = "", status }) {
   return "worker";
 }
 
-export function recommendWorktreeAction({ status, purpose, dirtyFiles }) {
+export function recommendWorktreeAction({ status, purpose, dirtyFiles, headSubjectInCurrent }) {
   if ((dirtyFiles ?? 0) > 0 && status !== "current") {
     return "preserve dirty work before any close or replay";
   }
@@ -111,6 +111,10 @@ export function recommendWorktreeAction({ status, purpose, dirtyFiles }) {
 
   if (status === "patch_equivalent") {
     return "patch-equivalent to current head; close only after owner confirmation";
+  }
+
+  if (status === "not_in_current" && headSubjectInCurrent) {
+    return "tip subject already exists in current head; inspect residual diff before replay or close";
   }
 
   if (status === "not_in_current" && purpose === "integration") {
@@ -155,6 +159,19 @@ function hasUnabsorbedPatchCommits(head, currentHead, repoRoot) {
   }
 }
 
+function commitSubject(revision, cwd) {
+  if (!revision) return null;
+  try {
+    return runGit(["show", "-s", "--format=%s", revision], cwd);
+  } catch {
+    return null;
+  }
+}
+
+function collectCurrentSubjects(currentHead, repoRoot) {
+  return new Set(runGit(["log", "--format=%s", currentHead], repoRoot).split("\n").filter(Boolean));
+}
+
 export function classifyWorktree({ head, detached, prunable }, currentHead, repoRoot) {
   if (prunable) return "prunable";
   if (detached) return "detached";
@@ -167,6 +184,17 @@ export function classifyWorktree({ head, detached, prunable }, currentHead, repo
     return "patch_equivalent";
   }
   return "not_in_current";
+}
+
+function annotateWorktreeSubject(record, currentHead, currentSubjects, objectCwd) {
+  const headSubject = commitSubject(record.head, objectCwd);
+
+  return {
+    ...record,
+    headSubject,
+    headSubjectInCurrent:
+      Boolean(headSubject) && record.head !== currentHead && currentSubjects.has(headSubject),
+  };
 }
 
 export function enrichWorktreeRecord(record) {
@@ -195,6 +223,9 @@ export function summarize(records) {
     (summary, record) => {
       summary.total += 1;
       summary[record.status] = (summary[record.status] ?? 0) + 1;
+      if (record.status === "not_in_current" && record.headSubjectInCurrent) {
+        summary.subject_matched = (summary.subject_matched ?? 0) + 1;
+      }
       if ((record.dirtyFiles ?? 0) > 0) summary.dirty += 1;
       summary.byPurpose[record.purpose] = (summary.byPurpose[record.purpose] ?? 0) + 1;
       if (record.ticket) {
@@ -206,20 +237,33 @@ export function summarize(records) {
   );
 }
 
-function collectSymphonyWorkspaceStatus({ repoRoot, currentHead, skipDirty, symphonyRoot }) {
+function collectSymphonyWorkspaceStatus({
+  repoRoot,
+  currentHead,
+  currentSubjects,
+  skipDirty,
+  symphonyRoot,
+}) {
   return listSymphonyWorkspacePaths(symphonyRoot).map((workspacePath) => {
     const head = runGit(["rev-parse", "HEAD"], workspacePath);
     const branch = runGit(["branch", "--show-current"], workspacePath) || "(detached)";
 
-    return enrichWorktreeRecord({
-      path: workspacePath,
-      branch,
-      head,
-      source: "symphony",
-      status: classifyWorktree({ head, detached: branch === "(detached)" }, currentHead, repoRoot),
-      dirtyFiles: countDirtyFiles(workspacePath, skipDirty),
-      prunable: false,
-    });
+    return enrichWorktreeRecord(
+      annotateWorktreeSubject(
+        {
+          path: workspacePath,
+          branch,
+          head,
+          source: "symphony",
+          status: classifyWorktree({ head, detached: branch === "(detached)" }, currentHead, repoRoot),
+          dirtyFiles: countDirtyFiles(workspacePath, skipDirty),
+          prunable: false,
+        },
+        currentHead,
+        currentSubjects,
+        workspacePath,
+      ),
+    );
   });
 }
 
@@ -231,17 +275,25 @@ export function collectWorktreeStatus({
 } = {}) {
   const repoRoot = runGit(["rev-parse", "--show-toplevel"], cwd);
   const currentHead = runGit(["rev-parse", "HEAD"], repoRoot);
+  const currentSubjects = collectCurrentSubjects(currentHead, repoRoot);
   const worktrees = parseWorktrees(runGit(["worktree", "list", "--porcelain"], repoRoot));
 
   const records = worktrees.map((worktree) =>
-    enrichWorktreeRecord({
-      path: worktree.path,
-      branch: worktree.branch ?? (worktree.detached ? "(detached)" : "(unknown)"),
-      head: worktree.head ?? null,
-      status: classifyWorktree(worktree, currentHead, repoRoot),
-      dirtyFiles: countDirtyFiles(worktree.path, skipDirty),
-      prunable: Boolean(worktree.prunable),
-    }),
+    enrichWorktreeRecord(
+      annotateWorktreeSubject(
+        {
+          path: worktree.path,
+          branch: worktree.branch ?? (worktree.detached ? "(detached)" : "(unknown)"),
+          head: worktree.head ?? null,
+          status: classifyWorktree(worktree, currentHead, repoRoot),
+          dirtyFiles: countDirtyFiles(worktree.path, skipDirty),
+          prunable: Boolean(worktree.prunable),
+        },
+        currentHead,
+        currentSubjects,
+        existsSync(worktree.path) ? worktree.path : repoRoot,
+      ),
+    ),
   );
 
   if (!includeSymphony) return records;
@@ -250,6 +302,7 @@ export function collectWorktreeStatus({
   const symphonyRecords = collectSymphonyWorkspaceStatus({
     repoRoot,
     currentHead,
+    currentSubjects,
     skipDirty,
     symphonyRoot,
   }).filter((record) => !seen.has(record.path));
@@ -442,6 +495,7 @@ function printSummary(summary) {
       `in_current: ${summary.in_current ?? 0}`,
       `patch_equivalent: ${summary.patch_equivalent ?? 0}`,
       `not_in_current: ${summary.not_in_current ?? 0}`,
+      `subject_matched: ${summary.subject_matched ?? 0}`,
       `detached: ${summary.detached ?? 0}`,
       `prunable: ${summary.prunable ?? 0}`,
       `dirty: ${summary.dirty}`,
