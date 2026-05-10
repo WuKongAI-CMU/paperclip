@@ -42,6 +42,7 @@ function reviewLoop(overrides: Partial<DearMeOutputReviewLoop> = {}): DearMeOutp
     lastDecisionNotePreview: null,
     nextStep: "Review it, then launch, request changes, ask for another pass, or choose a new direction.",
     reviewHandoff: null,
+    feedbackTrace: null,
     ...overrides,
   };
 }
@@ -843,6 +844,15 @@ describe("DearMe brand blueprint contract", () => {
               userDirection: "Make it sharper.",
               nextDraftDirection: "Prepare a stronger replacement before asking for approval again.",
             },
+            feedbackTrace: {
+              headline: "Feedback applied",
+              summary: "DearMe prepared a new private version instead of lightly editing the previous one.",
+              userFeedback: "Make it sharper.",
+              changes: [
+                "Prepared a replacement version from your direction.",
+                "Still private until you approve it.",
+              ],
+            },
           }),
           details: [],
           sourceEvidence: [],
@@ -853,6 +863,11 @@ describe("DearMe brand blueprint contract", () => {
       action: "regenerate",
       userDirection: "Make it sharper.",
       nextDraftDirection: expect.stringContaining("replacement"),
+    }));
+    expect(output.reviewLoop.feedbackTrace).toEqual(expect.objectContaining({
+      headline: "Feedback applied",
+      userFeedback: "Make it sharper.",
+      changes: expect.arrayContaining(["Still private until you approve it."]),
     }));
     const result = dearMeOutputReviewResultSchema.parse({
       companyId: "company-1",
@@ -885,6 +900,23 @@ describe("DearMe brand blueprint contract", () => {
             },
           ],
         },
+      }),
+    ).toThrow();
+    expect(() =>
+      dearMeOutputsResponseSchema.parse({
+        companyId: "company-1",
+        outputs: [
+          {
+            ...output,
+            reviewLoop: {
+              ...output.reviewLoop,
+              feedbackTrace: {
+                ...output.reviewLoop.feedbackTrace!,
+                provider: "codex-local",
+              },
+            },
+          },
+        ],
       }),
     ).toThrow();
   });

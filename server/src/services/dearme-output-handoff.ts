@@ -83,12 +83,18 @@ type DearMeParsedReviewDecision = {
   notePreview: string | null;
 };
 
+type DearMeOutputReviewFeedback = DearMeParsedReviewDecision & {
+  action: Exclude<DearMeOutputReviewAction, "approve">;
+};
+
 const BRAND_OS_FINGERPRINT = "brand-os-review";
 const VOICE_OPERATION_FINGERPRINT = "operation-seed_voice_profile";
 const CONTENT_OPERATION_FINGERPRINT = "operation-draft_content_batch";
 const CONTENT_DRAFT_WORK_PRODUCT_PROVIDER = "dearme";
 const CYCLE_OUTPUT_WORK_PRODUCT_PROVIDER = "dearme-cycle-output";
 const DEARME_OUTPUT_REVIEW_LOOP_MAX_ATTEMPTS = 3;
+const DEARME_FEEDBACK_TRACE_HIDDEN_TERMS =
+  /\b(dearme decision|issue comment|work product|provider|adapter|setup[-_ ]?payload|paperclip|openclaw|symphony|runtime|agent|model-provider|model provider|codex)\b/i;
 const outputKindSet = new Set<string>(DEARME_OUTPUT_KINDS);
 
 const OPERATION_DESCRIPTORS: Record<string, OutputDescriptor> = {
@@ -284,6 +290,121 @@ function reviewDecisionNotePreview(body: string) {
   return plainPreview(parts.join("\n\n"), 240) || null;
 }
 
+function parseReviewDecisions(reviewComments: DearMeReviewComment[]) {
+  return reviewComments
+    .map((comment) => {
+      const action = parseReviewAction(comment.body);
+      if (!action) return null;
+      return {
+        action,
+        createdAt: comment.createdAt,
+        notePreview: reviewDecisionNotePreview(comment.body),
+      };
+    })
+    .filter((decision): decision is DearMeParsedReviewDecision => Boolean(decision))
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+function latestReviewFeedback(decisions: DearMeParsedReviewDecision[]): DearMeOutputReviewFeedback | null {
+  const latestDecision = decisions[0] ?? null;
+  if (!latestDecision || latestDecision.action === "approve") return null;
+  return latestDecision as DearMeOutputReviewFeedback;
+}
+
+function customerSafeFeedbackText(value: string | null | undefined, maxLength = 260) {
+  const preview = plainPreview(value, maxLength);
+  if (!preview || DEARME_FEEDBACK_TRACE_HIDDEN_TERMS.test(preview)) return null;
+  return preview;
+}
+
+function hasFreshWorkAfterFeedback(input: {
+  reviewFeedback: DearMeOutputReviewFeedback;
+  documents: DearMeOutputDocument[];
+  latestUpdate: DearMeOutputUpdate | null;
+}) {
+  const feedbackAt = input.reviewFeedback.createdAt.getTime();
+  return input.documents.some((document) => Date.parse(document.updatedAt) > feedbackAt) ||
+    (input.latestUpdate ? Date.parse(input.latestUpdate.createdAt) > feedbackAt : false);
+}
+
+function detailTextFromDetails(
+  details: DearMeOutputDetail[],
+  kinds: DearMeOutputDetail["kind"][],
+  maxLength = 220,
+) {
+  for (const kind of kinds) {
+    const detail = details.find((candidate) => candidate.kind === kind);
+    const value = customerSafeFeedbackText(detail?.value, maxLength);
+    if (value) return value;
+  }
+  return null;
+}
+
+function feedbackTraceSummary(action: DearMeOutputReviewFeedback["action"]) {
+  if (action === "request_changes") {
+    return "DearMe used your change request before preparing this version.";
+  }
+  if (action === "not_useful") {
+    return "DearMe changed direction before bringing this back for review.";
+  }
+  return "DearMe prepared a new private version instead of lightly editing the previous one.";
+}
+
+function feedbackTraceLead(action: DearMeOutputReviewFeedback["action"]) {
+  if (action === "request_changes") {
+    return "Revised the private draft around your requested change.";
+  }
+  if (action === "not_useful") {
+    return "Changed the angle before asking for another launch call.";
+  }
+  return "Prepared a replacement version from your direction.";
+}
+
+function buildFeedbackTrace(input: {
+  reviewFeedback: DearMeOutputReviewFeedback | null;
+  details: DearMeOutputDetail[];
+  documents: DearMeOutputDocument[];
+  latestUpdate: DearMeOutputUpdate | null;
+}): DearMeOutputReviewLoop["feedbackTrace"] {
+  if (!input.reviewFeedback) return null;
+  if (!hasFreshWorkAfterFeedback({
+    reviewFeedback: input.reviewFeedback,
+    documents: input.documents,
+    latestUpdate: input.latestUpdate,
+  })) {
+    return null;
+  }
+
+  const currentFocus = detailTextFromDetails(input.details, [
+    "hook",
+    "draft_body",
+    "completed_work",
+    "decisions_needed",
+    "next_bets",
+    "proposed_copy",
+    "target",
+    "why_relevant",
+  ]);
+  const proof = detailTextFromDetails(input.details, [
+    "proof_used",
+    "proof_source",
+    "report_reference",
+  ]);
+  const changes = [
+    feedbackTraceLead(input.reviewFeedback.action),
+    currentFocus ? `Current draft focus: ${currentFocus}` : null,
+    proof ? `Proof now in view: ${proof}` : null,
+    "Still private until you approve it.",
+  ].filter((change): change is string => Boolean(change));
+
+  return {
+    headline: "Feedback applied",
+    summary: feedbackTraceSummary(input.reviewFeedback.action),
+    userFeedback: customerSafeFeedbackText(input.reviewFeedback.notePreview),
+    changes: changes.slice(0, 4),
+  };
+}
+
 function reviewLoopNextStep(state: DearMeOutputReviewLoop["state"]) {
   switch (state) {
     case "fresh":
@@ -346,22 +467,15 @@ function buildReviewHandoff(
 
 function buildReviewLoop(input: {
   status: DearMeOutputStatus;
-  reviewComments: DearMeReviewComment[];
+  decisions: DearMeParsedReviewDecision[];
+  feedbackTrace: DearMeOutputReviewLoop["feedbackTrace"];
 }): DearMeOutputReviewLoop {
-  const decisions = input.reviewComments
-    .map((comment) => {
-      const action = parseReviewAction(comment.body);
-      if (!action) return null;
-      return {
-        action,
-        createdAt: comment.createdAt,
-        notePreview: reviewDecisionNotePreview(comment.body),
-      };
-    })
-    .filter((decision): decision is DearMeParsedReviewDecision => Boolean(decision))
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  const lastDecision = decisions[0] ?? null;
-  const attemptCount = decisions.filter((decision) => decision.action !== "approve").length;
+  const lastDecision = input.decisions[0] ?? null;
+  const attemptCount = input.decisions.filter((decision) => decision.action !== "approve").length;
+  const feedbackApplied =
+    Boolean(input.feedbackTrace) &&
+    lastDecision?.action !== "approve" &&
+    (input.status === "ready_for_review" || input.status === "complete");
   let state: DearMeOutputReviewLoop["state"];
 
   if (!lastDecision) {
@@ -370,6 +484,8 @@ function buildReviewLoop(input: {
       : "fresh";
   } else if (lastDecision.action === "approve") {
     state = "approved";
+  } else if (feedbackApplied) {
+    state = "needs_user_review";
   } else if (attemptCount >= DEARME_OUTPUT_REVIEW_LOOP_MAX_ATTEMPTS) {
     state = "retry_limit_reached";
   } else if (lastDecision.action === "request_changes") {
@@ -390,8 +506,11 @@ function buildReviewLoop(input: {
     lastAction: lastDecision?.action ?? null,
     lastDecisionAt: lastDecision ? toIso(lastDecision.createdAt) : null,
     lastDecisionNotePreview: lastDecision?.notePreview ?? null,
-    nextStep: reviewLoopNextStep(state),
-    reviewHandoff: buildReviewHandoff(lastDecision, state),
+    nextStep: feedbackApplied
+      ? "Review this updated private work; your last feedback is reflected below before anything goes public."
+      : reviewLoopNextStep(state),
+    reviewHandoff: feedbackApplied ? null : buildReviewHandoff(lastDecision, state),
+    feedbackTrace: input.feedbackTrace,
   };
 }
 
@@ -867,6 +986,13 @@ function buildOutputItem(input: {
     workProducts: input.workProducts,
     latestUpdate: input.latestUpdate,
   });
+  const reviewDecisions = parseReviewDecisions(input.reviewComments);
+  const feedbackTrace = buildFeedbackTrace({
+    reviewFeedback: latestReviewFeedback(reviewDecisions),
+    details,
+    documents: input.documents,
+    latestUpdate: input.latestUpdate,
+  });
 
   return {
     id: `${input.issue.id}:${input.descriptor.kind}`,
@@ -885,7 +1011,8 @@ function buildOutputItem(input: {
     latestUpdate: input.latestUpdate,
     reviewLoop: buildReviewLoop({
       status,
-      reviewComments: input.reviewComments,
+      decisions: reviewDecisions,
+      feedbackTrace,
     }),
     details,
     sourceEvidence: buildOutputSourceEvidence({

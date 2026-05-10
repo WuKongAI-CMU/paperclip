@@ -1154,4 +1154,107 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       expect(serialized).not.toContain(hiddenTerm);
     }
   });
+
+  it("shows applied review feedback only after newer private work exists", async () => {
+    const companyId = await seedCompany();
+    const agentId = await seedAgent(companyId);
+    const issueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Prepare content batch",
+      identifier: "DME-13",
+      originFingerprint: "operation-draft_content_batch",
+      status: "in_review",
+      assigneeAgentId: agentId,
+      updatedAt: new Date("2026-05-07T19:00:00.000Z"),
+    });
+    const documentId = await attachDocument({
+      companyId,
+      issueId,
+      key: "content-drafts",
+      title: "Content drafts",
+      body: "Hook: From messy work to public proof.\nDraft body: Here is the first private draft.",
+      updatedAt: new Date("2026-05-07T19:01:00.000Z"),
+    });
+    await db.insert(issueComments).values({
+      id: randomUUID(),
+      companyId,
+      issueId,
+      authorUserId: randomUUID(),
+      body: [
+        "DearMe decision: requested changes before this represents me.",
+        "Make the proof more concrete and less generic.",
+      ].join("\n\n"),
+      createdAt: new Date("2026-05-07T19:02:00.000Z"),
+      updatedAt: new Date("2026-05-07T19:02:00.000Z"),
+    });
+
+    const before = await dearmeOutputHandoffService(db).listOutputs(companyId);
+    const beforeOutput = before.outputs.find((output) => output.kind === "content_drafts")!;
+    expect(beforeOutput.reviewLoop).toEqual(expect.objectContaining({
+      state: "revision_requested",
+      feedbackTrace: null,
+      reviewHandoff: expect.objectContaining({
+        userDirection: "Make the proof more concrete and less generic.",
+      }),
+    }));
+
+    await db
+      .update(documents)
+      .set({
+        latestBody: [
+          "Hook: Proof first, then the less generic post.",
+          "Draft body: A sharper private draft now opens with the concrete proof.",
+          "Proof used: The live DearMe review loop now carries customer feedback forward.",
+        ].join("\n"),
+        latestRevisionNumber: 3,
+        updatedAt: new Date("2026-05-07T19:10:00.000Z"),
+      })
+      .where(eq(documents.id, documentId));
+    await db.insert(issueComments).values({
+      id: randomUUID(),
+      companyId,
+      issueId,
+      authorAgentId: agentId,
+      body: "Prepared the revised private draft around the less generic post.",
+      createdAt: new Date("2026-05-07T19:11:00.000Z"),
+      updatedAt: new Date("2026-05-07T19:11:00.000Z"),
+    });
+
+    const after = await dearmeOutputHandoffService(db).listOutputs(companyId);
+    const afterOutput = after.outputs.find((output) => output.kind === "content_drafts")!;
+
+    expect(afterOutput.reviewLoop).toEqual(expect.objectContaining({
+      state: "needs_user_review",
+      attemptCount: 1,
+      lastAction: "request_changes",
+      lastDecisionNotePreview: "Make the proof more concrete and less generic.",
+      reviewHandoff: null,
+      feedbackTrace: expect.objectContaining({
+        headline: "Feedback applied",
+        userFeedback: "Make the proof more concrete and less generic.",
+        changes: expect.arrayContaining([
+          "Revised the private draft around your requested change.",
+          "Still private until you approve it.",
+        ]),
+      }),
+    }));
+    expect(afterOutput.reviewLoop.nextStep).toContain("last feedback");
+    expect(afterOutput.details.some((detail) => detail.value.includes("less generic post"))).toBe(true);
+
+    const traceSerialized = JSON.stringify(afterOutput.reviewLoop.feedbackTrace).toLowerCase();
+    for (const hiddenTerm of [
+      "dearme decision",
+      "provider",
+      "adapter",
+      "setup_payload",
+      "paperclip",
+      "openclaw",
+      "symphony",
+      "issue comment",
+      "work product",
+      "runtime",
+    ]) {
+      expect(traceSerialized).not.toContain(hiddenTerm);
+    }
+  });
 });

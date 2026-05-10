@@ -773,6 +773,13 @@ const dearMeOutputReviewHandoffSchema = z.object({
   nextDraftDirection: mediumTextSchema,
 }).strict();
 
+export const dearMeOutputFeedbackTraceSchema = z.object({
+  headline: shortTextSchema,
+  summary: mediumTextSchema,
+  userFeedback: mediumTextSchema.nullable(),
+  changes: z.array(mediumTextSchema).min(1).max(4),
+}).strict();
+
 export const dearMeOutputReviewLoopSchema = z.object({
   state: z.enum(DEARME_OUTPUT_REVIEW_LOOP_STATES),
   attemptCount: z.number().int().min(0).max(99),
@@ -783,6 +790,7 @@ export const dearMeOutputReviewLoopSchema = z.object({
   lastDecisionNotePreview: mediumTextSchema.nullable(),
   nextStep: mediumTextSchema,
   reviewHandoff: dearMeOutputReviewHandoffSchema.nullable(),
+  feedbackTrace: dearMeOutputFeedbackTraceSchema.nullable().default(null),
 }).strict();
 
 export const dearMeOutputDetailSchema = z.object({
@@ -1115,6 +1123,7 @@ export type DearMeMemoryUpdateResult = z.infer<typeof dearMeMemoryUpdateResultSc
 export type DearMeMemoryArchiveResult = z.infer<typeof dearMeMemoryArchiveResultSchema>;
 export type DearMeOutputDetail = z.infer<typeof dearMeOutputDetailSchema>;
 export type DearMeOutputDocument = z.infer<typeof dearMeOutputDocumentSchema>;
+export type DearMeOutputFeedbackTrace = z.infer<typeof dearMeOutputFeedbackTraceSchema>;
 export type DearMeOutputItem = z.infer<typeof dearMeOutputItemSchema>;
 export type DearMeOutputSourceEvidence = z.infer<typeof dearMeOutputSourceEvidenceSchema>;
 export type DearMeOutputKind = z.infer<typeof dearMeOutputItemSchema>["kind"];

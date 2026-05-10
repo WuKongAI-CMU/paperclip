@@ -338,21 +338,23 @@ function recordString(value: Record<string, unknown> | null, key: string): strin
 
 function livePulseText(text: string): string {
   const safeText = customerProofPackSummary(text)
-    .replace(/\bOpenClaw\b/gi, "the private team")
-    .replace(/\bSymphony\b/gi, "the private team")
-    .replace(/\bPaperclip\b/gi, "the workbench")
+    .replace(/\bOpenClaw\b/gi, "DearMe")
+    .replace(/\bSymphony\b/gi, "DearMe")
+    .replace(/\bPaperclip\b/gi, "DearMe")
     .replace(/\badapter\b/gi, "connection")
     .replace(/\badapters\b/gi, "connections")
     .replace(/\bprovider\b/gi, "service")
     .replace(/\bproviders\b/gi, "services")
-    .replace(/\bruntime\b/gi, "workspace")
-    .replace(/\bruntimes\b/gi, "workspaces")
+    .replace(/\bworkspace\b/gi, "private area")
+    .replace(/\bworkspaces\b/gi, "private areas")
+    .replace(/\bruntime\b/gi, "private pass")
+    .replace(/\bruntimes\b/gi, "private passes")
     .replace(/\bmodel\b/gi, "private check")
     .replace(/\bmodels\b/gi, "private checks")
     .replace(/\bsetup[-_\s]+payload\b/gi, "setup note")
-    .replace(/\bthe private team\s+the private team\b/gi, "the private team");
+    .replace(/\bDearMe\s+DearMe\b/gi, "DearMe");
   return safeText.replace(
-    /\b(?:the private team|the workbench) connections? services? workspaces?(?: private checks?)? setup note\b/gi,
+    /\bDearMe connections? services? private (?:area|pass) private checks? setup note\b/gi,
     "A private pass",
   );
 }
@@ -988,6 +990,49 @@ function ReviewHandoffCard({
         <p className="mt-2 text-xs text-muted-foreground">Your note: {handoff.userDirection}</p>
       ) : null}
       <p className="mt-2 text-xs text-muted-foreground">{customerProofPackSummary(handoff.nextDraftDirection)}</p>
+    </div>
+  );
+}
+
+function ReviewAppliedFeedbackCard({
+  loop,
+  className,
+}: {
+  loop: DearMeOutputReviewLoop;
+  className?: string;
+}) {
+  const trace = loop.feedbackTrace;
+  if (!trace) return null;
+  const headline = customerProofPackSummary(trace.headline);
+  const summary = customerProofPackSummary(trace.summary);
+  const userFeedback = trace.userFeedback ? customerProofPackSummary(trace.userFeedback) : null;
+  const changes = trace.changes
+    .map((change) => customerProofPackSummary(change).trim())
+    .filter(Boolean);
+
+  return (
+    <div
+      className={cn("rounded-md border border-border bg-background/80 p-3", className)}
+      aria-label="Feedback applied"
+    >
+      <div className="flex items-center gap-2">
+        <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+        <p className="text-xs font-medium text-muted-foreground">{headline}</p>
+      </div>
+      <p className="mt-2 text-sm text-foreground/85">{summary}</p>
+      {userFeedback ? (
+        <p className="mt-2 text-xs text-muted-foreground">You asked: {userFeedback}</p>
+      ) : null}
+      {changes.length > 0 ? (
+        <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+          {changes.map((change) => (
+            <li key={change} className="flex gap-2">
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>{change}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 }
@@ -2495,6 +2540,7 @@ function FocusedOutputPanel({
 
       <ReviewLoopNextStep loop={output.reviewLoop} className="mt-4" />
       <ReviewHandoffCard loop={output.reviewLoop} className="mt-4" />
+      <ReviewAppliedFeedbackCard loop={output.reviewLoop} className="mt-4" />
 
       {entryGuidance ? (
         <div className="mt-4 rounded-md border border-border bg-background/80 p-3">
@@ -5053,7 +5099,7 @@ function TeamWorkbenchPanel({
 
   if (workbenchQuery.isLoading) {
     return (
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]" aria-label="DearMe team workbench">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]" aria-label="DearMe team board">
         <div className="h-72 animate-pulse rounded-lg border border-border bg-muted/40" />
         <div className="h-72 animate-pulse rounded-lg border border-border bg-muted/40" />
       </section>
@@ -5131,7 +5177,7 @@ function TeamWorkbenchPanel({
   }
 
   return (
-    <section className="space-y-4" aria-label="DearMe team workbench">
+    <section className="space-y-4" aria-label="DearMe team board">
       {decisionFocus ? (
         <FocusedDecisionPanel
           decision={focusedDecision}
@@ -6119,7 +6165,7 @@ export function DearMeOnboarding() {
         eyebrow={
           <>
             <Sparkles className="h-4 w-4" />
-            DearMe / Team workbench
+            DearMe / Team board
           </>
         }
         title="Your personal brand growth team"

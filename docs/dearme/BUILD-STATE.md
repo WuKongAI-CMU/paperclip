@@ -2,6 +2,40 @@
 
 Date: 2026-05-10
 
+## DM-183K Feedback-Applied Review Trace - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the useful Symphony worker residue for repeated review loops without
+  introducing a new review surface or exposing the issue/work-product substrate.
+- Added a typed `feedbackTrace` to DearMe output review loops so regenerated
+  private work can show what changed after the user's last request.
+- Built the trace from existing review comments, documents, work products, and
+  latest updates, with customer-safe filtering for provider/runtime/agent/model
+  and orchestration terms.
+- Rendered the trace in the focused prepared-work panel as a compact
+  "Feedback applied" card, and tightened live-pulse/team-board copy so
+  customer UI does not substitute one internal word for another.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts --maxWorkers=1`
+  passed: 16 tests.
+- `pnpm exec vitest run server/src/__tests__/dearme-output-handoff.test.ts --maxWorkers=1`
+  passed: 9 tests.
+- `pnpm exec vitest run server/src/__tests__/dearme-workbench.test.ts --maxWorkers=1`
+  passed: 3 tests.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 45 tests.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `.symphony/bin/dearme-symphony status` confirmed the daemon at
+  `http://127.0.0.1:4100/` with no running or retrying workers.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported 117
+  DearMe worktrees with 0 dirty workers.
+- `git diff --check` passed.
+
 ## DM-183J Customer-Safe Review Copy and Error Boundaries - 2026-05-10
 
 Implementation slice:

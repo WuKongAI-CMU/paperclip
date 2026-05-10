@@ -126,6 +126,8 @@ const HIDDEN_PRODUCT_TERMS = {
   vendorName: hiddenTerm(["pro", "vider"]),
   modelName: "model",
   setupRecord: hiddenTerm(["setup", "payload"], "_"),
+  workbenchName: hiddenTerm(["work", "bench"]),
+  workspaceName: hiddenTerm(["work", "space"]),
 };
 
 function expectNoHiddenProductTerms(
@@ -306,6 +308,7 @@ function reviewLoopFixture(
     lastDecisionNotePreview: null,
     nextStep,
     reviewHandoff: null,
+    feedbackTrace: null,
     ...overrides,
   };
 }
@@ -1133,7 +1136,9 @@ function workbenchResponseWithChiefBrief() {
   };
 }
 
-function outputsResponse() {
+function outputsResponse(overrides: {
+  reviewLoop?: DearMeOutputReviewLoop;
+} = {}) {
   return {
     companyId: "company-1",
     outputs: [
@@ -1174,7 +1179,7 @@ function outputsResponse() {
           },
         ],
         latestUpdate: null,
-        reviewLoop: reviewLoopFixture("needs_user_review"),
+        reviewLoop: overrides.reviewLoop ?? reviewLoopFixture("needs_user_review"),
         details: [
           {
             kind: "completed_work",
@@ -1941,6 +1946,7 @@ describe("DearMeOnboarding", () => {
     expect(text).not.toContain("adapter");
     expect(text).not.toContain("provider");
     expect(text).not.toContain("runtime");
+    expect(text).not.toContain("workspace");
     expect(text).not.toContain("Issue route");
 
     await act(async () => {
@@ -2803,6 +2809,8 @@ describe("DearMeOnboarding", () => {
       HIDDEN_PRODUCT_TERMS.vendorName,
       HIDDEN_PRODUCT_TERMS.modelName,
       HIDDEN_PRODUCT_TERMS.setupRecord,
+      HIDDEN_PRODUCT_TERMS.workbenchName,
+      HIDDEN_PRODUCT_TERMS.workspaceName,
       "OpenClaw",
       "Paperclip",
     ]);
@@ -3519,7 +3527,28 @@ describe("DearMeOnboarding", () => {
 
   it("renders a focused private output from DearMe URL params", async () => {
     mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
-    mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse());
+    mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse({
+      reviewLoop: reviewLoopFixture(
+        "needs_user_review",
+        "Review this updated private work; your last feedback is reflected below before anything goes public.",
+        {
+          attemptCount: 1,
+          lastAction: "request_changes",
+          lastDecisionAt: "2026-05-07T13:40:00.000Z",
+          lastDecisionNotePreview: "Make the proof more concrete and less generic.",
+          feedbackTrace: {
+            headline: "Feedback applied",
+            summary: "DearMe used your change request before preparing this version.",
+            userFeedback: "Make the proof more concrete and less generic.",
+            changes: [
+              "Revised the private draft around your requested change.",
+              "Current draft focus: Refreshed positioning and prepared next bets.",
+              "Still private until you approve it.",
+            ],
+          },
+        },
+      ),
+    }));
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -3545,8 +3574,11 @@ describe("DearMeOnboarding", () => {
     expect(focusedWork.textContent).toContain("Voice ");
     expect(focusedWork.textContent).toContain("/100");
     expect(focusedWork.textContent).toContain("Public moves still wait for your launch call.");
-    expect(container.textContent).toContain("Review pass 0/3");
+    expect(focusedWork.textContent).toContain("Review pass 1/3");
     expect(container.textContent).toContain("Needs your review");
+    expect(container.textContent).toContain("Feedback applied");
+    expect(container.textContent).toContain("You asked: Make the proof more concrete and less generic.");
+    expect(container.textContent).toContain("Still private until you approve it.");
     expect(container.textContent).toContain("1 private reference prepared");
     expect(container.textContent).not.toContain("/issues/");
     expect(focusedCardsInSurface(container, "Work ready").some((card) =>
