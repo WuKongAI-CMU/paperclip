@@ -28,15 +28,14 @@ Verification:
 - A cleanup query against local Postgres returned no remaining
   `paperclip_e2e_%` databases after teardown.
 
-## DEA-19 Opportunity Hunter Lane Staged - 2026-05-10
+## DEA-19 Opportunity Hunter Lane Active - 2026-05-10
 
 Product/architecture slice:
 
-- Staged Linear `DEA-19` as the next non-overlapping DearMe value lane:
+- Promoted Linear `DEA-19` as the next non-overlapping DearMe value lane:
   Opportunity Hunter private shortlist without send.
-- Kept the lane in `Backlog`, not `In Progress`, so Symphony does not start a
-  second product implementation worker until the coordinator explicitly starts
-  it after the `DEA-18` browser-proof absorption.
+- Started it only after the `DEA-18` browser-proof absorption landed in the
+  coordinator checkout, keeping one active product implementation lane.
 - Scoped `DEA-19` to the 60-120s aha moment: 5 named targets, fit reasons,
   outreach angles, and draft first messages, all private and behind a send
   approval boundary.
@@ -49,18 +48,18 @@ Coordination state:
 
 - `DEA-18` is no longer a product-surface blocker after the coordinator harness
   absorption and browser proof pass.
-- Current `DEA-18` worker workspace remains code-clean except for a local
-  `.playwright-browsers/` download directory.
-- The coordinator checkout owns the absorbed e2e harness fix in
+- Symphony has one active issue, `DEA-19`, in
+  `/private/tmp/dearme-symphony-workspaces/DEA-19`.
+- The coordinator checkout owns the absorbed `DEA-18` e2e harness fix in
   `tests/e2e/playwright.config.ts`, `tests/e2e/playwright-database.ts`, and
   `tests/e2e/playwright.teardown.ts`.
 
 Verification:
 
-- Linear `DEA-19` exists in `Backlog` with hard boundaries against touching
-  `DEA-18` browser proof, Playwright harness, onboarding redesign, runtime
-  dashboards, customer-visible substrate language, or unapproved external
-  sends.
+- Linear `DEA-19` is `In Progress`, assigned to the coordinator user, with hard
+  boundaries against touching `DEA-18` browser proof, Playwright harness,
+  onboarding redesign, runtime dashboards, customer-visible substrate language,
+  or unapproved external sends.
 
 ## DEA-17 First-Glance Focus Absorption - 2026-05-10
 

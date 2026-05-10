@@ -569,10 +569,9 @@ onto the current shared/server workStream projection. Keep using this event
 metadata as the Symphony-to-product handoff contract; do not add a customer
 queue, runtime dashboard, or parallel event table for the same job.
 
-Coordinator note: DEA-19 is staged in Linear `Backlog` as the next Opportunity
-Hunter private-shortlist lane, not as an active Symphony worker. It is eligible
-as the next Symphony product lane after the DEA-18 browser-proof absorption is
-recorded in Linear. The lane should reuse the existing Opportunity Hunter
+Coordinator note: DEA-19 is now the single active Symphony product lane after
+the DEA-18 browser-proof absorption was recorded in Linear and landed in the
+coordinator checkout. The lane should reuse the existing Opportunity Hunter
 registry prompt, opportunity state machine, opportunities schema, and current
 output/workbench projection patterns to produce 5 private targets with fit
 reasons, outreach angles, and draft first messages. Do not use it to touch the
