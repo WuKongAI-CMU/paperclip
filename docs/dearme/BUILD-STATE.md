@@ -2,6 +2,25 @@
 
 Date: 2026-05-10
 
+## DM-183AK First Payoff Strip - 2026-05-10
+
+Implementation slice:
+
+- Reused the existing first-cycle preview/start contract instead of adding a
+  second onboarding flow or runtime surface.
+- Added a compact `First payoff` strip directly after the hero so the first
+  screen explains the core loop: one known-for sentence becomes a private proof
+  pack, then only the launch call waits on the user.
+- Kept the existing team board, private work, 90-second first-cycle form, paid
+  beta gate, and Brand OS seed flow intact; the new CTA simply focuses the
+  existing first-cycle input.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+
 ## DM-183AJ Final Move Approval Gate - 2026-05-10
 
 Implementation slice:

@@ -1792,6 +1792,13 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Team focus");
     expect(container.textContent).toContain("Weekly letter");
     expect(container.textContent).toContain("Voice profile");
+    const firstPayoff = surfaceByLabel(container, "First payoff");
+    expect(firstPayoff.textContent).toContain("One sentence becomes a private proof pack.");
+    expect(firstPayoff.textContent).toContain(
+      "Voice Profile, starter posts, one opportunity, proof card, first plan",
+    );
+    expect(firstPayoff.textContent).toContain("One launch call before anything public or external");
+    expect(firstPayoff.textContent).toContain("Start with one sentence");
     expect(container.textContent).toContain("Your brand team today");
     expect(container.textContent).toContain("Dear me, your team has decisions ready");
     expect(container.textContent).toContain("Team operating policy");
@@ -1895,6 +1902,16 @@ describe("DearMeOnboarding", () => {
       "Private work ready",
       "90-second first cycle",
     ]);
+    expectSurfacesInOrder(container, [
+      "First payoff",
+      "DearMe team board",
+      "Private work ready",
+      "90-second first cycle",
+    ]);
+    await act(async () => {
+      buttonByText(firstPayoff, "Start with one sentence")?.click();
+    });
+    expect(document.activeElement).toBe(container.querySelector("#dearme-first-cycle-intent"));
     expect(container.textContent).toContain("Launch Brand OS for Peter Studio");
     expect(container.textContent).toContain("Batch decisions");
     expect(container.textContent).toContain("Review content batch");
@@ -2820,6 +2837,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("90-second first cycle");
     expect(container.textContent).toContain("Preview first cycle");
     expect(container.textContent).toContain("Sample team package");
+    expect(surfaceByLabel(container, "First payoff").textContent).toContain("Preview the first proof pack");
 
     await act(async () => {
       setTextareaValue(

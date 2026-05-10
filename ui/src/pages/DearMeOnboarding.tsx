@@ -1914,6 +1914,51 @@ function FirstCyclePanel({
   );
 }
 
+function FirstCyclePayoffStrip({
+  canStartPrivateWork,
+  onFocusFirstCycle,
+}: {
+  canStartPrivateWork: boolean;
+  onFocusFirstCycle: () => void;
+}) {
+  const actionLabel = canStartPrivateWork ? "Start with one sentence" : "Preview the first proof pack";
+
+  return (
+    <section
+      aria-label="First payoff"
+      className="rounded-lg border border-primary/30 bg-primary/5 p-5"
+      data-dearme-surface="first-payoff"
+    >
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_auto] lg:items-center">
+        <div>
+          <Badge variant="outline">First payoff</Badge>
+          <h2 className="mt-3 text-xl font-semibold">One sentence becomes a private proof pack.</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            DearMe returns useful work first, then brings back only the call that needs you.
+          </p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {[
+            ["You write", "One known-for sentence"],
+            ["DearMe returns", "Voice Profile, starter posts, one opportunity, proof card, first plan"],
+            ["You decide", "One launch call before anything public or external"],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-md border border-border bg-background/75 p-3">
+              <p className="text-xs font-medium text-muted-foreground">{label}</p>
+              <p className="mt-1 text-sm font-medium text-foreground">{value}</p>
+            </div>
+          ))}
+        </div>
+        <Button type="button" className="w-full lg:w-auto" onClick={onFocusFirstCycle}>
+          <Sparkles className="h-4 w-4" />
+          {actionLabel}
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 function FirstCycleProofPackage({
   preview,
   isSample,
@@ -6586,6 +6631,12 @@ export function DearMeOnboarding() {
     outputReviewMutation.mutate({ outputId, action, decisionNote });
   }
 
+  const handleFocusFirstCycle = useCallback(() => {
+    const input = document.getElementById("dearme-first-cycle-intent");
+    input?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    if (input instanceof HTMLTextAreaElement) input.focus();
+  }, []);
+
   if (!selectedCompanyId) {
     return <p className="text-sm text-muted-foreground">{DEARME_PROFILE_REQUIRED_MESSAGE}</p>;
   }
@@ -6648,6 +6699,11 @@ export function DearMeOnboarding() {
           {paidBetaEntitlement.nextActionDescription}
         </div>
       ) : null}
+
+      <FirstCyclePayoffStrip
+        canStartPrivateWork={canStartPrivateWork}
+        onFocusFirstCycle={handleFocusFirstCycle}
+      />
 
       <TeamWorkbenchPanel
         companyId={selectedCompanyId}
