@@ -593,6 +593,32 @@
       ]
     },
     {
+      "ticket": "DM-026",
+      "branch": "codex/dearme-dm-026-team-proof-feed-refresh",
+      "head": "98fe35fdc00ed61a5dacab198af3276e34e77aa5",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current Live proof feed/action-card surface already carries the worker's proof-feed readability and /dearme review-routing value with richer proof-pack language, inline review controls, tests, and no new API, so the stale branch should not be replayed.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-026",
+      "branch": "codex/dearme-dm-026-unify-workstream-review",
+      "head": "8ad8eac6578e9fbf778ac0f081bfcb192d150e37",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current coordinator docs, absorption ledger, and Symphony worktree summary already make DearMe integration state explicit without replaying the worker's stale merge-queue document.",
+      "evidence": [
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md",
+        "docs/dearme/WORKTREE-ABSORPTION-LEDGER.json",
+        ".symphony/WORKFLOW.md"
+      ]
+    },
+    {
       "ticket": "DM-022",
       "branch": "codex/dearme-dm-022-source-change-refresh",
       "head": "b6916166cc7bb716ae8c05af5bd386636cddcddc",

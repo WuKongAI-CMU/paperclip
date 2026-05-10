@@ -46,6 +46,16 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DM-026 team-proof-feed-refresh head
+  `98fe35fdc00ed61a5dacab198af3276e34e77aa5` is recorded as absorbed because
+  the current `Live proof feed` already carries the worker's readable progress
+  value through customer-safe action cards, proof-pack summaries, inline review
+  controls, and `/dearme` review routing.
+- DM-026 unify-workstream-review head
+  `8ad8eac6578e9fbf778ac0f081bfcb192d150e37` is recorded as absorbed because
+  the current BUILD-STATE, reuse ledger, absorption ledger, and Symphony
+  worktree summary already make integration state explicit without replaying a
+  stale merge-queue document.
 - DM-021 live-events head `71f954430914ac8682d830e27d615002afe29152`
   is recorded as absorbed because the current `LiveUpdatesProvider` already
   refreshes the Workbench, outputs, Brand OS, and paid-beta queries on DearMe
@@ -144,6 +154,11 @@ heads plus the exact DM-023 source-context head to the reviewed absorption
 ledger. Treat those heads as no-replay candidates unless they advance; the code
 change in this pass is the review-freshness fix that stops stale
 `changes_requested` work products from hiding newer private work.
+
+Coordinator note: DM-183BK adds both exact DM-026 worker heads to the reviewed
+absorption ledger. Keep future proof-feed improvements on the current Live
+proof feed/action-card surface rather than restoring the older workstream
+sections or merge-queue doc.
 
 Coordinator note: DM-183O extends the Output review and decisions boundary into
 shared UI entry points, so DearMe approval cards, detail pages, approval lists,

@@ -2,6 +2,41 @@
 
 Date: 2026-05-10
 
+## DM-183BK DM-026 Live Proof Feed Absorption - 2026-05-10
+
+Product/architecture slice:
+
+- Kept Symphony as the cooperation spine and reviewed the exact DM-026 worker
+  heads against the coordinator checkout before replaying code.
+- Reviewed DM-026 team-proof-feed-refresh head
+  `98fe35fdc00ed61a5dacab198af3276e34e77aa5`. Current DearMe already carries
+  the durable product value through the `Live proof feed` panel, customer-safe
+  action cards, proof-pack summaries, inline review controls, and `/dearme`
+  review routing.
+- Reviewed DM-026 unify-workstream-review head
+  `8ad8eac6578e9fbf778ac0f081bfcb192d150e37`. The current BUILD-STATE,
+  reuse ledger, absorption ledger, and Symphony worktree summary already make
+  the integration state explicit without importing a stale merge-queue doc.
+- Recorded both exact heads in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so future Symphony patrols
+  close them as reviewed absorption candidates unless the branches advance.
+
+Verification:
+
+- `pnpm run dearme:worktrees -- --ticket=DM-026 --skip-dirty --limit=20`
+  reported both DM-026 worker branches as `reviewed_absorbed`.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
+  passed.
+- `.symphony/bin/dearme-symphony status --json` reported Symphony running with
+  one active DEA-9 worker in review and no retrying workers.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Known gap:
+
+- No UI tests were rerun for this slice because no product code changed; this
+  is a ledger/docs absorption of stale DM-026 worker heads.
+
 ## DEA-9 Repeatable Review-Memory Browser Smoke - 2026-05-10
 
 Product/architecture slice:
