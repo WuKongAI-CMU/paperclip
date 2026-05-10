@@ -145,6 +145,40 @@ Verification:
 - DEA-8 local API health check and shell API smoke against `/first-cycle/start`,
   `/outputs`, and `/workbench`
 
+### DM-183R: DearMe Live Refresh Invalidation
+
+Goal: make DearMe's visible work stay current when background decisions,
+reviews, comments, and output activity arrive over the existing live-update
+channel.
+
+Donor grounding:
+
+- Polsia: the customer should see progress appear without manual refresh or
+  admin navigation.
+- Lindy: decisions and comments are operational signals that should update the
+  active customer context quickly.
+- Naive/Paperclip/Symphony: reuse live updates, query invalidation, activity
+  payloads, and DearMe workbench projection; do not add a second realtime
+  channel.
+
+Completed:
+
+- Added DearMe product activity detection for activity actions and metadata.
+- DearMe product activity invalidates workbench, brand blueprint, outputs, and
+  paid-beta access queries.
+- DearMe approval decisions now refresh the DearMe product surface while still
+  preserving generic approval invalidations.
+- Broad issue comment/update events refresh only the DearMe workbench so the
+  server projection decides whether the comment is customer-visible.
+- Heartbeat and agent status events also refresh the DearMe workbench so the
+  customer surface catches durable progress changes.
+
+Verified:
+
+- `pnpm exec vitest run ui/src/context/LiveUpdatesProvider.test.ts --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `git diff --check`
+
 ### DM-183Q: Review Feedback Memory Loop
 
 Goal: make negative or corrective review decisions become future DearMe memory

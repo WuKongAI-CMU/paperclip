@@ -2,6 +2,29 @@
 
 Date: 2026-05-10
 
+## DM-183R DearMe Live Refresh Invalidation - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the parallel live-update invalidation slice for DearMe product
+  activity instead of creating a separate polling or refresh path.
+- Added DearMe activity detection for `dearme.` and `dearme_` live payloads and
+  DearMe approval metadata.
+- Refreshes DearMe workbench, brand blueprint, outputs, and paid-beta access
+  queries when a DearMe product activity arrives.
+- Refreshes only the DearMe workbench for broad issue comment/update events
+  where the server-side workbench query remains the authority on whether the
+  comment belongs in the customer surface.
+- Reuses existing live update and query-key infrastructure; no new customer UI
+  route, runtime surface, or dependency was added.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/context/LiveUpdatesProvider.test.ts --maxWorkers=1`
+  passed: 17 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check` passed.
+
 ## DM-183Q Review Feedback Memory Loop - 2026-05-10
 
 Implementation slice:
