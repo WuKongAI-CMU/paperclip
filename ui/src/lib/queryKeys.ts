@@ -106,6 +106,7 @@ export const queryKeys = {
   dearme: {
     brandBlueprint: (companyId: string) => ["dearme", companyId, "brand-blueprint"] as const,
     workbench: (companyId: string) => ["dearme", companyId, "workbench"] as const,
+    voiceMemory: (companyId: string) => ["dearme", companyId, "voice-memory"] as const,
     outputs: (companyId: string) => ["dearme", companyId, "outputs"] as const,
     paidBetaAccess: (companyId: string) => ["dearme", companyId, "paid-beta-access"] as const,
   },

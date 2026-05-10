@@ -651,6 +651,7 @@ function invalidateDearMeProductQueries(queryClient: QueryClient, companyId: str
   invalidateDearMeWorkbenchQueries(queryClient, companyId);
   queryClient.invalidateQueries({ queryKey: queryKeys.dearme.brandBlueprint(companyId) });
   queryClient.invalidateQueries({ queryKey: queryKeys.dearme.outputs(companyId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.dearme.voiceMemory(companyId) });
   queryClient.invalidateQueries({ queryKey: queryKeys.dearme.paidBetaAccess(companyId) });
 }
 

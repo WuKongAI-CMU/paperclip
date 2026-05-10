@@ -2,6 +2,53 @@
 
 Date: 2026-05-10
 
+## DM-183BJ DM-021/DM-023 Live Workbench Absorption - 2026-05-10
+
+Product/architecture slice:
+
+- Kept Symphony as the cooperation spine and compared the exact DM-021 and
+  DM-023 worker heads against the coordinator checkout instead of replaying
+  stale branches.
+- Reviewed DM-021 live-events head
+  `71f954430914ac8682d830e27d615002afe29152`. Current
+  `LiveUpdatesProvider` already carried the Workbench/output/Brand OS live
+  invalidation path; the remaining useful delta was to refresh Voice & Memory
+  on DearMe product events so saved private sources stay in sync with prepared
+  work.
+- Added the missing `queryKeys.dearme.voiceMemory(companyId)` contract entry so
+  this live invalidation path typechecks from a clean checkout.
+- Reviewed DM-021 source-restore head
+  `1b0309ae16d7687371637259a1d3ac08cdcb87da`. Current Voice & Memory already
+  exposes customer-controlled restore for retired private sources through the
+  shared contract, server routes, API client, onboarding UI, and tests.
+- Reviewed DM-023 source-context head
+  `0d8c71b9da2e57816696a813b93be3d23ec05adf`. Current prepared-work cards and
+  focused review use the richer `OutputSourceEvidenceList` / `sourceEvidence`
+  path, so the old compact source-context preview is superseded.
+- Recorded all three exact heads in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so future Symphony patrols stop
+  reopening them as replay candidates unless the branches advance.
+
+Verification:
+
+- `pnpm exec vitest run src/context/LiveUpdatesProvider.test.ts --config
+  vitest.config.ts` passed from `ui/`: 17 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
+  passed.
+- `pnpm run dearme:worktrees -- --ticket=DM-021 --skip-dirty --limit=20`
+  reported both DM-021 worker branches as `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --ticket=DM-023 --skip-dirty --limit=20`
+  reported the DM-023 source-context branch as `reviewed_absorbed`.
+- `.symphony/bin/dearme-symphony status --json` reported Symphony running with
+  no running or retrying workers.
+- `git diff --check` passed.
+
+Known gap:
+
+- Browser websocket smoke is not part of this narrow query-invalidation and
+  ledger absorption slice.
+
 ## DM-183BI DM-020 Approved Brand OS Seed Brief Absorption - 2026-05-10
 
 Product/architecture slice:
