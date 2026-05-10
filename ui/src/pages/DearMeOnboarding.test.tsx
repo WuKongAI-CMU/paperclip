@@ -1632,7 +1632,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Launch boundary");
     expect(container.textContent).toContain("The team keeps preparing private work: drafts, reports, opportunities");
     expect(container.textContent).toContain("Public posts, outbound messages, spend, and page changes return as one launch call.");
-    expect(container.textContent).toContain("Work ready / Decisions needed");
+    expect(container.textContent).toContain("Ready for your review");
     expect(container.textContent).toContain("Today's operating focus");
     expect(container.textContent).toContain("It starts with usable work and brings you the few decisions that matter.");
     expect(container.textContent).toContain("While you were away");
@@ -1906,6 +1906,42 @@ describe("DearMeOnboarding", () => {
       }),
     );
     expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=decisions&approval=approval-1");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps DearMe panel load errors customer-safe", async () => {
+    mockDearmeApi.getWorkbench.mockRejectedValueOnce(
+      new Error("Paperclip adapter provider workspace failed"),
+    );
+    mockDearmeApi.getOutputs.mockRejectedValueOnce(new Error("Issue route provider failed"));
+    mockDearmeApi.getPaidBetaAccess.mockRejectedValueOnce(new Error("OpenClaw runtime unavailable"));
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("DearMe team progress needs attention. Try again before reviewing private work.");
+    expect(text).toContain("Prepared work needs attention. Try again before reviewing private drafts.");
+    expect(text).toContain("Paid beta status needs attention. Try again before recording a payment.");
+    expect(text).not.toContain("Paperclip");
+    expect(text).not.toContain("OpenClaw");
+    expect(text).not.toContain("adapter");
+    expect(text).not.toContain("provider");
+    expect(text).not.toContain("runtime");
+    expect(text).not.toContain("Issue route");
 
     await act(async () => {
       root.unmount();
@@ -3227,7 +3263,7 @@ describe("DearMeOnboarding", () => {
 
     expect(mockApprovalsApi.approve).toHaveBeenCalledWith(
       "approval-ready",
-      "Launch this from DearMe. This represents me.",
+      "Approved in DearMe. This represents me.",
     );
     expect(mockApprovalsApi.requestRevision).not.toHaveBeenCalled();
     expect(mockApprovalsApi.reject).not.toHaveBeenCalled();
@@ -3301,7 +3337,7 @@ describe("DearMeOnboarding", () => {
 
     expect(mockApprovalsApi.reject).toHaveBeenCalledWith(
       "approval-ready",
-      "Pause this from DearMe. Do not move this forward.",
+      "Rejected in DearMe. Do not move this forward.",
     );
     expect(mockApprovalsApi.approve).not.toHaveBeenCalled();
     expect(mockApprovalsApi.requestRevision).not.toHaveBeenCalled();
@@ -3798,6 +3834,40 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("keeps paid beta payment failures customer-safe", async () => {
+    mockDearmeApi.recordPaidBetaPayment.mockRejectedValueOnce(
+      new Error("OpenClaw adapter runtime failed"),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Record payment")?.click();
+    });
+    await flushReact();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("Payment could not be recorded. Try again before counting paid beta access.");
+    expect(text).not.toContain("OpenClaw");
+    expect(text).not.toContain("adapter");
+    expect(text).not.toContain("runtime");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("shows generated private work and opens the customer-safe work route", async () => {
     mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse());
     const root = createRoot(container);
@@ -3816,6 +3886,8 @@ describe("DearMeOnboarding", () => {
 
     expect(mockDearmeApi.getOutputs).toHaveBeenCalledWith("company-1");
     expect(container.textContent).toContain("Private work ready");
+    expect(container.textContent).toContain("Ready for your review");
+    expect(container.textContent).toContain("1 private item ready");
     expect(container.textContent).toContain("Dear me report");
     expect(container.textContent).toContain("Completed work: refreshed positioning");
     expect(container.textContent).toContain("Decisions needed");
@@ -3824,6 +3896,8 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Proof used");
     expect(container.textContent).toContain("Prepared by Growth Analyst");
     expect(container.textContent).toContain("Ready for review");
+    expect(container.textContent).not.toContain("Work ready / Decisions needed");
+    expect(container.textContent).not.toContain("1 surfaces");
     expect(
       container.querySelectorAll(
         '[aria-label="Private work ready"] [data-dearme-surface="action-card"]',

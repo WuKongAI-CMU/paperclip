@@ -2,6 +2,33 @@
 
 Date: 2026-05-10
 
+## DM-183J Customer-Safe Review Copy and Error Boundaries - 2026-05-10
+
+Implementation slice:
+
+- Replayed the useful customer-facing residue from stale DM-035/DM-036/DM-041
+  and DM-042 worker branches without merging their old histories wholesale.
+- Changed the private-work review surface from generic "surfaces" and
+  "Work ready / Decisions needed" language to review-owned copy that reads as
+  prepared DearMe work waiting for the user.
+- Updated default decision notes so approvals, rejections, revisions, and new
+  direction requests read like natural DearMe review decisions instead of
+  inherited route or platform comments.
+- Added a customer-safe error boundary for DearMe panels and actions so
+  OpenClaw/Paperclip/Symphony/provider/runtime/adapter failures collapse into
+  plain product guidance on the customer path.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 45 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `.symphony/bin/dearme-symphony status` confirmed the daemon at
+  `http://127.0.0.1:4100/` with no running or retrying workers.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported 117
+  DearMe worktrees with 0 dirty workers.
+- `git diff --check` passed.
+
 ## DM-183I Output-Scoped Voice & Memory Task Context - 2026-05-10
 
 Implementation slice:

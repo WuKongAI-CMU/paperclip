@@ -357,6 +357,17 @@ function livePulseText(text: string): string {
   );
 }
 
+const DEARME_INTERNAL_ERROR_TERMS =
+  /\b(workbench|workstream|work stream|paperclip|openclaw|omx|symphony|setup[-_ ]?payload|adapter|provider|workspace|runtime|agent|issue route|approval route|model-provider|model provider)\b/i;
+
+function dearMeCustomerErrorMessage(error: unknown, fallback: string) {
+  if (!(error instanceof Error)) return fallback;
+  const message = error.message.trim();
+  if (!message) return fallback;
+  if (DEARME_INTERNAL_ERROR_TERMS.test(message)) return fallback;
+  return message;
+}
+
 function firstPayloadText(payload: Record<string, unknown> | null, keys: string[]): string | null {
   for (const key of keys) {
     const text = recordString(payload, key);
@@ -492,16 +503,16 @@ function parseDearMeReviewEntryIntent(value: string | null): DearMeReviewEntryIn
 }
 
 function defaultDearMeDecisionNote(action: DearMeApprovalReviewAction) {
-  if (action === "approve") return "Launch this from DearMe. This represents me.";
-  if (action === "reject") return "Pause this from DearMe. Do not move this forward.";
-  return "Please revise this from DearMe before moving forward.";
+  if (action === "approve") return "Approved in DearMe. This represents me.";
+  if (action === "reject") return "Rejected in DearMe. Do not move this forward.";
+  return "Please revise this before moving forward.";
 }
 
 function defaultDearMeOutputReviewNote(action: DearMeOutputReviewAction) {
-  if (action === "approve") return "Launch this from DearMe. This prepared work represents me.";
-  if (action === "request_changes") return "Please revise this from DearMe before review.";
-  if (action === "regenerate") return "Please prepare another private pass of this DearMe work for review.";
-  return "Please use a clearer direction before preparing the next private version.";
+  if (action === "approve") return "Approved in DearMe. This prepared work represents me.";
+  if (action === "request_changes") return "Please revise this private draft before review.";
+  if (action === "not_useful") return "This prepared work is not useful for my brand goals.";
+  return "Please prepare a new private version for review.";
 }
 
 function outputContinuationIntentForAction(
@@ -4981,7 +4992,12 @@ function TeamWorkbenchPanel({
     },
     onError: (err) => {
       setChiefOfStaffResult(null);
-      setChiefOfStaffError(err instanceof Error ? err.message : "Could not send the Chief of Staff brief.");
+      setChiefOfStaffError(
+        dearMeCustomerErrorMessage(
+          err,
+          "Chief of Staff brief needs attention. Try again before starting the next private move.",
+        ),
+      );
     },
   });
   const memoryMutation = useMutation({
@@ -4992,7 +5008,12 @@ function TeamWorkbenchPanel({
       queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
     },
     onError: (err) => {
-      setMemoryError(err instanceof Error ? err.message : "Could not update Voice & Memory.");
+      setMemoryError(
+        dearMeCustomerErrorMessage(
+          err,
+          "Voice & Memory needs attention. Try again before adding or editing private sources.",
+        ),
+      );
     },
   });
   const memoryUpdateMutation = useMutation({
@@ -5004,7 +5025,12 @@ function TeamWorkbenchPanel({
       queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
     },
     onError: (err) => {
-      setMemoryError(err instanceof Error ? err.message : "Could not revise Voice & Memory.");
+      setMemoryError(
+        dearMeCustomerErrorMessage(
+          err,
+          "Voice & Memory needs attention. Try again before adding or editing private sources.",
+        ),
+      );
     },
   });
   const memoryArchiveMutation = useMutation({
@@ -5015,7 +5041,12 @@ function TeamWorkbenchPanel({
       queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
     },
     onError: (err) => {
-      setMemoryError(err instanceof Error ? err.message : "Could not retire the source.");
+      setMemoryError(
+        dearMeCustomerErrorMessage(
+          err,
+          "Voice & Memory needs attention. Try again before retiring a private source.",
+        ),
+      );
     },
   });
   const workbench = workbenchQuery.data ?? null;
@@ -5033,9 +5064,10 @@ function TeamWorkbenchPanel({
     return (
       <div className="space-y-4">
         <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {workbenchQuery.error instanceof Error
-            ? workbenchQuery.error.message
-            : "Failed to load the DearMe team workbench."}
+          {dearMeCustomerErrorMessage(
+            workbenchQuery.error,
+            "DearMe team progress needs attention. Try again before reviewing private work.",
+          )}
         </div>
         <TeamWorkstreamPanel previewReady={false} paidBetaActive={paidBetaActive} />
       </div>
@@ -5354,7 +5386,12 @@ function PaidBetaAccessPanel({
       queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
     },
     onError: (err) => {
-      setPaymentError(err instanceof Error ? err.message : "Failed to record paid beta payment.");
+      setPaymentError(
+        dearMeCustomerErrorMessage(
+          err,
+          "Payment could not be recorded. Try again before counting paid beta access.",
+        ),
+      );
     },
   });
 
@@ -5383,7 +5420,10 @@ function PaidBetaAccessPanel({
 
       {isError ? (
         <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error instanceof Error ? error.message : "Failed to load paid beta status."}
+          {dearMeCustomerErrorMessage(
+            error,
+            "Paid beta status needs attention. Try again before recording a payment.",
+          )}
         </div>
       ) : null}
 
@@ -5593,7 +5633,7 @@ function PrivateWorkPanel({
         <div>
           <div className="flex items-center gap-2 text-sm font-medium">
             {isOpportunityView ? <Telescope className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-            {isOpportunityView ? "Opportunities ready / Launch calls" : "Work ready / Decisions needed"}
+            {isOpportunityView ? "Opportunities ready / Launch calls" : "Ready for your review"}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {isOpportunityView
@@ -5603,14 +5643,19 @@ function PrivateWorkPanel({
         </div>
         {outputs.length > 0 ? (
           <Badge variant="outline">
-            {isOpportunityView ? `${outputs.length} opportunity${outputs.length === 1 ? "" : "ies"}` : `${outputs.length} surfaces`}
+            {isOpportunityView
+              ? `${outputs.length} opportunity${outputs.length === 1 ? "" : "ies"}`
+              : pluralizeCount(outputs.length, "private item ready", "private items ready")}
           </Badge>
         ) : null}
       </div>
 
       {outputsQuery.isError ? (
         <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {outputsQuery.error instanceof Error ? outputsQuery.error.message : "Failed to load DearMe outputs."}
+          {dearMeCustomerErrorMessage(
+            outputsQuery.error,
+            "Prepared work needs attention. Try again before reviewing private drafts.",
+          )}
         </div>
       ) : null}
 
@@ -5625,7 +5670,7 @@ function PrivateWorkPanel({
           className="mt-4"
           icon={isOpportunityView ? Telescope : Workflow}
           title={isOpportunityView ? "Opportunity scouting has not produced reviewable leads yet" : "Private work has not started yet"}
-          description={isOpportunityView ? "Ask the Chief of Staff to scout practical openings and stage outreach behind the launch boundary." : "Launch Brand OS to start the private team cycle."}
+          description={isOpportunityView ? "Ask the Chief of Staff to scout practical openings and stage outreach behind the launch boundary." : "Launch Brand OS to start your private team."}
         />
       ) : (
         <>
@@ -5824,7 +5869,12 @@ export function DearMeOnboarding() {
       setActionError(null);
     },
     onError: (err) => {
-      setActionError(err instanceof Error ? err.message : "Failed to start the first cycle.");
+      setActionError(
+        dearMeCustomerErrorMessage(
+          err,
+          "First cycle needs attention. Try again before starting private work.",
+        ),
+      );
     },
   });
 
@@ -5841,7 +5891,12 @@ export function DearMeOnboarding() {
       setActionError(null);
     },
     onError: (err) => {
-      setActionError(err instanceof Error ? err.message : "Failed to preview Brand OS.");
+      setActionError(
+        dearMeCustomerErrorMessage(
+          err,
+          "Brand OS preview needs attention. Try again before starting private work.",
+        ),
+      );
     },
   });
 
@@ -5863,7 +5918,12 @@ export function DearMeOnboarding() {
       navigate(buildDearMeDecisionRoute({ approvalId: result.approval.id }));
     },
     onError: (err) => {
-      setActionError(err instanceof Error ? err.message : "Failed to request approval.");
+      setActionError(
+        dearMeCustomerErrorMessage(
+          err,
+          "Approval request needs attention. Try again before moving the Brand OS forward.",
+        ),
+      );
     },
   });
 
@@ -5897,7 +5957,12 @@ export function DearMeOnboarding() {
       }
     },
     onError: (err) => {
-      setActionError(err instanceof Error ? err.message : "Failed to update the DearMe decision.");
+      setActionError(
+        dearMeCustomerErrorMessage(
+          err,
+          "DearMe decision needs attention. Try again before moving this forward.",
+        ),
+      );
     },
     onSettled: () => {
       setPendingApprovalReview(null);
@@ -5943,7 +6008,12 @@ export function DearMeOnboarding() {
       queryClient.invalidateQueries({ queryKey: queryKeys.issues.workProducts(result.output.issueId) });
     },
     onError: (err) => {
-      setActionError(err instanceof Error ? err.message : "Failed to update the DearMe work.");
+      setActionError(
+        dearMeCustomerErrorMessage(
+          err,
+          "DearMe work needs attention. Try again before moving this forward.",
+        ),
+      );
     },
     onSettled: () => {
       setPendingOutputReview(null);
