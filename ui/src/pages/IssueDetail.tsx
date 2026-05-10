@@ -1500,6 +1500,7 @@ export function IssueDetail() {
   const resolvedHasActiveRun = issue ? shouldTrackIssueActiveRun(issue) && hasActiveRun : hasActiveRun;
   const hasLiveRuns = liveRunCount > 0 || resolvedHasActiveRun;
   const showIssueLiveRunIndicator = hasLiveRuns && !isDearMeDetailIssue;
+  const issueHeaderIdentifier = isDearMeDetailIssue ? null : issue?.identifier ?? issue?.id.slice(0, 8) ?? null;
   useEffect(() => {
     if (!hasLiveRuns && locallyQueuedCommentRunIds.size > 0) {
       setLocallyQueuedCommentRunIds(new Map());
@@ -3448,7 +3449,9 @@ export function IssueDetail() {
             priority={issue.priority}
             onChange={(priority) => updateIssue.mutate({ priority })}
           />
-          <span className="text-sm font-mono text-muted-foreground shrink-0">{issue.identifier ?? issue.id.slice(0, 8)}</span>
+          {issueHeaderIdentifier ? (
+            <span className="text-sm font-mono text-muted-foreground shrink-0">{issueHeaderIdentifier}</span>
+          ) : null}
 
           {showIssueLiveRunIndicator && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 text-[10px] font-medium text-cyan-600 dark:text-cyan-400 shrink-0">

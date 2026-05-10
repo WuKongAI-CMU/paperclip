@@ -1072,6 +1072,45 @@ describe("IssueDetail", () => {
     expect(mockOpenPanel).not.toHaveBeenCalled();
   });
 
+  it("preserves the header identifier for generic issues", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue());
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(container.textContent).toContain("PAP-1");
+    });
+  });
+
+  it("hides the raw header identifier for DearMe issues", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({ originKind: "dearme_brand_blueprint_apply" }));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(container.textContent).toContain("Chat thread");
+    });
+    expect(container.textContent).not.toContain("PAP-1");
+  });
+
   it("hides tree pause controls for DearMe issues", async () => {
     const childIssue = createIssue({
       id: "child-1",
