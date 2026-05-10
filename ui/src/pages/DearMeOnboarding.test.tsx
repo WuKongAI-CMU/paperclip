@@ -121,8 +121,10 @@ function hiddenTerm(parts: string[], separator = "") {
 
 const HIDDEN_PRODUCT_TERMS = {
   localKernel: hiddenTerm(["Paper", "clip"]),
+  orchestrationName: hiddenTerm(["Sym", "phony"]),
   bridgeName: hiddenTerm(["adap", "ter"]),
   vendorName: hiddenTerm(["pro", "vider"]),
+  modelName: "model",
   setupRecord: hiddenTerm(["setup", "payload"], "_"),
 };
 
@@ -1943,6 +1945,9 @@ describe("DearMeOnboarding", () => {
     expect(continuity.textContent).toContain("Work ready");
     expect(continuity.textContent).toContain("Weekly letter");
     expect(continuity.textContent).toContain("Launch call");
+    expect(continuity.textContent).toContain("Current proof pack");
+    expect(continuity.textContent).toContain("Next move");
+    expect(continuity.textContent).toContain("Ready for review weekly letter");
     expect(continuity.textContent).toContain("same private proof pack");
     expect(continuity.textContent).toContain("Private until approved");
     expect(continuity.textContent).not.toMatch(/cycle packet|shared packet/i);
@@ -2741,7 +2746,7 @@ describe("DearMeOnboarding", () => {
         payload: {
           phase: "running",
           runId: "run-1",
-          message: "Private execution advanced.",
+          message: "OpenClaw Symphony adapter provider runtime model setup_payload advanced.",
         },
       });
       await new Promise((resolve) => window.setTimeout(resolve, 300));
@@ -2751,6 +2756,20 @@ describe("DearMeOnboarding", () => {
     expect(mockDearmeApi.getWorkbench).toHaveBeenCalledTimes(2);
     expect(container.textContent).toContain("Dear me, your team has fresh runner progress");
     expect(container.textContent).toContain("The private cycle pulled in new execution progress for review.");
+    const livePulse = surfaceByLabel(container, "Live team pulse");
+    expect(livePulse.textContent).toContain("Team started a private pass");
+    expect(livePulse.textContent).toContain("A private pass advanced.");
+    expect(livePulse.textContent).toContain("Private work moving");
+    expectNoHiddenProductTerms(livePulse.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.orchestrationName,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+      HIDDEN_PRODUCT_TERMS.modelName,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+      "OpenClaw",
+      "Paperclip",
+    ]);
 
     await act(async () => {
       root.unmount();

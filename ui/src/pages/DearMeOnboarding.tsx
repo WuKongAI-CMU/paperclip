@@ -321,8 +321,48 @@ interface DearMeOutputReviewState {
   isPending: boolean;
 }
 
+interface DearMeLiveTeamPulse {
+  title: string;
+  description: string;
+  emittedAt: string | null;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function recordString(value: Record<string, unknown> | null, key: string): string | null {
+  const text = value?.[key];
+  return typeof text === "string" && text.trim() ? text.trim() : null;
+}
+
+function livePulseText(text: string): string {
+  const safeText = customerProofPackSummary(text)
+    .replace(/\bOpenClaw\b/gi, "the private team")
+    .replace(/\bSymphony\b/gi, "the private team")
+    .replace(/\bPaperclip\b/gi, "the workbench")
+    .replace(/\badapter\b/gi, "connection")
+    .replace(/\badapters\b/gi, "connections")
+    .replace(/\bprovider\b/gi, "service")
+    .replace(/\bproviders\b/gi, "services")
+    .replace(/\bruntime\b/gi, "workspace")
+    .replace(/\bruntimes\b/gi, "workspaces")
+    .replace(/\bmodel\b/gi, "private check")
+    .replace(/\bmodels\b/gi, "private checks")
+    .replace(/\bsetup[-_\s]+payload\b/gi, "setup note")
+    .replace(/\bthe private team\s+the private team\b/gi, "the private team");
+  return safeText.replace(
+    /\b(?:the private team|the workbench) connections? services? workspaces?(?: private checks?)? setup note\b/gi,
+    "A private pass",
+  );
+}
+
+function firstPayloadText(payload: Record<string, unknown> | null, keys: string[]): string | null {
+  for (const key of keys) {
+    const text = recordString(payload, key);
+    if (text) return livePulseText(text);
+  }
+  return null;
 }
 
 function parseDearMeWorkbenchSyncEvent(event: Event): DearMeWorkbenchResponse | null {
@@ -334,6 +374,99 @@ function parseDearMeWorkbenchSyncEvent(event: Event): DearMeWorkbenchResponse | 
     const workbench = isRecord(payload) ? payload.workbench : null;
     const result = dearMeWorkbenchResponseSchema.safeParse(workbench);
     return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseDearMeLiveTeamPulseEvent(event: Event): DearMeLiveTeamPulse | null {
+  if (!(event instanceof MessageEvent) || typeof event.data !== "string") return null;
+
+  try {
+    const parsed = JSON.parse(event.data) as unknown;
+    if (!isRecord(parsed) || typeof parsed.type !== "string") return null;
+    const payload = isRecord(parsed.payload) ? parsed.payload : null;
+    const emittedAt = recordString(parsed, "emittedAt");
+    const description =
+      firstPayloadText(payload, ["message", "summary", "reason", "description", "nextStep"]) ??
+      "Your team is moving private work forward.";
+
+    switch (parsed.type) {
+      case "task_created":
+        return {
+          title: "New private work started",
+          description,
+          emittedAt,
+        };
+      case "task_updated":
+        return {
+          title: "Private work moved forward",
+          description,
+          emittedAt,
+        };
+      case "agent_completed":
+        return {
+          title: "A teammate finished a private pass",
+          description,
+          emittedAt,
+        };
+      case "work_loop_transition": {
+        const to = recordString(payload, "to");
+        return {
+          title: to ? `Private work moved to ${livePulseText(to)}` : "Private work moved forward",
+          description,
+          emittedAt,
+        };
+      }
+      case "approval_pending":
+        return {
+          title: "Launch call is ready",
+          description,
+          emittedAt,
+        };
+      case "approval_resolved":
+        return {
+          title: "Launch call recorded",
+          description,
+          emittedAt,
+        };
+      case "voice_gate_scored": {
+        const passed = payload?.passed === true;
+        const score = typeof payload?.score === "number" ? payload.score : null;
+        return {
+          title: passed ? "Voice check passed" : "Voice check needs another pass",
+          description: score === null ? description : `Voice fit ${score}/100. ${description}`,
+          emittedAt,
+        };
+      }
+      case "channel_action_fired":
+        return {
+          title: "Approved launch action moved",
+          description,
+          emittedAt,
+        };
+      case "cost_recorded":
+        return {
+          title: "Spend checkpoint recorded",
+          description,
+          emittedAt,
+        };
+      case "openclaw_lifecycle": {
+        const phase = recordString(payload, "phase");
+        return {
+          title:
+            phase === "error"
+              ? "Private pass needs attention"
+              : phase === "end" || phase === "completed"
+                ? "Private pass finished"
+                : "Team started a private pass",
+          description,
+          emittedAt,
+        };
+      }
+      default:
+        return null;
+    }
   } catch {
     return null;
   }
@@ -2589,6 +2722,19 @@ function TeamProofPackContinuityRibbon({ workbench }: { workbench: DearMeWorkben
     nextApprovalDecision?.summary ??
     nextSourceReview?.nextAction ??
     "Your team can keep preparing private work.";
+  const packetFocusTitle = nextWork
+    ? customerProofPackSummary(nextWork.title)
+    : report
+      ? customerProofPackSummary(report.title)
+      : "Private proof pack";
+  const packetNextMove = report
+    ? `${OUTPUT_STATUS_LABELS[report.status]} weekly letter`
+    : nextWork
+      ? customerProofPackSummary(nextWork.summary)
+      : "private work";
+  const packetLaunchCall = decisionCount > 0
+    ? customerProofPackSummary(decisionTitle)
+    : "clear until the next public move";
   const steps = [
     {
       label: "Voice & Memory",
@@ -2634,6 +2780,22 @@ function TeamProofPackContinuityRibbon({ workbench }: { workbench: DearMeWorkben
           <p className="mt-1 max-w-3xl text-sm text-foreground/85">
             {continuitySummary}
           </p>
+          <div className="mt-3 grid gap-2 rounded-md border border-primary/20 bg-primary/5 p-3 text-sm sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
+            <p className="min-w-0">
+              <span className="block text-xs font-medium text-muted-foreground">Current proof pack</span>
+              <span className="block truncate font-medium text-foreground">{packetFocusTitle}</span>
+            </p>
+            <ArrowRight className="hidden h-4 w-4 text-primary/70 sm:block" aria-hidden="true" />
+            <p className="min-w-0">
+              <span className="block text-xs font-medium text-muted-foreground">Next move</span>
+              <span className="block truncate font-medium text-foreground">{packetNextMove}</span>
+            </p>
+            <ArrowRight className="hidden h-4 w-4 text-primary/70 sm:block" aria-hidden="true" />
+            <p className="min-w-0">
+              <span className="block text-xs font-medium text-muted-foreground">Launch call</span>
+              <span className="block truncate font-medium text-foreground">{packetLaunchCall}</span>
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline">Voice to review</Badge>
@@ -2664,9 +2826,11 @@ function TeamProofPackContinuityRibbon({ workbench }: { workbench: DearMeWorkben
 function TeamFocusWorkbenchPanel({
   workbench,
   paidBetaActive,
+  livePulse,
 }: {
   workbench: DearMeWorkbenchResponse;
   paidBetaActive: boolean;
+  livePulse?: DearMeLiveTeamPulse | null;
 }) {
   const latestProof = workbench.workStream[0] ?? workbench.recentProgress[0] ?? null;
   const nextMove = workbench.activeWork[0] ?? workbench.workReady[0] ?? null;
@@ -2713,6 +2877,27 @@ function TeamFocusWorkbenchPanel({
       />
 
       <TeamProofPackContinuityRibbon workbench={workbench} />
+
+      {livePulse ? (
+        <section
+          aria-label="Live team pulse"
+          className="rounded-md border border-primary/25 bg-primary/5 px-4 py-3"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <Workflow className="h-4 w-4 text-primary" />
+                <span>Live team pulse</span>
+              </div>
+              <p className="mt-1 text-sm font-medium text-foreground">{livePulse.title}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{livePulse.description}</p>
+            </div>
+            <Badge variant="outline" className="w-fit">
+              Private work moving
+            </Badge>
+          </div>
+        </section>
+      ) : null}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
         <DearMeWorkbenchCard
@@ -4698,6 +4883,7 @@ function TeamWorkbenchPanel({
   const [chiefOfStaffError, setChiefOfStaffError] = useState<string | null>(null);
   const [chiefOfStaffResult, setChiefOfStaffResult] = useState<DearMeChiefOfStaffMessageResult | null>(null);
   const [sourceReviewFocus, setSourceReviewFocus] = useState<DearMeSourceReviewFocus | null>(null);
+  const [livePulse, setLivePulse] = useState<DearMeLiveTeamPulse | null>(null);
   const workbenchQuery = useQuery({
     queryKey: queryKeys.dearme.workbench(companyId),
     queryFn: () => dearmeApi.getWorkbench(companyId),
@@ -4719,16 +4905,22 @@ function TeamWorkbenchPanel({
         void queryClient.invalidateQueries({ queryKey: workbenchKey });
       }, 250);
     };
+    const handleLivePulse: EventListener = (event) => {
+      const pulse = parseDearMeLiveTeamPulseEvent(event);
+      if (pulse) setLivePulse(pulse);
+    };
 
     stream.addEventListener("sync", handleSync);
     dearmeWorkbenchRefreshEventTypes.forEach((eventType) => {
       stream.addEventListener(eventType, scheduleWorkbenchRefresh);
+      stream.addEventListener(eventType, handleLivePulse);
     });
 
     return () => {
       stream.removeEventListener("sync", handleSync);
       dearmeWorkbenchRefreshEventTypes.forEach((eventType) => {
         stream.removeEventListener(eventType, scheduleWorkbenchRefresh);
+        stream.removeEventListener(eventType, handleLivePulse);
       });
       if (refreshTimer !== null) window.clearTimeout(refreshTimer);
       stream.close();
@@ -4880,7 +5072,7 @@ function TeamWorkbenchPanel({
         />
       ) : null}
 
-      <TeamFocusWorkbenchPanel workbench={workbench} paidBetaActive={paidBetaActive} />
+      <TeamFocusWorkbenchPanel workbench={workbench} paidBetaActive={paidBetaActive} livePulse={livePulse} />
 
       {selectedView === "opportunities" ? (
         <OpportunityWorkbenchPanel

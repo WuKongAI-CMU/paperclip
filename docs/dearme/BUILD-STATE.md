@@ -2,6 +2,30 @@
 
 Date: 2026-05-10
 
+## DEA-7 Live Team Pulse - 2026-05-10
+
+Implementation slice:
+
+- Added a customer-facing `Live team pulse` surface to the DearMe workbench so
+  the latest worker lifecycle event shows as active private team motion instead
+  of only triggering a silent refresh.
+- Reused the existing workbench EventSource, `dearmeWorkbenchRefreshEventTypes`,
+  and React Query invalidation path; no new endpoint, schema, or first-run data
+  shape was added.
+- Kept hidden Symphony/OpenClaw/runtime/provider/model terms backstage by
+  sanitizing live event payload copy before it reaches the paid-beta surface.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx
+  --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `git diff --check`
+- Chrome DevTools opened `http://127.0.0.1:4174/DEAA/dearme`, confirmed
+  the workbench and proof-pack continuity render, found no console errors or
+  warnings, and saw 200s for the relevant workbench, outputs, paid-beta, and
+  events requests.
+
 ## DEA-7 Proof Pack Continuity Ribbon - 2026-05-10
 
 Implementation slice:
@@ -9,6 +33,9 @@ Implementation slice:
 - Added a customer-facing `Proof pack continuity` ribbon to the DearMe
   workbench so the first screen shows how one private proof pack flows through
   Voice & Memory, Work Ready, the Dear me letter, and launch calls.
+- Added the compact `Current proof pack -> Next move -> Launch call` row inside
+  that ribbon so the aha is explicit before users inspect the four supporting
+  cards.
 - Reused the existing workbench projection, report status labels, source
   counts, decision queues, and packet-backed report detection instead of adding
   another packet/progress read model.
@@ -24,6 +51,9 @@ Verification:
 - `pnpm --filter @paperclipai/shared typecheck` passed.
 - `pnpm --filter @paperclipai/server typecheck` passed.
 - `pnpm --filter @paperclipai/ui typecheck` passed.
+- Browser fallback smoke on `http://127.0.0.1:3100/DEAAAAAAAAA/dearme` passed
+  for desktop and mobile: continuity ribbon present, no console errors, no
+  hidden donor/runtime terms.
 
 ## DEA-7 Content Packet Rerun Key - 2026-05-10
 
