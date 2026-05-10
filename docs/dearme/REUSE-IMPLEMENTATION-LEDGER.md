@@ -108,6 +108,12 @@ code change. Do not reopen this as another first-run schema or runtime task:
 `prepareFirstCycleProofOutputs(...)`, `prepareCycleOutputPacket(...)`, output
 handoff, and workbench projection already carry the paid-beta proof pack.
 
+Coordinator note: DEA-10 / DM-183AS-A is now absorbed as the narrow review
+receipt API/cache proof under the broader DEA-9 repeatable packet smoke. The
+useful reuse is the existing output continuation response, shared output schema,
+React Query output cache, and focused prepared-work review UI; do not create a
+second review receipt route, schema, or runtime surface for this loop.
+
 Coordinator note: DM-183M extends the Output review and decisions boundary into
 server responses and approval preflight, so DearMe auth, validation, and stale
 Brand OS approval failures stay product-safe before state changes.
@@ -2556,6 +2562,7 @@ UI, not server-side runtime artifacts the user never sees).
 | DM-140 | Voice Gate + Content Producer plugin (voice-match score, attribution link rule, rate cap) | Polsia Twitter agent rules | `packages/plugins/dearme-content-producer/` |
 | DM-183AQ | Private source link traceability on current Voice & Memory contract | DM-016 source-reference intent, adapted without stale `referenceUrl` schema replay | `ui/src/pages/DearMeOnboarding.tsx` |
 | DM-183AR | Work Ready inline review actions plus review receipts | DM-093/DM-097 in-place review pattern, current output handoff review-loop receipts | `ui/src/pages/DearMeOnboarding.tsx`, `server/src/services/dearme-output-handoff.ts` |
+| DM-183AS-A | Review receipt API/cache proof while output refresh is pending | Existing output continuation response, shared DearMe output schema, React Query output cache, focused prepared-work review controls | `ui/src/pages/DearMeOnboarding.test.tsx` |
 
 ### Sprint 2 - Work keeps moving
 

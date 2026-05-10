@@ -2,6 +2,49 @@
 
 Date: 2026-05-10
 
+## DM-183AS-A Review Receipt API/Cache Proof - 2026-05-10
+
+Product proof slice:
+
+- Kept Symphony healthy and idle before taking `DEA-10` back into the
+  coordinator lane instead of spawning another high-token worker.
+- Reused the current focused prepared-work review controls, output continuation
+  API, shared DearMe output schema, and React Query output cache.
+- Added regression coverage for the `prepare_another_pass` path so a returned
+  private output carrying `reviewLoop.feedbackTrace.receipts` immediately
+  replaces the cached output list while the next output refresh is still
+  pending.
+- Proved the focused Work Ready / review path keeps the customer-visible
+  `Feedback applied` receipt visible and does not fall back to private issue
+  routes.
+- Kept `DEA-9` / `DM-183AS` as the broader browser/API smoke lane; this slice is
+  the narrow API/cache proof under that product loop, not a second review
+  surface.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status --json` passed with the daemon healthy
+  and no retrying workers.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "keeps review-memory receipts in the focused output cache"`
+  passed.
+- `pnpm exec vitest run ui/src/api/dearme.test.ts packages/shared/src/validators/dearme.test.ts --maxWorkers=1`
+  passed.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "focused private output|review-memory receipts|review handoff|focused private work"`
+  passed.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- `pnpm run test:dearme-worktrees`
+  passed.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty`
+  passed and reported `reviewed_absorbed: 26`, `not_in_current: 87`, and
+  `dirty: 0`.
+- `git diff --check`
+  passed.
+- Full `pnpm test:run`, full `pnpm -r typecheck`, and build were not rerun for
+  this narrow test/docs proof slice.
+
 ## DM-183BC DM-010 Final Approval Baseline Absorption - 2026-05-10
 
 Coordination slice:

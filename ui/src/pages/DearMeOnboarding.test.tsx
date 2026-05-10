@@ -4890,6 +4890,105 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("keeps review-memory receipts in the focused output cache while the next refresh is pending", async () => {
+    mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
+    const initialOutputs = outputsResponse() as DearMeOutputsResponse;
+    const reviewedOutput: DearMeOutputsResponse["outputs"][number] = {
+      ...initialOutputs.outputs[0],
+      updatedAt: "2026-05-07T14:08:00.000Z",
+      reviewLoop: reviewLoopFixture(
+        "needs_user_review",
+        "Review this updated private work; your last feedback is reflected below before anything goes public.",
+        {
+          attemptCount: 1,
+          lastAction: "regenerate",
+          lastDecisionAt: "2026-05-07T14:05:00.000Z",
+          lastDecisionNotePreview: "Try a stronger proof-led opening before the launch call.",
+          feedbackTrace: {
+            headline: "Feedback applied",
+            summary: "DearMe prepared a new private version instead of lightly editing the previous one.",
+            userFeedback: "Try a stronger proof-led opening before the launch call.",
+            changes: [
+              "Prepared a replacement version from your direction.",
+              "Current draft focus: Refreshed positioning and prepared next bets.",
+              "Still private until you approve it.",
+            ],
+            receipts: [
+              "Another pass requested: Try a stronger proof-led opening before the launch call.",
+            ],
+          },
+        },
+      ),
+    };
+    mockDearmeApi.getOutputs.mockResolvedValueOnce(initialOutputs);
+    mockDearmeApi.continueOutput.mockResolvedValueOnce({
+      companyId: "company-1",
+      outputId: reviewedOutput.id,
+      action: "regenerate",
+      status: "queued",
+      comment: {
+        id: "comment-2",
+        bodyPreview: "DearMe decision: prepare another private pass before review.",
+        createdAt: "2026-05-07T14:05:00.000Z",
+      },
+      output: reviewedOutput,
+    });
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const focusedWork = surfaceByLabel(container, "Focused work");
+    const prepareAnotherPassButton = buttonByText(focusedWork, "Prepare another pass");
+    expect(prepareAnotherPassButton).toBeDefined();
+
+    mockDearmeApi.getOutputs.mockImplementation(
+      () => new Promise<DearMeOutputsResponse>(() => {}),
+    );
+
+    await act(async () => {
+      setTextareaValue(
+        container.querySelector("#dearme-focused-output-note") as HTMLTextAreaElement,
+        "Try a stronger proof-led opening before the launch call.",
+      );
+      prepareAnotherPassButton?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.continueOutput).toHaveBeenCalledWith(
+      "company-1",
+      "issue-1:weekly_report",
+      {
+        intent: "prepare_another_pass",
+        decisionNote: "Try a stronger proof-led opening before the launch call.",
+      },
+    );
+    const cachedOutputs = queryClient.getQueryData<DearMeOutputsResponse>(
+      queryKeys.dearme.outputs("company-1"),
+    );
+    expect(cachedOutputs?.outputs[0]?.reviewLoop.feedbackTrace?.receipts).toEqual([
+      "Another pass requested: Try a stronger proof-led opening before the launch call.",
+    ]);
+    expect(container.textContent).toContain("Feedback applied");
+    expect(container.textContent).toContain(
+      "Another pass requested: Try a stronger proof-led opening before the launch call.",
+    );
+    expect(container.textContent).not.toContain("/issues/");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("keeps focused private work review errors customer-safe", async () => {
     mockLocation.search = "?view=decisions&work=PET-7&artifact=issue-1%3Aweekly_report";
     mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse());
