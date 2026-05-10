@@ -2,6 +2,30 @@
 
 Date: 2026-05-10
 
+## DM-183BW Symphony Worker Bootstrap Hardening - 2026-05-10
+
+Product/architecture slice:
+
+- Kept Symphony as the DearMe coordinator/worker cooperation spine, but fixed
+  the worker workspace bootstrap so new Linear/Symphony lanes do not depend on
+  a global `corepack enable` symlink under `/usr/local/bin`.
+- Updated `.symphony/WORKFLOW.md` to prefer the existing user-local `pnpm`
+  binary, fall back to `corepack pnpm`, and fail with an explicit missing-pnpm
+  error only if neither path exists.
+- Confirmed the live retrying `DEA-12` lane recovered from the bootstrap
+  failure and moved from retrying to running in
+  `/private/tmp/dearme-symphony-workspaces/DEA-12`.
+- Product direction is unchanged: this only improves the backstage development
+  factory. DearMe customer surfaces still speak in team work, decisions,
+  private proof, handoff, and launch-call terms.
+
+Verification:
+
+- `git diff --check -- .symphony/WORKFLOW.md` passed.
+- `bash -n .symphony/bin/dearme-symphony` passed.
+- `.symphony/bin/dearme-symphony status --json` reported `DEA-12` running and
+  `retrying: []` after the workflow fix.
+
 ## DM-183BV Symphony Work-Event Contract And Residual Worktree Closure - 2026-05-10
 
 Product/architecture slice:

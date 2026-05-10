@@ -29,8 +29,15 @@ hooks:
     SOURCE_HEAD="$(git -C "$SOURCE_REPO" rev-parse "$SOURCE_BRANCH")"
     git checkout -B "$SOURCE_BRANCH" "$SOURCE_HEAD"
     echo "Symphony source head: $(git rev-parse --short HEAD)"
-    corepack enable
-    pnpm install --frozen-lockfile
+    export PATH="$HOME/.npm-global/bin:$HOME/Library/pnpm:$PATH"
+    if command -v pnpm >/dev/null 2>&1; then
+      pnpm install --frozen-lockfile
+    elif command -v corepack >/dev/null 2>&1; then
+      corepack pnpm install --frozen-lockfile
+    else
+      echo "pnpm is required for DearMe Symphony workspaces" >&2
+      exit 127
+    fi
 agent:
   max_concurrent_agents: 2
   max_turns: 12
