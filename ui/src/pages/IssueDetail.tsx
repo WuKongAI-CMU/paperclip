@@ -1352,6 +1352,7 @@ function IssueDetailActivityTab({
         issue={issue}
         onCheckNow={onCheckMonitorNow}
         checkingNow={checkingMonitorNow}
+        hideSubstrateDetails={isDearMeIssue(issue)}
       />
     </>
   );

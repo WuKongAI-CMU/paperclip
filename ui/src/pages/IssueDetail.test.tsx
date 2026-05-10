@@ -1143,6 +1143,54 @@ describe("IssueDetail", () => {
     });
   });
 
+  it("keeps DearMe scheduled follow-up cards product-safe", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({
+      originKind: "dearme_brand_blueprint_apply",
+      monitorNextCheckAt: new Date("2026-04-21T12:30:00.000Z"),
+      monitorAttemptCount: 4,
+      monitorNotes: "OpenClaw adapter should wake the provider token",
+      executionPolicy: {
+        mode: "normal",
+        commentRequired: true,
+        stages: [],
+        monitor: {
+          nextCheckAt: "2026-04-21T12:30:00.000Z",
+          notes: "OpenClaw adapter should wake the provider token",
+          scheduledBy: "board",
+          serviceName: "OpenClaw watchdog",
+        },
+      },
+    }));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    const activityButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.trim() === "Activity");
+    expect(activityButton).toBeTruthy();
+
+    await act(async () => {
+      activityButton!.click();
+    });
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Follow-up scheduled");
+      expect(container.textContent).toContain("Next review");
+      expect(container.textContent).toContain("DearMe will review this again automatically.");
+      expect(container.textContent).toContain("Refresh now");
+      expect(container.textContent).not.toMatch(
+        /Monitor scheduled|Next check|Check now|Attempt|OpenClaw|adapter|watchdog|provider|token/i,
+      );
+    });
+  });
+
   it("keeps generic linked approval decisions on the issue detail", async () => {
     const genericApproval = createApproval({
       id: "approval-generic-1",

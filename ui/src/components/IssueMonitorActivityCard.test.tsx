@@ -157,6 +157,55 @@ describe("IssueMonitorActivityCard", () => {
     act(() => root.unmount());
   });
 
+  it("renders scheduled follow-up details without substrate metadata when hidden", () => {
+    const onCheckNow = vi.fn();
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <IssueMonitorActivityCard
+          hideSubstrateDetails
+          issue={createIssue({
+            monitorAttemptCount: 3,
+            executionPolicy: {
+              mode: "normal",
+              commentRequired: true,
+              stages: [],
+              monitor: {
+                nextCheckAt: "2026-04-11T12:30:00.000Z",
+                notes: "OpenClaw adapter should wake the provider token",
+                scheduledBy: "board",
+                serviceName: "OpenClaw watchdog",
+              },
+            },
+          })}
+          onCheckNow={onCheckNow}
+        />,
+      );
+    });
+
+    expect(container.textContent).toContain("Follow-up scheduled");
+    expect(container.textContent).toContain("Next review");
+    expect(container.textContent).toContain("DearMe will review this again automatically.");
+    expect(container.textContent).toContain("Refresh now");
+    expect(container.textContent).not.toMatch(
+      /Monitor scheduled|Next check|Check now|Attempt|OpenClaw|adapter|watchdog|provider|token/i,
+    );
+
+    const button = Array.from(container.querySelectorAll("button")).find((candidate) =>
+      candidate.textContent?.includes("Refresh now"),
+    );
+    expect(button).toBeTruthy();
+
+    act(() => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(onCheckNow).toHaveBeenCalledTimes(1);
+
+    act(() => root.unmount());
+  });
+
   it("renders nothing when the issue has no scheduled monitor", () => {
     const root = createRoot(container);
 
