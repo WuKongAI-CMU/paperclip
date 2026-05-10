@@ -25,6 +25,39 @@ Verification:
 - `git -C /private/tmp/dearme-symphony-workspaces/DEA-9 status --short --branch`
   stayed clean after the worker was stopped.
 
+## DM-183AV Output Direction Cache Absorption - 2026-05-10
+
+Coordination slice:
+
+- Re-checked live Symphony and kept the output-review work as a coordinator
+  absorption slice, not a new worker runtime.
+- Extended `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` with exact
+  branch/head records for DM-024 and DM-025 after matching their output-review
+  lessons to current DearMe code.
+- Added regression coverage for the `choose_new_direction` / `not_useful`
+  review path so focused private work writes the returned output into the
+  existing React Query cache while the output refetch is still pending.
+- Kept the Voice & Memory first-class source-management donor as a separate
+  future Symphony ticket instead of mixing it into this output-review slice.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status --json`
+  passed.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- `pnpm run test:dearme-worktrees`
+  passed.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty`
+  passed and reported `reviewed_absorbed: 13`, `not_in_current: 100`, and
+  `dirty: 0`.
+- `pnpm run dearme:worktrees -- --status=reviewed-absorbed --skip-dirty --limit=25`
+  passed and listed DM-024 and DM-025 with the other reviewed entries.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/WORKTREE-ABSORPTION-LEDGER.json docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183AT Early Voice/Review Worktree Absorption - 2026-05-10
 
 Coordination slice:

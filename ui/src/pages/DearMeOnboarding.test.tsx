@@ -4925,7 +4925,36 @@ describe("DearMeOnboarding", () => {
 
   it("lets users choose a new direction from the focused output", async () => {
     mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
-    mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse());
+    const initialOutputs = outputsResponse() as DearMeOutputsResponse;
+    const reviewedOutput: DearMeOutputsResponse["outputs"][number] = {
+      ...initialOutputs.outputs[0],
+      status: "working",
+      isReviewable: false,
+      updatedAt: "2026-05-07T14:05:00.000Z",
+      reviewLoop: reviewLoopFixture(
+        "not_useful",
+        "Your team should avoid this angle and choose a clearer direction.",
+        {
+          attemptCount: 1,
+          lastAction: "not_useful",
+          lastDecisionAt: "2026-05-07T14:05:00.000Z",
+          lastDecisionNotePreview: "This angle is not useful for the audience.",
+        },
+      ),
+    };
+    mockDearmeApi.getOutputs.mockResolvedValueOnce(initialOutputs);
+    mockDearmeApi.continueOutput.mockResolvedValueOnce({
+      companyId: "company-1",
+      outputId: reviewedOutput.id,
+      action: "not_useful",
+      status: "queued",
+      comment: {
+        id: "comment-3",
+        bodyPreview: "DearMe decision: marked this prepared work as not useful.",
+        createdAt: "2026-05-07T14:05:00.000Z",
+      },
+      output: reviewedOutput,
+    });
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -4945,6 +4974,10 @@ describe("DearMeOnboarding", () => {
     expect(chooseNewDirectionButton).toBeDefined();
     expect(chooseNewDirectionButton?.disabled).toBe(false);
 
+    mockDearmeApi.getOutputs.mockImplementation(
+      () => new Promise<DearMeOutputsResponse>(() => {}),
+    );
+
     await act(async () => {
       setTextareaValue(
         container.querySelector("#dearme-focused-output-note") as HTMLTextAreaElement,
@@ -4958,6 +4991,20 @@ describe("DearMeOnboarding", () => {
       "company-1",
       "issue-1:weekly_report",
       { intent: "choose_new_direction", decisionNote: "This angle is not useful for the audience." },
+    );
+    const cachedOutputs = queryClient.getQueryData<DearMeOutputsResponse>(
+      queryKeys.dearme.outputs("company-1"),
+    );
+    expect(cachedOutputs?.outputs[0]).toEqual(
+      expect.objectContaining({
+        id: "issue-1:weekly_report",
+        status: "working",
+        isReviewable: false,
+        reviewLoop: expect.objectContaining({
+          state: "not_useful",
+          lastAction: "not_useful",
+        }),
+      }),
     );
 
     await act(async () => {
