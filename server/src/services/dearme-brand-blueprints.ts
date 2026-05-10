@@ -277,6 +277,15 @@ function firstCycleLines(lines: Array<string | null>) {
   return lines.filter((line): line is string => Boolean(line && line.trim().length > 0)).join("\n");
 }
 
+function formatOpportunityContactRecord(lead: DearMeFirstCyclePreviewResponse["opportunityShortlist"][number]) {
+  const record = [
+    lead.contactEvidence.contactEmail ?? null,
+    lead.contactEvidence.contactHandle ?? null,
+    lead.contactEvidence.contactUrl ?? null,
+  ].filter((value): value is string => Boolean(value && value.trim().length > 0));
+  return record.length > 0 ? record.join(" · ") : "No direct contact record yet";
+}
+
 function renderFirstCycleProofIssues(preview: DearMeFirstCyclePreviewResponse): FirstCycleProofIssue[] {
   const firstPost = preview.starterPosts[0];
   const starterDrafts = preview.starterPosts
@@ -284,7 +293,7 @@ function renderFirstCycleProofIssues(preview: DearMeFirstCyclePreviewResponse): 
     .join("\n");
   const launchBoundary = preview.approvalBoundary.summary;
   const opportunityShortlistTargets = preview.opportunityShortlist
-    .map((lead, index) => `Lead ${index + 1}: ${lead.title} - ${lead.target}`)
+    .map((lead, index) => `Lead ${index + 1}: ${lead.title} - ${lead.target} (${lead.contactEvidence.status})`)
     .join("\n");
 
   return [
@@ -364,10 +373,14 @@ function renderFirstCycleProofIssues(preview: DearMeFirstCyclePreviewResponse): 
             ...preview.opportunityShortlist.map((lead, index) => [
               `## Lead ${index + 1}: ${lead.title}`,
               `Target: ${lead.target}`,
-              `Why relevant: ${lead.whyRelevant}`,
+              `Verification status: ${lead.contactEvidence.status}`,
+              `Contact record: ${formatOpportunityContactRecord(lead)}`,
+              `Source signal: ${lead.contactEvidence.sourceSignal}`,
+              `Fit reason: ${lead.whyRelevant}`,
               `Relevance score: ${lead.relevanceScore}/10 starter hypothesis`,
               `Outreach angle: ${lead.outreachAngle}`,
-              `Draft message: ${lead.draftMessage}`,
+              `First message: ${lead.draftMessage}`,
+              `Approval gate: Send approval required`,
               "",
             ]).flat(),
             "Launch boundary: Outreach waits for one launch call before sending.",

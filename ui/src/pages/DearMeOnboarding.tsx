@@ -1116,7 +1116,7 @@ const OUTPUT_KIND_LABELS: Record<DearMeOutputItem["kind"], string> = {
   weekly_report: "Dear me report",
 };
 
-const OUTPUT_DETAIL_DISPLAY_LIMIT = 6;
+const OUTPUT_DETAIL_DISPLAY_LIMIT = 8;
 
 const OUTPUT_DETAIL_DISPLAY_ORDER: Record<
   DearMeOutputItem["kind"],
@@ -1127,11 +1127,14 @@ const OUTPUT_DETAIL_DISPLAY_ORDER: Record<
   content_drafts: ["channel", "audience", "hook", "draft_body", "proof_used", "approval_gate"],
   opportunity_drafts: [
     "target",
+    "verification_status",
+    "contact_record",
+    "source_signal",
     "why_relevant",
-    "relevance_score",
     "outreach_angle",
     "draft_message",
     "approval_gate",
+    "relevance_score",
   ],
   portfolio_update: ["page_section", "proof_source", "proposed_copy", "deploy_gate"],
   weekly_report: ["completed_work", "decisions_needed", "next_bets", "report_reference"],
@@ -1837,6 +1840,7 @@ function cyclePacketWorkProducts(output: DearMeOutputItem) {
 
 function customerProofPackSummary(text: string) {
   return text
+    .replace(/\bsend_email\b/gi, "Send approval required")
     .replace(/\blead packets\b/gi, "lead batches")
     .replace(/\bcurrent opportunity packet\b/gi, "current opportunity draft")
     .replace(/\bprepared opportunity packets\b/gi, "prepared opportunity drafts")
@@ -2306,7 +2310,7 @@ function FirstCycleProofPackage({
         <DearMeWorkbenchCard
           eyebrow="Opportunity shortlist"
           title="Five private targets"
-          description="Fit reasons, outreach angles, and first messages stay private until send approval."
+          description="Contact evidence, fit reasons, outreach angles, and first messages stay private until send approval."
           badge={<Users className="h-4 w-4 text-muted-foreground" />}
           className="lg:col-span-2"
           aria-label="Opportunity shortlist"
@@ -2326,26 +2330,50 @@ function FirstCycleProofPackage({
                     <Badge variant="secondary" className="h-auto">
                       {lead.relevanceScore}/10
                     </Badge>
-                    <Badge variant="outline" className="h-auto">
-                      Send approval
+                    <Badge
+                      variant={
+                        lead.contactEvidence.status === "verified"
+                          ? "default"
+                          : lead.contactEvidence.status === "pending"
+                            ? "secondary"
+                            : "outline"
+                      }
+                      className="h-auto"
+                    >
+                      {lead.contactEvidence.status === "verified"
+                        ? "Contact verified"
+                        : lead.contactEvidence.status === "pending"
+                          ? "Contact pending"
+                          : "No direct contact"}
                     </Badge>
                   </div>
                 </div>
-	                <div className="mt-3 space-y-2 text-sm">
-	                  <div>
-	                    <p className="text-xs font-medium uppercase text-muted-foreground">Fit</p>
-	                    <p className="mt-1 text-foreground/80">{lead.whyRelevant}</p>
-	                  </div>
-	                  <div>
-	                    <p className="text-xs font-medium uppercase text-muted-foreground">
-	                      Outreach angle
-	                    </p>
-	                    <p className="mt-1 text-foreground/80">{lead.outreachAngle}</p>
-	                  </div>
-	                  <div>
-	                    <p className="text-xs font-medium uppercase text-muted-foreground">
-	                      First message
-	                    </p>
+                <div className="mt-3 space-y-2 text-sm">
+                  <div>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">Contact evidence</p>
+                    <p className="mt-1 text-foreground/80">
+                      {[
+                        lead.contactEvidence.contactEmail,
+                        lead.contactEvidence.contactHandle,
+                        lead.contactEvidence.contactUrl,
+                      ].filter((value): value is string => Boolean(value && value.trim().length > 0)).join(" · ") ||
+                        "No direct contact record yet"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">Fit reason</p>
+                    <p className="mt-1 text-foreground/80">{lead.whyRelevant}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">Source signal</p>
+                    <p className="mt-1 text-foreground/80">{lead.contactEvidence.sourceSignal}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">Outreach angle</p>
+                    <p className="mt-1 text-foreground/80">{lead.outreachAngle}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">First message</p>
                     <p className="mt-1 text-foreground/80">{lead.draftMessage}</p>
                   </div>
                 </div>
@@ -3621,7 +3649,7 @@ function OpportunityWorkbenchPanel({
             <div className="rounded-md border border-border bg-background/80 p-3">
               <p className="text-xs font-medium text-muted-foreground">What the scout prepares</p>
               <p className="mt-1 text-sm text-foreground/85">
-                Target, fit reason, outreach angle, first message, and follow-up plan.
+                Target, contact evidence, fit reason, outreach angle, first message, and follow-up plan.
               </p>
             </div>
             <div className="rounded-md border border-border bg-background/80 p-3">
@@ -6519,7 +6547,7 @@ function PrivateWorkPanel({
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {isOpportunityView
-              ? "Prepared opportunity drafts: targets, fit reasons, outreach angles, draft messages, and launch boundaries."
+              ? "Prepared opportunity drafts: targets, contact evidence, fit reasons, outreach angles, draft messages, and launch boundaries."
               : "Private work ready for review: reports, drafts, voice guidance, and portfolio work DearMe has prepared."}
           </p>
         </div>

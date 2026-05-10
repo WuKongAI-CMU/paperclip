@@ -256,12 +256,17 @@ const DETAIL_EXTRACTION_LABELS = [
   "Target",
   "Contact",
   "Opportunity",
+  "Verification status",
+  "Contact record",
+  "Source signal",
+  "Fit reason",
   "Why relevant",
   "Relevance",
   "Relevance score",
   "Score",
   "Outreach angle",
   "Angle",
+  "First message",
   "Draft message",
   "Message",
   "Page section",
@@ -1169,10 +1174,13 @@ function buildOutputDetails(input: {
       break;
     case "opportunity_drafts":
       addOutputDetail(details, "target", "Target", extractOutputText(input, ["Target", "Contact", "Opportunity"]) ?? primary);
-      addOutputDetail(details, "why_relevant", "Why relevant", extractOutputText(input, ["Why relevant", "Relevance"]) ?? firstSentenceText(primary));
+      addOutputDetail(details, "verification_status", "Verification status", extractOutputText(input, ["Verification status", "Status"]));
+      addOutputDetail(details, "contact_record", "Contact record", extractOutputText(input, ["Contact record", "Contact"]));
+      addOutputDetail(details, "source_signal", "Source signal", extractOutputText(input, ["Source signal", "Source"]));
+      addOutputDetail(details, "why_relevant", "Fit reason", extractOutputText(input, ["Fit reason", "Why relevant", "Relevance"]) ?? firstSentenceText(primary));
       addOutputDetail(details, "relevance_score", "Relevance score", extractOutputText(input, ["Relevance score", "Score"]));
       addOutputDetail(details, "outreach_angle", "Outreach angle", extractOutputText(input, ["Outreach angle", "Angle"]));
-      addOutputDetail(details, "draft_message", "Draft message", extractOutputText(input, ["Draft message", "Message"]));
+      addOutputDetail(details, "draft_message", "First message", extractOutputText(input, ["First message", "Draft message", "Message"]));
       addOutputDetail(details, "approval_gate", "Launch boundary", extractOutputText(input, ["Launch boundary", "Approval gate"]) ?? derivedText("The outreach waits for one launch call before sending."));
       break;
     case "portfolio_update":

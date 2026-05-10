@@ -11104,6 +11104,15 @@ Not run:
 - The fresh active output Review-click smoke no longer emits the cancelled
   recovery run log 404 after the issue-detail transcript hydration polish; the
   re-run recorded zero same-origin failures and zero console errors.
+- DEA-35 closed the sparse first-cycle opportunity shortlist gap by reusing
+  the existing first-cycle preview contract, shared validator, proof renderers,
+  and output-handoff document shapes to surface verification status, contact
+  records, source signals, fit reasons, and first messages without a schema
+  migration or new send path. The shared schema now refuses `verified` contact
+  evidence on reserved demo domains, so the default first-cycle proof can show
+  contact evidence without pretending sample `.example` records are reachable.
+  The remaining gap is only richer real contact-source enrichment, not a new
+  dashboard or persistence layer.
 - Visible-label passes removed `Paperclip` from the main entry surfaces and the targeted runtime/admin/plugin/adapter/routine/workspace surfaces audited so far; the latest pass also removed OpenClaw labels from the teammate invite/gateway display surfaces and raw adapter ids from hire-agent approval payloads. Broad source still contains internal compatibility identifiers, package names, storage keys, CSS names, Lucide icon identifiers, `.paperclip.yaml`, exact gateway contract keys, and real `pnpm paperclipai ...` commands, so do not treat the whole codebase as product-copy clean yet.
 - Browser smokes used available fallbacks rather than the Browser Use plugin because the required browser execution tool was not exposed after tool discovery. The latest paid-beta fake-customer, weekly report reviewer, and generated-output handoff passes used Playwright.
 - The previous full-suite blocker from host Tailscale detection is fixed in `cli/src/__tests__/network-bind.test.ts` and `cli/src/__tests__/onboard.test.ts`; `pnpm test:run` is now green.

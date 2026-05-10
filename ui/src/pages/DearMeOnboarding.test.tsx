@@ -1329,7 +1329,7 @@ function outputsWithOpportunityDraft() {
             format: "markdown",
             revisionNumber: 1,
             bodyPreview:
-              "Target: Practical AI Builders podcast. Why relevant: audience matches Peter's proof. Outreach angle: share a local AI operator story. Draft message: Saw your workflow episode and have a concrete follow-up.",
+              "Target: Practical AI Builders podcast. Verification status: pending. Contact record: bookings@practicalaibuilders.example · https://practicalaibuilders.example/podcast. Source signal: Guest submission page publishes a dedicated booking inbox and intake form. First message: Saw your workflow episode and have a concrete follow-up.",
             updatedAt: "2026-05-07T14:00:00.000Z",
           },
         ],
@@ -1353,8 +1353,26 @@ function outputsWithOpportunityDraft() {
             source: "document",
           },
           {
+            kind: "verification_status",
+            label: "Verification status",
+            value: "pending",
+            source: "document",
+          },
+          {
+            kind: "contact_record",
+            label: "Contact record",
+            value: "bookings@practicalaibuilders.example · https://practicalaibuilders.example/podcast",
+            source: "document",
+          },
+          {
+            kind: "source_signal",
+            label: "Source signal",
+            value: "Guest submission page publishes a dedicated booking inbox and intake form.",
+            source: "document",
+          },
+          {
             kind: "why_relevant",
-            label: "Why relevant",
+            label: "Fit reason",
             value: "Audience matches Peter's proof and current positioning.",
             source: "document",
           },
@@ -1366,9 +1384,15 @@ function outputsWithOpportunityDraft() {
           },
           {
             kind: "draft_message",
-            label: "Draft message",
+            label: "First message",
             value: "Saw your workflow episode and have a concrete follow-up.",
             source: "document",
+          },
+          {
+            kind: "approval_gate",
+            label: "Approval gate",
+            value: "send_email",
+            source: "derived",
           },
         ],
         sourceEvidence: [
@@ -5609,7 +5633,9 @@ describe("DearMeOnboarding", () => {
     expect(commandCenter.textContent).toContain("Lead batches");
     expect(commandCenter.textContent).toContain("Current opportunity draft");
     expect(commandCenter.textContent).toContain("Opportunity Scout is working on Opportunity leads");
-    expect(commandCenter.textContent).toContain("Target, fit reason, outreach angle, first message, and follow-up plan.");
+    expect(commandCenter.textContent).toContain(
+      "Target, contact evidence, fit reason, outreach angle, first message, and follow-up plan.",
+    );
     expect(commandCenter.textContent).not.toMatch(/lead packets|opportunity packet/i);
 
     const opportunitySurface = surfaceByLabel(container, "Opportunity work ready");
@@ -5618,8 +5644,11 @@ describe("DearMeOnboarding", () => {
     expect(opportunitySurface.textContent).toContain("Warm collaboration lead");
     expect(opportunitySurface.textContent).toContain("Prepared by Opportunity Scout");
     expect(opportunitySurface.textContent).toContain("Practical AI Builders podcast");
+    expect(opportunitySurface.textContent).toContain("Verification status");
+    expect(opportunitySurface.textContent).toContain("Contact record");
     expect(opportunitySurface.textContent).toContain("Outreach angle");
     expect(opportunitySurface.textContent).toContain("No outbound message sends until Peter approves");
+    expect(opportunitySurface.textContent).not.toContain("send_email");
     expect(opportunitySurface.textContent).not.toContain("Dear me report");
     expect(opportunitySurface.textContent).not.toMatch(/opportunity packet|prepared opportunity packets/i);
     expect(

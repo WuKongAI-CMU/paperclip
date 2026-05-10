@@ -251,6 +251,21 @@ describe("DearMe brand blueprint contract", () => {
       "Founders evaluating local AI workflows",
     );
     expect(firstCycle.opportunityShortlist.map((lead) => lead.relevanceScore)).toEqual([9, 8, 7, 7, 8]);
+    expect(firstCycle.opportunityShortlist.every((lead) => lead.contactEvidence.sourceSignal.length > 0)).toBe(true);
+    expect(firstCycle.opportunityShortlist.every((lead) => ["verified", "pending", "unavailable"].includes(lead.contactEvidence.status))).toBe(true);
+    expect(
+      firstCycle.opportunityShortlist.filter((lead) =>
+        Boolean(lead.contactEvidence.contactEmail || lead.contactEvidence.contactHandle || lead.contactEvidence.contactUrl),
+      ),
+    ).toHaveLength(4);
+    expect(firstCycle.opportunityShortlist.filter((lead) => lead.contactEvidence.status === "verified")).toHaveLength(0);
+    expect(
+      firstCycle.opportunityShortlist.every(
+        (lead) =>
+          lead.contactEvidence.status !== "verified" ||
+          Boolean(lead.contactEvidence.contactEmail || lead.contactEvidence.contactHandle || lead.contactEvidence.contactUrl),
+      ),
+    ).toBe(true);
     expect(firstCycle.opportunityShortlist[4]?.target).toBe("Trusted Operator Intro List");
     expect(firstCycle.portfolioProofCard.approvalGate).toBe("deploy_public_site");
     expect(firstCycle.portfolioProofCard.proposedCopy).toContain(
@@ -292,6 +307,61 @@ describe("DearMe brand blueprint contract", () => {
     for (const hiddenTerm of ["provider", "adapter", "setup_payload", "mcp", "paperclip", "openclaw"]) {
       expect(serialized).not.toContain(hiddenTerm);
     }
+    expect(JSON.stringify(firstCycle.opportunityShortlist)).not.toMatch(/paperclip|openclaw|symphony|adapter|provider|model/i);
+  });
+
+  it("rejects verified first-cycle contact evidence on reserved demo domains", () => {
+    const firstCycle = createDearMeFirstCyclePreview("company-1", {
+      handle: "Peter Studio",
+      brand: {
+        displayName: "Peter",
+        positioning: "Known for practical AI products",
+        goals: ["Build visible proof"],
+        audiences: ["Founders evaluating local AI workflows"],
+        proofPoints: ["Shipped a local product"],
+        offers: [],
+        voiceSamples: [],
+        preferredChannels: ["linkedin"],
+        constraints: [],
+        cadence: "weekly",
+        budgetMonthlyCents: 25_000,
+        autoDraftEnabled: true,
+      },
+    });
+    const firstLead = firstCycle.opportunityShortlist[0]!;
+    const reservedVerifiedLead = {
+      ...firstLead,
+      contactEvidence: {
+        ...firstLead.contactEvidence,
+        status: "verified" as const,
+      },
+    };
+
+    expect(
+      dearMeFirstCyclePreviewResponseSchema.safeParse({
+        ...firstCycle,
+        opportunityLead: reservedVerifiedLead,
+        opportunityShortlist: [reservedVerifiedLead, ...firstCycle.opportunityShortlist.slice(1)],
+      }).success,
+    ).toBe(false);
+
+    const reachableVerifiedLead = {
+      ...firstLead,
+      contactEvidence: {
+        status: "verified" as const,
+        contactEmail: "hello@founders.ai",
+        contactUrl: "https://founders.ai/contact",
+        sourceSignal: "The public contact page lists a direct inbox and form.",
+      },
+    };
+
+    expect(
+      dearMeFirstCyclePreviewResponseSchema.safeParse({
+        ...firstCycle,
+        opportunityLead: reachableVerifiedLead,
+        opportunityShortlist: [reachableVerifiedLead, ...firstCycle.opportunityShortlist.slice(1)],
+      }).success,
+    ).toBe(true);
   });
 
   it("falls back to a safe preview handle when the supplied handle is unusable", () => {

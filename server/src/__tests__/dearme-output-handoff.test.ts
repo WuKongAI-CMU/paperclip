@@ -596,10 +596,14 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       title: "Opportunity list",
       body: [
         "Target: host of a practical AI operators podcast",
-        "Why relevant: their audience buys local-first AI workflow tools",
+        "Verification status: pending",
+        "Contact record: bookings@practicalaibuilders.example · https://practicalaibuilders.example/podcast",
+        "Source signal: Guest submission page publishes a dedicated booking inbox and intake form.",
+        "Fit reason: their audience buys local-first AI workflow tools",
         "Relevance score: 8/10",
         "Outreach angle: offer a teardown of a real local-agent workflow",
-        "Draft message: I can share concrete operator notes from a shipped local AI product.",
+        "First message: I can share concrete operator notes from a shipped local AI product.",
+        "Approval gate: Send approval required",
       ].join("\n"),
       updatedAt: new Date("2026-05-07T15:21:00.000Z"),
     });
@@ -769,8 +773,13 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     expect(contentOutput.workProducts[0]).not.toHaveProperty("provider");
     expect(opportunityOutput.details).toEqual(expect.arrayContaining([
       expect.objectContaining({ kind: "target", value: expect.stringContaining("podcast") }),
+      expect.objectContaining({ kind: "verification_status", value: "pending" }),
+      expect.objectContaining({ kind: "contact_record", value: expect.stringContaining("bookings@practicalaibuilders.example") }),
+      expect.objectContaining({ kind: "source_signal", value: expect.stringContaining("Guest submission page") }),
+      expect.objectContaining({ kind: "why_relevant", value: expect.stringContaining("local-first AI workflow tools") }),
       expect.objectContaining({ kind: "outreach_angle", value: expect.stringContaining("teardown") }),
       expect.objectContaining({ kind: "draft_message", value: expect.stringContaining("operator notes") }),
+      expect.objectContaining({ kind: "approval_gate", value: expect.stringContaining("Send approval") }),
     ]));
     expect(portfolioOutput.details).toEqual(expect.arrayContaining([
       expect.objectContaining({ kind: "page_section", value: "proof cards" }),

@@ -364,15 +364,27 @@ function renderOpportunitySeedDocument(input: {
 }): DearMeFirstWeekSeedDocument {
   const { brandBlueprint: blueprint } = input.payload;
   const { opportunityLead } = input.preview;
+  const formatContactRecord = (lead: DearMeFirstCyclePreviewResponse["opportunityShortlist"][number]) => {
+    const record = [
+      lead.contactEvidence.contactEmail ?? null,
+      lead.contactEvidence.contactHandle ?? null,
+      lead.contactEvidence.contactUrl ?? null,
+    ].filter((value): value is string => Boolean(value && value.trim().length > 0));
+    return record.length > 0 ? record.join(" · ") : "No direct contact record yet";
+  };
   const shortlistLines = input.preview.opportunityShortlist.flatMap((lead, index) => [
     `## Lead ${index + 1}: ${lead.title}`,
     `- Target: ${lead.target}`,
-    `- Why relevant: ${lead.whyRelevant}`,
+    `- Verification status: ${lead.contactEvidence.status}`,
+    `- Contact record: ${formatContactRecord(lead)}`,
+    `- Source signal: ${lead.contactEvidence.sourceSignal}`,
+    `- Fit reason: ${lead.whyRelevant}`,
     `- Relevance score: ${lead.relevanceScore}/10 starter hypothesis`,
     `- Outreach angle: ${lead.outreachAngle}`,
-    `- Approval gate: ${lead.approvalGate}`,
+    `- First message: ${lead.draftMessage}`,
+    `- Approval gate: Send approval required`,
     "",
-    "Draft message:",
+    "First message:",
     lead.draftMessage,
     "",
   ]);

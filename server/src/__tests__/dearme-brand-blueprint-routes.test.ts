@@ -374,6 +374,12 @@ function makeFirstCycleResult() {
       target: "Founders",
       whyRelevant: "Founders care about the first goal.",
       relevanceScore: 9,
+      contactEvidence: {
+        status: "verified",
+        contactEmail: "hello@founders.ai",
+        contactUrl: "https://founders.ai/contact",
+        sourceSignal: "Public contact page lists a direct inbox and contact form.",
+      },
       outreachAngle: "Lead with proof.",
       draftMessage: "Private outreach draft.",
       ownerRole: "opportunity_scout",
@@ -385,6 +391,12 @@ function makeFirstCycleResult() {
         target: "Founders",
         whyRelevant: "Founders care about the first goal.",
         relevanceScore: 9,
+        contactEvidence: {
+          status: "verified",
+          contactEmail: "hello@founders.ai",
+          contactUrl: "https://founders.ai/contact",
+          sourceSignal: "Public contact page lists a direct inbox and contact form.",
+        },
         outreachAngle: "Lead with proof.",
         draftMessage: "Private outreach draft.",
         ownerRole: "opportunity_scout",
@@ -395,6 +407,11 @@ function makeFirstCycleResult() {
         target: "Practical AI Product Operators Circle",
         whyRelevant: "Operators value visible proof and specific outcomes.",
         relevanceScore: 8,
+        contactEvidence: {
+          status: "pending",
+          contactHandle: "@practicalaioperators",
+          sourceSignal: "Community profile points to a shared inbox but the direct owner contact still needs confirmation.",
+        },
         outreachAngle: "Open with the proof.",
         draftMessage: "Private collaboration draft.",
         ownerRole: "opportunity_scout",
@@ -405,6 +422,12 @@ function makeFirstCycleResult() {
         target: "Practical AI Builders Podcast Desk",
         whyRelevant: "Hosts want a proof-backed story.",
         relevanceScore: 7,
+        contactEvidence: {
+          status: "verified",
+          contactEmail: "bookings@practicalaibuilders.fm",
+          contactUrl: "https://practicalaibuilders.fm/podcast",
+          sourceSignal: "Guest submission page publishes a dedicated booking inbox and intake form.",
+        },
         outreachAngle: "Pitch the concrete story.",
         draftMessage: "Private guest pitch draft.",
         ownerRole: "opportunity_scout",
@@ -415,6 +438,11 @@ function makeFirstCycleResult() {
         target: "Local AI Workflow Hiring Teams",
         whyRelevant: "Teams need proof they can trust.",
         relevanceScore: 7,
+        contactEvidence: {
+          status: "pending",
+          contactEmail: "jobs@localaiworkflow.example",
+          sourceSignal: "Hiring page names a recruiting inbox and the role page points to the team lead.",
+        },
         outreachAngle: "Lead with the outcome.",
         draftMessage: "Private hiring draft.",
         ownerRole: "opportunity_scout",
@@ -425,6 +453,10 @@ function makeFirstCycleResult() {
         target: "Trusted Operator Intro List",
         whyRelevant: "Trusted operators can make the right introduction.",
         relevanceScore: 8,
+        contactEvidence: {
+          status: "unavailable",
+          sourceSignal: "No direct public contact surfaced yet; a warm intro is the safest path for this lane.",
+        },
         outreachAngle: "Ask for a thoughtful introduction.",
         draftMessage: "Private intro draft.",
         ownerRole: "opportunity_scout",
@@ -1917,6 +1949,8 @@ describe("DearMe brand blueprint routes", () => {
     expect(res.body.opportunityLead.approvalGate).toBe("send_email");
     expect(res.body.opportunityShortlist).toHaveLength(5);
     expect(res.body.opportunityShortlist[0]?.target).toBe("Founders");
+    expect(res.body.opportunityShortlist.every((lead: { contactEvidence: { sourceSignal: string } }) => lead.contactEvidence.sourceSignal.length > 0)).toBe(true);
+    expect(res.body.opportunityShortlist.filter((lead: { contactEvidence: { status: string } }) => lead.contactEvidence.status === "verified")).toHaveLength(2);
     expect(res.body.opportunityShortlist[4]?.relevanceScore).toBe(8);
     expect(res.body.sitePreview.route).toBe("dearme.app/peter-studio");
     expect(res.body.sitePreview.status).toBe("private_preview");

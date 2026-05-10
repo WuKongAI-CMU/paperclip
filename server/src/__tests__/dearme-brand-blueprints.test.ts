@@ -267,6 +267,15 @@ describeEmbeddedPostgres("DearMe brand blueprint service", () => {
     expect(result.opportunityShortlist).toHaveLength(5);
     expect(result.opportunityShortlist[0]?.target).toBe("solo founders who need their work to become visible proof");
     expect(result.opportunityShortlist.map((lead) => lead.relevanceScore)).toEqual([9, 8, 7, 7, 8]);
+    expect(result.opportunityShortlist.every((lead) => lead.contactEvidence.sourceSignal.length > 0)).toBe(true);
+    expect(result.opportunityShortlist.filter((lead) => lead.contactEvidence.status === "verified")).toHaveLength(0);
+    expect(result.opportunityShortlist.filter((lead) =>
+      Boolean(lead.contactEvidence.contactEmail || lead.contactEvidence.contactHandle || lead.contactEvidence.contactUrl),
+    )).toHaveLength(4);
+    expect(result.opportunityShortlist.every((lead) =>
+      lead.contactEvidence.status !== "verified" ||
+      Boolean(lead.contactEvidence.contactEmail || lead.contactEvidence.contactHandle || lead.contactEvidence.contactUrl),
+    )).toBe(true);
     expect(result.opportunityShortlist[4]?.target).toBe("Trusted Operator Intro List");
     expect(result.voiceGate.status).not.toBe("blocked_before_public");
     expect(result.warnings).not.toContain("Voice profile needs at least two samples before tone should be trusted.");

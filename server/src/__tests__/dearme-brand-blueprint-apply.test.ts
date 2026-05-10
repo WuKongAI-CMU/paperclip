@@ -446,9 +446,14 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(opportunityDocuments[0]?.body).toContain("## Shortlist overview");
     expect(opportunityDocuments[0]?.body).toContain("Lead 5: Warm intro lead");
     expect(opportunityDocuments[0]?.body).toContain("Trusted Operator Intro List");
+    expect(opportunityDocuments[0]?.body).toContain("Verification status: unavailable");
+    expect(opportunityDocuments[0]?.body).toContain("Contact record: No direct contact record yet");
+    expect(opportunityDocuments[0]?.body).toContain("Source signal:");
+    expect(opportunityDocuments[0]?.body).toContain("Fit reason:");
     expect(opportunityDocuments[0]?.body).toContain("Relevance score: 8/10 starter hypothesis");
+    expect(opportunityDocuments[0]?.body).toContain("First message:");
     expect(opportunityDocuments[0]?.body).toContain("I am reaching out because");
-    expect(opportunityDocuments[0]?.body).toContain("Send email or direct message");
+    expect(opportunityDocuments[0]?.body).toContain("Approval gate: Send approval required");
     const portfolioDocuments = await documentService(db).listIssueDocuments(portfolioIssue!.id);
     expect(portfolioDocuments.map((document) => document.key)).toEqual(["portfolio-update"]);
     expect(portfolioDocuments[0]?.title).toBe("Portfolio update");

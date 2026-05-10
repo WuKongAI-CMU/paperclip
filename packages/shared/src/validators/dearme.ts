@@ -120,6 +120,9 @@ export const DEARME_OUTPUT_DETAIL_KINDS = [
   "approval_gate",
   "target",
   "why_relevant",
+  "verification_status",
+  "contact_record",
+  "source_signal",
   "relevance_score",
   "outreach_angle",
   "draft_message",
@@ -314,9 +317,83 @@ function isHttpUrl(value: string) {
   }
 }
 
+const RESERVED_CONTACT_HOSTS = new Set(["example.com", "example.net", "example.org", "localhost"]);
+const RESERVED_CONTACT_TLDS = new Set(["example", "test", "invalid", "localhost"]);
+
+function isReservedContactHostname(value: string) {
+  const hostname = value.trim().toLowerCase().replace(/\.$/, "");
+  if (!hostname || RESERVED_CONTACT_HOSTS.has(hostname)) return true;
+  const labels = hostname.split(".").filter(Boolean);
+  const tld = labels.at(-1);
+  return Boolean(tld && RESERVED_CONTACT_TLDS.has(tld));
+}
+
+function contactEmailUsesReservedDomain(value: string | undefined) {
+  if (!value) return false;
+  const atIndex = value.lastIndexOf("@");
+  if (atIndex < 0) return false;
+  return isReservedContactHostname(value.slice(atIndex + 1));
+}
+
+function contactUrlUsesReservedDomain(value: string | undefined) {
+  if (!value) return false;
+  try {
+    return isReservedContactHostname(new URL(value).hostname);
+  } catch {
+    return false;
+  }
+}
+
 function textList(maxItems: number, maxLength: number) {
   return z.array(z.string().trim().min(1).max(maxLength)).max(maxItems).default([]);
 }
+
+const dearMeFirstCycleOpportunityContactEvidenceSchema = z.object({
+  status: z.enum(["verified", "pending", "unavailable"]),
+  sourceSignal: mediumTextSchema,
+  contactEmail: optionalText(320),
+  contactHandle: optionalText(120),
+  contactUrl: optionalText(500),
+}).strict().superRefine((value, ctx) => {
+  const hasContactRecord = Boolean(value.contactEmail || value.contactHandle || value.contactUrl);
+  if (value.status === "unavailable") {
+    if (hasContactRecord) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Unavailable contact evidence should not include a direct contact record.",
+      });
+    }
+    return;
+  }
+  if (!hasContactRecord) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Contact evidence marked pending or verified needs a direct contact record.",
+    });
+  }
+  if (value.status !== "verified") return;
+  if (value.contactUrl && !isHttpUrl(value.contactUrl)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["contactUrl"],
+      message: "Verified contact evidence needs an http(s) contact URL.",
+    });
+  }
+  if (contactEmailUsesReservedDomain(value.contactEmail)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["contactEmail"],
+      message: "Verified contact evidence cannot use a reserved demo email domain.",
+    });
+  }
+  if (contactUrlUsesReservedDomain(value.contactUrl)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["contactUrl"],
+      message: "Verified contact evidence cannot use a reserved demo URL domain.",
+    });
+  }
+});
 
 function uniqueStrings(values: string[]) {
   const seen = new Set<string>();
@@ -624,6 +701,7 @@ const dearMeFirstCycleOpportunityLeadSchema = z.object({
   target: shortTextSchema,
   whyRelevant: mediumTextSchema,
   relevanceScore: z.number().int().min(1).max(10),
+  contactEvidence: dearMeFirstCycleOpportunityContactEvidenceSchema,
   outreachAngle: mediumTextSchema,
   draftMessage: mediumTextSchema,
   ownerRole: z.literal("opportunity_scout"),
@@ -1851,6 +1929,12 @@ export function createDearMeFirstCyclePreview(
       target: primaryAudience,
       whyRelevant: `${primaryAudience} are the first group likely to care about ${primaryGoal}.`,
       relevanceScore: 9,
+      contactEvidence: {
+        status: "pending",
+        contactEmail: "hello@practicalaiproducts.example",
+        contactUrl: "https://practicalaiproducts.example/contact",
+        sourceSignal: "Contact page pattern identifies a likely direct inbox; owner confirmation is still needed before outreach.",
+      },
       outreachAngle: `Lead with ${primaryProof}, then offer ${primaryOffer}.`,
       draftMessage: `I am reaching out because ${primaryAudience} are likely thinking about ${primaryGoal}. I can share a short practical note from ${primaryProof}; if useful, we can see whether ${primaryOffer} fits your current priorities.`,
       ownerRole: "opportunity_scout",
@@ -1861,6 +1945,12 @@ export function createDearMeFirstCyclePreview(
       target: "Practical AI Product Operators Circle",
       whyRelevant: "Practical AI Product Operators Circle already cares about visible proof, specific outcomes, and a clear next step.",
       relevanceScore: 8,
+      contactEvidence: {
+        status: "pending",
+        contactHandle: "@practicalaioperators",
+        contactUrl: "https://practicalaioperators.example/connect",
+        sourceSignal: "Community profile points to a shared inbox, but the best direct owner contact still needs confirmation.",
+      },
       outreachAngle: `Open with the proof, then offer a practical collaboration or referral conversation.`,
       draftMessage: `I am reaching out because you are already shipping practical AI work. I have a short proof-first note from ${primaryProof} and would be glad to share it if a useful collaboration or referral conversation would help.`,
       ownerRole: "opportunity_scout",
@@ -1871,6 +1961,12 @@ export function createDearMeFirstCyclePreview(
       target: "Practical AI Builders Podcast Desk",
       whyRelevant: "Practical AI Builders Podcast Desk is a strong fit for a proof-backed, concrete story about turning private work into public evidence.",
       relevanceScore: 7,
+      contactEvidence: {
+        status: "pending",
+        contactEmail: "bookings@practicalaibuilders.example",
+        contactUrl: "https://practicalaibuilders.example/podcast",
+        sourceSignal: "Guest submission pattern identifies a likely booking inbox and intake form; confirm the owner before outreach.",
+      },
       outreachAngle: `Pitch a short, evidence-first story that starts with ${primaryProof} and ends with a useful takeaway for their audience.`,
       draftMessage: `I am reaching out because your show focuses on practical AI builders and concrete stories. I can offer a short proof-backed angle rooted in ${primaryProof} if a guest conversation would be useful for your listeners.`,
       ownerRole: "opportunity_scout",
@@ -1881,6 +1977,11 @@ export function createDearMeFirstCyclePreview(
       target: "Local AI Workflow Hiring Teams",
       whyRelevant: "Local AI Workflow Hiring Teams usually need someone who can show evidence, not just talk about tools.",
       relevanceScore: 7,
+      contactEvidence: {
+        status: "pending",
+        contactEmail: "jobs@localaiworkflow.example",
+        sourceSignal: "Hiring page names a recruiting inbox and the role page points to the team lead.",
+      },
       outreachAngle: `Lead with the outcome from ${primaryProof}, then point to how ${primaryOffer} might support the team.`,
       draftMessage: `I am reaching out because teams hiring for local AI workflow expertise often want proof they can trust. I can share a short note on ${primaryProof} and, if useful, discuss whether ${primaryOffer} would help your team.`,
       ownerRole: "opportunity_scout",
@@ -1891,6 +1992,10 @@ export function createDearMeFirstCyclePreview(
       target: "Trusted Operator Intro List",
       whyRelevant: "Trusted Operator Intro List is often the best route to one strong introduction because these people already know how you work and what proof matters.",
       relevanceScore: 8,
+      contactEvidence: {
+        status: "unavailable",
+        sourceSignal: "No direct public contact surfaced yet; a warm intro is the safest path for this lane.",
+      },
       outreachAngle: "Ask for a single thoughtful introduction after leading with the specific proof and the concrete ask.",
       draftMessage: `I am reaching out because a trusted introduction can be the fastest way to connect the right people. I have a short practical note from ${primaryProof}, and if it seems relevant, I would appreciate a warm introduction to someone who cares about ${primaryGoal}.`,
       ownerRole: "opportunity_scout",
