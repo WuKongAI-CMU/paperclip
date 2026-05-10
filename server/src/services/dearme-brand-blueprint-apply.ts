@@ -364,6 +364,18 @@ function renderOpportunitySeedDocument(input: {
 }): DearMeFirstWeekSeedDocument {
   const { brandBlueprint: blueprint } = input.payload;
   const { opportunityLead } = input.preview;
+  const shortlistLines = input.preview.opportunityShortlist.flatMap((lead, index) => [
+    `## Lead ${index + 1}: ${lead.title}`,
+    `- Target: ${lead.target}`,
+    `- Why relevant: ${lead.whyRelevant}`,
+    `- Relevance score: ${lead.relevanceScore}/10 starter hypothesis`,
+    `- Outreach angle: ${lead.outreachAngle}`,
+    `- Approval gate: ${lead.approvalGate}`,
+    "",
+    "Draft message:",
+    lead.draftMessage,
+    "",
+  ]);
   return {
     key: "opportunity-list",
     title: "Opportunity list",
@@ -374,15 +386,11 @@ function renderOpportunitySeedDocument(input: {
       "Status: Private first-week seed brief",
       `Approval gate: ${approvalGateText(input.gate, "Send approval is required before any outreach leaves DearMe.")}`,
       "",
-      `## Lead 1: ${opportunityLead.title}`,
-      `- Target: ${opportunityLead.target}`,
-      `- Why relevant: ${opportunityLead.whyRelevant}`,
-      "- Relevance score: 7/10 starter hypothesis",
-      `- Outreach angle: ${opportunityLead.outreachAngle}`,
-      `- Approval gate: ${opportunityLead.approvalGate}`,
+      "## Shortlist overview",
+      `- First lead: ${opportunityLead.title} for ${opportunityLead.target}`,
+      `- Total leads: ${input.preview.opportunityShortlist.length}`,
       "",
-      "Draft message:",
-      opportunityLead.draftMessage,
+      ...shortlistLines,
       "",
       "## Recommendation",
       "- Confirm the relationship context, channel, and claim accuracy before sending.",
@@ -457,7 +465,7 @@ function renderDearMeReportDocument(
   const seededDrafts = preview
     ? [
         `- Content: ${preview.starterPosts.length} private starter posts seeded for review.`,
-        `- Opportunity: outreach draft for ${preview.opportunityLead.target} held for send approval.`,
+        `- Opportunity: five-target shortlist held for send approval, first lead for ${preview.opportunityLead.target}.`,
         `- Portfolio: ${preview.portfolioProofCard.placement} proof copy held for deploy approval.`,
       ]
     : ["- No reviewable drafts have been reported yet."];

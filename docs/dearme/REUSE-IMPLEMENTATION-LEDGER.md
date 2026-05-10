@@ -46,6 +46,17 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DEA-19 is coordinator-absorbed as the Opportunity Hunter private shortlist
+  slice. The first-cycle proof package now carries five private targets with
+  fit reasons, relevance scores, outreach angles, and draft first messages
+  while preserving `opportunityLead` as a compatibility alias for the first
+  lead. Keep this path additive: do not reopen a separate single-lead surface,
+  do not add another opportunity dashboard, and do not bypass `send_email`.
+- DEA-19 also exposed a Symphony infrastructure wrinkle: the worker produced a
+  valid patch but could not create `.git/index.lock` inside its temporary
+  workspace. For now, treat this as a coordinator-absorption fallback case; the
+  product lane is sound, but worker workspace Git writability should be fixed
+  before relying on worker-created commits for every changed-file lane.
 - DEA-17 is absorbed locally on the coordinator branch at `08137399`: the
   default DearMe first glance now centers one private result, one next decision
   or review action, and one first-cycle start/continue CTA. The coordinator

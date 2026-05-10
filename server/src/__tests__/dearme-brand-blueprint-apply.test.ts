@@ -421,7 +421,7 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(reportDocuments[0]?.body).toContain("private first-week work lanes were created");
     expect(reportDocuments[0]?.body).toContain("Content: 3 private starter posts seeded for review.");
     expect(reportDocuments[0]?.body).toContain(
-      "Opportunity: outreach draft for founders evaluating local AI workflows held for send approval.",
+      "Opportunity: five-target shortlist held for send approval, first lead for founders evaluating local AI workflows.",
     );
     expect(reportDocuments[0]?.body).toContain(
       "Portfolio: Homepage proof section proof copy held for deploy approval.",
@@ -443,6 +443,10 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     const opportunityDocuments = await documentService(db).listIssueDocuments(opportunityIssue!.id);
     expect(opportunityDocuments.map((document) => document.key)).toEqual(["opportunity-list"]);
     expect(opportunityDocuments[0]?.title).toBe("Opportunity list");
+    expect(opportunityDocuments[0]?.body).toContain("## Shortlist overview");
+    expect(opportunityDocuments[0]?.body).toContain("Lead 5: Warm intro lead");
+    expect(opportunityDocuments[0]?.body).toContain("Trusted Operator Intro List");
+    expect(opportunityDocuments[0]?.body).toContain("Relevance score: 8/10 starter hypothesis");
     expect(opportunityDocuments[0]?.body).toContain("I am reaching out because");
     expect(opportunityDocuments[0]?.body).toContain("Send email or direct message");
     const portfolioDocuments = await documentService(db).listIssueDocuments(portfolioIssue!.id);

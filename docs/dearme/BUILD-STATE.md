@@ -2,6 +2,46 @@
 
 Date: 2026-05-10
 
+## DEA-19 Opportunity Shortlist Absorbed - 2026-05-10
+
+Product/architecture slice:
+
+- Absorbed the Opportunity Hunter private-shortlist lane into the coordinator
+  checkout after Symphony produced an implementation patch but could not write
+  normal Git metadata in `/private/tmp/dearme-symphony-workspaces/DEA-19`.
+- Expanded the first-cycle proof package from one opportunity lead to a
+  five-target private shortlist with fit reasons, relevance scores, outreach
+  angles, and draft first messages.
+- Preserved the existing `opportunityLead` compatibility field by pointing it
+  at the first shortlist item, avoiding a contract break for current server/UI
+  paths.
+- Kept every outreach item private and behind `send_email`; no send, public
+  outreach, spend, deploy, new runtime, or customer-visible substrate surface
+  was added.
+- Reused the current Brand OS preview, first-week seed documents, report
+  seeding, and onboarding proof package instead of introducing a separate
+  opportunity dashboard.
+
+Coordination state:
+
+- Linear `DEA-19` remains the only active DearMe Symphony implementation lane
+  while the coordinator finalizes absorption.
+- Symphony worker output was useful, but the worker workspace could not create
+  `.git/index.lock`; coordinator absorption is the right fallback for this
+  lane.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed with 3 files and 120 tests.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm exec vitest run server/src/__tests__/dearme-output-handoff.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-workbench-projection.test.ts --maxWorkers=1`
+  passed the projection file and skipped the embedded-Postgres-dependent
+  output-handoff/workbench files on this host.
+- `git diff --check` passed.
+
 ## DEA-18 Browser Proof Unblocked - 2026-05-10
 
 Product/architecture slice:

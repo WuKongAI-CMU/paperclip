@@ -2273,11 +2273,55 @@ function FirstCycleProofPackage({
 
       <section className="grid gap-3 lg:grid-cols-3">
         <DearMeWorkbenchCard
-          eyebrow="Opportunity lead"
-          title={preview.opportunityLead.title}
-          description={preview.opportunityLead.draftMessage}
+          eyebrow="Opportunity shortlist"
+          title="Five private targets"
+          description="Fit reasons, outreach angles, and first messages stay private until send approval."
           badge={<Users className="h-4 w-4 text-muted-foreground" />}
-        />
+          className="lg:col-span-2"
+          aria-label="Opportunity shortlist"
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            {preview.opportunityShortlist.map((lead, index) => (
+              <div key={`${lead.title}-${lead.target}`} className="border-l border-border pl-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">
+                      Lead {index + 1}
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-foreground">{lead.title}</p>
+                    <p className="text-xs text-muted-foreground">{lead.target}</p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <Badge variant="secondary" className="h-auto">
+                      {lead.relevanceScore}/10
+                    </Badge>
+                    <Badge variant="outline" className="h-auto">
+                      Send approval
+                    </Badge>
+                  </div>
+                </div>
+	                <div className="mt-3 space-y-2 text-sm">
+	                  <div>
+	                    <p className="text-xs font-medium uppercase text-muted-foreground">Fit</p>
+	                    <p className="mt-1 text-foreground/80">{lead.whyRelevant}</p>
+	                  </div>
+	                  <div>
+	                    <p className="text-xs font-medium uppercase text-muted-foreground">
+	                      Outreach angle
+	                    </p>
+	                    <p className="mt-1 text-foreground/80">{lead.outreachAngle}</p>
+	                  </div>
+	                  <div>
+	                    <p className="text-xs font-medium uppercase text-muted-foreground">
+	                      First message
+	                    </p>
+                    <p className="mt-1 text-foreground/80">{lead.draftMessage}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DearMeWorkbenchCard>
         <DearMeWorkbenchCard
           eyebrow="Portfolio proof card"
           title={preview.portfolioProofCard.placement}

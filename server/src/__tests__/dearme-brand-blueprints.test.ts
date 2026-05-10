@@ -263,6 +263,10 @@ describeEmbeddedPostgres("DearMe brand blueprint service", () => {
     );
     expect(result.opportunityLead.target).toBe("solo founders who need their work to become visible proof");
     expect(result.opportunityLead.outreachAngle).toContain("a paid beta personal brand growth cycle");
+    expect(result.opportunityShortlist).toHaveLength(5);
+    expect(result.opportunityShortlist[0]?.target).toBe("solo founders who need their work to become visible proof");
+    expect(result.opportunityShortlist.map((lead) => lead.relevanceScore)).toEqual([9, 8, 7, 7, 8]);
+    expect(result.opportunityShortlist[4]?.target).toBe("Trusted Operator Intro List");
     expect(result.voiceGate.status).not.toBe("blocked_before_public");
     expect(result.warnings).not.toContain("Voice profile needs at least two samples before tone should be trusted.");
     expect(result.warnings).not.toContain("No proof points were supplied; the first cycle should collect proof before public claims.");

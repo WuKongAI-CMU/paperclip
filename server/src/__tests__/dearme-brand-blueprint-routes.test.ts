@@ -370,14 +370,67 @@ function makeFirstCycleResult() {
       },
     ],
     opportunityLead: {
-      title: "First opportunity lead",
+      title: "Direct customer lead",
       target: "Founders",
       whyRelevant: "Founders care about the first goal.",
+      relevanceScore: 9,
       outreachAngle: "Lead with proof.",
       draftMessage: "Private outreach draft.",
       ownerRole: "opportunity_scout",
       approvalGate: "send_email",
     },
+    opportunityShortlist: [
+      {
+        title: "Direct customer lead",
+        target: "Founders",
+        whyRelevant: "Founders care about the first goal.",
+        relevanceScore: 9,
+        outreachAngle: "Lead with proof.",
+        draftMessage: "Private outreach draft.",
+        ownerRole: "opportunity_scout",
+        approvalGate: "send_email",
+      },
+      {
+        title: "Warm collaboration lead",
+        target: "Practical AI Product Operators Circle",
+        whyRelevant: "Operators value visible proof and specific outcomes.",
+        relevanceScore: 8,
+        outreachAngle: "Open with the proof.",
+        draftMessage: "Private collaboration draft.",
+        ownerRole: "opportunity_scout",
+        approvalGate: "send_email",
+      },
+      {
+        title: "Podcast guest lead",
+        target: "Practical AI Builders Podcast Desk",
+        whyRelevant: "Hosts want a proof-backed story.",
+        relevanceScore: 7,
+        outreachAngle: "Pitch the concrete story.",
+        draftMessage: "Private guest pitch draft.",
+        ownerRole: "opportunity_scout",
+        approvalGate: "send_email",
+      },
+      {
+        title: "Hiring lead",
+        target: "Local AI Workflow Hiring Teams",
+        whyRelevant: "Teams need proof they can trust.",
+        relevanceScore: 7,
+        outreachAngle: "Lead with the outcome.",
+        draftMessage: "Private hiring draft.",
+        ownerRole: "opportunity_scout",
+        approvalGate: "send_email",
+      },
+      {
+        title: "Warm intro lead",
+        target: "Trusted Operator Intro List",
+        whyRelevant: "Trusted operators can make the right introduction.",
+        relevanceScore: 8,
+        outreachAngle: "Ask for a thoughtful introduction.",
+        draftMessage: "Private intro draft.",
+        ownerRole: "opportunity_scout",
+        approvalGate: "send_email",
+      },
+    ],
     portfolioProofCard: {
       title: "Portfolio proof card",
       proofSource: "The first verified work example",
@@ -1770,6 +1823,9 @@ describe("DearMe brand blueprint routes", () => {
       "Private site proof",
     ]);
     expect(res.body.opportunityLead.approvalGate).toBe("send_email");
+    expect(res.body.opportunityShortlist).toHaveLength(5);
+    expect(res.body.opportunityShortlist[0]?.target).toBe("Founders");
+    expect(res.body.opportunityShortlist[4]?.relevanceScore).toBe(8);
     expect(res.body.voiceGate.approvalGate).toBe("publish_social");
     expect(mockDearMeBrandBlueprintService.previewFirstCycle).toHaveBeenCalledWith(
       "company-1",

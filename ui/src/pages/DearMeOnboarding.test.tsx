@@ -2806,7 +2806,11 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Capture the positioning");
     expect(container.textContent).toContain("Only waits here");
     expect(container.textContent).toContain("Starter post: point of view");
-    expect(container.textContent).toContain("Opportunity lead");
+    expect(container.textContent).toContain("Opportunity shortlist");
+    expect(container.textContent).toContain("Five private targets");
+    expect(container.textContent).toContain("Direct customer lead");
+    expect(container.textContent).toContain("9/10");
+    expect(container.textContent).toContain("Warm intro lead");
     expect(container.textContent).toContain("Portfolio proof card");
     expect(container.textContent).toContain("First growth plan");
     expect(container.textContent).toContain("Ready to launch, with you in control");
@@ -2888,7 +2892,10 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Starter post: point of view");
     expect(container.textContent).toContain("Starter post: proof of work");
     expect(container.textContent).toContain("Starter post: useful opening");
-    expect(container.textContent).toContain("Opportunity lead");
+    expect(container.textContent).toContain("Opportunity shortlist");
+    expect(container.textContent).toContain("Five private targets");
+    expect(container.textContent).toContain("Podcast guest lead");
+    expect(container.textContent).toContain("7/10");
     expect(container.textContent).toContain("Portfolio proof card");
     expect(container.textContent).toContain("First growth plan");
     expect(container.textContent).toContain("Ready to launch, with you in control");

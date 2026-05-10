@@ -283,12 +283,15 @@ function renderFirstCycleProofIssues(preview: DearMeFirstCyclePreviewResponse): 
     .map((post) => `- ${post.title}: ${post.hook}`)
     .join("\n");
   const launchBoundary = preview.approvalBoundary.summary;
+  const opportunityShortlistTargets = preview.opportunityShortlist
+    .map((lead, index) => `Lead ${index + 1}: ${lead.title} - ${lead.target}`)
+    .join("\n");
 
   return [
     {
       originFingerprint: "brand-os-review",
       title: `DearMe: First-cycle Brand OS proof for ${preview.positioning}`,
-      description: "Prepared identity and voice proof for the first 5-minute private proof package.",
+      description: "Prepared identity, voice, and five-target opportunity proof for the first 5-minute private proof package.",
       priority: "high",
       documents: [
         {
@@ -297,9 +300,9 @@ function renderFirstCycleProofIssues(preview: DearMeFirstCyclePreviewResponse): 
           body: firstCycleLines([
             `Positioning: ${preview.positioning}`,
             `Proof Points: ${preview.portfolioProofCard.proofSource}`,
-            `Audiences: ${preview.opportunityLead.target}`,
+            `Audience shortlist: ${preview.opportunityShortlist.map((lead) => lead.target).join("; ")}`,
             `Goals: ${preview.growthPlan.priorities.join("; ")}`,
-            `Offers: ${preview.opportunityLead.outreachAngle}`,
+            `Offers: ${preview.opportunityShortlist.map((lead) => lead.outreachAngle).join("; ")}`,
             `Launch boundaries: ${launchBoundary}`,
           ]),
         },
@@ -348,18 +351,25 @@ function renderFirstCycleProofIssues(preview: DearMeFirstCyclePreviewResponse): 
     {
       originFingerprint: "operation-draft_opportunity_list",
       title: "DearMe Draft: First-cycle opportunity",
-      description: "Prepared the first private opportunity lane and outreach angle.",
+      description: "Prepared the first private five-target opportunity shortlist and outreach angles.",
       priority: "medium",
       documents: [
         {
           key: "opportunity-list",
           title: "Opportunity list",
           body: firstCycleLines([
-            `Target: ${preview.opportunityLead.target}`,
-            `Why relevant: ${preview.opportunityLead.whyRelevant}`,
-            "Relevance score: first lane",
-            `Outreach angle: ${preview.opportunityLead.outreachAngle}`,
-            `Draft message: ${preview.opportunityLead.draftMessage}`,
+            "Shortlist targets:",
+            opportunityShortlistTargets,
+            "",
+            ...preview.opportunityShortlist.map((lead, index) => [
+              `## Lead ${index + 1}: ${lead.title}`,
+              `Target: ${lead.target}`,
+              `Why relevant: ${lead.whyRelevant}`,
+              `Relevance score: ${lead.relevanceScore}/10 starter hypothesis`,
+              `Outreach angle: ${lead.outreachAngle}`,
+              `Draft message: ${lead.draftMessage}`,
+              "",
+            ]).flat(),
             "Launch boundary: Outreach waits for one launch call before sending.",
           ]),
         },
@@ -386,14 +396,14 @@ function renderFirstCycleProofIssues(preview: DearMeFirstCyclePreviewResponse): 
     {
       originFingerprint: "operation-schedule_weekly_report",
       title: "DearMe Draft: First-cycle Dear me report",
-      description: "Prepared the first private report note so DearMe can continue after the proof package.",
+      description: "Prepared the first private report note so DearMe can continue after the proof package and shortlist.",
       priority: "medium",
       documents: [
         {
           key: "dear-me-report",
           title: "Dear me report",
           body: firstCycleLines([
-            "Completed work: Identity dossier, starter content, opportunity angle, and private site proof are ready for review.",
+            "Completed work: Identity dossier, starter content, five-target opportunity shortlist, and private site proof are ready for review.",
             `Decisions needed: ${launchBoundary}`,
             `Next bets: ${preview.growthPlan.nextActions.join("; ")}`,
             "Report reference: First 5-minute proof package",

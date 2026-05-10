@@ -244,6 +244,12 @@ describe("DearMe brand blueprint contract", () => {
     expect(firstCycle.starterPosts.map((post) => post.body).join("\n")).not.toContain("A private draft");
     expect(firstCycle.opportunityLead.approvalGate).toBe("send_email");
     expect(firstCycle.opportunityLead.draftMessage).toContain("I am reaching out because");
+    expect(firstCycle.opportunityShortlist).toHaveLength(5);
+    expect(firstCycle.opportunityShortlist[0]?.target).toBe(
+      "Founders evaluating local AI workflows",
+    );
+    expect(firstCycle.opportunityShortlist.map((lead) => lead.relevanceScore)).toEqual([9, 8, 7, 7, 8]);
+    expect(firstCycle.opportunityShortlist[4]?.target).toBe("Trusted Operator Intro List");
     expect(firstCycle.portfolioProofCard.approvalGate).toBe("deploy_public_site");
     expect(firstCycle.portfolioProofCard.proposedCopy).toContain(
       "Peter helps Founders evaluating local AI workflows",

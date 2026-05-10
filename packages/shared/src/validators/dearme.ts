@@ -602,11 +602,14 @@ const dearMeFirstCycleOpportunityLeadSchema = z.object({
   title: shortTextSchema,
   target: shortTextSchema,
   whyRelevant: mediumTextSchema,
+  relevanceScore: z.number().int().min(1).max(10),
   outreachAngle: mediumTextSchema,
   draftMessage: mediumTextSchema,
   ownerRole: z.literal("opportunity_scout"),
   approvalGate: z.literal("send_email"),
 }).strict();
+
+const dearMeFirstCycleOpportunityShortlistItemSchema = dearMeFirstCycleOpportunityLeadSchema;
 
 const dearMeFirstCyclePortfolioProofCardSchema = z.object({
   title: shortTextSchema,
@@ -650,6 +653,7 @@ export const dearMeFirstCyclePreviewResponseSchema = z.object({
   starterPosts: z.array(dearMeFirstCycleStarterPostSchema).length(3),
   proofSequence: z.array(dearMeFirstCycleProofSequenceItemSchema).length(3),
   opportunityLead: dearMeFirstCycleOpportunityLeadSchema,
+  opportunityShortlist: z.array(dearMeFirstCycleOpportunityShortlistItemSchema).length(5),
   portfolioProofCard: dearMeFirstCyclePortfolioProofCardSchema,
   growthPlan: dearMeFirstCycleGrowthPlanSchema,
   autonomyPlan: dearMeFirstCycleAutonomyPlanSchema,
@@ -1791,6 +1795,58 @@ export function createDearMeFirstCyclePreview(
   const primaryOffer = firstPresent(blueprint.brand.offers, "a useful next conversation", 160);
   const warnings = collectDearMeBrandBlueprintWarnings(blueprint);
   const suppliedProof = blueprint.brand.proofPoints[0];
+  const opportunityShortlist: DearMeFirstCyclePreviewResponse["opportunityShortlist"] = [
+    {
+      title: "Direct customer lead",
+      target: primaryAudience,
+      whyRelevant: `${primaryAudience} are the first group likely to care about ${primaryGoal}.`,
+      relevanceScore: 9,
+      outreachAngle: `Lead with ${primaryProof}, then offer ${primaryOffer}.`,
+      draftMessage: `I am reaching out because ${primaryAudience} are likely thinking about ${primaryGoal}. I can share a short practical note from ${primaryProof}; if useful, we can see whether ${primaryOffer} fits your current priorities.`,
+      ownerRole: "opportunity_scout",
+      approvalGate: "send_email",
+    },
+    {
+      title: "Warm collaboration lead",
+      target: "Practical AI Product Operators Circle",
+      whyRelevant: "Practical AI Product Operators Circle already cares about visible proof, specific outcomes, and a clear next step.",
+      relevanceScore: 8,
+      outreachAngle: `Open with the proof, then offer a practical collaboration or referral conversation.`,
+      draftMessage: `I am reaching out because you are already shipping practical AI work. I have a short proof-first note from ${primaryProof} and would be glad to share it if a useful collaboration or referral conversation would help.`,
+      ownerRole: "opportunity_scout",
+      approvalGate: "send_email",
+    },
+    {
+      title: "Podcast guest lead",
+      target: "Practical AI Builders Podcast Desk",
+      whyRelevant: "Practical AI Builders Podcast Desk is a strong fit for a proof-backed, concrete story about turning private work into public evidence.",
+      relevanceScore: 7,
+      outreachAngle: `Pitch a short, evidence-first story that starts with ${primaryProof} and ends with a useful takeaway for their audience.`,
+      draftMessage: `I am reaching out because your show focuses on practical AI builders and concrete stories. I can offer a short proof-backed angle rooted in ${primaryProof} if a guest conversation would be useful for your listeners.`,
+      ownerRole: "opportunity_scout",
+      approvalGate: "send_email",
+    },
+    {
+      title: "Hiring lead",
+      target: "Local AI Workflow Hiring Teams",
+      whyRelevant: "Local AI Workflow Hiring Teams usually need someone who can show evidence, not just talk about tools.",
+      relevanceScore: 7,
+      outreachAngle: `Lead with the outcome from ${primaryProof}, then point to how ${primaryOffer} might support the team.`,
+      draftMessage: `I am reaching out because teams hiring for local AI workflow expertise often want proof they can trust. I can share a short note on ${primaryProof} and, if useful, discuss whether ${primaryOffer} would help your team.`,
+      ownerRole: "opportunity_scout",
+      approvalGate: "send_email",
+    },
+    {
+      title: "Warm intro lead",
+      target: "Trusted Operator Intro List",
+      whyRelevant: "Trusted Operator Intro List is often the best route to one strong introduction because these people already know how you work and what proof matters.",
+      relevanceScore: 8,
+      outreachAngle: "Ask for a single thoughtful introduction after leading with the specific proof and the concrete ask.",
+      draftMessage: `I am reaching out because a trusted introduction can be the fastest way to connect the right people. I have a short practical note from ${primaryProof}, and if it seems relevant, I would appreciate a warm introduction to someone who cares about ${primaryGoal}.`,
+      ownerRole: "opportunity_scout",
+      approvalGate: "send_email",
+    },
+  ];
   const proofSequence: DearMeFirstCyclePreviewResponse["proofSequence"] = [
     {
       window: "0-30s",
@@ -1802,7 +1858,7 @@ export function createDearMeFirstCyclePreview(
     {
       window: "60-120s",
       title: "Audience map",
-      summary: `${primaryAudience} is the first audience to map because they are likely to care about ${primaryGoal}. DearMe prepares starter posts and one opportunity angle for this lane.`,
+      summary: `${primaryAudience} is the first audience to map because they are likely to care about ${primaryGoal}. DearMe prepares starter posts and a private five-target opportunity shortlist for this lane.`,
       preparedArtifact: "Audience shortlist and first opportunity",
       approvalBoundary: "Outreach drafts stay private until you approve sending.",
     },
@@ -1892,14 +1948,9 @@ export function createDearMeFirstCyclePreview(
     starterPosts,
     proofSequence,
     opportunityLead: {
-      title: "First opportunity lead",
-      target: primaryAudience,
-      whyRelevant: `${primaryAudience} is the first group likely to care about ${primaryGoal}.`,
-      outreachAngle: `Lead with ${primaryProof}, then offer ${primaryOffer}.`,
-      draftMessage: `I am reaching out because ${primaryAudience} are likely thinking about ${primaryGoal}. I can share a short practical note from ${primaryProof}; if useful, we can see whether ${primaryOffer} fits your current priorities.`,
-      ownerRole: "opportunity_scout",
-      approvalGate: "send_email",
+      ...opportunityShortlist[0],
     },
+    opportunityShortlist,
     portfolioProofCard: {
       title: "Portfolio proof card",
       proofSource: primaryProof,
@@ -1910,16 +1961,16 @@ export function createDearMeFirstCyclePreview(
     },
     growthPlan: {
       title: "First growth plan",
-      summary: "Start with one sharp positioning decision, three private drafts, one opportunity lead, and one proof card so the first session already feels alive.",
+      summary: "Start with one sharp positioning decision, three private drafts, a five-target opportunity shortlist, and one proof card so the first session already feels alive.",
       priorities: [
         "Lock the sharpest positioning line",
         "Pick the first proof-backed starter post",
-        "Choose the opportunity lane worth moving on first",
+        "Choose the best lane from the five-target opportunity shortlist",
       ],
       nextActions: [
         "Voice Editor sharpens tone against the current samples",
         "Content Producer turns the three starter posts into launch-ready drafts",
-        "Opportunity Scout prepares the first outreach angle",
+        "Opportunity Scout prepares the five-target shortlist and first outreach angle",
         "Portfolio Builder assembles the proof card for the public site",
       ],
       ownerRole: "chief_of_staff",
