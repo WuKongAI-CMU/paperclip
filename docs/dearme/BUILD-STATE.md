@@ -2,6 +2,26 @@
 
 Date: 2026-05-10
 
+## DEA-20 Chief Pairing Smoke Active - 2026-05-10
+
+Product/architecture slice:
+
+- Opened Linear `DEA-20` as the next non-overlapping Symphony product lane:
+  OpenClaw Chief pairing smoke without customer-visible substrate.
+- Scope is deliberately narrow: prove the backstage Chief/OpenClaw pairing
+  assets can support DearMe's resident-team promise through manifest,
+  bootstrap, skill, and approval-gate smoke evidence.
+- This lane must not touch the first-cycle opportunity shortlist, onboarding
+  proof package, Playwright e2e harness, broad UI routes, or customer-facing
+  substrate language.
+
+Coordination state:
+
+- Symphony has picked up `DEA-20` in
+  `/private/tmp/dearme-symphony-workspaces/DEA-20`.
+- Do not add a second customer-facing product writer while `DEA-20` is active;
+  use extra help only for read-only review or coordinator-side absorption.
+
 ## DEA-19 Opportunity Shortlist Absorbed - 2026-05-10
 
 Product/architecture slice:
