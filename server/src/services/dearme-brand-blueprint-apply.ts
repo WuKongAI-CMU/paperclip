@@ -7,9 +7,11 @@ import {
   renderDearMeSixHourCycleIssue,
 } from "@paperclipai/dearme-agent-prompts";
 import {
+  createDearMeFirstCyclePreview,
   dearMeBrandBlueprintApplyPayloadSchema,
   type DearMeBrandBlueprint,
   type DearMeBrandBlueprintApplyPayload,
+  type DearMeFirstCyclePreviewResponse,
   type DearMeOutputKind,
 } from "@paperclipai/shared";
 import { unprocessable } from "../errors.js";
@@ -26,6 +28,12 @@ type DearMeRiskGate = DearMeBrandBlueprint["gates"][number];
 type DearMeMemorySeedKind = DearMeBrandBlueprint["memorySeeds"][number]["kind"];
 type DearMeOperationId = DearMeBrandBlueprintApplyPayload["executionPlan"]["operations"][number]["id"];
 type DearMeVoiceMemorySectionKey = "goals" | "audiences" | "offers" | "proof" | "voice" | "constraints";
+type DearMeFirstWeekSeedDocument = {
+  key: string;
+  title: string;
+  body: string;
+  changeSummary: string;
+};
 
 export const DEARME_BRAND_BLUEPRINT_ORIGIN_KIND = "dearme_brand_blueprint_apply";
 export const DEARME_BRAND_BLUEPRINT_AGENT_ADAPTER_TYPE = "codex_local";
@@ -39,6 +47,17 @@ const DEARME_OUTPUT_KIND_BY_OPERATION_ID: Partial<Record<DearMeOperationId, Dear
   draft_opportunity_list: "opportunity_drafts",
   prepare_portfolio_update: "portfolio_update",
   schedule_weekly_report: "weekly_report",
+};
+
+const DEARME_CHANNEL_LABELS: Record<string, string> = {
+  linkedin: "LinkedIn",
+  x: "X",
+  newsletter: "Newsletter",
+  blog: "Blog",
+  portfolio: "Portfolio",
+  email: "Email",
+  community: "Community",
+  website: "Website",
 };
 
 const DEARME_VOICE_MEMORY_SECTION_ORDER_BY_OUTPUT_KIND: Record<DearMeOutputKind, DearMeVoiceMemorySectionKey[]> = {
@@ -179,6 +198,33 @@ function gateByKind(blueprint: DearMeBrandBlueprint) {
   return new Map(blueprint.gates.map((gate) => [gate.kind, gate]));
 }
 
+function channelLabel(channel: string) {
+  return DEARME_CHANNEL_LABELS[channel] ?? channel;
+}
+
+function firstCyclePreviewForPayload(
+  companyId: string,
+  payload: DearMeBrandBlueprintApplyPayload,
+): DearMeFirstCyclePreviewResponse {
+  const { brandBlueprint: blueprint } = payload;
+  return createDearMeFirstCyclePreview(companyId, {
+    brand: {
+      displayName: blueprint.brand.displayName,
+      positioning: blueprint.brand.positioning,
+      goals: blueprint.brand.goals,
+      audiences: blueprint.brand.audiences,
+      proofPoints: blueprint.brand.proofPoints,
+      offers: blueprint.brand.offers,
+      voiceSamples: memorySeedValues(blueprint, "voice"),
+      preferredChannels: blueprint.brand.preferredChannels,
+      constraints: blueprint.brand.constraints,
+      cadence: blueprint.cycles[0]?.cadence ?? "weekly",
+      budgetMonthlyCents: blueprint.budgetPolicy.monthlyCents,
+      autoDraftEnabled: payload.autoDraftEnabled,
+    },
+  });
+}
+
 function ownerAgentId(
   agentsByRole: Map<DearMeTeamRole, { id: string; name: string }>,
   role: DearMeTeamRole,
@@ -263,9 +309,158 @@ function renderApprovalGatesDocument(blueprint: DearMeBrandBlueprint) {
   ].join("\n").trimEnd();
 }
 
-function renderDearMeReportDocument(payload: DearMeBrandBlueprintApplyPayload) {
+function approvalGateText(gate: DearMeRiskGate | null, fallback: string) {
+  if (!gate) return fallback;
+  return `${gate.label}: ${gate.reason}`;
+}
+
+function renderContentSeedDocument(input: {
+  payload: DearMeBrandBlueprintApplyPayload;
+  preview: DearMeFirstCyclePreviewResponse;
+  gate: DearMeRiskGate | null;
+}): DearMeFirstWeekSeedDocument {
+  const { brandBlueprint: blueprint } = input.payload;
+  return {
+    key: "starter-posts",
+    title: "Starter posts",
+    changeSummary: "Seeded first-week content brief from DearMe Brand OS approval",
+    body: [
+      `# Starter content batch: ${blueprint.brand.displayName}`,
+      "",
+      "Status: Private first-week seed brief",
+      `Approval gate: ${approvalGateText(input.gate, "Publish approval is required before any starter post moves public.")}`,
+      "",
+      "## Purpose",
+      "Turn the approved Brand OS into starter posts the user can review before any public publishing.",
+      "",
+      "## Private starter posts",
+      ...input.preview.starterPosts.flatMap((post, index) => [
+        `### Starter post ${index + 1}: ${post.title}`,
+        `- Channel: ${channelLabel(post.channel)}`,
+        `- Audience: ${input.preview.opportunityLead.target}`,
+        `- Hook: ${post.hook}`,
+        `- Proof used: ${post.proofUsed}`,
+        `- Approval gate: ${post.approvalGate}`,
+        "",
+        "Draft body:",
+        post.body,
+        "",
+      ]),
+      "## Voice check",
+      `Voice fit score: ${input.preview.voiceGate.score}/100, ${input.preview.voiceGate.status}`,
+      input.preview.voiceGate.summary,
+      "",
+      "## Review Notes",
+      "- Keep every draft private until the user approves a public action.",
+      "- Revise inside this document before asking for a launch decision.",
+    ].join("\n").trimEnd(),
+  };
+}
+
+function renderOpportunitySeedDocument(input: {
+  payload: DearMeBrandBlueprintApplyPayload;
+  preview: DearMeFirstCyclePreviewResponse;
+  gate: DearMeRiskGate | null;
+}): DearMeFirstWeekSeedDocument {
+  const { brandBlueprint: blueprint } = input.payload;
+  const { opportunityLead } = input.preview;
+  return {
+    key: "opportunity-list",
+    title: "Opportunity list",
+    changeSummary: "Seeded first-week opportunity brief from DearMe Brand OS approval",
+    body: [
+      `# Opportunity shortlist: ${blueprint.brand.displayName}`,
+      "",
+      "Status: Private first-week seed brief",
+      `Approval gate: ${approvalGateText(input.gate, "Send approval is required before any outreach leaves DearMe.")}`,
+      "",
+      `## Lead 1: ${opportunityLead.title}`,
+      `- Target: ${opportunityLead.target}`,
+      `- Why relevant: ${opportunityLead.whyRelevant}`,
+      "- Relevance score: 7/10 starter hypothesis",
+      `- Outreach angle: ${opportunityLead.outreachAngle}`,
+      `- Approval gate: ${opportunityLead.approvalGate}`,
+      "",
+      "Draft message:",
+      opportunityLead.draftMessage,
+      "",
+      "## Recommendation",
+      "- Confirm the relationship context, channel, and claim accuracy before sending.",
+      "- Keep this private until the user approves outreach.",
+    ].join("\n"),
+  };
+}
+
+function renderPortfolioSeedDocument(input: {
+  payload: DearMeBrandBlueprintApplyPayload;
+  preview: DearMeFirstCyclePreviewResponse;
+  gate: DearMeRiskGate | null;
+}): DearMeFirstWeekSeedDocument {
+  const { brandBlueprint: blueprint } = input.payload;
+  const { portfolioProofCard } = input.preview;
+  return {
+    key: "portfolio-update",
+    title: "Portfolio update",
+    changeSummary: "Seeded first-week portfolio brief from DearMe Brand OS approval",
+    body: [
+      `# Portfolio proof update: ${blueprint.brand.displayName}`,
+      "",
+      "Status: Private first-week seed brief",
+      `Deploy gate: ${approvalGateText(input.gate, "Deploy approval is required before any public site change.")}`,
+      "",
+      "## Proof Card",
+      `- Title: ${portfolioProofCard.title}`,
+      `- Placement: ${portfolioProofCard.placement}`,
+      `- Proof source: ${portfolioProofCard.proofSource}`,
+      `- Approval gate: ${portfolioProofCard.approvalGate}`,
+      "",
+      "Proposed copy:",
+      portfolioProofCard.proposedCopy,
+      "",
+      "## Recommendation",
+      "- Keep this as a private portfolio draft until the user approves deployment.",
+      "- Review proof accuracy and voice fit before requesting the launch decision.",
+    ].join("\n"),
+  };
+}
+
+function firstWeekSeedDocumentForOperation(input: {
+  operationId: DearMeOperationId;
+  payload: DearMeBrandBlueprintApplyPayload;
+  preview: DearMeFirstCyclePreviewResponse | null;
+  gate: DearMeRiskGate | null;
+}): DearMeFirstWeekSeedDocument | null {
+  if (!input.preview) return null;
+  const seedInput = {
+    payload: input.payload,
+    preview: input.preview,
+    gate: input.gate,
+  };
+  switch (input.operationId) {
+    case "draft_content_batch":
+      return renderContentSeedDocument(seedInput);
+    case "draft_opportunity_list":
+      return renderOpportunitySeedDocument(seedInput);
+    case "prepare_portfolio_update":
+      return renderPortfolioSeedDocument(seedInput);
+    default:
+      return null;
+  }
+}
+
+function renderDearMeReportDocument(
+  payload: DearMeBrandBlueprintApplyPayload,
+  preview: DearMeFirstCyclePreviewResponse | null,
+) {
   const { brandBlueprint: blueprint } = payload;
   const voiceSamples = memorySeedValues(blueprint, "voice");
+  const seededDrafts = preview
+    ? [
+        `- Content: ${preview.starterPosts.length} private starter posts seeded for review.`,
+        `- Opportunity: outreach draft for ${preview.opportunityLead.target} held for send approval.`,
+        `- Portfolio: ${preview.portfolioProofCard.placement} proof copy held for deploy approval.`,
+      ]
+    : ["- No reviewable drafts have been reported yet."];
   return [
     `# Dear me report: ${blueprint.brand.displayName}`,
     "",
@@ -296,13 +491,17 @@ function renderDearMeReportDocument(payload: DearMeBrandBlueprintApplyPayload) {
     listPreviewLines(blueprint.brand.constraints, 4, 240),
     "",
     "## Work Completed",
-    "- No completed work has been reported yet.",
+    preview
+      ? "- Brand OS, Voice Profile, approval gates, recurring cycles, and private first-week work lanes were created."
+      : "- No completed work has been reported yet.",
     "",
     "## Drafts and Assets Ready for Review",
-    "- No reviewable drafts have been reported yet.",
+    seededDrafts.join("\n"),
     "",
     "## Decisions Needed",
-    "- Choose which private drafts should move toward the launch boundary.",
+    preview
+      ? "- Review the seeded content, opportunity, and portfolio briefs before approving any public, send, or deploy action."
+      : "- Choose which private drafts should move toward the launch boundary.",
     "",
     "## Outcomes and Signals",
     "- No live channel or opportunity signals have been reported yet.",
@@ -536,6 +735,9 @@ export function dearmeBrandBlueprintApplyService(db: Db) {
     const { brandBlueprint: blueprint } = payload;
     const { serviceActor, activityActor } = actorForApproval(approval);
     const agentsByRole = new Map<DearMeTeamRole, { id: string; name: string }>();
+    const firstCyclePreview = payload.autoDraftEnabled
+      ? firstCyclePreviewForPayload(approval.companyId, payload)
+      : null;
     const artifacts: DearMeBrandBlueprintApplyArtifacts = {
       agents: [],
       routines: [],
@@ -736,13 +938,37 @@ export function dearmeBrandBlueprintApplyService(db: Db) {
         status: issue.status as "backlog" | "todo",
       });
 
+      const seedDocument = firstWeekSeedDocumentForOperation({
+        operationId: operation.id,
+        payload,
+        preview: firstCyclePreview,
+        gate,
+      });
+      if (seedDocument) {
+        const created = await documentsSvc.upsertIssueDocument({
+          issueId: issue.id,
+          key: seedDocument.key,
+          title: seedDocument.title,
+          format: "markdown",
+          body: seedDocument.body,
+          changeSummary: seedDocument.changeSummary,
+          createdByAgentId: serviceActor.agentId,
+          createdByUserId: serviceActor.userId,
+        });
+        artifacts.documents.push({
+          id: created.document.id,
+          key: created.document.key,
+          issueId: issue.id,
+        });
+      }
+
       if (operation.id === "schedule_weekly_report") {
         const created = await documentsSvc.upsertIssueDocument({
           issueId: issue.id,
           key: DEARME_WEEKLY_REPORT_DOCUMENT_KEY,
           title: "Dear me report",
           format: "markdown",
-          body: renderDearMeReportDocument(payload),
+          body: renderDearMeReportDocument(payload, firstCyclePreview),
           changeSummary: "Created from DearMe weekly report operation",
           createdByAgentId: serviceActor.agentId,
           createdByUserId: serviceActor.userId,

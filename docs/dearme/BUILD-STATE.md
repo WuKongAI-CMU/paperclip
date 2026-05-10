@@ -2,6 +2,56 @@
 
 Date: 2026-05-10
 
+## DM-183BI DM-020 Approved Brand OS Seed Brief Absorption - 2026-05-10
+
+Product/architecture slice:
+
+- Kept Symphony as the cooperation spine and used the coordinator checkout as
+  the integration surface rather than merging stale worker branches.
+- Reviewed exact DM-020 seed-brief head
+  `ac6eeecf6ab2634ef4b6667c6da79e7cb86b5eb6` and work-ready cockpit head
+  `49762397fe4bada59266fb0d60c45e0bc5d02045`.
+- Adapted the useful seed-brief intent onto the current Brand OS approval apply
+  path: when `autoDraftEnabled` is true, approving Brand OS now seeds
+  `starter-posts`, `opportunity-list`, `portfolio-update`, and
+  `dear-me-report` issue documents from the existing first-cycle preview.
+- Kept the disabled auto-draft path queue-only: it still creates the Brand OS,
+  Voice Profile, Approval Gates, and weekly Dear me report documents without
+  preparing content/opportunity/portfolio work for review.
+- Reused the existing output handoff. The seeded documents now make content,
+  opportunity, and portfolio outputs `ready_for_review` without adding another
+  runtime, route, schema, or customer-facing Symphony surface.
+- Recorded both exact DM-020 heads in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so Symphony patrols stop
+  treating them as unresolved replay candidates unless the branches advance.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts
+  server/src/__tests__/dearme-brand-blueprint-apply.test.ts --maxWorkers=1`
+  passed the shared validator file: 16 tests passed. The embedded Postgres
+  Brand OS apply suite was skipped by Vitest because this host's embedded
+  Postgres init script exited with code 1.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
+  passed.
+- `pnpm run test:dearme-worktrees` passed: 13 tests passed.
+- `pnpm run dearme:worktrees -- --ticket=DM-020 --skip-dirty --limit=20`
+  reported both DM-020 worker branches as `reviewed_absorbed`, dirty 0.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` passed:
+  DearMe worktrees 117 total, dirty 0, reviewed absorbed 40.
+- `.symphony/bin/dearme-symphony status --json` reported Symphony running with
+  no running or retrying workers.
+- `git diff --check` passed.
+
+Known gap:
+
+- `pnpm exec prettier --write ...` was attempted before verification, but
+  Prettier is not installed in this workspace. No dependency was added.
+- Browser smoke is not part of this narrow backend/contract absorption unless a
+  later UI change requires it.
+
 ## DM-183BH DM-019 Source-Grounded Draft Absorption - 2026-05-10
 
 Product/architecture slice:

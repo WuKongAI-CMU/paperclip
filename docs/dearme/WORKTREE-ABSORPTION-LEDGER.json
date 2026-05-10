@@ -525,6 +525,33 @@
       ]
     },
     {
+      "ticket": "DM-020",
+      "branch": "codex/dearme-dm-020-first-week-seed-briefs",
+      "head": "ac6eeecf6ab2634ef4b6667c6da79e7cb86b5eb6",
+      "reviewedAt": "2026-05-10",
+      "reason": "The worker's approved-Brand-OS seed-brief intent is adapted into the current approval apply path and output handoff: auto-draft approvals seed reviewable starter-posts, opportunity-list, portfolio-update, and Dear me report documents without replaying the stale branch.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/services/dearme-brand-blueprint-apply.ts",
+        "server/src/__tests__/dearme-brand-blueprint-apply.test.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-020",
+      "branch": "codex/dearme-dm-020-work-ready-cockpit",
+      "head": "49762397fe4bada59266fb0d60c45e0bc5d02045",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current Work Ready ordering already carries the cockpit value, and the approved-Brand-OS seed documents now make the content, opportunity, and portfolio lanes reviewable through the existing output handoff instead of a stale cockpit branch.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "server/src/services/dearme-brand-blueprint-apply.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
       "ticket": "DM-022",
       "branch": "codex/dearme-dm-022-source-change-refresh",
       "head": "b6916166cc7bb716ae8c05af5bd386636cddcddc",

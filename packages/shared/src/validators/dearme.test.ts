@@ -234,8 +234,21 @@ describe("DearMe brand blueprint contract", () => {
       "publish_social",
       "publish_social",
     ]);
+    expect(firstCycle.starterPosts[0]?.body).toContain(
+      "The positioning to test this week: Known for turning AI research into practical local products.",
+    );
+    expect(firstCycle.starterPosts[1]?.body).toContain(
+      "The strongest proof to use this week is Shipped an autonomous local product that customers can run.",
+    );
+    expect(firstCycle.starterPosts[2]?.body).toContain("not a broad pitch");
+    expect(firstCycle.starterPosts.map((post) => post.body).join("\n")).not.toContain("A private draft");
     expect(firstCycle.opportunityLead.approvalGate).toBe("send_email");
+    expect(firstCycle.opportunityLead.draftMessage).toContain("I am reaching out because");
     expect(firstCycle.portfolioProofCard.approvalGate).toBe("deploy_public_site");
+    expect(firstCycle.portfolioProofCard.proposedCopy).toContain(
+      "Peter helps Founders evaluating local AI workflows",
+    );
+    expect(firstCycle.portfolioProofCard.proposedCopy).toContain("Recent proof:");
     expect(firstCycle.growthPlan.approvalGate).toBe("public_claim");
     expect(firstCycle.voiceGate.status).toBe("ready_for_review");
     expect(firstCycle.voiceGate.approvalGate).toBe("publish_social");

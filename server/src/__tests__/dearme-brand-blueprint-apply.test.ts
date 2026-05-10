@@ -29,6 +29,7 @@ import {
 } from "../services/dearme-brand-blueprint-apply.js";
 import { dearmeBrandBlueprintService } from "../services/dearme-brand-blueprints.js";
 import { documentService } from "../services/documents.js";
+import { dearmeOutputHandoffService } from "../services/dearme-output-handoff.js";
 import { instanceSettingsService } from "../services/instance-settings.js";
 
 const embeddedPostgresSupport = await getEmbeddedPostgresTestSupport();
@@ -417,9 +418,86 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(reportDocuments[0]?.body).toContain("Direct and precise.");
     expect(reportDocuments[0]?.body).toContain("paid beta personal brand growth");
     expect(reportDocuments[0]?.body).toContain("## Work Completed");
+    expect(reportDocuments[0]?.body).toContain("private first-week work lanes were created");
+    expect(reportDocuments[0]?.body).toContain("Content: 3 private starter posts seeded for review.");
+    expect(reportDocuments[0]?.body).toContain(
+      "Opportunity: outreach draft for founders evaluating local AI workflows held for send approval.",
+    );
+    expect(reportDocuments[0]?.body).toContain(
+      "Portfolio: Homepage proof section proof copy held for deploy approval.",
+    );
     expect(reportDocuments[0]?.body).toContain("## Decisions Needed");
+    expect(reportDocuments[0]?.body).toContain(
+      "Review the seeded content, opportunity, and portfolio briefs before approving any public, send, or deploy action.",
+    );
+    expect(reportDocuments[0]?.body).not.toContain("No reviewable drafts have been reported yet.");
 
-    expect(artifacts.issueDocuments).toHaveLength(4);
+    const contentDocuments = await documentService(db).listIssueDocuments(contentIssue!.id);
+    expect(contentDocuments.map((document) => document.key)).toEqual(["starter-posts"]);
+    expect(contentDocuments[0]?.title).toBe("Starter posts");
+    expect(contentDocuments[0]?.body).toContain("Status: Private first-week seed brief");
+    expect(contentDocuments[0]?.body).toContain("The positioning to test this week");
+    expect(contentDocuments[0]?.body).toContain("Publish social post");
+    expect(contentDocuments[0]?.body).not.toContain("A private draft");
+    expect(contentDocuments[0]?.body).toContain("Voice fit score:");
+    const opportunityDocuments = await documentService(db).listIssueDocuments(opportunityIssue!.id);
+    expect(opportunityDocuments.map((document) => document.key)).toEqual(["opportunity-list"]);
+    expect(opportunityDocuments[0]?.title).toBe("Opportunity list");
+    expect(opportunityDocuments[0]?.body).toContain("I am reaching out because");
+    expect(opportunityDocuments[0]?.body).toContain("Send email or direct message");
+    const portfolioDocuments = await documentService(db).listIssueDocuments(portfolioIssue!.id);
+    expect(portfolioDocuments.map((document) => document.key)).toEqual(["portfolio-update"]);
+    expect(portfolioDocuments[0]?.title).toBe("Portfolio update");
+    expect(portfolioDocuments[0]?.body).toContain("Portfolio proof update");
+    expect(portfolioDocuments[0]?.body).toContain("Deploy public site update");
+    expect(portfolioDocuments[0]?.body).toContain("Recent proof:");
+
+    const outputs = await dearmeOutputHandoffService(db).listOutputs(companyId);
+    const outputByKind = new Map(outputs.outputs.map((output) => [output.kind, output]));
+    expect(outputByKind.get("content_drafts")).toEqual(
+      expect.objectContaining({
+        status: "ready_for_review",
+        isReviewable: true,
+      }),
+    );
+    expect(outputByKind.get("content_drafts")?.documents.map((document) => document.key)).toEqual(["starter-posts"]);
+    expect(outputByKind.get("content_drafts")?.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: "draft_body", value: expect.stringContaining("positioning to test") }),
+        expect.objectContaining({ kind: "proof_used", value: expect.stringContaining("approval gates") }),
+        expect.objectContaining({ kind: "approval_gate", value: expect.stringContaining("Publish") }),
+      ]),
+    );
+    expect(outputByKind.get("opportunity_drafts")).toEqual(
+      expect.objectContaining({
+        status: "ready_for_review",
+        isReviewable: true,
+      }),
+    );
+    expect(outputByKind.get("opportunity_drafts")?.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "draft_message",
+          value: expect.stringContaining("I am reaching out because"),
+        }),
+      ]),
+    );
+    expect(outputByKind.get("portfolio_update")).toEqual(
+      expect.objectContaining({
+        status: "ready_for_review",
+        isReviewable: true,
+      }),
+    );
+    expect(outputByKind.get("portfolio_update")?.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "proposed_copy",
+          value: expect.stringContaining("Recent proof"),
+        }),
+      ]),
+    );
+
+    expect(artifacts.issueDocuments).toHaveLength(7);
     expect(artifacts.activity).toHaveLength(1);
     expect(artifacts.activity[0]?.details).toEqual(
       expect.objectContaining({
@@ -487,8 +565,14 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
 
     const artifacts = await countAppliedArtifacts(companyId);
     expect(artifacts.issues).toHaveLength(6);
+    expect(artifacts.issueDocuments).toHaveLength(4);
     expect(artifacts.issues.every((issue) => issue.status === "backlog")).toBe(true);
     expect(artifacts.issues.every((issue) => Boolean(issue.assigneeAgentId))).toBe(true);
+    const reportIssue = artifacts.issues.find((issue) => issue.title === "DearMe Draft: Draft weekly Dear me report");
+    expect(reportIssue).toBeTruthy();
+    const reportDocuments = await documentService(db).listIssueDocuments(reportIssue!.id);
+    expect(reportDocuments.map((document) => document.key)).toEqual(["dear-me-report"]);
+    expect(reportDocuments[0]?.body).toContain("No reviewable drafts have been reported yet.");
   });
 
   it("keeps invalid Brand OS approvals pending with customer-safe preflight errors", async () => {
