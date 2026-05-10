@@ -53,13 +53,13 @@ The right reuse split is:
   commit because it lacked the required OmX coauthor trailer. Keep this as the
   current rule for first-run aha work: one product-surface writer, plus
   read-only review or narrow browser/harness lanes only.
-- DEA-18 is the only active follow-up Symphony lane. Its job is browser-level
-  proof for the first private outcome by reproducing or fixing the
-  Playwright/private-handoff embedded PostgreSQL blocker. It should not
-  redesign onboarding or add another visible work queue. The coordinator left a
-  Linear guardrail comment requiring exact changed files, pass/fail evidence,
-  absorption status, and the smallest reproducible blocker if the lane remains
-  blocked.
+- DEA-18 is coordinator-absorbed as the browser-level proof lane for the first
+  private outcome. The blocker was harness/environmental: embedded PostgreSQL
+  failed during e2e webServer boot before browser execution on this host. The
+  harness now prefers an isolated throwaway external PostgreSQL database when
+  available, preserves embedded PostgreSQL fallback, and tears down generated
+  `paperclip_e2e_%` databases after the run. This keeps the fix proof-only and
+  avoids redesigning onboarding or adding another visible work queue.
 - The current worktree inventory has no unabsorbed queue: 117 DearMe
   worktrees, 0 `not_in_current`, 0 dirty, 0 prunable, and 113
   `reviewed_absorbed`. Remaining old worktrees are audit/owner-confirmation
@@ -570,14 +570,14 @@ metadata as the Symphony-to-product handoff contract; do not add a customer
 queue, runtime dashboard, or parallel event table for the same job.
 
 Coordinator note: DEA-19 is staged in Linear `Backlog` as the next Opportunity
-Hunter private-shortlist lane, not as an active Symphony worker. Start it only
-after DEA-18 produces an absorbable browser-proof commit, explicit no-code
-evidence, or a blocker/patch handoff. The lane should reuse the existing
-Opportunity Hunter registry prompt, opportunity state machine, opportunities
-schema, and current output/workbench projection patterns to produce 5 private
-targets with fit reasons, outreach angles, and draft first messages. Do not use
-it to touch the Playwright/browser proof, redesign onboarding, add another
-first-run contract, or expose hidden substrate terms.
+Hunter private-shortlist lane, not as an active Symphony worker. It is eligible
+as the next Symphony product lane after the DEA-18 browser-proof absorption is
+recorded in Linear. The lane should reuse the existing Opportunity Hunter
+registry prompt, opportunity state machine, opportunities schema, and current
+output/workbench projection patterns to produce 5 private targets with fit
+reasons, outreach angles, and draft first messages. Do not use it to touch the
+Playwright/browser proof, redesign onboarding, add another first-run contract,
+or expose hidden substrate terms.
 
 ## Recently Completed
 

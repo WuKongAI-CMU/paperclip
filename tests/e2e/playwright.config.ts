@@ -2,12 +2,14 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { defineConfig } from "@playwright/test";
+import { resolveE2eDatabaseEnv } from "./playwright-database";
 
 // Use a dedicated port so e2e tests always start their own server in local_trusted mode,
 // even when the dev server is running on :3100 in authenticated mode.
 const PORT = Number(process.env.PAPERCLIP_E2E_PORT ?? 3199);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const PAPERCLIP_HOME = fs.mkdtempSync(path.join(os.tmpdir(), "paperclip-e2e-home-"));
+const DATABASE_ENV = resolveE2eDatabaseEnv(PAPERCLIP_HOME);
 
 export default defineConfig({
   testDir: ".",
@@ -29,6 +31,7 @@ export default defineConfig({
       use: { browserName: "chromium" },
     },
   ],
+  globalTeardown: "./playwright.teardown.ts",
   // The webServer directive bootstraps a throwaway instance and then starts it.
   // `onboard --yes --run` works in a non-interactive temp PAPERCLIP_HOME.
   webServer: {
@@ -42,6 +45,7 @@ export default defineConfig({
     stderr: "pipe",
     env: {
       ...process.env,
+      ...DATABASE_ENV,
       PORT: String(PORT),
       PAPERCLIP_HOME,
       PAPERCLIP_INSTANCE_ID: "playwright-e2e",

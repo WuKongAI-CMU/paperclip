@@ -2,6 +2,32 @@
 
 Date: 2026-05-10
 
+## DEA-18 Browser Proof Unblocked - 2026-05-10
+
+Product/architecture slice:
+
+- Closed the first-private-outcome browser proof as a harness/environment fix,
+  not a DearMe product redesign.
+- Root cause was local embedded PostgreSQL initialization failing before browser
+  execution with `could not create shared memory segment`, while the current
+  DearMe first-glance/private-handoff product path was already ready to smoke.
+- Updated the Playwright e2e harness to prefer an isolated throwaway external
+  PostgreSQL database when a reachable local admin database exists, keep
+  embedded PostgreSQL as fallback, and drop the generated database during
+  global teardown.
+- Kept the proof local/private: e2e still boots a dedicated
+  `local_trusted`/`private` throwaway Paperclip home and does not attach to the
+  developer's active runtime state.
+
+Verification:
+
+- `pnpm exec playwright test --config tests/e2e/playwright.config.ts tests/e2e/dearme-private-handoff.spec.ts --project=chromium`
+  passed with 1 test.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check` passed.
+- A cleanup query against local Postgres returned no remaining
+  `paperclip_e2e_%` databases after teardown.
+
 ## DEA-19 Opportunity Hunter Lane Staged - 2026-05-10
 
 Product/architecture slice:
@@ -9,8 +35,8 @@ Product/architecture slice:
 - Staged Linear `DEA-19` as the next non-overlapping DearMe value lane:
   Opportunity Hunter private shortlist without send.
 - Kept the lane in `Backlog`, not `In Progress`, so Symphony does not start a
-  second product implementation worker while `DEA-18` still owns the active
-  browser/private-handoff proof lane.
+  second product implementation worker until the coordinator explicitly starts
+  it after the `DEA-18` browser-proof absorption.
 - Scoped `DEA-19` to the 60-120s aha moment: 5 named targets, fit reasons,
   outreach angles, and draft first messages, all private and behind a send
   approval boundary.
@@ -21,14 +47,13 @@ Product/architecture slice:
 
 Coordination state:
 
-- `DEA-18` remains the single active Symphony worker lane for browser proof.
-  It has not yet posted a terminal handoff or blocker comment in Linear.
+- `DEA-18` is no longer a product-surface blocker after the coordinator harness
+  absorption and browser proof pass.
 - Current `DEA-18` worker workspace remains code-clean except for a local
   `.playwright-browsers/` download directory.
-- The coordinator checkout currently has unabsorbed e2e harness edits in
+- The coordinator checkout owns the absorbed e2e harness fix in
   `tests/e2e/playwright.config.ts`, `tests/e2e/playwright-database.ts`, and
-  `tests/e2e/playwright.teardown.ts`; these are intentionally left uncommitted
-  until `DEA-18` produces an absorbable proof, patch handoff, or blocker.
+  `tests/e2e/playwright.teardown.ts`.
 
 Verification:
 
@@ -36,8 +61,6 @@ Verification:
   `DEA-18` browser proof, Playwright harness, onboarding redesign, runtime
   dashboards, customer-visible substrate language, or unapproved external
   sends.
-- Linear `DEA-18` comments still contain only the coordinator guardrail; no
-  worker completion or blocker comment is present yet.
 
 ## DEA-17 First-Glance Focus Absorption - 2026-05-10
 
