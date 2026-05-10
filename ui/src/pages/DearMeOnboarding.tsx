@@ -3247,18 +3247,13 @@ function TeamProofPackContinuityRibbon({ workbench }: { workbench: DearMeWorkben
   const report = workbench.report;
   const reportIsPacketBacked = report ? isPacketBackedReport(report) : false;
   const continuitySummary = reportIsPacketBacked
-    ? "One private proof pack is feeding Voice & Memory, prepared work, the weekly letter, and your launch call."
-    : "Voice & Memory, prepared work, the weekly letter, and launch calls stay connected before anything public moves.";
+    ? "One private proof pack is feeding Voice & Memory, prepared work, and your launch call."
+    : "Voice & Memory and prepared work stay connected before anything public moves.";
   const decisionTitle =
     nextBatchDecision?.title ??
     nextApprovalDecision?.title ??
     nextSourceReview?.proposedTitle ??
     "No launch call waiting";
-  const decisionDetail =
-    nextBatchDecision?.summary ??
-    nextApprovalDecision?.summary ??
-    nextSourceReview?.nextAction ??
-    "Your team can keep preparing private work.";
   const packetFocusTitle = nextWork
     ? customerProofPackSummary(nextWork.title)
     : report
@@ -3272,36 +3267,6 @@ function TeamProofPackContinuityRibbon({ workbench }: { workbench: DearMeWorkben
   const packetLaunchCall = decisionCount > 0
     ? customerProofPackSummary(decisionTitle)
     : "clear until the next public move";
-  const steps = [
-    {
-      label: "Voice & Memory",
-      value: pluralizeCount(workbench.memory.sourceCount, "source"),
-      detail: workbench.memory.voiceProfile.nextStep,
-      icon: Users,
-    },
-    {
-      label: "Work ready",
-      value: nextWork ? customerProofPackSummary(nextWork.title) : "Private cycle",
-      detail: nextWork
-        ? customerProofPackSummary(nextWork.summary)
-        : "The team will prepare the first reviewable asset.",
-      icon: FileText,
-    },
-    {
-      label: "Weekly letter",
-      value: report ? OUTPUT_STATUS_LABELS[report.status] : "Waiting",
-      detail: report
-        ? customerProofPackSummary(report.bodyPreview || report.summary)
-        : "The next Dear me report will summarize what changed.",
-      icon: MessageSquare,
-    },
-    {
-      label: "Launch call",
-      value: decisionCount > 0 ? pluralizeCount(decisionCount, "call") : "Clear",
-      detail: `${customerProofPackSummary(decisionTitle)}: ${customerProofPackSummary(decisionDetail)}`,
-      icon: ShieldCheck,
-    },
-  ];
 
   return (
     <section
@@ -3339,23 +3304,6 @@ function TeamProofPackContinuityRibbon({ workbench }: { workbench: DearMeWorkben
           <Badge variant="outline">Private until approved</Badge>
         </div>
       </div>
-
-      <DearMeEvidenceGrid className="mt-4 md:grid-cols-2 xl:grid-cols-4">
-        {steps.map((step) => {
-          const Icon = step.icon;
-
-          return (
-            <div key={step.label} className="rounded-md border border-border bg-muted/25 p-3">
-              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <Icon className="h-4 w-4" />
-                {step.label}
-              </div>
-              <p className="mt-2 text-sm font-medium text-foreground">{step.value}</p>
-              <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">{step.detail}</p>
-            </div>
-          );
-        })}
-      </DearMeEvidenceGrid>
     </section>
   );
 }
@@ -3364,10 +3312,16 @@ function TeamFocusWorkbenchPanel({
   workbench,
   paidBetaActive,
   livePulse,
+  canStartPrivateWork,
+  onOpenNextDecision,
+  onFocusFirstCycle,
 }: {
   workbench: DearMeWorkbenchResponse;
   paidBetaActive: boolean;
   livePulse?: DearMeLiveTeamPulse | null;
+  canStartPrivateWork: boolean;
+  onOpenNextDecision: () => void;
+  onFocusFirstCycle: () => void;
 }) {
   const latestProof = workbench.workStream[0] ?? workbench.recentProgress[0] ?? null;
   const nextMove = workbench.activeWork[0] ?? workbench.workReady[0] ?? null;
@@ -3375,11 +3329,7 @@ function TeamFocusWorkbenchPanel({
   const nextApprovalDecision = workbench.decisionsNeeded[0] ?? null;
   const nextSourceReview = workbench.memory.sourceReviewQueue[0] ?? null;
   const primaryMember = workbench.team[0] ?? null;
-  const decisionCount =
-    workbench.decisionsNeeded.length +
-    workbench.batchDecisions.length +
-    workbench.memory.sourceReviewQueue.length;
-  const workCount = workbench.workReady.length + workbench.activeWork.length;
+  const nextDecision = nextBatchDecision ?? nextApprovalDecision ?? nextSourceReview ?? null;
   const nextDecisionTitle =
     customerProofPackSummary(
       nextBatchDecision?.title ??
@@ -3394,10 +3344,9 @@ function TeamFocusWorkbenchPanel({
         nextSourceReview?.nextAction ??
         "Your team can keep preparing private work.",
     );
-  const reportStatus = workbench.report
-    ? OUTPUT_STATUS_LABELS[workbench.report.status]
-    : "Not ready";
-  const voiceConfidence = `${workbench.memory.voiceProfile.confidence}%`;
+  const firstCycleActionLabel = canStartPrivateWork
+    ? "Start with one sentence"
+    : "Preview the first proof pack";
 
   return (
     <DearMeFocusSurface aria-label="Today's brand team focus" className="space-y-5">
@@ -3407,34 +3356,24 @@ function TeamFocusWorkbenchPanel({
         title="Dear me, your team is working."
         description="The team keeps preparing private work: drafts, reports, opportunities, and proof it already moved forward. Public posts, outbound messages, spend, and page changes return as one launch call."
         trailing={
-          <Badge variant={paidBetaActive ? "default" : "secondary"}>
-            {paidBetaActive ? "Team working" : "Private work locked"}
-          </Badge>
+          <div className="flex flex-col gap-2 sm:items-end">
+            <Badge variant={paidBetaActive ? "default" : "secondary"}>
+              {livePulse
+                ? "Private work moving"
+                : paidBetaActive
+                  ? "Team working"
+                  : "Private work locked"}
+            </Badge>
+            <Button type="button" size="sm" onClick={onFocusFirstCycle}>
+              <Sparkles className="h-4 w-4" />
+              {firstCycleActionLabel}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
         }
       />
 
       <TeamProofPackContinuityRibbon workbench={workbench} />
-
-      {livePulse ? (
-        <section
-          aria-label="Live team pulse"
-          className="rounded-md border border-primary/25 bg-primary/5 px-4 py-3"
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <Workflow className="h-4 w-4 text-primary" />
-                <span>Live team pulse</span>
-              </div>
-              <p className="mt-1 text-sm font-medium text-foreground">{livePulse.title}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{livePulse.description}</p>
-            </div>
-            <Badge variant="outline" className="w-fit">
-              Private work moving
-            </Badge>
-          </div>
-        </section>
-      ) : null}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
         <DearMeWorkbenchCard
@@ -3472,35 +3411,29 @@ function TeamFocusWorkbenchPanel({
 
         <div className="grid gap-3">
           <DearMeWorkbenchCard
-            eyebrow="Decisions waiting"
-            title={decisionCount}
-            description={nextDecisionTitle}
+            eyebrow="Next decision"
+            title={nextDecisionTitle}
+            description={nextDecisionSummary}
             badge={<ShieldCheck className="h-4 w-4 text-muted-foreground" />}
-            footer={<p className="text-xs text-muted-foreground">{nextDecisionSummary}</p>}
+            footer={
+              nextDecision ? (
+                <div className="flex justify-end">
+                  <Button type="button" size="sm" variant="outline" onClick={onOpenNextDecision}>
+                    Open next decision
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : null
+            }
           />
-          <DearMeWorkbenchCard
-            eyebrow="Work ready"
-            title={workCount}
-            description="Prepared assets and active lanes your team can keep moving privately."
-            badge={<FileText className="h-4 w-4 text-muted-foreground" />}
-          />
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            <DearMeWorkbenchCard
-              eyebrow="Weekly letter"
-              title={reportStatus}
-              description={
-                workbench.report?.bodyPreview
-                  ? customerProofPackSummary(workbench.report.bodyPreview)
-                  : "Your next Dear me report will summarize what changed."
-              }
-              badge={<MessageSquare className="h-4 w-4 text-muted-foreground" />}
-            />
-            <DearMeWorkbenchCard
-              eyebrow="Voice profile"
-              title={voiceConfidence}
-              description={workbench.memory.voiceProfile.nextStep}
-              badge={<Users className="h-4 w-4 text-muted-foreground" />}
-            />
+          <div className="rounded-md border border-border bg-background/70 p-3">
+            <p className="text-xs font-medium text-muted-foreground">Work ready</p>
+            <p className="mt-1 text-sm font-medium">
+              {workbench.workReady.length + workbench.activeWork.length}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Prepared assets and active lanes your team can keep moving privately.
+            </p>
           </div>
         </div>
       </div>
@@ -5683,6 +5616,8 @@ function TeamWorkbenchPanel({
   paidBetaActive,
   selectedView,
   decisionFocus,
+  canStartPrivateWork,
+  onFocusFirstCycle,
   onOpenApproval,
   onOpenIssue,
   onOpenWorkItem,
@@ -5695,6 +5630,8 @@ function TeamWorkbenchPanel({
   paidBetaActive: boolean;
   selectedView: DearMePageView;
   decisionFocus: DearMeDecisionFocus | null;
+  canStartPrivateWork: boolean;
+  onFocusFirstCycle: () => void;
   onOpenApproval: (approvalId: string) => void;
   onOpenIssue: (issueReference: string, outputId?: string | null) => void;
   onOpenWorkItem: (
@@ -5953,7 +5890,26 @@ function TeamWorkbenchPanel({
         />
       ) : null}
 
-      <TeamFocusWorkbenchPanel workbench={workbench} paidBetaActive={paidBetaActive} livePulse={livePulse} />
+      <TeamFocusWorkbenchPanel
+        workbench={workbench}
+        paidBetaActive={paidBetaActive}
+        livePulse={livePulse}
+        canStartPrivateWork={canStartPrivateWork}
+        onFocusFirstCycle={onFocusFirstCycle}
+        onOpenNextDecision={() => {
+          if (workbench.batchDecisions[0]) {
+            openBatch(workbench.batchDecisions[0]);
+            return;
+          }
+          if (workbench.decisionsNeeded[0]) {
+            openDecision(workbench.decisionsNeeded[0]);
+            return;
+          }
+          if (workbench.memory.sourceReviewQueue[0]) {
+            openSourceReview(workbench.memory.sourceReviewQueue[0]);
+          }
+        }}
+      />
 
       {privateExecutionHandoff ? (
         <PrivateExecutionHandoffPanel
@@ -7012,16 +6968,13 @@ export function DearMeOnboarding() {
         </div>
       ) : null}
 
-      <FirstCyclePayoffStrip
-        canStartPrivateWork={canStartPrivateWork}
-        onFocusFirstCycle={handleFocusFirstCycle}
-      />
-
       <TeamWorkbenchPanel
         companyId={selectedCompanyId}
         paidBetaActive={canRequestPaidBetaWork}
         selectedView={selectedView}
         decisionFocus={decisionFocus}
+        canStartPrivateWork={canStartPrivateWork}
+        onFocusFirstCycle={handleFocusFirstCycle}
         onOpenApproval={handleOpenApproval}
         onOpenIssue={handleOpenIssue}
         onOpenWorkItem={handleOpenWorkbenchWorkItem}
@@ -7037,6 +6990,11 @@ export function DearMeOnboarding() {
           action: pendingOutputReview?.action ?? null,
           isPending: outputReviewMutation.isPending,
         }}
+      />
+
+      <FirstCyclePayoffStrip
+        canStartPrivateWork={canStartPrivateWork}
+        onFocusFirstCycle={handleFocusFirstCycle}
       />
 
       <PrivateWorkPanel

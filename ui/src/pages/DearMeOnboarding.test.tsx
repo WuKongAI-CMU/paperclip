@@ -1856,10 +1856,16 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Today's operating focus");
     expect(container.textContent).toContain("It starts with usable work and brings you the few decisions that matter.");
     expect(container.textContent).toContain("While you were away");
-    expect(container.textContent).toContain("Decisions waiting");
+    expect(container.textContent).toContain("Next decision");
     expect(container.textContent).toContain("Team focus");
-    expect(container.textContent).toContain("Weekly letter");
-    expect(container.textContent).toContain("Voice profile");
+    expect(container.textContent).toContain("Open next decision");
+    const topFocus = surfaceByLabel(container, "Today's brand team focus");
+    expect(topFocus.textContent).toContain("While you were away");
+    expect(topFocus.textContent).toContain("Next decision");
+    expect(topFocus.textContent).toContain("Open next decision");
+    expect(topFocus.textContent).toContain("Start with one sentence");
+    expect(topFocus.textContent).not.toContain("Live team pulse");
+    expectSurfacesInOrder(container, ["Today's brand team focus", "First payoff"]);
     const firstPayoff = surfaceByLabel(container, "First payoff");
     expect(firstPayoff.getAttribute("data-dearme-surface")).toBe("focus-surface");
     expect(firstPayoff.querySelectorAll('[data-dearme-surface="workbench-card"]').length).toBe(3);
@@ -1975,8 +1981,8 @@ describe("DearMeOnboarding", () => {
       "90-second first cycle",
     ]);
     expectSurfacesInOrder(container, [
-      "First payoff",
       "DearMe team board",
+      "First payoff",
       "Private work ready",
       "90-second first cycle",
     ]);
@@ -2387,14 +2393,12 @@ describe("DearMeOnboarding", () => {
     const continuity = surfaceByLabel(container, "Proof pack continuity");
     expect(continuity.textContent).toContain("Proof pack continuity");
     expect(continuity.textContent).toContain("Voice & Memory");
-    expect(continuity.textContent).toContain("Work ready");
-    expect(continuity.textContent).toContain("Weekly letter");
     expect(continuity.textContent).toContain("Launch call");
     expect(continuity.textContent).toContain("Current proof pack");
     expect(continuity.textContent).toContain("Next move");
-    expect(continuity.textContent).toContain("Ready for review weekly letter");
-    expect(continuity.textContent).toContain("same private proof pack");
+    expect(continuity.textContent).toContain("Voice to review");
     expect(continuity.textContent).toContain("Private until approved");
+    expect(continuity.textContent).toContain("Ready for review weekly letter");
     expect(continuity.textContent).not.toMatch(/cycle packet|shared packet/i);
     expectNoHiddenProductTerms(continuity.textContent, [
       HIDDEN_PRODUCT_TERMS.bridgeName,
@@ -3757,11 +3761,10 @@ describe("DearMeOnboarding", () => {
     expect(mockDearmeApi.getWorkbench).toHaveBeenCalledTimes(2);
     expect(container.textContent).toContain("Dear me, your team has fresh runner progress");
     expect(container.textContent).toContain("The private cycle pulled in new execution progress for review.");
-    const livePulse = surfaceByLabel(container, "Live team pulse");
-    expect(livePulse.textContent).toContain("Team started a private pass");
-    expect(livePulse.textContent).toContain("A private pass advanced.");
-    expect(livePulse.textContent).toContain("Private work moving");
-    expectNoHiddenProductTerms(livePulse.textContent, [
+    const topFocus = surfaceByLabel(container, "Today's brand team focus");
+    expect(topFocus.textContent).toContain("Private work moving");
+    expect(topFocus.textContent).not.toContain("Live team pulse");
+    expectNoHiddenProductTerms(topFocus.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
       HIDDEN_PRODUCT_TERMS.orchestrationName,
       HIDDEN_PRODUCT_TERMS.bridgeName,
