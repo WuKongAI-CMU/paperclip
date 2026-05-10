@@ -35,7 +35,7 @@ Verification:
 - `pnpm run dearme:worktrees -- --summary-only --skip-dirty` passed and
   reported `reviewed_absorbed: 24`, `not_in_current: 89`, and `dirty: 0`.
 - `pnpm exec vitest run server/src/__tests__/dearme-output-regeneration-brief.test.ts server/src/__tests__/heartbeat-task-markdown.test.ts --maxWorkers=1`
-  passed.
+  passed with 9 tests.
 - `pnpm --filter @paperclipai/server typecheck` passed.
 - `git diff --check -- server/src/services/dearme-output-handoff.ts server/src/services/heartbeat.ts server/src/__tests__/dearme-output-regeneration-brief.test.ts server/src/__tests__/heartbeat-task-markdown.test.ts docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`
   passed.
