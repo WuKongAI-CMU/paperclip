@@ -1793,11 +1793,15 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Weekly letter");
     expect(container.textContent).toContain("Voice profile");
     const firstPayoff = surfaceByLabel(container, "First payoff");
+    expect(firstPayoff.getAttribute("data-dearme-surface")).toBe("focus-surface");
+    expect(firstPayoff.querySelectorAll('[data-dearme-surface="workbench-card"]').length).toBe(3);
     expect(firstPayoff.textContent).toContain("One sentence becomes a private proof pack.");
+    expect(firstPayoff.textContent).toContain("No setup tour. No public action. One focused answer.");
     expect(firstPayoff.textContent).toContain(
       "Voice Profile, starter posts, one opportunity, proof card, first plan",
     );
     expect(firstPayoff.textContent).toContain("One launch call before anything public or external");
+    expect(firstPayoff.textContent).toContain("Approve, revise, or redirect the team from one place.");
     expect(firstPayoff.textContent).toContain("Start with one sentence");
     expect(container.textContent).toContain("Your brand team today");
     expect(container.textContent).toContain("Dear me, your team has decisions ready");

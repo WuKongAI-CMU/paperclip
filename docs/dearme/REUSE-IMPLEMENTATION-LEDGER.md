@@ -164,6 +164,35 @@ before adding new onboarding forms.
 
 ## Recently Completed
 
+### DM-183AL: First Payoff CTA Rail
+
+Goal: make the first-screen aha path feel like one clear action rail instead
+of another explanatory panel.
+
+Donor grounding:
+
+- Polsia: keep the immediate input-to-private-proof loop as the first customer
+  promise.
+- Lindy: reuse compact review-card rhythm so the user sees the next decision
+  before reading the rest of the workbench.
+- Naive/Paperclip: keep the existing first-cycle, paid-beta, and approval
+  machinery hidden under the customer-facing shell.
+
+Completed:
+
+- Rebuilt the `First payoff` surface from DearMe shell primitives rather than a
+  bespoke card grid.
+- Preserved the same one-sentence CTA, trial preview CTA, and focus behavior on
+  the existing first-cycle input.
+- Locked the surface primitive, three payoff cards, and one-answer/no-public
+  action promise in the focused onboarding regression test.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+
 ### DM-183AK: First Payoff Strip
 
 Goal: make the first visible screen explain the payoff before the user has to

@@ -2,6 +2,25 @@
 
 Date: 2026-05-10
 
+## DM-183AL First Payoff CTA Rail - 2026-05-10
+
+Implementation slice:
+
+- Reused `DearMeFocusSurface`, `DearMeWorkbenchSectionHeader`,
+  `DearMeMetricStrip`, and `DearMeWorkbenchCard` for the first payoff instead of
+  keeping a bespoke strip layout.
+- Tightened the first-screen path into a clearer rail: write one sentence,
+  receive the private proof pack, then make one launch call before anything
+  public or external moves.
+- Preserved the existing first-cycle input, trial preview CTA, paid-beta start
+  CTA, Brand OS preview/apply flow, and customer-safe proof-pack language.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+
 ## DM-183AK First Payoff Strip - 2026-05-10
 
 Implementation slice:

@@ -1598,6 +1598,24 @@ const FIRST_CYCLE_ARTIFACTS = [
   "First growth plan",
 ];
 
+const FIRST_PAYOFF_STEPS = [
+  {
+    label: "You write",
+    title: "One known-for sentence",
+    description: "Start with the outcome you want people to remember.",
+  },
+  {
+    label: "DearMe returns",
+    title: "Voice Profile, starter posts, one opportunity, proof card, first plan",
+    description: "A private proof pack appears before settings or public launch.",
+  },
+  {
+    label: "You decide",
+    title: "One launch call before anything public or external",
+    description: "Approve, revise, or redirect the team from one place.",
+  },
+] as const;
+
 const SAMPLE_FIRST_CYCLE_PREVIEW = createDearMeFirstCyclePreview("sample-company", {
   brand: {
     displayName: "Maya Chen",
@@ -1924,38 +1942,42 @@ function FirstCyclePayoffStrip({
   const actionLabel = canStartPrivateWork ? "Start with one sentence" : "Preview the first proof pack";
 
   return (
-    <section
+    <DearMeFocusSurface
       aria-label="First payoff"
-      className="rounded-lg border border-primary/30 bg-primary/5 p-5"
-      data-dearme-surface="first-payoff"
+      className="overflow-hidden p-0"
     >
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_auto] lg:items-center">
-        <div>
-          <Badge variant="outline">First payoff</Badge>
-          <h2 className="mt-3 text-xl font-semibold">One sentence becomes a private proof pack.</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            DearMe returns useful work first, then brings back only the call that needs you.
-          </p>
+      <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <div className="space-y-4 border-b border-primary/20 bg-background/55 p-5 sm:p-6 lg:border-b-0 lg:border-r">
+          <DearMeWorkbenchSectionHeader
+            icon={Sparkles}
+            eyebrow="First payoff"
+            title="One sentence becomes a private proof pack."
+            description="DearMe returns useful work first, then brings back only the call that needs you."
+          />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button type="button" className="w-full sm:w-auto" onClick={onFocusFirstCycle}>
+              <Sparkles className="h-4 w-4" />
+              {actionLabel}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <p className="text-xs font-medium text-muted-foreground">
+              No setup tour. No public action. One focused answer.
+            </p>
+          </div>
         </div>
-        <div className="grid gap-2 sm:grid-cols-3">
-          {[
-            ["You write", "One known-for sentence"],
-            ["DearMe returns", "Voice Profile, starter posts, one opportunity, proof card, first plan"],
-            ["You decide", "One launch call before anything public or external"],
-          ].map(([label, value]) => (
-            <div key={label} className="rounded-md border border-border bg-background/75 p-3">
-              <p className="text-xs font-medium text-muted-foreground">{label}</p>
-              <p className="mt-1 text-sm font-medium text-foreground">{value}</p>
-            </div>
+        <DearMeMetricStrip className="p-5 sm:grid-cols-3 sm:p-6 xl:grid-cols-3">
+          {FIRST_PAYOFF_STEPS.map((step) => (
+            <DearMeWorkbenchCard
+              key={step.label}
+              eyebrow={step.label}
+              title={step.title}
+              description={step.description}
+              className="bg-background/75"
+            />
           ))}
-        </div>
-        <Button type="button" className="w-full lg:w-auto" onClick={onFocusFirstCycle}>
-          <Sparkles className="h-4 w-4" />
-          {actionLabel}
-          <ArrowRight className="h-4 w-4" />
-        </Button>
+        </DearMeMetricStrip>
       </div>
-    </section>
+    </DearMeFocusSurface>
   );
 }
 
