@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_LIMIT = 0;
+const DEFAULT_SYMPHONY_ROOT = "/private/tmp/dearme-symphony-workspaces";
 const WORKTREE_STATUSES = new Set([
   "current",
   "in_current",
@@ -67,14 +69,22 @@ export function parseWorktrees(output) {
 
 export function deriveWorktreeTicket({ branch = "", path = "" }) {
   const source = `${branch} ${path}`;
-  const match = source.match(/(?:^|[-_/\s])dm[-_]?(\d{3}[a-z]?)(?:[-_/\s]|$)/i);
-  return match ? `DM-${match[1].toUpperCase()}` : null;
+  const match = source.match(
+    /(?:^|[-_/\s])(?<prefix>dm|dea)[-_]?(?<number>\d{1,4}[a-z]?)(?:[-_/\s]|$)/i,
+  );
+  if (!match?.groups) return null;
+  return `${match.groups.prefix.toUpperCase()}-${match.groups.number.toUpperCase()}`;
 }
 
 export function classifyWorktreePurpose({ branch = "", path = "", status }) {
   if (status === "current") return "current";
 
   const source = `${branch} ${path}`;
+  const ticket = deriveWorktreeTicket({ branch, path });
+  if (ticket?.startsWith("DEA-") || /dearme-symphony-workspaces|symphony/i.test(source)) {
+    return "symphony";
+  }
+
   if (/\b(baseline|integrate|integrated|integration)\b/i.test(source)) {
     return "integration";
   }
@@ -91,6 +101,10 @@ export function recommendWorktreeAction({ status, purpose, dirtyFiles }) {
     return "coordination head; keep as the integration truth";
   }
 
+  if (status === "in_current" && purpose === "symphony") {
+    return "absorbed Symphony lane; keep as audit trail or close after owner confirmation";
+  }
+
   if (status === "in_current") {
     return "absorbed by current head; close only after owner confirmation";
   }
@@ -101,6 +115,10 @@ export function recommendWorktreeAction({ status, purpose, dirtyFiles }) {
 
   if (status === "not_in_current" && purpose === "integration") {
     return "historical integration branch; compare before replay, do not merge blindly";
+  }
+
+  if (status === "not_in_current" && purpose === "symphony") {
+    return "active Symphony lane; compare against current head and replay only issue-scoped slices";
   }
 
   if (status === "not_in_current") {
@@ -163,6 +181,15 @@ export function enrichWorktreeRecord(record) {
   };
 }
 
+export function listSymphonyWorkspacePaths(root = DEFAULT_SYMPHONY_ROOT) {
+  if (!existsSync(root)) return [];
+
+  return readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(root, entry.name, "repo"))
+    .filter((repoPath) => existsSync(join(repoPath, ".git")));
+}
+
 export function summarize(records) {
   return records.reduce(
     (summary, record) => {
@@ -179,12 +206,34 @@ export function summarize(records) {
   );
 }
 
-export function collectWorktreeStatus({ cwd = process.cwd(), skipDirty = false } = {}) {
+function collectSymphonyWorkspaceStatus({ repoRoot, currentHead, skipDirty, symphonyRoot }) {
+  return listSymphonyWorkspacePaths(symphonyRoot).map((workspacePath) => {
+    const head = runGit(["rev-parse", "HEAD"], workspacePath);
+    const branch = runGit(["branch", "--show-current"], workspacePath) || "(detached)";
+
+    return enrichWorktreeRecord({
+      path: workspacePath,
+      branch,
+      head,
+      source: "symphony",
+      status: classifyWorktree({ head, detached: branch === "(detached)" }, currentHead, repoRoot),
+      dirtyFiles: countDirtyFiles(workspacePath, skipDirty),
+      prunable: false,
+    });
+  });
+}
+
+export function collectWorktreeStatus({
+  cwd = process.cwd(),
+  skipDirty = false,
+  includeSymphony = true,
+  symphonyRoot = DEFAULT_SYMPHONY_ROOT,
+} = {}) {
   const repoRoot = runGit(["rev-parse", "--show-toplevel"], cwd);
   const currentHead = runGit(["rev-parse", "HEAD"], repoRoot);
   const worktrees = parseWorktrees(runGit(["worktree", "list", "--porcelain"], repoRoot));
 
-  return worktrees.map((worktree) =>
+  const records = worktrees.map((worktree) =>
     enrichWorktreeRecord({
       path: worktree.path,
       branch: worktree.branch ?? (worktree.detached ? "(detached)" : "(unknown)"),
@@ -194,6 +243,18 @@ export function collectWorktreeStatus({ cwd = process.cwd(), skipDirty = false }
       prunable: Boolean(worktree.prunable),
     }),
   );
+
+  if (!includeSymphony) return records;
+
+  const seen = new Set(records.map((record) => record.path));
+  const symphonyRecords = collectSymphonyWorkspaceStatus({
+    repoRoot,
+    currentHead,
+    skipDirty,
+    symphonyRoot,
+  }).filter((record) => !seen.has(record.path));
+
+  return [...records, ...symphonyRecords];
 }
 
 export function parseArgs(argv) {
@@ -205,6 +266,8 @@ export function parseArgs(argv) {
     statuses: new Set(),
     tickets: new Set(),
     limit: DEFAULT_LIMIT,
+    includeSymphony: true,
+    symphonyRoot: DEFAULT_SYMPHONY_ROOT,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -231,6 +294,23 @@ export function parseArgs(argv) {
 
     if (arg === "--dirty-only") {
       options.dirtyOnly = true;
+      continue;
+    }
+
+    if (arg === "--no-symphony") {
+      options.includeSymphony = false;
+      continue;
+    }
+
+    if (arg === "--symphony-root") {
+      i += 1;
+      if (!argv[i]) throw new Error("--symphony-root requires a value");
+      options.symphonyRoot = argv[i];
+      continue;
+    }
+
+    if (arg.startsWith("--symphony-root=")) {
+      options.symphonyRoot = arg.slice("--symphony-root=".length);
       continue;
     }
 
@@ -289,9 +369,10 @@ function addStatusFilter(options, value) {
 
 function addTicketFilter(options, value) {
   if (!value) throw new Error("--ticket requires a value");
-  const match = value.match(/^(?:dm[-_]?)?(\d{3}[a-z]?)$/i);
-  if (!match) throw new Error(`Ticket must look like DM-138, got: ${value}`);
-  options.tickets.add(`DM-${match[1].toUpperCase()}`);
+  const match = value.match(/^(?:(?<prefix>dm|dea)[-_]?)?(?<number>\d{1,4}[a-z]?)$/i);
+  if (!match?.groups) throw new Error(`Ticket must look like DM-138 or DEA-7, got: ${value}`);
+  const prefix = (match.groups.prefix ?? "DM").toUpperCase();
+  options.tickets.add(`${prefix}-${match.groups.number.toUpperCase()}`);
 }
 
 function parseLimit(value) {
@@ -370,6 +451,7 @@ function printSummary(summary) {
     [
       `purpose current: ${summary.byPurpose.current ?? 0}`,
       `integration: ${summary.byPurpose.integration ?? 0}`,
+      `symphony: ${summary.byPurpose.symphony ?? 0}`,
       `worker: ${summary.byPurpose.worker ?? 0}`,
     ].join(" | "),
   );
@@ -391,7 +473,11 @@ function printActionSummary(records) {
 function main() {
   const options = parseArgs(process.argv.slice(2));
   const records = filterWorktreeRecords(
-    collectWorktreeStatus({ skipDirty: options.skipDirty }),
+    collectWorktreeStatus({
+      skipDirty: options.skipDirty,
+      includeSymphony: options.includeSymphony,
+      symphonyRoot: options.symphonyRoot,
+    }),
     options,
   );
 

@@ -2,6 +2,37 @@
 
 Date: 2026-05-10
 
+## DM-183C Symphony Workspace Inventory - 2026-05-10
+
+Implementation slice:
+
+- Extended `pnpm dearme:worktrees` so the coordinator report includes real
+  repos under `/private/tmp/dearme-symphony-workspaces/*/repo`, not only
+  `git worktree list` entries attached to the source checkout.
+- Added DEA ticket detection and a `symphony` purpose bucket, so active Linear
+  worker lanes such as `DEA-7` are separated from stale worker branches and
+  historical integration branches.
+- Added `--no-symphony` and `--symphony-root` options for reproducible tests
+  and emergency fallback when an operator needs the old git-worktree-only view.
+- Kept the coordinator action conservative: Symphony workspaces must still be
+  compared against current head and replayed only as issue-scoped slices.
+
+Verification:
+
+- `pnpm test:dearme-worktrees` passed: 10 tests.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported 117
+  worktrees including 1 Symphony workspace, 3 `in_current`, 113
+  `not_in_current`, 0 `patch_equivalent`, and 0 dirty records.
+- `pnpm dearme:worktrees -- --ticket=DEA-7 --limit=10 --skip-dirty`
+  reported the real Symphony workspace as `in_current`, with the conservative
+  action `absorbed Symphony lane; keep as audit trail or close after owner
+  confirmation`.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty --no-symphony`
+  preserved the legacy 116-worktree view.
+- `.symphony/bin/dearme-symphony status` confirmed the daemon at
+  `http://127.0.0.1:4100/` with no running or retrying jobs.
+- `git diff --check` passed.
+
 ## DEA-7 Live Team Pulse - 2026-05-10
 
 Implementation slice:

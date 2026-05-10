@@ -1,15 +1,17 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
 import {
   classifyWorktree,
+  collectWorktreeStatus,
   deriveWorktreeTicket,
   enrichWorktreeRecord,
   filterWorktreeRecords,
+  listSymphonyWorkspacePaths,
   parseArgs,
   parseWorktrees,
   summarize,
@@ -115,6 +117,18 @@ test("enrichWorktreeRecord adds ticket, purpose, and coordinator action", () => 
     }).nextAction,
     "patch-equivalent to current head; close only after owner confirmation",
   );
+
+  assert.equal(
+    enrichWorktreeRecord({
+      path: "/private/tmp/dearme-symphony-workspaces/DEA-7/repo",
+      branch: "verify-dea-7-current",
+      head: "bcd",
+      status: "in_current",
+      dirtyFiles: 0,
+      prunable: false,
+    }).nextAction,
+    "absorbed Symphony lane; keep as audit trail or close after owner confirmation",
+  );
 });
 
 test("filters support status, ticket, dirty-only, and limits", () => {
@@ -175,6 +189,28 @@ test("parseArgs tolerates the pnpm argument separator", () => {
 
   const patchEquivalentOptions = parseArgs(["--status=patch-equivalent"]);
   assert.equal(patchEquivalentOptions.statuses.has("patch_equivalent"), true);
+
+  const rootEqualsOptions = parseArgs(["--symphony-root=/tmp/dearme-symphony-equals"]);
+  assert.equal(rootEqualsOptions.symphonyRoot, "/tmp/dearme-symphony-equals");
+});
+
+test("parseArgs supports DEA tickets and Symphony workspace options", () => {
+  const options = parseArgs([
+    "--ticket",
+    "DEA-7",
+    "--no-symphony",
+    "--symphony-root",
+    "/tmp/dearme-symphony-test",
+  ]);
+
+  assert.equal(options.tickets.has("DEA-7"), true);
+  assert.equal(options.includeSymphony, false);
+  assert.equal(options.symphonyRoot, "/tmp/dearme-symphony-test");
+
+  assert.throws(
+    () => parseArgs(["--symphony-root"]),
+    /--symphony-root requires a value/,
+  );
 });
 
 test("summarize keeps legacy counts and adds purpose/ticket buckets", () => {
@@ -203,25 +239,112 @@ test("summarize keeps legacy counts and adds purpose/ticket buckets", () => {
       dirtyFiles: 0,
       prunable: false,
     }),
+    enrichWorktreeRecord({
+      path: "/private/tmp/dearme-symphony-workspaces/DEA-7-publish-qbFNq4/repo",
+      branch: "verify-dea-7-current",
+      head: "4",
+      status: "not_in_current",
+      dirtyFiles: 0,
+      prunable: false,
+    }),
   ];
 
   assert.deepEqual(summarize(records), {
-    total: 3,
+    total: 4,
     dirty: 1,
     current: 1,
-    not_in_current: 1,
+    not_in_current: 2,
     patch_equivalent: 1,
     byPurpose: {
       current: 1,
       integration: 1,
+      symphony: 1,
       worker: 1,
     },
     byTicket: {
       "DM-136": 1,
       "DM-086": 1,
       "DM-087": 1,
+      "DEA-7": 1,
     },
   });
+});
+
+test("enrichWorktreeRecord classifies DEA and Symphony paths as active lanes", () => {
+  const record = enrichWorktreeRecord({
+    path: "/private/tmp/dearme-symphony-workspaces/DEA-7/repo",
+    branch: "main",
+    head: "abc",
+    status: "not_in_current",
+    dirtyFiles: 0,
+    prunable: false,
+  });
+
+  assert.equal(record.ticket, "DEA-7");
+  assert.equal(record.purpose, "symphony");
+  assert.equal(
+    record.nextAction,
+    "active Symphony lane; compare against current head and replay only issue-scoped slices",
+  );
+
+  assert.equal(
+    enrichWorktreeRecord({
+      path: "/private/tmp/dearme-symphony-workspaces/DEA-7/repo",
+      branch: "verify-dea-7-current",
+      head: "def",
+      status: "in_current",
+      dirtyFiles: 0,
+      prunable: false,
+    }).nextAction,
+    "absorbed Symphony lane; keep as audit trail or close after owner confirmation",
+  );
+});
+
+test("collectWorktreeStatus includes real Symphony workspace repos by default", () => {
+  const repo = mkdtempSync(join(tmpdir(), "dearme-worktree-status-root-"));
+  const symphonyRoot = mkdtempSync(join(tmpdir(), "dearme-symphony-root-"));
+  const symphonyRepo = join(symphonyRoot, "DEA-7", "repo");
+
+  try {
+    git(repo, ["init", "--initial-branch=main"]);
+    writeFileSync(join(repo, "brand.md"), "base\n");
+    git(repo, ["add", "brand.md"]);
+    commit(repo, "base");
+
+    mkdirSync(join(symphonyRoot, "DEA-7"));
+    git(symphonyRoot, ["clone", repo, symphonyRepo]);
+    writeFileSync(join(symphonyRepo, "brand.md"), "base\nsymphony lane\n");
+    git(symphonyRepo, ["add", "brand.md"]);
+    commit(symphonyRepo, "symphony lane");
+
+    assert.deepEqual(listSymphonyWorkspacePaths(symphonyRoot), [symphonyRepo]);
+
+    const records = collectWorktreeStatus({
+      cwd: repo,
+      skipDirty: true,
+      symphonyRoot,
+    });
+    const symphonyRecord = records.find((record) => record.path === symphonyRepo);
+
+    assert.equal(symphonyRecord?.source, "symphony");
+    assert.equal(symphonyRecord?.ticket, "DEA-7");
+    assert.equal(symphonyRecord?.purpose, "symphony");
+    assert.equal(symphonyRecord?.status, "not_in_current");
+    assert.equal(symphonyRecord?.dirtyFiles, null);
+
+    assert.equal(
+      collectWorktreeStatus({
+        cwd: repo,
+        skipDirty: true,
+        includeSymphony: false,
+        symphonyRoot,
+      }).some((record) => record.path === symphonyRepo),
+      false,
+    );
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+    rmSync(symphonyRoot, { recursive: true, force: true });
+  }
 });
 
 test("classifyWorktree marks cherry-pick-equivalent branches as patch_equivalent", () => {
@@ -268,5 +391,12 @@ test("deriveWorktreeTicket handles compact and dashed ticket names", () => {
       path: "/private/tmp/dearme-dm-005a-proof",
     }),
     "DM-005A",
+  );
+  assert.equal(
+    deriveWorktreeTicket({
+      branch: "verify-dea-7-current",
+      path: "/private/tmp/dearme-symphony-workspaces/DEA-7-publish-qbFNq4/repo",
+    }),
+    "DEA-7",
   );
 });
