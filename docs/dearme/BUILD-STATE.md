@@ -19,6 +19,18 @@ Verification:
 
 - `pnpm --filter @paperclipai/dearme-openclaw run generate-skills` regenerated
   12 skills and 4 bootstrap files.
+- `pnpm --filter @paperclipai/dearme-openclaw test` passed: 16 tests.
+- `pnpm --filter @paperclipai/dearme-openclaw typecheck` passed.
+- `pnpm --filter @paperclipai/dearme-openclaw build` passed.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx
+  --maxWorkers=1` passed: 41 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/ui build` passed. Vite still reports the
+  existing `MarkdownEditor.tsx` dynamic/static import and large chunk warnings.
+- `git diff --check` passed.
+- Browser smoke opened `http://127.0.0.1:3100/DEAA/dearme`, found
+  `Voice check` once, found no `Voice Gate v0`, and reported zero console
+  errors or warnings.
 
 ## DEA-7 Voice-Gated Draft Handoff - 2026-05-10
 
