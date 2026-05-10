@@ -2,6 +2,26 @@
 
 Date: 2026-05-10
 
+## DM-183AG Retire Source Confirmation - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the useful DM-019 confirmation-boundary lesson onto the current
+  Voice & Memory source projection instead of replaying its stale browser-dialog
+  implementation.
+- Retiring a saved private source now opens a DearMe-owned confirmation dialog
+  before the existing archive mutation runs.
+- Kept the current soft-retire and restore path intact, so retired sources stay
+  in private history and can be restored without a new memory table or service.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183AF Live Proof Feed and Prepared Work Ordering - 2026-05-10
 
 Implementation slice:

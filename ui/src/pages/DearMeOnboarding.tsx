@@ -78,6 +78,14 @@ import {
 } from "../lib/dearme-brand-blueprint";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -4446,6 +4454,7 @@ function VoiceMemoryPanel({
   const [body, setBody] = useState("");
   const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
   const [selectedSourceReviewId, setSelectedSourceReviewId] = useState<string | null>(null);
+  const [retireCandidate, setRetireCandidate] = useState<DearMeMemoryUpdateItem | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const voiceProfile = memory.voiceProfile;
   const sourcePlan = memory.sourcePlan;
@@ -4455,6 +4464,12 @@ function VoiceMemoryPanel({
   );
   const selectedGuide =
     MEMORY_SOURCE_GUIDES.find((guide) => guide.id === sourceGuideId) ?? DEFAULT_MEMORY_SOURCE_GUIDE;
+  const retireCandidateTitle = retireCandidate
+    ? customerProofPackSummary(retireCandidate.title ?? MEMORY_KIND_LABELS[retireCandidate.kind])
+    : "this source";
+  const retireCandidateSummary = retireCandidate
+    ? customerProofPackSummary(retireCandidate.bodyPreview)
+    : null;
   const sourceLabelText =
     sourceInputMode === "link"
       ? "Private link"
@@ -4519,6 +4534,13 @@ function VoiceMemoryPanel({
     if (selectedSourceReview) return;
     setSelectedSourceReviewId(null);
   }, [selectedSourceReview, selectedSourceReviewId]);
+
+  useEffect(() => {
+    if (!archiveResult || !retireCandidate) return;
+    if (archiveResult.memoryId === retireCandidate.id) {
+      setRetireCandidate(null);
+    }
+  }, [archiveResult, retireCandidate]);
 
   useEffect(() => {
     if (!sourceReviewFocus) return;
@@ -4594,10 +4616,23 @@ function VoiceMemoryPanel({
   }
 
   function handleRetireSource(item: DearMeMemoryUpdateItem) {
-    if (editingMemoryId === item.id) {
+    setLocalError(null);
+    setRetireCandidate(item);
+  }
+
+  function handleRetireDialogOpenChange(open: boolean) {
+    if (!open && !isPending) {
+      setRetireCandidate(null);
+    }
+  }
+
+  function handleConfirmRetireSource() {
+    if (!retireCandidate) return;
+    if (editingMemoryId === retireCandidate.id) {
       handleCancelRevise();
     }
-    onArchive(item.id);
+    setLocalError(null);
+    onArchive(retireCandidate.id);
   }
 
   function handleRestoreSource(item: DearMeMemoryUpdateItem) {
@@ -5014,6 +5049,47 @@ function VoiceMemoryPanel({
           </div>
         </DearMeEmptyState>
       )}
+
+      <Dialog open={retireCandidate !== null} onOpenChange={handleRetireDialogOpenChange}>
+        <DialogContent showCloseButton={!isPending}>
+          <DialogHeader>
+            <DialogTitle>Retire private source?</DialogTitle>
+            <DialogDescription>
+              DearMe will stop using {retireCandidateTitle} for future drafts. The source stays in
+              private history so you can restore it later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+            {retireCandidateSummary ??
+              "Use this when the source is stale, duplicated, or no longer matches how you want DearMe to write and decide."}
+          </div>
+          {error ? (
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending}
+              aria-label={`Keep ${retireCandidateTitle}`}
+              onClick={() => setRetireCandidate(null)}
+            >
+              Keep source
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={isPending}
+              aria-label={`Confirm retire ${retireCandidateTitle}`}
+              onClick={handleConfirmRetireSource}
+            >
+              {isPending ? "Retiring..." : "Retire source"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {visibleArchivedMemory.length > 0 ? (
         <div className="mt-5 border-t border-border pt-4">

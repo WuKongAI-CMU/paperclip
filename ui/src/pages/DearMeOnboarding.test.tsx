@@ -1482,6 +1482,12 @@ function buttonByText(container: HTMLElement, text: string) {
   ) as HTMLButtonElement | undefined;
 }
 
+function buttonByLabel(container: HTMLElement, label: string) {
+  return [...container.querySelectorAll("button")].find((button) =>
+    button.getAttribute("aria-label") === label,
+  ) as HTMLButtonElement | undefined;
+}
+
 function surfaceByLabel(container: HTMLElement, label: string) {
   const surface =
     [...container.querySelectorAll<HTMLElement>("[aria-label]")].find(
@@ -2378,6 +2384,18 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
+    expect(mockDearmeApi.archiveMemorySource).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain("Retire private source?");
+    expect(document.body.textContent).toContain(
+      "DearMe will stop using Voice note for future drafts.",
+    );
+    expect(container.textContent).toContain("Voice note");
+
+    await act(async () => {
+      buttonByLabel(document.body, "Confirm retire Voice note")?.click();
+    });
+    await flushReact();
+
     expect(mockDearmeApi.archiveMemorySource).toHaveBeenCalledWith("company-1", "memory-1");
     expect(container.textContent).not.toContain("Voice note");
     expect(container.textContent).toContain("Shipped proof");
@@ -2451,6 +2469,13 @@ describe("DearMeOnboarding", () => {
 
     await act(async () => {
       buttonByText(container, "Retire source")?.click();
+    });
+    await flushReact();
+
+    expect(document.body.textContent).toContain("Retire private source?");
+
+    await act(async () => {
+      buttonByLabel(document.body, "Confirm retire Voice note")?.click();
     });
     await flushReact();
 
