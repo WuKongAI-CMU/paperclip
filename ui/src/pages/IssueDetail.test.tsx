@@ -951,6 +951,8 @@ describe("IssueDetail", () => {
     mockNavigate.mockClear();
     mockPushToast.mockClear();
     mockTabsOnValueChange.current = null;
+    mockOpenPanel.mockClear();
+    mockClosePanel.mockClear();
     mockIssuesListRender.mockClear();
     mockIssueChatThreadRender.mockClear();
     mockIssueRunLedgerRender.mockClear();
@@ -985,6 +987,9 @@ describe("IssueDetail", () => {
     expect(container.textContent).toContain("Issue detail smoke");
     expect(container.textContent).toContain("Chat thread");
     expect(container.textContent).toContain("Workspace");
+    expect(container.querySelector('button[title="Properties"]')).toBeTruthy();
+    expect(container.querySelector('button[title="Show properties"]')).toBeTruthy();
+    expect(mockOpenPanel).toHaveBeenCalled();
     expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
@@ -1006,6 +1011,28 @@ describe("IssueDetail", () => {
       expect(container.textContent).toContain("Chat thread");
     });
     expect(container.textContent).not.toContain("Workspace");
+  });
+
+  it("hides issue properties controls for DearMe issues", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({ originKind: "dearme_brand_blueprint_apply" }));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(container.textContent).toContain("Chat thread");
+    });
+    expect(container.querySelector('button[title="Properties"]')).toBeNull();
+    expect(container.querySelector('button[title="Show properties"]')).toBeNull();
+    expect(mockOpenPanel).not.toHaveBeenCalled();
   });
 
   it("routes DearMe linked approval decisions back to DearMe", async () => {

@@ -607,7 +607,8 @@ interface InboxMobileToolbarProps {
   onArchive: () => void;
   archivePending: boolean;
   onCopy: () => void;
-  onProperties: () => void;
+  onProperties?: () => void;
+  showProperties?: boolean;
   onHide: () => void;
 }
 
@@ -619,6 +620,7 @@ function InboxMobileToolbar({
   archivePending,
   onCopy,
   onProperties,
+  showProperties = true,
   onHide,
 }: InboxMobileToolbarProps) {
   const navigate = useNavigate();
@@ -671,13 +673,15 @@ function InboxMobileToolbar({
               <Copy className="h-3 w-3" />
               Copy as markdown
             </button>
-            <button
-              className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50"
-              onClick={() => { onProperties(); setMenuOpen(false); }}
-            >
-              <SlidersHorizontal className="h-3 w-3" />
-              Properties
-            </button>
+            {showProperties && onProperties ? (
+              <button
+                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50"
+                onClick={() => { onProperties(); setMenuOpen(false); }}
+              >
+                <SlidersHorizontal className="h-3 w-3" />
+                Properties
+              </button>
+            ) : null}
             {issueIdProp && (
               <button
                 className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-destructive"
@@ -1667,18 +1671,19 @@ export function IssueDetail() {
     },
     [issue?.id, rawChildIssues],
   );
+  const isDearMeDetailIssue = issue ? isDearMeIssue(issue) : false;
   const liveIssueIds = useMemo(() => collectLiveIssueIds(companyLiveRuns), [companyLiveRuns]);
   const issuePanelKey = useMemo(
     () => buildIssuePropertiesPanelKey(issue ?? null, childIssues),
     [childIssues, issue],
   );
   const panelIssue = useMemo(
-    () => issue ?? null,
-    [issue?.id, issuePanelKey],
+    () => isDearMeDetailIssue ? null : issue ?? null,
+    [isDearMeDetailIssue, issue?.id, issuePanelKey],
   );
   const panelChildIssues = useMemo(
-    () => childIssues,
-    [issuePanelKey],
+    () => isDearMeDetailIssue ? [] : childIssues,
+    [isDearMeDetailIssue, issuePanelKey],
   );
   const showRichSubIssuesSection = shouldRenderRichSubIssuesSection(childIssuesLoading, childIssues.length);
   const openNewSubIssue = useCallback(() => {
@@ -3041,12 +3046,13 @@ export function IssueDetail() {
         onArchive={() => inboxToolbarCallbacksRef.current.onArchive()}
         onCopy={() => inboxToolbarCallbacksRef.current.onCopy()}
         onProperties={() => inboxToolbarCallbacksRef.current.onProperties()}
+        showProperties={!isDearMeDetailIssue}
         onHide={() => inboxToolbarCallbacksRef.current.onHide()}
       />,
     );
 
     return () => setMobileToolbar(null);
-  }, [showInboxToolbar, backHref, issue?.id, issueHidden, archivePending, setMobileToolbar]);
+  }, [showInboxToolbar, backHref, issue?.id, issueHidden, archivePending, isDearMeDetailIssue, setMobileToolbar]);
 
   const attachmentsInitialLoading = attachmentsLoading && attachments === undefined;
   const loadOlderComments = useCallback(() => {
@@ -3514,14 +3520,16 @@ export function IssueDetail() {
               >
                 {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
               </Button>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => setMobilePropsOpen(true)}
-                title="Properties"
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-              </Button>
+              {!isDearMeDetailIssue ? (
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => setMobilePropsOpen(true)}
+                  title="Properties"
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                </Button>
+              ) : null}
             </div>
           )}
 
@@ -3548,18 +3556,20 @@ export function IssueDetail() {
             >
               {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              className={cn(
-                "shrink-0 transition-opacity duration-200",
-                panelVisible ? "opacity-0 pointer-events-none w-0 overflow-hidden" : "opacity-100",
-              )}
-              onClick={() => setPanelVisible(true)}
-              title="Show properties"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-            </Button>
+            {!isDearMeDetailIssue ? (
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                className={cn(
+                  "shrink-0 transition-opacity duration-200",
+                  panelVisible ? "opacity-0 pointer-events-none w-0 overflow-hidden" : "opacity-100",
+                )}
+                onClick={() => setPanelVisible(true)}
+                title="Show properties"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+              </Button>
+            ) : null}
 
             <Popover open={moreOpen} onOpenChange={setMoreOpen}>
               <PopoverTrigger asChild>
@@ -4239,24 +4249,26 @@ export function IssueDetail() {
       </Dialog>
 
       {/* Mobile properties drawer */}
-      <Sheet open={mobilePropsOpen} onOpenChange={setMobilePropsOpen}>
-        <SheetContent side="bottom" className="max-h-[85dvh] pb-[env(safe-area-inset-bottom)]">
-          <SheetHeader>
-            <SheetTitle className="text-sm">Properties</SheetTitle>
-          </SheetHeader>
-          <ScrollArea className="flex-1 overflow-y-auto">
-            <div className="px-4 pb-4">
-              <IssueProperties
-                issue={issue}
-                childIssues={childIssues}
-                onAddSubIssue={openNewSubIssue}
-                onUpdate={(data) => updateIssue.mutate(data)}
-                inline
-              />
-            </div>
-          </ScrollArea>
-        </SheetContent>
-      </Sheet>
+      {!isDearMeDetailIssue ? (
+        <Sheet open={mobilePropsOpen} onOpenChange={setMobilePropsOpen}>
+          <SheetContent side="bottom" className="max-h-[85dvh] pb-[env(safe-area-inset-bottom)]">
+            <SheetHeader>
+              <SheetTitle className="text-sm">Properties</SheetTitle>
+            </SheetHeader>
+            <ScrollArea className="flex-1 overflow-y-auto">
+              <div className="px-4 pb-4">
+                <IssueProperties
+                  issue={issue}
+                  childIssues={childIssues}
+                  onAddSubIssue={openNewSubIssue}
+                  onUpdate={(data) => updateIssue.mutate(data)}
+                  inline
+                />
+              </div>
+            </ScrollArea>
+          </SheetContent>
+        </Sheet>
+      ) : null}
       <ScrollToBottom />
     </div>
   );
