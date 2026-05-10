@@ -46,6 +46,13 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DEA-23 hardens the Symphony development factory after the DEA-21 cleanup
+  miss: worker terminal handoff now exports committed changes as durable
+  `format-patch`, `git bundle`, and JSON summary artifacts under
+  `/private/tmp/dearme-symphony-workspaces/_handoffs`. Treat a worker-local hash
+  alone as insufficient for changed-file lanes; coordinator absorption should
+  use the artifact paths printed by `pnpm dearme:symphony-handoff -- --issue
+  DEA-123 .` when the per-ticket workspace may be cleaned.
 - DEA-21 is coordinator-absorbed as the Private Site Host Smoke slice. The
   first-cycle preview now carries a handle-safe `dearme.app/<handle>` private
   preview route through the shared contract, server proof documents, apply

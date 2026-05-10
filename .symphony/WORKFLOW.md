@@ -29,6 +29,8 @@ hooks:
     SOURCE_HEAD="$(git -C "$SOURCE_REPO" rev-parse "$SOURCE_BRANCH")"
     git checkout -B "$SOURCE_BRANCH" "$SOURCE_HEAD"
     echo "Symphony source head: $(git rev-parse --short HEAD)"
+    GIT_DIR="$(git rev-parse --git-dir)"
+    printf '%s\n' "$(git rev-parse HEAD)" > "$GIT_DIR/dearme-symphony-base-head"
     export PATH="$HOME/.npm-global/bin:$HOME/Library/pnpm:$PATH"
     if command -v pnpm >/dev/null 2>&1; then
       pnpm install --frozen-lockfile
@@ -169,11 +171,18 @@ Operating rules:
     state, or leave a final response that can be interpreted as terminal unless
     the coordinator can absorb the work from durable evidence. If files changed,
     run `git status --short`, `git diff --check`, focused verification, stage
-    explicit paths only, and create a local commit in the worker workspace. If
-    a commit is blocked, leave the exact patch/diff summary, touched paths,
-    failing command, and current workspace path in the final response and keep
-    the issue non-terminal. If no files changed, explicitly say "No file
-    changes" and include the command evidence proving why the issue is complete.
+    explicit paths only, and create a local commit in the worker workspace. Then
+    run `pnpm dearme:symphony-handoff -- --issue {{ issue.identifier }} .` and
+    include the printed patch, bundle, and summary artifact paths in the final
+    response. The artifact root is outside the per-ticket workspace at
+    `/private/tmp/dearme-symphony-workspaces/_handoffs`, so coordinator
+    absorption does not depend on the worker workspace surviving cleanup. If a
+    commit is blocked, run the same handoff command anyway, leave the exact
+    patch/diff summary, touched paths, failing command, handoff artifact path,
+    and current workspace path in the final response, and keep the issue
+    non-terminal. If no files changed, run the handoff command, explicitly say
+    "No file changes", and include the command evidence proving why the issue is
+    complete.
 15. Critical product proof lanes stay effectively single-lane. When a first-cycle
     private run, launch handoff, or similar aha-proof ticket is active, do not
     start or request another product implementation lane until that ticket leaves
@@ -184,8 +193,8 @@ Operating rules:
 Final response contract:
 
 - Completed actions
-- Absorbable evidence: local commit hash, or explicit no-code evidence, or
-  blocker/patch handoff with workspace path
+- Absorbable evidence: local commit hash plus durable handoff artifact paths,
+  or explicit no-code evidence, or blocker/patch handoff with workspace path
 - Files changed
 - Validation evidence
 - Blockers only if real

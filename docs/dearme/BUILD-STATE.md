@@ -2,6 +2,29 @@
 
 Date: 2026-05-10
 
+## DEA-23 Symphony Durable Handoff Artifacts - 2026-05-10
+
+Coordinator micro-tuning:
+
+- Added a terminal handoff artifact script so Symphony workers preserve
+  coordinator-absorbable patch evidence outside the per-ticket workspace before
+  cleanup can remove the local Git object.
+- Worker creation now records the coordinator source head in worker Git
+  metadata; terminal handoff compares that base to `HEAD` and writes
+  `format-patch`, `git bundle`, and JSON summary artifacts under
+  `/private/tmp/dearme-symphony-workspaces/_handoffs`.
+- Updated the Symphony worker contract so changed-file lanes report both the
+  local commit hash and the durable artifact paths, no-code lanes prove `No file
+  changes`, and dirty/blocker lanes leave a patch summary while staying
+  non-terminal.
+
+Verification:
+
+- `pnpm test:dearme-symphony-handoff` passed with 4 tests.
+- `pnpm test:dearme-symphony-preflight` passed with 4 tests.
+- `pnpm dearme:symphony-handoff -- --help` passed.
+- `git diff --check` passed.
+
 ## DEA-21 Private Site Host Smoke Absorbed - 2026-05-10
 
 Product/architecture slice:

@@ -69,11 +69,18 @@ Worker issues are not coordinator-absorbable just because Linear says Done.
 Before a Symphony lane reaches a terminal state, the worker final response must
 leave one durable handoff path:
 
-- a local commit hash in the worker workspace when files changed;
+- a local commit hash plus the patch, bundle, and summary paths printed by
+  `pnpm dearme:symphony-handoff -- --issue DEA-123 .` when files changed;
 - explicit "No file changes" evidence for analysis-only or already-complete
   tickets;
 - or a blocker/patch handoff with workspace path, touched paths, and the exact
   failed command if a commit could not be created.
+
+The handoff script writes outside the per-ticket worker checkout under
+`/private/tmp/dearme-symphony-workspaces/_handoffs`, which is still inside the
+Symphony writable root. This keeps the coordinator able to absorb a worker patch
+even if Symphony cleans `/private/tmp/dearme-symphony-workspaces/DEA-123` before
+the coordinator inspects it.
 
 This keeps the main DearMe checkout as the integration truth and prevents stale
 workspaces from being cleaned before the coordinator can absorb or reject the
@@ -96,3 +103,18 @@ pnpm dearme:symphony-preflight -- .
 The Symphony workflow runs this during workspace creation and again in Codex
 bootstrap evidence. A failure means the lane should stop with the workspace path
 and exact command output instead of producing an uncommittable patch.
+
+## Worker Handoff Artifacts
+
+Worker creation records the coordinator source head in the worker Git metadata.
+At terminal handoff time, run:
+
+```sh
+pnpm dearme:symphony-handoff -- --issue DEA-123 .
+```
+
+If the worker has clean local commits after the recorded base, the command
+writes a `format-patch` file, a `git bundle`, and a JSON summary. If the worker
+has no file changes, it prints `No file changes`. If the worker is still dirty,
+it writes a blocker patch summary and exits nonzero so the issue stays
+non-terminal until a coordinator can inspect or recover it.
