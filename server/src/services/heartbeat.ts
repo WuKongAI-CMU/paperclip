@@ -27,6 +27,7 @@ import {
   agentWakeupRequests,
   activityLog,
   companySkills as companySkillsTable,
+  documents,
   documentRevisions,
   issueDocuments,
   heartbeatRunEvents,
@@ -129,6 +130,12 @@ import {
 import { isAutomaticRecoverySuppressedByPauseHold } from "./recovery/pause-hold-guard.js";
 import { recoveryService } from "./recovery/service.js";
 import { productivityReviewService } from "./productivity-review.js";
+import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "./dearme-brand-blueprint-apply.js";
+import {
+  buildDearMeOutputRegenerationBrief,
+  dearMeOutputArtifactTitleForOriginFingerprint,
+  parseDearMeOutputReviewDecisionComment,
+} from "./dearme-output-handoff.js";
 import { withAgentStartLock } from "./agent-start-lock.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
 import { redactEventPayload } from "../redaction.js";
@@ -1993,6 +2000,82 @@ type PaperclipTaskIssueDocument = {
   latestRevisionNumber?: number | null;
 };
 
+async function buildDearMeIssueRegenerationBrief(input: {
+  db: Db;
+  companyId: string;
+  issue: {
+    id: string;
+    originKind?: string | null;
+    originFingerprint?: string | null;
+  } | null;
+}) {
+  const issue = input.issue;
+  if (!issue || issue.originKind !== DEARME_BRAND_BLUEPRINT_ORIGIN_KIND) return null;
+
+  const latestDecision = await input.db
+    .select({
+      body: issueComments.body,
+      createdAt: issueComments.createdAt,
+    })
+    .from(issueComments)
+    .where(and(
+      eq(issueComments.companyId, input.companyId),
+      eq(issueComments.issueId, issue.id),
+    ))
+    .orderBy(desc(issueComments.createdAt))
+    .limit(12)
+    .then((rows) =>
+      rows
+        .map((row) => parseDearMeOutputReviewDecisionComment(row))
+        .find((decision) => decision !== null) ?? null,
+    );
+
+  if (!latestDecision || latestDecision.action === "approve") return null;
+
+  const [latestDocument, latestWorkProduct] = await Promise.all([
+    input.db
+      .select({
+        title: documents.title,
+        body: documents.latestBody,
+        updatedAt: documents.updatedAt,
+      })
+      .from(issueDocuments)
+      .innerJoin(documents, eq(issueDocuments.documentId, documents.id))
+      .where(and(
+        eq(issueDocuments.companyId, input.companyId),
+        eq(issueDocuments.issueId, issue.id),
+        notInArray(issueDocuments.key, [ISSUE_CONTINUATION_SUMMARY_DOCUMENT_KEY]),
+      ))
+      .orderBy(desc(documents.updatedAt))
+      .limit(1)
+      .then((rows) => rows[0] ?? null),
+    input.db
+      .select({
+        title: issueWorkProducts.title,
+        summary: issueWorkProducts.summary,
+        updatedAt: issueWorkProducts.updatedAt,
+      })
+      .from(issueWorkProducts)
+      .where(and(
+        eq(issueWorkProducts.companyId, input.companyId),
+        eq(issueWorkProducts.issueId, issue.id),
+      ))
+      .orderBy(desc(issueWorkProducts.updatedAt))
+      .limit(1)
+      .then((rows) => rows[0] ?? null),
+  ]);
+
+  return buildDearMeOutputRegenerationBrief({
+    decision: latestDecision,
+    artifactTitle: dearMeOutputArtifactTitleForOriginFingerprint(issue.originFingerprint),
+    previousDraft: {
+      title: latestDocument?.title ?? latestWorkProduct?.title ?? null,
+      summary: latestWorkProduct?.summary ?? null,
+      bodyPreview: latestDocument?.body ?? null,
+    },
+  });
+}
+
 function isHeartbeatRunTerminalStatus(
   status: string | null | undefined,
 ): status is (typeof HEARTBEAT_RUN_TERMINAL_STATUSES)[number] {
@@ -2013,6 +2096,7 @@ export function buildPaperclipTaskMarkdown(input: {
     id: string;
     body: string;
   } | null;
+  dearMeRegenerationBrief?: string | null;
 }) {
   const quoteTaskScalar = (value: string) => JSON.stringify(value);
   const quoteTaskNullableScalar = (value: string | null | undefined) =>
@@ -2031,10 +2115,11 @@ export function buildPaperclipTaskMarkdown(input: {
   };
   const issue = input.issue;
   const wakeComment = input.wakeComment ?? null;
+  const dearMeRegenerationBrief = input.dearMeRegenerationBrief?.trim();
   const issueDocuments = (input.issueDocuments ?? [])
     .filter((document) => document.key.trim().length > 0)
     .slice(0, PAPERCLIP_TASK_DOCUMENT_MAX_COUNT);
-  if (!issue && !wakeComment && issueDocuments.length === 0) return null;
+  if (!issue && !wakeComment && issueDocuments.length === 0 && !dearMeRegenerationBrief) return null;
 
   const lines = [
     "DearMe task context:",
@@ -2052,6 +2137,9 @@ export function buildPaperclipTaskMarkdown(input: {
   }
   if (wakeComment?.body.trim()) {
     lines.push("", "Latest wake comment:", fenceTaskText(wakeComment.body.trim()));
+  }
+  if (dearMeRegenerationBrief) {
+    lines.push("", dearMeRegenerationBrief);
   }
   if (issueDocuments.length > 0) {
     lines.push("", "Attached issue documents:");
@@ -2362,6 +2450,8 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
         identifier: issues.identifier,
         title: issues.title,
         description: issues.description,
+        originKind: issues.originKind,
+        originFingerprint: issues.originFingerprint,
         status: issues.status,
         priority: issues.priority,
         projectId: issues.projectId,
@@ -6313,6 +6403,8 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
           status: issueContext.status,
           priority: issueContext.priority,
           description: issueContext.description,
+          originKind: issueContext.originKind,
+          originFingerprint: issueContext.originFingerprint,
           projectId: issueContext.projectId,
           projectWorkspaceId: issueContext.projectWorkspaceId,
           executionWorkspaceId: issueContext.executionWorkspaceId,
@@ -6353,6 +6445,11 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
     } else {
       delete context[PAPERCLIP_WAKE_PAYLOAD_KEY];
     }
+    const dearMeRegenerationBrief = await buildDearMeIssueRegenerationBrief({
+      db,
+      companyId: agent.companyId,
+      issue: issueRef,
+    });
     const taskMarkdown = buildPaperclipTaskMarkdown({
       issue: issueRef
         ? {
@@ -6364,6 +6461,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
         : null,
       issueDocuments: issueDocumentsForTask,
       wakeComment: wakeCommentContext,
+      dearMeRegenerationBrief,
     });
     if (issueRef) {
       context.paperclipIssue = {

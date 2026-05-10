@@ -86,13 +86,13 @@ type DearMeReviewComment = {
   createdAt: Date;
 };
 
-type DearMeParsedReviewDecision = {
+export type DearMeParsedReviewDecision = {
   action: DearMeOutputReviewAction;
   createdAt: Date;
   notePreview: string | null;
 };
 
-type DearMeOutputReviewFeedback = DearMeParsedReviewDecision & {
+export type DearMeOutputReviewFeedback = DearMeParsedReviewDecision & {
   action: Exclude<DearMeOutputReviewAction, "approve">;
 };
 
@@ -345,17 +345,22 @@ function reviewDecisionNotePreview(body: string) {
   return plainPreview(parts.join("\n\n"), 240) || null;
 }
 
+export function parseDearMeOutputReviewDecisionComment(input: {
+  body: string;
+  createdAt: Date;
+}): DearMeParsedReviewDecision | null {
+  const action = parseReviewAction(input.body);
+  if (!action) return null;
+  return {
+    action,
+    createdAt: input.createdAt,
+    notePreview: reviewDecisionNotePreview(input.body),
+  };
+}
+
 function parseReviewDecisions(reviewComments: DearMeReviewComment[]) {
   return reviewComments
-    .map((comment) => {
-      const action = parseReviewAction(comment.body);
-      if (!action) return null;
-      return {
-        action,
-        createdAt: comment.createdAt,
-        notePreview: reviewDecisionNotePreview(comment.body),
-      };
-    })
+    .map((comment) => parseDearMeOutputReviewDecisionComment(comment))
     .filter((decision): decision is DearMeParsedReviewDecision => Boolean(decision))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
@@ -423,6 +428,76 @@ function reviewReceiptLabel(action: DearMeOutputReviewFeedback["action"]) {
   if (action === "request_changes") return "Change requested";
   if (action === "not_useful") return "New direction requested";
   return "Another pass requested";
+}
+
+export function dearMeOutputArtifactTitleForOriginFingerprint(originFingerprint: string | null | undefined) {
+  if (!originFingerprint) return "Private work";
+  if (originFingerprint === BRAND_OS_FINGERPRINT) return BRAND_OS_DESCRIPTOR.title;
+  if (originFingerprint === VOICE_OPERATION_FINGERPRINT) return VOICE_DESCRIPTOR.title;
+  return OPERATION_DESCRIPTORS[originFingerprint]?.title ?? "Private work";
+}
+
+function regenerationReviewSignal(decision: DearMeOutputReviewFeedback, artifactTitle: string) {
+  if (decision.action === "request_changes") {
+    return `The user asked for changes to ${artifactTitle}.`;
+  }
+  if (decision.action === "not_useful") {
+    return `The user marked ${artifactTitle} as not useful.`;
+  }
+  return `The user asked for a new version of ${artifactTitle}.`;
+}
+
+function regenerationNextDraftDirection(decision: DearMeOutputReviewFeedback) {
+  if (decision.action === "request_changes") {
+    return "Revise the next private draft around the requested changes while preserving any voice, proof, or audience choices that still fit.";
+  }
+  if (decision.action === "not_useful") {
+    return "Change direction before drafting again; avoid repeating the angle, structure, or proof choices that made the last version unhelpful.";
+  }
+  return "Prepare a substantially new private draft instead of lightly editing the last version.";
+}
+
+export function buildDearMeOutputRegenerationBrief(input: {
+  decision: DearMeParsedReviewDecision;
+  artifactTitle: string;
+  previousDraft?: {
+    title?: string | null;
+    summary?: string | null;
+    bodyPreview?: string | null;
+  } | null;
+}) {
+  if (input.decision.action === "approve") return null;
+
+  const decision = input.decision as DearMeOutputReviewFeedback;
+  const note = customerSafeFeedbackText(decision.notePreview, 700);
+  const previousTitle = customerSafeFeedbackText(input.previousDraft?.title, 160);
+  const previousSummary = customerSafeFeedbackText(input.previousDraft?.summary, 420);
+  const previousBody = customerSafeFeedbackText(input.previousDraft?.bodyPreview, 900);
+  const previousDraftParts = [
+    previousTitle ? `title: ${previousTitle}` : null,
+    previousSummary ? `summary: ${previousSummary}` : null,
+    previousBody ? `draft context: ${previousBody}` : null,
+  ].filter((part): part is string => Boolean(part));
+
+  const lines = [
+    "DearMe regeneration brief:",
+    `- Review signal: ${regenerationReviewSignal(decision, input.artifactTitle)}`,
+  ];
+
+  if (note) {
+    lines.push(`- User feedback: ${JSON.stringify(note)}`);
+  }
+
+  if (previousDraftParts.length > 0) {
+    lines.push(`- Previous draft context: ${previousDraftParts.join("; ")}.`);
+  }
+
+  lines.push(
+    `- Next draft direction: ${regenerationNextDraftDirection(decision)}`,
+    "- Keep the next version private until the user reviews it.",
+  );
+
+  return lines.join("\n");
 }
 
 function buildReviewReceipts(decisions: DearMeParsedReviewDecision[]) {

@@ -2,6 +2,36 @@ import { describe, expect, it } from "vitest";
 import { buildPaperclipTaskMarkdown } from "../services/heartbeat.ts";
 
 describe("buildPaperclipTaskMarkdown", () => {
+  it("can pass DearMe regeneration context without leaking worker internals", () => {
+    const markdown = buildPaperclipTaskMarkdown({
+      issue: {
+        id: "issue-1",
+        identifier: "DEAA-80",
+        title: "DearMe Draft: Draft content batch",
+        description: "Prepare a better private draft.",
+      },
+      issueDocuments: [],
+      wakeComment: null,
+      dearMeRegenerationBrief: [
+        "DearMe regeneration brief:",
+        "- Review signal: The user asked for changes to Content drafts.",
+        "- User feedback: \"Make the proof more concrete.\"",
+        "- Next draft direction: Revise the next private draft around the requested changes.",
+        "- Keep the next version private until the user reviews it.",
+      ].join("\n"),
+    });
+
+    expect(markdown).toContain("DearMe task context:");
+    expect(markdown).toContain("DearMe regeneration brief:");
+    expect(markdown).toContain("Make the proof more concrete.");
+    expect(markdown).toContain("Keep the next version private");
+
+    const serialized = markdown!.toLowerCase();
+    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw", "symphony", "runtime"]) {
+      expect(serialized).not.toContain(hiddenTerm);
+    }
+  });
+
   it("includes attached issue document context and update protocol", () => {
     const markdown = buildPaperclipTaskMarkdown({
       issue: {

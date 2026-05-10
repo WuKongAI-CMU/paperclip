@@ -2,6 +2,45 @@
 
 Date: 2026-05-10
 
+## DM-183BB Review Feedback Regeneration Brief - 2026-05-10
+
+Product/runtime slice:
+
+- Kept Symphony as the active cooperation spine and verified the daemon before
+  absorbing the next review-loop gap.
+- Reused the current output-review decision comments instead of adding another
+  review-feedback service, schema, or customer-facing queue.
+- Exported the existing DearMe review-decision parser and artifact-title
+  lookup so heartbeat runs can recognize the latest private-review decision.
+- Added a regeneration brief to the hidden heartbeat task context when a
+  DearMe brand-blueprint output has a latest `request_changes`, `regenerate`,
+  or `not_useful` decision.
+- The next worker sees the user feedback, previous private draft context, and a
+  product-safe next-draft direction before drafting again; approvals do not
+  create regeneration briefs.
+- Recorded the exact DM-008 heads as absorbed into this regeneration-brief
+  path and the exact DM-009 heads as already absorbed by the existing applied
+  feedback trace.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status --json` passed with the daemon healthy
+  and no retrying workers.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('json ok')"`
+  passed.
+- `pnpm run test:dearme-worktrees` passed.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` passed and
+  reported `reviewed_absorbed: 24`, `not_in_current: 89`, and `dirty: 0`.
+- `pnpm exec vitest run server/src/__tests__/dearme-output-regeneration-brief.test.ts server/src/__tests__/heartbeat-task-markdown.test.ts --maxWorkers=1`
+  passed with 4 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `git diff --check -- server/src/services/dearme-output-handoff.ts server/src/services/heartbeat.ts server/src/__tests__/dearme-output-regeneration-brief.test.ts server/src/__tests__/heartbeat-task-markdown.test.ts docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`
+  passed.
+- `pnpm exec vitest run server/src/__tests__/dearme-output-handoff.test.ts --maxWorkers=1`
+  was attempted, but the embedded Postgres suite skipped on this host because
+  the Postgres init script exited with code 1 before running the 9 DB-backed
+  tests.
+
 ## DM-183BA Review Outcome Memory Baseline Absorption - 2026-05-10
 
 Coordination slice:
