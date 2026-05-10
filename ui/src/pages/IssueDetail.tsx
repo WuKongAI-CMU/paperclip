@@ -1502,6 +1502,7 @@ export function IssueDetail() {
   const showIssueLiveRunIndicator = hasLiveRuns && !isDearMeDetailIssue;
   const issueHeaderIdentifier = isDearMeDetailIssue ? null : issue?.identifier ?? issue?.id.slice(0, 8) ?? null;
   const showIssuePluginSurfaces = !isDearMeDetailIssue;
+  const canEditIssueHeaderState = !isDearMeDetailIssue;
   useEffect(() => {
     if (!hasLiveRuns && locallyQueuedCommentRunIds.size > 0) {
       setLocallyQueuedCommentRunIds(new Map());
@@ -3449,11 +3450,11 @@ export function IssueDetail() {
           <StatusIcon
             status={issue.status}
             blockerAttention={issue.blockerAttention}
-            onChange={(status) => updateIssue.mutate({ status })}
+            onChange={canEditIssueHeaderState ? (status) => updateIssue.mutate({ status }) : undefined}
           />
           <PriorityIcon
             priority={issue.priority}
-            onChange={(priority) => updateIssue.mutate({ priority })}
+            onChange={canEditIssueHeaderState ? (priority) => updateIssue.mutate({ priority }) : undefined}
           />
           {issueHeaderIdentifier ? (
             <span className="text-sm font-mono text-muted-foreground shrink-0">{issueHeaderIdentifier}</span>

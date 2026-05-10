@@ -296,13 +296,25 @@ vi.mock("../components/ScrollToBottom", () => ({
 }));
 
 vi.mock("../components/StatusIcon", () => ({
-  StatusIcon: ({ status, blockerAttention }: { status: string; blockerAttention?: Issue["blockerAttention"] }) => (
-    <span data-status-icon-state={blockerAttention?.state}>{status}</span>
+  StatusIcon: ({
+    status,
+    blockerAttention,
+    onChange,
+  }: {
+    status: string;
+    blockerAttention?: Issue["blockerAttention"];
+    onChange?: (status: string) => void;
+  }) => (
+    <span data-status-icon-state={blockerAttention?.state} data-status-editable={onChange ? "true" : "false"}>
+      {status}
+    </span>
   ),
 }));
 
 vi.mock("../components/PriorityIcon", () => ({
-  PriorityIcon: ({ priority }: { priority: string }) => <span>{priority}</span>,
+  PriorityIcon: ({ priority, onChange }: { priority: string; onChange?: (priority: string) => void }) => (
+    <span data-priority-editable={onChange ? "true" : "false"}>{priority}</span>
+  ),
 }));
 
 vi.mock("../components/ApprovalCard", () => ({
@@ -1182,6 +1194,49 @@ describe("IssueDetail", () => {
     expect(container.textContent).not.toContain("Plugin outlet");
     expect(container.textContent).not.toContain("Plugin launcher");
     expect(container.textContent).not.toContain("Operator plugin");
+  });
+
+  it("preserves editable status and priority controls for generic issues", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue());
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(container.querySelector('[data-status-editable="true"]')).toBeTruthy();
+      expect(container.querySelector('[data-priority-editable="true"]')).toBeTruthy();
+    });
+  });
+
+  it("renders status and priority as read-only for DearMe issues", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({ originKind: "dearme_brand_blueprint_apply" }));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+    });
+
+    expect(container.querySelector('[data-status-editable="true"]')).toBeNull();
+    expect(container.querySelector('[data-priority-editable="true"]')).toBeNull();
+    expect(container.querySelector('[data-status-editable="false"]')).toBeTruthy();
+    expect(container.querySelector('[data-priority-editable="false"]')).toBeTruthy();
   });
 
   it("hides tree pause controls for DearMe issues", async () => {
