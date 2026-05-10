@@ -12,6 +12,7 @@ import {
 } from "@paperclipai/db";
 import {
   DEARME_OUTPUT_KINDS,
+  DEARME_SILENCE_DEFAULT_REVIEW_SCORE,
   dearMeContentDraftPacketSchema,
   dearMeVoiceGateResultSchema,
   dearMeOutputReviewResultSchema,
@@ -115,6 +116,8 @@ const CONTENT_OPERATION_FINGERPRINT = "operation-draft_content_batch";
 const CONTENT_DRAFT_WORK_PRODUCT_PROVIDER = "dearme";
 const CYCLE_OUTPUT_WORK_PRODUCT_PROVIDER = "dearme-cycle-output";
 const DEARME_OUTPUT_REVIEW_LOOP_MAX_ATTEMPTS = 3;
+const DEARME_SILENCE_DEFAULT_REVIEW_NOTE =
+  "No response came in, so DearMe kept this private work moving with a default review score of 7/10. You can still revise the direction later.";
 const DEARME_FEEDBACK_TRACE_HIDDEN_TERMS =
   /\b(dearme decision|issue comment|work product|provider|adapter|setup[-_ ]?payload|paperclip|openclaw|symphony|runtime|agent|model-provider|model provider|codex)\b/i;
 const outputKindSet = new Set<string>(DEARME_OUTPUT_KINDS);
@@ -346,6 +349,7 @@ function issueByOutputFingerprint(issueRows: DearMeIssueRow[]) {
 function parseReviewAction(body: string): DearMeOutputReviewAction | null {
   const normalized = body.toLowerCase();
   if (normalized.startsWith("dearme decision: approved this prepared work.")) return "approve";
+  if (normalized.startsWith("dearme decision: kept this private work moving after no response.")) return "approve";
   if (normalized.startsWith("dearme decision: requested changes before this represents me.")) return "request_changes";
   if (normalized.startsWith("dearme decision: regenerate this prepared work before review.")) return "regenerate";
   if (normalized.startsWith("dearme decision: marked this prepared work as not useful.")) return "not_useful";
@@ -1419,21 +1423,27 @@ function parseOutputId(outputId: string) {
   return { issueId, kind: kind as DearMeOutputKind };
 }
 
-function outputDecisionCopy(action: DearMeOutputReviewAction, decisionNote: string | null | undefined) {
-  const note = decisionNote?.trim();
-  if (action === "approve") {
+function outputDecisionCopy(request: DearMeOutputReviewRequest) {
+  const note = request.silenceDefault ? DEARME_SILENCE_DEFAULT_REVIEW_NOTE : request.decisionNote?.trim();
+  if (request.action === "approve") {
+    if (request.silenceDefault) {
+      return [
+        "DearMe decision: kept this private work moving after no response.",
+        note,
+      ].join("\n\n");
+    }
     return [
       "DearMe decision: approved this prepared work.",
       note || "This represents me.",
     ].join("\n\n");
   }
-  if (action === "request_changes") {
+  if (request.action === "request_changes") {
     return [
       "DearMe decision: requested changes before this represents me.",
       note || "Please revise this before review.",
     ].join("\n\n");
   }
-  if (action === "not_useful") {
+  if (request.action === "not_useful") {
     return [
       "DearMe decision: marked this prepared work as not useful.",
       note || "This does not help right now.",
@@ -2080,6 +2090,9 @@ export function dearmeOutputHandoffService(db: Db) {
       request: DearMeOutputReviewRequest,
       actor: DearMeOutputReviewActor,
     ): Promise<DearMeOutputReviewServiceResult> => {
+      if (request.silenceDefault && request.action !== "approve") {
+        throw new Error("DearMe silence defaults can only approve private output review");
+      }
       const { issueId, kind } = parseOutputId(outputId);
       const outputs = await service.listOutputs(companyId);
       const output = outputs.outputs.find((item) =>
@@ -2110,7 +2123,7 @@ export function dearmeOutputHandoffService(db: Db) {
       }
 
       const now = new Date();
-      const body = outputDecisionCopy(request.action, request.decisionNote);
+      const body = outputDecisionCopy(request);
       const [comment] = await db
         .insert(issueComments)
         .values({
@@ -2164,7 +2177,7 @@ export function dearmeOutputHandoffService(db: Db) {
           eq(issueWorkProducts.issueId, issueId),
         ));
 
-      if (request.action === "approve") {
+      if (request.action === "approve" && !request.silenceDefault) {
         const launchHandoff = output.kind === "content_drafts"
           ? await latestLaunchHandoffForOutput({ companyId, issueId })
           : null;
@@ -2209,6 +2222,25 @@ export function dearmeOutputHandoffService(db: Db) {
             },
       };
     },
+
+    defaultScoreOnSilence: async (
+      companyId: string,
+      outputId: string,
+      actor: DearMeOutputReviewActor,
+    ): Promise<DearMeOutputReviewServiceResult> =>
+      service.reviewOutput(
+        companyId,
+        outputId,
+        {
+          action: "approve",
+          decisionNote: null,
+          silenceDefault: {
+            score: DEARME_SILENCE_DEFAULT_REVIEW_SCORE,
+            reason: "review_window_elapsed",
+          },
+        },
+        actor,
+      ),
   };
 
   return service;

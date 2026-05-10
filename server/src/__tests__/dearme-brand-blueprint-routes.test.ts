@@ -1390,6 +1390,91 @@ describe("DearMe brand blueprint routes", () => {
     expect(mockDearMeMemoryContextService.refreshRoutineMemoryContext).not.toHaveBeenCalled();
   });
 
+  it("records silence-default private approval as feedback without waking work or hard gates", async () => {
+    const output = {
+      id: "issue-1:weekly_report",
+      companyId: "company-1",
+      kind: "weekly_report",
+      title: "Dear me report",
+      summary: "Private weekly report.",
+      status: "complete",
+      isReviewable: true,
+      issueId: "issue-1",
+      issueIdentifier: "PET-7",
+      issueTitle: "DearMe Draft: Draft weekly Dear me report",
+      updatedAt: "2026-05-07T14:00:00.000Z",
+      documents: [],
+      workProducts: [],
+      latestUpdate: null,
+      details: [],
+      sourceEvidence: [],
+    };
+    mockDearMeOutputHandoffService.reviewOutput.mockResolvedValue({
+      companyId: "company-1",
+      outputId: "issue-1:weekly_report",
+      action: "approve",
+      status: "recorded",
+      comment: {
+        id: "comment-silence-1",
+        bodyPreview: "DearMe decision: approved this prepared work.",
+        createdAt: "2026-05-07T14:00:00.000Z",
+      },
+      output,
+      wakeIssue: null,
+    });
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/outputs/issue-1%3Aweekly_report/reviews")
+      .send({
+        action: "approve",
+        silenceDefault: { reason: "review window elapsed" },
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.action).toBe("approve");
+    expect(res.body.wakeIssue).toBeUndefined();
+    expect(mockDearMeOutputHandoffService.reviewOutput).toHaveBeenCalledWith(
+      "company-1",
+      "issue-1:weekly_report",
+      expect.objectContaining({
+        action: "approve",
+        decisionNote: null,
+        silenceDefault: {
+          score: 7,
+          reason: "review window elapsed",
+        },
+      }),
+      expect.objectContaining({ actorType: "user", actorId: "user-1", agentId: null }),
+    );
+    expect(mockDearMePaidBetaAccessService.getAccess).not.toHaveBeenCalled();
+    expect(mockQueueIssueAssignmentWakeup).not.toHaveBeenCalled();
+    expect(mockLogActivity).toHaveBeenCalledTimes(2);
+    expect(mockLogActivity).toHaveBeenNthCalledWith(
+      2,
+      expect.anything(),
+      expect.objectContaining({
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: "review-feedback:comment-silence-1",
+        details: expect.objectContaining({
+          kind: "review_feedback",
+          body: expect.stringContaining("neutral-positive 7/10 signal"),
+          reviewAction: "approve",
+          defaultApprovalScore: 7,
+          defaultedBySilence: true,
+        }),
+      }),
+    );
+    expect(mockDearMeMemoryContextService.refreshRoutineMemoryContext).toHaveBeenCalledWith(
+      "company-1",
+      {
+        userId: "user-1",
+        agentId: null,
+        runId: null,
+      },
+    );
+  });
+
   it("queues not-useful output feedback without exposing wake internals", async () => {
     const output = {
       id: "issue-1:weekly_report",

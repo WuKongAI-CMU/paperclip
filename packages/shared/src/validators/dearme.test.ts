@@ -828,6 +828,18 @@ describe("DearMe brand blueprint contract", () => {
       decisionNote: "",
     });
     expect(request).toEqual({ action: "regenerate", decisionNote: null });
+    const silenceDefaultRequest = dearMeOutputReviewRequestSchema.parse({
+      action: "approve",
+      silenceDefault: { reason: "review window elapsed" },
+    });
+    expect(silenceDefaultRequest).toEqual({
+      action: "approve",
+      decisionNote: null,
+      silenceDefault: {
+        score: 7,
+        reason: "review window elapsed",
+      },
+    });
 
     const continuation = dearMeOutputContinuationRequestSchema.parse({
       intent: "prepare_another_pass",
@@ -939,6 +951,18 @@ describe("DearMe brand blueprint contract", () => {
       expect(serialized).not.toContain(hiddenTerm);
     }
     expect(() => dearMeOutputReviewRequestSchema.parse({ action: "publish" })).toThrow();
+    expect(() =>
+      dearMeOutputReviewRequestSchema.parse({
+        action: "regenerate",
+        silenceDefault: {},
+      })
+    ).toThrow();
+    expect(() =>
+      dearMeOutputReviewRequestSchema.parse({
+        action: "approve",
+        silenceDefault: { score: 8 },
+      })
+    ).toThrow();
     expect(() =>
       dearMeOutputReviewResultSchema.parse({
         ...result,

@@ -23,7 +23,10 @@ import {
   startEmbeddedPostgresTestDatabase,
 } from "./helpers/embedded-postgres.js";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "../services/dearme-brand-blueprint-apply.js";
-import { dearmeOutputHandoffService } from "../services/dearme-output-handoff.js";
+import {
+  dearmeOutputHandoffService,
+  parseDearMeOutputReviewDecisionComment,
+} from "../services/dearme-output-handoff.js";
 
 const embeddedPostgresSupport = await getEmbeddedPostgresTestSupport();
 const describeEmbeddedPostgres = embeddedPostgresSupport.supported ? describe : describe.skip;
@@ -33,6 +36,24 @@ if (!embeddedPostgresSupport.supported) {
     `Skipping embedded Postgres DearMe output handoff tests on this host: ${embeddedPostgresSupport.reason ?? "unsupported environment"}`,
   );
 }
+
+describe("DearMe output review decision parsing", () => {
+  it("treats silence default score receipts as private approvals", () => {
+    const decision = parseDearMeOutputReviewDecisionComment({
+      body: [
+        "DearMe decision: kept this private work moving after no response.",
+        "No response came in, so DearMe kept this private work moving with a default review score of 7/10. You can still revise the direction later.",
+      ].join("\n\n"),
+      createdAt: new Date("2026-05-08T09:03:00.000Z"),
+    });
+
+    expect(decision).toEqual({
+      action: "approve",
+      createdAt: new Date("2026-05-08T09:03:00.000Z"),
+      notePreview: expect.stringContaining("default review score of 7/10"),
+    });
+  });
+});
 
 function issuePrefix(id: string) {
   return `OH${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
@@ -1221,6 +1242,99 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       .from(approvals)
       .where(eq(approvals.companyId, companyId));
     expect(approvalCountAfterRepeat).toHaveLength(1);
+
+    const serialized = JSON.stringify(result).toLowerCase();
+    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw", "symphony", "runtime"]) {
+      expect(serialized).not.toContain(hiddenTerm);
+    }
+  });
+
+  it("records a private default score on silence without creating launch approval", async () => {
+    const companyId = await seedCompany();
+    const agentId = await seedAgent(companyId);
+    const issueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Prepare content batch",
+      identifier: "DME-28",
+      originFingerprint: "operation-draft_content_batch",
+      status: "in_review",
+      assigneeAgentId: agentId,
+      updatedAt: new Date("2026-05-08T09:00:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId,
+      key: "content-drafts",
+      title: "Content drafts",
+      body: "Hook: Build in public from real proof.\nDraft body: A private draft ready for review.",
+      updatedAt: new Date("2026-05-08T09:01:00.000Z"),
+    });
+    const workProductId = randomUUID();
+    await db.insert(issueWorkProducts).values({
+      id: workProductId,
+      companyId,
+      issueId,
+      type: "draft",
+      provider: "dearme",
+      title: "Content draft batch",
+      url: null,
+      status: "ready",
+      reviewState: "pending",
+      summary: "Three private posts prepared for review.",
+      metadata: {
+        dearme: {
+          outputKind: "content_drafts",
+          launchHandoff: {
+            toolName: "post_x",
+            channel: "x",
+            gate: "publish",
+            payload: { text: "A private post." },
+          },
+        },
+      },
+      updatedAt: new Date("2026-05-08T09:02:00.000Z"),
+    });
+
+    const result = await dearmeOutputHandoffService(db).defaultScoreOnSilence(
+      companyId,
+      `${issueId}:content_drafts`,
+      { actorType: "agent", actorId: agentId, agentId, runId: null },
+    );
+
+    expect(result.status).toBe("recorded");
+    expect(result.action).toBe("approve");
+    expect(result.wakeIssue).toBeNull();
+    expect(result.comment.bodyPreview).toContain("kept this private work moving");
+    expect(result.output.reviewLoop).toEqual(expect.objectContaining({
+      state: "approved",
+      lastAction: "approve",
+      lastDecisionNotePreview: expect.stringContaining("default review score of 7/10"),
+    }));
+
+    const nextMoveApprovals = await db
+      .select({ id: approvals.id })
+      .from(approvals)
+      .where(eq(approvals.companyId, companyId));
+    expect(nextMoveApprovals).toHaveLength(0);
+
+    const linkedApprovals = await db
+      .select({ approvalId: issueApprovals.approvalId })
+      .from(issueApprovals)
+      .where(eq(issueApprovals.companyId, companyId));
+    expect(linkedApprovals).toHaveLength(0);
+
+    const [issueRow] = await db
+      .select({ status: issues.status, completedAt: issues.completedAt })
+      .from(issues)
+      .where(eq(issues.id, issueId));
+    expect(issueRow?.status).toBe("done");
+    expect(issueRow?.completedAt).toBeInstanceOf(Date);
+
+    const [workProductRow] = await db
+      .select({ reviewState: issueWorkProducts.reviewState })
+      .from(issueWorkProducts)
+      .where(eq(issueWorkProducts.id, workProductId));
+    expect(workProductRow?.reviewState).toBe("approved");
 
     const serialized = JSON.stringify(result).toLowerCase();
     for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw", "symphony", "runtime"]) {

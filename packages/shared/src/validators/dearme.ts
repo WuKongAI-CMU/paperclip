@@ -52,6 +52,7 @@ export const DEARME_FIRST_CYCLE_PROOF_WINDOWS = ["0-30s", "60-120s", "3-5min"] a
 
 export const DEARME_APPROVAL_GATES = ["publish", "send", "deploy", "spend"] as const;
 export const DEARME_APPROVAL_DECISIONS = ["pending", "approved", "rejected"] as const;
+export const DEARME_SILENCE_DEFAULT_REVIEW_SCORE = 7;
 
 export const DEARME_BRAND_BLUEPRINT_OPERATION_ORDER = [
   "create_brand_os",
@@ -889,10 +890,27 @@ export const dearMeOutputsResponseSchema = z.object({
   outputs: z.array(dearMeOutputItemSchema),
 }).strict();
 
+const dearMeOutputReviewSilenceDefaultSchema = z.object({
+  score: z.literal(DEARME_SILENCE_DEFAULT_REVIEW_SCORE).optional(),
+  reason: optionalText(500).nullable().optional(),
+}).strict().transform((value) => ({
+  score: value.score ?? DEARME_SILENCE_DEFAULT_REVIEW_SCORE,
+  reason: value.reason ?? null,
+}));
+
 export const dearMeOutputReviewRequestSchema = z.object({
   action: z.enum(DEARME_OUTPUT_REVIEW_ACTIONS),
   decisionNote: optionalText(1_000).nullable().optional(),
-}).strict().transform((value) => ({
+  silenceDefault: dearMeOutputReviewSilenceDefaultSchema.nullable().optional(),
+}).strict().superRefine((value, ctx) => {
+  if (value.silenceDefault && value.action !== "approve") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["silenceDefault"],
+      message: "Silence defaults can only approve private output review.",
+    });
+  }
+}).transform((value) => ({
   ...value,
   decisionNote: value.decisionNote ?? null,
 }));

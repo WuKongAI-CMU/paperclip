@@ -214,6 +214,16 @@ function dearMeReviewFeedbackMemoryBody(input: {
   return `For ${input.outputTitle}, the owner ${actionText}.${feedback}${continuation}`;
 }
 
+function dearMeSilenceDefaultReviewMemoryBody(input: {
+  outputTitle: string;
+  score: number;
+  reason: string | null;
+}) {
+  const reason = input.reason?.trim().replace(/_/g, " ");
+  const reasonSentence = reason ? ` Reason: ${reason}.` : "";
+  return `For ${input.outputTitle}, no review response arrived, so DearMe treated the private review as a neutral-positive ${input.score}/10 signal and approved the work for private learning.${reasonSentence} Public posts, outbound messages, deployment, and spend still need explicit approval.`;
+}
+
 function contentDraftIssueIdFromOutputId(outputId: string) {
   const separatorIndex = outputId.lastIndexOf(":");
   if (separatorIndex <= 0 || separatorIndex === outputId.length - 1) {
@@ -309,7 +319,20 @@ export function dearmeRoutes(db: Db) {
       },
     });
 
-    if (result.action !== "approve") {
+    const silenceDefault = input.request.action === "approve" ? input.request.silenceDefault : null;
+    if (result.action !== "approve" || silenceDefault) {
+      const memoryBody = silenceDefault
+        ? dearMeSilenceDefaultReviewMemoryBody({
+            outputTitle: result.output.title,
+            score: silenceDefault.score,
+            reason: silenceDefault.reason,
+          })
+        : dearMeReviewFeedbackMemoryBody({
+            action: result.action as Exclude<DearMeOutputReviewAction, "approve">,
+            outputTitle: result.output.title,
+            decisionNote: input.request.decisionNote,
+            continuationIntent: input.continuationIntent,
+          });
       await logActivity(db, {
         companyId: input.companyId,
         actorType: input.actor.actorType,
@@ -323,18 +346,15 @@ export function dearmeRoutes(db: Db) {
           kind: "review_feedback",
           sourceInputMode: "paste",
           title: dearMeReviewFeedbackMemoryTitle(result.output.title),
-          body: dearMeReviewFeedbackMemoryBody({
-            action: result.action,
-            outputTitle: result.output.title,
-            decisionNote: input.request.decisionNote,
-            continuationIntent: input.continuationIntent,
-          }),
+          body: memoryBody,
           sourceLabel: result.output.title,
           outputId: result.outputId,
           outputKind: result.output.kind,
           issueId: result.output.issueId,
           issueIdentifier: result.output.issueIdentifier,
           reviewAction: result.action,
+          defaultApprovalScore: silenceDefault?.score ?? null,
+          defaultedBySilence: Boolean(silenceDefault),
           continuationIntent: input.continuationIntent ?? null,
           commentId: result.comment.id,
         },
@@ -541,6 +561,7 @@ export function dearmeRoutes(db: Db) {
       const request: DearMeOutputReviewRequest = {
         action,
         decisionNote: req.body.decisionNote ?? defaultDearMeContinuationNote(req.body.intent),
+        silenceDefault: null,
       };
       const result = await recordDearMeOutputReview({
         companyId,
