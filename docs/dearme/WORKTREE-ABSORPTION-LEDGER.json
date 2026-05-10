@@ -1233,6 +1233,98 @@
         "ui/src/pages/IssueDetail.tsx",
         "ui/src/pages/IssueDetail.test.tsx"
       ]
+    },
+    {
+      "ticket": "DM-071",
+      "branch": "codex/dearme-dm-071-tree-controls-safe",
+      "head": "285f4a212367a97a0bda6af4ae7186848be91e19",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the tree-control worker by hiding subissue pause and tree controls for DearMe issue detail while preserving generic issue tree behavior.",
+      "evidence": [
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-072",
+      "branch": "codex/dearme-dm-072-live-indicator-safe",
+      "head": "3a2b38ece272963ddefaa8542478db83bf4b8a39",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the live-indicator worker by suppressing issue and child live-run indicators for DearMe issue detail while preserving generic live indicators.",
+      "evidence": [
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-073",
+      "branch": "codex/dearme-dm-073-identifier-safe",
+      "head": "cb4a84beba3d3500df6366eee2e62164c6235efc",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the identifier worker by suppressing raw issue header identifiers on DearMe issue detail while generic issue identifiers remain available.",
+      "evidence": [
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-074",
+      "branch": "codex/dearme-dm-074-plugin-slot-safe",
+      "head": "c84e3fc9239f8c91997575cc4d654a6a632311c0",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the plugin-slot worker by gating generic issue plugin surfaces out of DearMe issue detail.",
+      "evidence": [
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-075",
+      "branch": "codex/dearme-dm-075-status-priority-safe",
+      "head": "7c5d6f5db9fd2bc0ac4a854f048cdb8e90aed132",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the status-priority worker by making shared issue state controls read-only on DearMe issue detail until DearMe-owned decision controls exist.",
+      "evidence": [
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-076",
+      "branch": "codex/dearme-dm-076-subissue-list-safe",
+      "head": "85576482aebe581d7021ff49eeff1a95cf22f8e5",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the subissue-list worker by keeping generic subtask surfaces and controls out of DearMe issue detail through the shared plugin-surface gate.",
+      "evidence": [
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-077",
+      "branch": "codex/dearme-dm-077-related-work-safe",
+      "head": "fb6d40ab0b17658ef7e3db3a1ce1c846df5352c0",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the related-work worker by hiding related-work tabs and redirects for DearMe issue detail while preserving generic issue related-work navigation.",
+      "evidence": [
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-078",
+      "branch": "codex/dearme-dm-078-markdown-reference-safe",
+      "head": "a27c0fa1eb156fbf714d38bd6c52e086e8ce87d4",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the markdown-reference worker by disabling raw issue reference links in DearMe chat and document markdown while preserving generic issue-link rendering.",
+      "evidence": [
+        "ui/src/components/IssueChatThread.tsx",
+        "ui/src/components/IssueChatThread.test.tsx",
+        "ui/src/components/IssueDocumentsSection.tsx",
+        "ui/src/components/IssueDocumentsSection.test.tsx",
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx"
+      ]
     }
   ]
 }

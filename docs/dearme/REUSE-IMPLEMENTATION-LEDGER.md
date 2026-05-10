@@ -82,15 +82,18 @@ The right reuse split is:
   centralizes reject-success navigation in `approvalRejectedHref`, so both the
   approval list and inbox return DearMe rejections to the DearMe decision
   surface while generic approvals stay on the shared route.
-- DM-064 through DM-070 issue-chat, activity-history, and issue-sidebar heads
+- DM-064 through DM-078 issue-chat, activity-history, issue-sidebar, and
+  markdown-reference heads
   are recorded as absorbed by the current DearMe run/transcript projection,
   work-history surface, activity-event projection, scheduled follow-up card,
-  and generic-control hiding boundaries. Linked runs, transcript placeholders,
-  activity history, scheduled follow-ups, workspace cards, related-work/plugin
-  entries, and properties controls now stay on DearMe-owned language and keep
-  raw run routes, agent links, model-profile details, liveness substrate
-  failures, cost summaries, monitor metadata, and generic operator controls
-  behind the product boundary.
+  generic-control hiding boundaries, read-only state controls, and raw
+  reference-link suppression. Linked runs, transcript placeholders, activity
+  history, scheduled follow-ups, workspace cards, tree/live indicators,
+  identifiers, related-work/plugin/subtask entries, properties controls, state
+  controls, and issue-reference markdown now stay on DearMe-owned language and
+  keep raw run routes, agent links, model-profile details, liveness substrate
+  failures, cost summaries, monitor metadata, raw issue identifiers, and
+  generic operator controls behind the product boundary.
 - DM-043 memory-label safety head
   `f3b3f7420c556aa6103c32c4b31654bd515edce6` is recorded as absorbed by the
   current Voice & Memory context normalization path, without restoring the

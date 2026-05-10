@@ -2,14 +2,14 @@
 
 Date: 2026-05-10
 
-## DM-183BT DM-064/070 Chat/Sidebar Safety Absorption - 2026-05-10
+## DM-183BT DM-064/078 Chat/Issue Surface Safety Absorption - 2026-05-10
 
 Product/architecture slice:
 
-- Kept Symphony as the cooperation spine and treated DM-064 through DM-070 as
-  issue-chat, activity-history, and issue-sidebar absorption work, not fresh
-  replay targets.
-- Recorded exact-head reviewed absorptions for DM-064 through DM-070 in
+- Kept Symphony as the cooperation spine and treated DM-064 through DM-078 as
+  issue-chat, activity-history, issue-sidebar, and markdown-reference
+  absorption work, not fresh replay targets.
+- Recorded exact-head reviewed absorptions for DM-064 through DM-078 in
   `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`.
 - Mapped DM-064 to the current DearMe issue-chat run projection: linked runs
   render as DearMe team work updates, DearMe issues do not link customers to
@@ -31,6 +31,24 @@ Product/architecture slice:
 - Mapped DM-070 to the current issue properties boundary: DearMe issues hide
   the generic properties panel, mobile drawer, and toolbar entries until a
   DearMe-owned settings surface exists.
+- Mapped DM-071 to the current issue tree boundary: DearMe issues hide generic
+  subissue pause and tree controls while generic issue tree behavior remains.
+- Mapped DM-072 to the current live-indicator boundary: DearMe issues hide
+  generic live-run indicators and child live markers.
+- Mapped DM-073 to the current identifier boundary: DearMe issue headers do not
+  expose raw issue identifiers while generic issue identifiers remain available.
+- Mapped DM-074 to the current plugin-slot boundary: DearMe issues keep generic
+  issue plugin surfaces out of the customer detail view.
+- Mapped DM-075 to the current status/priority boundary: shared issue state
+  controls are read-only on DearMe issues until DearMe-owned decision controls
+  exist.
+- Mapped DM-076 to the current subissue-list boundary: generic subtask surfaces
+  and controls stay out of DearMe issue detail through the shared plugin gate.
+- Mapped DM-077 to the current related-work boundary: DearMe issues hide
+  related-work tabs and redirects while generic issue navigation remains.
+- Mapped DM-078 to the current markdown-reference boundary: DearMe chat and
+  document markdown do not link raw issue references while generic issue-link
+  rendering remains available.
 - Left the active DEA-11 Symphony workspace untouched; it remains stale against
   the current branch until closed and rebuilt from the live head.
 
@@ -38,21 +56,24 @@ Verification:
 
 - `git log --oneline --max-count=80`
   showed the live same-subject commits `83e2bc13`, `bf608910`, `3f169c53`,
-  `e484dc6c`, `9a9b833d`, `e4c4b589`, and `c2586e6e` on the current branch.
+  `e484dc6c`, `9a9b833d`, `e4c4b589`, `c2586e6e`, `94f97de5`,
+  `b56eed6f`, `207448a3`, `25a2fb17`, `d827cc22`, `1967900f`,
+  `997c2f92`, `019bc63a`, and `b2e00db6` on the current branch.
 - `rg -n "dearMeRunPlaceholderText|buildAssistantPartsFromTranscript|createHistoricalRunMessage|createHistoricalTranscriptMessage|createLiveRunMessage|hideRunSubstrateDetails|DearMe team|work update|work history|modelProfileForRun|runDurationLabel" ui/src/lib/issue-chat-messages.ts ui/src/lib/issue-chat-messages.test.ts ui/src/components/IssueChatThread.tsx ui/src/components/IssueChatThread.test.tsx ui/src/components/IssueRunLedger.tsx ui/src/components/IssueRunLedger.test.tsx ui/src/pages/IssueDetail.tsx ui/src/pages/IssueDetail.test.tsx`
   confirmed the current chat, transcript, and activity-history safety surfaces
   are present.
-- `rg -n "formatDearMeActivityAction|hideSubstrateDetails=\\{hideRunSubstrateDetails\\}|Follow-up scheduled|Next review|DearMe will review this again automatically|Refresh now|IssueWorkspaceCard|showIssuePluginSurfaces|showIssueRelatedWorkTab|showProperties=\\{!isDearMeDetailIssue\\}|button\\[title=\\\"Properties\\\"\\]|button\\[title=\\\"Show properties\\\"\\]" ui/src/pages/IssueDetail.tsx ui/src/pages/IssueDetail.test.tsx ui/src/components/IssueMonitorActivityCard.tsx ui/src/components/IssueMonitorActivityCard.test.tsx`
-  confirmed the current activity-event, workspace-card, follow-up-card, related
-  work, plugin, and properties boundaries are present.
+- `rg -n "formatDearMeActivityAction|hideSubstrateDetails=\\{hideRunSubstrateDetails\\}|Follow-up scheduled|Next review|DearMe will review this again automatically|Refresh now|IssueWorkspaceCard|showIssuePluginSurfaces|showIssueRelatedWorkTab|showProperties=\\{!isDearMeDetailIssue\\}|activePauseHold|canShowSubIssueControls|showIssueLiveRunIndicator|visibleLiveIssueIds|issueHeaderIdentifier|canEditIssueHeaderState|linkIssueReferences" ui/src/pages/IssueDetail.tsx ui/src/pages/IssueDetail.test.tsx ui/src/components/IssueMonitorActivityCard.tsx ui/src/components/IssueMonitorActivityCard.test.tsx ui/src/components/IssueChatThread.tsx ui/src/components/IssueChatThread.test.tsx ui/src/components/IssueDocumentsSection.tsx ui/src/components/IssueDocumentsSection.test.tsx`
+  confirmed the current activity-event, workspace-card, follow-up-card,
+  properties, tree, live-indicator, identifier, state, related-work, plugin,
+  and markdown-reference boundaries are present.
 - `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
   passed.
-- `pnpm exec vitest run ui/src/lib/issue-chat-messages.test.ts ui/src/components/IssueChatThread.test.tsx ui/src/components/IssueRunLedger.test.tsx ui/src/components/IssueMonitorActivityCard.test.tsx ui/src/pages/IssueDetail.test.tsx --maxWorkers=1`
+- `pnpm exec vitest run ui/src/lib/issue-chat-messages.test.ts ui/src/components/IssueChatThread.test.tsx ui/src/components/IssueRunLedger.test.tsx ui/src/components/IssueMonitorActivityCard.test.tsx ui/src/components/IssueDocumentsSection.test.tsx ui/src/pages/IssueDetail.test.tsx --maxWorkers=1`
   passed.
 - `pnpm run dearme:worktrees -- --status=reviewed-absorbed --skip-dirty --limit=120`
-  showed the exact DM-064 through DM-070 heads as `reviewed_absorbed`.
+  showed the exact DM-064 through DM-078 heads as `reviewed_absorbed`.
 - `pnpm run dearme:worktrees -- --summary-only --skip-dirty` reported
-  `reviewed_absorbed: 90`, `not_in_current: 23`, and `dirty: 0`.
+  `reviewed_absorbed: 98`, `not_in_current: 15`, and `dirty: 0`.
 - `git diff --check -- docs/dearme/BUILD-STATE.md docs/dearme/INDEX.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`
   passed.
 
