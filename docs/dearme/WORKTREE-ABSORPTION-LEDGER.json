@@ -62,6 +62,36 @@
       ]
     },
     {
+      "ticket": "DM-005",
+      "branch": "codex/dearme-dm-005-voice-memory-source-management",
+      "head": "acaa7842c05ffb4339f4f4739d1c6455204ce447",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current Voice & Memory source management has absorbed and adapted the DM-005 private-source intent into memory-updates plus the activity-log source lifecycle, supporting source links, revision, retire, restore, work previews, and dependent-surface refresh instead of preserving the old dearme-voice-memory API.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/routes/dearme.ts",
+        "server/src/services/dearme-workbench.ts",
+        "ui/src/api/dearme.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-005",
+      "branch": "codex/dearme-dm-005-integrated",
+      "head": "77e7d403913ef4381c41e8aefcdd9bd16592f6d2",
+      "reviewedAt": "2026-05-10",
+      "reason": "The old DM-005 integration baseline adds the same initial private-source creation concept as the worker head, but current DearMe absorbs it through the evolved activity-log source guide and richer source lifecycle instead of the obsolete voice-memory endpoint.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/routes/dearme.ts",
+        "server/src/services/dearme-workbench.ts",
+        "ui/src/api/dearme.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
       "ticket": "DM-014",
       "branch": "codex/dearme-dm-014-mobile-nav-safe-area",
       "head": "65d7a59938bbf529d69e16a0907f07db3ae5e565",

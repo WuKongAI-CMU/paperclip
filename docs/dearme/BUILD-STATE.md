@@ -32,6 +32,18 @@ Verification:
 - `rg` checks across current shared, server, UI, and test files confirmed the
   current activity-log Voice & Memory source path covers create, revise, retire,
   restore, source links, and refresh behavior.
+- `pnpm run test:dearme-worktrees`
+  passed.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty`
+  passed and reported `reviewed_absorbed: 16`, `not_in_current: 97`, and
+  `dirty: 0`.
+- `pnpm run dearme:worktrees -- --status=reviewed-absorbed --skip-dirty --limit=40`
+  passed and listed both DM-005 heads.
+- `pnpm run dearme:worktrees -- --ticket=DM-005 --skip-dirty --limit=20`
+  passed and showed only the DM-005 worker and integration heads as
+  `reviewed_absorbed`.
+- `git diff --check -- docs/dearme/WORKTREE-ABSORPTION-LEDGER.json docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
 
 ## DM-183AX Voice & Memory Active Source State Labels - 2026-05-10
 
