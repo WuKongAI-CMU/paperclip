@@ -429,11 +429,24 @@ test("enrichWorktreeRecord classifies DEA and Symphony paths as active lanes", (
     }).nextAction,
     "absorbed Symphony lane; keep as audit trail or close after owner confirmation",
   );
+
+  assert.equal(
+    enrichWorktreeRecord({
+      path: "/private/tmp/dearme-symphony-workspaces/DEA-37",
+      branch: "codex/dearme-dm-136-sample-demo-proof",
+      head: "ghi",
+      status: "not_in_current",
+      dirtyFiles: 0,
+      prunable: false,
+    }).ticket,
+    "DEA-37",
+  );
 });
 
 test("collectWorktreeStatus includes real Symphony workspace repos by default", () => {
   const repo = mkdtempSync(join(tmpdir(), "dearme-worktree-status-root-"));
   const symphonyRoot = mkdtempSync(join(tmpdir(), "dearme-symphony-root-"));
+  const directSymphonyRepo = join(symphonyRoot, "DEA-8");
   const symphonyRepo = join(symphonyRoot, "DEA-7", "repo");
 
   try {
@@ -448,7 +461,15 @@ test("collectWorktreeStatus includes real Symphony workspace repos by default", 
     git(symphonyRepo, ["add", "brand.md"]);
     commit(symphonyRepo, "symphony lane");
 
-    assert.deepEqual(listSymphonyWorkspacePaths(symphonyRoot), [symphonyRepo]);
+    git(symphonyRoot, ["clone", repo, directSymphonyRepo]);
+    writeFileSync(join(directSymphonyRepo, "brand.md"), "base\ndirect symphony lane\n");
+    git(directSymphonyRepo, ["add", "brand.md"]);
+    commit(directSymphonyRepo, "direct symphony lane");
+
+    assert.deepEqual(listSymphonyWorkspacePaths(symphonyRoot), [
+      symphonyRepo,
+      directSymphonyRepo,
+    ].sort());
 
     const records = collectWorktreeStatus({
       cwd: repo,
@@ -456,12 +477,18 @@ test("collectWorktreeStatus includes real Symphony workspace repos by default", 
       symphonyRoot,
     });
     const symphonyRecord = records.find((record) => record.path === symphonyRepo);
+    const directSymphonyRecord = records.find((record) => record.path === directSymphonyRepo);
 
     assert.equal(symphonyRecord?.source, "symphony");
     assert.equal(symphonyRecord?.ticket, "DEA-7");
     assert.equal(symphonyRecord?.purpose, "symphony");
     assert.equal(symphonyRecord?.status, "not_in_current");
     assert.equal(symphonyRecord?.dirtyFiles, null);
+    assert.equal(directSymphonyRecord?.source, "symphony");
+    assert.equal(directSymphonyRecord?.ticket, "DEA-8");
+    assert.equal(directSymphonyRecord?.purpose, "symphony");
+    assert.equal(directSymphonyRecord?.status, "not_in_current");
+    assert.equal(directSymphonyRecord?.dirtyFiles, null);
 
     assert.equal(
       collectWorktreeStatus({
@@ -470,6 +497,15 @@ test("collectWorktreeStatus includes real Symphony workspace repos by default", 
         includeSymphony: false,
         symphonyRoot,
       }).some((record) => record.path === symphonyRepo),
+      false,
+    );
+    assert.equal(
+      collectWorktreeStatus({
+        cwd: repo,
+        skipDirty: true,
+        includeSymphony: false,
+        symphonyRoot,
+      }).some((record) => record.path === directSymphonyRepo),
       false,
     );
   } finally {

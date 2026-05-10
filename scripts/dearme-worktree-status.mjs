@@ -70,12 +70,18 @@ export function parseWorktrees(output) {
 }
 
 export function deriveWorktreeTicket({ branch = "", path = "" }) {
-  const source = `${branch} ${path}`;
-  const match = source.match(
-    /(?:^|[-_/\s])(?<prefix>dm|dea)[-_]?(?<number>\d{1,4}[a-z]?)(?:[-_/\s]|$)/i,
-  );
+  const pathMatch = matchTicket(path);
+  const branchMatch = matchTicket(branch);
+  const match =
+    /dearme-symphony-workspaces|symphony/i.test(path) && pathMatch ? pathMatch : (branchMatch ?? pathMatch);
   if (!match?.groups) return null;
   return `${match.groups.prefix.toUpperCase()}-${match.groups.number.toUpperCase()}`;
+}
+
+function matchTicket(value) {
+  return value.match(
+    /(?:^|[-_/\s])(?<prefix>dm|dea)[-_]?(?<number>\d{1,4}[a-z]?)(?:[-_/\s]|$)/i,
+  );
 }
 
 export function classifyWorktreePurpose({ branch = "", path = "", status }) {
@@ -260,10 +266,22 @@ export function enrichWorktreeRecord(record, reviewedAbsorptions = []) {
 export function listSymphonyWorkspacePaths(root = DEFAULT_SYMPHONY_ROOT) {
   if (!existsSync(root)) return [];
 
-  return readdirSync(root, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => join(root, entry.name, "repo"))
-    .filter((repoPath) => existsSync(join(repoPath, ".git")));
+  const paths = new Set();
+
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+
+    const workspacePath = join(root, entry.name);
+    const candidates = [workspacePath, join(workspacePath, "repo")];
+
+    for (const candidate of candidates) {
+      if (existsSync(join(candidate, ".git"))) {
+        paths.add(candidate);
+      }
+    }
+  }
+
+  return [...paths].sort();
 }
 
 export function summarize(records) {
