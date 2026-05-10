@@ -15,9 +15,8 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import {
   approvalDetailHref,
   approvalListActionErrorMessage,
+  approvalRejectedHref,
   approvalResolvedHref,
-  dearMeApprovalDecisionHref,
-  isDearMeApprovalType,
 } from "@/lib/dearmeApprovals";
 
 type StatusFilter = "pending" | "all";
@@ -73,9 +72,8 @@ export function Approvals() {
     onSuccess: (approval, id) => {
       setActionError(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.approvals.list(selectedCompanyId!) });
-      if (isDearMeApprovalType(approval?.type)) {
-        navigate(dearMeApprovalDecisionHref(id));
-      }
+      const rejectedHref = approvalRejectedHref(approval?.type, id);
+      if (rejectedHref) navigate(rejectedHref);
     },
     onError: (err, id) => {
       setActionError(

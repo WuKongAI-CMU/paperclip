@@ -1082,6 +1082,71 @@
         "ui/src/lib/dearmeApprovals.ts",
         "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
       ]
+    },
+    {
+      "ticket": "DM-059",
+      "branch": "codex/dearme-dm-059-approval-detail-error-safe",
+      "head": "9617dd632a7b017d417292b8cabd41def6e83b19",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the approval-detail error worker through the shared DearMe approval error sanitizer used by approve, reject, revision, resubmit, and comment actions while preserving generic approval error details.",
+      "evidence": [
+        "ui/src/pages/ApprovalDetail.tsx",
+        "ui/src/pages/ApprovalDetail.test.tsx",
+        "ui/src/lib/dearmeApprovals.ts",
+        "ui/src/lib/dearmeApprovals.test.ts"
+      ]
+    },
+    {
+      "ticket": "DM-060",
+      "branch": "codex/dearme-dm-060-list-inbox-error-safe",
+      "head": "ad081fc66af1ea59a72dfe864c1f5a0aca685ba3",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the list and inbox approval error worker by routing list-surface approve/reject failures through approvalListActionErrorMessage with DearMe-owned fallbacks and generic approval preservation.",
+      "evidence": [
+        "ui/src/pages/Approvals.tsx",
+        "ui/src/pages/Inbox.tsx",
+        "ui/src/lib/dearmeApprovals.ts",
+        "ui/src/lib/dearmeApprovals.test.ts"
+      ]
+    },
+    {
+      "ticket": "DM-061",
+      "branch": "codex/dearme-dm-061-issue-approval-error-safe",
+      "head": "02794009743717367447cc8e613f6769bc87b99a",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the issue approval error worker by resolving linked approval type from issue-detail approval cache before sanitizing DearMe action failures and keeping generic approval failures explicit.",
+      "evidence": [
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/pages/IssueDetail.test.tsx",
+        "ui/src/lib/dearmeApprovals.ts",
+        "ui/src/lib/dearmeApprovals.test.ts"
+      ]
+    },
+    {
+      "ticket": "DM-062",
+      "branch": "codex/dearme-dm-062-comment-thread-approval-safe",
+      "head": "d350ed369f4777125a32a94c8bcec0b524df7e29",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the comment-thread approval worker by routing linked DearMe approvals from comments back to the DearMe decision surface instead of the shared approval detail route.",
+      "evidence": [
+        "ui/src/components/CommentThread.tsx",
+        "ui/src/components/CommentThread.test.tsx",
+        "ui/src/lib/dearmeApprovals.ts",
+        "ui/src/lib/dearmeApprovals.test.ts"
+      ]
+    },
+    {
+      "ticket": "DM-063",
+      "branch": "codex/dearme-dm-063-inbox-reject-route-safe",
+      "head": "c0edd7a04f5aa83b2843f9823589cdf4c11f1751",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the inbox rejection route worker by centralizing DearMe rejection navigation in approvalRejectedHref and using it from both the approval list and inbox success paths.",
+      "evidence": [
+        "ui/src/pages/Approvals.tsx",
+        "ui/src/pages/Inbox.tsx",
+        "ui/src/lib/dearmeApprovals.ts",
+        "ui/src/lib/dearmeApprovals.test.ts"
+      ]
     }
   ]
 }

@@ -147,11 +147,13 @@ through DM-050 are now recorded as reviewed absorptions on the current
 route/auth, approval-preflight, and profile-selection boundaries. DM-051
 through DM-058 are now recorded as reviewed absorptions on the current shared
 DearMe approval helper, approval-surface routing, and internal-error sanitizer.
-The next likely batch starts at DM-059 through DM-066 because the residual
-group now shifts from approval routing into error/comment/chat safety, but
+DM-059 through DM-063 are now recorded as reviewed absorptions on the current
+approval error, comment-link, and rejection-route helpers. The next likely
+batch starts at DM-064 through DM-066 because the residual group now shifts
+from approval routing into issue-chat run/transcript/activity safety, but
 inspect exact heads before recording any closure. Reuse only still-valuable
-product surfaces; do not add another first-run contract, packet schema, runtime
-dashboard, queue system, or customer-visible substrate surface.
+product surfaces; do not add another first-run contract, packet schema,
+runtime dashboard, queue system, or customer-visible substrate surface.
 
 ### Roadmap (compressed by aggressive port + tri-substrate integration)
 

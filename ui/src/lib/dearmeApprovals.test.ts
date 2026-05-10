@@ -3,6 +3,7 @@ import {
   approvalActionErrorMessage,
   approvalDetailHref,
   approvalListActionErrorMessage,
+  approvalRejectedHref,
   approvalResolvedHref,
   dearMeApprovalDecisionHref,
   isDearMeApprovalType,
@@ -36,6 +37,10 @@ describe("dearmeApprovals", () => {
     expect(approvalResolvedHref("request_board_approval", "approval-1")).toBe(
       "/approvals/approval-1?resolved=approved",
     );
+    expect(approvalRejectedHref("dearme_output_next_move", "approval-1")).toBe(
+      "/dearme?view=decisions&approval=approval-1",
+    );
+    expect(approvalRejectedHref("request_board_approval", "approval-1")).toBeNull();
   });
 
   it("sanitizes internal approval errors only for DearMe decisions", () => {

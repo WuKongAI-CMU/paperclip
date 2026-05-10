@@ -2,6 +2,42 @@
 
 Date: 2026-05-10
 
+## DM-183BS DM-059/063 Approval Error/Reject Absorption - 2026-05-10
+
+Product/architecture slice:
+
+- Kept Symphony as the cooperation spine and treated DM-059 through DM-063 as
+  a bounded approval error and route-safety absorption batch.
+- Recorded exact-head reviewed absorptions for DM-059, DM-060, DM-061,
+  DM-062, and DM-063 in `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`.
+- Confirmed the current head already carries the useful DM-059 through DM-062
+  behavior: approval detail actions, list/inbox approval failures, issue-detail
+  approval failures, and comment-thread approval links all route through shared
+  DearMe approval helpers while preserving generic approval behavior.
+- Closed the residual DM-063 shape gap by centralizing post-rejection DearMe
+  navigation in `approvalRejectedHref` and using it from both the approval list
+  and inbox mutation success paths.
+- Left the active DEA-11 Symphony workspace untouched; it remains a separate
+  daemon-owned lane.
+
+Verification:
+
+- `rg -n "approvalDetailHref|approvalResolvedHref|approvalRejectedHref|approvalActionErrorMessage|approvalListActionErrorMessage|Failed to update the DearMe decision|Failed to post your note" ui/src/lib/dearmeApprovals.ts ui/src/lib/dearmeApprovals.test.ts ui/src/pages/ApprovalDetail.tsx ui/src/pages/ApprovalDetail.test.tsx ui/src/pages/Approvals.tsx ui/src/pages/Inbox.tsx ui/src/pages/Inbox.test.tsx ui/src/pages/IssueDetail.tsx ui/src/pages/IssueDetail.test.tsx ui/src/components/CommentThread.tsx ui/src/components/CommentThread.test.tsx`
+  confirmed the shared approval helpers and customer-safe approval surfaces are
+  present.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
+  passed.
+- `pnpm exec vitest run ui/src/lib/dearmeApprovals.test.ts ui/src/pages/ApprovalDetail.test.tsx ui/src/pages/Inbox.test.tsx ui/src/pages/IssueDetail.test.tsx ui/src/components/CommentThread.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm run dearme:worktrees -- --status=reviewed-absorbed --skip-dirty --limit=115`
+  showed the exact DM-059 through DM-063 heads as `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` reported
+  `reviewed_absorbed: 83`, `not_in_current: 30`, and `dirty: 0`.
+- `.symphony/bin/dearme-symphony status --json` reported Symphony running with
+  one active DEA-11 worker and no retrying workers.
+- `git diff --check -- docs/dearme/BUILD-STATE.md docs/dearme/INDEX.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/WORKTREE-ABSORPTION-LEDGER.json ui/src/lib/dearmeApprovals.ts ui/src/lib/dearmeApprovals.test.ts ui/src/pages/Approvals.tsx ui/src/pages/Inbox.tsx`
+  passed.
+
 ## DM-183BR DM-051/058 Approval Surface Absorption - 2026-05-10
 
 Product/architecture slice:

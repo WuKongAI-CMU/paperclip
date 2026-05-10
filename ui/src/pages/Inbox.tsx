@@ -36,8 +36,8 @@ import {
 import {
   approvalDetailHref,
   approvalListActionErrorMessage,
+  approvalRejectedHref,
   approvalResolvedHref,
-  dearMeApprovalDecisionHref,
   isDearMeApprovalType,
 } from "../lib/dearmeApprovals";
 import { prefetchIssueDetail } from "../lib/issueDetailCache";
@@ -1352,9 +1352,8 @@ export function Inbox() {
     onSuccess: (approval, id) => {
       setActionError(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.approvals.list(selectedCompanyId!) });
-      if (isDearMeApprovalType(approval?.type)) {
-        navigate(dearMeApprovalDecisionHref(id));
-      }
+      const rejectedHref = approvalRejectedHref(approval?.type, id);
+      if (rejectedHref) navigate(rejectedHref);
     },
     onError: (err, id) => {
       setActionError(

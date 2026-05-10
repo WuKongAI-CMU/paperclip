@@ -77,6 +77,11 @@ The right reuse split is:
   current DearMe-only internal error sanitizer and regression coverage for
   inherited substrate names, model/token wording, execution routes, API key
   wording, and decision routes.
+- DM-059 through DM-063 approval error/rejection heads are recorded as absorbed
+  by the current shared DearMe approval helpers. The remaining live code delta
+  centralizes reject-success navigation in `approvalRejectedHref`, so both the
+  approval list and inbox return DearMe rejections to the DearMe decision
+  surface while generic approvals stay on the shared route.
 - DM-043 memory-label safety head
   `f3b3f7420c556aa6103c32c4b31654bd515edce6` is recorded as absorbed by the
   current Voice & Memory context normalization path, without restoring the

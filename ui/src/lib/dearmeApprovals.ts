@@ -23,6 +23,11 @@ export function approvalResolvedHref(type: string | null | undefined, approvalId
   return `/approvals/${approvalId}?resolved=approved`;
 }
 
+export function approvalRejectedHref(type: string | null | undefined, approvalId: string) {
+  if (isDearMeApprovalType(type)) return dearMeApprovalDecisionHref(approvalId);
+  return null;
+}
+
 const INTERNAL_APPROVAL_ERROR_PATTERN =
   /\b(paperclip|openclaw|symphony|codex|provider|adapter|runtime|model|token|setup[_ -]?payload|workspace|workbench)\b|\/approvals?\//i;
 
