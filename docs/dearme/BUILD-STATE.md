@@ -2,6 +2,28 @@
 
 Date: 2026-05-10
 
+## DM-183Z Memory Context Term Safety - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the useful DM-043 customer-safe memory-label direction onto the
+  current `dearme-memory-context` service instead of importing the stale worker
+  service shape.
+- Voice & Memory titles, bodies, and source labels are now normalized before
+  they are inserted into DearMe routine descriptions, keeping private worker
+  guidance free of donor/runtime/provider terms.
+- Added embedded Postgres coverage that seeds hidden substrate terms through a
+  memory update and proves the refreshed routine receives only DearMe-safe
+  wording.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-memory-context.test.ts --maxWorkers=1`
+  passed: 4 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `git diff --check -- server/src/services/dearme-memory-context.ts server/src/__tests__/dearme-memory-context.test.ts docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183Y Launch Boundary Cards - 2026-05-10
 
 Implementation slice:

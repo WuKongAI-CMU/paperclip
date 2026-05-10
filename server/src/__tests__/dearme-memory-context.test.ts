@@ -252,7 +252,7 @@ describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
       "Voice sample: Operator note: Short, direct note. Source: Manual note.",
     );
     expect(description).toContain(
-      "Proof point: Launch proof: Shipped a local AI workbench that turns private logs into reviewable outputs.",
+      "Proof point: Launch proof: Shipped a local AI team progress view that turns private logs into reviewable outputs.",
     );
     expect(description).toContain("Operating boundary:");
     expect(description.indexOf("Latest saved Voice & Memory updates:")).toBeLessThan(
@@ -317,6 +317,68 @@ describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
       "Voice sample: Revised operator note: Sharper revised voice source. Source: Manual note.",
     );
     expect(revisedDescription).not.toContain("Voice sample: Operator note: Short, direct note.");
+  });
+
+  it("keeps Voice & Memory routine context customer-safe", async () => {
+    const companyId = await seedCompany();
+    const brandOsIssue = await seedParentIssue(
+      companyId,
+      DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
+      "DearMe: Review Brand OS for Peter",
+    );
+    const routinesSvc = routineService(db);
+    const dearmeRoutine = await routinesSvc.create(
+      companyId,
+      {
+        projectId: null,
+        goalId: null,
+        parentIssueId: brandOsIssue.id,
+        title: "DearMe: Weekly growth cycle",
+        description: "Prepare private growth work.",
+        assigneeAgentId: null,
+        priority: "medium",
+        status: "active",
+        concurrencyPolicy: "coalesce_if_active",
+        catchUpPolicy: "skip_missed",
+        variables: [],
+      },
+      { userId: "user-1" },
+    );
+
+    await db.insert(activityLog).values({
+      companyId,
+      actorType: "user",
+      actorId: "user-1",
+      action: "dearme.memory_updated",
+      entityType: "dearme_memory",
+      entityId: "memory-internal-labels",
+      details: {
+        kind: "proof_point",
+        title: "Paperclip adapter provider workspace runtime setup_payload",
+        body: "OpenClaw model provider workbench issue route token should stay hidden.",
+        sourceLabel: "Symphony execution route API key",
+      },
+      createdAt: new Date("2026-05-08T14:00:00.000Z"),
+    });
+
+    await dearmeMemoryContextService(db).refreshRoutineMemoryContext(
+      companyId,
+      { userId: "user-1" },
+    );
+    const [updatedDearMeRoutine] = await db
+      .select()
+      .from(routines)
+      .where(eq(routines.id, dearmeRoutine.id));
+    const description = updatedDearMeRoutine.description ?? "";
+
+    expect(description).toContain(
+      "Proof point: DearMe connectors services private work areas private pass setup details:",
+    );
+    expect(description).toContain("DearMe services team progress view review links private credentials");
+    expect(description).toContain("Source: DearMe private action links private credentials.");
+    expect(description).not.toMatch(
+      /\b(Paperclip|OpenClaw|Symphony|adapter|provider|setup_payload|model provider|workbench|issue route|execution route|API key|token|workspace|runtime)\b/i,
+    );
   });
 
   it("removes retired Voice & Memory sources from DearMe routines", async () => {
