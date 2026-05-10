@@ -2,6 +2,32 @@
 
 Date: 2026-05-10
 
+## DM-183Q Review Feedback Memory Loop - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the parallel review-feedback memory slice now that the first proof
+  and approval-entry paths are stable.
+- Added `review_feedback` as a first-class DearMe Voice & Memory update kind.
+- When a customer asks for changes, asks DearMe to prepare another pass, or
+  marks prepared work as not useful, the review route now records a
+  customer-safe memory update and refreshes DearMe growth-cycle context.
+- Kept approve-only decisions out of memory refresh so successful approvals do
+  not add redundant feedback.
+- Surfaced review feedback with the existing Voice & Memory labels in workbench
+  and DearMe UI instead of adding a new panel or route.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts --maxWorkers=1`
+  passed: 37 tests.
+- `pnpm exec vitest run server/src/__tests__/dearme-memory-context.test.ts --maxWorkers=1`
+  passed: 3 tests.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed earlier in this integration
+  pass and covered the DearMe UI label addition.
+
 ## DM-183P DearMe Approval Entry Routes - 2026-05-10
 
 Implementation slice:

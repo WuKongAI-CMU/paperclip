@@ -145,6 +145,41 @@ Verification:
 - DEA-8 local API health check and shell API smoke against `/first-cycle/start`,
   `/outputs`, and `/workbench`
 
+### DM-183Q: Review Feedback Memory Loop
+
+Goal: make negative or corrective review decisions become future DearMe memory
+so the next private pass learns from what the customer rejected.
+
+Donor grounding:
+
+- Polsia: the growth loop should keep learning from the owner without manual
+  process management.
+- Lindy: rejection and revision are still structured signals, not terminal
+  failures.
+- Naive/Paperclip/Symphony: reuse activity log, routine refresh, workbench
+  memory projection, and existing review route; do not add a new customer
+  workflow.
+
+Completed:
+
+- Added `review_feedback` to the shared DearMe memory kind contract and UI/
+  workbench labels.
+- The DearMe review route now records review feedback memory when the owner
+  requests changes, asks for another pass, or says prepared work is not useful.
+- The memory body captures the output title, customer note, and continuation
+  intent in customer-safe language.
+- Review feedback refreshes existing DearMe growth-cycle routine context.
+- Approved outputs remain quiet so the memory stream does not fill with
+  redundant successful decisions.
+
+Verified:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts --maxWorkers=1`
+- `pnpm exec vitest run server/src/__tests__/dearme-memory-context.test.ts --maxWorkers=1`
+- `pnpm --filter @paperclipai/shared typecheck`
+- `pnpm --filter @paperclipai/server typecheck`
+- `pnpm --filter @paperclipai/ui typecheck`
+
 ### DM-183P: DearMe Approval Entry Routes
 
 Goal: keep every approval entry point that can surface a DearMe decision inside
