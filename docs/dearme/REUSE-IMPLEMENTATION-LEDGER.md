@@ -209,6 +209,13 @@ current Work Ready / focused review path. Keep the next Symphony lane on
 review/integration or launch-handoff hardening; do not add broader agents just
 to rediscover this path.
 
+Coordinator note: DEA-11 / DM-183CA is the next active launch-handoff lane.
+It should harden the existing final approval, `dearme_output_next_move`, output
+handoff, Workbench projection, and private launch brief path into a
+customer-ready next step. DM-095 remains a useful Work Ready summary-actions
+candidate, but should stay deferred until DEA-9 leaves review because it can
+touch the same focused review surface.
+
 Coordinator note: DM-011 is now absorbed into the current final-approval path.
 Approving a DearMe next move records a customer-safe launch receipt, prepares a
 private execution handoff, hides the stale prepared-work decision, and leaves a
@@ -2745,7 +2752,8 @@ issue/document handoff. DM-138E live-smoked the same path, fixed stale
 cancelled output history so current proof issues project as `ready_for_review`,
 and kept the customer surface free of donor/runtime vocabulary.
 
-DM-S01 and DM-138A-E have landed locally. The next non-negotiable slice is
-DM-139 / DM-140: turn the first proof package into autonomous reporting plus
-voice/content production that keeps the queue moving after the first aha,
-without adding another customer-facing runtime contract.
+DM-S01, DM-138A-E, DM-139 / DM-140, DEA-7, DEA-8, and DEA-9 have landed locally
+or are in active Symphony review. The next non-negotiable slice is DEA-11 /
+DM-183CA: turn approved prepared work into a launch-ready private handoff that
+shows the next safe action while preserving the four public-action gates. Do
+not add another customer-facing runtime contract to solve this.
