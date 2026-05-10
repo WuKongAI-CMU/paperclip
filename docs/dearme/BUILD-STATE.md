@@ -2,6 +2,56 @@
 
 Date: 2026-05-10
 
+## DEA-17 First-Glance Focus Absorption - 2026-05-10
+
+Product/architecture slice:
+
+- Absorbed the useful Symphony DEA-17 simplification through the coordinator
+  branch as commit `08137399` instead of cherry-picking the worker commit,
+  because the worker commit lacked the required OmX coauthor trailer.
+- Tuned the default `/dearme` post-hero surface so the first product glance is
+  one private result, one next decision/review action, and one first-cycle
+  start/continue CTA.
+- Deferred the broader First payoff strip below the team board and removed the
+  separate visible live-pulse block from the first focus surface so it does not
+  compete with the intended aha moment.
+- Kept Symphony, Paperclip, OpenClaw, provider, adapter, model, setup payload,
+  and raw runtime language out of the customer-facing surface.
+
+Coordination state:
+
+- Linear `DEA-17` has a coordinator absorption comment pointing to local commit
+  `08137399`.
+- Pushing `codex/dearme-dm-136-sample-demo-proof` to
+  `paperclipai/paperclip` is blocked by GitHub auth:
+  `Permission to paperclipai/paperclip.git denied to WuKongAI-CMU`.
+- The DearMe worktree report found 117 worktrees: 1 current, 3 in current, 113
+  reviewed absorbed, 0 not in current, 0 dirty, and 0 prunable.
+- Opened Linear `DEA-18` as the only active Symphony lane for browser-level
+  proof. Its scope is limited to reproducing and unblocking the
+  Playwright/private-handoff embedded PostgreSQL blocker, not broad UI
+  redesign.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed with 66 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed.
+- `.symphony/bin/dearme-symphony status --json` reported `DEA-18` running in
+  `/private/tmp/dearme-symphony-workspaces/DEA-18` from local head `08137399`.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported no
+  unabsorbed or dirty DearMe worktrees.
+
+Not run:
+
+- Playwright private-handoff e2e is intentionally delegated to `DEA-18`; the
+  previous worker handoff reported an embedded PostgreSQL initialization
+  blocker in the throwaway webServer path.
+- Remote push is not complete because the current GitHub credential lacks
+  permission on `paperclipai/paperclip`.
+
 ## DM-171A OpenClaw Plugin Install Proof - 2026-05-10
 
 Product/architecture slice:

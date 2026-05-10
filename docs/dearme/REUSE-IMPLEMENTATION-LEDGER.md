@@ -46,6 +46,24 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DEA-17 is absorbed locally on the coordinator branch at `08137399`: the
+  default DearMe first glance now centers one private result, one next decision
+  or review action, and one first-cycle start/continue CTA. The coordinator
+  absorbed the useful worker simplification but did not cherry-pick the worker
+  commit because it lacked the required OmX coauthor trailer. Keep this as the
+  current rule for first-run aha work: one product-surface writer, plus
+  read-only review or narrow browser/harness lanes only.
+- DEA-18 is the only active follow-up Symphony lane. Its job is browser-level
+  proof for the first private outcome by reproducing or fixing the
+  Playwright/private-handoff embedded PostgreSQL blocker. It should not
+  redesign onboarding or add another visible work queue.
+- The current worktree inventory has no unabsorbed queue: 117 DearMe
+  worktrees, 0 `not_in_current`, 0 dirty, 0 prunable, and 113
+  `reviewed_absorbed`. Remaining old worktrees are audit/owner-confirmation
+  cleanup, not replay candidates.
+- Remote publication of `08137399` is blocked by GitHub auth for
+  `paperclipai/paperclip` under credential `WuKongAI-CMU`; Symphony workers can
+  still start from the local coordinator checkout.
 - DEA-16 / DM-171A closed as a no-code install-proof lane: the existing
   `@paperclipai/dearme-openclaw` package already proves the plugin scaffold is
   coherent from the current coordinator head. The manifest points OpenClaw at
