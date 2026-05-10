@@ -2,6 +2,39 @@
 
 Date: 2026-05-10
 
+## DM-183BC DM-010 Final Approval Baseline Absorption - 2026-05-10
+
+Coordination slice:
+
+- Kept Symphony as the cooperation spine and checked the live daemon before
+  closing the next not-in-current integration candidate.
+- Reviewed exact DM-010 heads `47b2c5815b968451a93b6c9f3eeb734f1f2406ba`
+  and `732244956a8688cb8133b2ea31433186d386c241`.
+- Confirmed current DearMe already carries the useful DM-010 product boundary:
+  approving private work creates a separate `dearme_output_next_move` final
+  approval before publish, send, deploy, spend, or next-cycle action.
+- Matched that boundary to the current shared approval type, output handoff,
+  workbench decision projection, approval payload, focused DearMe decision
+  route, and regression coverage.
+- Rejected replaying the stale DM-010 branch code because DM-183AJ and later
+  review-loop hardening already cover the product behavior on the current
+  server/UI spine.
+- Recorded both exact DM-010 heads in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so Symphony worktree patrols
+  stop treating them as unresolved development candidates.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status --json` passed with the daemon healthy
+  and no retrying workers.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('json ok')"`
+  passed.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` passed and
+  reported `reviewed_absorbed: 26`, `not_in_current: 87`, and `dirty: 0`.
+- `pnpm run test:dearme-worktrees` passed.
+- `git diff --check -- docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`
+  passed.
+
 ## DM-183BB Review Feedback Regeneration Brief - 2026-05-10
 
 Product/runtime slice:

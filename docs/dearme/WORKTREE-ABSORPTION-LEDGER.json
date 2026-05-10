@@ -211,6 +211,40 @@
       ]
     },
     {
+      "ticket": "DM-010",
+      "branch": "codex/dearme-dm-010-approval-ready-handoff",
+      "head": "47b2c5815b968451a93b6c9f3eeb734f1f2406ba",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe has absorbed the useful DM-010 final-approval boundary through dearme_output_next_move approvals, issue-approval links, outputId-carrying decisions, and DearMe-native focused decision routing instead of replaying the stale branch patch.",
+      "evidence": [
+        "packages/shared/src/constants.ts",
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/services/dearme-output-handoff.ts",
+        "server/src/services/dearme-workbench.ts",
+        "server/src/__tests__/dearme-output-handoff.test.ts",
+        "server/src/__tests__/dearme-workbench.test.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-010",
+      "branch": "codex/dearme-dm-010-integrated",
+      "head": "732244956a8688cb8133b2ea31433186d386c241",
+      "reviewedAt": "2026-05-10",
+      "reason": "The old DM-010 integration baseline is semantically covered by the current DM-183AJ final-move approval gate and later review-loop hardening, with no remaining schema, route, or UI slice worth replaying from the historical branch.",
+      "evidence": [
+        "packages/shared/src/constants.ts",
+        "server/src/services/dearme-output-handoff.ts",
+        "server/src/services/dearme-workbench.ts",
+        "ui/src/components/ApprovalPayload.tsx",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
       "ticket": "DM-014",
       "branch": "codex/dearme-dm-014-mobile-nav-safe-area",
       "head": "65d7a59938bbf529d69e16a0907f07db3ae5e565",

@@ -159,6 +159,11 @@ current output-review path. Keep the final launch/send/deploy/spend call in the
 existing approval substrate and carry `outputId` through projections instead of
 adding another launch queue, worker runtime, or customer-facing Symphony surface.
 
+Coordinator note: DM-183BC records both exact DM-010 worker/integration heads
+as absorbed by the current final-move approval gate. Future work should extend
+`dearme_output_next_move` semantics in place instead of replaying the historical
+approval-ready handoff branches.
+
 Coordinator note: DM-183AK pulls the first payoff above the workbench without
 moving the underlying first-cycle contract. Keep future first-screen work
 focused on showing immediate payoff and routing to existing private-work inputs
