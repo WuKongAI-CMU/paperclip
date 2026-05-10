@@ -7,7 +7,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./functions": "./src/functions.ts",
-    "./contract": "./src/contract.ts"
+    "./contract": "./src/contract.ts",
+    "./model-routing": "./src/model-routing.ts"
   },
   "publishConfig": {
     "exports": {
@@ -22,6 +23,10 @@
       "./contract": {
         "types": "./dist/contract.d.ts",
         "import": "./dist/contract.js"
+      },
+      "./model-routing": {
+        "types": "./dist/model-routing.d.ts",
+        "import": "./dist/model-routing.js"
       }
     }
   },
