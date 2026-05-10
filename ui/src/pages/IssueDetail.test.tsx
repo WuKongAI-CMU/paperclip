@@ -86,6 +86,9 @@ const mockPushToast = vi.hoisted(() => vi.fn());
 const mockIssuesListRender = vi.hoisted(() => vi.fn());
 const mockIssueChatThreadRender = vi.hoisted(() => vi.fn());
 const mockIssueRunLedgerRender = vi.hoisted(() => vi.fn());
+const mockPluginSlotOutletRender = vi.hoisted(() => vi.fn());
+const mockPluginSlotMountRender = vi.hoisted(() => vi.fn());
+const mockPluginLauncherOutletRender = vi.hoisted(() => vi.fn());
 const mockTabsOnValueChange = vi.hoisted(() => ({
   current: null as ((value: string) => void) | null,
 }));
@@ -192,13 +195,26 @@ vi.mock("../hooks/useProjectOrder", () => ({
 }));
 
 vi.mock("@/plugins/slots", () => ({
-  PluginSlotMount: () => null,
-  PluginSlotOutlet: () => null,
-  usePluginSlots: () => ({ slots: [], isLoading: false, errorMessage: null }),
+  PluginSlotMount: (props: { slot?: { displayName?: string } }) => {
+    mockPluginSlotMountRender(props);
+    return <div>Mounted plugin slot</div>;
+  },
+  PluginSlotOutlet: (props: { slotTypes?: string[] }) => {
+    mockPluginSlotOutletRender(props);
+    return <div>Plugin outlet {props.slotTypes?.join(",")}</div>;
+  },
+  usePluginSlots: () => ({
+    slots: [{ id: "slot-1", pluginKey: "operator", displayName: "Operator plugin" }],
+    isLoading: false,
+    errorMessage: null,
+  }),
 }));
 
 vi.mock("@/plugins/launchers", () => ({
-  PluginLauncherOutlet: () => null,
+  PluginLauncherOutlet: (props: { placementZones?: string[] }) => {
+    mockPluginLauncherOutletRender(props);
+    return <div>Plugin launcher {props.placementZones?.join(",")}</div>;
+  },
 }));
 
 vi.mock("../components/InlineEditor", () => ({
@@ -993,6 +1009,9 @@ describe("IssueDetail", () => {
     mockIssuesListRender.mockClear();
     mockIssueChatThreadRender.mockClear();
     mockIssueRunLedgerRender.mockClear();
+    mockPluginSlotOutletRender.mockClear();
+    mockPluginSlotMountRender.mockClear();
+    mockPluginLauncherOutletRender.mockClear();
   });
 
   afterEach(async () => {
@@ -1109,6 +1128,60 @@ describe("IssueDetail", () => {
       expect(container.textContent).toContain("Chat thread");
     });
     expect(container.textContent).not.toContain("PAP-1");
+  });
+
+  it("preserves generic issue plugin surfaces", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue());
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(mockPluginSlotOutletRender).toHaveBeenCalled();
+      expect(mockPluginLauncherOutletRender).toHaveBeenCalled();
+    });
+
+    const renderedSlotTypes = mockPluginSlotOutletRender.mock.calls
+      .map(([props]) => props?.slotTypes?.join(","));
+    expect(renderedSlotTypes).toEqual(expect.arrayContaining([
+      "toolbarButton,contextMenuItem",
+      "taskDetailView",
+    ]));
+    expect(container.textContent).toContain("Plugin launcher toolbarButton");
+    expect(container.textContent).toContain("Operator plugin");
+  });
+
+  it("hides generic plugin surfaces for DearMe issues", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({ originKind: "dearme_brand_blueprint_apply" }));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(container.textContent).toContain("Chat thread");
+    });
+
+    expect(mockPluginSlotOutletRender).not.toHaveBeenCalled();
+    expect(mockPluginLauncherOutletRender).not.toHaveBeenCalled();
+    expect(container.textContent).not.toContain("Plugin outlet");
+    expect(container.textContent).not.toContain("Plugin launcher");
+    expect(container.textContent).not.toContain("Operator plugin");
   });
 
   it("hides tree pause controls for DearMe issues", async () => {

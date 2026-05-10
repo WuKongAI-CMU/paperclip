@@ -1501,6 +1501,7 @@ export function IssueDetail() {
   const hasLiveRuns = liveRunCount > 0 || resolvedHasActiveRun;
   const showIssueLiveRunIndicator = hasLiveRuns && !isDearMeDetailIssue;
   const issueHeaderIdentifier = isDearMeDetailIssue ? null : issue?.identifier ?? issue?.id.slice(0, 8) ?? null;
+  const showIssuePluginSurfaces = !isDearMeDetailIssue;
   useEffect(() => {
     if (!hasLiveRuns && locallyQueuedCommentRunIds.size > 0) {
       setLocallyQueuedCommentRunIds(new Map());
@@ -1584,17 +1585,22 @@ export function IssueDetail() {
     slotTypes: ["detailTab"],
     entityType: "issue",
     companyId: resolvedCompanyId,
-    enabled: !!resolvedCompanyId,
+    enabled: !!resolvedCompanyId && showIssuePluginSurfaces,
   });
   const issuePluginTabItems = useMemo(
-    () => issuePluginDetailSlots.map((slot) => ({
-      value: `plugin:${slot.pluginKey}:${slot.id}`,
-      label: slot.displayName,
-      slot,
-    })),
-    [issuePluginDetailSlots],
+    () =>
+      showIssuePluginSurfaces
+        ? issuePluginDetailSlots.map((slot) => ({
+            value: `plugin:${slot.pluginKey}:${slot.id}`,
+            label: slot.displayName,
+            slot,
+          }))
+        : [],
+    [issuePluginDetailSlots, showIssuePluginSurfaces],
   );
-  const activePluginTab = issuePluginTabItems.find((item) => item.value === detailTab) ?? null;
+  const activePluginTab = showIssuePluginSurfaces
+    ? issuePluginTabItems.find((item) => item.value === detailTab) ?? null
+    : null;
   const {
     data: treeControlPreview,
     isFetching: treeControlPreviewLoading,
@@ -3732,46 +3738,50 @@ export function IssueDetail() {
         />
       </div>
 
-      <PluginSlotOutlet
-        slotTypes={["toolbarButton", "contextMenuItem"]}
-        entityType="issue"
-        context={{
-          companyId: issue.companyId,
-          projectId: issue.projectId ?? null,
-          entityId: issue.id,
-          entityType: "issue",
-        }}
-        className="flex flex-wrap gap-2"
-        itemClassName="inline-flex"
-        missingBehavior="placeholder"
-      />
+      {showIssuePluginSurfaces ? (
+        <>
+          <PluginSlotOutlet
+            slotTypes={["toolbarButton", "contextMenuItem"]}
+            entityType="issue"
+            context={{
+              companyId: issue.companyId,
+              projectId: issue.projectId ?? null,
+              entityId: issue.id,
+              entityType: "issue",
+            }}
+            className="flex flex-wrap gap-2"
+            itemClassName="inline-flex"
+            missingBehavior="placeholder"
+          />
 
-      <PluginLauncherOutlet
-        placementZones={["toolbarButton"]}
-        entityType="issue"
-        context={{
-          companyId: issue.companyId,
-          projectId: issue.projectId ?? null,
-          entityId: issue.id,
-          entityType: "issue",
-        }}
-        className="flex flex-wrap gap-2"
-        itemClassName="inline-flex"
-      />
+          <PluginLauncherOutlet
+            placementZones={["toolbarButton"]}
+            entityType="issue"
+            context={{
+              companyId: issue.companyId,
+              projectId: issue.projectId ?? null,
+              entityId: issue.id,
+              entityType: "issue",
+            }}
+            className="flex flex-wrap gap-2"
+            itemClassName="inline-flex"
+          />
 
-      <PluginSlotOutlet
-        slotTypes={["taskDetailView"]}
-        entityType="issue"
-        context={{
-          companyId: issue.companyId,
-          projectId: issue.projectId ?? null,
-          entityId: issue.id,
-          entityType: "issue",
-        }}
-        className="space-y-3"
-        itemClassName="rounded-lg border border-border p-3"
-        missingBehavior="placeholder"
-      />
+          <PluginSlotOutlet
+            slotTypes={["taskDetailView"]}
+            entityType="issue"
+            context={{
+              companyId: issue.companyId,
+              projectId: issue.projectId ?? null,
+              entityId: issue.id,
+              entityType: "issue",
+            }}
+            className="space-y-3"
+            itemClassName="rounded-lg border border-border p-3"
+            missingBehavior="placeholder"
+          />
+        </>
+      ) : null}
 
       {showRichSubIssuesSection ? (
         <div className="space-y-3">
