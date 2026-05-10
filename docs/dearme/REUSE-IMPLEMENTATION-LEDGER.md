@@ -46,6 +46,11 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DM-183BY adds a Symphony terminal handoff guard: worker lanes must leave a
+  local commit, explicit no-code evidence, or a blocker/patch handoff before a
+  terminal claim is acceptable. This keeps Linear state from becoming a proxy
+  for integration truth and protects the coordinator from cleaned workspaces
+  with no absorbable artifact.
 - DEA-12 was marked Done in Linear/Symphony without leaving an absorbable
   branch or live workspace on the coordination head, so the coordinator
   recovered the useful Voice Gate slice directly: the current scorer now passes

@@ -2,6 +2,34 @@
 
 Date: 2026-05-10
 
+## DM-183BY Symphony Terminal Handoff Guard - 2026-05-10
+
+Product/architecture slice:
+
+- Tightened the Symphony worker prompt after the DEA-12 recovery finding: a
+  Linear terminal state is not enough unless the coordinator can absorb a local
+  commit, explicit no-code evidence, or a blocker/patch handoff.
+- Added a terminal handoff gate to `.symphony/WORKFLOW.md`: changed-file
+  workers must run status/diff-check/focused verification, stage explicit
+  paths, and create a local commit before claiming completion; blocked commits
+  must leave workspace path, touched paths, patch summary, and failing command
+  while keeping the issue non-terminal.
+- Added the same guard to `.symphony/README.md` so DearMe keeps the main
+  checkout as the integration truth and avoids cleaned workspaces with no
+  absorbable artifact.
+- Confirmed the next product lane, DEA-13, had already cloned from `4b917f75`
+  before this coordinator-only guard; current Symphony status showed DEA-13
+  running with no retrying workers.
+
+Verification:
+
+- `git diff --check -- .symphony/WORKFLOW.md .symphony/README.md docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+- `.symphony/bin/dearme-symphony status --json` reported DEA-13 running and
+  `retrying: []`.
+- `git -C /private/tmp/dearme-symphony-workspaces/DEA-13 log -1 --oneline`
+  showed DEA-13 started from `4b917f75`.
+
 ## DM-183BX Voice Gate Scorer Recovery - 2026-05-10
 
 Product/architecture slice:

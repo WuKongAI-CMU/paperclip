@@ -62,3 +62,19 @@ Keychain service `dearme-linear-api-key`. The real dashboard/API defaults to
 
 Only assign real worker tickets to Peter in Linear. The default onboarding
 Linear issues remain unassigned and are filtered out by `assignee: me`.
+
+## Terminal Handoff Guard
+
+Worker issues are not coordinator-absorbable just because Linear says Done.
+Before a Symphony lane reaches a terminal state, the worker final response must
+leave one durable handoff path:
+
+- a local commit hash in the worker workspace when files changed;
+- explicit "No file changes" evidence for analysis-only or already-complete
+  tickets;
+- or a blocker/patch handoff with workspace path, touched paths, and the exact
+  failed command if a commit could not be created.
+
+This keeps the main DearMe checkout as the integration truth and prevents stale
+workspaces from being cleaned before the coordinator can absorb or reject the
+actual change.

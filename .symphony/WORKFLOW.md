@@ -159,10 +159,21 @@ Operating rules:
    `pnpm exec playwright install chromium` once and retry the same shell smoke
    before falling back to API/DOM evidence. If Playwright is otherwise
    unavailable, record the exact shell blocker and fall back to API/DOM evidence.
+13. Terminal handoff gate: do not claim complete, move the issue to a terminal
+    state, or leave a final response that can be interpreted as terminal unless
+    the coordinator can absorb the work from durable evidence. If files changed,
+    run `git status --short`, `git diff --check`, focused verification, stage
+    explicit paths only, and create a local commit in the worker workspace. If
+    a commit is blocked, leave the exact patch/diff summary, touched paths,
+    failing command, and current workspace path in the final response and keep
+    the issue non-terminal. If no files changed, explicitly say "No file
+    changes" and include the command evidence proving why the issue is complete.
 
 Final response contract:
 
 - Completed actions
+- Absorbable evidence: local commit hash, or explicit no-code evidence, or
+  blocker/patch handoff with workspace path
 - Files changed
 - Validation evidence
 - Blockers only if real
