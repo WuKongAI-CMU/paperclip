@@ -168,6 +168,12 @@ Operating rules:
     failing command, and current workspace path in the final response and keep
     the issue non-terminal. If no files changed, explicitly say "No file
     changes" and include the command evidence proving why the issue is complete.
+14. Critical product proof lanes stay effectively single-lane. When a first-cycle
+    private run, launch handoff, or similar aha-proof ticket is active, do not
+    start or request another product implementation lane until that ticket leaves
+    an absorbable commit, explicit no-code evidence, or blocker/patch handoff.
+    Use read-only review help for architecture/product checks instead of adding
+    another writer against the same surface.
 
 Final response contract:
 

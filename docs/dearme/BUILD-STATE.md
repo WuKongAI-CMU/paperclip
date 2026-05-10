@@ -17,18 +17,26 @@ Product/architecture slice:
 - Added the same guard to `.symphony/README.md` so DearMe keeps the main
   checkout as the integration truth and avoids cleaned workspaces with no
   absorbable artifact.
-- Confirmed the next product lane, DEA-13, had already cloned from `4b917f75`
-  before this coordinator-only guard; current Symphony status showed DEA-13
-  running with no retrying workers.
+- Added the current concurrency rule for aha-proof work: while DEA-13 or a
+  similar first-cycle private-run/launch-handoff ticket is active, keep the
+  product implementation lane effectively single-lane and use extra Codex help
+  only for read-only review.
+- Confirmed the next product lane, DEA-13, had cloned from `4b917f75`; DEA-14
+  then reached a terminal Linear state and its workspace was already cleaned,
+  which is exactly why the coordinator now requires absorbable evidence instead
+  of trusting terminal state alone.
 
 Verification:
 
 - `git diff --check -- .symphony/WORKFLOW.md .symphony/README.md docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
   passed.
-- `.symphony/bin/dearme-symphony status --json` reported DEA-13 running and
-  `retrying: []`.
+- `.symphony/bin/dearme-symphony status --json` reported DEA-13 as the only
+  running worker and `retrying: []`.
 - `git -C /private/tmp/dearme-symphony-workspaces/DEA-13 log -1 --oneline`
   showed DEA-13 started from `4b917f75`.
+- `/private/tmp/dearme-symphony-workspaces/DEA-14` was already missing after
+  Linear terminal completion, so the useful coordination rule was landed from
+  the coordinator checkout.
 
 ## DM-183BX Voice Gate Scorer Recovery - 2026-05-10
 

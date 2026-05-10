@@ -51,6 +51,10 @@ The right reuse split is:
   terminal claim is acceptable. This keeps Linear state from becoming a proxy
   for integration truth and protects the coordinator from cleaned workspaces
   with no absorbable artifact.
+- DEA-13 is the only active product proof lane right now. Do not add another
+  product-writing Symphony agent until DEA-13 leaves an absorbable handoff; use
+  native Codex subagents only for read-only architecture or QA review while it
+  runs.
 - DEA-12 was marked Done in Linear/Symphony without leaving an absorbable
   branch or live workspace on the coordination head, so the coordinator
   recovered the useful Voice Gate slice directly: the current scorer now passes
@@ -2959,8 +2963,10 @@ issue/document handoff. DM-138E live-smoked the same path, fixed stale
 cancelled output history so current proof issues project as `ready_for_review`,
 and kept the customer surface free of donor/runtime vocabulary.
 
-DM-S01, DM-138A-E, DM-139 / DM-140, DEA-7, DEA-8, and DEA-9 have landed locally
-or are in active Symphony review. The next non-negotiable slice is DEA-11 /
-DM-183CA: turn approved prepared work into a launch-ready private handoff that
-shows the next safe action while preserving the four public-action gates. Do
-not add another customer-facing runtime contract to solve this.
+DM-S01, DM-138A-E, DM-139 / DM-140, DEA-7, DEA-8, DEA-9, DEA-11, and DEA-12
+have landed or been recovered on the current coordination head. The current
+non-negotiable slice is DEA-13 / DM-139A: turn the existing first-cycle start
+flow into one private DearMe chief-of-staff letter plus one simple review
+decision card. Do not add another customer-facing runtime contract or parallel
+product-writing lane to solve this; let DEA-13 return an absorbable handoff
+first.
