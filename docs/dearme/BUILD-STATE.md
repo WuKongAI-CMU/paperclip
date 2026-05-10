@@ -2,6 +2,30 @@
 
 Date: 2026-05-10
 
+## DM-183AP Reviewed Worktree Absorption Ledger - 2026-05-10
+
+Implementation slice:
+
+- Added a reviewed-absorption ledger for old worker branches that were already
+  manually compared against the current product surface.
+- Taught `dearme:worktrees` to mark exact branch/head matches as
+  `reviewed_absorbed` so Symphony coordination can stop treating those tips as
+  fresh replay candidates.
+- Kept the safety boundary narrow: reviewed absorption only applies to
+  `not_in_current` records whose branch and head match the ledger, and the
+  action still says to close only after owner confirmation.
+
+Verification:
+
+- `pnpm run test:dearme-worktrees` passed: 13 node tests.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` passed and now
+  reports `reviewed_absorbed: 5`, `not_in_current: 108`, `subject_matched: 16`,
+  `dirty: 0`.
+- `pnpm run dearme:worktrees -- --status=reviewed-absorbed --skip-dirty --limit=20`
+  passed and listed DM-096, DM-098, DM-099, DM-100, and DM-101 as reviewed.
+- `git diff --check -- scripts/dearme-worktree-status.mjs scripts/dearme-worktree-status.test.mjs docs/dearme/WORKTREE-ABSORPTION-LEDGER.json docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183AO Saved Source Work Paths - 2026-05-10
 
 Implementation slice:

@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_LIMIT = 0;
 const DEFAULT_SYMPHONY_ROOT = "/private/tmp/dearme-symphony-workspaces";
+const DEFAULT_REVIEWED_ABSORPTION_LEDGER = "docs/dearme/WORKTREE-ABSORPTION-LEDGER.json";
 const WORKTREE_STATUSES = new Set([
   "current",
   "in_current",
   "patch_equivalent",
+  "reviewed_absorbed",
   "not_in_current",
   "detached",
   "prunable",
@@ -113,6 +115,10 @@ export function recommendWorktreeAction({ status, purpose, dirtyFiles, headSubje
     return "patch-equivalent to current head; close only after owner confirmation";
   }
 
+  if (status === "reviewed_absorbed") {
+    return "reviewed as already absorbed in current head; close only after owner confirmation, do not replay";
+  }
+
   if (status === "not_in_current" && headSubjectInCurrent) {
     return "tip subject already exists in current head; inspect residual diff before replay or close";
   }
@@ -172,6 +178,47 @@ function collectCurrentSubjects(currentHead, repoRoot) {
   return new Set(runGit(["log", "--format=%s", currentHead], repoRoot).split("\n").filter(Boolean));
 }
 
+export function loadReviewedAbsorptions(
+  repoRoot = process.cwd(),
+  ledgerPath = DEFAULT_REVIEWED_ABSORPTION_LEDGER,
+) {
+  const fullPath = join(repoRoot, ledgerPath);
+  if (!existsSync(fullPath)) return [];
+
+  const parsed = JSON.parse(readFileSync(fullPath, "utf8"));
+  if (Array.isArray(parsed)) return parsed;
+  if (Array.isArray(parsed.reviewedAbsorptions)) return parsed.reviewedAbsorptions;
+  return [];
+}
+
+function matchesReviewedAbsorption(record, absorption) {
+  if (!absorption?.branch || absorption.branch !== record.branch) return false;
+  if (!record.head) return false;
+  if (absorption.head && record.head === absorption.head) return true;
+  if (absorption.headPrefix && record.head.startsWith(absorption.headPrefix)) return true;
+  return false;
+}
+
+export function markReviewedAbsorption(record, reviewedAbsorptions = []) {
+  if (record.status !== "not_in_current") return record;
+
+  const reviewedAbsorption = reviewedAbsorptions.find((absorption) =>
+    matchesReviewedAbsorption(record, absorption),
+  );
+  if (!reviewedAbsorption) return record;
+
+  return {
+    ...record,
+    status: "reviewed_absorbed",
+    reviewedAbsorption: {
+      ticket: reviewedAbsorption.ticket ?? deriveWorktreeTicket(record),
+      reviewedAt: reviewedAbsorption.reviewedAt ?? null,
+      reason: reviewedAbsorption.reason ?? "",
+      evidence: reviewedAbsorption.evidence ?? [],
+    },
+  };
+}
+
 export function classifyWorktree({ head, detached, prunable }, currentHead, repoRoot) {
   if (prunable) return "prunable";
   if (detached) return "detached";
@@ -197,15 +244,16 @@ function annotateWorktreeSubject(record, currentHead, currentSubjects, objectCwd
   };
 }
 
-export function enrichWorktreeRecord(record) {
+export function enrichWorktreeRecord(record, reviewedAbsorptions = []) {
+  const reviewedRecord = markReviewedAbsorption(record, reviewedAbsorptions);
   const ticket = deriveWorktreeTicket(record);
-  const purpose = classifyWorktreePurpose(record);
+  const purpose = classifyWorktreePurpose(reviewedRecord);
 
   return {
-    ...record,
+    ...reviewedRecord,
     ticket,
     purpose,
-    nextAction: recommendWorktreeAction({ ...record, purpose }),
+    nextAction: recommendWorktreeAction({ ...reviewedRecord, purpose }),
   };
 }
 
@@ -243,6 +291,7 @@ function collectSymphonyWorkspaceStatus({
   currentSubjects,
   skipDirty,
   symphonyRoot,
+  reviewedAbsorptions,
 }) {
   return listSymphonyWorkspacePaths(symphonyRoot).map((workspacePath) => {
     const head = runGit(["rev-parse", "HEAD"], workspacePath);
@@ -263,6 +312,7 @@ function collectSymphonyWorkspaceStatus({
         currentSubjects,
         workspacePath,
       ),
+      reviewedAbsorptions,
     );
   });
 }
@@ -276,6 +326,7 @@ export function collectWorktreeStatus({
   const repoRoot = runGit(["rev-parse", "--show-toplevel"], cwd);
   const currentHead = runGit(["rev-parse", "HEAD"], repoRoot);
   const currentSubjects = collectCurrentSubjects(currentHead, repoRoot);
+  const reviewedAbsorptions = loadReviewedAbsorptions(repoRoot);
   const worktrees = parseWorktrees(runGit(["worktree", "list", "--porcelain"], repoRoot));
 
   const records = worktrees.map((worktree) =>
@@ -293,6 +344,7 @@ export function collectWorktreeStatus({
         currentSubjects,
         existsSync(worktree.path) ? worktree.path : repoRoot,
       ),
+      reviewedAbsorptions,
     ),
   );
 
@@ -305,6 +357,7 @@ export function collectWorktreeStatus({
     currentSubjects,
     skipDirty,
     symphonyRoot,
+    reviewedAbsorptions,
   }).filter((record) => !seen.has(record.path));
 
   return [...records, ...symphonyRecords];
@@ -471,10 +524,10 @@ function printTable(records) {
   printSummary(summary);
   console.log("");
   console.log(
-    `${"status".padEnd(16)} ${"dirty".padStart(5)} ${"ticket".padEnd(8)} ${"purpose".padEnd(11)} ${"branch".padEnd(54)} path`,
+    `${"status".padEnd(18)} ${"dirty".padStart(5)} ${"ticket".padEnd(8)} ${"purpose".padEnd(11)} ${"branch".padEnd(54)} path`,
   );
   console.log(
-    `${"-".repeat(16)} ${"-".repeat(5)} ${"-".repeat(8)} ${"-".repeat(11)} ${"-".repeat(54)} ${"-".repeat(20)}`,
+    `${"-".repeat(18)} ${"-".repeat(5)} ${"-".repeat(8)} ${"-".repeat(11)} ${"-".repeat(54)} ${"-".repeat(20)}`,
   );
 
   for (const record of rows) {
@@ -482,7 +535,7 @@ function printTable(records) {
     const ticket = record.ticket ?? "-";
     const branch = record.branch.length > 54 ? `${record.branch.slice(0, 51)}...` : record.branch;
     console.log(
-      `${record.status.padEnd(16)} ${dirty.padStart(5)} ${ticket.padEnd(8)} ${record.purpose.padEnd(11)} ${branch.padEnd(54)} ${record.path}`,
+      `${record.status.padEnd(18)} ${dirty.padStart(5)} ${ticket.padEnd(8)} ${record.purpose.padEnd(11)} ${branch.padEnd(54)} ${record.path}`,
     );
   }
 }
@@ -494,6 +547,7 @@ function printSummary(summary) {
       `current: ${summary.current ?? 0}`,
       `in_current: ${summary.in_current ?? 0}`,
       `patch_equivalent: ${summary.patch_equivalent ?? 0}`,
+      `reviewed_absorbed: ${summary.reviewed_absorbed ?? 0}`,
       `not_in_current: ${summary.not_in_current ?? 0}`,
       `subject_matched: ${summary.subject_matched ?? 0}`,
       `detached: ${summary.detached ?? 0}`,

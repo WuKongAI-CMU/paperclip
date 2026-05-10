@@ -1,0 +1,65 @@
+{
+  "updatedAt": "2026-05-10",
+  "reviewedAbsorptions": [
+    {
+      "ticket": "DM-096",
+      "branch": "codex/dearme-dm-096-focused-decision-banner-actions",
+      "head": "e61752b8e6fee7f8c3a92051c2e76ecf9a7cb044",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current onboarding already carries the focused decision banner behavior through the evolved DearMe action-card and decision surfaces; the reviewed branch tip is queue/docs alignment only.",
+      "evidence": [
+        "ui/src/components/dearme/DearMeActionCard.tsx",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "doc/plans/2026-05-09-dearme-dm-096-focused-decision-banner-actions.md"
+      ]
+    },
+    {
+      "ticket": "DM-098",
+      "branch": "codex/dearme-dm-098-decision-action-card",
+      "head": "b888a54786506da45702bbf2807c023b5929195e",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current onboarding already uses the shared DearMe action-card shell across focused review and decision paths; replaying the stale patch would duplicate older UI deltas.",
+      "evidence": [
+        "ui/src/components/dearme/DearMeActionCard.tsx",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-099",
+      "branch": "codex/dearme-dm-099-operating-loop",
+      "head": "505849149368f7c0d7f397ffe9b5323a8bc9bfee",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current onboarding already includes the evolved OperatingLoopPanel and workbench loop metrics; the branch intent is present through newer combined implementation.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "doc/plans/2026-05-08-dearme-dm-merge-queue.md"
+      ]
+    },
+    {
+      "ticket": "DM-100",
+      "branch": "codex/dearme-dm-100-cycle-guardrails",
+      "head": "efafc054653b4519430cab3ff82e77c64e76738d",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current shared, server, and onboarding code already expose and render paid-beta cycle guardrails derived from spend rails.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/services/dearme-paid-beta-access.ts",
+        "ui/src/pages/DearMeOnboarding.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-101",
+      "branch": "codex/dearme-dm-101-cycle-guardrail-enforcement",
+      "head": "f4d86752f00127cf9952fc2f1a2760a5baf7f8d9",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current server routes already enforce private-cycle blocker checks before regeneration and output activity actions.",
+      "evidence": [
+        "server/src/services/dearme-paid-beta-access.ts",
+        "server/src/routes/dearme.ts",
+        "server/src/__tests__/dearme-brand-blueprint-routes.test.ts"
+      ]
+    }
+  ]
+}

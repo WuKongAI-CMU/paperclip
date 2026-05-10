@@ -12,6 +12,8 @@ import {
   enrichWorktreeRecord,
   filterWorktreeRecords,
   listSymphonyWorkspacePaths,
+  loadReviewedAbsorptions,
+  markReviewedAbsorption,
   parseArgs,
   parseWorktrees,
   summarize,
@@ -143,6 +145,33 @@ test("enrichWorktreeRecord adds ticket, purpose, and coordinator action", () => 
     }).nextAction,
     "absorbed Symphony lane; keep as audit trail or close after owner confirmation",
   );
+
+  const reviewed = enrichWorktreeRecord(
+    {
+      path: "/private/tmp/dearme-dm-099-operating-loop",
+      branch: "codex/dearme-dm-099-operating-loop",
+      head: "505849149368f7c0d7f397ffe9b5323a8bc9bfee",
+      status: "not_in_current",
+      dirtyFiles: 0,
+      prunable: false,
+    },
+    [
+      {
+        ticket: "DM-099",
+        branch: "codex/dearme-dm-099-operating-loop",
+        head: "505849149368f7c0d7f397ffe9b5323a8bc9bfee",
+        reviewedAt: "2026-05-10",
+        reason: "current onboarding already carries this loop",
+      },
+    ],
+  );
+
+  assert.equal(reviewed.status, "reviewed_absorbed");
+  assert.equal(reviewed.reviewedAbsorption.ticket, "DM-099");
+  assert.equal(
+    reviewed.nextAction,
+    "reviewed as already absorbed in current head; close only after owner confirmation, do not replay",
+  );
 });
 
 test("filters support status, ticket, dirty-only, and limits", () => {
@@ -204,6 +233,9 @@ test("parseArgs tolerates the pnpm argument separator", () => {
   const patchEquivalentOptions = parseArgs(["--status=patch-equivalent"]);
   assert.equal(patchEquivalentOptions.statuses.has("patch_equivalent"), true);
 
+  const reviewedAbsorbedOptions = parseArgs(["--status=reviewed-absorbed"]);
+  assert.equal(reviewedAbsorbedOptions.statuses.has("reviewed_absorbed"), true);
+
   const rootEqualsOptions = parseArgs(["--symphony-root=/tmp/dearme-symphony-equals"]);
   assert.equal(rootEqualsOptions.symphonyRoot, "/tmp/dearme-symphony-equals");
 });
@@ -254,6 +286,23 @@ test("summarize keeps legacy counts and adds purpose/ticket buckets", () => {
       dirtyFiles: 0,
       prunable: false,
     }),
+    enrichWorktreeRecord(
+      {
+        path: "/private/tmp/dearme-dm-099-operating-loop",
+        branch: "codex/dearme-dm-099-operating-loop",
+        head: "5",
+        status: "not_in_current",
+        dirtyFiles: 0,
+        prunable: false,
+      },
+      [
+        {
+          ticket: "DM-099",
+          branch: "codex/dearme-dm-099-operating-loop",
+          head: "5",
+        },
+      ],
+    ),
     enrichWorktreeRecord({
       path: "/private/tmp/dearme-symphony-workspaces/DEA-7-publish-qbFNq4/repo",
       branch: "verify-dea-7-current",
@@ -265,25 +314,91 @@ test("summarize keeps legacy counts and adds purpose/ticket buckets", () => {
   ];
 
   assert.deepEqual(summarize(records), {
-    total: 4,
+    total: 5,
     dirty: 1,
     current: 1,
     not_in_current: 2,
     patch_equivalent: 1,
+    reviewed_absorbed: 1,
     subject_matched: 1,
     byPurpose: {
       current: 1,
       integration: 1,
       symphony: 1,
-      worker: 1,
+      worker: 2,
     },
     byTicket: {
       "DM-136": 1,
       "DM-086": 1,
       "DM-087": 1,
+      "DM-099": 1,
       "DEA-7": 1,
     },
   });
+});
+
+test("markReviewedAbsorption only matches exact reviewed branch heads", () => {
+  const reviewLedger = [
+    {
+      ticket: "DM-100",
+      branch: "codex/dearme-dm-100-cycle-guardrails",
+      head: "efafc054653b4519430cab3ff82e77c64e76738d",
+      reason: "guardrail already absorbed",
+    },
+  ];
+
+  const reviewed = markReviewedAbsorption(
+    {
+      path: "/private/tmp/dearme-dm-100-cycle-guardrails",
+      branch: "codex/dearme-dm-100-cycle-guardrails",
+      head: "efafc054653b4519430cab3ff82e77c64e76738d",
+      status: "not_in_current",
+      dirtyFiles: 0,
+      prunable: false,
+    },
+    reviewLedger,
+  );
+
+  assert.equal(reviewed.status, "reviewed_absorbed");
+  assert.equal(reviewed.reviewedAbsorption.reason, "guardrail already absorbed");
+
+  const advancedBranch = markReviewedAbsorption(
+    {
+      path: "/private/tmp/dearme-dm-100-cycle-guardrails",
+      branch: "codex/dearme-dm-100-cycle-guardrails",
+      head: "ffffffffffffffffffffffffffffffffffffffff",
+      status: "not_in_current",
+      dirtyFiles: 0,
+      prunable: false,
+    },
+    reviewLedger,
+  );
+
+  assert.equal(advancedBranch.status, "not_in_current");
+});
+
+test("loadReviewedAbsorptions reads the repo absorption ledger", () => {
+  const repo = mkdtempSync(join(tmpdir(), "dearme-reviewed-absorptions-"));
+  const ledgerDir = join(repo, "docs", "dearme");
+  const ledgerPath = join(ledgerDir, "WORKTREE-ABSORPTION-LEDGER.json");
+  const absorption = {
+    ticket: "DM-096",
+    branch: "codex/dearme-dm-096-focused-decision-banner-actions",
+    head: "e61752b8e6fee7f8c3a92051c2e76ecf9a7cb044",
+    reason: "focused decision banner already absorbed",
+  };
+
+  try {
+    mkdirSync(ledgerDir, { recursive: true });
+    writeFileSync(ledgerPath, JSON.stringify({ reviewedAbsorptions: [absorption] }));
+
+    assert.deepEqual(loadReviewedAbsorptions(repo), [absorption]);
+
+    writeFileSync(ledgerPath, JSON.stringify([absorption]));
+    assert.deepEqual(loadReviewedAbsorptions(repo), [absorption]);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
 });
 
 test("enrichWorktreeRecord classifies DEA and Symphony paths as active lanes", () => {
