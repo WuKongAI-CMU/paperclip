@@ -205,6 +205,10 @@ Verification:
 - `git diff --check -- ui/src/pages/DearMeOnboarding.tsx
   ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md
   docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md` passed.
+- Playwright fallback smoke on `http://127.0.0.1:3100/DEAAAAAAAAA/dearme`
+  confirmed writing-sample, source-link, and forbidden-phrase previews switch
+  in the real UI with no horizontal overflow, no same-origin request failures,
+  no console/page errors, and no hidden substrate terms.
 
 ### DM-183AM: Voice & Memory Source Guardrails
 

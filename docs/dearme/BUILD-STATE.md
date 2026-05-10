@@ -23,6 +23,11 @@ Verification:
   passed.
 - `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
   passed.
+- Playwright fallback smoke on `http://127.0.0.1:3100/DEAAAAAAAAA/dearme`
+  confirmed the source-team preview changes for writing sample, source link,
+  and forbidden phrase, with no horizontal overflow, no same-origin request
+  failures, no console/page errors, and no hidden substrate terms. Screenshot:
+  `/tmp/dearme-dm183an-team-preview.png`.
 
 ## DM-183AM Voice & Memory Source Guardrails - 2026-05-10
 
