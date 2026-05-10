@@ -59,6 +59,9 @@ type DearMeMemorySourceReviewCandidate = DearMeMemoryUpdateItem & {
 };
 type DearMeStreamKind = DearMeWorkbenchStreamItem["kind"];
 type DearMeCycleStage = DearMeWorkbenchStreamItem["cycleStage"];
+type DearMeWorkEventAction = DearMeWorkbenchStreamItem["action"];
+type DearMeWorkEventDecisionNeed = DearMeWorkbenchStreamItem["decisionNeed"];
+type DearMeWorkEventTraceRef = DearMeWorkbenchStreamItem["traceRefs"][number];
 type DearMeCyclePacketEvidence = {
   voiceFit: string | null;
   summary: string;
@@ -622,6 +625,75 @@ function artifactForDecision(decision: DearMeWorkbenchDecision) {
   return "Approval";
 }
 
+function traceRef(
+  kind: DearMeWorkEventTraceRef["kind"],
+  id: string | null | undefined,
+  identifier: string | null = null,
+): DearMeWorkEventTraceRef | null {
+  if (!id) return null;
+  return { kind, id, identifier };
+}
+
+function compactTraceRefs(refs: Array<DearMeWorkEventTraceRef | null>): DearMeWorkEventTraceRef[] {
+  const seen = new Set<string>();
+  return refs.filter((ref): ref is DearMeWorkEventTraceRef => {
+    if (!ref) return false;
+    const key = `${ref.kind}:${ref.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function decisionNeed(input: {
+  needed: boolean;
+  label: string | null;
+  reason: string | null;
+  riskGate?: DearMeRiskGate | null;
+}): DearMeWorkEventDecisionNeed {
+  return {
+    needed: input.needed,
+    label: input.label ? dearMeWorkbenchProjectionTitle(input.label, "Decision needed") : null,
+    reason: input.reason ? dearMeWorkbenchProjectionText(input.reason, "Your team is waiting for your call.") : null,
+    riskGate: input.riskGate ?? null,
+  };
+}
+
+function noDecisionNeed(): DearMeWorkEventDecisionNeed {
+  return decisionNeed({
+    needed: false,
+    label: null,
+    reason: null,
+    riskGate: null,
+  });
+}
+
+function actionForWork(input: {
+  item: DearMeWorkbenchWorkItem;
+  isChiefBrief: boolean;
+  isReady: boolean;
+}): DearMeWorkEventAction {
+  if (input.isChiefBrief) return "plan";
+  if (input.isReady) return input.item.outputKind === "weekly_report" ? "report" : "review";
+  if (input.item.outputKind === "opportunity_drafts") return "research";
+  if (input.item.outputKind === "portfolio_update") return "prepare";
+  if (input.item.outputKind === "voice_profile") return "learn";
+  return "draft";
+}
+
+function actionForDecision(decision: DearMeWorkbenchDecision): DearMeWorkEventAction {
+  return decision.kind === "review_output" ? "review" : "approve";
+}
+
+function actionForProgress(item: DearMeWorkbenchProgressItem): DearMeWorkEventAction {
+  if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "learn";
+  if (item.kind === "brand_os_requested" || item.kind === "brand_os_applied") return "plan";
+  if (item.kind === "next_move_approved") return "approve";
+  if (item.kind === "execution_handoff_prepared") return "handoff";
+  if (item.kind === "paid_beta") return "prepare";
+  return "report";
+}
+
 function cycleStageForOutputKind(outputKind: DearMeOutputKind | null): DearMeCycleStage {
   if (outputKind === "brand_os") return "plan";
   if (outputKind === "voice_profile") return "learn";
@@ -775,11 +847,13 @@ function streamItemFromWork(item: DearMeWorkbenchWorkItem): DearMeWorkbenchStrea
       ? "Cycle brief"
       : "Prepared work";
   const isReady = item.status === "ready_for_review";
+  const nextAction = nextActionForWork({ item, isChiefBrief, isReady });
 
   return {
     id: `work:${item.id}`,
     kind: streamKindForWork(item),
     cycleStage: cycleStageForWork(item),
+    action: actionForWork({ item, isChiefBrief, isReady }),
     role,
     title: isChiefBrief
       ? "Chief of Staff is turning your brief into private work"
@@ -787,16 +861,30 @@ function streamItemFromWork(item: DearMeWorkbenchWorkItem): DearMeWorkbenchStrea
         ? `${TEAM_ROLE_PUBLIC_LABELS[role]} prepared ${item.title}`
         : `${TEAM_ROLE_PUBLIC_LABELS[role]} is working on ${item.title}`,
     summary: item.summary,
+    customerSummary: item.summary,
     artifact,
+    artifactTarget: artifact,
     status: item.status === "queued" ? "working" : item.status,
     needsApproval: isReady,
+    decisionNeed: isReady
+      ? decisionNeed({
+          needed: true,
+          label: item.outputKind === "weekly_report" ? "Review weekly report" : "Review prepared work",
+          reason: nextAction,
+          riskGate: item.outputKind ? OUTPUT_DECISION_GATE[item.outputKind] : null,
+        })
+      : noDecisionNeed(),
     sourceLabel: sourceLabelForWork({ item, isChiefBrief }),
     costImpact: null,
-    nextAction: nextActionForWork({ item, isChiefBrief, isReady }),
+    nextAction,
     relatedOutputId: item.outputKind ? item.id : null,
     issueId: item.issueId,
     issueIdentifier: item.issueIdentifier,
     approvalId: null,
+    traceRefs: compactTraceRefs([
+      traceRef("output", item.outputKind ? item.id : null),
+      traceRef("issue", item.issueId, item.issueIdentifier),
+    ]),
     createdAt: item.updatedAt,
     reviewLoop: item.reviewLoop,
   };
@@ -804,24 +892,40 @@ function streamItemFromWork(item: DearMeWorkbenchWorkItem): DearMeWorkbenchStrea
 
 function streamItemFromDecision(decision: DearMeWorkbenchDecision): DearMeWorkbenchStreamItem {
   const role = roleForDecision(decision);
+  const artifact = artifactForDecision(decision);
+  const nextAction = nextActionForDecision(decision);
 
   return {
     id: `decision:${decision.id}`,
     kind: decision.outputKind === "weekly_report" ? "report_ready" : "decision_needed",
     cycleStage: decision.outputKind === "weekly_report" ? "report" : "review",
+    action: actionForDecision(decision),
     role,
     title: `Your call: ${decision.title}`,
     summary: decision.summary,
-    artifact: artifactForDecision(decision),
+    customerSummary: decision.summary,
+    artifact,
+    artifactTarget: artifact,
     status: "decision_needed",
     needsApproval: true,
+    decisionNeed: decisionNeed({
+      needed: true,
+      label: decision.riskGate ? "Approval required" : "Review needed",
+      reason: nextAction,
+      riskGate: decision.riskGate,
+    }),
     sourceLabel: sourceLabelForDecision(decision),
     costImpact: decision.riskGate === "spend_money" ? "Spend waits for the launch call" : null,
-    nextAction: nextActionForDecision(decision),
+    nextAction,
     relatedOutputId: decision.outputId,
     issueId: decision.issueId,
     issueIdentifier: decision.issueIdentifier,
     approvalId: decision.approvalId,
+    traceRefs: compactTraceRefs([
+      traceRef("approval", decision.approvalId),
+      traceRef("output", decision.outputId),
+      traceRef("issue", decision.issueId, decision.issueIdentifier),
+    ]),
     createdAt: decision.updatedAt,
     reviewLoop: decision.reviewLoop,
   };
@@ -833,12 +937,16 @@ function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbe
       id: `progress:${item.id}`,
       kind: streamKindForProgress(item),
       cycleStage: cycleStageForProgress(item),
+      action: actionForProgress(item),
       role: "voice_editor",
       title: item.title,
       summary: item.summary,
+      customerSummary: item.summary,
       artifact: "Voice & Memory",
+      artifactTarget: "Voice & Memory",
       status: "recorded",
       needsApproval: false,
+      decisionNeed: noDecisionNeed(),
       sourceLabel: sourceLabelForProgress(item),
       costImpact: costImpactForProgress(item),
       nextAction: nextActionForProgress(item),
@@ -846,21 +954,30 @@ function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbe
       issueId: null,
       issueIdentifier: null,
       approvalId: null,
+      traceRefs: compactTraceRefs([
+        traceRef("activity", item.id),
+      ]),
       createdAt: item.createdAt,
       reviewLoop: null,
     };
   }
 
+  const artifact = artifactForProgress(item);
+
   return {
     id: `progress:${item.id}`,
     kind: streamKindForProgress(item),
     cycleStage: cycleStageForProgress(item),
+    action: actionForProgress(item),
     role: roleForProgress(item),
     title: item.title,
     summary: item.summary,
-    artifact: artifactForProgress(item),
+    customerSummary: item.summary,
+    artifact,
+    artifactTarget: artifact,
     status: "recorded",
     needsApproval: false,
+    decisionNeed: noDecisionNeed(),
     sourceLabel: sourceLabelForProgress(item),
     costImpact: costImpactForProgress(item),
     nextAction: nextActionForProgress(item),
@@ -868,6 +985,12 @@ function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbe
     issueId: item.issueId ?? null,
     issueIdentifier: item.issueIdentifier ?? null,
     approvalId: item.approvalId ?? null,
+    traceRefs: compactTraceRefs([
+      traceRef("activity", item.id),
+      traceRef("approval", item.approvalId ?? null),
+      traceRef("output", item.outputId ?? null),
+      traceRef("issue", item.issueId ?? null, item.issueIdentifier ?? null),
+    ]),
     createdAt: item.createdAt,
     reviewLoop: null,
   };

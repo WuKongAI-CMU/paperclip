@@ -2,6 +2,62 @@
 
 Date: 2026-05-10
 
+## DM-183BV Symphony Work-Event Contract And Residual Worktree Closure - 2026-05-10
+
+Product/architecture slice:
+
+- Made Symphony the active cooperation spine for DearMe coordinator/worker
+  collaboration while keeping Symphony, OpenClaw, Paperclip, Naive, Polsia,
+  and Lindy as backstage primitives rather than paid-beta customer language.
+- Promoted the DearMe workbench stream into a typed work-event contract:
+  `action`, `customerSummary`, `artifactTarget`, `decisionNeed`, and
+  `traceRefs` now travel from shared validators through the server projection
+  so Symphony-style work can become customer-safe decision cards without
+  exposing a queue, run id, model, provider, or worker surface.
+- Added explicit shared exports for `DEARME_WORK_EVENT_ACTIONS` and
+  `DEARME_WORK_EVENT_TRACE_KINDS` so future Symphony workers can reuse the
+  same action/trace vocabulary instead of inventing parallel event shapes.
+- Recorded exact-head reviewed absorptions for the last residual worktree
+  group: DM-084 integration-base audit
+  `f4d86752f00127cf9952fc2f1a2760a5baf7f8d9`, DM-086 donor-reuse
+  integration `1e408791f3a3bc60fc043dd792bdf95e95b162d6`, DM-095 Work
+  Ready summary actions `74775861b00ab26598549b3840e538860bddf845`,
+  both DM-097 review/event-smoke heads
+  `71c2e1c0022363ad171fdb38e7d4ce17cdc9f069` and
+  `4a91c6098407c88493ce7da255b0337e2c8472f3`, DM-098 product-copy leakage
+  `60b6fc517d2b463454ffaa98ccd0b7bc1aea8817`, and DM-101 baseline guardrail
+  integration `0f6529b6937e806260640331660746779086c915`.
+- Mapped DM-084 and DM-101 to the current paid-beta access/spend guardrails,
+  private-cycle hard stops, regeneration blockers, and route tests.
+- Mapped DM-086 to the current donor-reuse architecture and reuse ledger; it
+  is docs-only historical queue context now that Symphony is the cooperation
+  spine.
+- Mapped DM-095 and both DM-097 heads to the current Work Ready/focused review
+  path plus the new typed work-event contract, so review actions stay on the
+  existing output-review mutation path.
+- Mapped DM-098 to current invite/account/onboarding copy guards that keep
+  Paperclip, OpenClaw, Symphony, provider, model, and workspace terms out of
+  customer-visible surfaces.
+
+Verification:
+
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
+  passed.
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-workbench-projection.test.ts server/src/__tests__/dearme-paid-beta-access.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/pages/DearMeOnboarding.test.tsx ui/src/pages/CompanyInvites.test.tsx ui/src/pages/InviteLanding.test.tsx --maxWorkers=1`
+  passed for the non-embedded-Postgres files; the embedded-Postgres
+  workbench file kept the repo's existing host skip when Postgres init was
+  unavailable.
+- `pnpm --filter @paperclipai/shared typecheck`,
+  `pnpm --filter @paperclipai/server typecheck`, and
+  `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` reported
+  `not_in_current: 0`; the exact DM-084, DM-086, DM-095, DM-097, DM-098, and
+  DM-101 heads now classify as `reviewed_absorbed`.
+- `.symphony/bin/dearme-symphony status --json` reported Symphony running with
+  no active or retrying workers.
+- `git diff --check -- packages/shared/src/index.ts packages/shared/src/validators/dearme.ts packages/shared/src/validators/index.ts packages/shared/src/validators/dearme.test.ts server/src/services/dearme-workbench.ts ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/INDEX.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`
+  passed.
+
 ## DM-183BU DM-083/089 Learning/Progress/Source Absorption - 2026-05-10
 
 Product/architecture slice:

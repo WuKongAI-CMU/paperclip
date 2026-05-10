@@ -129,36 +129,19 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-183AR review-memory surface** — Work Ready and focused review now preserve customer-safe review receipts through `feedbackTrace.receipts`, so repeated review decisions become visible product memory rather than raw queue history.
 - **DEA-9 / DM-183AS repeatable review-memory proof** — the current branch browser/API smoke proves another-pass feedback, fresh private report work, and focused `Feedback applied` receipts on the same Work Ready path without hidden donor/runtime terms.
 - **DEA-11 / DM-183BO private launch-handoff proof** — the current branch browser/API smoke proves a prepared output can be approved, converted into the final launch-call approval, accepted, and surfaced as a private handoff brief through DearMe `work=` / `artifact=` navigation without leaking hidden substrate terms or claiming external execution already happened.
+- **DM-183BV Symphony cooperation spine** — the current branch now treats Symphony as the coordinator/worker cooperation center while keeping it backstage. Workbench stream items have a typed work-event contract (`action`, `customerSummary`, `artifactTarget`, `decisionNeed`, `traceRefs`) for customer-safe decision cards, and the remaining DM-084, DM-086, DM-095, DM-097, DM-098, and DM-101 stale worktree heads are recorded as reviewed absorptions.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)
 
-**Coordinator next step — close stale DEA-11 and continue the residual worker
-absorption patrol.**
+**Coordinator next step — run new DearMe work only through Symphony/Linear.**
 
-DEA-11 is now proven on the current branch. The active Symphony workspace was
-created from an older head, so treat it as stale until its diff is compared
-against this proof and either closed or replayed as a strictly smaller slice.
-
-After DEA-11 is closed, inspect the remaining `not_in_current` worker group in
-small batches. DM-043 through DM-047 are now recorded as reviewed absorptions on
-the current customer-safe memory, workbench, and error-boundary paths. DM-048
-through DM-050 are now recorded as reviewed absorptions on the current
-route/auth, approval-preflight, and profile-selection boundaries. DM-051
-through DM-058 are now recorded as reviewed absorptions on the current shared
-DearMe approval helper, approval-surface routing, and internal-error sanitizer.
-DM-059 through DM-063 are now recorded as reviewed absorptions on the current
-approval error, comment-link, and rejection-route helpers. DM-064 through
-DM-078 are now recorded as reviewed absorptions on the current issue-chat
-run/transcript projection, work-history surface, activity-event projection,
-scheduled follow-up card, generic issue-control boundaries, read-only state
-controls, and raw issue-reference suppression. DM-083 through DM-089 are now
-recorded as reviewed absorptions on the current review-feedback learning,
-review-preference, donor-reuse, team-progress, decision-first workstream, and
-typed Voice & Memory source-ingestion paths. The next likely residual batch is
-DM-095, DM-097, DM-098, and DM-101, with any still-listed historical
-integration branch inspected by exact head before closure. Reuse only
-still-valuable product surfaces; do not add another first-run contract, packet
+The stale local worktree queue is closed by exact-head reviewed absorptions.
+Future collaboration should start from a Linear `DEA` issue and a Symphony
+workspace on the current coordinator head, then land only one bounded
+customer-facing slice at a time. Reuse still means adapting Polsia
+choreography, Lindy action-card/source patterns, and Naive/Paperclip substrate
+behind the DearMe product shell; do not add another first-run contract, packet
 schema, runtime dashboard, queue system, or customer-visible substrate surface.
 
 ### Roadmap (compressed by aggressive port + tri-substrate integration)

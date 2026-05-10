@@ -51,6 +51,16 @@ The right reuse split is:
   real approval path from prepared output review to final launch-call approval,
   then verifies the private handoff panel and `work=` / `artifact=` brief
   navigation without exposing hidden substrate terms.
+- DM-183BV makes Symphony the cooperation spine for future DearMe work while
+  keeping it backstage. The live product contract is the typed work-event
+  projection in shared/server code: `action`, `customerSummary`,
+  `artifactTarget`, `decisionNeed`, and `traceRefs` let Symphony-style work
+  become DearMe decision cards without exposing queue, run, model, provider, or
+  worker machinery.
+- DM-084, DM-086, DM-095, both DM-097 heads, DM-098, and DM-101 are now
+  recorded as exact-head reviewed absorptions. Their useful product value maps
+  to current paid-beta guardrails, donor-reuse docs, Work Ready review, typed
+  work events, product-copy leak guards, and private-cycle route blockers.
 - DM-048 route/auth safety head
   `e9ff182462daed1076112700985056c39984ac55` is recorded as absorbed by the
   current DearMe route error boundary for auth, access, and validation failures.
@@ -114,9 +124,10 @@ The right reuse split is:
   development factory stay in their product-fit lanes.
 - DM-087 work-event-contract head
   `aea19d9057dca08ed91e4d6f0ee7716306e39252` is recorded as absorbed by the
-  current team-progress event projection, where `team_progress` activity turns
-  into `progress_recorded` workbench progress across activity, routine, and
-  spend signals.
+  current team-progress event projection and DM-183BV's current-contract port:
+  `workStream` items now carry `action`, `customerSummary`, `artifactTarget`,
+  `decisionNeed`, and `traceRefs` while preserving the evolved cycle stage,
+  source label, cost impact, review loop, run ledger, and final approval gate.
 - DM-088 Lindy/workstream UI heads
   `ff5a745f611ab6475b81877e6d6863a2faf98d4b` and
   `0ed881448c0a5b32004dfd6ed81307969bf69cd6` are recorded as absorbed by the
@@ -303,7 +314,7 @@ Working rule:
 | Weekly report and rituals | `server/src/services/dearme-brand-blueprint-apply.ts`; `server/src/services/dearme-workbench.ts`; `server/src/services/dearme-output-handoff.ts` | Polsia report/cycle ritual is adapted into DearMe weekly report and daily team work language. DM-139/DM-140 now writes the Dear me report from the same private cycle packet as content drafts, with voice-fit and next-decision provenance carried in documents and work products, makes the report digest point back to the same review packet, and renders the visible report as a one-pass proof pack review. DEA-7 makes the companion content packet independently persistable while keeping report/content review tied to the same proof and launch boundary. | Let real cycle usage decide whether the report needs richer history; keep the first report surface packet-backed. |
 | Cost and reliability | `docs/dearme/AUTOMATION-RELIABILITY-COST-POLICY.md`; `ui/src/pages/DearMeOnboarding.tsx`; current workbench/cycle projections; Naive cost-event docs; Lindy router/executor evidence | DM-129 adapts Polsia task/subscription attribution, Naive pre-invocation budget rails, and Lindy routing/circuit-breaker behavior into a DearMe policy plus a customer-safe workbench panel. | Add backend policy facts only when future autonomous jobs need state that cannot be derived from the current workbench and paid-beta status. |
 | Generated portfolio/site | Existing brand blueprint and optional generated asset layer docs | Naive app/site provisioning remains optional P1/P2, not P0. Polsia personal-brand fork recommends Brand Site Builder, but DearMe first needs review-quality content and proof. | Start only after content/voice/opportunity loop is credible. |
-| Development factory | `doc/plans/2026-05-08-dearme-symphony-operating-loop.md`; `.symphony/WORKFLOW.md`; `scripts/dearme-worktree-status.mjs`; `/Users/peter/symphony`; `/private/tmp/dearme-symphony-workspaces` | Symphony-style worker queue is now the cooperation spine for bounded tickets. DM-183 turns the local worktree inventory into a ticket-aware coordinator report with purpose labels and next-action buckets. DM-183B adds `patch_equivalent` so cherry-pick-equivalent worker heads can be closed only after owner confirmation instead of replayed as fresh product slices; the current live audit found 0 such branches, so `not_in_current` still means content review is required. DM-183C folds real Symphony workspace repos into the same report, detects DEA tickets, and separates active or absorbed `symphony` lanes from stale worker branches. DM-183E adds `subject_matched` for stale worker tips whose commit subject already appears in current head: these remain `not_in_current`, but workers should inspect only residual diff before replay or closure. DM-183AP adds `reviewed_absorbed` from `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` for exact branch/head worker tips that the coordinator already compared and found absorbed; these are not replay candidates, but still require owner confirmation before closing. DM-183AT extends that ledger to the exact DM-014 through DM-019 heads after matching their useful mobile shell, output-detail, source-traceability, source-editing, source-archive, and confirmation lessons to current DearMe surfaces. The follow-up DM-020 pass records the exact seed-brief and work-ready cockpit heads after adapting approved-Brand-OS seed docs into the current output handoff and confirming current Work Ready ordering covers the cockpit value. DM-183AV adds the exact DM-024 and DM-025 output-review heads after matching their status-refresh and cache-write-through lessons to the current review surface. DM-183AW adds the exact DM-022 source-refresh head after adapting its stale-context lesson onto current Voice & Memory source mutations. DM-183AY adds both exact DM-005 source-management heads after matching their initial private-source idea to the current activity-log source lifecycle. DM-183AZ adds both exact DM-006 output-detail review workspace heads after matching the old decision-desk concept to the current prepared-work review evidence and launch-boundary controls. DM-183BA adds both exact DM-007 review-feedback heads after matching the old review-feedback service concept to the current review-memory loop. `AGENTS.md` now points DearMe product workers to `.symphony/WORKFLOW.md` before the architecture docs so the active queue, Linear scope, and workspace discipline stay first-class. The real daemon now routes by Linear team `DEA` plus `assignee: me`, because DearMe has no Linear Project. The `DEA-7` Symphony workspace now reports `in_current` with the action `absorbed Symphony lane; keep as audit trail or close after owner confirmation`; future coordinator integration should keep consuming issue-scoped Symphony lanes rather than spawning parallel content runtimes. The latest coordinator pass absorbed the opportunity workbench and generated-skill wrapper hardening as small product-facing increments, which is the preferred Symphony loop shape. DM-183AQ follows that shape by taking one useful stale worker intent, rejecting its obsolete schema, and landing only the current-product traceability slice. DEA-9 now has current-branch browser smoke evidence for the repeatable packet review-memory loop. DEA-11 exposed the right micro-adjustment: worker lanes must start on the live coordinator head and final proof must follow the complete approval sequence before marking Linear Done. The coordinator absorbed the private handoff proof on current head instead of trusting the stale workspace diff. | Workers must use Linear issue scope, `AGENTS.md`, this ledger, `BUILD-STATE.md`, `.symphony/WORKFLOW.md`, and `pnpm dearme:worktrees -- --summary-only --skip-dirty` before selecting old tickets. Do not replay DM-005, DM-006, DM-007, DM-014 through DM-020, DM-022, DM-024, or DM-025 from the exact ledger heads unless the evidence is wrong or the branch advanced. Do not open more parallel Symphony workers until the active DEA lane is either absorbed on current head or explicitly closed as stale. |
+| Development factory | `doc/plans/2026-05-08-dearme-symphony-operating-loop.md`; `.symphony/WORKFLOW.md`; `scripts/dearme-worktree-status.mjs`; `/Users/peter/symphony`; `/private/tmp/dearme-symphony-workspaces` | Symphony-style worker queue is now the cooperation spine for bounded tickets. DM-183 turns the local worktree inventory into a ticket-aware coordinator report with purpose labels and next-action buckets. DM-183B adds `patch_equivalent` so cherry-pick-equivalent worker heads can be closed only after owner confirmation instead of replayed as fresh product slices; the current live audit found 0 such branches, so `not_in_current` still means content review is required. DM-183C folds real Symphony workspace repos into the same report, detects DEA tickets, and separates active or absorbed `symphony` lanes from stale worker branches. DM-183E adds `subject_matched` for stale worker tips whose commit subject already appears in current head: these remain `not_in_current`, but workers should inspect only residual diff before replay or closure. DM-183AP adds `reviewed_absorbed` from `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` for exact branch/head worker tips that the coordinator already compared and found absorbed; these are not replay candidates, but still require owner confirmation before closing. DM-183AT extends that ledger to the exact DM-014 through DM-019 heads after matching their useful mobile shell, output-detail, source-traceability, source-editing, source-archive, and confirmation lessons to current DearMe surfaces. The follow-up DM-020 pass records the exact seed-brief and work-ready cockpit heads after adapting approved-Brand-OS seed docs into the current output handoff and confirming current Work Ready ordering covers the cockpit value. DM-183AV adds the exact DM-024 and DM-025 output-review heads after matching their status-refresh and cache-write-through lessons to the current review surface. DM-183AW adds the exact DM-022 source-refresh head after adapting its stale-context lesson onto current Voice & Memory source mutations. DM-183AY adds both exact DM-005 source-management heads after matching their initial private-source idea to the current activity-log source lifecycle. DM-183AZ adds both exact DM-006 output-detail review workspace heads after matching the old decision-desk concept to the current prepared-work review evidence and launch-boundary controls. DM-183BA adds both exact DM-007 review-feedback heads after matching the old review-feedback service concept to the current review-memory loop. `AGENTS.md` now points DearMe product workers to `.symphony/WORKFLOW.md` before the architecture docs so the active queue, Linear scope, and workspace discipline stay first-class. The real daemon now routes by Linear team `DEA` plus `assignee: me`, because DearMe has no Linear Project. The `DEA-7` Symphony workspace now reports `in_current` with the action `absorbed Symphony lane; keep as audit trail or close after owner confirmation`; future coordinator integration should keep consuming issue-scoped Symphony lanes rather than spawning parallel content runtimes. The latest coordinator pass absorbed the opportunity workbench and generated-skill wrapper hardening as small product-facing increments, which is the preferred Symphony loop shape. DM-183AQ follows that shape by taking one useful stale worker intent, rejecting its obsolete schema, and landing only the current-product traceability slice. DEA-9 now has current-branch browser smoke evidence for the repeatable packet review-memory loop. DEA-11 exposed the right micro-adjustment: worker lanes must start on the live coordinator head and final proof must follow the complete approval sequence before marking Linear Done. The coordinator absorbed the private handoff proof on current head instead of trusting the stale workspace diff. DM-183BV closes the remaining local residual queue by exact-head reviewed absorption and makes the shared/server work-event contract the handoff surface between Symphony workers and DearMe product UI. | Workers must use Linear issue scope, `AGENTS.md`, this ledger, `BUILD-STATE.md`, `.symphony/WORKFLOW.md`, and `pnpm dearme:worktrees -- --summary-only --skip-dirty` before selecting old tickets. Do not replay DM-005, DM-006, DM-007, DM-014 through DM-020, DM-022, DM-024, DM-025, DM-084, DM-086, DM-095, DM-097, DM-098, or DM-101 from the exact ledger heads unless the evidence is wrong or the branch advanced. Start future work from Symphony/Linear on the live coordinator head instead of stale local branches. |
 
 Coordinator note: DM-183BJ adds the exact DM-021 live-events and source-restore
 heads plus the exact DM-023 source-context head to the reviewed absorption
@@ -501,7 +512,47 @@ absorbed by the current output-review memory loop. Do not restore the stale
 current `review_feedback` memory rows, feedback trace, review handoff, and
 Review preferences projection prove insufficient in real review loops.
 
+Coordinator note: DM-183BV ports the reusable DM-087/DM-097 work-event shape
+onto the current shared/server workStream projection. Keep using this event
+metadata as the Symphony-to-product handoff contract; do not add a customer
+queue, runtime dashboard, or parallel event table for the same job.
+
 ## Recently Completed
+
+### DM-183BV: Work Event Contract Port
+
+Donor/worktree:
+
+- DM-087 `codex/dearme-dm-087-work-event-contract` at
+  `aea19d9057dca08ed91e4d6f0ee7716306e39252`
+- DM-097 `codex/dearme-dm-097-event-stream-interrupt-foundation` at
+  `71c2e1c0022363ad171fdb38e7d4ce17cdc9f069`
+
+Decision:
+
+- Port the reusable work-event idea onto the current DearMe workbench stream
+  instead of cherry-picking stale worker branches.
+- Keep `cycleStage`, `sourceLabel`, `costImpact`, `reviewLoop`, the run ledger,
+  and the final `dearme_output_next_move` launch approval gate authoritative.
+- Keep Symphony as the development/cooperation spine only. The product surface
+  speaks in DearMe team work, decisions, private handoff, and launch-call terms.
+
+Implementation:
+
+- `packages/shared/src/validators/dearme.ts` adds the event vocabulary and
+  stream fields `action`, `customerSummary`, `artifactTarget`, `decisionNeed`,
+  and `traceRefs`.
+- `server/src/services/dearme-workbench.ts` derives those fields from current
+  work, decision, and progress items without adding a new event table, queue,
+  dashboard, or customer-visible runtime.
+- `ui/src/pages/DearMeOnboarding.test.tsx` keeps the private handoff proof
+  customer-safe with hidden-term coverage on the handoff panel.
+
+Coordination rule:
+
+- Future Codex agents should enter through a fresh Linear `DEA` issue and a
+  Symphony workspace on the current coordinator head. Do not reopen exact
+  absorbed worktree heads unless the ledger evidence is proven wrong.
 
 ### DM-183BA: Review Outcome Memory Baseline Absorption
 
@@ -2840,6 +2891,7 @@ UI, not server-side runtime artifacts the user never sees).
 | Ticket | Slice | Donor mechanism | Path |
 |---|---|---|---|
 | DM-141 | Opportunity Hunter plugin + opportunities schema + 6-state machine | Polsia Cold Outreach + Naive 5-touch deliverable | new `packages/db/src/schema/opportunities.ts`, `packages/plugins/dearme-opportunity-hunter/` |
+| DM-183BV | Work-event metadata on the current workStream | DM-087/DM-097 work-event contract, adapted without stale branch replay | `packages/shared/src/validators/dearme.ts`, `server/src/services/dearme-workbench.ts` |
 | DM-149 | Emergency pause intent in chief-of-staff messaging | Polsia `pause_ads()` highest-priority pattern | `server/src/services/dearme-workbench.ts` |
 | DM-153 | Default approval score on silence + cross-tenant feedback wiring | Polsia score-7 default | approvals service |
 

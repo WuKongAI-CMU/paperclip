@@ -2,6 +2,95 @@
   "updatedAt": "2026-05-10",
   "reviewedAbsorptions": [
     {
+      "ticket": "DM-084",
+      "branch": "codex/dearme-dm-084-integration-base-audit",
+      "head": "f4d86752f00127cf9952fc2f1a2760a5baf7f8d9",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the integration-base audit through the paid-beta access service, spend-derived cycle guardrail, regeneration blockers, Chief of Staff private-cycle blockers, and route-level coverage; replaying the historical integration branch would reintroduce older aggregation noise.",
+      "evidence": [
+        "server/src/services/dearme-paid-beta-access.ts",
+        "server/src/routes/dearme.ts",
+        "server/src/__tests__/dearme-paid-beta-access.test.ts",
+        "server/src/__tests__/dearme-brand-blueprint-routes.test.ts",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
+      "ticket": "DM-086",
+      "branch": "codex/dearme-dm-086-integrated",
+      "head": "1e408791f3a3bc60fc043dd792bdf95e95b162d6",
+      "reviewedAt": "2026-05-10",
+      "reason": "The old donor-reuse integration branch is docs-only queue history now superseded by the current architecture and reuse ledger plus exact DM-083 through DM-086 worker absorptions already recorded on the live Symphony spine.",
+      "evidence": [
+        "docs/dearme/PRODUCT-ARCHITECTURE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md",
+        "docs/dearme/WORKTREE-ABSORPTION-LEDGER.json"
+      ]
+    },
+    {
+      "ticket": "DM-095",
+      "branch": "codex/dearme-dm-095-work-ready-summary-actions-integrate",
+      "head": "74775861b00ab26598549b3840e538860bddf845",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current Work Ready and focused review surfaces already expose summary actions through the same output-review mutation path, so the useful value is preserved without adding a second summary-action backend route.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "server/src/services/dearme-workbench.ts"
+      ]
+    },
+    {
+      "ticket": "DM-097",
+      "branch": "codex/dearme-dm-097-event-stream-interrupt-foundation",
+      "head": "71c2e1c0022363ad171fdb38e7d4ce17cdc9f069",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the event-stream interrupt foundation through the typed work-event contract with action, customer summary, artifact target, decision need, and trace refs, letting stream cards reuse the existing output-review path instead of exposing Symphony or a raw queue.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/services/dearme-workbench.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-097",
+      "branch": "codex/dearme-dm-097-focused-browser-smoke",
+      "head": "4a91c6098407c88493ce7da255b0337e2c8472f3",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current focused Work Ready review and private handoff browser/API proof already cover in-place prepared-work review; the stale smoke branch adds no distinct product contract beyond evidence now recorded on the live head.",
+      "evidence": [
+        "docs/dearme/BUILD-STATE.md",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-098",
+      "branch": "codex/dearme-dm-098-product-copy-leakage",
+      "head": "60b6fc517d2b463454ffaa98ccd0b7bc1aea8817",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current invite, account, and onboarding tests keep customer-visible copy inside DearMe and app-owned language while guarding against hidden Paperclip, OpenClaw, Symphony, provider, model, and workspace terms.",
+      "evidence": [
+        "ui/src/pages/InviteLanding.test.tsx",
+        "ui/src/pages/CompanyInvites.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-101",
+      "branch": "codex/dearme-baseline-dm101-integration",
+      "head": "0f6529b6937e806260640331660746779086c915",
+      "reviewedAt": "2026-05-10",
+      "reason": "The baseline DM-101 guardrail integration is already present through current private-cycle paid-beta guardrails, spend rails, route blockers, tests, and build-state documentation; the branch is historical proof, not a replay target.",
+      "evidence": [
+        "server/src/services/dearme-paid-beta-access.ts",
+        "server/src/routes/dearme.ts",
+        "server/src/__tests__/dearme-paid-beta-access.test.ts",
+        "server/src/__tests__/dearme-brand-blueprint-routes.test.ts",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
       "ticket": "DM-028",
       "branch": "codex/dearme-dm-028-source-reference-briefs",
       "head": "dd3f3503b00793e2da8acedcf8bba8d87ee01baf",
@@ -1381,11 +1470,11 @@
       "branch": "codex/dearme-dm-087-work-event-contract",
       "head": "aea19d9057dca08ed91e4d6f0ee7716306e39252",
       "reviewedAt": "2026-05-10",
-      "reason": "Current DearMe absorbs the work-event contract worker through team_progress memory activity, progress_recorded workbench projection, and customer-safe progress mapping across activity, routine, and spend signals.",
+      "reason": "Current DearMe now absorbs the work-event contract worker by porting action, customerSummary, artifactTarget, decisionNeed, and traceRefs onto the evolved workStream projection while preserving cycleStage, sourceLabel, costImpact, reviewLoop, runLedger, and the final approval gate.",
       "evidence": [
         "packages/shared/src/validators/dearme.ts",
         "server/src/services/dearme-workbench.ts",
-        "ui/src/pages/DearMeOnboarding.tsx",
+        "packages/shared/src/validators/dearme.test.ts",
         "ui/src/pages/DearMeOnboarding.test.tsx"
       ]
     },

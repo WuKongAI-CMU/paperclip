@@ -193,6 +193,24 @@ export const DEARME_WORKBENCH_CYCLE_STAGES = [
   "learn",
   "report",
 ] as const;
+export const DEARME_WORK_EVENT_ACTIONS = [
+  "plan",
+  "research",
+  "draft",
+  "review",
+  "approve",
+  "handoff",
+  "report",
+  "learn",
+  "prepare",
+] as const;
+export const DEARME_WORK_EVENT_TRACE_KINDS = [
+  "output",
+  "issue",
+  "approval",
+  "activity",
+  "comment",
+] as const;
 export const DEARME_ACTION_GRAPH_NODE_KINDS = [
   "cycle",
   "role",
@@ -935,12 +953,21 @@ export const dearMeWorkbenchStreamItemSchema = z.object({
   id: z.string().min(1),
   kind: z.enum(DEARME_WORKBENCH_STREAM_KINDS),
   cycleStage: z.enum(DEARME_WORKBENCH_CYCLE_STAGES),
+  action: z.enum(DEARME_WORK_EVENT_ACTIONS),
   role: z.enum(DEARME_TEAM_ROLES),
   title: shortTextSchema,
   summary: mediumTextSchema,
+  customerSummary: mediumTextSchema,
   artifact: shortTextSchema,
+  artifactTarget: shortTextSchema,
   status: z.enum(DEARME_WORKBENCH_STREAM_STATUSES),
   needsApproval: z.boolean(),
+  decisionNeed: z.object({
+    needed: z.boolean(),
+    label: shortTextSchema.nullable(),
+    reason: mediumTextSchema.nullable(),
+    riskGate: z.enum(DEARME_RISK_GATES).nullable(),
+  }).strict(),
   sourceLabel: shortTextSchema,
   costImpact: shortTextSchema.nullable(),
   nextAction: mediumTextSchema,
@@ -948,6 +975,11 @@ export const dearMeWorkbenchStreamItemSchema = z.object({
   issueId: z.string().min(1).nullable(),
   issueIdentifier: z.string().nullable(),
   approvalId: z.string().min(1).nullable(),
+  traceRefs: z.array(z.object({
+    kind: z.enum(DEARME_WORK_EVENT_TRACE_KINDS),
+    id: z.string().min(1),
+    identifier: z.string().min(1).nullable(),
+  }).strict()).max(8),
   createdAt: z.string().datetime(),
   reviewLoop: dearMeOutputReviewLoopSchema.nullable(),
 }).strict();
