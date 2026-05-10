@@ -2,6 +2,43 @@
 
 Date: 2026-05-10
 
+## DEA-22 Private Site Launch Decision Active - 2026-05-10
+
+Product/architecture slice:
+
+- Opened Linear `DEA-22` as the next single product implementation lane after
+  `DEA-19` and `DEA-20` absorption.
+- The lane targets the weakest remaining first-session aha window: turn the
+  3-5 minute private site proof from a placeholder proof card into a clear,
+  private launch-decision package.
+- The intended customer-visible package should tie together page section, proof
+  source, proposed copy, audience, CTA or offer, and deploy boundary while
+  staying private behind `deploy_public_site`.
+- Reuse is mandatory: start from the existing first-cycle preview,
+  `portfolioProofCard`, proof sequence, Brand OS preview/apply, output handoff,
+  Workbench projection, Brand Site Builder role, and deploy-gate contracts.
+  Do not add a second site schema, runtime dashboard, queue, or public deploy
+  path in this slice.
+
+Coordination state:
+
+- Symphony is idle before `DEA-22` starts; this should become the only active
+  DearMe product writer lane.
+- Use additional Codex help only for read-only architecture/product review or
+  coordinator absorption while this ticket is active.
+- Keep the DEA-19 opportunity shortlist and DEA-20 Chief pairing proof stable
+  unless the first-cycle package naturally references their already-absorbed
+  output.
+
+Verification expectation:
+
+- Worker should run the narrowest checks for touched files. If the likely shared
+  + route + UI scope changes, expected baseline is
+  `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`,
+  relevant package typechecks, and `git diff --check`.
+- Completion requires an absorbable worker commit, explicit no-code evidence,
+  or a blocker/patch handoff with workspace path.
+
 ## DEA-20 Chief Pairing Smoke Absorbed - 2026-05-10
 
 Product/architecture slice:

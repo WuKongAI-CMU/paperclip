@@ -46,6 +46,14 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- Current active handoff target is `DEA-22`: make the 3-5 minute private site
+  proof feel like a concrete launch decision without deploying or adding another
+  public site runtime. This lane should reuse the existing first-cycle preview,
+  `portfolioProofCard`, proof sequence, Brand OS preview/apply, output handoff,
+  Workbench projection, Brand Site Builder role, and deploy-gate contracts.
+  Keep it as the only product writer lane while active; use extra Codex help for
+  read-only review or coordinator absorption, not parallel writes to the same
+  customer surface.
 - DEA-20 is absorbed as a no-code OpenClaw Chief pairing smoke: the existing
   plugin package already proves the manifest, generated skills, bootstrap
   files, required config, and outbound approval-gate bindings. This keeps
