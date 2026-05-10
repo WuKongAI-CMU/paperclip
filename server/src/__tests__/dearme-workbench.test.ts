@@ -992,6 +992,14 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
           body: "Sharper revised voice sample for future private drafts.",
         }),
       ],
+      archived: [
+        expect.objectContaining({
+          id: "memory-retired",
+          kind: "proof_point",
+          title: "Old proof",
+          body: "A proof point that should no longer guide private work.",
+        }),
+      ],
       sourceReviewQueue: [
         expect.objectContaining({
           sourceMemoryId: "memory-active",

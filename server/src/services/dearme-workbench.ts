@@ -908,6 +908,50 @@ function activeMemoryFromActivityRows(
   return items;
 }
 
+function archivedMemoryFromActivityRows(
+  rows: Array<{
+    id: string;
+    action: string;
+    entityId: string | null;
+    details: unknown;
+    createdAt: Date;
+  }>,
+) {
+  const latestState = new Map<string, "active" | "archived">();
+  const seenIds = new Set<string>();
+  const items: DearMeMemoryUpdateItem[] = [];
+
+  for (const row of rows) {
+    const memoryId = row.entityId || row.id;
+    if (!latestState.has(memoryId)) {
+      if (row.action === DEARME_MEMORY_ARCHIVED_ACTION) {
+        latestState.set(memoryId, "archived");
+      } else if (row.action === DEARME_MEMORY_UPDATED_ACTION) {
+        latestState.set(memoryId, "active");
+      }
+      continue;
+    }
+
+    if (latestState.get(memoryId) !== "archived" || row.action !== DEARME_MEMORY_UPDATED_ACTION || seenIds.has(memoryId)) {
+      continue;
+    }
+
+    const item = memoryFromActivity({
+      id: row.id,
+      entityId: memoryId,
+      details: row.details,
+      createdAt: row.createdAt,
+    });
+    if (!item) continue;
+
+    seenIds.add(memoryId);
+    items.push(item);
+    if (items.length >= 6) break;
+  }
+
+  return items;
+}
+
 function buildMemorySummary(items: DearMeMemoryUpdateItem[]) {
   if (items.length === 0) {
     return "Add voice samples, proof, goals, and boundaries so DearMe can make better private work.";
@@ -1984,6 +2028,7 @@ export function dearmeWorkbenchService(db: Db) {
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
         .slice(0, 5);
       const latestMemory = activeMemoryFromActivityRows(memoryRows);
+      const archivedMemory = archivedMemoryFromActivityRows(memoryRows);
       const memory = {
         summary: buildMemorySummary(latestMemory),
         sourceCount: latestMemory.length,
@@ -1993,6 +2038,7 @@ export function dearmeWorkbenchService(db: Db) {
         sourcePlan: buildMemorySourcePlan(latestMemory),
         sourceReviewQueue: buildMemorySourceReviewQueue(latestMemory),
         latest: latestMemory,
+        archived: archivedMemory,
       };
       const reportOutput = outputs.find((output) => output.kind === "weekly_report") ?? null;
       const reportPacket = reportOutput ? cyclePacketEvidence(reportOutput) : null;

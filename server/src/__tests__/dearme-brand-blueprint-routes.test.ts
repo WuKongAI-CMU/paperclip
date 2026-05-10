@@ -72,7 +72,16 @@ function registerModuleMocks() {
   }));
 }
 
-async function createApp(actorOverrides: Record<string, unknown> = {}) {
+function createMemoryActivityDb(rows: Array<{ action: string; details: unknown; createdAt: Date }>) {
+  const limit = vi.fn().mockResolvedValue(rows);
+  const orderBy = vi.fn(() => ({ limit }));
+  const where = vi.fn(() => ({ orderBy }));
+  const from = vi.fn(() => ({ where }));
+  const select = vi.fn(() => ({ from }));
+  return { select };
+}
+
+async function createApp(actorOverrides: Record<string, unknown> = {}, db: Record<string, unknown> = {}) {
   const [{ errorHandler }, { dearmeRoutes }] = await Promise.all([
     import("../middleware/index.js"),
     import("../routes/dearme.js"),
@@ -90,7 +99,7 @@ async function createApp(actorOverrides: Record<string, unknown> = {}) {
     };
     next();
   });
-  app.use("/api/dearme", dearmeRoutes({} as any));
+  app.use("/api/dearme", dearmeRoutes(db as any));
   app.use(errorHandler);
   return app;
 }
@@ -1131,6 +1140,72 @@ describe("DearMe brand blueprint routes", () => {
           memoryId: "memory-voice-1",
           reason: "user_retired_source",
         },
+      }),
+    );
+    expect(mockDearMeMemoryContextService.refreshRoutineMemoryContext).toHaveBeenCalledWith(
+      "company-1",
+      {
+        userId: "user-1",
+        agentId: null,
+        runId: null,
+      },
+    );
+  });
+
+  it("restores a retired Voice & Memory source through the activity log", async () => {
+    const memoryDb = createMemoryActivityDb([
+      {
+        action: "dearme.memory_archived",
+        details: {
+          memoryId: "memory-voice-1",
+          reason: "user_retired_source",
+        },
+        createdAt: new Date("2026-05-07T14:07:00.000Z"),
+      },
+      {
+        action: "dearme.memory_updated",
+        details: {
+          kind: "voice_sample",
+          sourceInputMode: "paste",
+          title: "Operator note",
+          body: "Short, direct note.",
+          sourceLabel: "Manual note",
+        },
+        createdAt: new Date("2026-05-07T14:00:00.000Z"),
+      },
+    ]);
+
+    const res = await request(await createApp({}, memoryDb))
+      .post("/api/dearme/companies/company-1/memory-updates/memory-voice-1/restore");
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("recorded");
+    expect(res.body.memory).toEqual(expect.objectContaining({
+      id: "memory-voice-1",
+      kind: "voice_sample",
+      sourceInputMode: "paste",
+      title: "Operator note",
+      body: "Short, direct note.",
+      bodyPreview: "Short, direct note.",
+      sourceLabel: "Manual note",
+    }));
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        companyId: "company-1",
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: "memory-voice-1",
+        details: expect.objectContaining({
+          kind: "voice_sample",
+          sourceInputMode: "paste",
+          title: "Operator note",
+          body: "Short, direct note.",
+          sourceLabel: "Manual note",
+          restoredFromArchive: true,
+        }),
       }),
     );
     expect(mockDearMeMemoryContextService.refreshRoutineMemoryContext).toHaveBeenCalledWith(

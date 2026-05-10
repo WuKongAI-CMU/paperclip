@@ -2,6 +2,52 @@
 
 Date: 2026-05-10
 
+## DM-183W Retired Voice & Memory Restore - 2026-05-10
+
+Implementation slice:
+
+- Added a capped `archived` Voice & Memory projection to the existing DearMe
+  workbench memory contract so retired private sources can still be reviewed.
+- Reused the existing `activity_log` memory substrate: archive remains the
+  state marker, and restore writes a fresh `dearme.memory_updated` event from
+  the last saved source body.
+- Added an owner-only restore route that reuses the current memory update result
+  shape and routine refresh path instead of introducing a new table or memory
+  runtime.
+- The DearMe workbench now shows retired private sources with a restore action
+  and keeps restored items out of the retired list immediately after the action.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-workbench.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 93 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `git diff --check -- docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md packages/shared/src/validators/dearme.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/routes/dearme.ts server/src/services/dearme-workbench.ts ui/src/api/dearme.ts ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed.
+
+## DM-183V Brand OS Preview Copy Cleanup - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the still-useful DM-029 copy residue onto the current DearMe Brand OS
+  preview instead of raw-merging the stale worker branch.
+- The empty preview now frames the first pass as private work with budget,
+  memory, and launch boundaries.
+- The preview metrics and sections now use `Rhythm`, `Working rhythm`, and
+  `First private work` instead of internal cycle/operation wording.
+- Reused the existing preview payload and execution plan; no schema, route,
+  server behavior, or runtime surface was changed.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 52 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed.
+
 ## DM-183U Artifact Links For Focused Private Work - 2026-05-10
 
 Implementation slice:

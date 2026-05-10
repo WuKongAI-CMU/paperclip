@@ -1034,6 +1034,7 @@ export const dearMeWorkbenchMemorySchema = z.object({
   sourcePlan: dearMeWorkbenchMemorySourcePlanSchema,
   sourceReviewQueue: z.array(dearMeMemorySourceReviewItemSchema).max(6).default([]),
   latest: z.array(dearMeMemoryUpdateItemSchema).max(12),
+  archived: z.array(dearMeMemoryUpdateItemSchema).max(6).default([]),
 }).strict();
 
 export const dearMeWorkbenchReportSchema = z.object({

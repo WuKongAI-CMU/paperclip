@@ -107,6 +107,11 @@ export const dearmeApi = {
     api.delete<DearMeMemoryArchiveResult>(
       `/dearme/companies/${companyId}/memory-updates/${encodeURIComponent(memoryId)}`,
     ),
+  restoreMemorySource: (companyId: string, memoryId: string) =>
+    api.post<DearMeMemoryUpdateResult>(
+      `/dearme/companies/${companyId}/memory-updates/${encodeURIComponent(memoryId)}/restore`,
+      {},
+    ),
   getPaidBetaAccess: (companyId: string) =>
     api.get<DearMePaidBetaStatus>(`/dearme/companies/${companyId}/paid-beta/access`),
   previewFirstCycle: (companyId: string, data: DearMeFirstCyclePreview) =>

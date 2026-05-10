@@ -4388,6 +4388,7 @@ function VoiceMemoryPanel({
   onAdd,
   onUpdate,
   onArchive,
+  onRestore,
 }: {
   memory: DearMeWorkbenchMemory;
   sourceReviewFocus: DearMeSourceReviewFocus | null;
@@ -4398,6 +4399,7 @@ function VoiceMemoryPanel({
   onAdd: (input: DearMeMemoryUpdate) => void;
   onUpdate: (memoryId: string, input: DearMeMemoryUpdate) => void;
   onArchive: (memoryId: string) => void;
+  onRestore: (memoryId: string) => void;
 }) {
   const [kind, setKind] = useState<DearMeMemoryUpdateKind>("voice_sample");
   const [sourceGuideId, setSourceGuideId] = useState<MemorySourceGuideId>("writing_sample");
@@ -4437,8 +4439,9 @@ function VoiceMemoryPanel({
     ? [recordedMemory, ...memory.latest.filter((item) => item.id !== recordedMemory.id)]
     : memory.latest;
   const visibleLatestMemory = archiveResult
-    ? latestMemory.filter((item) => item.id !== archiveResult.memoryId)
+    ? latestMemory.filter((item) => item.id !== archiveResult.memoryId || item.id === recordedMemory?.id)
     : latestMemory;
+  const visibleArchivedMemory = memory.archived.filter((item) => item.id !== recordedMemory?.id);
   const displayedSourceCount = result
     ? Math.max(memory.sourceCount, result.growthCycles.memorySources)
     : memory.sourceCount;
@@ -4558,6 +4561,14 @@ function VoiceMemoryPanel({
       handleCancelRevise();
     }
     onArchive(item.id);
+  }
+
+  function handleRestoreSource(item: DearMeMemoryUpdateItem) {
+    if (editingMemoryId === item.id) {
+      handleCancelRevise();
+    }
+    setLocalError(null);
+    onRestore(item.id);
   }
 
   function handleDismissSourceReview(item: DearMeSourceReviewItem) {
@@ -4966,6 +4977,45 @@ function VoiceMemoryPanel({
           </div>
         </DearMeEmptyState>
       )}
+
+      {visibleArchivedMemory.length > 0 ? (
+        <div className="mt-5 border-t border-border pt-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Retired sources</p>
+              <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+                These stay private. Restore one if DearMe should use it again.
+              </p>
+            </div>
+            <Badge variant="outline">{visibleArchivedMemory.length} retired</Badge>
+          </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {visibleArchivedMemory.map((item) => (
+              <DearMeActionCard
+                key={item.id}
+                aria-label="Retired Voice & Memory source"
+                eyebrow={MEMORY_KIND_LABELS[item.kind]}
+                title={customerProofPackSummary(item.title ?? "Untitled memory")}
+                summary={customerProofPackSummary(item.bodyPreview)}
+                chips={[
+                  { label: MEMORY_SOURCE_INPUT_MODE_LABELS[item.sourceInputMode], variant: "outline" as const },
+                  ...(item.sourceLabel
+                    ? [{ label: sourceLabelForChip(item.sourceLabel), variant: "outline" as const }]
+                    : []),
+                  { label: "Retired", variant: "secondary" as const },
+                ]}
+                footer={shortDate(item.createdAt)}
+                action={{
+                  label: "Restore",
+                  ariaLabel: `Restore ${customerProofPackSummary(item.title ?? MEMORY_KIND_LABELS[item.kind])}`,
+                  icon: RefreshCw,
+                  onClick: () => handleRestoreSource(item),
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
     </DearMePanel>
   );
 }
@@ -5282,6 +5332,22 @@ function TeamWorkbenchPanel({
       );
     },
   });
+  const memoryRestoreMutation = useMutation({
+    mutationFn: (memoryId: string) => dearmeApi.restoreMemorySource(companyId, memoryId),
+    onSuccess: () => {
+      setMemoryError(null);
+      queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(companyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
+    },
+    onError: (err) => {
+      setMemoryError(
+        dearMeCustomerErrorMessage(
+          err,
+          "Voice & Memory needs attention. Try again before restoring a private source.",
+        ),
+      );
+    },
+  });
   const workbench = workbenchQuery.data ?? null;
 
   if (workbenchQuery.isLoading) {
@@ -5435,13 +5501,19 @@ function TeamWorkbenchPanel({
           <VoiceMemoryPanel
             memory={workbench.memory}
             sourceReviewFocus={sourceReviewFocus}
-            isPending={memoryMutation.isPending || memoryUpdateMutation.isPending || memoryArchiveMutation.isPending}
+            isPending={
+              memoryMutation.isPending ||
+              memoryUpdateMutation.isPending ||
+              memoryArchiveMutation.isPending ||
+              memoryRestoreMutation.isPending
+            }
             error={memoryError}
-            result={memoryUpdateMutation.data ?? memoryMutation.data ?? null}
+            result={memoryRestoreMutation.data ?? memoryUpdateMutation.data ?? memoryMutation.data ?? null}
             archiveResult={memoryArchiveMutation.data ?? null}
             onAdd={(input) => memoryMutation.mutate(input)}
             onUpdate={(memoryId, input) => memoryUpdateMutation.mutate({ memoryId, update: input })}
             onArchive={(memoryId) => memoryArchiveMutation.mutate(memoryId)}
+            onRestore={(memoryId) => memoryRestoreMutation.mutate(memoryId)}
           />
         </div>
       </DearMeCockpitGrid>
@@ -5479,7 +5551,7 @@ function PreviewPanel({
         className="min-h-[360px] rounded-lg p-5"
         icon={Sparkles}
         title="First cycle preview"
-        description="Preview shows the team, first-cycle artifacts, budget, memory seeds, and launch boundaries before the first cycle starts."
+        description="See the team, first private work, budget, memory seeds, and launch boundaries before anything starts."
       />
     );
   }
@@ -5506,7 +5578,7 @@ function PreviewPanel({
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Metric icon={Users} label="Team" value={preview.summary.teamMemberCount} />
-          <Metric icon={Workflow} label="Cycles" value={preview.summary.cycleCount} />
+          <Metric icon={Workflow} label="Rhythm" value={preview.summary.cycleCount} />
           <Metric icon={ShieldCheck} label="Launch boundaries" value={preview.summary.riskGateCount} />
           <Metric icon={CircleDollarSign} label="Monthly budget" value={money(preview.blueprint.budgetPolicy.monthlyCents)} />
         </div>
@@ -5534,7 +5606,7 @@ function PreviewPanel({
         <section className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Gauge className="h-4 w-4" />
-            Cycles
+            Working rhythm
           </div>
           <div className="grid gap-2">
             {preview.blueprint.cycles.map((cycle) => (
@@ -5552,7 +5624,7 @@ function PreviewPanel({
       <section className="space-y-3">
         <div className="flex items-center gap-2 text-sm font-medium">
           <FileText className="h-4 w-4" />
-          First operations
+          First private work
         </div>
         <div className="grid gap-2">
           {executionPlan.operations.map((operation) => (

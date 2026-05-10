@@ -29,6 +29,7 @@ const mockDearmeApi = vi.hoisted(() => ({
   recordMemoryUpdate: vi.fn(),
   updateMemorySource: vi.fn(),
   archiveMemorySource: vi.fn(),
+  restoreMemorySource: vi.fn(),
   recordPaidBetaPayment: vi.fn(),
   previewFirstCycle: vi.fn(),
   startFirstCycle: vi.fn(),
@@ -573,6 +574,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
           createdAt: "2026-05-07T13:00:00.000Z",
         },
       ],
+      archived: [],
     },
     workStream: [
       {
@@ -1608,6 +1610,26 @@ describe("DearMeOnboarding", () => {
         memorySources: 1,
       },
     });
+    mockDearmeApi.restoreMemorySource.mockResolvedValue({
+      companyId: "company-1",
+      status: "recorded",
+      memory: {
+        id: "memory-1",
+        kind: "voice_sample",
+        sourceInputMode: "paste",
+        title: "Voice note",
+        body: "Short, direct voice note.",
+        bodyPreview: "Short, direct voice note.",
+        sourceLabel: "Manual note",
+        createdAt: "2026-05-07T14:08:00.000Z",
+      },
+      growthCycles: {
+        checked: 2,
+        updated: 1,
+        unchanged: 1,
+        memorySources: 2,
+      },
+    });
     mockDearmeApi.recordPaidBetaPayment.mockResolvedValue({
       event: { id: "finance-event-1", amountCents: 25_000, currency: "USD" },
       access: paidBetaStatus("active"),
@@ -2014,7 +2036,10 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Voice 100/100");
     expect(container.textContent).toContain("Ready for review");
     expect(container.textContent).toContain("Chief of Staff");
-    expect(container.textContent).toContain("First operations");
+    expect(container.textContent).toContain("Working rhythm");
+    expect(container.textContent).toContain("First private work");
+    expect(container.textContent).not.toContain("machinery hidden");
+    expect(container.textContent).not.toContain("First operations");
 
     await act(async () => {
       buttonByText(container, "Start Brand OS")?.click();
@@ -2344,6 +2369,73 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).not.toContain("Voice note");
     expect(container.textContent).toContain("Shipped proof");
     expect(container.textContent).toContain("Retire source");
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("restores retired Voice & Memory sources from the private memory list", async () => {
+    const response = workbenchResponse();
+    const retiredSource = {
+      ...response.memory.latest[0]!,
+      id: "memory-retired",
+      title: "Retired voice note",
+      body: "Short retired voice note.",
+      bodyPreview: "Short retired voice note.",
+      createdAt: "2026-05-07T13:30:00.000Z",
+    };
+    mockDearmeApi.getWorkbench.mockResolvedValue({
+      ...response,
+      memory: {
+        ...response.memory,
+        archived: [retiredSource],
+      },
+    });
+    mockDearmeApi.restoreMemorySource.mockResolvedValue({
+      companyId: "company-1",
+      status: "recorded",
+      memory: {
+        ...retiredSource,
+        createdAt: "2026-05-07T14:08:00.000Z",
+      },
+      growthCycles: {
+        checked: 2,
+        updated: 1,
+        unchanged: 1,
+        memorySources: 3,
+      },
+    });
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Retired sources");
+    expect(container.textContent).toContain("Retired voice note");
+
+    await act(async () => {
+      buttonByText(container, "Restore")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.restoreMemorySource).toHaveBeenCalledWith("company-1", "memory-retired");
+    expect(container.textContent).toContain("Just saved");
+    expect(container.textContent).not.toContain("Retired sources");
     expectNoHiddenProductTerms(container.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
       HIDDEN_PRODUCT_TERMS.bridgeName,

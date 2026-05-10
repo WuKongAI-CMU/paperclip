@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { Router, type ErrorRequestHandler, type Response } from "express";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { ZodError } from "zod";
-import type { Db } from "@paperclipai/db";
+import { activityLog, type Db } from "@paperclipai/db";
 import {
   dearMeApprovalResolveRequestSchema,
   dearMeApprovalResolveResultSchema,
@@ -49,6 +50,18 @@ import { queueIssueAssignmentWakeup } from "../services/issue-assignment-wakeup.
 
 function memoryBodyPreview(body: string) {
   return body.length > 700 ? `${body.slice(0, 697)}...` : body;
+}
+
+function memoryUpdateFromActivityDetails(details: unknown): DearMeMemoryUpdate | null {
+  if (!isRecord(details)) return null;
+  const parsed = dearMeMemoryUpdateSchema.safeParse({
+    kind: details.kind,
+    sourceInputMode: details.sourceInputMode,
+    title: details.title,
+    body: details.body,
+    sourceLabel: details.sourceLabel,
+  });
+  return parsed.success ? parsed.data : null;
 }
 
 const dearMeAuthErrorMessages = new Map<string, string>([
@@ -787,6 +800,71 @@ export function dearmeRoutes(db: Db) {
         status: "archived",
         memoryId,
         archivedAt,
+        growthCycles,
+      }));
+    },
+  );
+
+  router.post(
+    "/companies/:companyId/memory-updates/:memoryId/restore",
+    async (req, res) => {
+      const companyId = req.params.companyId as string;
+      const memoryId = req.params.memoryId as string;
+      assertCompanyAccess(req, companyId);
+      assertBoard(req);
+      const actor = getActorInfo(req);
+      const createdAt = new Date().toISOString();
+      const memoryRows = await db
+        .select({
+          action: activityLog.action,
+          details: activityLog.details,
+          createdAt: activityLog.createdAt,
+        })
+        .from(activityLog)
+        .where(and(
+          eq(activityLog.companyId, companyId),
+          eq(activityLog.entityType, "dearme_memory"),
+          eq(activityLog.entityId, memoryId),
+          inArray(activityLog.action, [DEARME_MEMORY_UPDATED_ACTION, DEARME_MEMORY_ARCHIVED_ACTION]),
+        ))
+        .orderBy(desc(activityLog.createdAt))
+        .limit(25);
+
+      if (memoryRows[0]?.action !== DEARME_MEMORY_ARCHIVED_ACTION) {
+        throw notFound("Memory source not found");
+      }
+
+      const sourceRow = memoryRows.find((row) => row.action === DEARME_MEMORY_UPDATED_ACTION);
+      const input = sourceRow ? memoryUpdateFromActivityDetails(sourceRow.details) : null;
+      if (!input) {
+        throw notFound("Memory source not found");
+      }
+
+      await logActivity(db, {
+        companyId,
+        actorType: actor.actorType,
+        actorId: actor.actorId,
+        agentId: actor.agentId,
+        runId: actor.runId,
+        action: DEARME_MEMORY_UPDATED_ACTION,
+        entityType: "dearme_memory",
+        entityId: memoryId,
+        details: {
+          kind: input.kind,
+          sourceInputMode: input.sourceInputMode,
+          title: input.title,
+          body: input.body,
+          sourceLabel: input.sourceLabel,
+          restoredFromArchive: true,
+        },
+      });
+
+      const growthCycles = await refreshDearMeMemoryCycles(companyId, actor);
+
+      res.status(200).json(dearMeMemoryUpdateResultSchema.parse({
+        companyId,
+        status: "recorded",
+        memory: memoryUpdateResponseItem({ memoryId, update: input, createdAt }),
         growthCycles,
       }));
     },
