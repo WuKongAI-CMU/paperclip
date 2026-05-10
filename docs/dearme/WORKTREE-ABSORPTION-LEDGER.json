@@ -2,6 +2,54 @@
   "updatedAt": "2026-05-10",
   "reviewedAbsorptions": [
     {
+      "ticket": "DM-022",
+      "branch": "codex/dearme-dm-022-workstream-proof-feed",
+      "head": "86a3078d6b5079b5b228792f78a8257f72478f9f",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe already absorbs the old workstream-proof-feed intent through the evolved Live proof feed, DearMe action cards, proof-pack summaries, and inline review routing; replaying the branch would restore stale team-work-stream UI.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/components/dearme/DearMeActionCard.tsx",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-027",
+      "branch": "codex/dearme-dm-027-preserve-output-focus",
+      "head": "4aa7e0975b162421b69515d2935b77cc507bee44",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe carries output focus through the canonical focused-decision route with artifact-aware parsing and output-aware action handlers across batches, live proof feed, reports, and prepared work; the older output query-parameter patch is superseded.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
+      "ticket": "DM-029",
+      "branch": "codex/dearme-dm-029-first-cycle-copy",
+      "head": "9b7994ccee1f641a32d95282be4a35e3b8573119",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current first-cycle surface already uses customer-owned Working rhythm and First private work language and has regression coverage against the stale machinery/operations copy.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-030",
+      "branch": "codex/dearme-dm-030-review-boundary-cards",
+      "head": "11145f2d569c95e4035290d8ef2b83f3d5c672c2",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current focused decision, batch, Work Ready, and output-detail surfaces already expose launch boundaries, review handoff cards, and in-place prepared-work review controls; the older compact Review boundary card is superseded by the richer current controls.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
       "ticket": "DM-096",
       "branch": "codex/dearme-dm-096-focused-decision-banner-actions",
       "head": "e61752b8e6fee7f8c3a92051c2e76ecf9a7cb044",

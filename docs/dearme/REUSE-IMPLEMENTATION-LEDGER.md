@@ -46,6 +46,25 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DM-022 workstream-proof-feed head
+  `86a3078d6b5079b5b228792f78a8257f72478f9f` is recorded as absorbed because
+  the current `Live proof feed` already turns team progress into proof through
+  DearMe action cards, proof-pack summaries, and inline review routing.
+- DM-027 preserve-output-focus head
+  `4aa7e0975b162421b69515d2935b77cc507bee44` is recorded as absorbed because
+  the current focused review route preserves output identity through
+  artifact-aware parsing and output-aware batch, report, live-feed, and
+  prepared-work actions.
+- DM-029 first-cycle-copy head
+  `9b7994ccee1f641a32d95282be4a35e3b8573119` is recorded as absorbed because
+  current first-cycle copy already uses `Working rhythm` and
+  `First private work`, with tests guarding against stale machinery/operations
+  copy.
+- DM-030 review-boundary-cards head
+  `11145f2d569c95e4035290d8ef2b83f3d5c672c2` is recorded as absorbed because
+  current focused decision, batch, Work Ready, and output-detail surfaces
+  already expose launch boundaries, review handoff cards, and in-place
+  prepared-work review controls.
 - DM-026 team-proof-feed-refresh head
   `98fe35fdc00ed61a5dacab198af3276e34e77aa5` is recorded as absorbed because
   the current `Live proof feed` already carries the worker's readable progress
@@ -154,6 +173,14 @@ heads plus the exact DM-023 source-context head to the reviewed absorption
 ledger. Treat those heads as no-replay candidates unless they advance; the code
 change in this pass is the review-freshness fix that stops stale
 `changes_requested` work products from hiding newer private work.
+
+Coordinator note: DM-183BL adds the exact DM-022, DM-027, DM-029, and DM-030
+worker heads to the reviewed absorption ledger. Keep future proof-feed,
+focused-route, first-cycle-copy, and launch-boundary improvements on the
+current Live proof feed, artifact-aware focused route, Working rhythm / First
+private work copy, and in-place prepared-work review controls rather than
+restoring the older workstream, `output=`-only, or compact boundary-card
+branches.
 
 Coordinator note: DM-183BK adds both exact DM-026 worker heads to the reviewed
 absorption ledger. Keep future proof-feed improvements on the current Live

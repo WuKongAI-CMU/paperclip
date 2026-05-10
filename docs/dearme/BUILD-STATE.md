@@ -2,6 +2,58 @@
 
 Date: 2026-05-10
 
+## DM-183BL DM-022/027/029/030 UI Worker Absorption - 2026-05-10
+
+Product/architecture slice:
+
+- Kept Symphony as the cooperation spine and compared the exact DM-022,
+  DM-027, DM-029, and DM-030 worker heads against the coordinator checkout
+  before deciding whether to replay code.
+- Reviewed DM-022 workstream-proof-feed head
+  `86a3078d6b5079b5b228792f78a8257f72478f9f`. Current DearMe already carries
+  the useful progress-proof value through the evolved `Live proof feed`,
+  customer-safe action cards, proof-pack summaries, and inline review routing,
+  so the older Team work stream UI was not restored.
+- Reviewed DM-027 preserve-output-focus head
+  `4aa7e0975b162421b69515d2935b77cc507bee44`. Current focused review routes
+  preserve output identity through artifact-aware parsing and output-aware
+  batch, report, live-feed, and prepared-work actions, so the old
+  `output=`-only route patch is superseded.
+- Reviewed DM-029 first-cycle-copy head
+  `9b7994ccee1f641a32d95282be4a35e3b8573119`. Current first-cycle copy already
+  uses `Working rhythm` and `First private work`, with tests guarding against
+  stale machinery/operations language.
+- Reviewed DM-030 review-boundary-cards head
+  `11145f2d569c95e4035290d8ef2b83f3d5c672c2`. Current focused decision,
+  batch, Work Ready, and output-detail surfaces already expose launch
+  boundaries, review handoff cards, and in-place prepared-work review controls;
+  the older compact Review boundary card would duplicate current UI.
+- Recorded all four exact heads in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so future Symphony patrols
+  close them as reviewed absorption candidates unless the branches advance.
+
+Verification:
+
+- `pnpm run dearme:worktrees -- --ticket=DM-022 --skip-dirty --limit=20`
+  reported the DM-022 worker branch as `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --ticket=DM-027 --skip-dirty --limit=20`
+  reported the DM-027 worker branch as `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --ticket=DM-029 --skip-dirty --limit=20`
+  reported the DM-029 worker branch as `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --ticket=DM-030 --skip-dirty --limit=20`
+  reported the DM-030 worker branch as `reviewed_absorbed`.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
+  passed.
+- `.symphony/bin/dearme-symphony status --json` reported Symphony running with
+  one active DEA-9 worker in review and no retrying workers.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+
+Known gap:
+
+- No product code changed in this slice. The current UI evidence was inspected
+  directly, but UI tests were not rerun for this docs/ledger absorption pass.
+
 ## DM-183BK DM-026 Live Proof Feed Absorption - 2026-05-10
 
 Product/architecture slice:
