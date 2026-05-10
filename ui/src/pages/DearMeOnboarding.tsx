@@ -5075,6 +5075,9 @@ function VoiceMemoryPanel({
                       summary={customerProofPackSummary(item.summary)}
                       chips={[
                         { label: MEMORY_KIND_LABELS[item.proposedKind], variant: "outline" },
+                        ...(selected || focused
+                          ? [{ label: "Selected for next pass", variant: "secondary" as const }]
+                          : []),
                         ...(item.sourceLabel
                           ? [{ label: sourceLabelForChip(item.sourceLabel), variant: "outline" as const }]
                           : []),
@@ -5330,7 +5333,7 @@ function VoiceMemoryPanel({
                 title={customerProofPackSummary(item.title ?? "Untitled memory")}
                 summary={customerProofPackSummary(item.bodyPreview)}
                 chips={chips}
-                calloutLabel="Feeds work"
+                calloutLabel={justSaved ? `${sourceWorkPath.owner} will use this next` : "Already in use"}
                 callout={
                   <div className="space-y-1">
                     <p className="font-medium text-foreground">{sourceWorkPath.owner}</p>

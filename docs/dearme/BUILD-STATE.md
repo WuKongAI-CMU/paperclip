@@ -2,6 +2,63 @@
 
 Date: 2026-05-10
 
+## DM-183AY Source Management Baseline Absorption - 2026-05-10
+
+Coordination slice:
+
+- Kept Symphony as the active cooperation spine and checked the live daemon
+  before absorbing stale worker history.
+- Reviewed the exact DM-005 worker head
+  `acaa7842c05ffb4339f4f4739d1c6455204ce447` and integration head
+  `77e7d403913ef4381c41e8aefcdd9bd16592f6d2`.
+- Matched DM-005's useful lesson to the current product path: private Voice &
+  Memory sources now save through the activity-log memory route, support guided
+  source paths, source links, revision, retire, restore, work previews, and
+  source-grounded surface refresh.
+- Rejected replaying the stale `server/src/services/dearme-voice-memory.ts`
+  endpoint because current DearMe already owns the richer source lifecycle
+  through the existing workbench and memory-update routes.
+- Recorded both exact DM-005 heads in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so future Symphony workers do
+  not reopen the obsolete baseline.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status --json`
+  passed and showed an active DEA worker running.
+- `git show --stat --oneline --no-renames acaa7842` and
+  `git show --stat --oneline --no-renames 77e7d403` confirmed the old source
+  management scope before absorption.
+- `rg` checks across current shared, server, UI, and test files confirmed the
+  current activity-log Voice & Memory source path covers create, revise, retire,
+  restore, source links, and refresh behavior.
+
+## DM-183AX Voice & Memory Active Source State Labels - 2026-05-10
+
+Product/UI slice:
+
+- Used the Symphony-side design review as a bounded UI follow-up after the
+  DM-022 source-refresh absorption.
+- Kept the change inside `VoiceMemoryPanel`; no API, schema, runtime, or new
+  source workflow was added.
+- Changed saved Voice & Memory source cards from generic "Feeds work" language
+  to active state labels: already-used sources say "Already in use" and the
+  newly saved source names the DearMe role that will use it next.
+- Added a visible "Selected for next pass" state to source-review cards after
+  the user prepares a fact, so the review queue feels like live work instead of
+  a static list.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status --json`
+  passed with the daemon healthy and no retrying workers.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183AW Source Change Review Refresh Absorption - 2026-05-10
 
 Coordination slice:
@@ -45,14 +102,17 @@ Coordination slice:
   tokens while the worker workspace remained clean.
 - Kept the issue alive by moving it back to `Todo`, which let Symphony stop the
   single worker without stopping the daemon or canceling the product lane.
-- Tuned `.symphony/WORKFLOW.md` so future workers use medium reasoning and must
-  run shell evidence, current-branch status, and the DearMe worktree summary
-  before broad synthesis.
+- Tuned `.symphony/WORKFLOW.md` so future workers use a standard execution
+  model and must run shell evidence, current-branch status, and the DearMe
+  worktree summary as the first assistant action before broad synthesis.
 - Added an explicit one-ticket worker boundary: Symphony workers should not
   spawn their own subagents; the coordinator owns parallelization.
 - Added a browser-smoke guard after the retried worker started `pnpm dev` as a
   foreground command: future workers must use bounded smoke scripts or
   background servers with PID cleanup.
+- Paused `DEA-10` after the first narrow child lane still spent more than 500k
+  tokens in reasoning before running its required bootstrap commands; the
+  workflow now makes bootstrap evidence the hard first action, before docs.
 
 Verification:
 
@@ -65,6 +125,9 @@ Verification:
 - The retried worker reached terminal interaction and started the DearMe dev
   server; moving `DEA-9` back to `Todo` stopped the Codex worker and its dev
   server children, and Symphony returned to `running: []`.
+- `DEA-10` reached `540779` tokens while still in reasoning with a clean
+  workspace; moving it back to `Todo` stopped the worker and Symphony again
+  reported `running: []`.
 
 ## DM-183AV Output Direction Cache Absorption - 2026-05-10
 

@@ -198,7 +198,40 @@ the current Voice & Memory mutation path. Source create, revise, retire, and
 restore now refresh source-grounded Workbench, output-review, and activity
 queries together; do not replay the stale panel-level source-refresh patch.
 
+Coordinator note: DM-183AX applies the Symphony-side design review as a UI-only
+Voice & Memory pass. Keep source state visible with active, role-backed labels
+before adding richer source history or another source-management surface.
+
 ## Recently Completed
+
+### DM-183AX: Voice & Memory Active Source State Labels
+
+Goal: make private sources feel like active team context instead of saved
+archive rows.
+
+Donor grounding:
+
+- Lindy: source cards should show operational state at a glance.
+- Polsia: visible momentum matters; the user should see which source is already
+  shaping the next private pass.
+- Symphony: use sidecar review output as a bounded UI patch, not a new runtime.
+
+Implementation:
+
+- Replaced the generic saved-source callout label with "Already in use" or the
+  specific DearMe role that will use the just-saved source next.
+- Added "Selected for next pass" to the selected source-review card.
+- Kept the patch inside `VoiceMemoryPanel` and existing tests.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status --json` passed with the daemon healthy
+  and no retrying workers.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
 
 ### DM-183AW: Source Change Review Refresh Absorption
 

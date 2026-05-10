@@ -2009,7 +2009,7 @@ describe("DearMeOnboarding", () => {
       ).length,
     ).toBeGreaterThan(0);
     expect(container.textContent).toContain("Voice Editor");
-    expect(container.textContent).toContain("Feeds work");
+    expect(container.textContent).toContain("Already in use");
     expect(container.textContent).toContain("Keeps drafts, outreach, and reports inside your approved voice.");
     expect(container.textContent).toContain("Portfolio Builder");
     expect(container.textContent).toContain("Feeds proof cards, stronger claims, and launch-call notes.");
@@ -3437,6 +3437,9 @@ describe("DearMeOnboarding", () => {
       }),
     );
     const savedSourceLink = linkByText(surfaceByLabel(container, "Voice & Memory"), "Open private source");
+    expect(surfaceByLabel(container, "Voice & Memory").textContent).toContain(
+      "Portfolio Builder will use this next",
+    );
     expect(savedSourceLink?.href).toBe("https://example.com/proof-note");
     expect(savedSourceLink?.target).toBe("_blank");
     expect(savedSourceLink?.rel).toContain("noreferrer");
@@ -3487,6 +3490,7 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     const sourceDetail = surfaceByLabel(container, "Source review detail");
+    expect(surfaceByLabel(container, "Voice & Memory source review").textContent).toContain("Selected for next pass");
     const detailLink = linkByText(sourceDetail, "Open private source");
     expect(sourceDetail.textContent).toContain("Private source");
     expect(detailLink?.href).toBe("https://example.com/build-log");
