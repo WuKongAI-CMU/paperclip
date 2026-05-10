@@ -76,6 +76,12 @@ leave one durable handoff path:
 - or a blocker/patch handoff with workspace path, touched paths, and the exact
   failed command if a commit could not be created.
 
+Workers must not move their own Linear issue into `Done`, `Canceled`, or
+`Duplicate`. Terminal state changes are coordinator-owned and happen only after
+the coordinator verifies one of the durable evidence paths above. If a worker
+believes the issue is already complete without code changes, it leaves Linear
+non-terminal and provides explicit no-code evidence.
+
 The handoff script writes outside the per-ticket worker checkout under
 `/private/tmp/dearme-symphony-workspaces/_handoffs`, which is still inside the
 Symphony writable root. This keeps the coordinator able to absorb a worker patch

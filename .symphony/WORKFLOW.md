@@ -183,6 +183,10 @@ Operating rules:
     non-terminal. If no files changed, run the handoff command, explicitly say
     "No file changes", and include the command evidence proving why the issue is
     complete.
+    Do not use Linear tools, GraphQL, API calls, or comments to move this issue
+    into `Done`, `Canceled`, or `Duplicate`. Terminal state authority belongs to
+    the coordinator after artifact verification; workers leave Linear
+    non-terminal.
 15. Critical product proof lanes stay effectively single-lane. When a first-cycle
     private run, launch handoff, or similar aha-proof ticket is active, do not
     start or request another product implementation lane until that ticket leaves
@@ -195,6 +199,8 @@ Final response contract:
 - Completed actions
 - Absorbable evidence: local commit hash plus durable handoff artifact paths,
   or explicit no-code evidence, or blocker/patch handoff with workspace path
+- Linear state: leave the issue non-terminal; coordinator moves terminal states
+  after verifying evidence
 - Files changed
 - Validation evidence
 - Blockers only if real
