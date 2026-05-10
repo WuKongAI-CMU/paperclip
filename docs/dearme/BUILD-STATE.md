@@ -2,6 +2,34 @@
 
 Date: 2026-05-10
 
+## DM-183AT Early Voice/Review Worktree Absorption - 2026-05-10
+
+Coordination slice:
+
+- Extended `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` with exact
+  branch/head records for DM-014, DM-015, DM-016, DM-017, DM-018, and DM-019.
+- Kept those old worker tips out of the fresh replay lane because the current
+  DearMe product already carries the useful mobile shell, first-week output
+  detail, private-source traceability, source revise, source retire/restore,
+  and retire-confirmation behaviors through newer surfaces.
+- Preserved the Symphony boundary: these records only mean the listed exact
+  heads have been reviewed as absorbed; branch advances still need a new
+  product review before closure or replay.
+
+Verification:
+
+- Manual source checks matched each old branch intent to current DearMe files
+  before adding the ledger entries.
+- `pnpm run test:dearme-worktrees`
+  passed.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty`
+  passed and reported `reviewed_absorbed: 11`, `not_in_current: 102`, and
+  `dirty: 0`.
+- `pnpm run dearme:worktrees -- --status=reviewed-absorbed --skip-dirty --limit=20`
+  passed and listed DM-014 through DM-019 plus the prior reviewed entries.
+- `git diff --check -- docs/dearme/WORKTREE-ABSORPTION-LEDGER.json docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183AS Symphony Handoff - 2026-05-10
 
 Coordination slice:
