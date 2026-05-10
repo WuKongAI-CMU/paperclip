@@ -46,6 +46,13 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DEA-16 / DM-171A closed as a no-code install-proof lane: the existing
+  `@paperclipai/dearme-openclaw` package already proves the plugin scaffold is
+  coherent from the current coordinator head. The manifest points OpenClaw at
+  `./generated/skills`, all 12 generated skill folders contain `SKILL.md`, the
+  four bootstrap files are present, and the config schema requires `apiKey` plus
+  `handle`. This finishes the plugin-install proof portion of DM-171; the
+  customer onboarding bridge remains a separate slice if needed.
 - DEA-15 / DM-183BZ closed as a no-code proof lane: the existing
   first-cycle start, private handoff, Workbench projection, and DearMe
   onboarding surfaces already produce a sample/demo package with Chief of Staff

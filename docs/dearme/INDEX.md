@@ -149,7 +149,7 @@ schema, runtime dashboard, queue system, or customer-visible substrate surface.
 | Sprint | Window | Deliverable | Tickets |
 |--------|--------|-------------|---------|
 | 0 | done | Foundation, registry, contracts, OpenClaw plugin, tri-substrate integration **+ runtime** | DM-S01, DM-141 schema, registry, ai-proxy contract, **DM-S05**, **DM-S06** (contracts), **DM-S07** (runtime: 6 server services + lynchpin wrapper) |
-| 1 | days 1–7 | First-run aha moment live through OpenClaw + Chief routes first conversation | DM-138, DM-139, **DM-170-impl** voice-score model + Express route, **DM-171** plugin install flow, **DM-179** SSE Express route over `dearme-sse-bus` |
+| 1 | days 1–7 | First-run aha moment live through OpenClaw + Chief routes first conversation | DM-138, DM-139, **DM-170-impl** voice-score model + Express route, **DM-171A** plugin install proof complete, **DM-171B** onboarding bridge remains if needed, **DM-179** SSE Express route over `dearme-sse-bus` |
 | 2 | days 8–14 | Voice + content loop publishing via DearMe-owned tools | DM-140, DM-142, DM-146, **DM-172** `post_x` `ChannelDispatch`, **DM-173** X OAuth callback writing into `channel_connections`, **DM-180** approval resolver Express route |
 | 3 | days 15–21 | Outbound + opportunity + audience care running | DM-141 runtime, DM-149, DM-150, **DM-174** `send_email` `ChannelDispatch` (Resend/SES), **DM-176** `send_linkedin_dm` `ChannelDispatch` |
 | 4 | days 22–35 | Site live + ads option + first paid beta | DM-147, DM-148, DM-153, DM-154, **DM-177** `deploy_site` `ChannelDispatch`, **DM-178** `create_meta_campaign` `ChannelDispatch` |

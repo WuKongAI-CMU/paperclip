@@ -2,6 +2,36 @@
 
 Date: 2026-05-10
 
+## DM-171A OpenClaw Plugin Install Proof - 2026-05-10
+
+Product/architecture slice:
+
+- Closed DEA-16 as a no-code Symphony proof lane: the current
+  `@paperclipai/dearme-openclaw` package already has a coherent plugin
+  manifest, generated skill tree, bootstrap payloads, and explicit backstage
+  setup schema.
+- Kept DM-171A focused on installability evidence instead of expanding it into
+  a customer-facing setup wizard, dashboard, browser smoke, or outbound channel
+  implementation.
+- Preserved the product boundary: OpenClaw remains the backstage install
+  substrate, while DearMe's paid-beta surface stays in customer language.
+
+Verification:
+
+- Worker package smoke passed
+  `pnpm --filter @paperclipai/dearme-openclaw test` with 1 file and 18 tests
+  passed.
+- Coordinator reran
+  `pnpm --filter @paperclipai/dearme-openclaw test` on the current head and it
+  passed with 1 file and 18 tests.
+- Coordinator manifest smoke confirmed `openclaw.plugin.json` points to
+  `./generated/skills`, 12 generated skill folders have `SKILL.md`,
+  `generated/bootstrap/{AGENTS,SOUL,IDENTITY,USER}.md` are present, and
+  `configSchema.required` is `apiKey` plus `handle`.
+- `git diff --check -- docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/INDEX.md packages/plugins/dearme-openclaw`
+  passed after the docs absorption edit.
+- Linear `DEA-16` is `Done` with no file changes and no blocker.
+
 ## DM-183BZ First-Cycle Sample Demo Proof Card - 2026-05-10
 
 Product/architecture slice:
