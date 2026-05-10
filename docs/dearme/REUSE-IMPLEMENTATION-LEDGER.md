@@ -46,6 +46,11 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- Symphony worker startup now includes `pnpm dearme:symphony-preflight -- .`
+  as both workspace-creation and Codex bootstrap evidence. This keeps the
+  DEA-19 `.git/index.lock` failure mode from recurring after a worker has
+  already produced a useful patch: future lanes should stop before
+  implementation if Git metadata is locked, stale, dirty, or unwritable.
 - Current active handoff target is `DEA-21`: make the 3-5 minute private site
   proof feel like a concrete, handle-specific private site preview or host smoke
   without deploying or adding another public site runtime. This lane should

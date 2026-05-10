@@ -2,6 +2,26 @@
 
 Date: 2026-05-10
 
+## DM-183CA Symphony Git Preflight - 2026-05-10
+
+Coordinator micro-tuning:
+
+- Added a worker Git readiness preflight so Symphony lanes fail before
+  implementation when `.git/index.lock` is present, tracked files are already
+  dirty, or the workspace Git metadata is not writable.
+- Wired the preflight into `.symphony/WORKFLOW.md` after workspace dependency
+  install and into Codex bootstrap evidence before the worker reads old
+  worktrees or starts product analysis.
+- Documented the guard in `.symphony/README.md` and exposed it as
+  `pnpm dearme:symphony-preflight -- .` with focused Node tests.
+- This addresses the DEA-19 handoff wrinkle without adding another product
+  implementation lane while DEA-21 is active.
+
+Verification:
+
+- `pnpm test:dearme-symphony-preflight` passed with 4 tests.
+- `git diff --check` passed.
+
 ## DEA-21 Private Site Host Smoke Active - 2026-05-10
 
 Product/architecture slice:

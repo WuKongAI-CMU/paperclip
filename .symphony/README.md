@@ -83,3 +83,16 @@ For first-cycle private-run or launch-handoff proof work, keep the product lane
 effectively single-lane until the active worker leaves one of those absorbable
 handoff artifacts. Extra Codex help is useful as read-only architecture or QA
 review, not as another concurrent writer on the same customer surface.
+
+## Worker Git Preflight
+
+Worker workspaces must prove Git metadata is usable before implementation
+starts:
+
+```sh
+pnpm dearme:symphony-preflight -- .
+```
+
+The Symphony workflow runs this during workspace creation and again in Codex
+bootstrap evidence. A failure means the lane should stop with the workspace path
+and exact command output instead of producing an uncommittable patch.

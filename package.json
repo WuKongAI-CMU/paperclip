@@ -35,6 +35,8 @@
     "release:rollback": "./scripts/rollback-latest.sh",
     "release:bootstrap-package": "node scripts/bootstrap-npm-package.mjs",
     "check:tokens": "node scripts/check-forbidden-tokens.mjs",
+    "dearme:symphony-preflight": "node scripts/dearme-symphony-git-preflight.mjs",
+    "test:dearme-symphony-preflight": "node --test scripts/dearme-symphony-git-preflight.test.mjs",
     "dearme:worktrees": "node scripts/dearme-worktree-status.mjs",
     "test:dearme-worktrees": "node --test scripts/dearme-worktree-status.test.mjs",
     "docs:dev": "cd docs && npx mintlify dev",

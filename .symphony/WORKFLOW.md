@@ -38,6 +38,7 @@ hooks:
       echo "pnpm is required for DearMe Symphony workspaces" >&2
       exit 127
     fi
+    node scripts/dearme-symphony-git-preflight.mjs .
 agent:
   max_concurrent_agents: 2
   max_turns: 12
@@ -54,6 +55,7 @@ codex:
   bootstrap_commands:
     - git log -1 --oneline
     - git status --short --branch
+    - pnpm dearme:symphony-preflight -- .
     - |
       if pnpm dearme:worktrees -- --summary-only --skip-dirty; then
         true
@@ -131,26 +133,30 @@ Operating rules:
    the current product paths and run the narrow shell smoke or focused test
    before any broad synthesis. If those checks show no code gap, report the
    evidence and stop instead of continuing analysis.
-5. Keep code edits scoped to the issue. Stage explicit paths only; never use
+5. Git readiness guard: the bootstrap runs
+   `pnpm dearme:symphony-preflight -- .` before implementation. If it fails,
+   stop with the failing command and workspace path instead of continuing to a
+   patch that cannot be committed.
+6. Keep code edits scoped to the issue. Stage explicit paths only; never use
    `git add -A` or broad cleanup commands.
-6. Preserve approval boundaries: public send/deploy/spend/sensitive actions
+7. Preserve approval boundaries: public send/deploy/spend/sensitive actions
    require approval.
-7. For UI work, ship a real product surface, not internal substrate controls.
+8. For UI work, ship a real product surface, not internal substrate controls.
    The experience should be simple, beautiful, autonomous, and show a concrete
    first proof artifact whenever the issue touches onboarding or first-run.
-8. Verify with the narrowest meaningful command first, then broader checks if
+9. Verify with the narrowest meaningful command first, then broader checks if
    the touched surface warrants it. Report exact commands and outcomes.
-9. If blocked by missing credentials or permissions, stop with a concise blocker
+10. If blocked by missing credentials or permissions, stop with a concise blocker
    brief. Do not fabricate external access.
-10. Do not spawn additional subagents from inside a Symphony worker. The
+11. Do not spawn additional subagents from inside a Symphony worker. The
    coordinator owns parallelization; a worker owns one bounded Linear issue.
-11. Never leave long-running development servers, watchers, or Storybook in the
+12. Never leave long-running development servers, watchers, or Storybook in the
    foreground. For smoke work, prefer an existing bounded script. If a local
    server is required, start it in the background with a PID/log file, wait for
    the target health check, run the smoke, then kill and wait for the process
    before ending the turn. Do not run `pnpm dev`, watch commands, or other
    non-exiting commands as the foreground command.
-12. For rendered/browser smoke work, use repo-local headless verification from
+13. For rendered/browser smoke work, use repo-local headless verification from
    the shell (Playwright, Vitest, or an existing script). Do not call
    `tool_search` for browser tools, `chrome-devtools`, `browser-use`, or
    `computer-use`: those MCP/browser surfaces can trigger interactive
@@ -159,7 +165,7 @@ Operating rules:
    `pnpm exec playwright install chromium` once and retry the same shell smoke
    before falling back to API/DOM evidence. If Playwright is otherwise
    unavailable, record the exact shell blocker and fall back to API/DOM evidence.
-13. Terminal handoff gate: do not claim complete, move the issue to a terminal
+14. Terminal handoff gate: do not claim complete, move the issue to a terminal
     state, or leave a final response that can be interpreted as terminal unless
     the coordinator can absorb the work from durable evidence. If files changed,
     run `git status --short`, `git diff --check`, focused verification, stage
@@ -168,7 +174,7 @@ Operating rules:
     failing command, and current workspace path in the final response and keep
     the issue non-terminal. If no files changed, explicitly say "No file
     changes" and include the command evidence proving why the issue is complete.
-14. Critical product proof lanes stay effectively single-lane. When a first-cycle
+15. Critical product proof lanes stay effectively single-lane. When a first-cycle
     private run, launch handoff, or similar aha-proof ticket is active, do not
     start or request another product implementation lane until that ticket leaves
     an absorbable commit, explicit no-code evidence, or blocker/patch handoff.
