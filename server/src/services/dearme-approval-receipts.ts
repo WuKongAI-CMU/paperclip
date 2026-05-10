@@ -93,7 +93,7 @@ function launchHandoffFromPayload(payload: Record<string, unknown>) {
     channel,
     channelLabel: label,
     connectChannelState: "connect_channel_required" as const,
-    connectChannelNextStep: `Connect ${label} before DearMe can continue this approved handoff.`,
+    connectChannelNextStep: `Connect ${label} before DearMe can continue this approved next step.`,
   };
 }
 
@@ -110,10 +110,40 @@ function verifiedLinkedIssueId(payloadIssueId: string | null, linkedIssueIds: st
   return linkedIds[0] ?? null;
 }
 
+function launchReadyBriefCopyForRiskGate(riskGate: string | null) {
+  if (riskGate === "publish_social") {
+    return {
+      title: "Launch-ready posting brief prepared",
+      nextStep: "Review the channel-ready posting brief before any post goes live.",
+    };
+  }
+  if (riskGate === "send_email") {
+    return {
+      title: "Launch-ready outreach brief prepared",
+      nextStep: "Review the recipient-by-recipient outreach brief before any message is sent.",
+    };
+  }
+  if (riskGate === "deploy_public_site") {
+    return {
+      title: "Launch-ready portfolio brief prepared",
+      nextStep: "Review the site-update brief before anything is published publicly.",
+    };
+  }
+  if (riskGate === "spend_money") {
+    return {
+      title: "Budget-ready next step prepared",
+      nextStep: "Review the budget brief before any spend happens.",
+    };
+  }
+  return null;
+}
+
 function buildReceiptDetails(approval: ApprovalRecord) {
   const payload = isRecord(approval.payload) ? approval.payload : {};
   const launchHandoff = launchHandoffFromPayload(payload);
   const paused = hasDearMePauseIntent(approval.decisionNote);
+  const riskGate = payloadText(payload, "riskGate");
+  const launchReadyBriefCopy = launchReadyBriefCopyForRiskGate(riskGate);
   const recommendedAction =
     customerSafePayloadText(payload, "recommendedAction", "") ||
     customerSafePayloadText(payload, "title", "") ||
@@ -121,14 +151,15 @@ function buildReceiptDetails(approval: ApprovalRecord) {
   const payloadNextAction = customerSafePayloadText(
     payload,
     "nextActionOnApproval",
-    "DearMe will prepare the next governed handoff before anything external runs.",
+    "DearMe will prepare the next governed brief before anything external runs.",
   );
   const nextActionOnApproval =
     paused
       ? DEARME_PAUSE_NEXT_STEP
       : launchHandoff?.connectChannelNextStep ??
-    payloadNextAction ??
-    "DearMe will prepare the next governed handoff before anything external runs.";
+        launchReadyBriefCopy?.nextStep ??
+        payloadNextAction ??
+        "DearMe will prepare the next governed brief before anything external runs.";
   const receiptStatus = paused ? "paused" : "not_run_yet";
   const receiptSummary = [
     `Approved: ${recommendedAction}`,
@@ -144,7 +175,7 @@ function buildReceiptDetails(approval: ApprovalRecord) {
     outputKind: payloadText(payload, "outputKind"),
     issueId: payloadText(payload, "issueId"),
     issueIdentifier: payloadText(payload, "issueIdentifier"),
-    riskGate: payloadText(payload, "riskGate"),
+    riskGate,
     preparedTitle: customerSafePayloadText(payload, "preparedTitle", ""),
     preparedSummary: customerSafePayloadText(payload, "preparedSummary", ""),
     recommendedAction,
@@ -164,46 +195,24 @@ function handoffCopyFor(details: ReceiptDetails) {
   if (details.paused) {
     return {
       title: details.launchChannelLabel
-        ? `Private ${details.launchChannelLabel} handoff paused`
-        : "Private execution handoff paused",
+        ? `Launch-ready ${details.launchChannelLabel} step paused`
+        : "Launch-ready next step paused",
       nextStep: DEARME_PAUSE_NEXT_STEP,
     };
   }
   if (details.connectChannelState === "connect_channel_required" && details.launchChannelLabel) {
     return {
-      title: `Private ${details.launchChannelLabel} handoff prepared`,
+      title: `Launch-ready ${details.launchChannelLabel} brief prepared`,
       nextStep:
         details.connectChannelNextStep ??
-        `Connect ${details.launchChannelLabel} before DearMe can continue this approved handoff.`,
+        `Connect ${details.launchChannelLabel} before DearMe can continue this approved next step.`,
     };
   }
-  if (details.riskGate === "publish_social") {
-    return {
-      title: "Private publishing handoff prepared",
-      nextStep: "DearMe will prepare the channel-ready posting brief before any post goes live.",
-    };
-  }
-  if (details.riskGate === "send_email") {
-    return {
-      title: "Private outreach handoff prepared",
-      nextStep: "DearMe will prepare the recipient-by-recipient outreach brief before any message is sent.",
-    };
-  }
-  if (details.riskGate === "deploy_public_site") {
-    return {
-      title: "Private portfolio handoff prepared",
-      nextStep: "DearMe will prepare the site-update brief before anything is published publicly.",
-    };
-  }
-  if (details.riskGate === "spend_money") {
-    return {
-      title: "Private spending handoff prepared",
-      nextStep: "DearMe will prepare the budget and execution brief before any spend happens.",
-    };
-  }
+  const riskCopy = launchReadyBriefCopyForRiskGate(details.riskGate);
+  if (riskCopy) return riskCopy;
   return {
-    title: "Private execution handoff prepared",
-    nextStep: "DearMe will prepare the governed execution brief before any external action happens.",
+    title: "Launch-ready next step prepared",
+    nextStep: "Review the governed brief before any external action happens.",
   };
 }
 
@@ -211,8 +220,8 @@ function buildPrivateExecutionHandoffDetails(receiptDetails: ReceiptDetails) {
   const copy = handoffCopyFor(receiptDetails);
   const handoffSummary = [
     receiptDetails.paused
-      ? "The final approval is recorded and DearMe paused the private execution brief."
-      : "The final approval is recorded and DearMe prepared the private execution brief.",
+      ? "The final approval is recorded and DearMe paused the next launch step."
+      : "The final approval is recorded and DearMe prepared the launch-ready brief.",
     "External action: still not run.",
     `Next: ${copy.nextStep}`,
   ].join(" ");
@@ -243,8 +252,8 @@ function buildReceiptComment(details: ReceiptDetails) {
 function buildPrivateExecutionHandoffComment(details: PrivateExecutionHandoffDetails) {
   return [
     details.paused
-      ? "DearMe private handoff: paused the execution brief."
-      : "DearMe private handoff: prepared the execution brief.",
+      ? "DearMe next step: paused before anything external."
+      : "DearMe next step: prepared the launch-ready brief.",
     "",
     `Ready: ${details.handoffTitle}`,
     "External action: still nothing has been published, sent, deployed, or spent.",

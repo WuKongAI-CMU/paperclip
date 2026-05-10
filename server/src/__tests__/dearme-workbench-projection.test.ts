@@ -103,7 +103,7 @@ describe("DearMe workbench projection helpers", () => {
     expect(projected.sourceEvidence[0]?.summary).toContain("DearMe");
   });
 
-  it("projects connect-channel readiness through the private handoff progress item", () => {
+  it("projects connect-channel readiness through the launch-ready progress item", () => {
     const projected = dearmeWorkbenchProgressFromActivity({
       id: "activity-private-handoff",
       action: "dearme.private_execution_handoff_prepared",
@@ -116,23 +116,24 @@ describe("DearMe workbench projection helpers", () => {
         outputKind: "content_drafts",
         riskGate: "publish_social",
         executionReadiness: "private_handoff_ready",
-        handoffTitle: "Private X handoff prepared",
-        handoffSummary: "The final approval is recorded and DearMe prepared the private X execution brief. External action: still not run. Next: Connect X before DearMe can continue this approved handoff.",
-        handoffNextStep: "Connect X before DearMe can continue this approved handoff.",
+        handoffTitle: "Launch-ready X brief prepared",
+        handoffSummary: "The final approval is recorded and DearMe prepared the launch-ready brief. External action: still not run. Next: Connect X before DearMe can continue this approved next step.",
+        handoffNextStep: "Connect X before DearMe can continue this approved next step.",
       },
       createdAt: new Date("2026-05-08T12:00:00.000Z"),
     });
 
     expect(projected).toEqual(expect.objectContaining({
       kind: "execution_handoff_prepared",
-      title: "Private X handoff prepared",
-      summary: expect.stringContaining("Connect X before DearMe can continue this approved handoff."),
-      nextStep: "Connect X before DearMe can continue this approved handoff.",
+      title: "Launch-ready X brief prepared",
+      summary: expect.stringContaining("Connect X before DearMe can continue this approved next step."),
+      nextStep: "Connect X before DearMe can continue this approved next step.",
     }));
     expect(JSON.stringify(projected)).not.toMatch(HIDDEN_SUBSTRATE_PATTERN);
+    expect(JSON.stringify(projected)).not.toMatch(/execution handoff|launch queue/i);
   });
 
-  it("projects pause readiness through the private handoff progress item", () => {
+  it("projects pause readiness through the launch-ready progress item", () => {
     const projected = dearmeWorkbenchProgressFromActivity({
       id: "activity-private-handoff-paused",
       action: "dearme.private_execution_handoff_prepared",
@@ -145,8 +146,8 @@ describe("DearMe workbench projection helpers", () => {
         outputKind: "content_drafts",
         riskGate: "publish_social",
         executionReadiness: "private_handoff_paused",
-        handoffTitle: "Private publishing handoff paused",
-        handoffSummary: "The final approval is recorded and DearMe paused the private execution brief. External action: still not run. Next: DearMe is paused until you resume or approve a new direction.",
+        handoffTitle: "Launch-ready posting step paused",
+        handoffSummary: "The final approval is recorded and DearMe paused the next launch step. External action: still not run. Next: DearMe is paused until you resume or approve a new direction.",
         handoffNextStep: "DearMe is paused until you resume or approve a new direction.",
       },
       createdAt: new Date("2026-05-08T12:05:00.000Z"),
@@ -154,11 +155,12 @@ describe("DearMe workbench projection helpers", () => {
 
     expect(projected).toEqual(expect.objectContaining({
       kind: "execution_handoff_prepared",
-      title: "Private publishing handoff paused",
+      title: "Launch-ready posting step paused",
       summary: expect.stringContaining("DearMe is paused until you resume or approve a new direction."),
       executionReadiness: "private_handoff_paused",
       nextStep: "DearMe is paused until you resume or approve a new direction.",
     }));
     expect(JSON.stringify(projected)).not.toMatch(HIDDEN_SUBSTRATE_PATTERN);
+    expect(JSON.stringify(projected)).not.toMatch(/execution handoff|launch queue/i);
   });
 });

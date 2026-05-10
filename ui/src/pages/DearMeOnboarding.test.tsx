@@ -4290,7 +4290,7 @@ describe("DearMeOnboarding", () => {
       title: "Your call: Launch Brand OS for Peter Studio",
       summary: "Review the first growth-team plan before private work starts.",
       artifact: "Brand OS",
-      sourceLabel: "Launch queue",
+      sourceLabel: "Launch call",
       nextAction: "Launch Brand OS when the first cycle and launch boundaries match your brand.",
       relatedOutputId: null,
       issueId: null,
@@ -4337,8 +4337,8 @@ describe("DearMeOnboarding", () => {
       {
         id: "activity-private-handoff",
         kind: "execution_handoff_prepared",
-        title: "Private publishing handoff prepared",
-        summary: "DearMe prepared the private execution brief. Nothing external has run yet.",
+        title: "Launch-ready posting brief prepared",
+        summary: "DearMe prepared the launch-ready brief. Nothing external has run yet.",
         outputKind: "content_drafts",
         outputId: "issue-2:content_drafts",
         riskGate: "publish_social",
@@ -4346,7 +4346,7 @@ describe("DearMeOnboarding", () => {
         issueId: "issue-2",
         issueIdentifier: "PET-8",
         executionReadiness: "private_handoff_ready",
-        nextStep: "DearMe will prepare the channel-ready posting brief before any post goes live.",
+        nextStep: "Review the channel-ready posting brief before any post goes live.",
         createdAt: "2026-05-07T14:06:00.000Z",
       },
       ...response.recentProgress,
@@ -4366,12 +4366,13 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
-    const handoffPanel = surfaceByLabel(container, "Private handoff ready");
-    expect(handoffPanel.textContent).toContain("Private handoff");
-    expect(handoffPanel.textContent).toContain("Private publishing handoff prepared");
+    const handoffPanel = surfaceByLabel(container, "Launch-ready next step ready");
+    expect(handoffPanel.textContent).toContain("Launch-ready next step");
+    expect(handoffPanel.textContent).toContain("Launch-ready posting brief prepared");
     expect(handoffPanel.textContent).toContain("External action not run");
     expect(handoffPanel.textContent).toContain("channel-ready posting brief");
     expect(handoffPanel.textContent).toContain("Content drafts");
+    expect(handoffPanel.textContent).not.toMatch(/execution handoff|launch queue/i);
     expectNoHiddenProductTerms(handoffPanel.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
       HIDDEN_PRODUCT_TERMS.orchestrationName,
@@ -4403,8 +4404,8 @@ describe("DearMeOnboarding", () => {
       {
         id: "activity-private-handoff-paused",
         kind: "execution_handoff_prepared",
-        title: "Private publishing handoff paused",
-        summary: "DearMe paused the private execution brief. Nothing external has run yet.",
+        title: "Launch-ready posting step paused",
+        summary: "DearMe paused the next launch step. Nothing external has run yet.",
         outputKind: "content_drafts",
         outputId: "issue-2:content_drafts",
         riskGate: "publish_social",
@@ -4432,8 +4433,8 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
-    const handoffPanel = surfaceByLabel(container, "Private handoff paused");
-    expect(handoffPanel.textContent).toContain("Private publishing handoff paused");
+    const handoffPanel = surfaceByLabel(container, "Launch-ready next step paused");
+    expect(handoffPanel.textContent).toContain("Launch-ready posting step paused");
     expect(handoffPanel.textContent).toContain("Paused");
     expect(handoffPanel.textContent).toContain("DearMe is paused until you resume or approve a new direction.");
     expect(handoffPanel.textContent).toContain("External action not run");
@@ -4467,8 +4468,8 @@ describe("DearMeOnboarding", () => {
       {
         id: "activity-private-handoff-connect",
         kind: "execution_handoff_prepared",
-        title: "Private X handoff prepared",
-        summary: "The final approval is recorded and DearMe prepared the private X execution brief. External action: still not run. Next: Connect X before DearMe can continue this approved handoff.",
+        title: "Launch-ready X brief prepared",
+        summary: "The final approval is recorded and DearMe prepared the launch-ready X brief. External action: still not run. Next: Connect X before DearMe can continue this approved next step.",
         outputKind: "content_drafts",
         outputId: "issue-2:content_drafts",
         riskGate: "publish_social",
@@ -4476,7 +4477,7 @@ describe("DearMeOnboarding", () => {
         issueId: "issue-2",
         issueIdentifier: "PET-8",
         executionReadiness: "private_handoff_ready",
-        nextStep: "Connect X before DearMe can continue this approved handoff.",
+        nextStep: "Connect X before DearMe can continue this approved next step.",
         createdAt: "2026-05-07T14:06:00.000Z",
       },
       ...response.recentProgress,
@@ -4496,9 +4497,9 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
-    const handoffPanel = surfaceByLabel(container, "Private handoff ready");
-    expect(handoffPanel.textContent).toContain("Private X handoff prepared");
-    expect(handoffPanel.textContent).toContain("Connect X before DearMe can continue this approved handoff.");
+    const handoffPanel = surfaceByLabel(container, "Launch-ready next step ready");
+    expect(handoffPanel.textContent).toContain("Launch-ready X brief prepared");
+    expect(handoffPanel.textContent).toContain("Connect X before DearMe can continue this approved next step.");
     expect(handoffPanel.textContent).toContain("External action not run");
     expect(handoffPanel.textContent).not.toContain("connect_channel_required");
     expect(handoffPanel.textContent).not.toContain("launchHandoff");

@@ -230,7 +230,7 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
             channel: binding.channel,
             reason: "no-active-channel-connection",
             gate: "connect_channel",
-            message: `Connect ${channelLabel} before DearMe can continue this approved handoff.`,
+            message: `Connect ${channelLabel} before DearMe can continue this approved next step.`,
           };
         }
       }

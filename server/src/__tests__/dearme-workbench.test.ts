@@ -1110,8 +1110,8 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
       receiptTitle: "Final approval recorded",
       receiptSummary: expect.stringContaining("nothing has run outside DearMe yet"),
       executionReadiness: "private_handoff_ready",
-      handoffTitle: "Private publishing handoff prepared",
-      handoffSummary: expect.stringContaining("private execution brief"),
+      handoffTitle: "Launch-ready posting brief prepared",
+      handoffSummary: expect.stringContaining("launch-ready brief"),
       handoffNextStep: expect.stringContaining("channel-ready posting brief"),
     }));
 
@@ -1138,8 +1138,8 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         }),
         expect.objectContaining({
           kind: "execution_handoff_prepared",
-          title: "Private publishing handoff prepared",
-          summary: expect.stringContaining("private execution brief"),
+          title: "Launch-ready posting brief prepared",
+          summary: expect.stringContaining("launch-ready brief"),
           outputKind: "content_drafts",
           outputId,
           riskGate: "publish_social",
@@ -1173,12 +1173,12 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
           kind: "progress_recorded",
           cycleStage: "work",
           role: "content_producer",
-          title: "Private publishing handoff prepared",
-          summary: expect.stringContaining("private execution brief"),
+          title: "Launch-ready posting brief prepared",
+          summary: expect.stringContaining("launch-ready brief"),
           artifact: "Content drafts",
           status: "recorded",
           needsApproval: false,
-          sourceLabel: "Private handoff",
+          sourceLabel: "Launch brief",
           costImpact: "No external action has run",
           nextAction: expect.stringContaining("channel-ready posting brief"),
           relatedOutputId: outputId,
@@ -1196,7 +1196,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
       "DearMe final approval: recorded the next move.",
     );
     expect(receiptComments.map((comment) => comment.body).join("\n")).toContain(
-      "DearMe private handoff: prepared the execution brief.",
+      "DearMe next step: prepared the launch-ready brief.",
     );
 
     const customerPathJson = JSON.stringify(result);

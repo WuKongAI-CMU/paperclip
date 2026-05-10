@@ -753,7 +753,7 @@ function nextActionForDecision(decision: DearMeWorkbenchDecision) {
 }
 
 function sourceLabelForDecision(decision: DearMeWorkbenchDecision) {
-  if (decision.approvalId) return "Launch queue";
+  if (decision.approvalId) return "Launch call";
   if (decisionHasCyclePacketEvidence(decision)) return "Private cycle packet";
   return "Prepared output";
 }
@@ -775,7 +775,7 @@ function cycleStageForProgress(item: DearMeWorkbenchProgressItem): DearMeCycleSt
 
 function sourceLabelForProgress(item: DearMeWorkbenchProgressItem) {
   if (item.kind === "next_move_approved") return "Launch receipt";
-  if (item.kind === "execution_handoff_prepared") return "Private handoff";
+  if (item.kind === "execution_handoff_prepared") return "Launch brief";
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "Voice & Memory";
   if (item.kind === "brand_os_requested" || item.kind === "brand_os_applied") return "Brand OS";
   if (item.kind === "paid_beta") return "Paid beta access";
@@ -803,7 +803,7 @@ function roleForProgress(item: DearMeWorkbenchProgressItem): DearMeTeamRole {
 function artifactForProgress(item: DearMeWorkbenchProgressItem) {
   if (item.outputKind) return OUTPUT_KIND_ARTIFACT_LABELS[item.outputKind];
   if (item.kind === "next_move_approved") return "Approved next move";
-  if (item.kind === "execution_handoff_prepared") return "Private execution handoff";
+  if (item.kind === "execution_handoff_prepared") return "Launch-ready brief";
   if (item.kind === "brand_os_applied") return "Growth team";
   if (item.kind === "cycle_check_in") return "Cycle check-in";
   if (item.kind === "spend_checkpoint") return "Spend checkpoint";
@@ -812,16 +812,16 @@ function artifactForProgress(item: DearMeWorkbenchProgressItem) {
 
 function nextActionForProgress(item: DearMeWorkbenchProgressItem) {
   if (item.kind === "next_move_approved") {
-    return "Final approval is recorded; DearMe will prepare the governed handoff before the next external move.";
+    return "Final approval is recorded; DearMe will prepare the governed brief before the next external move.";
   }
   if (item.kind === "execution_handoff_prepared") {
     if (item.executionReadiness === "private_handoff_paused") {
       return (
         item.nextStep ??
-        "DearMe paused the private execution brief until you resume or approve a new direction."
+        "DearMe paused the next launch step until you resume or approve a new direction."
       );
     }
-    return item.nextStep ?? "DearMe prepared the private execution brief; nothing external runs until the governed next move is ready.";
+    return item.nextStep ?? "DearMe prepared the launch-ready brief; nothing external runs until the governed next move is ready.";
   }
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") {
     return "No approval needed; DearMe will use this source in the next private cycle.";
@@ -1870,7 +1870,7 @@ export function dearmeWorkbenchProgressFromActivity(input: {
       ),
       summary: dearMeWorkbenchProjectionText(
         optionalPayloadString(details.receiptSummary),
-        "Your final approval is recorded. Nothing has run outside DearMe yet; the team will prepare the governed handoff before the next move.",
+        "Your final approval is recorded. Nothing has run outside DearMe yet; the team will prepare the governed brief before the next move.",
       ),
       outputKind: outputKindFromPayload(details.outputKind),
       outputId: optionalPayloadString(details.outputId),
@@ -1888,11 +1888,11 @@ export function dearmeWorkbenchProgressFromActivity(input: {
       kind: "execution_handoff_prepared",
       title: dearMeWorkbenchProjectionTitle(
         optionalPayloadString(details.handoffTitle),
-        "Private execution handoff prepared",
+        "Launch-ready next step prepared",
       ),
       summary: dearMeWorkbenchProjectionText(
         optionalPayloadString(details.handoffSummary),
-        "DearMe prepared the private execution brief. Nothing external has run yet.",
+        "DearMe prepared the launch-ready brief. Nothing external has run yet.",
       ),
       outputKind: outputKindFromPayload(details.outputKind),
       outputId: optionalPayloadString(details.outputId),

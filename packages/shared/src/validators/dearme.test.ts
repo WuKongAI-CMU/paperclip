@@ -1174,8 +1174,8 @@ describe("DearMe brand blueprint contract", () => {
         {
           id: "activity-2",
           kind: "execution_handoff_prepared",
-          title: "Private publishing handoff prepared",
-          summary: "DearMe prepared the private execution brief. Nothing external has run yet.",
+          title: "Launch-ready posting brief prepared",
+          summary: "DearMe prepared the launch-ready brief. Nothing external has run yet.",
           outputKind: "content_drafts",
           outputId: "issue-2:content_drafts",
           riskGate: "publish_social",
@@ -1280,7 +1280,7 @@ describe("DearMe brand blueprint contract", () => {
             reason: "Launch Brand OS when the first cycle and launch boundaries match how you want to be represented.",
             riskGate: null,
           },
-          sourceLabel: "Launch queue",
+          sourceLabel: "Launch call",
           costImpact: null,
           nextAction: "Launch Brand OS when the first cycle and launch boundaries match how you want to be represented.",
           relatedOutputId: null,
@@ -1301,7 +1301,7 @@ describe("DearMe brand blueprint contract", () => {
           role: "brand_strategist",
           title: "Your call: Launch Brand OS for Peter",
           summary: "Review the first growth-team plan before private work starts.",
-          evidenceLabel: "Launch queue / Brand OS",
+          evidenceLabel: "Launch call / Brand OS",
           status: "decision_needed",
           needsApproval: true,
           nextAction: "Launch Brand OS when the first cycle and launch boundaries match how you want to be represented.",
@@ -1419,14 +1419,14 @@ describe("DearMe brand blueprint contract", () => {
       role: "brand_strategist",
       status: "decision_needed",
       needsApproval: true,
-      sourceLabel: "Launch queue",
+      sourceLabel: "Launch call",
       nextAction: expect.stringContaining("Launch Brand OS"),
     }));
     expect(response.runLedger.map((entry) => entry.kind)).toEqual(
       expect.arrayContaining(["needs_decision", "learned"]),
     );
     expect(response.runLedger[0]).toEqual(expect.objectContaining({
-      evidenceLabel: "Launch queue / Brand OS",
+      evidenceLabel: "Launch call / Brand OS",
       needsApproval: true,
     }));
     expect(response.actionGraph.nodes.map((node) => node.kind)).toEqual(

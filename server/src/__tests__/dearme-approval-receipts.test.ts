@@ -77,8 +77,9 @@ describe("recordDearMeNextMoveApprovalReceipt", () => {
       externalExecutionStatus: "not_run_yet",
       receiptTitle: "Final approval recorded",
       executionReadiness: "private_handoff_ready",
-      handoffTitle: "Private publishing handoff prepared",
-      handoffNextStep: expect.stringContaining("channel-ready posting brief"),
+      handoffTitle: "Launch-ready posting brief prepared",
+      handoffNextStep: "Review the channel-ready posting brief before any post goes live.",
+      nextActionOnApproval: "Review the channel-ready posting brief before any post goes live.",
     }));
     expect(mockLogActivity).toHaveBeenCalledTimes(2);
     expect(mockLogActivity).toHaveBeenNthCalledWith(1, db, expect.objectContaining({
@@ -96,7 +97,7 @@ describe("recordDearMeNextMoveApprovalReceipt", () => {
       action: DEARME_PRIVATE_EXECUTION_HANDOFF_ACTIVITY,
       details: expect.objectContaining({
         executionReadiness: "private_handoff_ready",
-        handoffTitle: "Private publishing handoff prepared",
+        handoffTitle: "Launch-ready posting brief prepared",
       }),
     }));
 
@@ -114,10 +115,11 @@ describe("recordDearMeNextMoveApprovalReceipt", () => {
         companyId: "company-1",
         issueId: "issue-1",
         authorUserId: "user-1",
-        body: expect.stringContaining("DearMe private handoff: prepared the execution brief."),
+        body: expect.stringContaining("DearMe next step: prepared the launch-ready brief."),
       }),
     ]);
     const serializedComments = commentRows.map((row) => row.body).join("\n").toLowerCase();
+    expect(serializedComments).not.toContain("channel handoff");
     for (const hiddenTerm of ["paperclip", "openclaw", "symphony", "setup_payload", "runtime", "provider"]) {
       expect(serializedComments).not.toContain(hiddenTerm);
     }
@@ -147,24 +149,24 @@ describe("recordDearMeNextMoveApprovalReceipt", () => {
       launchChannel: "x",
       launchChannelLabel: "X",
       connectChannelState: "connect_channel_required",
-      connectChannelNextStep: "Connect X before DearMe can continue this approved handoff.",
-      handoffTitle: "Private X handoff prepared",
-      handoffNextStep: "Connect X before DearMe can continue this approved handoff.",
-      nextActionOnApproval: "Connect X before DearMe can continue this approved handoff.",
+      connectChannelNextStep: "Connect X before DearMe can continue this approved next step.",
+      handoffTitle: "Launch-ready X brief prepared",
+      handoffNextStep: "Connect X before DearMe can continue this approved next step.",
+      nextActionOnApproval: "Connect X before DearMe can continue this approved next step.",
     }));
     expect(mockLogActivity).toHaveBeenNthCalledWith(2, db, expect.objectContaining({
       details: expect.objectContaining({
         launchChannel: "x",
         launchChannelLabel: "X",
         connectChannelState: "connect_channel_required",
-        connectChannelNextStep: "Connect X before DearMe can continue this approved handoff.",
+        connectChannelNextStep: "Connect X before DearMe can continue this approved next step.",
       }),
     }));
 
     expect(insert).toHaveBeenCalledTimes(1);
     const commentRows = values.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
     const serializedComments = commentRows.map((row) => row.body).join("\n");
-    expect(serializedComments).toContain("Connect X before DearMe can continue this approved handoff.");
+    expect(serializedComments).toContain("Connect X before DearMe can continue this approved next step.");
     for (const hiddenTerm of ["launchHandoff", "connect_channel_required", "paperclip", "openclaw", "symphony"]) {
       expect(serializedComments).not.toContain(hiddenTerm);
     }
@@ -186,7 +188,7 @@ describe("recordDearMeNextMoveApprovalReceipt", () => {
       paused: true,
       externalExecutionStatus: "paused",
       executionReadiness: "private_handoff_paused",
-      handoffTitle: "Private execution handoff paused",
+      handoffTitle: "Launch-ready next step paused",
       handoffNextStep: "DearMe is paused until you resume or approve a new direction.",
       nextActionOnApproval: "DearMe is paused until you resume or approve a new direction.",
     }));
@@ -201,7 +203,7 @@ describe("recordDearMeNextMoveApprovalReceipt", () => {
     const commentRows = values.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
     const serializedComments = commentRows.map((row) => row.body).join("\n");
     expect(serializedComments).toContain("DearMe final approval: recorded the pause before any external action.");
-    expect(serializedComments).toContain("DearMe private handoff: paused the execution brief.");
+    expect(serializedComments).toContain("DearMe next step: paused before anything external.");
     for (const hiddenTerm of ["launchHandoff", "paperclip", "openclaw", "symphony"]) {
       expect(serializedComments).not.toContain(hiddenTerm);
     }

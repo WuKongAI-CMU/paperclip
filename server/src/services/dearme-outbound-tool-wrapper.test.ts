@@ -282,7 +282,7 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
     expect(result.channel).toBe("x");
     expect(result.reason).toBe("no-active-channel-connection");
     expect(result.gate).toBe("connect_channel");
-    expect(result.message).toBe("Connect X before DearMe can continue this approved handoff.");
+    expect(result.message).toBe("Connect X before DearMe can continue this approved next step.");
     expect(dispatch).not.toHaveBeenCalled();
   });
 

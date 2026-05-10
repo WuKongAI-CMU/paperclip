@@ -15,6 +15,11 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-10
 
+- DEA-36 turns the first proof pack into one launch-ready next step by reusing
+  the existing output handoff, `dearme_output_next_move` approval payload,
+  private receipt activity, Workbench projection, and onboarding proof-pack
+  surface. Keep this as the launch-readiness path; do not add a second launch
+  queue, first-run contract, runtime dashboard, or direct send/publish surface.
 - DEA-34 now closes the missing issuance half of DM-145C with a dedicated
   admin route at `POST /agents/:id/keys/dearme-proxy`. The route reuses the
   existing `agent_api_keys` table and `agentService.createApiKey(...,
@@ -69,6 +74,12 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DEA-36 is coordinator-absorbed as the DM-147 launch-ready next-step slice.
+  Symphony provided the proof-pack summary/output-handoff refinement in worker
+  handoff `47b31e0f`, and the coordinator kept the final cut on the existing
+  receipt, Workbench, shared contract fixture, and onboarding projection paths.
+  Customer-facing copy says one launch-ready next step/brief; the internal
+  `execution_handoff_prepared` kind stays backstage.
 - DEA-31 is coordinator-absorbed as the DM-155 prompt-cache economics contract.
   The worker proved the narrow cache-accounting shape; the coordinator kept the
   final cut at the proxy package boundary with a `./cache-economics` subpath,
@@ -542,9 +553,15 @@ customer-ready next step. DM-095 remains a useful Work Ready summary-actions
 candidate, but should stay deferred until DEA-9 leaves review because it can
 touch the same focused review surface.
 
+Coordinator note: DEA-36 tightened the first-cycle proof pack into one
+customer-ready next step by reusing the existing output handoff, Workbench
+projection, and onboarding proof-pack surface. Keep later launch-handoff work
+on this same path; do not split it into a second first-run contract, queue, or
+runtime dashboard.
+
 Coordinator note: DM-011 is now absorbed into the current final-approval path.
 Approving a DearMe next move records a customer-safe launch receipt, prepares a
-private execution handoff, hides the stale prepared-work decision, and leaves a
+launch-ready brief, hides the stale prepared-work decision, and leaves a
 Workbench trace that says the final approval was captured without claiming that
 anything was published, sent, deployed, or spent.
 

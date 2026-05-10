@@ -2037,16 +2037,16 @@ function PrivateExecutionHandoffPanel({
   const summary = customerProofPackSummary(handoff.summary);
   const isPaused = handoff.executionReadiness === "private_handoff_paused";
   const statusLabel = isPaused ? "Paused" : "Ready";
-  const ariaLabel = isPaused ? "Private handoff paused" : "Private handoff ready";
+  const ariaLabel = isPaused ? "Launch-ready next step paused" : "Launch-ready next step ready";
   const nextStep = handoff.nextStep
     ? customerProofPackSummary(handoff.nextStep)
-    : "DearMe prepared the private brief. Nothing public or external runs until the next governed move is ready.";
+    : "DearMe prepared the launch-ready brief. Nothing public or external runs until the next governed move is ready.";
 
   return (
     <DearMeFocusSurface aria-label={ariaLabel} className="space-y-4">
       <DearMeWorkbenchSectionHeader
         icon={ShieldCheck}
-        eyebrow="Private handoff"
+        eyebrow="Launch-ready next step"
         title={customerProofPackSummary(handoff.title)}
         description={summary}
         trailing={

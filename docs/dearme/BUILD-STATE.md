@@ -2,6 +2,43 @@
 
 Date: 2026-05-10
 
+## DEA-36 DM-147 Launch-Ready Next Step Absorbed - 2026-05-10
+
+Product/architecture slice:
+
+- Absorbed Symphony worker handoff `47b31e0f` onto the coordinator branch at
+  `649a66ba`, then tightened the remaining approval receipt, Workbench, shared
+  fixture, and onboarding copy so the first proof pack reads as one
+  launch-ready next step instead of a mechanical handoff.
+- The slice reuses the existing output handoff, `dearme_output_next_move`
+  approval payload, private receipt activity, Workbench projection, and
+  onboarding proof-pack surface. No new launch dashboard, queue, runtime view,
+  send path, or first-run contract was added.
+- Customer-visible labels now converge on `Launch-ready next step`,
+  `Launch-ready brief`, and explicit approval-boundary copy. The internal
+  `execution_handoff_prepared` progress kind remains a storage/read-model
+  detail only.
+
+Coordination state:
+
+- Worker evidence is preserved under
+  `/private/tmp/dearme-symphony-workspaces/_handoffs/DEA-36-794d89631182..47b31e0fdfae-2026-05-10T23-05-18-528Z.*`.
+- Linear `DEA-36` tracks this as the single active Symphony implementation
+  lane until coordinator verification and closeout.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-approval-receipts.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-workbench-projection.test.ts server/src/__tests__/dearme-output-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts packages/shared/src/validators/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed with 108 tests and 16 embedded-Postgres-dependent tests skipped by
+  the host probe.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `git diff --check` passed.
+- The target customer-visible code/fixture scan found no remaining
+  `Launch queue`, `approved handoff`, or private execution-brief wording under
+  `server/src`, `ui/src`, or `packages/shared/src`.
+
 ## DEA-34 DM-145C Proxy-Key Issuance Absorbed - 2026-05-10
 
 Product/architecture slice:
@@ -225,7 +262,7 @@ Product/architecture slice:
   handoffs at coordinator commit `2b8aa781`.
 - Private handoff receipts now read the existing `launchHandoff` publish gate
   from the approved next-move payload and surface the customer-safe next step:
-  `Connect X before DearMe can continue this approved handoff.`
+  `Connect X before DearMe can continue this approved next step.`
 - The Workbench projection reuses the existing `execution_handoff_prepared`
   progress item and the existing handoff panel. No launch queue, runtime
   dashboard, dispatch path, or second approval surface was added.
@@ -11121,7 +11158,6 @@ Not run:
 - The isolated `/tmp/dearme-clean-local.CNG6u6` home contains one smoke company/payment and can be deleted after the evidence is no longer needed.
 - The clean mobile full-page screenshot shows the fixed bottom nav crossing through content at the captured viewport fold. The paid-beta panel itself rendered and functioned correctly, but this remains a visual polish risk for mobile full-page capture.
 - The local dev database now contains smoke approvals `b9d605b6-4c62-40d5-bac2-960d25d9ffc1`, `84e4dcea-a30d-419c-a83b-9fc4c70c1d5a`, `915a7866-e53d-432f-bea7-d4587663850e`, `840cd202-540c-4a2c-a376-d2ea78eed338`, `4cbd056f-3f9d-47a4-a9d3-b4a76d737563`, `2df0e229-5caa-441b-90e9-4e7a1dc60d62`, `519caeef-3252-41b9-a11d-753b33ecf444`, `a3e02ffa-4230-4e05-9977-66ab79327642`, `d40f9acf-3fac-4be5-a660-6fb946b8db69`, `8398a7e3-cb33-4ce9-ba10-f4e9522a6f29`, `bc3f2eab-e675-4b2c-960a-54ca7bd3b5c7`, `36e61ca3-0a28-4599-804f-fe45420ea376`, `a1229131-632d-49ce-a29f-453e640481e6`, `df7a1333-c14a-4369-b395-110ca68a0680`, `b2bb8a9d-649c-48dc-b398-afac8efaeb62`, `2ca6835f-7b46-4f19-99e5-dfa9abae3c63`, `338871e5-ee1b-4f6e-be14-a05cc6bc7884`, `6c370c67-4fe1-422d-a243-832f289003dd`, and `0481af14-6da5-414a-ae32-1da7f10d4f05`.
-
 ## Next Slice
 
 Make the runtime loop paid-beta credible now that Codex receives task context, produces content, updates the attached weekly report document, has live-verified review handoffs for content and report output, only auto-starts the content lane by default, has live-verified weekly report reviewer decisions, now shows generated work on `/dearme`, and Voice & Memory source add/edit/archive/dialog behavior is integrated through `98fa9796c3e8`:
