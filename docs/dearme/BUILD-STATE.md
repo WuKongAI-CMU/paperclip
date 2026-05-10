@@ -15,6 +15,9 @@ Coordination slice:
   before broad synthesis.
 - Added an explicit one-ticket worker boundary: Symphony workers should not
   spawn their own subagents; the coordinator owns parallelization.
+- Added a browser-smoke guard after the retried worker started `pnpm dev` as a
+  foreground command: future workers must use bounded smoke scripts or
+  background servers with PID cleanup.
 
 Verification:
 
@@ -24,6 +27,9 @@ Verification:
   404 and `.symphony/bin/dearme-symphony status` reported `running: []`.
 - `git -C /private/tmp/dearme-symphony-workspaces/DEA-9 status --short --branch`
   stayed clean after the worker was stopped.
+- The retried worker reached terminal interaction and started the DearMe dev
+  server; moving `DEA-9` back to `Todo` stopped the Codex worker and its dev
+  server children, and Symphony returned to `running: []`.
 
 ## DM-183AV Output Direction Cache Absorption - 2026-05-10
 

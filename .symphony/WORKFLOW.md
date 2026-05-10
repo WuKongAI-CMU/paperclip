@@ -120,7 +120,13 @@ Operating rules:
    brief. Do not fabricate external access.
 10. Do not spawn additional subagents from inside a Symphony worker. The
    coordinator owns parallelization; a worker owns one bounded Linear issue.
-11. For rendered/browser smoke work, use repo-local headless verification from
+11. Never leave long-running development servers, watchers, or Storybook in the
+   foreground. For smoke work, prefer an existing bounded script. If a local
+   server is required, start it in the background with a PID/log file, wait for
+   the target health check, run the smoke, then kill and wait for the process
+   before ending the turn. Do not run `pnpm dev`, watch commands, or other
+   non-exiting commands as the foreground command.
+12. For rendered/browser smoke work, use repo-local headless verification from
    the shell (Playwright, Vitest, or an existing script). Do not call
    `tool_search` for browser tools, `chrome-devtools`, `browser-use`, or
    `computer-use`: those MCP/browser surfaces can trigger interactive
