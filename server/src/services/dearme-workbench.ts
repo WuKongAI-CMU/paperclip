@@ -815,6 +815,12 @@ function nextActionForProgress(item: DearMeWorkbenchProgressItem) {
     return "Final approval is recorded; DearMe will prepare the governed handoff before the next external move.";
   }
   if (item.kind === "execution_handoff_prepared") {
+    if (item.executionReadiness === "private_handoff_paused") {
+      return (
+        item.nextStep ??
+        "DearMe paused the private execution brief until you resume or approve a new direction."
+      );
+    }
     return item.nextStep ?? "DearMe prepared the private execution brief; nothing external runs until the governed next move is ready.";
   }
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") {
@@ -1894,9 +1900,11 @@ export function dearmeWorkbenchProgressFromActivity(input: {
       approvalId: optionalPayloadString(details.approvalId) ?? input.entityId,
       issueId: optionalPayloadString(details.issueId),
       issueIdentifier: optionalPayloadString(details.issueIdentifier),
-      executionReadiness: details.executionReadiness === "private_handoff_ready"
-        ? "private_handoff_ready"
-        : null,
+      executionReadiness:
+        details.executionReadiness === "private_handoff_ready" ||
+        details.executionReadiness === "private_handoff_paused"
+          ? details.executionReadiness
+          : null,
       nextStep: dearMeWorkbenchProjectionOptionalText(optionalPayloadString(details.handoffNextStep)),
       createdAt: toIso(input.createdAt),
     };

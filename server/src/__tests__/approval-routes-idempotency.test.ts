@@ -40,6 +40,7 @@ function registerModuleMocks() {
   }));
   vi.doMock("../services/dearme-approval-receipts.js", () => ({
     DEARME_NEXT_MOVE_APPROVAL_TYPE: "dearme_output_next_move",
+    hasDearMePauseIntent: vi.fn(() => false),
     recordDearMeNextMoveApprovalReceipt: mockRecordDearMeNextMoveApprovalReceipt,
   }));
 }
@@ -120,7 +121,7 @@ describe("approval routes idempotent retries", () => {
     mockHeartbeatService.wakeup.mockResolvedValue({ id: "wake-1" });
     mockIssueApprovalService.listIssuesForApproval.mockResolvedValue([{ id: "issue-1" }]);
     mockLogActivity.mockResolvedValue(undefined);
-    mockRecordDearMeNextMoveApprovalReceipt.mockResolvedValue(undefined);
+    mockRecordDearMeNextMoveApprovalReceipt.mockResolvedValue({ paused: false });
   });
 
   it("does not emit duplicate approval side effects when approve is already resolved", async () => {
@@ -229,6 +230,46 @@ describe("approval routes idempotent retries", () => {
       approval,
       actorUserId: "user-1",
     });
+  });
+
+  it("skips downstream launch and requester wakeup when a DearMe next move is paused", async () => {
+    const launchService = {
+      executeApprovedNextMove: vi.fn(),
+    };
+    const approval = {
+      id: "approval-9",
+      companyId: "company-1",
+      type: "dearme_output_next_move",
+      status: "approved",
+      payload: {
+        outputId: "issue-1:content_drafts",
+        issueId: "issue-1",
+        launchHandoff: {
+          toolName: "post_x",
+          payload: { text: "Hold this for now." },
+        },
+      },
+      requestedByAgentId: "agent-1",
+    };
+    mockApprovalService.getById.mockResolvedValue({
+      ...approval,
+      status: "pending",
+    });
+    mockApprovalService.approve.mockResolvedValue({ approval, applied: true });
+    mockRecordDearMeNextMoveApprovalReceipt.mockResolvedValue({
+      paused: true,
+    });
+
+    const res = await request(await createApp({}, {
+      dearMeLaunchHandoffService: launchService,
+    }))
+      .post("/api/approvals/approval-9/approve")
+      .send({ decisionNote: "Please pause and do not send." });
+
+    expect(res.status).toBe(200);
+    expect(mockRecordDearMeNextMoveApprovalReceipt).toHaveBeenCalledTimes(1);
+    expect(launchService.executeApprovedNextMove).not.toHaveBeenCalled();
+    expect(mockHeartbeatService.wakeup).not.toHaveBeenCalled();
   });
 
   it("does not emit duplicate rejection logs when reject is already resolved", async () => {

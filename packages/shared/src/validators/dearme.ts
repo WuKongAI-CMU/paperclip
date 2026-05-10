@@ -162,6 +162,7 @@ export const DEARME_WORKBENCH_PROGRESS_KINDS = [
 ] as const;
 export const DEARME_WORKBENCH_EXECUTION_READINESS = [
   "private_handoff_ready",
+  "private_handoff_paused",
 ] as const;
 export const DEARME_WORKBENCH_STREAM_STATUSES = [
   "working",

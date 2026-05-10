@@ -1065,8 +1065,8 @@ describe("DearMe brand blueprint contract", () => {
           approvalId: "approval-2",
           issueId: "issue-2",
           issueIdentifier: "PET-8",
-          executionReadiness: "private_handoff_ready",
-          nextStep: "DearMe will prepare the channel-ready posting brief before any post goes live.",
+          executionReadiness: "private_handoff_paused",
+          nextStep: "DearMe is paused until you resume or approve a new direction.",
           createdAt: "2026-05-07T14:06:00.000Z",
         },
       ],
@@ -1273,8 +1273,8 @@ describe("DearMe brand blueprint contract", () => {
     expect(response.decisionsNeeded[0]!.approvalId).toBe("approval-1");
     expect(response.recentProgress[1]).toEqual(expect.objectContaining({
       kind: "execution_handoff_prepared",
-      executionReadiness: "private_handoff_ready",
-      nextStep: "DearMe will prepare the channel-ready posting brief before any post goes live.",
+      executionReadiness: "private_handoff_paused",
+      nextStep: "DearMe is paused until you resume or approve a new direction.",
     }));
     expect(response.batchDecisions[0]).toEqual(expect.objectContaining({
       actionLabel: "Review work",

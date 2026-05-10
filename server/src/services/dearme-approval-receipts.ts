@@ -6,6 +6,7 @@ import { dearMeCustomerSafeText } from "./dearme-customer-text.js";
 export const DEARME_NEXT_MOVE_APPROVAL_TYPE = "dearme_output_next_move";
 export const DEARME_NEXT_MOVE_APPROVED_ACTIVITY = "dearme.next_move_approved";
 export const DEARME_PRIVATE_EXECUTION_HANDOFF_ACTIVITY = "dearme.private_execution_handoff_prepared";
+export const DEARME_PAUSE_NEXT_STEP = "DearMe is paused until you resume or approve a new direction.";
 
 type ApprovalRecord = typeof approvals.$inferSelect;
 type ReceiptDetails = ReturnType<typeof buildReceiptDetails>;
@@ -32,6 +33,26 @@ function payloadText(payload: Record<string, unknown>, key: string) {
 
 function customerSafePayloadText(payload: Record<string, unknown>, key: string, fallback: string) {
   return dearMeCustomerSafeText(payloadText(payload, key), fallback);
+}
+
+export function hasDearMePauseIntent(decisionNote: string | null | undefined) {
+  const note = decisionNote?.trim().toLowerCase();
+  if (!note) return false;
+
+  return (
+    note.includes("do not send") ||
+    note.includes("do not continue") ||
+    note.includes("do not publish") ||
+    note.includes("do not deploy") ||
+    note.includes("do not spend") ||
+    note.includes("don't send") ||
+    note.includes("don't continue") ||
+    note.includes("don't publish") ||
+    note.includes("don't deploy") ||
+    note.includes("don't spend") ||
+    /\b(?:pause|paused|hold|stop)\b/.test(note) ||
+    note.includes("not now")
+  );
 }
 
 const CHANNEL_LABELS: Record<string, string> = {
@@ -92,6 +113,7 @@ function verifiedLinkedIssueId(payloadIssueId: string | null, linkedIssueIds: st
 function buildReceiptDetails(approval: ApprovalRecord) {
   const payload = isRecord(approval.payload) ? approval.payload : {};
   const launchHandoff = launchHandoffFromPayload(payload);
+  const paused = hasDearMePauseIntent(approval.decisionNote);
   const recommendedAction =
     customerSafePayloadText(payload, "recommendedAction", "") ||
     customerSafePayloadText(payload, "title", "") ||
@@ -102,12 +124,17 @@ function buildReceiptDetails(approval: ApprovalRecord) {
     "DearMe will prepare the next governed handoff before anything external runs.",
   );
   const nextActionOnApproval =
-    launchHandoff?.connectChannelNextStep ??
+    paused
+      ? DEARME_PAUSE_NEXT_STEP
+      : launchHandoff?.connectChannelNextStep ??
     payloadNextAction ??
     "DearMe will prepare the next governed handoff before anything external runs.";
+  const receiptStatus = paused ? "paused" : "not_run_yet";
   const receiptSummary = [
     `Approved: ${recommendedAction}`,
-    "External action: nothing has run outside DearMe yet.",
+    paused
+      ? `Paused: ${DEARME_PAUSE_NEXT_STEP}`
+      : "External action: nothing has run outside DearMe yet.",
     `Next: ${nextActionOnApproval}`,
   ].join(" ");
 
@@ -126,13 +153,22 @@ function buildReceiptDetails(approval: ApprovalRecord) {
     launchChannelLabel: launchHandoff?.channelLabel ?? null,
     connectChannelState: launchHandoff?.connectChannelState ?? null,
     connectChannelNextStep: launchHandoff?.connectChannelNextStep ?? null,
-    externalExecutionStatus: "not_run_yet",
+    paused,
+    externalExecutionStatus: receiptStatus,
     receiptTitle: "Final approval recorded",
     receiptSummary: clippedText(receiptSummary, 1_000),
   };
 }
 
 function handoffCopyFor(details: ReceiptDetails) {
+  if (details.paused) {
+    return {
+      title: details.launchChannelLabel
+        ? `Private ${details.launchChannelLabel} handoff paused`
+        : "Private execution handoff paused",
+      nextStep: DEARME_PAUSE_NEXT_STEP,
+    };
+  }
   if (details.connectChannelState === "connect_channel_required" && details.launchChannelLabel) {
     return {
       title: `Private ${details.launchChannelLabel} handoff prepared`,
@@ -174,14 +210,16 @@ function handoffCopyFor(details: ReceiptDetails) {
 function buildPrivateExecutionHandoffDetails(receiptDetails: ReceiptDetails) {
   const copy = handoffCopyFor(receiptDetails);
   const handoffSummary = [
-    "The final approval is recorded and DearMe prepared the private execution brief.",
+    receiptDetails.paused
+      ? "The final approval is recorded and DearMe paused the private execution brief."
+      : "The final approval is recorded and DearMe prepared the private execution brief.",
     "External action: still not run.",
     `Next: ${copy.nextStep}`,
   ].join(" ");
 
   return {
     ...receiptDetails,
-    executionReadiness: "private_handoff_ready",
+    executionReadiness: receiptDetails.paused ? "private_handoff_paused" : "private_handoff_ready",
     handoffTitle: copy.title,
     handoffSummary: clippedText(handoffSummary, 1_000),
     handoffNextStep: copy.nextStep,
@@ -190,17 +228,23 @@ function buildPrivateExecutionHandoffDetails(receiptDetails: ReceiptDetails) {
 
 function buildReceiptComment(details: ReceiptDetails) {
   return [
-    "DearMe final approval: recorded the next move.",
+    details.paused
+      ? "DearMe final approval: recorded the pause before any external action."
+      : "DearMe final approval: recorded the next move.",
     "",
     `Approved: ${details.recommendedAction}`,
-    "External action: nothing has run outside DearMe yet.",
+    details.paused
+      ? `Paused: ${DEARME_PAUSE_NEXT_STEP}`
+      : "External action: nothing has run outside DearMe yet.",
     `Next: ${details.nextActionOnApproval}`,
   ].join("\n");
 }
 
 function buildPrivateExecutionHandoffComment(details: PrivateExecutionHandoffDetails) {
   return [
-    "DearMe private handoff: prepared the execution brief.",
+    details.paused
+      ? "DearMe private handoff: paused the execution brief."
+      : "DearMe private handoff: prepared the execution brief.",
     "",
     `Ready: ${details.handoffTitle}`,
     "External action: still nothing has been published, sent, deployed, or spent.",

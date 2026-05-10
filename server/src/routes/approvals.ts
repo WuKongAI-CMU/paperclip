@@ -180,18 +180,80 @@ export function approvalRoutes(
       });
 
       if (approval.type === DEARME_NEXT_MOVE_APPROVAL_TYPE) {
-        await recordDearMeNextMoveApprovalReceipt(db, {
+        const handoffDetails = await recordDearMeNextMoveApprovalReceipt(db, {
           approval,
           actorUserId: decidedByUserId,
           linkedIssueIds,
         });
-        await launchHandoffService.executeApprovedNextMove({
-          approval,
-          actorUserId: decidedByUserId,
-        });
-      }
+        if (!handoffDetails?.paused) {
+          await launchHandoffService.executeApprovedNextMove({
+            approval,
+            actorUserId: decidedByUserId,
+          });
+        }
+        if (approval.requestedByAgentId && !handoffDetails?.paused) {
+          try {
+            const wakeRun = await heartbeat.wakeup(approval.requestedByAgentId, {
+              source: "automation",
+              triggerDetail: "system",
+              reason: "approval_approved",
+              payload: {
+                approvalId: approval.id,
+                approvalStatus: approval.status,
+                issueId: primaryIssueId,
+                issueIds: linkedIssueIds,
+              },
+              requestedByActorType: "user",
+              requestedByActorId: req.actor.userId ?? "board",
+              contextSnapshot: {
+                source: "approval.approved",
+                approvalId: approval.id,
+                approvalStatus: approval.status,
+                issueId: primaryIssueId,
+                issueIds: linkedIssueIds,
+                taskId: primaryIssueId,
+                wakeReason: "approval_approved",
+              },
+            });
 
-      if (approval.requestedByAgentId) {
+            await logActivity(db, {
+              companyId: approval.companyId,
+              actorType: "user",
+              actorId: req.actor.userId ?? "board",
+              action: "approval.requester_wakeup_queued",
+              entityType: "approval",
+              entityId: approval.id,
+              details: {
+                requesterAgentId: approval.requestedByAgentId,
+                wakeRunId: wakeRun?.id ?? null,
+                linkedIssueIds,
+              },
+            });
+          } catch (err) {
+            logger.warn(
+              {
+                err,
+                approvalId: approval.id,
+                requestedByAgentId: approval.requestedByAgentId,
+              },
+              "failed to queue requester wakeup after approval",
+            );
+            await logActivity(db, {
+              companyId: approval.companyId,
+              actorType: "user",
+              actorId: req.actor.userId ?? "board",
+              action: "approval.requester_wakeup_failed",
+              entityType: "approval",
+              entityId: approval.id,
+              details: {
+                requesterAgentId: approval.requestedByAgentId,
+                linkedIssueIds,
+                error: err instanceof Error ? err.message : String(err),
+              },
+            });
+          }
+        }
+      } else if (approval.requestedByAgentId) {
         try {
           const wakeRun = await heartbeat.wakeup(approval.requestedByAgentId, {
             source: "automation",

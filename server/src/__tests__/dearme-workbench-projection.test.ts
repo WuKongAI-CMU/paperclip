@@ -131,4 +131,34 @@ describe("DearMe workbench projection helpers", () => {
     }));
     expect(JSON.stringify(projected)).not.toMatch(HIDDEN_SUBSTRATE_PATTERN);
   });
+
+  it("projects pause readiness through the private handoff progress item", () => {
+    const projected = dearmeWorkbenchProgressFromActivity({
+      id: "activity-private-handoff-paused",
+      action: "dearme.private_execution_handoff_prepared",
+      entityId: "approval-1",
+      details: {
+        approvalId: "approval-1",
+        issueId: "issue-1",
+        issueIdentifier: "PET-8",
+        outputId: "issue-1:content_drafts",
+        outputKind: "content_drafts",
+        riskGate: "publish_social",
+        executionReadiness: "private_handoff_paused",
+        handoffTitle: "Private publishing handoff paused",
+        handoffSummary: "The final approval is recorded and DearMe paused the private execution brief. External action: still not run. Next: DearMe is paused until you resume or approve a new direction.",
+        handoffNextStep: "DearMe is paused until you resume or approve a new direction.",
+      },
+      createdAt: new Date("2026-05-08T12:05:00.000Z"),
+    });
+
+    expect(projected).toEqual(expect.objectContaining({
+      kind: "execution_handoff_prepared",
+      title: "Private publishing handoff paused",
+      summary: expect.stringContaining("DearMe is paused until you resume or approve a new direction."),
+      executionReadiness: "private_handoff_paused",
+      nextStep: "DearMe is paused until you resume or approve a new direction.",
+    }));
+    expect(JSON.stringify(projected)).not.toMatch(HIDDEN_SUBSTRATE_PATTERN);
+  });
 });

@@ -170,6 +170,43 @@ describe("recordDearMeNextMoveApprovalReceipt", () => {
     }
   });
 
+  it("records a pause intent without dispatching a launch-ready handoff", async () => {
+    const { db, insert, values } = makeDb();
+    const approval = makeApproval({
+      decisionNote: "Please hold and do not send this yet.",
+    });
+
+    const result = await recordDearMeNextMoveApprovalReceipt(db, {
+      approval,
+      actorUserId: "user-1",
+      linkedIssueIds: ["issue-1"],
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      paused: true,
+      externalExecutionStatus: "paused",
+      executionReadiness: "private_handoff_paused",
+      handoffTitle: "Private execution handoff paused",
+      handoffNextStep: "DearMe is paused until you resume or approve a new direction.",
+      nextActionOnApproval: "DearMe is paused until you resume or approve a new direction.",
+    }));
+    expect(mockLogActivity).toHaveBeenNthCalledWith(2, db, expect.objectContaining({
+      details: expect.objectContaining({
+        executionReadiness: "private_handoff_paused",
+        paused: true,
+      }),
+    }));
+
+    expect(insert).toHaveBeenCalledTimes(1);
+    const commentRows = values.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+    const serializedComments = commentRows.map((row) => row.body).join("\n");
+    expect(serializedComments).toContain("DearMe final approval: recorded the pause before any external action.");
+    expect(serializedComments).toContain("DearMe private handoff: paused the execution brief.");
+    for (const hiddenTerm of ["launchHandoff", "paperclip", "openclaw", "symphony"]) {
+      expect(serializedComments).not.toContain(hiddenTerm);
+    }
+  });
+
   it("uses only linked issues for receipt comments", async () => {
     const { db, values } = makeDb();
 

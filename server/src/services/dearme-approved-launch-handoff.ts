@@ -18,6 +18,7 @@ import { dearMeApprovalResolverService } from "./dearme-approval-resolver.js";
 import { dearMeChannelConnectionsService } from "./dearme-channel-connections.js";
 import {
   DEARME_NEXT_MOVE_APPROVAL_TYPE,
+  hasDearMePauseIntent,
 } from "./dearme-approval-receipts.js";
 import { getDearMeSseBus } from "./dearme-sse-bus.js";
 import { dearMeVoiceGateService } from "./dearme-voice-gate.js";
@@ -82,6 +83,9 @@ export function callOutboundInputFromApprovedNextMove(input: {
 }): CallOutboundInput | null {
   const { approval, actorUserId } = input;
   if (approval.type !== DEARME_NEXT_MOVE_APPROVAL_TYPE || approval.status !== "approved") {
+    return null;
+  }
+  if (hasDearMePauseIntent(approval.decisionNote)) {
     return null;
   }
 

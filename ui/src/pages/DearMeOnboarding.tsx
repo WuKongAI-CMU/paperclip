@@ -2013,12 +2013,15 @@ function PrivateExecutionHandoffPanel({
   const issueReference = handoff.issueIdentifier ?? handoff.issueId ?? null;
   const artifact = handoff.outputKind ? OUTPUT_KIND_LABELS[handoff.outputKind] : "Prepared move";
   const summary = customerProofPackSummary(handoff.summary);
+  const isPaused = handoff.executionReadiness === "private_handoff_paused";
+  const statusLabel = isPaused ? "Paused" : "Ready";
+  const ariaLabel = isPaused ? "Private handoff paused" : "Private handoff ready";
   const nextStep = handoff.nextStep
     ? customerProofPackSummary(handoff.nextStep)
     : "DearMe prepared the private brief. Nothing public or external runs until the next governed move is ready.";
 
   return (
-    <DearMeFocusSurface aria-label="Private handoff ready" className="space-y-4">
+    <DearMeFocusSurface aria-label={ariaLabel} className="space-y-4">
       <DearMeWorkbenchSectionHeader
         icon={ShieldCheck}
         eyebrow="Private handoff"
@@ -2026,6 +2029,7 @@ function PrivateExecutionHandoffPanel({
         description={summary}
         trailing={
           <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={isPaused ? "destructive" : "secondary"}>{statusLabel}</Badge>
             <Badge variant="secondary">External action not run</Badge>
             <Badge variant="outline">{artifact}</Badge>
           </div>
@@ -5889,7 +5893,8 @@ function TeamWorkbenchPanel({
   const liveStream = workbench.workStream.slice(0, 6);
   const privateExecutionHandoff = workbench.recentProgress.find((item) =>
     item.kind === "execution_handoff_prepared" &&
-    item.executionReadiness === "private_handoff_ready",
+    (item.executionReadiness === "private_handoff_ready" ||
+      item.executionReadiness === "private_handoff_paused"),
   ) ?? null;
   const visibleRunLedger = memoryArchiveMutation.data
     ? workbench.runLedger.filter((entry) => entry.id !== `ledger:memory:${memoryArchiveMutation.data.memoryId}`)

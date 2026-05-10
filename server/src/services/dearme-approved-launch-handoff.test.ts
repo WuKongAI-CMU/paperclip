@@ -73,4 +73,22 @@ describe("dearMeApprovedLaunchHandoffService", () => {
       actorUserId: "user-1",
     })).toBeNull();
   });
+
+  it("treats a pause intent as a no-dispatch approved next move", async () => {
+    const svc = dearMeApprovedLaunchHandoffService({
+      callOutbound: vi.fn(),
+    });
+
+    expect(callOutboundInputFromApprovedNextMove({
+      approval: approval({ decisionNote: "Please hold this and do not send." }),
+      actorUserId: "user-1",
+    })).toBeNull();
+
+    const result = await svc.executeApprovedNextMove({
+      approval: approval({ decisionNote: "Please hold this and do not send." }),
+      actorUserId: "user-1",
+    });
+
+    expect(result).toEqual({ kind: "not_applicable" });
+  });
 });
