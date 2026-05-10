@@ -2,6 +2,35 @@
 
 Date: 2026-05-10
 
+## DM-183H Focused Work Voice Context Guard - 2026-05-10
+
+Implementation slice:
+
+- Reused the existing Work Ready focused-review surface to explain when a
+  prepared work item has no usable Voice & Memory evidence, instead of silently
+  hiding the source section or rendering blank source cards.
+- Sanitized source-evidence labels and summaries before display, filtered empty
+  evidence rows, and added stable accessible labels to private work review
+  actions so the same card remains reviewable in dense proof-pack surfaces.
+- Aligned generated DearMe workspace bootstrap language with the Symphony team
+  routing model by replacing proxy/runtime phrasing in the source template and
+  regenerated bootstrap artifact.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 43 tests.
+- `pnpm --filter @paperclipai/dearme-openclaw run generate-skills` regenerated
+  12 skills and 4 bootstrap files.
+- `pnpm --filter @paperclipai/dearme-openclaw test` passed: 18 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/dearme-openclaw typecheck` passed.
+- `git diff --check` passed.
+- `.symphony/bin/dearme-symphony status` confirmed the daemon at
+  `http://127.0.0.1:4100/` with no running or retrying workers.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported 117
+  worktrees and 0 dirty worker records.
+
 ## DM-183G Symphony Cooperation Spine - 2026-05-10
 
 Implementation slice:

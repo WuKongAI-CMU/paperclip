@@ -33,7 +33,7 @@ available skills list).
 
 1. **Chief of Staff is in charge.** Every ambiguous request lands on Chief of
    Staff. Chief of Staff classifies intent and routes to the right specialist
-   via \`find_best_agent\` (the proxy tool). When in doubt, stage the safest
+   via \`find_best_agent\` (the team routing tool). When in doubt, stage the safest
    useful next step and keep moving; ask the user only when the next step is
    irreversible, public, paid, identity-changing, or genuinely impossible
    without their preference.
@@ -77,10 +77,10 @@ Don't fabricate a "the team has X capability" answer when it doesn't.
 
 ## Where to find more
 
-- Registry of roles, prompts, state machines, proxy tools:
+- Registry of roles, prompts, state machines, and team routing:
   \`packages/plugins/dearme-agent-prompts/src/registry.ts\` (\`DEARME_ROLE_REGISTRY\`)
 - Architecture: \`docs/dearme/INDEX.md\` and \`docs/dearme/PRODUCT-ARCHITECTURE.md\`
-- Runtime integration: follow the local DearMe runtime docs and current workspace instructions.
+- Team workspace: follow the local DearMe docs and current workspace instructions.
 `;
 
 const SOUL_MD = `# DearMe — soul

@@ -2356,15 +2356,35 @@ function OutputSourceEvidenceList({
   output,
   limit = 3,
   compact = false,
+  showEmptyState = false,
   className,
 }: {
   output: DearMeOutputItem;
   limit?: number;
   compact?: boolean;
+  showEmptyState?: boolean;
   className?: string;
 }) {
-  const evidence = output.sourceEvidence.slice(0, limit);
-  if (evidence.length === 0) return null;
+  const evidence = output.sourceEvidence
+    .map((item) => ({
+      ...item,
+      label: customerProofPackSummary(item.label).trim(),
+      summary: customerProofPackSummary(item.summary).trim(),
+    }))
+    .filter((item) => item.label.length > 0 || item.summary.length > 0)
+    .slice(0, limit);
+
+  if (evidence.length === 0) {
+    if (!showEmptyState) return null;
+    return (
+      <DearMeEmptyState
+        className={className}
+        icon={FileText}
+        title="No Voice & Memory context yet"
+        description="Add one real voice sample, proof point, or launch boundary before trusting public-facing work."
+      />
+    );
+  }
 
   return (
     <div
@@ -2383,10 +2403,10 @@ function OutputSourceEvidenceList({
         {evidence.map((item) => (
           <div key={`${output.id}:source:${item.kind}`} className="min-w-0">
             <Badge variant="outline" className="max-w-full truncate">
-              {customerProofPackSummary(item.label)}
+              {item.label}
             </Badge>
             <p className={cn("mt-1 text-foreground/85", compact ? "line-clamp-2 text-xs" : "text-sm")}>
-              {customerProofPackSummary(item.summary)}
+              {item.summary}
             </p>
           </div>
         ))}
@@ -2458,7 +2478,7 @@ function FocusedOutputPanel({
         </DearMeEvidenceGrid>
       ) : null}
 
-      <OutputSourceEvidenceList output={output} className="mt-4" />
+      <OutputSourceEvidenceList output={output} showEmptyState className="mt-4" />
 
       {voiceGate ? <VoiceCheckPanel gate={voiceGate} className="mt-4" /> : null}
 
@@ -2566,6 +2586,12 @@ function privateWorkActionLabel(output: DearMeOutputItem) {
   const loopLabel = reviewLoopActionLabel(output.reviewLoop);
   if (loopLabel) return loopLabel === "Review prepared work" && output.isReviewable ? "Review" : loopLabel;
   return output.isReviewable ? "Review" : "Open";
+}
+
+function privateWorkActionAriaLabel(output: DearMeOutputItem) {
+  const actionLabel = privateWorkActionLabel(output);
+  const title = customerProofPackSummary(output.title).trim();
+  return title ? `${actionLabel} ${title}` : actionLabel;
 }
 
 function workReadyNextStepLabel(status: DearMeOutputStatus) {
@@ -5665,6 +5691,7 @@ function PrivateWorkPanel({
                   footer={footer}
                   action={{
                     label: privateWorkActionLabel(output),
+                    ariaLabel: privateWorkActionAriaLabel(output),
                     onClick: () => onOpenOutput(output, routeIntent),
                     variant: output.isReviewable || routeIntent ? "default" : "outline",
                   }}

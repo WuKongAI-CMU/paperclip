@@ -3525,6 +3525,47 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("explains missing Voice & Memory context on focused prepared work", async () => {
+    mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
+    const response = outputsResponse();
+    const blankEvidence = {
+      ...response.outputs[0]!.sourceEvidence[0]!,
+      label: " ",
+      summary: " ",
+    };
+    mockDearmeApi.getOutputs.mockResolvedValue({
+      ...response,
+      outputs: [
+        {
+          ...response.outputs[0]!,
+          sourceEvidence: [blankEvidence],
+        },
+      ],
+    });
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const focusedWork = surfaceByLabel(container, "Focused work");
+    expect(focusedWork.textContent).toContain("No Voice & Memory context yet");
+    expect(focusedWork.textContent).toContain("Add one real voice sample, proof point, or launch boundary");
+    expect(focusedWork.textContent).not.toContain("Sources behind this work");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("explains new direction entrypoint for not-useful prepared work", async () => {
     mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report&intent=direction";
     mockDearmeApi.getOutputs.mockResolvedValue({
@@ -3899,6 +3940,8 @@ describe("DearMeOnboarding", () => {
     expect(packetSurface.textContent).toContain("/100");
     expect(packetSurface.textContent).not.toContain("cycle packet");
     expect(container.textContent).not.toContain("dearme-cycle-output");
+    expect(container.querySelector('button[aria-label="Review Dear me report"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Review Starter post batch"]')).not.toBeNull();
 
     await act(async () => {
       buttonByText(packetSurface, "Review proof pack")?.click();
