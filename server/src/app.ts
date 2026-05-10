@@ -11,6 +11,7 @@ import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
 import { healthRoutes } from "./routes/health.js";
 import { dearmeRoutes } from "./routes/dearme.js";
+import { dearMeAiProxyRoutes, DEARME_PROXY_BASE_PATH } from "./routes/dearme-ai-proxy.js";
 import { companyRoutes } from "./routes/companies.js";
 import { companySkillRoutes } from "./routes/company-skills.js";
 import { agentRoutes } from "./routes/agents.js";
@@ -173,6 +174,7 @@ export async function createApp(
     app.all("/api/auth/{*authPath}", opts.betterAuthHandler);
   }
   app.use(llmRoutes(db));
+  app.use(DEARME_PROXY_BASE_PATH, dearMeAiProxyRoutes(db));
   app.use(dearMeVoiceGateRoutes());
 
   const hostServicesDisposers = new Map<string, () => void>();

@@ -3181,6 +3181,33 @@ Verification:
 - `pnpm --filter @paperclipai/dearme-ai-proxy test` passed: 6 tests.
 - `pnpm --filter @paperclipai/server typecheck` passed.
 
+## DM-145A AI Proxy Runtime Skeleton - 2026-05-10
+
+Implementation slice:
+
+- Mounted the DearMe AI proxy router under the contract base path from
+  `@paperclipai/dearme-ai-proxy`, so the server now answers
+  `POST /api/proxy/ai/v1/chat/completions` and
+  `POST /api/proxy/ai/v1/messages`.
+- Kept the route boundary small: `dm_sk_*` auth, shared model routing,
+  shared prompt-cache normalization, and `cost_events` insertion into the
+  existing schema shape. No schema migration was needed in this slice.
+- The mounted route now fails closed with `503` unless a provider execution
+  function is injected. This prevents the runtime skeleton from returning
+  synthetic output on a real product path.
+- Kept the existing root `POST /v1/voice/score` route unchanged.
+- Remaining DM-145 follow-ups are the durable key issuance/revocation
+  workflow, stricter tenant binding for proxy requests, and live provider
+  execution. Those stay in later runtime slices.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-ai-proxy-routes.test.ts
+  server/src/__tests__/dearme-voice-gate-routes.test.ts --maxWorkers=1`
+- `pnpm --filter @paperclipai/server typecheck`
+- `pnpm --filter @paperclipai/dearme-ai-proxy typecheck`
+- `git diff --check`
+
 ## DEA-7 Content Packet Worker Save Route - 2026-05-10
 
 Implementation slice:

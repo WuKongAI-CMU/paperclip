@@ -3004,8 +3004,20 @@ Next-up tickets unlocked by this scaffold:
 | `src/contract.ts` | DM-145 / DM-143 / DM-155 | `dm_sk_*` API key prefix, dual-protocol cost-attribution headers (`task` for OpenAI, `X-Subscription-ID` for Anthropic), `agent/run` endpoint shape, `CostLedgerEvent`, `AgentRunRequest`/`AgentRunResponse` types |
 | `src/model-routing.ts` | DM-143A | Proxy-owned export surface for the canonical prompt-package complexity `1-10` model routing table and helpers; no duplicated thresholds |
 
-This package only owns the contract. The HTTP server implementation
-(routes, cache layer, ledger writer) is delivered in DM-145.
+The package still only owns the contract. The HTTP server implementation now
+mounts the proxy skeleton under the same base path; later DM-145 slices still
+own durable key issuance/revocation, stronger tenant binding, live provider
+execution, and the `agent/run` runtime.
+
+### DM-145A Runtime Surface — `server/src/routes/dearme-ai-proxy.ts`
+
+| File | Used by ticket | What it defines |
+|---|---|---|
+| `server/src/routes/dearme-ai-proxy.ts` | DM-145A | `POST /api/proxy/ai/v1/chat/completions` and `POST /api/proxy/ai/v1/messages` mounted under the shared contract base path, `dm_sk_*` auth at the route boundary, shared routing through `resolveDearMeProxyModelRouting`, prompt-cache normalization through `normalizeDearMeProxyUsage` / `buildDearMeCostLedgerEvent`, and `cost_events` writes into the existing schema shape |
+| `server/src/app.ts` | DM-145A | Mounts the DearMe proxy router at `DM_PROXY_BASE_URL_DEFAULT` so the proxy routes are reachable without changing the voice-gate mount |
+
+The mounted skeleton fails closed with `503` unless provider execution is
+injected, so the product path cannot silently return synthetic proxy output.
 
 Latest focused verification (2026-05-10):
 
