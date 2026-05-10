@@ -110,7 +110,43 @@ Coordinator note: DM-183M extends the Output review and decisions boundary into
 server responses and approval preflight, so DearMe auth, validation, and stale
 Brand OS approval failures stay product-safe before state changes.
 
+Coordinator note: DM-183AB absorbs the DM-046/DM-047 worker residue as
+regression coverage only. The current production page already routes Voice &
+Memory, Brand OS, decision, and focused-work mutation failures through the
+DearMe customer-safe error helper, so the useful replay is locking those paths
+without adding another error layer.
+
 ## Recently Completed
+
+### DM-183AB: Mutation Error Coverage
+
+Goal: lock the customer-safe error boundary for the DearMe page's highest-risk
+mutation paths without changing the already-current runtime flow.
+
+Donor grounding:
+
+- DM-046/DM-047: keep the source/action mutation failure cases, not the stale
+  component offsets or older button copy.
+- Symphony: treat worker branches as regression evidence to replay onto the
+  current architecture.
+- Polsia/Lindy: keep failures framed as team or private-work issues instead of
+  provider, workspace, or route failures.
+
+Completed:
+
+- Added Voice & Memory save, retire, and restore failure regressions.
+- Added Brand OS preview/start failure regressions.
+- Added focused private-work review failure regression coverage.
+- Left production code unchanged because the current page already uses the
+  shared DearMe customer-safe error helper on those paths.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 58 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
 
 ### DM-183AA: Live Feed State Guidance
 

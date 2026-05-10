@@ -2,6 +2,26 @@
 
 Date: 2026-05-10
 
+## DM-183AB Mutation Error Coverage - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the useful DM-046/DM-047 customer-safe mutation error coverage onto
+  the current DearMe page after confirming the production error boundary had
+  already moved into the latest architecture.
+- Added UI regressions for Voice & Memory save/retire/restore failures, Brand
+  OS preview/start failures, and focused private-work review failures.
+- Kept runtime code, route contracts, schema, query keys, and customer-facing
+  success flows unchanged.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 58 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183AA Live Feed State Guidance - 2026-05-10
 
 Implementation slice:

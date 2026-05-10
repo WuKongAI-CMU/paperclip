@@ -2384,6 +2384,78 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("keeps Voice & Memory source save errors customer-safe", async () => {
+    mockDearmeApi.recordMemoryUpdate.mockRejectedValueOnce(
+      new Error("Provider workspace runtime rejected setup_payload for Paperclip adapter source."),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      setTextareaValue(
+        container.querySelector("#dearme-memory-body") as HTMLTextAreaElement,
+        "A short private writing sample.",
+      );
+      buttonByText(container, "Add to Voice & Memory")?.click();
+    });
+    await flushReact();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("Voice & Memory needs attention. Try again before adding or editing private sources.");
+    expect(text).not.toContain("Provider workspace runtime");
+    expect(text).not.toContain("setup_payload");
+    expect(text).not.toContain("Paperclip adapter");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps Voice & Memory source retire errors customer-safe", async () => {
+    mockDearmeApi.archiveMemorySource.mockRejectedValueOnce(
+      new Error("Runtime workbench provider failed to archive adapter workspace source."),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Retire source")?.click();
+    });
+    await flushReact();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("Voice & Memory needs attention. Try again before retiring a private source.");
+    expect(text).not.toContain("Runtime workbench provider");
+    expect(text).not.toContain("adapter workspace source");
+    expect(text).toContain("Voice note");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("restores retired Voice & Memory sources from the private memory list", async () => {
     const response = workbenchResponse();
     const retiredSource = {
@@ -2445,6 +2517,56 @@ describe("DearMeOnboarding", () => {
       HIDDEN_PRODUCT_TERMS.bridgeName,
       HIDDEN_PRODUCT_TERMS.vendorName,
     ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps Voice & Memory source restore errors customer-safe", async () => {
+    const response = workbenchResponse();
+    const retiredSource = {
+      ...response.memory.latest[0]!,
+      id: "memory-retired",
+      title: "Retired voice note",
+      body: "Short retired voice note.",
+      bodyPreview: "Short retired voice note.",
+      createdAt: "2026-05-07T13:30:00.000Z",
+    };
+    mockDearmeApi.getWorkbench.mockResolvedValue({
+      ...response,
+      memory: {
+        ...response.memory,
+        archived: [retiredSource],
+      },
+    });
+    mockDearmeApi.restoreMemorySource.mockRejectedValueOnce(
+      new Error("OpenClaw provider runtime could not restore workspace source."),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Restore")?.click();
+    });
+    await flushReact();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("Voice & Memory needs attention. Try again before restoring a private source.");
+    expect(text).not.toContain("OpenClaw provider runtime");
+    expect(text).not.toContain("workspace source");
+    expect(text).toContain("Retired voice note");
 
     await act(async () => {
       root.unmount();
@@ -2721,6 +2843,79 @@ describe("DearMeOnboarding", () => {
     expect(requestButton?.disabled).toBe(true);
     expect(container.textContent).toContain("unlock the private Brand OS cycle");
     expect(mockDearmeApi.createBrandBlueprintApplyRequest).not.toHaveBeenCalled();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps Brand OS preview errors customer-safe", async () => {
+    mockDearmeApi.previewBrandBlueprint.mockRejectedValueOnce(
+      new Error("Paperclip adapter provider could not prepare setup_payload."),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Preview Brand OS")?.click();
+    });
+    await flushReact();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("Brand OS preview needs attention. Try again before starting private work.");
+    expect(text).not.toContain("Paperclip adapter provider");
+    expect(text).not.toContain("setup_payload");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps Brand OS start errors customer-safe", async () => {
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
+    mockDearmeApi.createBrandBlueprintApplyRequest.mockRejectedValueOnce(
+      new Error("Approval route provider failed inside Paperclip workspace."),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Preview Brand OS")?.click();
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Start Brand OS")?.click();
+    });
+    await flushReact();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("Approval request needs attention. Try again before moving the Brand OS forward.");
+    expect(text).not.toContain("Approval route provider");
+    expect(text).not.toContain("Paperclip workspace");
+    expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining("approval-1"));
 
     await act(async () => {
       root.unmount();
@@ -4271,6 +4466,49 @@ describe("DearMeOnboarding", () => {
       }),
     );
     expect(container.textContent).not.toContain("/issues/");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps focused private work review errors customer-safe", async () => {
+    mockLocation.search = "?view=decisions&work=PET-7&artifact=issue-1%3Aweekly_report";
+    mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse());
+    mockDearmeApi.reviewOutput.mockRejectedValueOnce(
+      new Error("Provider runtime could not update the workbench output."),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const focusedWork = surfaceByLabel(container, "Focused work");
+    expect(focusedWork.textContent).toContain("What should your team do next?");
+
+    await act(async () => {
+      buttonByText(focusedWork, "Launch this work")?.click();
+    });
+    await flushReact();
+
+    const text = container.textContent ?? "";
+    expect(mockDearmeApi.reviewOutput).toHaveBeenCalledWith(
+      "company-1",
+      "issue-1:weekly_report",
+      { action: "approve", decisionNote: "Approved in DearMe. This prepared work represents me." },
+    );
+    expect(text).toContain("DearMe work needs attention. Try again before moving this forward.");
+    expect(text).not.toContain("Provider runtime");
+    expect(text).not.toContain("workbench output");
 
     await act(async () => {
       root.unmount();
