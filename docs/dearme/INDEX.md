@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-10 (post DEA-9 repeatable review-memory proof and DEA-11 launch-handoff lane)
+Last updated: 2026-05-10 (post DEA-9 review-memory proof and DEA-11 private launch-handoff proof)
 
 ---
 
@@ -128,31 +128,25 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-139 / DM-140 / DEA-7 packet-backed work** — private Dear me report and content draft packets now reuse output handoff, work products, Voice Gate, workbench projection, and focused review instead of creating a second report/content runtime.
 - **DM-183AR review-memory surface** — Work Ready and focused review now preserve customer-safe review receipts through `feedbackTrace.receipts`, so repeated review decisions become visible product memory rather than raw queue history.
 - **DEA-9 / DM-183AS repeatable review-memory proof** — the current branch browser/API smoke proves another-pass feedback, fresh private report work, and focused `Feedback applied` receipts on the same Work Ready path without hidden donor/runtime terms.
+- **DEA-11 / DM-183BO private launch-handoff proof** — the current branch browser/API smoke proves a prepared output can be approved, converted into the final launch-call approval, accepted, and surfaced as a private handoff brief through DearMe `work=` / `artifact=` navigation without leaking hidden substrate terms or claiming external execution already happened.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)
 
-**DEA-11 / DM-183CA — Launch-ready private handoff proof.**
+**Coordinator next step — close stale DEA-11 and continue the residual worker
+absorption patrol.**
 
-DEA-9 is already the active Symphony review lane for repeatable review memory.
-The next aha step is turning that proven private proof loop into a launch-ready
-handoff: after a prepared output is approved, DearMe should show a compact
-private launch brief / next step that explains what is ready, what boundary
-remains, and what the team is waiting for, without claiming an external action
-already happened.
+DEA-11 is now proven on the current branch. The active Symphony workspace was
+created from an older head, so treat it as stale until its diff is compared
+against this proof and either closed or replayed as a strictly smaller slice.
 
-Use Linear issue `DEA-11` as the bounded Symphony lane. It should reuse:
-
-- The final approval path and `dearme_output_next_move` approval type.
-- Existing output handoff, work products, and Workbench projection.
-- The private handoff readiness / launch receipt path absorbed from DM-011
-  through DM-013.
-- The current Work Ready / focused review surface and DEA-9 review-memory proof.
-
-Do not create a new first-run contract, packet schema, runtime dashboard,
-queue system, or customer-visible substrate surface. Do not replay DM-095 while
-DEA-9 is still in review; inspect it later as a separate Work Ready summary
-actions candidate.
+After DEA-11 is closed, inspect the remaining `not_in_current` worker group in
+small batches. DM-043 through DM-047 are now recorded as reviewed absorptions on
+the current customer-safe memory, workbench, and error-boundary paths. The next
+likely batch starts at DM-048 through DM-050 because it continues the same
+customer-safe route/auth/profile theme. Reuse only still-valuable product
+surfaces; do not add another first-run contract, packet schema, runtime
+dashboard, queue system, or customer-visible substrate surface.
 
 ### Roadmap (compressed by aggressive port + tri-substrate integration)
 

@@ -868,6 +868,71 @@
         "docs/dearme/BUILD-STATE.md",
         "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
       ]
+    },
+    {
+      "ticket": "DM-043",
+      "branch": "codex/dearme-dm-043-customer-safe-memory-labels",
+      "head": "f3b3f7420c556aa6103c32c4b31654bd515edce6",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the memory-label safety worker through the live Voice & Memory context projection, which normalizes routine guidance and source labels before they influence private work without restoring the stale dearme-voice-memory-grounding service.",
+      "evidence": [
+        "server/src/services/dearme-memory-context.ts",
+        "server/src/__tests__/dearme-memory-context.test.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-044",
+      "branch": "codex/dearme-dm-044-customer-safe-memory-projection",
+      "head": "d63a50f65d08730ec70ddd4e95429e020172e6fb",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current Workbench memory projection already keeps Voice & Memory output customer-safe through the shared workbench projection path, so the older dearme-voice-memory projection service is superseded.",
+      "evidence": [
+        "server/src/services/dearme-workbench.ts",
+        "server/src/__tests__/dearme-workbench-projection.test.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-045",
+      "branch": "codex/dearme-dm-045-customer-safe-workbench-projection",
+      "head": "cfae31d9878b0e825e3917a306e7d7b9db35f6c3",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the workbench customer-safe projection intent by normalizing nested memory, feedback, and output payloads through the live workbench projection instead of adding a second customer-safe mapper.",
+      "evidence": [
+        "server/src/services/dearme-workbench.ts",
+        "server/src/__tests__/dearme-workbench-projection.test.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-046",
+      "branch": "codex/dearme-dm-046-customer-safe-source-errors",
+      "head": "e9970d273cfd0308fe78e127c21eb49b4199922e",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe source save, retire, and restore failures already pass through customer-safe onboarding error helpers and regression coverage, absorbing the stale source-error patch without replay.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-047",
+      "branch": "codex/dearme-dm-047-customer-safe-action-errors",
+      "head": "72d98700c1f1443f9ed3505149ca4b5cd5f8d620",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current Brand OS preview, first private work start, and focused review action failures already collapse hidden provider/runtime terms into DearMe guidance, absorbing the stale action-error worker.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
     }
   ]
 }

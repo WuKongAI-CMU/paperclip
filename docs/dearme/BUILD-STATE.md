@@ -2,6 +2,69 @@
 
 Date: 2026-05-10
 
+## DM-183BP DM-043/047 Customer-Safe Projection Absorption - 2026-05-10
+
+Product/architecture slice:
+
+- Kept Symphony as the cooperation spine and treated DM-043 through DM-047 as
+  reviewed residue, not fresh implementation targets, because their useful
+  customer-safe boundary value is already present on the current branch.
+- Recorded exact-head reviewed absorptions for DM-043, DM-044, DM-045,
+  DM-046, and DM-047 in `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`.
+- Mapped DM-043 to the current Voice & Memory context normalization path
+  instead of restoring the stale `dearme-voice-memory-grounding` service.
+- Mapped DM-044 and DM-045 to the current Workbench memory/output projection
+  tests and customer-safe projection helpers instead of adding a second
+  customer-safe mapper.
+- Mapped DM-046 and DM-047 to the current DearMe onboarding error boundary
+  tests for source mutations, Brand OS preview/start, and focused review
+  actions instead of replaying old UI error patches.
+- Left the active DEA-11 Symphony workspace untouched; it remains a separate
+  lane until closed or advanced by the daemon.
+
+Verification:
+
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
+  passed.
+- `pnpm run dearme:worktrees -- --status=reviewed-absorbed --skip-dirty --limit=90`
+  showed the exact DM-043, DM-044, DM-045, DM-046, and DM-047 heads as
+  `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` reported
+  `reviewed_absorbed: 67`, `not_in_current: 46`, and `dirty: 0`.
+- `.symphony/bin/dearme-symphony status --json` reported Symphony running with
+  one active DEA-11 worker and no retrying workers.
+- `git diff --check -- docs/dearme/BUILD-STATE.md docs/dearme/INDEX.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/WORKTREE-ABSORPTION-LEDGER.json tests/e2e/dearme-private-handoff.spec.ts`
+  passed.
+
+## DM-183BO / DEA-11 Private Launch Handoff Browser Proof - 2026-05-10
+
+Product/architecture slice:
+
+- Treated DEA-11 as a launch-handoff proof on the current DearMe coordination
+  head, not as a blind merge from the stale Symphony workspace that started at
+  `1712f83a`.
+- Added a browser/API smoke test for the real approval sequence: prepared
+  content draft review approval creates a pending `dearme_output_next_move`
+  launch call, Workbench exposes the pending `approve_action`, final approval
+  records the private handoff readiness receipt, and the DearMe decision route
+  renders the customer-facing private handoff panel.
+- Kept the value on the existing output handoff, approval, Workbench, and
+  focused decision route. No new first-run contract, packet schema, runtime
+  dashboard, or customer-visible queue was introduced.
+- Locked the customer boundary: the private handoff panel stays on DearMe
+  `work=` / `artifact=` navigation after opening the brief, does not fall back
+  to raw issue URLs, and the tested customer-facing handoff copy excludes
+  hidden substrate terms.
+
+Verification:
+
+- Initial E2E run failed before assertions because the local PostgreSQL test
+  database `dearme_e2e_private_handoff` did not exist.
+- `createdb dearme_e2e_private_handoff || true` prepared the throwaway local
+  test database.
+- `DATABASE_URL=postgres://peter@127.0.0.1:5432/dearme_e2e_private_handoff pnpm exec playwright test --config tests/e2e/playwright.config.ts tests/e2e/dearme-private-handoff.spec.ts --project=chromium`
+  passed: 1 browser test.
+
 ## DM-183BN DM-031/042 Symphony Absorption Cleanup - 2026-05-10
 
 Product/architecture slice:
