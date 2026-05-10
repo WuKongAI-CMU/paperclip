@@ -76,10 +76,12 @@ The right reuse split is:
 
 - DEA-36 is coordinator-absorbed as the DM-147 launch-ready next-step slice.
   Symphony provided the proof-pack summary/output-handoff refinement in worker
-  handoff `47b31e0f`, and the coordinator kept the final cut on the existing
-  receipt, Workbench, shared contract fixture, and onboarding projection paths.
-  Customer-facing copy says one launch-ready next step/brief; the internal
-  `execution_handoff_prepared` kind stays backstage.
+  handoffs `47b31e0f`, `63ec69b6`, and useful follow-on `dbe46539` grammar,
+  and the coordinator kept the final cut on the existing receipt, Workbench,
+  shared contract fixture, and onboarding projection paths. Customer-facing
+  copy says one launch-ready next step/brief and the shared proof-pack sentence
+  is reused across ready work, decisions, output review loops, and report
+  digest text; the internal `execution_handoff_prepared` kind stays backstage.
 - DEA-31 is coordinator-absorbed as the DM-155 prompt-cache economics contract.
   The worker proved the narrow cache-accounting shape; the coordinator kept the
   final cut at the proxy package boundary with a `./cache-economics` subpath,

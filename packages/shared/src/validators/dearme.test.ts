@@ -41,7 +41,7 @@ function reviewLoop(overrides: Partial<DearMeOutputReviewLoop> = {}): DearMeOutp
     lastAction: null,
     lastDecisionAt: null,
     lastDecisionNotePreview: null,
-    nextStep: "Review it, then launch, request changes, ask for another pass, or choose a new direction.",
+    nextStep: "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.",
     reviewHandoff: null,
     feedbackTrace: null,
     ...overrides,

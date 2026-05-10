@@ -644,11 +644,13 @@ function buildFeedbackTrace(input: {
 }
 
 function reviewLoopNextStep(state: DearMeOutputReviewLoop["state"]) {
+  const sharedLaunchReadyNextStep =
+    "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.";
   switch (state) {
     case "fresh":
       return "Your team is preparing this privately.";
     case "needs_user_review":
-      return "Review it, then launch, request changes, ask for another pass, or mark it not useful.";
+      return sharedLaunchReadyNextStep;
     case "revision_requested":
       return "Your team has your note and should prepare a revised version.";
     case "regeneration_requested":

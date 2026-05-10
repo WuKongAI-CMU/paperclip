@@ -880,7 +880,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         expect.stringContaining("same private cycle packet"),
       ]),
       decisions: expect.arrayContaining([
-        expect.stringContaining("Shared packet review"),
+        expect.stringContaining("Launch-ready next step"),
       ]),
       nextBets: expect.arrayContaining([
         expect.stringContaining("single review surface"),
@@ -888,7 +888,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     }));
     expect(contentStreamItem).toEqual(expect.objectContaining({
       sourceLabel: "Private cycle packet",
-      nextAction: expect.stringContaining("shared packet"),
+      nextAction: expect.stringContaining("proof pack"),
     }));
     expect(contentLedgerEntry).toEqual(expect.objectContaining({
       evidenceLabel: "Private cycle packet / Content drafts",

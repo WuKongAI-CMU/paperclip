@@ -307,7 +307,7 @@ function paidBetaStatus(status: "trial" | "active") {
 function reviewLoopFixture(
   state: DearMeOutputReviewLoop["state"] = "fresh",
   nextStep = state === "needs_user_review"
-    ? "Review it, then launch, request changes, ask for another pass, or choose a new direction."
+    ? "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate."
     : "Your team is preparing this privately.",
   overrides: Partial<DearMeOutputReviewLoop> = {},
 ): DearMeOutputReviewLoop {
@@ -606,12 +606,12 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         decisionNeed: {
           needed: true,
           label: "Review needed",
-          reason: "Review it, then launch, request changes, ask for another pass, or choose a new direction.",
+          reason: "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.",
           riskGate: "publish_social",
         },
         sourceLabel: "Prepared output",
         costImpact: null,
-        nextAction: "Review it, then launch, request changes, ask for another pass, or choose a new direction.",
+        nextAction: "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.",
         relatedOutputId: "issue-2:content_drafts",
         issueId: "issue-2",
         issueIdentifier: "PET-8",
@@ -763,7 +763,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         evidenceLabel: "Prepared output / Content drafts",
         status: "decision_needed",
         needsApproval: true,
-        nextAction: "Review it, then launch, request changes, ask for another pass, or choose a new direction.",
+        nextAction: "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.",
         relatedOutputId: "issue-2:content_drafts",
         issueId: "issue-2",
         issueIdentifier: "PET-8",
@@ -1003,7 +1003,7 @@ function workbenchResponseWithPacketReport(): DearMeWorkbenchResponse {
       accomplished: [
         "Content draft and Dear me report came from the same private cycle packet.",
       ],
-      decisions: ["Shared packet review: review once before public moves."],
+      decisions: ["Launch-ready next step: review once before public moves."],
       learnings: ["Voice fit 97/100 ready for review."],
       nextBets: ["Pick one launch move from the single review surface."],
     },
@@ -1013,8 +1013,8 @@ function workbenchResponseWithPacketReport(): DearMeWorkbenchResponse {
 function workbenchResponseWithPacketWorkbench(): DearMeWorkbenchResponse {
   const response = workbenchResponseWithPacketReport();
   const packetSummary =
-    "DearMe prepared this draft, report, and decision from the same private cycle packet. Review the shared packet once before public moves.";
-  const packetNextStep = "Review the shared packet once before DearMe launches, revises, or regenerates anything.";
+    "DearMe prepared this draft, report, and decision from the same private cycle packet. Review the shared proof pack once before public moves.";
+  const packetNextStep = "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.";
   const packetLoop = reviewLoopFixture("needs_user_review", packetNextStep, {
     reviewHandoff: {
       action: "request_changes",

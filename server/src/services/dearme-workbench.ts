@@ -69,6 +69,9 @@ type DearMeCyclePacketEvidence = {
   nextAction: string;
 };
 
+export const SHARED_LAUNCH_READY_NEXT_STEP =
+  "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.";
+
 type DearMeRoutineRunRow = {
   id: string;
   routineTitle: string;
@@ -495,7 +498,7 @@ function cyclePacketEvidence(output: DearMeOutputItem): DearMeCyclePacketEvidenc
       `DearMe prepared the report and content drafts from the same private cycle packet.${voiceClause} Review once, then launch, revise, or regenerate.`,
       900,
     ),
-    nextAction: "Review the shared packet once; DearMe can launch, revise, or regenerate without letting any public move happen by accident.",
+    nextAction: SHARED_LAUNCH_READY_NEXT_STEP,
   };
 }
 
@@ -508,7 +511,7 @@ function outputSummaryForWorkbench(output: DearMeOutputItem) {
 function decisionHasCyclePacketEvidence(decision: Pick<DearMeWorkbenchDecision, "summary">) {
   return /\bsame private cycle packet\b/i.test(decision.summary) ||
     /\bsame private evidence packet\b/i.test(decision.summary) ||
-    /\bshared packet\b/i.test(decision.summary);
+    /\bshared (?:proof )?packet\b/i.test(decision.summary);
 }
 
 function moneyFromCents(value: number) {
@@ -726,7 +729,7 @@ function nextActionForWork(input: {
     return "Let Chief of Staff turn the brief into private work before asking for a public move.";
   }
   if (input.isReady) {
-    return "Open the prepared work and decide whether it represents you.";
+    return SHARED_LAUNCH_READY_NEXT_STEP;
   }
   return "Let the team keep preparing this privately; public moves remain approval-gated.";
 }
@@ -746,7 +749,7 @@ function nextActionForDecision(decision: DearMeWorkbenchDecision) {
     return "Launch Brand OS when the first cycle and launch boundaries match how you want to be represented.";
   }
   if (decisionHasCyclePacketEvidence(decision)) {
-    return "Review the shared packet once; DearMe can launch, revise, or regenerate without letting any public move happen by accident.";
+    return SHARED_LAUNCH_READY_NEXT_STEP;
   }
   if (decision.reviewLoop?.nextStep) return decision.reviewLoop.nextStep;
   return "Review this call so the team can continue the private growth cycle.";
@@ -1307,7 +1310,7 @@ function buildReportDigest(input: {
   const decisions = digestItems(
     [
       input.cyclePacket
-        ? `Shared packet review: ${input.cyclePacket.nextAction}`
+        ? `Launch-ready next step: ${input.cyclePacket.nextAction}`
         : null,
       ...input.decisionsNeeded.map((decision) => `${decision.title}: ${decision.summary}`),
     ],
@@ -1326,10 +1329,10 @@ function buildReportDigest(input: {
       ...input.activeWork.map((item) =>
         `${TEAM_ROLE_PUBLIC_LABELS[item.ownerRole]} is moving ${movingLabelForWork(item)} forward.`),
       input.workReady.length > 0
-        ? "Review the prepared work and decide what can represent you publicly."
+        ? SHARED_LAUNCH_READY_NEXT_STEP
         : null,
       input.cyclePacket
-        ? "Use the shared packet as the single review surface before the next cycle starts."
+        ? "Use the shared proof pack as the single review surface before the next cycle starts."
         : null,
       input.decisionsNeeded.length > 0
         ? "Make the waiting high-leverage calls so the team can continue the cycle."

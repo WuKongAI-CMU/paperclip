@@ -6,38 +6,42 @@ Date: 2026-05-10
 
 Product/architecture slice:
 
-- Absorbed Symphony worker handoff `47b31e0f` onto the coordinator branch at
-  `649a66ba`, then tightened the remaining approval receipt, Workbench, shared
-  fixture, and onboarding copy so the first proof pack reads as one
-  launch-ready next step instead of a mechanical handoff.
+- Absorbed Symphony worker handoffs `47b31e0f`, `63ec69b6`, and the useful
+  `dbe46539` follow-on direction onto the coordinator branch, then tightened
+  the remaining approval receipt, Workbench, shared fixture, and onboarding
+  copy so the first proof pack reads as one launch-ready next step instead of a
+  mechanical handoff.
 - The slice reuses the existing output handoff, `dearme_output_next_move`
   approval payload, private receipt activity, Workbench projection, and
   onboarding proof-pack surface. No new launch dashboard, queue, runtime view,
   send path, or first-run contract was added.
 - Customer-visible labels now converge on `Launch-ready next step`,
-  `Launch-ready brief`, and explicit approval-boundary copy. The internal
-  `execution_handoff_prepared` progress kind remains a storage/read-model
-  detail only.
+  `Launch-ready brief`, a shared proof-pack next-step sentence, and explicit
+  approval-boundary copy. The internal `execution_handoff_prepared` progress
+  kind remains a storage/read-model detail only.
 
 Coordination state:
 
-- Worker evidence is preserved under
-  `/private/tmp/dearme-symphony-workspaces/_handoffs/DEA-36-794d89631182..47b31e0fdfae-2026-05-10T23-05-18-528Z.*`.
+- Worker evidence is preserved under the DEA-36 handoff artifacts in
+  `/private/tmp/dearme-symphony-workspaces/_handoffs/`, including the initial
+  `47b31e0f` proof-pack handoff and later `dbe46539` grammar unification
+  patch.
 - Linear `DEA-36` tracks this as the single active Symphony implementation
   lane until coordinator verification and closeout.
 
 Verification:
 
-- `pnpm exec vitest run server/src/__tests__/dearme-approval-receipts.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-workbench-projection.test.ts server/src/__tests__/dearme-output-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts packages/shared/src/validators/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
-  passed with 108 tests and 16 embedded-Postgres-dependent tests skipped by
+- `pnpm exec vitest run server/src/__tests__/dearme-approval-receipts.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-workbench-projection.test.ts server/src/__tests__/dearme-output-handoff.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts server/src/services/dearme-workbench.next-step.test.ts packages/shared/src/validators/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed with 148 tests and 16 embedded-Postgres-dependent tests skipped by
   the host probe.
 - `pnpm --filter @paperclipai/server typecheck` passed.
 - `pnpm --filter @paperclipai/ui typecheck` passed.
 - `pnpm --filter @paperclipai/shared typecheck` passed.
 - `git diff --check` passed.
 - The target customer-visible code/fixture scan found no remaining
-  `Launch queue`, `approved handoff`, or private execution-brief wording under
-  `server/src`, `ui/src`, or `packages/shared/src`.
+  `Launch queue`, `approved handoff`, old generic review-launch sentence,
+  `shared packet once`, or private execution-brief wording under `server/src`,
+  `ui/src`, or `packages/shared/src`.
 
 ## DEA-34 DM-145C Proxy-Key Issuance Absorbed - 2026-05-10
 
