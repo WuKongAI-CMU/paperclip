@@ -30,6 +30,8 @@ Verification:
 - `pnpm exec vitest run server/src/__tests__/approval-routes-idempotency.test.ts server/src/__tests__/dearme-workbench.test.ts --maxWorkers=1`
   passed the approval route suite; the embedded Postgres workbench suite
   skipped on this host because its Postgres init script exited with code 1.
+- `pnpm exec vitest run server/src/__tests__/dearme-approval-receipts.test.ts --maxWorkers=1`
+  passed.
 - `pnpm --filter @paperclipai/shared typecheck` passed.
 - `pnpm --filter @paperclipai/server typecheck` passed.
 - `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('json ok')"`
