@@ -395,6 +395,80 @@ describe("IssueChatThread", () => {
     });
   });
 
+  it("renders DearMe live transcripts without internal tool detail", () => {
+    const root = createRoot(container);
+    const transcript: IssueChatTranscriptEntry[] = [
+      {
+        kind: "assistant",
+        ts: "2026-04-06T12:00:01.000Z",
+        text: "Preparing your brand update.",
+      },
+      {
+        kind: "thinking",
+        ts: "2026-04-06T12:00:02.000Z",
+        text: "Need to inspect internal files.",
+      },
+      {
+        kind: "tool_call",
+        ts: "2026-04-06T12:00:03.000Z",
+        name: "read_file",
+        toolUseId: "tool-1",
+        input: { path: "ui/src/pages/IssueDetail.tsx" },
+      },
+      {
+        kind: "tool_result",
+        ts: "2026-04-06T12:00:04.000Z",
+        toolUseId: "tool-1",
+        toolName: "read_file",
+        content: "internal file contents",
+        isError: false,
+      },
+    ];
+
+    act(() => {
+      root.render(
+        <MemoryRouter>
+          <IssueChatThread
+            comments={[]}
+            linkedRuns={[]}
+            timelineEvents={[]}
+            liveRuns={[{
+              id: "run-live-1",
+              issueId: "issue-1",
+              status: "running",
+              invocationSource: "comment",
+              triggerDetail: null,
+              startedAt: "2026-04-06T12:00:00.000Z",
+              finishedAt: null,
+              createdAt: "2026-04-06T12:00:00.000Z",
+              agentId: "agent-1",
+              agentName: "CodexCoder",
+              adapterType: "codex_local",
+            }]}
+            transcriptsByRunId={new Map([["run-live-1", transcript]])}
+            hasOutputForRun={(runId) => runId === "run-live-1"}
+            onAdd={async () => {}}
+            showComposer={false}
+            enableLiveTranscriptPolling={false}
+            hideRunSubstrateDetails
+          />
+        </MemoryRouter>,
+      );
+    });
+
+    expect(container.textContent).toContain("DearMe team");
+    expect(container.textContent).toContain("Preparing your brand update.");
+    expect(container.textContent).not.toContain("CodexCoder");
+    expect(container.textContent).not.toContain("Need to inspect internal files.");
+    expect(container.textContent).not.toContain("read_file");
+    expect(container.textContent).not.toContain("IssueDetail.tsx");
+    expect(container.textContent).not.toContain("internal file contents");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   it("keeps generic run summaries linked to their run detail", () => {
     const root = createRoot(container);
     const linkedRuns: IssueChatLinkedRun[] = [

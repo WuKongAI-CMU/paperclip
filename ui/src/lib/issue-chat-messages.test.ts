@@ -121,6 +121,62 @@ describe("buildAssistantPartsFromTranscript", () => {
     expect(result.notices).toEqual([]);
   });
 
+  it("keeps only assistant-facing transcript text for DearMe issue chat", () => {
+    const result = buildAssistantPartsFromTranscript([
+      {
+        kind: "assistant",
+        ts: "2026-04-06T12:00:00.000Z",
+        text: "Preparing your brand update.",
+      },
+      {
+        kind: "thinking",
+        ts: "2026-04-06T12:00:01.000Z",
+        text: "Need to inspect internal files.",
+      },
+      {
+        kind: "tool_call",
+        ts: "2026-04-06T12:00:02.000Z",
+        name: "read_file",
+        toolUseId: "tool-1",
+        input: { path: "ui/src/pages/IssueDetail.tsx" },
+      },
+      {
+        kind: "tool_result",
+        ts: "2026-04-06T12:00:03.000Z",
+        toolUseId: "tool-1",
+        content: "internal file contents",
+        isError: false,
+      },
+      {
+        kind: "diff",
+        ts: "2026-04-06T12:00:04.000Z",
+        changeType: "file_header",
+        text: "private file",
+      },
+      {
+        kind: "result",
+        ts: "2026-04-06T12:00:05.000Z",
+        text: "Internal tool error",
+        isError: true,
+      },
+      {
+        kind: "assistant",
+        ts: "2026-04-06T12:00:06.000Z",
+        text: "Your update is ready.",
+      },
+    ], { hideRunSubstrateDetails: true });
+
+    expect(result.parts).toEqual([{
+      type: "text",
+      text: "Preparing your brand update. Your update is ready.",
+    }]);
+    expect(result.segments).toEqual([]);
+    expect(JSON.stringify(result)).not.toContain("read_file");
+    expect(JSON.stringify(result)).not.toContain("IssueDetail.tsx");
+    expect(JSON.stringify(result)).not.toContain("internal file contents");
+    expect(JSON.stringify(result)).not.toContain("private file");
+  });
+
   it("preserves transcript ordering when text and tool activity are interleaved", () => {
     const result = buildAssistantPartsFromTranscript([
       { kind: "assistant", ts: "2026-04-06T12:00:00.000Z", text: "First." },
@@ -735,7 +791,7 @@ describe("buildIssueChatMessages", () => {
     expect(messages[0]).toMatchObject({
       id: "run-assistant:run-history-3",
       role: "assistant",
-      content: [{ text: "Work finished" }],
+      content: [{ text: "Work needs attention" }],
       metadata: {
         custom: {
           runAgentName: "DearMe team",

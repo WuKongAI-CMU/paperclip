@@ -84,6 +84,10 @@ export interface IssueChatTranscriptEntry {
 const ISSUE_CHAT_TRANSCRIPT_MAX_VISIBLE_ENTRIES = 30;
 const DEARME_RUN_AUTHOR_LABEL = "DearMe team";
 
+type BuildAssistantPartsOptions = {
+  hideRunSubstrateDetails?: boolean;
+};
+
 type MessageWithOrder = {
   createdAtMs: number;
   order: number;
@@ -515,6 +519,31 @@ function runDurationLabel(run: {
   }
 }
 
+function dearMeRunPlaceholderText(run: {
+  status: string;
+  resultJson?: Record<string, unknown> | null;
+}) {
+  const stopReason = typeof run.resultJson?.stopReason === "string" ? run.resultJson.stopReason : null;
+  switch (run.status) {
+    case "queued":
+      return "Work queued";
+    case "running":
+      return "Working...";
+    case "failed":
+    case "error":
+      return "Work needs attention";
+    case "timed_out":
+      return "Work timed out";
+    case "cancelled":
+      return stopReason === "paused" ? "Work paused" : "Work cancelled";
+    case "succeeded":
+    case "complete":
+      return "Work finished";
+    default:
+      return "Work updated";
+  }
+}
+
 function createHistoricalRunMessage(
   run: IssueChatLinkedRun,
   agentMap?: Map<string, Agent>,
@@ -558,8 +587,16 @@ function createHistoricalTranscriptMessage(args: {
     ? DEARME_RUN_AUTHOR_LABEL
     : run.agentName ?? agentMap?.get(run.agentId)?.name ?? run.agentId.slice(0, 8);
   const compactedTranscript = compactIssueChatTranscript(transcript);
-  const { parts, notices, segments } = buildAssistantPartsFromTranscript(compactedTranscript);
-  const waitingText = hasOutput ? "" : hideRunSubstrateDetails ? "Work finished" : "Run finished";
+  const { parts, notices, segments } = buildAssistantPartsFromTranscript(compactedTranscript, {
+    hideRunSubstrateDetails,
+  });
+  const waitingText = parts.length > 0
+    ? ""
+    : hideRunSubstrateDetails
+      ? dearMeRunPlaceholderText(run)
+      : hasOutput
+        ? ""
+        : "Run finished";
   const content = parts.length > 0
     ? parts
     : waitingText
@@ -589,11 +626,36 @@ function createHistoricalTranscriptMessage(args: {
   return message;
 }
 
-export function buildAssistantPartsFromTranscript(entries: readonly IssueChatTranscriptEntry[]): {
+export function buildAssistantPartsFromTranscript(
+  entries: readonly IssueChatTranscriptEntry[],
+  options: BuildAssistantPartsOptions = {},
+): {
   parts: Array<TextMessagePart | ReasoningMessagePart | ToolCallMessagePart<JsonObject, unknown>>;
   notices: string[];
   segments: SegmentTiming[];
 } {
+  if (options.hideRunSubstrateDetails) {
+    const safeParts: TextMessagePart[] = [];
+    for (const entry of entries) {
+      if (entry.kind !== "assistant" || !entry.text) continue;
+      const previous = safeParts.at(-1);
+      const next: TextMessagePart = { type: "text", text: entry.text };
+      if (previous) {
+        safeParts[safeParts.length - 1] = {
+          ...previous,
+          text: mergePartText(previous, next),
+        };
+      } else {
+        safeParts.push(next);
+      }
+    }
+    return {
+      parts: safeParts,
+      notices: [],
+      segments: [],
+    };
+  }
+
   const orderedParts: Array<TextMessagePart | ReasoningMessagePart | ToolCallMessagePart<JsonObject, unknown>> = [];
   const toolParts = new Map<string, ToolCallMessagePart<JsonObject, unknown>>();
   const toolIndices = new Map<string, number>();
@@ -755,7 +817,9 @@ function createLiveRunMessage(args: {
 }) {
   const { run, transcript, hideRunSubstrateDetails = false } = args;
   const compactedTranscript = compactIssueChatTranscript(transcript);
-  const { parts, notices, segments } = buildAssistantPartsFromTranscript(compactedTranscript);
+  const { parts, notices, segments } = buildAssistantPartsFromTranscript(compactedTranscript, {
+    hideRunSubstrateDetails,
+  });
   const waitingText =
     run.status === "queued"
       ? "Queued..."
