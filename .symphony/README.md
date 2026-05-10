@@ -96,6 +96,9 @@ For first-cycle private-run or launch-handoff proof work, keep the product lane
 effectively single-lane until the active worker leaves one of those absorbable
 handoff artifacts. Extra Codex help is useful as read-only architecture or QA
 review, not as another concurrent writer on the same customer surface.
+`WORKFLOW.md` enforces this during the current proof phase by limiting
+`In Progress` Symphony workers to one, while the coordinator can still use
+native Codex subagents for read-only review.
 
 ## Worker Git Preflight
 

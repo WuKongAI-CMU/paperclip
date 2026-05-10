@@ -44,10 +44,13 @@ hooks:
 agent:
   max_concurrent_agents: 2
   max_turns: 12
+  # DearMe is still in the first-cycle proof phase: keep implementation lanes
+  # single-file through coordinator absorption, and use extra Codex capacity for
+  # read-only review/QA instead of concurrent writers on the same product surface.
   max_concurrent_agents_by_state:
     Backlog: 1
     Todo: 2
-    In Progress: 2
+    In Progress: 1
     In Review: 1
 codex:
   command: codex --config shell_environment_policy.inherit=all --config 'model="gpt-5.4-mini"' --config model_reasoning_effort=high app-server
