@@ -46,6 +46,13 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DEA-27 is coordinator-absorbed as the DM-149 emergency pause intent slice at
+  `70ef7f59`. Customer stop, pause, hold, not now, and do-not-send/publish/
+  deploy/spend notes now short-circuit approved launch handoffs before outbound
+  dispatch, then project a paused private handoff through the existing receipt,
+  Workbench progress, and handoff panel. This is the right trust/autonomy
+  direction: DearMe feels more independent because it can keep working, but the
+  user has an immediate human stop handle without seeing a control plane.
 - DEA-26 is coordinator-absorbed as the connect-channel handoff receipt slice at
   `2b8aa781`. It turns the existing `launchHandoff` publish gate into a
   customer-safe private receipt and Workbench progress next step when X is not

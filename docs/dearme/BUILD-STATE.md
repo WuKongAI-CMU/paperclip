@@ -2,6 +2,38 @@
 
 Date: 2026-05-10
 
+## DEA-27 Emergency Pause Handoff Absorbed - 2026-05-10
+
+Product/architecture slice:
+
+- Absorbed the Symphony worker patch for emergency pause intent on approved
+  DearMe handoffs at coordinator commit `70ef7f59`.
+- Final approval notes that say stop, pause, hold, not now, or do not send /
+  publish / deploy / spend now short-circuit external dispatch before any
+  outbound action runs.
+- The pause state reuses the existing approval receipt, private handoff,
+  Workbench progress, and team handoff panel surfaces. No new runtime,
+  dashboard, queue, or second control plane was added.
+- Customer-facing copy stays DearMe-native: the surface says the private handoff
+  is paused until the customer resumes or approves a new direction, without
+  exposing substrate language.
+
+Coordination state:
+
+- Worker evidence was preserved under
+  `/private/tmp/dearme-symphony-workspaces/_handoffs/DEA-27-107da766288c..399dcd94d810-2026-05-10T20-54-16-488Z.*`.
+- Coordinator absorbed the durable handoff patch after the worker workspace
+  returned to a clean tree.
+
+Verification:
+
+- `git diff --cached --check` passed before the product commit.
+- `pnpm exec vitest run server/src/services/dearme-approved-launch-handoff.test.ts server/src/__tests__/approval-routes-idempotency.test.ts server/src/__tests__/dearme-approval-receipts.test.ts server/src/__tests__/dearme-workbench-projection.test.ts packages/shared/src/validators/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed with 110 tests.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+
 ## DEA-26 Connect-Channel Handoff Receipt Absorbed - 2026-05-10
 
 Product/architecture slice:
