@@ -1799,7 +1799,8 @@ describe("DearMeOnboarding", () => {
       }),
     );
     expect(container.textContent).toContain("Create Brand OS for Peter Studio");
-    expect(container.textContent).toContain("Voice Gate v0");
+    expect(container.textContent).toContain("Voice check");
+    expect(container.textContent).toContain("Voice 100/100");
     expect(container.textContent).toContain("Ready for review");
     expect(container.textContent).toContain("Chief of Staff");
     expect(container.textContent).toContain("First operations");
@@ -2115,7 +2116,8 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Audience shortlist and first opportunity");
     expect(container.textContent).toContain("Private proof page move");
     expect(container.textContent).toContain("Draft Voice Profile");
-    expect(container.textContent).toContain("Voice Gate v0");
+    expect(container.textContent).toContain("Voice check");
+    expect(container.textContent).toContain("Voice 100/100");
     expect(container.textContent).toContain("Autopilot until launch");
     expect(container.textContent).toContain("Queue the next private pass");
     expect(container.textContent).toContain("Only waits here");

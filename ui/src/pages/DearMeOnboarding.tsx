@@ -1354,18 +1354,18 @@ function isPacketBackedReport(report: DearMeWorkbenchReport) {
 
 function VoiceGatePanel({ gate }: { gate: DearMeVoiceGateResult }) {
   return (
-    <section className="rounded-md border border-border p-4" aria-label="Voice Gate v0">
+    <section className="rounded-md border border-border p-4" aria-label="Voice check">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm font-medium">
             <ShieldCheck className="h-4 w-4" />
-            Voice Gate v0
+            Voice check
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">{gate.summary}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{customerProofPackSummary(gate.summary)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={voiceGateVariant(gate.status)}>{VOICE_GATE_STATUS_LABELS[gate.status]}</Badge>
-          <Badge variant="outline">{gate.score}/100</Badge>
+          <Badge variant="outline">Voice {gate.score}/100</Badge>
         </div>
       </div>
       <DearMeEvidenceGrid className="mt-4 xl:grid-cols-5" columns="two">
