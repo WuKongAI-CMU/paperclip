@@ -2037,6 +2037,81 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("reviews live team feed work without leaving DearMe", async () => {
+    const contentOutput = outputsWithFirstCyclePacket().outputs[1]!;
+    mockDearmeApi.continueOutput.mockResolvedValueOnce({
+      companyId: "company-1",
+      outputId: "issue-2:content_drafts",
+      action: "regenerate",
+      status: "queued",
+      comment: {
+        id: "comment-live-feed-1",
+        bodyPreview: "DearMe decision: prepare another private pass before review.",
+        createdAt: "2026-05-07T14:05:00.000Z",
+      },
+      output: {
+        ...contentOutput,
+        status: "working",
+        isReviewable: false,
+        reviewLoop: reviewLoopFixture(
+          "regeneration_requested",
+          "Your team has your direction and should prepare another version.",
+          {
+            attemptCount: 1,
+            lastAction: "regenerate",
+            lastDecisionAt: "2026-05-07T14:05:00.000Z",
+            lastDecisionNotePreview: "Try a proof-led version before I review it.",
+          },
+        ),
+      },
+    });
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const liveFeed = surfaceByLabel(container, "Live team feed");
+    expect(liveFeed.textContent).toContain("Review this private work here.");
+    expect(liveFeed.textContent).toContain("Launch this work");
+    expect(liveFeed.textContent).toContain("Request changes");
+    expect(liveFeed.textContent).toContain("Prepare another pass");
+    expect(liveFeed.textContent).toContain("Choose new direction");
+
+    await act(async () => {
+      setTextareaValue(
+        liveFeed.querySelector("#dearme-live-feed-output-note-needs_call-0") as HTMLTextAreaElement,
+        "Try a proof-led version before I review it.",
+      );
+      buttonByText(liveFeed, "Prepare another pass")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.continueOutput).toHaveBeenCalledWith(
+      "company-1",
+      "issue-2:content_drafts",
+      {
+        intent: "prepare_another_pass",
+        decisionNote: "Try a proof-led version before I review it.",
+      },
+    );
+    expect(mockDearmeApi.reviewOutput).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining("/issues/"));
+    expect(container.textContent).not.toContain("/issues/");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("keeps DearMe panel load errors customer-safe", async () => {
     mockDearmeApi.getWorkbench.mockRejectedValueOnce(
       new Error("Codex model token failed inside Symphony execution route."),
@@ -3330,7 +3405,25 @@ describe("DearMeOnboarding", () => {
     });
   });
 
-  it("opens live feed output decisions in the DearMe review surface", async () => {
+  it("reviews live feed output decisions in place", async () => {
+    const contentOutput = outputsWithFirstCyclePacket().outputs[1]!;
+    mockDearmeApi.reviewOutput.mockResolvedValueOnce({
+      companyId: "company-1",
+      outputId: "issue-2:content_drafts",
+      action: "approve",
+      status: "approved",
+      comment: {
+        id: "comment-live-feed-approve",
+        bodyPreview: "DearMe decision: launch this prepared work.",
+        createdAt: "2026-05-07T14:05:00.000Z",
+      },
+      output: {
+        ...contentOutput,
+        status: "approved",
+        isReviewable: false,
+        reviewLoop: reviewLoopFixture("approved"),
+      },
+    });
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -3345,16 +3438,25 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
-    const reviewButton = buttonByText(container, "Review now");
-    expect(reviewButton).toBeTruthy();
+    const liveFeed = surfaceByLabel(container, "Live team feed");
+    const launchButton = buttonByText(liveFeed, "Launch this work");
+    expect(launchButton).toBeTruthy();
 
     await act(async () => {
-      reviewButton?.click();
+      launchButton?.click();
     });
+    await flushReact();
 
-    expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&work=PET-8&output=issue-2%3Acontent_drafts",
+    expect(mockDearmeApi.reviewOutput).toHaveBeenCalledWith(
+      "company-1",
+      "issue-2:content_drafts",
+      {
+        action: "approve",
+        decisionNote: "Approved in DearMe. This prepared work represents me.",
+      },
     );
+    expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining("/issues/"));
+    expect(container.textContent).not.toContain("/issues/");
 
     await act(async () => {
       root.unmount();
@@ -3611,7 +3713,37 @@ describe("DearMeOnboarding", () => {
       buttonByText(container, "Review posts")?.click();
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=decisions&work=issue-2");
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/dearme?view=decisions&work=issue-2&output=issue-2%3Acontent_drafts",
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("opens the Dear me letter with exact output focus", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Open letter")?.click();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/dearme?view=decisions&work=PET-7&output=issue-1%3Aweekly_report",
+    );
 
     await act(async () => {
       root.unmount();

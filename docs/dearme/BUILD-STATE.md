@@ -2,6 +2,29 @@
 
 Date: 2026-05-10
 
+## DM-183T Exact Output Focus From Review Entrypoints - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the still-useful DM-027 output-focus residue onto the current
+  DearMe decision surface instead of raw-merging the stale worker branch.
+- Batch decisions and the Dear me letter now carry existing prepared-output ids
+  into `/dearme?view=decisions&work=...&output=...`.
+- Reviewable live-feed work now exposes the same in-place launch/change/another
+  pass/new-direction controls used by focused prepared work, so the user can
+  keep work moving without leaving DearMe.
+- Reused `batchPreparedOutputId`, report `outputId`, live stream
+  `relatedOutputId`, review-loop state, and `buildDearMeDecisionRoute`; no new
+  schema, raw issue route, worker, or customer-facing runtime surface was added.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 51 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed.
+
 ## DM-183S Decision-First Live Team Feed - 2026-05-10
 
 Implementation slice:

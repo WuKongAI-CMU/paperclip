@@ -2067,6 +2067,19 @@ function liveFeedActionLabel(item: DearMeWorkbenchStreamItem) {
   return null;
 }
 
+function liveFeedReviewableOutputId(item: DearMeWorkbenchStreamItem) {
+  if (!item.relatedOutputId) return null;
+  if (
+    item.needsApproval ||
+    item.status === "decision_needed" ||
+    item.status === "ready_for_review" ||
+    item.reviewLoop?.state === "needs_user_review"
+  ) {
+    return item.relatedOutputId;
+  }
+  return null;
+}
+
 function liveFeedSectionId(item: DearMeWorkbenchStreamItem): LiveFeedSectionId {
   if (item.needsApproval || item.status === "decision_needed" || item.status === "ready_for_review") {
     return "needs_call";
@@ -4093,7 +4106,7 @@ function DearMeLetterPanel({
   onOpenIssue,
 }: {
   report: DearMeWorkbenchReport | null;
-  onOpenIssue: (issueReference: string) => void;
+  onOpenIssue: (issueReference: string, outputId?: string | null) => void;
 }) {
   const packetBackedReport = report ? isPacketBackedReport(report) : false;
   const reportSummary = report ? customerProofPackSummary(report.summary) : "";
@@ -4122,7 +4135,7 @@ function DearMeLetterPanel({
               type="button"
               size="sm"
               variant="outline"
-              onClick={() => onOpenIssue(report.issueIdentifier ?? report.issueId)}
+              onClick={() => onOpenIssue(report.issueIdentifier ?? report.issueId, report.outputId)}
             >
               Open letter
               <ArrowRight className="h-4 w-4" />
@@ -4224,6 +4237,8 @@ function LiveTeamFeedPanel({
   onOpenApproval,
   onOpenIssue,
   onOpenWorkItem,
+  outputReviewState,
+  onReviewOutput,
 }: {
   liveStream: DearMeWorkbenchStreamItem[];
   onOpenApproval: (approvalId: string) => void;
@@ -4233,6 +4248,8 @@ function LiveTeamFeedPanel({
     outputId: string,
     intent?: DearMeReviewEntryIntent | null,
   ) => void;
+  outputReviewState: DearMeOutputReviewState;
+  onReviewOutput: (outputId: string, action: DearMeOutputReviewAction, decisionNote: string) => void;
 }) {
   if (liveStream.length === 0) return null;
 
@@ -4274,6 +4291,7 @@ function LiveTeamFeedPanel({
                 const issueReference = streamItemIssueTarget(item);
                 const canOpen = Boolean(item.approvalId || issueReference);
                 const actionLabel = canOpen ? liveFeedActionLabel(item) : null;
+                const reviewableOutputId = liveFeedReviewableOutputId(item);
                 const isLatest = section.id === liveFeedSections[0]?.id && index === 0;
 
                 return (
@@ -4319,7 +4337,7 @@ function LiveTeamFeedPanel({
                     calloutLabel="Next action"
                     callout={customerProofPackSummary(item.nextAction)}
                     action={
-                      actionLabel
+                      !reviewableOutputId && actionLabel
                         ? {
                             label: actionLabel,
                             variant: item.needsApproval ? "default" : "outline",
@@ -4338,7 +4356,18 @@ function LiveTeamFeedPanel({
                           }
                         : null
                     }
-                  />
+                  >
+                    {reviewableOutputId ? (
+                      <FocusedPreparedWorkReviewControls
+                        outputId={reviewableOutputId}
+                        noteId={`dearme-live-feed-output-note-${section.id}-${index}`}
+                        description="Review this private work here. Keep it moving, request changes, ask for another pass, or choose a new direction."
+                        disabledReason="This private work is still moving; DearMe will bring it back when it needs your call."
+                        reviewState={outputReviewState}
+                        onReviewOutput={onReviewOutput}
+                      />
+                    ) : null}
+                  </DearMeActionCard>
                 );
               })}
             </div>
@@ -5121,7 +5150,7 @@ function TeamWorkbenchPanel({
   selectedView: DearMePageView;
   decisionFocus: DearMeDecisionFocus | null;
   onOpenApproval: (approvalId: string) => void;
-  onOpenIssue: (issueReference: string) => void;
+  onOpenIssue: (issueReference: string, outputId?: string | null) => void;
   onOpenWorkItem: (
     issueReference: string,
     outputId: string,
@@ -5312,6 +5341,11 @@ function TeamWorkbenchPanel({
       return;
     }
     const issueId = batch.issueIds[0];
+    const outputId = batchPreparedOutputId(batch);
+    if (issueId && outputId) {
+      onOpenWorkItem(issueId, outputId);
+      return;
+    }
     if (issueId) onOpenIssue(issueId);
   }
 
@@ -5419,6 +5453,8 @@ function TeamWorkbenchPanel({
           onOpenApproval={onOpenApproval}
           onOpenIssue={onOpenIssue}
           onOpenWorkItem={onOpenWorkItem}
+          outputReviewState={outputReviewState}
+          onReviewOutput={onReviewOutput}
         />
       </DearMeCockpitGrid>
     </section>
@@ -6278,8 +6314,8 @@ export function DearMeOnboarding() {
     );
   }
 
-  function handleOpenIssue(issueReference: string) {
-    navigate(buildDearMeDecisionRoute({ issueReference }));
+  function handleOpenIssue(issueReference: string, outputId?: string | null) {
+    navigate(buildDearMeDecisionRoute({ issueReference, outputId: outputId ?? undefined }));
   }
 
   function handleOpenWorkbenchWorkItem(
