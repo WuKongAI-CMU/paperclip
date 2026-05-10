@@ -513,6 +513,37 @@ export const dearMeVoiceGateResultSchema = z.object({
   blockedActions: z.array(shortTextSchema).min(1).max(8),
 }).strict();
 
+const dearMeContentDraftPacketEvidenceSchema = z.object({
+  label: shortTextSchema,
+  summary: mediumTextSchema,
+  source: z.enum(["brand_os", "voice_profile", "dear_me_report", "cycle_note", "proof", "user_direction"]).optional(),
+}).strict();
+
+const dearMeContentDraftPacketDraftSchema = z.object({
+  id: shortTextSchema.optional(),
+  title: shortTextSchema,
+  channel: z.enum(DEARME_BRAND_CHANNELS),
+  audience: mediumTextSchema,
+  hook: mediumTextSchema,
+  body: longTextSchema,
+  proofUsed: mediumTextSchema,
+  voiceGate: dearMeVoiceGateResultSchema,
+  launchBoundary: shortTextSchema.default("publish social posts"),
+}).strict();
+
+export const dearMeContentDraftPacketSchema = z.object({
+  packetId: shortTextSchema.optional(),
+  title: shortTextSchema.optional().default("Content draft packet"),
+  summary: mediumTextSchema.nullable().optional(),
+  cycleEvidence: z.array(dearMeContentDraftPacketEvidenceSchema).min(1).max(12),
+  drafts: z.array(dearMeContentDraftPacketDraftSchema).min(1).max(12),
+  createdByRunId: z.string().uuid().optional().nullable(),
+}).strict().transform((value) => ({
+  ...value,
+  summary: value.summary ?? null,
+  createdByRunId: value.createdByRunId ?? null,
+}));
+
 const dearMeFirstCycleVoiceProfileSchema = z.object({
   title: shortTextSchema,
   status: z.enum(["needs_samples", "ready_for_gate"]),
@@ -1069,6 +1100,7 @@ export type DearMeFirstCyclePreview = z.infer<typeof dearMeFirstCyclePreviewSche
 export type DearMeFirstCyclePreviewResponse = z.infer<typeof dearMeFirstCyclePreviewResponseSchema>;
 export type DearMeVoiceGateEvaluation = z.infer<typeof dearMeVoiceGateEvaluationSchema>;
 export type DearMeVoiceGateResult = z.infer<typeof dearMeVoiceGateResultSchema>;
+export type DearMeContentDraftPacket = z.infer<typeof dearMeContentDraftPacketSchema>;
 export type DearMeChiefOfStaffMessage = z.infer<typeof dearMeChiefOfStaffMessageSchema>;
 export type DearMeChiefOfStaffMessageIntent = z.infer<typeof dearMeChiefOfStaffMessageSchema>["intent"];
 export type DearMeChiefOfStaffMessageResult = z.infer<typeof dearMeChiefOfStaffMessageResultSchema>;

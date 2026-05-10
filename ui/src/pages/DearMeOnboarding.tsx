@@ -1382,6 +1382,77 @@ function VoiceGatePanel({ gate }: { gate: DearMeVoiceGateResult }) {
   );
 }
 
+function outputVoiceGateResults(output: DearMeOutputItem) {
+  return output.workProducts
+    .map((workProduct) => workProduct.voiceGate)
+    .filter((gate): gate is DearMeVoiceGateResult => Boolean(gate));
+}
+
+function primaryOutputVoiceGate(output: DearMeOutputItem) {
+  const priority: Record<DearMeVoiceGateResult["status"], number> = {
+    blocked_before_public: 3,
+    needs_voice_review: 2,
+    ready_for_review: 1,
+  };
+  return outputVoiceGateResults(output).sort((left, right) => priority[right.status] - priority[left.status])[0] ?? null;
+}
+
+function VoiceCheckPanel({
+  gate,
+  compact = false,
+  className,
+}: {
+  gate: DearMeVoiceGateResult;
+  compact?: boolean;
+  className?: string;
+}) {
+  const attentionChecks = gate.checks.filter((check) => check.status !== "pass").slice(0, 2);
+  return (
+    <section
+      className={cn(
+        "rounded-md border border-border bg-background/80",
+        compact ? "p-2" : "p-3",
+        className,
+      )}
+      aria-label="Voice check"
+    >
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Voice check
+          </div>
+          <p className={cn("mt-1 text-foreground/85", compact ? "line-clamp-2 text-xs" : "text-sm")}>
+            {customerProofPackSummary(gate.summary)}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <Badge variant={voiceGateVariant(gate.status)}>{VOICE_GATE_STATUS_LABELS[gate.status]}</Badge>
+          <Badge variant="outline">Voice {gate.score}/100</Badge>
+        </div>
+      </div>
+      {!compact && attentionChecks.length > 0 ? (
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {attentionChecks.map((check) => (
+            <div key={check.label} className="rounded-md border border-border bg-muted/20 p-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={voiceGateCheckVariant(check.status)}>{roleLabel(check.status)}</Badge>
+                <p className="text-xs font-medium text-foreground">{check.label}</p>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{customerProofPackSummary(check.summary)}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {!compact ? (
+        <p className="mt-3 text-xs text-muted-foreground">
+          Public moves still wait for your launch call.
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 function TeamWorkstreamPanel({
   previewReady,
   paidBetaActive,
@@ -2158,6 +2229,7 @@ function FocusedOutputPanel({
 }) {
   const preview = outputPreview(output);
   const details = output.details.slice(0, 4);
+  const voiceGate = primaryOutputVoiceGate(output);
   const entryGuidance = reviewEntryGuidance(entryIntent, output.reviewLoop);
   const [decisionNote, setDecisionNote] = useState("");
   const isReviewingOutput = reviewState.isPending && reviewState.outputId === output.id;
@@ -2208,6 +2280,8 @@ function FocusedOutputPanel({
       ) : null}
 
       <OutputSourceEvidenceList output={output} className="mt-4" />
+
+      {voiceGate ? <VoiceCheckPanel gate={voiceGate} className="mt-4" /> : null}
 
       <ReviewLoopNextStep loop={output.reviewLoop} className="mt-4" />
       <ReviewHandoffCard loop={output.reviewLoop} className="mt-4" />
@@ -4915,6 +4989,8 @@ function FirstCyclePacketSpotlight({
   const contentOutput = packetOutputs.find((output) => output.kind === "content_drafts");
   const reportOutput = packetOutputs.find((output) => output.kind === "weekly_report");
   const primaryOutput = contentOutput ?? reportOutput ?? packetOutputs[0];
+  const contentVoiceGate = contentOutput ? primaryOutputVoiceGate(contentOutput) : null;
+  const reportVoiceGate = reportOutput ? primaryOutputVoiceGate(reportOutput) : null;
   const readyCount = packetOutputs.filter((output) => output.status === "ready_for_review").length;
 
   return (
@@ -4947,6 +5023,7 @@ function FirstCyclePacketSpotlight({
             <p className="mt-1 line-clamp-3 text-sm text-foreground/85">
               {cyclePacketSummary(contentOutput)}
             </p>
+            {contentVoiceGate ? <VoiceCheckPanel gate={contentVoiceGate} compact className="mt-3" /> : null}
           </div>
         ) : null}
         {reportOutput ? (
@@ -4955,6 +5032,7 @@ function FirstCyclePacketSpotlight({
             <p className="mt-1 line-clamp-3 text-sm text-foreground/85">
               {cyclePacketSummary(reportOutput)}
             </p>
+            {reportVoiceGate ? <VoiceCheckPanel gate={reportVoiceGate} compact className="mt-3" /> : null}
           </div>
         ) : null}
       </div>
@@ -5047,6 +5125,7 @@ function PrivateWorkPanel({
             {outputs.map((output) => {
               const preview = outputPreview(output);
               const details = output.details.slice(0, 3);
+              const voiceGate = primaryOutputVoiceGate(output);
               const routeIntent = reviewLoopRouteIntent(output.reviewLoop);
               const focused = decisionFocus ? matchesOutputFocus(output, decisionFocus) : false;
               const footer = `Updated ${shortDate(output.updatedAt)}${
@@ -5075,6 +5154,12 @@ function PrivateWorkPanel({
                       label: reviewLoopStateLabel(output.reviewLoop),
                       variant: reviewLoopVariant(output.reviewLoop),
                     },
+                    ...(voiceGate
+                      ? [{
+                          label: `Voice ${voiceGate.score}/100`,
+                          variant: voiceGateVariant(voiceGate.status),
+                        }]
+                      : []),
                     {
                       label: OUTPUT_KIND_LABELS[output.kind],
                       variant: "outline",
@@ -5100,6 +5185,8 @@ function PrivateWorkPanel({
                   </p>
 
                   <OutputSourceEvidenceList output={output} limit={2} compact className="mt-3" />
+
+                  {voiceGate ? <VoiceCheckPanel gate={voiceGate} compact className="mt-3" /> : null}
 
                   {details.length > 0 ? (
                     <dl className="mt-3 space-y-2 border-t border-border pt-3">

@@ -205,7 +205,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     status: "planned",
     group: "growth",
     description:
-      "Composes voice-gated short-form content (Twitter/X 2/day, 280 char hard cap, dark-humor voice, mandatory attribution link).",
+      "Prepares voice-gated private content drafts for review and holds every public move behind approval.",
     substrate: { openclaw: "skill-call", naive: "heartbeat_runs", polsia: "work" },
   },
   {

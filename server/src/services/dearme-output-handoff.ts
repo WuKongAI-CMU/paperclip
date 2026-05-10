@@ -3,10 +3,13 @@ import type { Db } from "@paperclipai/db";
 import { documents, issueComments, issueDocuments, issues, issueWorkProducts } from "@paperclipai/db";
 import {
   DEARME_OUTPUT_KINDS,
+  dearMeContentDraftPacketSchema,
   dearMeVoiceGateResultSchema,
   dearMeOutputReviewResultSchema,
+  dearMeOutputWorkProductSchema,
   dearMeOutputsResponseSchema,
   isSystemIssueDocumentKey,
+  type DearMeContentDraftPacket,
   type DearMeOutputDetail,
   type DearMeOutputDocument,
   type DearMeOutputItem,
@@ -82,12 +85,14 @@ type DearMeParsedReviewDecision = {
 
 const BRAND_OS_FINGERPRINT = "brand-os-review";
 const VOICE_OPERATION_FINGERPRINT = "operation-seed_voice_profile";
+const CONTENT_OPERATION_FINGERPRINT = "operation-draft_content_batch";
+const CONTENT_DRAFT_WORK_PRODUCT_PROVIDER = "dearme";
 const CYCLE_OUTPUT_WORK_PRODUCT_PROVIDER = "dearme-cycle-output";
 const DEARME_OUTPUT_REVIEW_LOOP_MAX_ATTEMPTS = 3;
 const outputKindSet = new Set<string>(DEARME_OUTPUT_KINDS);
 
 const OPERATION_DESCRIPTORS: Record<string, OutputDescriptor> = {
-  "operation-draft_content_batch": {
+  [CONTENT_OPERATION_FINGERPRINT]: {
     kind: "content_drafts",
     title: "Content drafts",
     summary: "Private posts, essays, and newsletter drafts prepared for review.",
@@ -157,8 +162,10 @@ const DETAIL_EXTRACTION_LABELS = [
   "Approval gate",
   "Approval boundaries",
   "Boundaries",
+  "Voice Gate",
   "Voice fit score",
   "Voice fit",
+  "Cycle evidence",
   "Target",
   "Contact",
   "Opportunity",
@@ -547,6 +554,66 @@ function voiceGateFromMetadata(metadata: unknown): DearMeVoiceGateResult | null 
   }
 
   return null;
+}
+
+function voiceGateStatusRank(status: DearMeVoiceGateResult["status"]) {
+  switch (status) {
+    case "blocked_before_public":
+      return 0;
+    case "needs_voice_review":
+      return 1;
+    case "ready_for_review":
+    default:
+      return 2;
+  }
+}
+
+function strictestVoiceGate(packet: DearMeContentDraftPacket) {
+  return [...packet.drafts]
+    .map((draft) => draft.voiceGate)
+    .sort((left, right) =>
+      voiceGateStatusRank(left.status) - voiceGateStatusRank(right.status) ||
+      left.score - right.score
+    )[0]!;
+}
+
+function contentDraftPacketExternalId(packet: DearMeContentDraftPacket) {
+  return packet.packetId ? `content-drafts:${packet.packetId}` : null;
+}
+
+function formatContentDraftPacket(packet: DearMeContentDraftPacket) {
+  const parts = [
+    `Drafts and Assets Ready for Review: ${packet.title}`,
+    packet.summary ? `Summary: ${packet.summary}` : null,
+    ...packet.drafts.flatMap((draft, index) => [
+      `Draft ${index + 1}: ${draft.title}`,
+      `Channel: ${draft.channel}`,
+      `Audience: ${draft.audience}`,
+      `Hook: ${draft.hook}`,
+      `Draft body: ${draft.body}`,
+      `Proof used: ${draft.proofUsed}`,
+      `Voice Gate: ${draft.voiceGate.score}/100, ${draft.voiceGate.status}`,
+      `Launch boundary: ${draft.launchBoundary}`,
+    ]),
+    "Cycle evidence:",
+    ...packet.cycleEvidence.map((item) => `${item.label}: ${item.summary}`),
+  ].filter((part): part is string => Boolean(part));
+
+  return parts.join("\n");
+}
+
+function outputWorkProductFromRow(row: typeof issueWorkProducts.$inferSelect): DearMeOutputWorkProduct {
+  return dearMeOutputWorkProductSchema.parse({
+    id: row.id,
+    type: row.type,
+    title: row.title,
+    url: row.url ?? null,
+    status: row.status,
+    reviewState: row.reviewState,
+    summary: row.summary ?? null,
+    voiceGate: voiceGateFromMetadata(row.metadata),
+    updatedAt: toIso(row.updatedAt),
+  });
 }
 
 function renderCycleOutputPacket(input: {
@@ -1212,6 +1279,141 @@ export function dearmeOutputHandoffService(db: Db) {
           reviewCommentsByIssue,
         }),
       });
+    },
+
+    persistContentDraftPacket: async (
+      companyId: string,
+      issueId: string,
+      input: unknown,
+    ): Promise<DearMeOutputWorkProduct> => {
+      const packet = dearMeContentDraftPacketSchema.parse(input);
+      const [issue] = await db
+        .select({
+          id: issues.id,
+          companyId: issues.companyId,
+          projectId: issues.projectId,
+          originFingerprint: issues.originFingerprint,
+        })
+        .from(issues)
+        .where(and(
+          eq(issues.id, issueId),
+          eq(issues.companyId, companyId),
+          eq(issues.originKind, DEARME_BRAND_BLUEPRINT_ORIGIN_KIND),
+          eq(issues.originFingerprint, CONTENT_OPERATION_FINGERPRINT),
+          isNull(issues.hiddenAt),
+        ))
+        .limit(1);
+
+      if (!issue) {
+        throw notFound("DearMe content drafts output not found");
+      }
+
+      const now = new Date();
+      const voiceGate = strictestVoiceGate(packet);
+      const externalId = contentDraftPacketExternalId(packet);
+      const summary = formatContentDraftPacket(packet);
+      const metadata = {
+        voiceGate,
+        dearme: {
+          outputKind: "content_drafts",
+          packetId: packet.packetId ?? null,
+          draftCount: packet.drafts.length,
+          cycleEvidence: packet.cycleEvidence,
+          drafts: packet.drafts.map((draft) => ({
+            id: draft.id ?? null,
+            title: draft.title,
+            channel: draft.channel,
+            audience: draft.audience,
+            hook: draft.hook,
+            body: draft.body,
+            proofUsed: draft.proofUsed,
+            launchBoundary: draft.launchBoundary,
+            voiceGate: draft.voiceGate,
+          })),
+          voiceGate,
+        },
+      };
+
+      const row = await db.transaction(async (tx) => {
+        const existing = externalId
+          ? await tx
+            .select({ id: issueWorkProducts.id })
+            .from(issueWorkProducts)
+            .where(and(
+              eq(issueWorkProducts.companyId, companyId),
+              eq(issueWorkProducts.issueId, issueId),
+              eq(issueWorkProducts.provider, CONTENT_DRAFT_WORK_PRODUCT_PROVIDER),
+              eq(issueWorkProducts.externalId, externalId),
+            ))
+            .limit(1)
+            .then((rows) => rows[0] ?? null)
+          : null;
+
+        const values = {
+          projectId: issue.projectId ?? null,
+          type: "artifact",
+          provider: CONTENT_DRAFT_WORK_PRODUCT_PROVIDER,
+          externalId,
+          title: packet.title,
+          url: null,
+          status: "ready_for_review",
+          reviewState: "needs_board_review",
+          isPrimary: true,
+          healthStatus: "healthy",
+          summary,
+          metadata,
+          createdByRunId: packet.createdByRunId,
+          updatedAt: now,
+        } satisfies Partial<typeof issueWorkProducts.$inferInsert>;
+
+        await tx
+          .update(issueWorkProducts)
+          .set({ isPrimary: false, updatedAt: now })
+          .where(and(
+            eq(issueWorkProducts.companyId, companyId),
+            eq(issueWorkProducts.issueId, issueId),
+            eq(issueWorkProducts.type, values.type),
+          ));
+
+        const saved = existing
+          ? await tx
+            .update(issueWorkProducts)
+            .set(values)
+            .where(eq(issueWorkProducts.id, existing.id))
+            .returning()
+            .then((rows) => rows[0] ?? null)
+          : await tx
+            .insert(issueWorkProducts)
+            .values({
+              ...values,
+              companyId,
+              issueId,
+              createdAt: now,
+            })
+            .returning()
+            .then((rows) => rows[0] ?? null);
+
+        await tx
+          .update(issues)
+          .set({
+            status: "in_review",
+            completedAt: null,
+            cancelledAt: null,
+            updatedAt: now,
+          })
+          .where(and(
+            eq(issues.id, issueId),
+            eq(issues.companyId, companyId),
+          ));
+
+        return saved;
+      });
+
+      if (!row) {
+        throw new Error("Failed to persist DearMe content drafts");
+      }
+
+      return outputWorkProductFromRow(row);
     },
 
     prepareCycleOutputPacket: async (

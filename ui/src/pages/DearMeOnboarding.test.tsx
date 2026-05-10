@@ -202,6 +202,58 @@ function createFirstCyclePreview() {
   };
 }
 
+function weeklyReportVoiceGate() {
+  return evaluateDearMeVoiceGate({
+    brand: {
+      displayName: "Peter Studio",
+      positioning: "Known for turning research into practical AI products",
+      goals: ["Grow owned audience"],
+      audiences: ["Founders"],
+      proofPoints: ["Refreshed positioning and prepared next bets"],
+      offers: ["Paid beta"],
+      voiceSamples: ["Short, direct voice note.", "Plain language with concrete proof."],
+      preferredChannels: ["linkedin", "newsletter", "portfolio"],
+      constraints: ["Ask before publishing"],
+      cadence: "weekly",
+      budgetMonthlyCents: 25_000,
+      autoDraftEnabled: true,
+    },
+    artifact: {
+      kind: "weekly_report",
+      channel: "newsletter",
+      title: "Dear me report",
+      text: "Completed work: refreshed positioning and prepared next bets for founders.",
+      proofUsed: "Refreshed positioning and prepared next bets",
+    },
+  });
+}
+
+function contentDraftVoiceGate() {
+  return evaluateDearMeVoiceGate({
+    brand: {
+      displayName: "Peter Studio",
+      positioning: "Known for turning research into practical AI products",
+      goals: ["Grow owned audience"],
+      audiences: ["Founders"],
+      proofPoints: ["Private proof from the first cycle"],
+      offers: ["Paid beta"],
+      voiceSamples: ["Short, direct voice note.", "Plain language with concrete proof."],
+      preferredChannels: ["linkedin", "newsletter", "portfolio"],
+      constraints: ["Ask before publishing"],
+      cadence: "weekly",
+      budgetMonthlyCents: 25_000,
+      autoDraftEnabled: true,
+    },
+    artifact: {
+      kind: "content_draft",
+      channel: "linkedin",
+      title: "Starter post batch",
+      text: "Starter post from private proof for founders who need practical AI product evidence.",
+      proofUsed: "Private proof from the first cycle",
+    },
+  });
+}
+
 function paidBetaStatus(status: "trial" | "active") {
   const active = status === "active";
   return {
@@ -1106,7 +1158,19 @@ function outputsResponse() {
             updatedAt: "2026-05-07T14:00:00.000Z",
           },
         ],
-        workProducts: [],
+        workProducts: [
+          {
+            id: "work-product-weekly-report",
+            type: "report",
+            title: "Weekly report voice check",
+            url: null,
+            status: "ready_for_review",
+            reviewState: "pending",
+            summary: "Dear me report passed the voice check before review.",
+            voiceGate: weeklyReportVoiceGate(),
+            updatedAt: "2026-05-07T14:00:00.000Z",
+          },
+        ],
         latestUpdate: null,
         reviewLoop: reviewLoopFixture("needs_user_review"),
         details: [
@@ -1197,6 +1261,7 @@ function outputsWithFirstCyclePacket() {
             status: "ready_for_review",
             reviewState: "pending",
             summary: "Starter post draft prepared from the cycle packet with voice fit 95.",
+            voiceGate: contentDraftVoiceGate(),
             updatedAt: "2026-05-07T14:00:00.000Z",
           },
         ],
@@ -3316,6 +3381,11 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Review one public claim before publishing");
     expect(container.textContent).toContain("Sources behind this work");
     expect(container.textContent).toContain("Proof used");
+    const focusedWork = surfaceByLabel(container, "Focused work");
+    expect(focusedWork.textContent).toContain("Voice check");
+    expect(focusedWork.textContent).toContain("Voice ");
+    expect(focusedWork.textContent).toContain("/100");
+    expect(focusedWork.textContent).toContain("Public moves still wait for your launch call.");
     expect(container.textContent).toContain("Review pass 0/3");
     expect(container.textContent).toContain("Needs your review");
     expect(container.textContent).toContain("1 private reference prepared");
@@ -3638,6 +3708,9 @@ describe("DearMeOnboarding", () => {
     expect(packetSurface.textContent).toContain("Private until approved");
     expect(packetSurface.textContent).toContain("Starter post draft prepared from the first proof pack");
     expect(packetSurface.textContent).toContain("Report prepared from the same first proof pack");
+    expect(packetSurface.textContent).toContain("Voice check");
+    expect(packetSurface.textContent).toContain("Voice ");
+    expect(packetSurface.textContent).toContain("/100");
     expect(packetSurface.textContent).not.toContain("cycle packet");
     expect(container.textContent).not.toContain("dearme-cycle-output");
 

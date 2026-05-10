@@ -12,6 +12,7 @@ import {
   dearMeBrandBlueprintApplyRequestSchema,
   dearMeBrandBlueprintPreviewSchema,
   dearMeBrandBlueprintSchema,
+  dearMeContentDraftPacketSchema,
   dearMeFirstCyclePreviewResponseSchema,
   dearMeFirstCyclePreviewSchema,
   dearMeMemoryArchiveResultSchema,
@@ -707,6 +708,70 @@ describe("DearMe brand blueprint contract", () => {
         ],
       }),
     ).toThrow();
+  });
+
+  it("normalizes private content draft packets behind Voice Gate review", () => {
+    const voiceGate = evaluateDearMeVoiceGate({
+      brand: {
+        displayName: "Peter",
+        positioning: "Builder of local-first products",
+        goals: ["Turn shipping proof into clear public content"],
+        audiences: ["Founders evaluating local-first workflows"],
+        proofPoints: ["Shipped a private product launch"],
+        offers: ["Paid beta for personal brand growth"],
+        voiceSamples: ["Direct, specific, evidence-backed writing.", "Short notes with concrete next steps."],
+        preferredChannels: ["linkedin"],
+        constraints: ["No public claims without review."],
+        cadence: "weekly",
+        budgetMonthlyCents: 25_000,
+        autoDraftEnabled: true,
+      },
+      artifact: {
+        kind: "content_draft",
+        channel: "linkedin",
+        title: "Proof-backed post",
+        text: "A short proof-backed post for founders evaluating local-first workflows.",
+        proofUsed: "Shipped a private product launch",
+      },
+    });
+    const packet = dearMeContentDraftPacketSchema.parse({
+      packetId: "cycle-2026-05-10-content",
+      cycleEvidence: [
+        {
+          label: "Proof",
+          source: "proof",
+          summary: "The latest private work produced a concrete launch receipt.",
+        },
+      ],
+      drafts: [
+        {
+          title: "Proof-backed post",
+          channel: "linkedin",
+          audience: "Founders evaluating local-first workflows",
+          hook: "Your personal brand should show proof while you keep building.",
+          body: "A short proof-backed post for founders evaluating local-first workflows.",
+          proofUsed: "Shipped a private product launch",
+          voiceGate,
+        },
+      ],
+    });
+
+    expect(packet).toEqual(expect.objectContaining({
+      title: "Content draft packet",
+      summary: null,
+      createdByRunId: null,
+    }));
+    expect(packet.drafts[0]).toEqual(expect.objectContaining({
+      launchBoundary: "publish social posts",
+      voiceGate: expect.objectContaining({
+        approvalGate: "publish_social",
+        status: "ready_for_review",
+      }),
+    }));
+    expect(() => dearMeContentDraftPacketSchema.parse({
+      drafts: packet.drafts,
+      cycleEvidence: [],
+    })).toThrow();
   });
 
   it("describes output review decisions without substrate fields", () => {

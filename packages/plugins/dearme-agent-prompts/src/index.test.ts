@@ -165,13 +165,15 @@ describe("dearme-agent-prompts package", () => {
       "ALWAYS maintain queue ≥ 3 tasks",
     );
 
-    // Content Producer: private drafts + Voice Gate + no public action.
-    expect(CONTENT_PRODUCER_PROMPT).toContain("private brand");
+    // Content Producer: private review packet + Voice Gate + no public action.
+    expect(CONTENT_PRODUCER_PROMPT).toContain("private review packet");
     expect(CONTENT_PRODUCER_PROMPT).toContain("Voice Gate score");
     expect(CONTENT_PRODUCER_PROMPT).toContain("Do not publish, send, schedule");
+    expect(CONTENT_PRODUCER_PROMPT).toContain("If the packet is not saved");
     expect(CONTENT_PRODUCER_PROMPT).toContain(
       "NEVER reveal client relationships",
     );
+    expect(CONTENT_PRODUCER_PROMPT).not.toMatch(/Paperclip|OpenClaw|Symphony|adapter|provider|setup payload|setup_payload|model|runtime/i);
 
     // Opportunity Hunter: 4-step daily workflow + state machine
     expect(OPPORTUNITY_HUNTER_PROMPT).toContain("Your Daily Workflow");

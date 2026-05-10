@@ -133,6 +133,138 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     return documentId;
   }
 
+  it("persists a voice-gated content packet as private review work", async () => {
+    const companyId = await seedCompany();
+    const issueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft first content batch",
+      identifier: "DME-0",
+      originFingerprint: "operation-draft_content_batch",
+      status: "in_progress",
+      updatedAt: new Date("2026-05-07T13:00:00.000Z"),
+    });
+    const voiceGate = evaluateDearMeVoiceGate({
+      brand: {
+        displayName: "Peter",
+        positioning: "Practical AI operator for local-first products.",
+        preferredChannels: ["linkedin"],
+        goals: ["Build visible proof."],
+        audiences: ["founders evaluating local-first workflows"],
+        offers: [],
+        proofPoints: ["shipped a local-first product launch"],
+        voiceSamples: [
+          "Short, direct, evidence-first notes.",
+          "Show the receipt before asking for trust.",
+        ],
+        constraints: ["No public claims without review."],
+        cadence: "weekly",
+        budgetMonthlyCents: 25_000,
+        autoDraftEnabled: true,
+      },
+      artifact: {
+        kind: "content_draft",
+        channel: "linkedin",
+        title: "Proof-backed post",
+        text: "A short proof-backed post about turning private work into public receipts.",
+        proofUsed: "shipped a local-first product launch",
+      },
+    });
+
+    const product = await dearmeOutputHandoffService(db).persistContentDraftPacket(
+      companyId,
+      issueId,
+      {
+        packetId: "cycle-2026-05-07-content",
+        title: "Proof-backed content drafts",
+        summary: "One private post is ready for review from this cycle's proof.",
+        cycleEvidence: [
+          {
+            label: "Proof",
+            source: "proof",
+            summary: "The launch note showed concrete receipts from the latest private work.",
+          },
+          {
+            label: "Voice",
+            source: "voice_profile",
+            summary: "Use short, direct, evidence-first language.",
+          },
+        ],
+        drafts: [
+          {
+            id: "proof-post",
+            title: "Proof-backed post",
+            channel: "linkedin",
+            audience: "Founders evaluating local-first workflows",
+            hook: "Your personal brand should show proof while you keep building.",
+            body: "A short proof-backed post about turning private work into public receipts.",
+            proofUsed: "shipped a local-first product launch",
+            voiceGate,
+            launchBoundary: "publish social posts",
+          },
+        ],
+      },
+    );
+
+    expect(product).toEqual(expect.objectContaining({
+      type: "artifact",
+      title: "Proof-backed content drafts",
+      status: "ready_for_review",
+      reviewState: "needs_board_review",
+      summary: expect.stringContaining("Draft body: A short proof-backed post"),
+      voiceGate: expect.objectContaining({
+        status: "ready_for_review",
+        score: 100,
+        approvalGate: "publish_social",
+      }),
+    }));
+
+    const [issueRow] = await db
+      .select({ status: issues.status })
+      .from(issues)
+      .where(eq(issues.id, issueId));
+    expect(issueRow?.status).toBe("in_review");
+
+    const [workProductRow] = await db
+      .select({
+        provider: issueWorkProducts.provider,
+        externalId: issueWorkProducts.externalId,
+        metadata: issueWorkProducts.metadata,
+      })
+      .from(issueWorkProducts)
+      .where(eq(issueWorkProducts.issueId, issueId));
+    expect(workProductRow?.provider).toBe("dearme");
+    expect(workProductRow?.externalId).toBe("content-drafts:cycle-2026-05-07-content");
+    expect(workProductRow?.metadata).toEqual(expect.objectContaining({
+      voiceGate: expect.objectContaining({ approvalGate: "publish_social" }),
+      dearme: expect.objectContaining({
+        outputKind: "content_drafts",
+        draftCount: 1,
+        cycleEvidence: expect.arrayContaining([
+          expect.objectContaining({ label: "Proof" }),
+        ]),
+      }),
+    }));
+
+    const result = await dearmeOutputHandoffService(db).listOutputs(companyId);
+    const contentOutput = result.outputs.find((output) => output.kind === "content_drafts")!;
+    expect(contentOutput.status).toBe("ready_for_review");
+    expect(contentOutput.isReviewable).toBe(true);
+    expect(contentOutput.workProducts[0]).toEqual(expect.objectContaining({
+      title: "Proof-backed content drafts",
+      voiceGate: expect.objectContaining({ score: 100 }),
+    }));
+    expect(contentOutput.details).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "channel", value: "linkedin" }),
+      expect.objectContaining({ kind: "draft_body", value: expect.stringContaining("public receipts") }),
+      expect.objectContaining({ kind: "proof_used", value: "shipped a local first product launch" }),
+    ]));
+
+    const serialized = JSON.stringify(result).toLowerCase();
+    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw", "symphony", "runtime"]) {
+      expect(serialized).not.toContain(hiddenTerm);
+    }
+  });
+
   it("returns customer-visible DearMe outputs and strips system/provider internals", async () => {
     const companyId = await seedCompany();
     const agentId = await seedAgent(companyId);
@@ -207,7 +339,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
         "## Goals",
         "Build visible proof.",
         "## Proof Points",
-        "Shipped a local agent runtime.",
+        "Shipped a local-first product launch.",
       ].join("\n\n"),
       updatedAt: new Date("2026-05-07T14:01:00.000Z"),
     });
@@ -245,7 +377,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
         "Audience: founders evaluating local AI workflows",
         "Hook: Your personal brand should show proof while you keep building.",
         "Draft body: A short proof-backed post about shipping local AI products.",
-        "Proof used: shipped a local agent runtime",
+        "Proof used: shipped a local-first product launch",
         "Launch boundary: publish social posts",
       ].join("\n"),
       updatedAt: new Date("2026-05-07T15:01:00.000Z"),
@@ -258,7 +390,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
         goals: ["Build visible proof."],
         audiences: ["founders evaluating local AI workflows"],
         offers: [],
-        proofPoints: ["shipped a local agent runtime"],
+        proofPoints: ["shipped a local-first product launch"],
         voiceSamples: [
           "Short, direct, evidence-first notes.",
           "Show the receipt before asking for trust.",
@@ -273,7 +405,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
         channel: "linkedin",
         title: "Starter posts",
         text: "A short proof-backed post about shipping local AI products.",
-        proofUsed: "shipped a local agent runtime",
+        proofUsed: "shipped a local-first product launch",
       },
     });
     await attachDocument({
@@ -297,7 +429,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       title: "Portfolio update",
       body: [
         "Page section: proof cards",
-        "Proof source: local-agent runtime launch notes",
+        "Proof source: local-first product launch notes",
         "Proposed copy: Built a local-first AI operating layer with approval gates.",
         "Deploy gate: public site update requires approval.",
       ].join("\n"),
@@ -370,7 +502,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       }),
       expect.objectContaining({
         kind: "proof_used",
-        value: "Shipped a local agent runtime.",
+        value: "Shipped a local first product launch.",
       }),
       expect.objectContaining({
         kind: "approval_gate",
@@ -387,7 +519,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       expect.objectContaining({
         kind: "proof",
         label: "Proof used",
-        summary: "Shipped a local agent runtime.",
+        summary: "Shipped a local first product launch.",
       }),
       expect.objectContaining({
         kind: "private_reference",
@@ -423,7 +555,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       expect.objectContaining({
         kind: "proof",
         label: "Proof used",
-        summary: "shipped a local agent runtime",
+        summary: "shipped a local first product launch",
       }),
       expect.objectContaining({
         kind: "approval_boundary",
@@ -450,7 +582,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       expect.objectContaining({
         kind: "proof_claim",
         status: "pass",
-        evidence: ["shipped a local agent runtime"],
+        evidence: ["shipped a local-first product launch"],
       }),
     ]));
     expect(contentOutput.workProducts[0]).not.toHaveProperty("provider");
@@ -482,7 +614,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       }),
     ]));
     const serialized = JSON.stringify(result).toLowerCase();
-    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw"]) {
+    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw", "symphony", "runtime"]) {
       expect(serialized).not.toContain(hiddenTerm);
     }
 
@@ -584,7 +716,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       title: "Brand OS",
       body: [
         "Positioning: practical AI operator for local-first builders",
-        "Proof Points: shipped a local agent runtime with approval gates",
+        "Proof Points: shipped a local-first product launch with approval gates",
       ].join("\n"),
       updatedAt: new Date("2026-05-09T14:01:00.000Z"),
     });
@@ -598,7 +730,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
         "Audience: founders evaluating local AI workflows",
         "Hook: Your personal brand should show proof while you keep building.",
         "Draft body: A short proof-backed post about shipping local AI products.",
-        "Proof used: shipped a local agent runtime",
+        "Proof used: shipped a local-first product launch",
         "Launch boundary: publish social posts only after approval",
       ].join("\n"),
       updatedAt: new Date("2026-05-09T14:11:00.000Z"),
@@ -616,7 +748,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       issueId: portfolioIssueId,
       key: "portfolio-update",
       title: "Portfolio update",
-      body: "Proof source: local-agent runtime launch notes\nProposed copy: Built a local-first AI operating layer.",
+      body: "Proof source: local-first product launch notes\nProposed copy: Built a local-first AI operating layer.",
       updatedAt: new Date("2026-05-09T14:31:00.000Z"),
     });
 
@@ -679,7 +811,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     expect(packetWorkProducts).toHaveLength(2);
 
     const serialized = JSON.stringify(result).toLowerCase();
-    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw"]) {
+    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw", "symphony", "runtime"]) {
       expect(serialized).not.toContain(hiddenTerm);
     }
   });
@@ -754,7 +886,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     expect(workProductRow?.reviewState).toBe("approved");
 
     const serialized = JSON.stringify(result).toLowerCase();
-    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw"]) {
+    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw", "symphony", "runtime"]) {
       expect(serialized).not.toContain(hiddenTerm);
     }
   });
@@ -830,7 +962,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     expect(workProductRow?.reviewState).toBe("changes_requested");
 
     const serialized = JSON.stringify(result).toLowerCase();
-    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw"]) {
+    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw", "symphony", "runtime"]) {
       expect(serialized).not.toContain(hiddenTerm);
     }
   });
@@ -880,7 +1012,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     expect(result.wakeIssue).toEqual({ id: issueId, assigneeAgentId: agentId, status: "todo" });
 
     const serialized = JSON.stringify(result).toLowerCase();
-    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw"]) {
+    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw", "symphony", "runtime"]) {
       expect(serialized).not.toContain(hiddenTerm);
     }
   });
