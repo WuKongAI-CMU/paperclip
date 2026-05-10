@@ -2003,6 +2003,11 @@ describe("DearMeOnboarding", () => {
       ).length,
     ).toBeGreaterThan(0);
     expect(container.textContent).toContain("Voice Editor");
+    expect(container.textContent).toContain("Feeds work");
+    expect(container.textContent).toContain("Keeps drafts, outreach, and reports inside your approved voice.");
+    expect(container.textContent).toContain("Portfolio Builder");
+    expect(container.textContent).toContain("Feeds proof cards, stronger claims, and launch-call notes.");
+    expect(container.textContent).toContain("Applies this correction to the next draft before it reaches you.");
     expect(container.textContent).toContain("Source guide");
     expect(container.textContent).toContain("Writing sample");
     expect(container.textContent).toContain("Source link");

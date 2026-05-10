@@ -1527,6 +1527,48 @@ const MEMORY_SOURCE_TEAM_PREVIEWS: Record<
   },
 };
 
+const MEMORY_SOURCE_WORK_PATHS: Record<
+  DearMeMemoryUpdateKind,
+  { owner: string; destination: string }
+> = {
+  voice_sample: {
+    owner: "Voice Editor",
+    destination: "Keeps drafts, outreach, and reports inside your approved voice.",
+  },
+  proof_point: {
+    owner: "Portfolio Builder",
+    destination: "Feeds proof cards, stronger claims, and launch-call notes.",
+  },
+  goal: {
+    owner: "Chief of Staff",
+    destination: "Turns this into the next private plan and priority checks.",
+  },
+  audience: {
+    owner: "Brand Strategist",
+    destination: "Shapes audience angles, channel choices, and opportunity filters.",
+  },
+  offer: {
+    owner: "Opportunity Scout",
+    destination: "Shapes prepared asks, collaboration angles, and lead review.",
+  },
+  constraint: {
+    owner: "Chief of Staff",
+    destination: "Routes sensitive words, public claims, and launch calls into Decisions.",
+  },
+  relationship: {
+    owner: "Opportunity Scout",
+    destination: "Guides warm outreach, follow-ups, and relationship context.",
+  },
+  preference: {
+    owner: "Chief of Staff",
+    destination: "Keeps future review notes and prepared work aligned with your preferences.",
+  },
+  review_feedback: {
+    owner: "Voice Editor",
+    destination: "Applies this correction to the next draft before it reaches you.",
+  },
+};
+
 function defaultSourceInputModeForGuide(
   guide: (typeof MEMORY_SOURCE_GUIDES)[number],
 ): DearMeMemorySourceInputMode {
@@ -5179,6 +5221,7 @@ function VoiceMemoryPanel({
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {visibleLatestMemory.slice(0, 6).map((item) => {
             const justSaved = recordedMemory?.id === item.id;
+            const sourceWorkPath = MEMORY_SOURCE_WORK_PATHS[item.kind];
             const chips = [
               { label: MEMORY_SOURCE_INPUT_MODE_LABELS[item.sourceInputMode], variant: "outline" as const },
               ...(justSaved
@@ -5196,6 +5239,13 @@ function VoiceMemoryPanel({
                 title={customerProofPackSummary(item.title ?? "Untitled memory")}
                 summary={customerProofPackSummary(item.bodyPreview)}
                 chips={chips}
+                calloutLabel="Feeds work"
+                callout={
+                  <div className="space-y-1">
+                    <p className="font-medium text-foreground">{sourceWorkPath.owner}</p>
+                    <p>{sourceWorkPath.destination}</p>
+                  </div>
+                }
                 footer={shortDate(item.createdAt)}
                 action={{
                   label: "Revise",

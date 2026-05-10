@@ -2,6 +2,28 @@
 
 Date: 2026-05-10
 
+## DM-183AO Saved Source Work Paths - 2026-05-10
+
+Implementation slice:
+
+- Adapted the still-useful DM-092 source-to-work intent onto the current
+  Symphony spine instead of replaying its stale saved-source card branch.
+- Added a `Feeds work` callout to saved Voice & Memory source cards so each
+  private source names the DearMe role that will use it and the visible work it
+  improves.
+- Kept the current memory kinds, source guide, source review queue, and memory
+  mutation contract intact; this is a customer-facing explanation layer, not a
+  new source workflow or worker runtime.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 1 file, 62 tests.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183AN Voice & Memory Team Preview - 2026-05-10
 
 Implementation slice:
