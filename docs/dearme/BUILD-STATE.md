@@ -83,9 +83,12 @@ Product/architecture slice:
 - Reuse decision: keep a single `agent_api_keys` substrate for both `pcp_*`
   and `dm_sk_*` families. Do not add a second DearMe key store or a parallel
   auth model.
-- Remaining gap: this is backstage issuance only. DearMe onboarding still
-  needs product wiring to call the new route; no customer-facing key management
-  surface was added here.
+- DM-145D now closes the onboarding gap: DearMe onboarding issues the
+  dedicated `dm_sk_*` credential for the Chief of Staff agent, stores it in a
+  backstage company secret, and binds it through the agent adapter config
+  without exposing key management to the customer.
+- Customer-facing copy still stays DearMe-only; no generic key-management
+  surface was added.
 
 Verification:
 

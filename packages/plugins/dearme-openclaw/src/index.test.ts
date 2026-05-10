@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import { DEARME_ROLE_REGISTRY } from "@paperclipai/dearme-agent-prompts";
@@ -150,6 +152,27 @@ describe("dearme-openclaw bootstrap files", () => {
     expect(combined).toContain("channel-specific publishing limits");
     expect(combined).toContain("connected public channels");
     expect(combined).toContain("public post or note");
+  });
+});
+
+describe("dearme-openclaw customer-facing manifest copy", () => {
+  it("keeps the install surface team-oriented and backstage-only", () => {
+    const manifestJson = readFileSync(new URL("../openclaw.plugin.json", import.meta.url), "utf8");
+    const manifest = JSON.parse(manifestJson) as {
+      uiHints?: Record<string, { label?: string; help?: string }>;
+    };
+    const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
+    const uiCopy = Object.values(manifest.uiHints ?? {})
+      .flatMap((hint) => [hint.label, hint.help])
+      .filter(Boolean)
+      .join("\n");
+
+    expect(manifest.uiHints?.apiKey?.label).toBe("DearMe team access");
+    expect(manifest.uiHints?.apiKey?.help).toContain("Provisioned during onboarding");
+    expect(uiCopy).not.toMatch(/API key|dm_sk_|credential|OpenClaw|proxy|runtime|provider|model/i);
+    expect(manifestJson).not.toMatch(/dm_sk_/i);
+    expect(readme).toContain("private team access");
+    expect(readme).not.toMatch(/dm_sk_\\\*|API key|backstage credential/i);
   });
 });
 

@@ -3,10 +3,12 @@ import { and, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   activityLog,
+  agentApiKeys,
   agents,
   approvals,
   companies,
   createDb,
+  companySecrets,
   issueDocuments,
   issues,
   routineTriggers,
@@ -88,7 +90,16 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
   }
 
   async function countAppliedArtifacts(companyId: string) {
-    const [agentRows, routineRows, triggerRows, issueRows, issueDocumentRows, activityRows] =
+    const [
+      agentRows,
+      routineRows,
+      triggerRows,
+      issueRows,
+      issueDocumentRows,
+      activityRows,
+      secretRows,
+      keyRows,
+    ] =
       await Promise.all([
         db.select().from(agents).where(eq(agents.companyId, companyId)),
         db.select().from(routines).where(eq(routines.companyId, companyId)),
@@ -102,6 +113,8 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
           .select()
           .from(activityLog)
           .where(and(eq(activityLog.companyId, companyId), eq(activityLog.action, "dearme.brand_blueprint_applied"))),
+        db.select().from(companySecrets).where(eq(companySecrets.companyId, companyId)),
+        db.select().from(agentApiKeys).where(eq(agentApiKeys.companyId, companyId)),
       ]);
     return {
       agents: agentRows,
@@ -110,6 +123,8 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
       issues: issueRows,
       issueDocuments: issueDocumentRows,
       activity: activityRows,
+      secrets: secretRows,
+      keys: keyRows,
     };
   }
 
@@ -194,6 +209,14 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
         heartbeatCadenceHours: 2,
       }),
     );
+    expect((chiefOfStaff?.adapterConfig as any).env).toEqual(
+      expect.objectContaining({
+        DEARME_PROXY_API_KEY: expect.objectContaining({
+          type: "secret_ref",
+          version: "latest",
+        }),
+      }),
+    );
     expect(chiefOfStaff?.metadata).toEqual(
       expect.objectContaining({
         dearmeRole: "chief_of_staff",
@@ -220,6 +243,21 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(
       artifacts.agents.every((agent) => (agent.metadata as any).externalActionsRequireApproval === true),
     ).toBe(true);
+    expect(artifacts.secrets).toHaveLength(1);
+    expect(artifacts.secrets[0]).toEqual(
+      expect.objectContaining({
+        name: "dearme-chief-of-staff-proxy-key",
+        provider: "local_encrypted",
+        description: "Backstage DearMe team access for the Chief of Staff agent.",
+      }),
+    );
+    expect(artifacts.keys).toHaveLength(1);
+    expect(artifacts.keys[0]).toEqual(
+      expect.objectContaining({
+        name: "dearme-proxy",
+        agentId: chiefOfStaff?.id,
+      }),
+    );
 
     expect(artifacts.routines).toHaveLength(5);
     expect(artifacts.triggers).toHaveLength(5);

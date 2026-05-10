@@ -20,6 +20,7 @@ import { documentService } from "./documents.js";
 import { issueService } from "./issues.js";
 import { logActivity } from "./activity-log.js";
 import { routineService } from "./routines.js";
+import { secretService } from "./secrets.js";
 
 type ApprovalRecord = typeof approvals.$inferSelect;
 type DearMeTeamMember = DearMeBrandBlueprint["team"][number];
@@ -82,6 +83,8 @@ const DEARME_BRAND_BLUEPRINT_AGENT_ADAPTER_CONFIG = {
   dangerouslyBypassApprovalsAndSandbox: false,
   extraArgs: DEARME_BRAND_BLUEPRINT_CODEX_SANDBOX_ARGS,
 } as const;
+const DEARME_PROXY_API_KEY_ENV_KEY = "DEARME_PROXY_API_KEY";
+const DEARME_PROXY_API_KEY_SECRET_NAME = "dearme-chief-of-staff-proxy-key";
 
 function buildDearMeBrandBlueprintAgentAdapterConfig(member: DearMeTeamMember) {
   return {
@@ -109,6 +112,129 @@ function buildDearMeBrandBlueprintAgentRuntimeConfig(member: DearMeTeamMember) {
       heartbeatCadenceHours: member.heartbeatCadenceHours,
     },
   };
+}
+
+function buildDearMeProxyApiKeyBinding(secretId: string) {
+  return {
+    type: "secret_ref" as const,
+    secretId,
+    version: "latest" as const,
+  };
+}
+
+function adapterEnvRecord(adapterConfig: Record<string, unknown>) {
+  const currentEnv = adapterConfig.env;
+  return currentEnv && typeof currentEnv === "object" && !Array.isArray(currentEnv)
+    ? (currentEnv as Record<string, unknown>)
+    : {};
+}
+
+function isDearMeProxyApiKeyBinding(value: unknown): value is ReturnType<typeof buildDearMeProxyApiKeyBinding> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const binding = value as Record<string, unknown>;
+  const version = binding.version;
+  return (
+    binding.type === "secret_ref" &&
+    typeof binding.secretId === "string" &&
+    binding.secretId.length > 0 &&
+    (version === undefined || version === "latest" || typeof version === "number")
+  );
+}
+
+export async function issueDearMeProxyCredentialForChiefOfStaff(input: {
+  db: Db;
+  companyId: string;
+  agent: { id: string; adapterConfig: Record<string, unknown> };
+  actor: { userId?: string | null; agentId?: string | null };
+}) {
+  const agentsSvc = agentService(input.db);
+  const secretsSvc = secretService(input.db);
+
+  async function bindSecret(secretId: string) {
+    const existingEnv = adapterEnvRecord(input.agent.adapterConfig);
+    const nextAdapterConfig = {
+      ...input.agent.adapterConfig,
+      env: {
+        ...existingEnv,
+        [DEARME_PROXY_API_KEY_ENV_KEY]: buildDearMeProxyApiKeyBinding(secretId),
+      },
+    };
+    const normalizedAdapterConfig = await secretsSvc.normalizeAdapterConfigForPersistence(
+      input.companyId,
+      nextAdapterConfig,
+      { strictMode: false },
+    );
+    await agentsSvc.update(
+      input.agent.id,
+      {
+        adapterConfig: normalizedAdapterConfig,
+      },
+      {
+        recordRevision: {
+          createdByAgentId: input.actor.agentId ?? null,
+          createdByUserId: input.actor.userId ?? null,
+          source: "patch",
+        },
+      },
+    );
+  }
+
+  const existingBinding = adapterEnvRecord(input.agent.adapterConfig)[DEARME_PROXY_API_KEY_ENV_KEY];
+  if (isDearMeProxyApiKeyBinding(existingBinding)) {
+    await bindSecret(existingBinding.secretId);
+    return;
+  }
+
+  const existingSecret = await secretsSvc.getByName(input.companyId, DEARME_PROXY_API_KEY_SECRET_NAME);
+  if (existingSecret) {
+    await bindSecret(existingSecret.id);
+    return;
+  }
+
+  let issuedKey: Awaited<ReturnType<typeof agentsSvc.createApiKey>> | null = null;
+  let createdSecretId: string | null = null;
+
+  const cleanupIssuedKey = async () => {
+    if (!issuedKey) return;
+    await agentsSvc.revokeKey(input.agent.id, issuedKey.id).catch(() => undefined);
+    issuedKey = null;
+  };
+
+  try {
+    issuedKey = await agentsSvc.createApiKey(input.agent.id, "dearme-proxy", {
+      prefix: "dm_sk_",
+    });
+
+    try {
+      const createdSecret = await secretsSvc.create(
+        input.companyId,
+        {
+          name: DEARME_PROXY_API_KEY_SECRET_NAME,
+          provider: "local_encrypted",
+          value: issuedKey.token,
+          description: "Backstage DearMe team access for the Chief of Staff agent.",
+        },
+        input.actor,
+      );
+      createdSecretId = createdSecret.id;
+    } catch (error) {
+      const raceWinner = await secretsSvc.getByName(input.companyId, DEARME_PROXY_API_KEY_SECRET_NAME);
+      await cleanupIssuedKey();
+      if (raceWinner) {
+        await bindSecret(raceWinner.id);
+        return;
+      }
+      throw error;
+    }
+
+    await bindSecret(createdSecretId);
+  } catch (error) {
+    await cleanupIssuedKey();
+    if (createdSecretId) {
+      await secretsSvc.remove(createdSecretId).catch(() => undefined);
+    }
+    throw error;
+  }
 }
 
 const DEARME_BRAND_BLUEPRINT_ISSUE_ASSIGNEE_OVERRIDES = {
@@ -755,7 +881,10 @@ export function dearmeBrandBlueprintApplyService(db: Db) {
     const payload = validateDearMeBrandBlueprintApplyPayload(approval.payload);
     const { brandBlueprint: blueprint } = payload;
     const { serviceActor, activityActor } = actorForApproval(approval);
-    const agentsByRole = new Map<DearMeTeamRole, { id: string; name: string }>();
+    const agentsByRole = new Map<
+      DearMeTeamRole,
+      { id: string; name: string; adapterConfig: Record<string, unknown> }
+    >();
     const firstCyclePreview = payload.autoDraftEnabled
       ? firstCyclePreviewForPayload(approval.companyId, payload)
       : null;
@@ -795,8 +924,22 @@ export function dearmeBrandBlueprintApplyService(db: Db) {
         permissions: { canCreateAgents: false },
         lastHeartbeatAt: null,
       });
-      agentsByRole.set(member.role, { id: created.id, name: created.name });
+      agentsByRole.set(member.role, {
+        id: created.id,
+        name: created.name,
+        adapterConfig: created.adapterConfig,
+      });
       artifacts.agents.push({ id: created.id, role: member.role, name: created.name });
+    }
+
+    const chiefOfStaff = agentsByRole.get("chief_of_staff");
+    if (chiefOfStaff) {
+      await issueDearMeProxyCredentialForChiefOfStaff({
+        db,
+        companyId: approval.companyId,
+        agent: chiefOfStaff,
+        actor: { userId: serviceActor.userId, agentId: serviceActor.agentId },
+      });
     }
 
     const brandOsIssue = await issuesSvc.create(approval.companyId, {

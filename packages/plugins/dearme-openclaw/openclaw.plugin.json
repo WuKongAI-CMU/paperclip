@@ -5,12 +5,12 @@
   "skills": ["./generated/skills"],
   "uiHints": {
     "apiBaseUrl": {
-      "label": "DearMe API base URL",
-      "help": "Base URL of the DearMe cloud (AI proxy + voice fingerprint + opportunities + brand site host). Defaults to https://api.dearme.app for production."
+      "label": "DearMe service URL",
+      "help": "Service URL for private team work, voice checks, opportunity drafts, and brand site updates. Defaults to https://api.dearme.app for production."
     },
     "apiKey": {
-      "label": "DearMe API key",
-      "help": "Personal DearMe API key (dm_sk_*). Issued during onboarding at https://dearme.app/onboard."
+      "label": "DearMe team access",
+      "help": "Provisioned during onboarding for the private growth team."
     },
     "handle": {
       "label": "DearMe handle",
@@ -18,7 +18,7 @@
     },
     "defaults.dailyLetterChannel": {
       "label": "Where to deliver the daily Dear-me letter",
-      "help": "Pick the inbound OpenClaw channel that should receive your morning Dear-me letter (iMessage / Telegram / WhatsApp / Slack / etc)."
+      "help": "Pick the private delivery channel that should receive your morning Dear-me letter (iMessage / Telegram / WhatsApp / Slack / etc)."
     },
     "defaults.voiceGate.minScore": {
       "label": "Minimum voice-gate score",
@@ -26,7 +26,7 @@
     },
     "defaults.budget.dailyUsdCap": {
       "label": "Daily AI spend cap",
-      "help": "Hard cap on combined model + ads daily spend. Hits will pause autonomous work until you approve."
+      "help": "Hard cap on combined private work + ads daily spend. Hits will pause autonomous work until you approve."
     }
   },
   "configSchema": {
@@ -40,7 +40,7 @@
       },
       "apiKey": {
         "type": "string",
-        "pattern": "^dm_sk_[a-zA-Z0-9_-]{16,}$"
+        "minLength": 16
       },
       "handle": {
         "type": "string",

@@ -64,4 +64,4 @@ This package follows the runtime-port doctrine (`PRODUCT-ARCHITECTURE.md` §9.0)
 1. **Verbatim prompts.** The generator embeds `spec.prompt` as a string copy. No paraphrase.
 2. **Registry is law.** The generator iterates the registry; it never invents a role or skill.
 3. **Original UI elsewhere.** The OpenClaw plugin shape (manifest, skill folder, bootstrap files) is the runtime-mechanism layer. Customer-facing surface (workbench, brand site) is built original elsewhere and is not affected by this package.
-4. **Useful first.** No consent screens, no throat-clearing. The user installs the plugin, supplies their `dm_sk_*` key + handle, and the team is on.
+4. **Useful first.** No consent screens, no throat-clearing. Onboarding provisions private team access and the user's handle, and the team is on.

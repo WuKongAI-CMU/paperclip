@@ -34,8 +34,10 @@ It answers three questions before another worker starts building:
   stays on the default `pcp_*` family. This keeps prefix selection out of the
   public/admin payload shape and preserves the current revocation/storage
   model.
-- Remaining gap for the reuse lane: DearMe onboarding still needs to call the
-  new route. No customer-facing key-management surface or second auth store was
+- DM-145D closes the onboarding gap by issuing the proxy credential during the
+  DearMe apply flow, storing the token in a backstage company secret, and
+  binding it only to the Chief of Staff agent through `adapterConfig.env`.
+- No customer-facing key-management surface or second auth store was
   introduced.
 - DM-145B is now anchored on the existing `agent_api_keys` substrate rather
   than a second DearMe key store. The proxy runtime should resolve `dm_sk_*`
@@ -44,9 +46,8 @@ It answers three questions before another worker starts building:
 - `agentService.createApiKey()` now has a conservative `pcp_` / `dm_sk_`
   prefix option so the current `pcp_*` agent-key family remains the default
   while DM-145 can mint `dm_sk_*` keys later without a parallel generator.
-- Remaining follow-up for the reuse lane: add the actual DearMe proxy-key
-  issuance surface, then keep all later proxy calls on the same agent-key
-  storage and revocation path.
+- Remaining follow-up for the reuse lane: keep later proxy calls on the same
+  agent-key storage and revocation path.
 
 DearMe should maximize reuse, but "reuse" means adapting the strongest proven
 primitive into the DearMe product surface. It does not mean importing a whole
