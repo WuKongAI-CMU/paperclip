@@ -20,14 +20,15 @@ hooks:
   after_create: |
     set -euo pipefail
     SOURCE_REPO="${DEARME_SYMPHONY_SOURCE_REPO:-/Users/peter/dearme}"
-    # Coordinator target as of 2026-05-10: DEA-9 / DM-183AS should prove the
-    # repeatable packet-backed review-memory path through output handoff,
-    # workbench projection, focused review, and browser/API smoke. Do not fork a
+    # Coordinator target as of 2026-05-10: always start new Symphony workers
+    # from the live DearMe coordination branch head. Worker tickets should prove
+    # one bounded product slice on the current customer surface, not fork a
     # second first-run contract, report runtime, or customer-facing work queue.
-    # Override this after the next reviewed integration branch lands.
     SOURCE_BRANCH="${DEARME_SYMPHONY_SOURCE_BRANCH:-codex/dearme-dm-136-sample-demo-proof}"
     git clone --no-hardlinks "$SOURCE_REPO" .
-    git checkout "$SOURCE_BRANCH"
+    SOURCE_HEAD="$(git -C "$SOURCE_REPO" rev-parse "$SOURCE_BRANCH")"
+    git checkout -B "$SOURCE_BRANCH" "$SOURCE_HEAD"
+    echo "Symphony source head: $(git rev-parse --short HEAD)"
     corepack enable
     pnpm install --frozen-lockfile
 agent:
