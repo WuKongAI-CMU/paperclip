@@ -2,6 +2,54 @@
 
 Date: 2026-05-10
 
+## DM-183BA Review Outcome Memory Baseline Absorption - 2026-05-10
+
+Coordination slice:
+
+- Kept Symphony as the active cooperation spine and checked the live daemon
+  before absorbing another stale worker pair.
+- Reviewed the exact DM-007 worker head
+  `d1bf8431b0027747a9a384a307848324dc99741f` and integration head
+  `3d419f55b6664f41ebb36452eb88fc6027f5d51a`.
+- Matched DM-007's useful lesson to the current product path: output review
+  now stores review decisions as `review_feedback` memory rows, attaches review
+  handoff and feedback-trace context to private outputs, projects that context
+  through the workbench, and renders learned Review preferences in Voice &
+  Memory.
+- Rejected replaying the stale `dearme-review-feedback.ts` /
+  `dearme-voice-memory.ts` service path because current DearMe already owns the
+  review-memory loop through the existing handoff, memory, and workbench
+  projection surfaces.
+- Recorded both exact DM-007 heads in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so future Symphony workers do
+  not reopen the obsolete review-feedback baseline.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status --json`
+  passed with the daemon healthy and no retrying workers.
+- `pnpm run dearme:worktrees -- --ticket=DM-007 --skip-dirty --limit=20`
+  passed before the ledger update and showed the worker and integration heads
+  as `not_in_current`.
+- `git show --stat --oneline --no-renames d1bf8431b0027747a9a384a307848324dc99741f`
+  and `git show --stat --oneline --no-renames 3d419f55b6664f41ebb36452eb88fc6027f5d51a`
+  confirmed the old review-feedback memory scope before absorption.
+- `rg` checks across current shared, server, UI, and test files confirmed the
+  current path carries `review_feedback` memory, feedback traces, review
+  handoff, workbench projection, and Review preferences.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('json ok')"`
+  passed.
+- `pnpm run test:dearme-worktrees`
+  passed.
+- `pnpm run dearme:worktrees -- --ticket=DM-007 --skip-dirty --limit=20`
+  passed after the ledger update and showed both DM-007 worktrees as
+  `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty`
+  passed and reported `reviewed_absorbed: 20`, `not_in_current: 93`, and
+  `dirty: 0`.
+- `git diff --check -- docs/dearme/WORKTREE-ABSORPTION-LEDGER.json docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/BUILD-STATE.md`
+  passed.
+
 ## DM-183AZ Output Review Workspace Baseline Absorption - 2026-05-10
 
 Coordination slice:
