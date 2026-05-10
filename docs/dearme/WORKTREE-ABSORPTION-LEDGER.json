@@ -2,6 +2,20 @@
   "updatedAt": "2026-05-10",
   "reviewedAbsorptions": [
     {
+      "ticket": "DEA-33",
+      "branch": "codex/dearme-dm-136-sample-demo-proof",
+      "head": "73af61e9f5eb02f9be4a0404985bec09cdc63d02",
+      "reviewedAt": "2026-05-10",
+      "reason": "The DEA-33 Symphony commitfix is already absorbed by current coordinator commit 4978ba827ddd649a742905c8953cf3456ea3b145; replaying the worker tip would regress the token-prefix type boundary from pcp_/dm_sk_ back to arbitrary strings and downgrade the docs from absorbed verification to in-progress wording.",
+      "evidence": [
+        "server/src/services/agents.ts",
+        "server/src/__tests__/agent-api-key-service.test.ts",
+        "server/src/__tests__/dearme-ai-proxy-routes.test.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
       "ticket": "DM-084",
       "branch": "codex/dearme-dm-084-integration-base-audit",
       "head": "f4d86752f00127cf9952fc2f1a2760a5baf7f8d9",
