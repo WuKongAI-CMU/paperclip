@@ -2,6 +2,28 @@
 
 Date: 2026-05-10
 
+## DM-183U Artifact Links For Focused Private Work - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the still-useful DM-033 route residue onto the current DearMe
+  decision surface instead of raw-merging the stale worker branch.
+- New focused prepared-work entrypoints now generate
+  `/dearme?view=decisions&work=...&artifact=...`.
+- Legacy `output=` decision links still parse, so old review handoffs keep
+  opening the exact private work item.
+- Reused `buildDearMeDecisionRoute`, `parseDearMeDecisionFocus`, and the current
+  focused-work tests; no new schema, server route, or customer-facing runtime
+  surface was added.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 51 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed.
+
 ## DM-183T Exact Output Focus From Review Entrypoints - 2026-05-10
 
 Implementation slice:
@@ -9,7 +31,7 @@ Implementation slice:
 - Absorbed the still-useful DM-027 output-focus residue onto the current
   DearMe decision surface instead of raw-merging the stale worker branch.
 - Batch decisions and the Dear me letter now carry existing prepared-output ids
-  into `/dearme?view=decisions&work=...&output=...`.
+  into `/dearme?view=decisions&work=...&artifact=...`.
 - Reviewable live-feed work now exposes the same in-place launch/change/another
   pass/new-direction controls used by focused prepared work, so the user can
   keep work moving without leaving DearMe.

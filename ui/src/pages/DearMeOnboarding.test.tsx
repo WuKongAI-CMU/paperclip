@@ -3219,7 +3219,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&work=PET-7&output=issue-1%3Aweekly_report",
+      "/dearme?view=decisions&work=PET-7&artifact=issue-1%3Aweekly_report",
     );
 
     await act(async () => {
@@ -3310,7 +3310,7 @@ describe("DearMeOnboarding", () => {
   });
 
   it("reviews a focused work-ready item from the DearMe decision drawer", async () => {
-    mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
+    mockLocation.search = "?view=decisions&issue=PET-7&artifact=issue-1%3Aweekly_report";
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -3397,7 +3397,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&work=PET-7&output=issue-1%3Aweekly_report&intent=continue",
+      "/dearme?view=decisions&work=PET-7&artifact=issue-1%3Aweekly_report&intent=continue",
     );
 
     await act(async () => {
@@ -3714,7 +3714,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&work=issue-2&output=issue-2%3Acontent_drafts",
+      "/dearme?view=decisions&work=issue-2&artifact=issue-2%3Acontent_drafts",
     );
 
     await act(async () => {
@@ -3742,7 +3742,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&work=PET-7&output=issue-1%3Aweekly_report",
+      "/dearme?view=decisions&work=PET-7&artifact=issue-1%3Aweekly_report",
     );
 
     await act(async () => {
@@ -3893,7 +3893,7 @@ describe("DearMeOnboarding", () => {
   });
 
   it("renders a focused private output from DearMe URL params", async () => {
-    mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
+    mockLocation.search = "?view=decisions&issue=PET-7&artifact=issue-1%3Aweekly_report";
     mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse({
       reviewLoop: reviewLoopFixture(
         "needs_user_review",
@@ -4348,7 +4348,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&work=PET-7&output=issue-1%3Aweekly_report",
+      "/dearme?view=decisions&work=PET-7&artifact=issue-1%3Aweekly_report",
     );
 
     await act(async () => {
@@ -4409,7 +4409,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&work=PET-9&output=issue-3%3Aopportunity_drafts",
+      "/dearme?view=decisions&work=PET-9&artifact=issue-3%3Aopportunity_drafts",
     );
 
     await act(async () => {
@@ -4454,7 +4454,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&work=PET-8&output=issue-2%3Acontent_drafts",
+      "/dearme?view=decisions&work=PET-8&artifact=issue-2%3Acontent_drafts",
     );
 
     await act(async () => {

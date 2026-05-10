@@ -297,7 +297,7 @@ function buildDearMeDecisionRoute(params: {
   const search = new URLSearchParams({ view: "decisions" });
   if (params.approvalId) search.set("approval", params.approvalId);
   if (params.issueReference) search.set("work", params.issueReference);
-  if (params.outputId) search.set("output", params.outputId);
+  if (params.outputId) search.set("artifact", params.outputId);
   if (params.intent && params.intent !== "review") search.set("intent", params.intent);
   return `/dearme?${search.toString()}`;
 }
@@ -496,7 +496,7 @@ function parseDearMeDecisionFocus(search: string): DearMeDecisionFocus | null {
   const focus = {
     approvalId: params.get("approval"),
     issueReference: params.get("work") ?? params.get("issue"),
-    outputId: params.get("output"),
+    outputId: params.get("artifact") ?? params.get("output"),
     intent: parseDearMeReviewEntryIntent(params.get("intent")),
   };
   if (!focus.approvalId && !focus.issueReference && !focus.outputId) return null;
