@@ -3942,7 +3942,7 @@ function OperatingLoopPanel({
           <div className="mt-5">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-sm font-semibold">Team work stream</p>
+                <p className="text-sm font-semibold">Team progress map</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   The current cycle, shown as the moves, memories, and guardrails that matter to you.
                 </p>

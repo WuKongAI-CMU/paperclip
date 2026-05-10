@@ -112,6 +112,37 @@ Brand OS approval failures stay product-safe before state changes.
 
 ## Recently Completed
 
+### DM-183X: Team Progress Map Copy
+
+Goal: keep the growth map customer-owned by removing the last visible workstream
+label from the DearMe page.
+
+Donor grounding:
+
+- DM-038: reuse the product-facing team progress copy direction without
+  replaying stale component edits.
+- Polsia: keep the surface compact and legible; the user sees progress, not
+  implementation lanes.
+- Symphony: treat old worker output as reusable source material, then absorb the
+  smallest current-safe slice into the coordinator branch.
+
+Completed:
+
+- Renamed the visible growth-map heading from `Team work stream` to `Team
+  progress map`.
+- Kept `workbench` and `workStream` as internal route/schema vocabulary for this
+  slice instead of starting a broad contract migration.
+- Added a regression assertion that the retired customer-facing phrase stays out
+  of the page.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ### DM-183W: Retired Voice & Memory Restore
 
 Goal: let users recover a retired private source while keeping Voice & Memory

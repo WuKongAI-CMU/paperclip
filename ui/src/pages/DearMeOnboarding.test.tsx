@@ -1828,7 +1828,8 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("2 assets");
     expect(container.textContent).toContain("1 signal");
     expect(container.textContent).toContain("1 guardrail");
-    expect(container.textContent).toContain("Team work stream");
+    expect(container.textContent).toContain("Team progress map");
+    expect(container.textContent).not.toContain("Team work stream");
     expect(container.textContent).toContain("The current cycle, shown as the moves, memories, and guardrails that matter to you.");
     expect(container.textContent).toContain("Team visible");
     expect(container.textContent).toContain("Weekly growth cycle");

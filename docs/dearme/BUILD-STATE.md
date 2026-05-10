@@ -2,6 +2,26 @@
 
 Date: 2026-05-10
 
+## DM-183X Team Progress Map Copy - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the still-useful DM-038 copy residue found during the Symphony
+  worktree pass without raw-merging the stale worker branch.
+- Replaced the remaining customer-visible `Team work stream` growth-map label
+  with `Team progress map`, keeping the experience product-facing while the
+  internal workbench/workStream contracts stay backstage.
+- Added UI coverage that locks the new visible label and prevents the retired
+  visible phrase from returning.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183W Retired Voice & Memory Restore - 2026-05-10
 
 Implementation slice:
