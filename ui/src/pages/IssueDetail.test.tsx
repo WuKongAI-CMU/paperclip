@@ -984,7 +984,28 @@ describe("IssueDetail", () => {
 
     expect(container.textContent).toContain("Issue detail smoke");
     expect(container.textContent).toContain("Chat thread");
+    expect(container.textContent).toContain("Workspace");
     expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it("hides workspace controls for DearMe issues", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({ originKind: "dearme_brand_blueprint_apply" }));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(container.textContent).toContain("Chat thread");
+    });
+    expect(container.textContent).not.toContain("Workspace");
   });
 
   it("routes DearMe linked approval decisions back to DearMe", async () => {

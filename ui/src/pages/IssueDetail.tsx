@@ -3946,11 +3946,13 @@ export function IssueDetail() {
         onOpenChange={setGalleryOpen}
       />
 
-      <IssueWorkspaceCard
-        issue={issue}
-        project={resolvedProject}
-        onUpdate={(data) => updateIssue.mutate(data)}
-      />
+      {!isDearMeIssue(issue) ? (
+        <IssueWorkspaceCard
+          issue={issue}
+          project={resolvedProject}
+          onUpdate={(data) => updateIssue.mutate(data)}
+        />
+      ) : null}
 
       {canReviewIssueOutput ? (
         <IssueReviewDecisionPanel
