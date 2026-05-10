@@ -1622,12 +1622,13 @@ const SAMPLE_FIRST_CYCLE_PREVIEW = createDearMeFirstCyclePreview("sample-company
 });
 
 function outputPreview(output: DearMeOutputItem) {
-  return (
-    output.documents[0]?.bodyPreview ||
-    output.latestUpdate?.bodyPreview ||
-    output.workProducts[0]?.summary ||
-    ""
-  );
+  const candidates = [
+    ...output.documents.map((document) => document.bodyPreview),
+    output.latestUpdate?.bodyPreview,
+    ...output.workProducts.map((workProduct) => workProduct.summary),
+    output.summary,
+  ];
+  return candidates.find((candidate) => typeof candidate === "string" && candidate.trim())?.trim() ?? "";
 }
 
 function replaceDearMeOutputInResponse(

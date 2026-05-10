@@ -4345,6 +4345,50 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("keeps stale prepared work readable while private artifacts sync", async () => {
+    mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report";
+    const response = outputsResponse();
+    mockDearmeApi.getOutputs.mockResolvedValue({
+      ...response,
+      outputs: [
+        {
+          ...response.outputs[0]!,
+          summary: "A private report is ready for review while the full artifact finishes syncing.",
+          documents: [],
+          workProducts: [],
+          latestUpdate: null,
+        },
+      ],
+    });
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(surfaceByLabel(container, "Focused work").textContent).toContain(
+      "A private report is ready for review while the full artifact finishes syncing.",
+    );
+    const privateWork = surfaceByLabel(container, "Private work ready");
+    expect(privateWork.textContent).toContain(
+      "A private report is ready for review while the full artifact finishes syncing.",
+    );
+    expect(privateWork.textContent).not.toContain("Waiting for the first private draft.");
+    expect(container.textContent).not.toContain("Paperclip");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("explains new direction entrypoint for not-useful prepared work", async () => {
     mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report&intent=direction";
     mockDearmeApi.getOutputs.mockResolvedValue({

@@ -147,7 +147,42 @@ by deriving a small Review preferences strip from current `review_feedback`
 Voice & Memory rows. Keep this derived from existing memory until repeated
 review usage proves the need for editable preference storage.
 
+Coordinator note: DM-183AI absorbs the safe remainder of DM-014 as a current
+output-preview fallback. The DearMe mobile shell exception was already absorbed
+by `DearMeMobileNav`; keep this slice limited to stale prepared-work readability
+unless mobile screenshots prove a new obstruction.
+
 ## Recently Completed
+
+### DM-183AI: Stale Prepared Work Preview
+
+Goal: keep prepared private work readable when an older or still-syncing payload
+has not attached document, update, or work-product previews yet.
+
+Donor grounding:
+
+- DM-014: reuse the product lesson that stale prepared-output payloads should
+  remain reviewable instead of blanking or implying no work exists.
+- Polsia: keep the review surface simple and autonomous; show the best available
+  private-work signal without exposing runtime state.
+- Naive/Paperclip/OpenClaw: keep the current output contract and avoid adding a
+  second compatibility schema for old `reviewContext` payloads.
+
+Completed:
+
+- Updated `outputPreview(...)` to use document previews, latest updates, work
+  product summaries, then the output summary as a final customer-readable
+  fallback.
+- Added a focused UI regression proving Private Work stays readable and does not
+  show the misleading first-draft waiting copy while private artifacts sync.
+- Left the current DearMe-specific mobile navigation untouched because the
+  active layout already routes `/dearme` through `DearMeMobileNav`.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
 
 ### DM-183AH: Review Feedback Preferences
 

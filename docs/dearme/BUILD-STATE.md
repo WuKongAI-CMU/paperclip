@@ -2,6 +2,28 @@
 
 Date: 2026-05-10
 
+## DM-183AI Stale Prepared Work Preview - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the still-useful DM-014 stale-output lesson onto the current
+  DearMe output contract instead of replaying its retired `reviewContext`
+  fallback.
+- Private Work cards now fall back to the prepared output summary when a live
+  or older payload has not attached documents, latest updates, or work-product
+  summaries yet.
+- Kept the current DearMe mobile navigation exception unchanged because the
+  active layout already uses `DearMeMobileNav` instead of the generic bottom
+  nav on `/dearme`.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183AH Review Feedback Preferences - 2026-05-10
 
 Implementation slice:
