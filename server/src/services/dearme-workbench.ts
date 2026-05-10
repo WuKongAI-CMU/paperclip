@@ -266,6 +266,174 @@ function previewText(value: string, maxLength = 700) {
   return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
 }
 
+function compactProjectionText(value: string | null | undefined) {
+  if (!value) return "";
+  return value
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function dearMeWorkbenchProjectionText(
+  value: string | null | undefined,
+  fallback: string,
+  maxLength = 1_000,
+) {
+  let safe = compactProjectionText(value);
+  for (const [pattern, replacement] of [
+    [/\bOpenClaw\b/gi, "DearMe"],
+    [/\bSymphony\b/gi, "DearMe"],
+    [/\bPaperclip\b/gi, "DearMe"],
+    [/\bOK Partner\b/gi, "DearMe"],
+    [/\bsetup[_ -]?payload\b/gi, "setup details"],
+    [/\badapter[_ -]?type\b|\badapterType\b/gi, "connector type"],
+    [/\bmodel[- ]providers?\b/gi, "services"],
+    [/\bmodels?\b/gi, "private checks"],
+    [/\badapters?\b/gi, "connectors"],
+    [/\bproviders?\b/gi, "services"],
+    [/\bruntimes?\b/gi, "private work area"],
+    [/\broutines?\b/gi, "cycle checks"],
+    [/\bworkbench\b/gi, "team progress"],
+    [/\bworkstreams?\b/gi, "team updates"],
+    [/\bwork streams?\b/gi, "team updates"],
+    [/\bissue comments?\b/gi, "review notes"],
+    [/\bissue routes?\b/gi, "private review links"],
+    [/\bapproval routes?\b/gi, "review links"],
+    [/\bwork products?\b/gi, "prepared work"],
+    [/\bworkspaces?\b/gi, "private work areas"],
+    [/\bagents?\b/gi, "teammates"],
+  ] as const) {
+    safe = safe.replace(pattern, replacement);
+  }
+
+  safe = safe.replace(/\s+/g, " ").trim();
+  return previewText(safe || fallback, maxLength);
+}
+
+function dearMeWorkbenchProjectionTitle(
+  value: string | null | undefined,
+  fallback: string,
+) {
+  return dearMeWorkbenchProjectionText(value, fallback, 160);
+}
+
+function dearMeWorkbenchProjectionOptionalText(
+  value: string | null | undefined,
+  maxLength = 1_000,
+) {
+  const compact = compactProjectionText(value);
+  return compact ? dearMeWorkbenchProjectionText(compact, compact, maxLength) : null;
+}
+
+function projectDearMeReviewLoop(
+  reviewLoop: DearMeOutputItem["reviewLoop"],
+): DearMeOutputItem["reviewLoop"] {
+  return {
+    ...reviewLoop,
+    lastDecisionNotePreview: dearMeWorkbenchProjectionOptionalText(
+      reviewLoop.lastDecisionNotePreview,
+      1_000,
+    ),
+    nextStep: dearMeWorkbenchProjectionText(
+      reviewLoop.nextStep,
+      "Review the private work and choose the next move.",
+    ),
+    reviewHandoff: reviewLoop.reviewHandoff
+      ? {
+          ...reviewLoop.reviewHandoff,
+          title: dearMeWorkbenchProjectionTitle(reviewLoop.reviewHandoff.title, "Review handoff"),
+          summary: dearMeWorkbenchProjectionText(
+            reviewLoop.reviewHandoff.summary,
+            "DearMe captured the review direction for the next private draft.",
+          ),
+          userDirection: dearMeWorkbenchProjectionOptionalText(reviewLoop.reviewHandoff.userDirection),
+          nextDraftDirection: dearMeWorkbenchProjectionText(
+            reviewLoop.reviewHandoff.nextDraftDirection,
+            "Prepare a stronger private draft before asking for approval again.",
+          ),
+        }
+      : null,
+  };
+}
+
+function projectDearMeVoiceGate(
+  voiceGate: NonNullable<DearMeOutputItem["workProducts"][number]["voiceGate"]>,
+): NonNullable<DearMeOutputItem["workProducts"][number]["voiceGate"]> {
+  return {
+    ...voiceGate,
+    summary: dearMeWorkbenchProjectionText(
+      voiceGate.summary,
+      "DearMe checked this draft before review.",
+    ),
+    checks: voiceGate.checks.map((check) => ({
+      ...check,
+      label: dearMeWorkbenchProjectionTitle(check.label, "Voice check"),
+      summary: dearMeWorkbenchProjectionText(check.summary, "DearMe checked this draft."),
+      evidence: check.evidence.map((item) =>
+        dearMeWorkbenchProjectionTitle(item, "Private evidence"),
+      ),
+      recommendation: dearMeWorkbenchProjectionText(
+        check.recommendation,
+        "Review the private draft before any external action.",
+      ),
+    })),
+    blockedActions: voiceGate.blockedActions.map((item) =>
+      dearMeWorkbenchProjectionTitle(item, "External action"),
+    ),
+  };
+}
+
+export function dearMeWorkbenchProjectionOutput(output: DearMeOutputItem): DearMeOutputItem {
+  const artifact = OUTPUT_KIND_ARTIFACT_LABELS[output.kind];
+
+  return {
+    ...output,
+    title: dearMeWorkbenchProjectionTitle(output.title, artifact),
+    summary: dearMeWorkbenchProjectionText(output.summary, "The team prepared private work for review."),
+    issueTitle: dearMeWorkbenchProjectionTitle(output.issueTitle, artifact),
+    documents: output.documents.map((document) => ({
+      ...document,
+      title: document.title
+        ? dearMeWorkbenchProjectionTitle(document.title, "Private draft")
+        : document.title,
+      bodyPreview: dearMeWorkbenchProjectionText(
+        document.bodyPreview,
+        "Private draft ready for review.",
+        2_000,
+      ),
+    })),
+    workProducts: output.workProducts.map((workProduct) => ({
+      ...workProduct,
+      title: dearMeWorkbenchProjectionTitle(workProduct.title, artifact),
+      summary: dearMeWorkbenchProjectionOptionalText(workProduct.summary),
+      voiceGate: workProduct.voiceGate
+        ? projectDearMeVoiceGate(workProduct.voiceGate)
+        : workProduct.voiceGate,
+    })),
+    latestUpdate: output.latestUpdate
+      ? {
+          ...output.latestUpdate,
+          bodyPreview: dearMeWorkbenchProjectionText(
+            output.latestUpdate.bodyPreview,
+            "The team recorded a private update.",
+            2_000,
+          ),
+        }
+      : null,
+    reviewLoop: projectDearMeReviewLoop(output.reviewLoop),
+    details: output.details.map((detail) => ({
+      ...detail,
+      label: dearMeWorkbenchProjectionTitle(detail.label, "Private detail"),
+      value: dearMeWorkbenchProjectionText(detail.value, "Private detail recorded.", 1_500),
+    })),
+    sourceEvidence: output.sourceEvidence.map((item) => ({
+      ...item,
+      label: dearMeWorkbenchProjectionTitle(item.label, "Private evidence"),
+      summary: dearMeWorkbenchProjectionText(item.summary, "DearMe recorded private evidence."),
+    })),
+  };
+}
+
 function outputEvidenceText(output: DearMeOutputItem) {
   return [
     output.summary,
@@ -399,7 +567,7 @@ function reviewLoopFromChiefBriefStatus(
 
 function titleFromChiefBriefIssue(title: string) {
   const briefTitle = title.replace(/^DearMe:\s*/i, "").trim() || "Private growth brief";
-  return previewText(`Chief of Staff brief: ${briefTitle}`, 180);
+  return dearMeWorkbenchProjectionTitle(`Chief of Staff brief: ${briefTitle}`, "Chief of Staff brief");
 }
 
 function workItemFromChiefBriefIssue(input: {
@@ -691,10 +859,10 @@ function memoryFromActivity(input: {
       input.details.sourceInputMode === "link" || input.details.sourceInputMode === "import_note"
         ? input.details.sourceInputMode
         : "paste",
-    title: optionalStringFromRecord(input.details, "title"),
-    body,
-    bodyPreview: previewText(body),
-    sourceLabel: optionalStringFromRecord(input.details, "sourceLabel"),
+    title: dearMeWorkbenchProjectionOptionalText(optionalStringFromRecord(input.details, "title"), 160),
+    body: dearMeWorkbenchProjectionText(body, "Private memory source recorded.", 4_000),
+    bodyPreview: dearMeWorkbenchProjectionText(body, "Private memory source recorded."),
+    sourceLabel: dearMeWorkbenchProjectionOptionalText(optionalStringFromRecord(input.details, "sourceLabel")),
     createdAt: toIso(input.createdAt),
   };
 }
@@ -868,17 +1036,25 @@ function buildMemorySourceReviewQueue(items: DearMeMemoryUpdateItem[]): DearMeWo
     .slice(0, 6)
     .map((item) => {
       const sourceTitle = item.title ?? `${MEMORY_KIND_LABELS[item.kind]} source`;
+      const projectedSourceTitle = dearMeWorkbenchProjectionTitle(
+        sourceTitle,
+        `${MEMORY_KIND_LABELS[item.kind]} source`,
+      );
       const modeLabel = MEMORY_SOURCE_REVIEW_MODE_LABELS[item.sourceInputMode];
       const kindLabel = MEMORY_KIND_LABELS[item.kind].toLocaleLowerCase();
       return {
         id: `source-review:${item.id}`,
         sourceMemoryId: item.id,
         sourceInputMode: item.sourceInputMode,
-        sourceTitle,
-        sourceLabel: item.sourceLabel,
-        summary: previewText(`${modeLabel} saved for ${kindLabel}: ${item.bodyPreview}`, 900),
+        sourceTitle: projectedSourceTitle,
+        sourceLabel: dearMeWorkbenchProjectionOptionalText(item.sourceLabel),
+        summary: dearMeWorkbenchProjectionText(
+          `${modeLabel} saved for ${kindLabel}: ${item.bodyPreview}`,
+          `${modeLabel} saved for ${kindLabel}.`,
+          900,
+        ),
         proposedKind: item.kind,
-        proposedTitle: previewText(sourceTitle, 160),
+        proposedTitle: projectedSourceTitle,
         proposedBody: item.body,
         nextAction: `Review this ${kindLabel} and save the fact once it is ready for future private work.`,
         createdAt: item.createdAt,
@@ -1370,18 +1546,21 @@ function decisionFromApproval(input: {
   payload: Record<string, unknown>;
   updatedAt: Date;
 }): DearMeWorkbenchDecision {
-  const title = typeof input.payload.title === "string"
+  const rawTitle = typeof input.payload.title === "string"
     ? input.payload.title
     : "Approve DearMe action";
-  const summary = typeof input.payload.summary === "string"
+  const rawSummary = typeof input.payload.summary === "string"
     ? input.payload.summary
     : "Review the pending DearMe action before the team moves forward.";
 
   return {
     id: `approval:${input.id}`,
     kind: input.type === "dearme_brand_blueprint_apply" ? "approve_brand_os" : "approve_action",
-    title,
-    summary,
+    title: dearMeWorkbenchProjectionTitle(rawTitle, "Approve DearMe action"),
+    summary: dearMeWorkbenchProjectionText(
+      rawSummary,
+      "Review the pending DearMe action before the team moves forward.",
+    ),
     riskGate: null,
     status: "pending",
     outputKind: null,
@@ -1504,7 +1683,7 @@ function progressFromActivity(input: {
 }
 
 function progressFromRoutineRun(input: DearMeRoutineRunRow): DearMeWorkbenchProgressItem {
-  const title = cleanCycleTitle(input.routineTitle);
+  const title = dearMeWorkbenchProjectionTitle(cleanCycleTitle(input.routineTitle), "Growth cycle");
   const createdAt = input.completedAt ?? input.updatedAt ?? input.triggeredAt;
 
   if (input.status === "completed") {
@@ -1755,7 +1934,7 @@ export function dearmeWorkbenchService(db: Db) {
           : Promise.resolve([{ eventCount: 0, totalCents: 0, latestAt: null }]),
       ]);
 
-      const outputs = outputsResponse.outputs;
+      const outputs = outputsResponse.outputs.map(dearMeWorkbenchProjectionOutput);
       const activeOutputWork = outputs
         .filter((output) => !output.isReviewable && !["complete", "cancelled"].includes(output.status))
         .map(workItemFromOutput);

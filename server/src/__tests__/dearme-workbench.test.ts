@@ -243,11 +243,14 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
       issueId: contentIssueId,
       type: "draft",
       provider: "codex-local",
-      title: "Content draft batch",
+      title: "OpenClaw Symphony content agent batch",
       url: null,
       status: "ready",
       reviewState: "pending",
-      summary: "Three proof-backed posts prepared for review.",
+      summary: [
+        "OpenClaw provider runtime model adapter Paperclip Symphony agents prepared",
+        "three proof-backed posts for review.",
+      ].join(" "),
       updatedAt: new Date("2026-05-07T15:05:00.000Z"),
     });
     await db.insert(issueComments).values({
@@ -264,7 +267,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
       id: weeklyCycleRoutineId,
       companyId,
       parentIssueId: brandIssueId,
-      title: "DearMe: Weekly content cycle",
+      title: "DearMe: Weekly OpenClaw runtime routine",
       description: "Keep the private brand growth cycle moving.",
       assigneeAgentId: chiefOfStaffId,
       status: "active",
@@ -307,8 +310,8 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         type: "dearme_brand_blueprint_apply",
         status: "pending",
         payload: {
-          title: "Create Brand OS for Peter",
-          summary: "DearMe will create the first private growth team.",
+          title: "Create OpenClaw Paperclip Brand OS for Peter",
+          summary: "Symphony provider runtime setup_payload model should stay backstage.",
         },
         requestedByUserId: "user-1",
         updatedAt: new Date("2026-05-07T16:20:00.000Z"),
@@ -743,9 +746,15 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     const customerPathJson = JSON.stringify(result);
     expect(customerPathJson).not.toContain("codex-local");
     expect(customerPathJson).not.toContain("adapterType");
+    expect(customerPathJson).not.toContain("adapter");
     expect(customerPathJson).not.toContain("provider");
+    expect(customerPathJson).not.toContain("runtime");
+    expect(customerPathJson).not.toContain("model");
     expect(customerPathJson).not.toContain("setup_payload");
+    expect(customerPathJson).not.toContain("OpenClaw");
+    expect(customerPathJson).not.toContain("Symphony");
     expect(customerPathJson).not.toContain("Paperclip");
+    expect(customerPathJson).not.toContain("agents");
     expect(customerPathJson).not.toContain("routine");
     expect(customerPathJson).not.toContain("anthropic");
     expect(customerPathJson).not.toContain("claude-sonnet");

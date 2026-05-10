@@ -1004,6 +1004,7 @@ UI, not server-side runtime artifacts the user never sees).
 | DM-142 | Six-hour DearMe cycle routine seed + approval-time provisioning | Polsia cycle every_6_hours | `packages/plugins/dearme-agent-prompts/src/state-machines/dearme-cycle.ts`, `server/src/services/dearme-brand-blueprint-apply.ts` | ✅ done (seed + routine/trigger provisioning + tests) |
 | DM-146 | Mount DearMe build skills into execution workspaces | Polsia per-execution `.claude/skills/` | `server/src/services/heartbeat.ts`, adapter skill injection services | ✅ done (runtime skills projected into execution-run adapter config + focused test) |
 | DM-154 | Configure CEO/direct + worker/remote role templates with 2h/8h heartbeat | Naive two-tier agent split | `packages/shared/src/validators/dearme.ts`, `server/src/services/dearme-brand-blueprint-apply.ts` | ✅ done (Brand OS team template now provisions direct/local chief-of-staff on 2h cadence plus worker/remote teammates on 8h cadence) |
+| DM-183D | Customer-safe workbench projection for donor/substrate output | Polsia simple customer surface over private execution machinery | `server/src/services/dearme-workbench.ts`, `server/src/__tests__/dearme-workbench.test.ts` | ✅ done (work products from OpenClaw/Symphony/Paperclip/provider/runtime/model logs are projected into DearMe language before the workbench response) |
 
 ### Sprint 1 - Aha moment
 

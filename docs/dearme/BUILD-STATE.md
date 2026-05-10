@@ -2,6 +2,40 @@
 
 Date: 2026-05-10
 
+## DM-183D Customer-Safe Workbench Projection - 2026-05-10
+
+Implementation slice:
+
+- Finished the service-level projection layer for DearMe workbench outputs so
+  imported work products from OpenClaw, Symphony, Paperclip, adapter/provider
+  runs, and model/runtime logs are rewritten into DearMe customer language
+  before they shape work items, decisions, streams, run ledger, reports, and
+  the action graph.
+- Reused the existing Naive/Paperclip work-product, document, issue, cost, and
+  routine data paths; this adds no new database table, endpoint, worker, or UI
+  contract.
+- Kept the architecture boundary explicit: substrate names can remain in
+  internal compatibility records and donor-derived execution logs, but the
+  DearMe workbench projects them as private teammates, prepared work, private
+  checks, review notes, and team progress.
+- Strengthened the embedded-postgres workbench regression by seeding a work
+  product with hidden substrate vocabulary and asserting the complete
+  customer-path JSON stays free of those terms.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-workbench.test.ts
+  --maxWorkers=1` passed: 3 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `git diff --check -- server/src/services/dearme-workbench.ts
+  server/src/__tests__/dearme-workbench.test.ts docs/dearme/BUILD-STATE.md
+  docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md` passed.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported 117
+  worktrees, 1 Symphony workspace, 0 patch-equivalent branches, and 0 dirty
+  records.
+- `.symphony/bin/dearme-symphony status` confirmed the daemon at
+  `http://127.0.0.1:4100/` with no running or retrying jobs.
+
 ## DM-183C Symphony Workspace Inventory - 2026-05-10
 
 Implementation slice:
