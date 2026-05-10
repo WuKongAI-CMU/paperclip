@@ -2,6 +2,40 @@
 
 Date: 2026-05-10
 
+## DM-183BG Integrated Baseline Absorption Follow-Up - 2026-05-10
+
+Coordination slice:
+
+- Kept the live Symphony daemon idle and used the coordinator checkout as the
+  integration surface instead of starting another worker.
+- Reviewed the matching old DM-014 through DM-018 integration branch heads and
+  recorded them as exact-head `reviewed_absorbed` baselines in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`.
+- Recorded heads: DM-014 `75458d807fc7ff3e35a51a860b1d8d6171e814b9`,
+  DM-015 `5a09b4d33cacad22648cbabe3ba1acd61989dfa8`, DM-016
+  `16fa8fb804baae650f76da19792279761a4e8e7c`, DM-017
+  `2029081240bd186841b5f0bd5b8440ade613712b`, and DM-018
+  `94c3b4c6a011db105cbde28b2a01e448350e2804`.
+- Kept those heads out of the replay lane because the current DearMe product
+  already carries their useful mobile shell, output detail, source
+  traceability, Brand OS apply-gate, and source archive behavior through newer
+  surfaces.
+- Updated `docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md` so future Symphony
+  workers do not reopen those old integration baselines as fresh product work.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status --json` passed with daemon pid `89569`,
+  dashboard `http://127.0.0.1:4100/`, and no running or retrying workers.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
+  passed.
+- `pnpm run test:dearme-worktrees` passed, 13 tests.
+- `pnpm run dearme:worktrees -- --status=not_in_current --skip-dirty --limit=20`
+  passed and no longer lists DM-014 through DM-018 integration heads.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` passed and
+  reported `reviewed_absorbed: 37`, `not_in_current: 76`, and `dirty: 0`.
+- `git diff --check` passed.
+
 ## DM-183BF DM-013 Private Handoff Readiness Absorption - 2026-05-10
 
 Product/UI slice:

@@ -217,6 +217,12 @@ DM-015, DM-016, DM-017, DM-018, and DM-019. Treat those exact old heads as
 already absorbed by current DearMe surfaces; review again only if a branch head
 advances or if the cited product evidence proves wrong.
 
+Coordinator note: DM-183BG adds the matching DM-014 through DM-018 integration
+branch heads to the same reviewed-absorption ledger. Those branches are
+historical integration baselines for work already present in the current
+mobile shell, output detail, source traceability, Brand OS apply gate, and
+source archive surfaces; do not replay them as fresh product patches.
+
 Coordinator note: DM-183AV extends the reviewed-absorption ledger to DM-024 and
 DM-025. Treat those exact output-review/cache worker heads as absorbed by the
 current output status service and DearMe review cache write-through; keep the
