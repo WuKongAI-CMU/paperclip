@@ -7,6 +7,7 @@ import type {
   DearMeBrandBlueprintSummary,
   DearMeChiefOfStaffMessage,
   DearMeChiefOfStaffMessageResult,
+  DearMeContentDraftPacketInput,
   DearMeFirstCyclePreview,
   DearMeFirstCyclePreviewResponse,
   DearMeMemoryArchiveResult,
@@ -16,6 +17,7 @@ import type {
   DearMeOutputsResponse,
   DearMeOutputReviewRequest,
   DearMeOutputReviewResult,
+  DearMeOutputWorkProduct,
   DearMePaidBetaRecord,
   DearMePaidBetaStatus,
   DearMeVoiceGateResult,
@@ -84,6 +86,11 @@ export const dearmeApi = {
   continueOutput: (companyId: string, outputId: string, data: DearMeOutputContinuationRequest) =>
     api.post<DearMeOutputReviewResult>(
       `/dearme/companies/${companyId}/outputs/${encodeURIComponent(outputId)}/continue`,
+      data,
+    ),
+  saveContentDraftPacket: (companyId: string, outputId: string, data: DearMeContentDraftPacketInput) =>
+    api.post<DearMeOutputWorkProduct>(
+      `/dearme/companies/${companyId}/outputs/${encodeURIComponent(outputId)}/content-draft-packets`,
       data,
     ),
   recordMemoryUpdate: (companyId: string, data: DearMeMemoryUpdate) =>

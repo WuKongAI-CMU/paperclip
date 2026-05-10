@@ -17,6 +17,7 @@ const mockDearMePaidBetaAccessService = vi.hoisted(() => ({
 
 const mockDearMeOutputHandoffService = vi.hoisted(() => ({
   listOutputs: vi.fn(),
+  persistContentDraftPacket: vi.fn(),
   reviewOutput: vi.fn(),
 }));
 
@@ -200,7 +201,7 @@ function makeVoiceGateResult() {
         label: "Proof claim",
         status: "pass",
         summary: "A proof point is attached to the draft.",
-        evidence: ["shipped local runtime"],
+        evidence: ["shipped private proof"],
         recommendation: "Check that the proof is accurate before approving the public move.",
       },
       {
@@ -213,6 +214,39 @@ function makeVoiceGateResult() {
       },
     ],
     blockedActions: ["Publish social posts"],
+  };
+}
+
+function makeContentDraftPacket() {
+  return {
+    packetId: "cycle-2026-05-10-content",
+    title: "Proof-backed content drafts",
+    summary: "One private post is ready for review from this cycle's proof.",
+    cycleEvidence: [
+      {
+        label: "Proof",
+        source: "proof" as const,
+        summary: "The latest work showed concrete receipts from the private cycle.",
+      },
+      {
+        label: "Voice",
+        source: "voice_profile" as const,
+        summary: "Use short, direct, evidence-first language.",
+      },
+    ],
+    drafts: [
+      {
+        id: "proof-post",
+        title: "Proof-backed post",
+        channel: "linkedin" as const,
+        audience: "Founders evaluating local-first workflows",
+        hook: "Your personal brand should show proof while you keep building.",
+        body: "A short proof-backed post about turning private work into public receipts.",
+        proofUsed: "shipped a local-first product launch",
+        voiceGate: makeVoiceGateResult(),
+        launchBoundary: "publish social posts",
+      },
+    ],
   };
 }
 
@@ -463,6 +497,7 @@ describe("DearMe brand blueprint routes", () => {
     mockDearMePaidBetaAccessService.recordPayment.mockReset();
     mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("active"));
     mockDearMeOutputHandoffService.listOutputs.mockReset();
+    mockDearMeOutputHandoffService.persistContentDraftPacket.mockReset();
     mockDearMeOutputHandoffService.reviewOutput.mockReset();
     mockDearMeApprovalResolverService.resolve.mockReset();
     mockDearMeMemoryContextService.refreshRoutineMemoryContext.mockReset();
@@ -1328,6 +1363,82 @@ describe("DearMe brand blueprint routes", () => {
         }),
       }),
     );
+  });
+
+  it("lets an assigned DearMe worker save a private content packet into output handoff", async () => {
+    const packet = makeContentDraftPacket();
+    mockDearMeOutputHandoffService.persistContentDraftPacket.mockResolvedValue({
+      id: "work-product-1",
+      type: "artifact",
+      title: "Proof-backed content drafts",
+      url: null,
+      status: "ready_for_review",
+      reviewState: "needs_board_review",
+      summary: "Draft body: A short proof-backed post about turning private work into public receipts.",
+      voiceGate: makeVoiceGateResult(),
+      updatedAt: "2026-05-10T14:00:00.000Z",
+    });
+
+    const res = await request(await createApp({
+      type: "agent",
+      companyId: "company-1",
+      agentId: "agent-1",
+      runId: "11111111-1111-4111-8111-111111111111",
+    }))
+      .post("/api/dearme/companies/company-1/outputs/issue-1%3Acontent_drafts/content-draft-packets")
+      .send(packet);
+
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual(expect.objectContaining({
+      id: "work-product-1",
+      title: "Proof-backed content drafts",
+      voiceGate: expect.objectContaining({
+        score: 88,
+        approvalGate: "publish_social",
+      }),
+    }));
+    expect(mockDearMeOutputHandoffService.persistContentDraftPacket).toHaveBeenCalledWith(
+      "company-1",
+      "issue-1",
+      expect.objectContaining({
+        packetId: "cycle-2026-05-10-content",
+        title: "Proof-backed content drafts",
+        createdByRunId: null,
+      }),
+    );
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: "dearme.content_draft_packet_saved",
+        actorType: "agent",
+        actorId: "agent-1",
+        entityType: "issue_work_product",
+        entityId: "work-product-1",
+        details: expect.objectContaining({
+          outputId: "issue-1:content_drafts",
+          outputKind: "content_drafts",
+          issueId: "issue-1",
+          voiceGateScore: 88,
+        }),
+      }),
+    );
+    const serialized = JSON.stringify(res.body).toLowerCase();
+    for (const hiddenTerm of ["provider", "adapter", "paperclip", "openclaw", "symphony", "runtime"]) {
+      expect(serialized).not.toContain(hiddenTerm);
+    }
+  });
+
+  it("does not let content packet saves target another DearMe output lane", async () => {
+    const res = await request(await createApp({
+      type: "agent",
+      companyId: "company-1",
+      agentId: "agent-1",
+    }))
+      .post("/api/dearme/companies/company-1/outputs/issue-1%3Aweekly_report/content-draft-packets")
+      .send(makeContentDraftPacket());
+
+    expect(res.status).toBe(404);
+    expect(mockDearMeOutputHandoffService.persistContentDraftPacket).not.toHaveBeenCalled();
   });
 
   it("blocks output regeneration cycles when paid-beta spend reaches the guardrail", async () => {

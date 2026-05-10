@@ -8,11 +8,13 @@ import {
   dearMeBrandBlueprintPreviewSchema,
   dearMeChiefOfStaffMessageResultSchema,
   dearMeChiefOfStaffMessageSchema,
+  dearMeContentDraftPacketSchema,
   dearMeFirstCyclePreviewSchema,
   dearMeMemoryArchiveResultSchema,
   dearMeMemoryUpdateResultSchema,
   dearMeMemoryUpdateSchema,
   dearMeOutputContinuationRequestSchema,
+  dearMeOutputWorkProductSchema,
   dearMeOutputReviewRequestSchema,
   dearMePaidBetaRecordSchema,
   type DearMeChiefOfStaffMessage,
@@ -39,7 +41,7 @@ import {
   getDearMeSseBus,
   type DearMeSseEvent,
 } from "../services/dearme-sse-bus.js";
-import { forbidden } from "../errors.js";
+import { forbidden, notFound } from "../errors.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { heartbeatService } from "../services/heartbeat.js";
 import { queueIssueAssignmentWakeup } from "../services/issue-assignment-wakeup.js";
@@ -124,6 +126,19 @@ function defaultDearMeContinuationNote(intent: DearMeOutputContinuationIntent) {
     return "Prepare another private pass for review.";
   }
   return "Use this feedback to choose a clearer direction before the next private version.";
+}
+
+function contentDraftIssueIdFromOutputId(outputId: string) {
+  const separatorIndex = outputId.lastIndexOf(":");
+  if (separatorIndex <= 0 || separatorIndex === outputId.length - 1) {
+    throw notFound("DearMe content drafts output not found");
+  }
+  const issueId = outputId.slice(0, separatorIndex);
+  const outputKind = outputId.slice(separatorIndex + 1);
+  if (outputKind !== "content_drafts") {
+    throw notFound("DearMe content drafts output not found");
+  }
+  return issueId;
 }
 
 function dearMeOutputWakeReason(action: DearMeOutputReviewAction) {
@@ -419,6 +434,59 @@ export function dearmeRoutes(db: Db) {
 
       const { wakeIssue: _wakeIssue, ...responseBody } = result;
       res.status(responseBody.status === "queued" ? 202 : 200).json(responseBody);
+    },
+  );
+
+  router.post(
+    "/companies/:companyId/outputs/:outputId/content-draft-packets",
+    validate(dearMeContentDraftPacketSchema),
+    async (req, res) => {
+      const companyId = req.params.companyId as string;
+      const outputId = req.params.outputId as string;
+      assertCompanyAccess(req, companyId);
+      const actor = getActorInfo(req);
+      const issueId = contentDraftIssueIdFromOutputId(outputId);
+      const product = await outputHandoff.persistContentDraftPacket(companyId, issueId, req.body);
+
+      await logActivity(db, {
+        companyId,
+        actorType: actor.actorType,
+        actorId: actor.actorId,
+        agentId: actor.agentId,
+        runId: actor.runId,
+        action: "dearme.content_draft_packet_saved",
+        entityType: "issue_work_product",
+        entityId: product.id,
+        details: {
+          outputId,
+          outputKind: "content_drafts",
+          issueId,
+          workProductId: product.id,
+          voiceGateScore: product.voiceGate?.score ?? null,
+          voiceGateStatus: product.voiceGate?.status ?? null,
+        },
+      });
+
+      const emittedAt = new Date().toISOString();
+      sseBus.emit({
+        type: "agent_completed",
+        emittedAt,
+        scope: {
+          companyId,
+          issueId,
+          ...(actor.agentId ? { agentId: actor.agentId } : {}),
+          workLoopState: "review",
+        },
+        payload: {
+          role: "content_producer",
+          artifact: "content_draft_packet",
+          outputId,
+          workProductId: product.id,
+          status: "ready_for_private_review",
+        },
+      });
+
+      res.status(201).json(dearMeOutputWorkProductSchema.parse(product));
     },
   );
 

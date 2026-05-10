@@ -140,6 +140,7 @@ export {
   type DearMeChiefOfStaffMessageIntent,
   type DearMeChiefOfStaffMessageResult,
   type DearMeContentDraftPacket,
+  type DearMeContentDraftPacketInput,
   type DearMeCycleGuardrail,
   type DearMeFirstCyclePreview,
   type DearMeFirstCyclePreviewResponse,

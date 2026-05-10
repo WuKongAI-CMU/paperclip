@@ -1101,6 +1101,7 @@ export type DearMeFirstCyclePreviewResponse = z.infer<typeof dearMeFirstCyclePre
 export type DearMeVoiceGateEvaluation = z.infer<typeof dearMeVoiceGateEvaluationSchema>;
 export type DearMeVoiceGateResult = z.infer<typeof dearMeVoiceGateResultSchema>;
 export type DearMeContentDraftPacket = z.infer<typeof dearMeContentDraftPacketSchema>;
+export type DearMeContentDraftPacketInput = z.input<typeof dearMeContentDraftPacketSchema>;
 export type DearMeChiefOfStaffMessage = z.infer<typeof dearMeChiefOfStaffMessageSchema>;
 export type DearMeChiefOfStaffMessageIntent = z.infer<typeof dearMeChiefOfStaffMessageSchema>["intent"];
 export type DearMeChiefOfStaffMessageResult = z.infer<typeof dearMeChiefOfStaffMessageResultSchema>;

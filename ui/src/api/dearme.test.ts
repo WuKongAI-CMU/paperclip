@@ -68,6 +68,86 @@ describe("dearmeApi", () => {
     );
   });
 
+  it("posts private content draft packets through the DearMe company endpoint", async () => {
+    const payload = {
+      title: "Proof-backed content drafts",
+      cycleEvidence: [
+        {
+          label: "Proof",
+          source: "proof" as const,
+          summary: "The latest work showed concrete receipts from the private cycle.",
+        },
+      ],
+      drafts: [
+        {
+          title: "Proof-backed post",
+          channel: "linkedin" as const,
+          audience: "Founders evaluating local-first workflows",
+          hook: "Your personal brand should show proof while you keep building.",
+          body: "A short proof-backed post about turning private work into public receipts.",
+          proofUsed: "shipped a local-first product launch",
+          voiceGate: {
+            status: "ready_for_review" as const,
+            score: 100,
+            summary: "Ready for review.",
+            approvalGate: "publish_social" as const,
+            checks: [
+              {
+                kind: "voice_samples" as const,
+                label: "Voice samples",
+                status: "pass" as const,
+                summary: "Voice samples are present.",
+                evidence: [],
+                recommendation: "Review before publishing.",
+              },
+              {
+                kind: "forbidden_phrases" as const,
+                label: "Banned phrasing",
+                status: "pass" as const,
+                summary: "No banned phrasing was found.",
+                evidence: [],
+                recommendation: "Keep the direct language.",
+              },
+              {
+                kind: "generic_launch_copy" as const,
+                label: "Generic launch copy",
+                status: "pass" as const,
+                summary: "No generic launch copy was found.",
+                evidence: [],
+                recommendation: "Keep the hook grounded in proof.",
+              },
+              {
+                kind: "proof_claim" as const,
+                label: "Proof claim",
+                status: "pass" as const,
+                summary: "A proof point is attached.",
+                evidence: ["local-first product launch"],
+                recommendation: "Verify the proof before approval.",
+              },
+              {
+                kind: "channel_length" as const,
+                label: "Channel length",
+                status: "pass" as const,
+                summary: "Draft length is within range.",
+                evidence: [],
+                recommendation: "Length is ready for review.",
+              },
+            ],
+            blockedActions: ["Publish social posts"],
+          },
+          launchBoundary: "publish social posts",
+        },
+      ],
+    };
+
+    await dearmeApi.saveContentDraftPacket("company-1", "issue-1:content_drafts", payload);
+
+    expect(mockApi.post).toHaveBeenCalledWith(
+      "/dearme/companies/company-1/outputs/issue-1%3Acontent_drafts/content-draft-packets",
+      payload,
+    );
+  });
+
   it("gets the team workbench through the DearMe company endpoint", async () => {
     await dearmeApi.getWorkbench("company-1");
 

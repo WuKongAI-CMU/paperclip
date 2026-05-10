@@ -24,6 +24,33 @@ Verification:
 - `pnpm --filter @paperclipai/dearme-ai-proxy test` passed: 6 tests.
 - `pnpm --filter @paperclipai/server typecheck` passed.
 
+## DEA-7 Content Packet Worker Save Route - 2026-05-10
+
+Implementation slice:
+
+- Added company-scoped `POST /api/dearme/companies/:companyId/outputs/:outputId/content-draft-packets`
+  so Symphony content workers can persist private content packets through the
+  existing DearMe output handoff instead of creating another content runtime.
+- Reused `persistContentDraftPacket(...)`, validates that the target output is
+  the `content_drafts` lane, logs `dearme.content_draft_packet_saved`, emits a
+  customer-safe workbench completion event, and returns the existing
+  `DearMeOutputWorkProduct` shape.
+- Exported `DearMeContentDraftPacketInput` through shared validators and added
+  `dearmeApi.saveContentDraftPacket(...)` for the UI/client surface.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts
+  server/src/services/dearme-voice-gate.test.ts
+  server/src/__tests__/dearme-voice-gate-routes.test.ts --maxWorkers=1`
+  passed: 46 tests.
+- `pnpm exec vitest run ui/src/api/dearme.test.ts
+  server/src/__tests__/dearme-brand-blueprint-routes.test.ts --maxWorkers=1`
+  passed: 49 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+
 ## DM-141 Opportunity Workbench and Team Skill Rails - 2026-05-10
 
 Implementation slice:
