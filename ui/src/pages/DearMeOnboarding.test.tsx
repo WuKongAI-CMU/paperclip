@@ -523,8 +523,8 @@ function workbenchResponse(): DearMeWorkbenchResponse {
       },
     ],
     memory: {
-      summary: "2 recent Voice & Memory sources are available. Latest: Voice sample.",
-      sourceCount: 2,
+      summary: "3 recent Voice & Memory sources are available. Latest: Voice sample.",
+      sourceCount: 3,
       voiceSampleCount: 1,
       proofCount: 1,
       voiceProfile: {
@@ -572,6 +572,16 @@ function workbenchResponse(): DearMeWorkbenchResponse {
           bodyPreview: "Shipped a working local product.",
           sourceLabel: "Build log",
           createdAt: "2026-05-07T13:00:00.000Z",
+        },
+        {
+          id: "memory-review-1",
+          kind: "review_feedback",
+          sourceInputMode: "paste",
+          title: "Shorter proof-led drafts",
+          body: "Keep future drafts shorter, proof-led, and direct before asking for approval.",
+          bodyPreview: "Keep future drafts shorter, proof-led, and direct before asking for approval.",
+          sourceLabel: "Last review",
+          createdAt: "2026-05-07T12:30:00.000Z",
         },
       ],
       archived: [],
@@ -1823,7 +1833,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain(
       "Feedback, proof sources, and report learnings shape the next private cycle automatically.",
     );
-    expect(container.textContent).toContain("4 learning signals");
+    expect(container.textContent).toContain("5 learning signals");
     expect(container.textContent).toContain(
       "Private work keeps moving. Public posts, outbound messages, page changes, and spend come back as one launch call.",
     );
@@ -1953,6 +1963,12 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("55%");
     expect(container.textContent).toContain("Add one more real sample");
     expect(container.textContent).toContain("Manual note");
+    expect(container.textContent).toContain("Review preferences");
+    expect(container.textContent).toContain("Shorter proof-led drafts");
+    expect(container.textContent).toContain(
+      "Keep future drafts shorter, proof-led, and direct before asking for approval.",
+    );
+    expect(container.textContent).toContain("Last review");
     expect(container.textContent).toContain("Source coverage");
     expect(container.textContent).toContain("Building");
     expect(container.textContent).toContain("Writing samples");

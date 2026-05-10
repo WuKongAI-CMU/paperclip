@@ -4493,6 +4493,9 @@ function VoiceMemoryPanel({
   const visibleLatestMemory = archiveResult
     ? latestMemory.filter((item) => item.id !== archiveResult.memoryId || item.id === recordedMemory?.id)
     : latestMemory;
+  const reviewPreferences = visibleLatestMemory
+    .filter((item) => item.kind === "review_feedback")
+    .slice(0, 4);
   const visibleArchivedMemory = memory.archived.filter((item) => item.id !== recordedMemory?.id);
   const displayedSourceCount = result
     ? Math.max(memory.sourceCount, result.growthCycles.memorySources)
@@ -4838,6 +4841,42 @@ function VoiceMemoryPanel({
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {reviewPreferences.length > 0 ? (
+        <section className="mt-5 border-t border-border pt-4" aria-label="Review preferences">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="flex items-center gap-2 text-sm font-medium">
+                <MessageSquare className="h-4 w-4" />
+                Review preferences
+              </p>
+              <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+                DearMe uses these review notes as next-draft guidance before future private work.
+              </p>
+            </div>
+            <Badge variant="outline">{reviewPreferences.length} learned</Badge>
+          </div>
+          <ul className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {reviewPreferences.map((item) => (
+              <li key={item.id} className="rounded-md border border-border bg-muted/20 px-3 py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary">Review feedback</Badge>
+                  <Badge variant="outline">{shortDate(item.createdAt)}</Badge>
+                  {item.sourceLabel ? (
+                    <Badge variant="outline">{sourceLabelForChip(item.sourceLabel)}</Badge>
+                  ) : null}
+                </div>
+                <p className="mt-2 text-sm font-medium">
+                  {customerProofPackSummary(item.title ?? "Review preference")}
+                </p>
+                <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                  {customerProofPackSummary(item.bodyPreview)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       <form id={DEARME_MEMORY_FORM_ID} className="mt-5 grid gap-4" onSubmit={handleSubmit}>

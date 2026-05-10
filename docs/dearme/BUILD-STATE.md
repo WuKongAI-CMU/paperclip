@@ -2,6 +2,25 @@
 
 Date: 2026-05-10
 
+## DM-183AH Review Feedback Preferences - 2026-05-10
+
+Implementation slice:
+
+- Reused the current `review_feedback` Voice & Memory records as a compact
+  Review preferences section inside the Voice & Memory panel.
+- Adapted the useful DM-085 preference lesson without restoring its old
+  `reviewLearning` schema or adding a second preference store.
+- Kept the latest source cards, revise/retire flow, and backend memory
+  projection unchanged; the new section is derived from visible active memory.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183AG Retire Source Confirmation - 2026-05-10
 
 Implementation slice:
