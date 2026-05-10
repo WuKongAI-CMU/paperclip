@@ -391,8 +391,72 @@ function mergeOptimisticFeedbackVote(
   ];
 }
 
-function ActorIdentity({ evt, agentMap, userProfileMap }: { evt: ActivityEvent; agentMap: Map<string, Agent>; userProfileMap?: Map<string, import("../lib/company-members").CompanyUserProfile> }) {
+const DEARME_ACTIVITY_ACTION_LABELS: Record<string, string> = {
+  "issue.created": "started this request",
+  "issue.updated": "updated this request",
+  "issue.checked_out": "started working",
+  "issue.released": "finished this request",
+  "issue.comment_added": "added a private update",
+  "issue.comment_cancelled": "cancelled a queued update",
+  "issue.feedback_vote_saved": "saved your feedback on prepared work",
+  "issue.attachment_added": "added a private file",
+  "issue.attachment_removed": "removed a private file",
+  "issue.document_created": "prepared a private document",
+  "issue.document_updated": "updated a private document",
+  "issue.document_deleted": "removed a private document",
+  "issue.monitor_scheduled": "scheduled a private check",
+  "issue.monitor_triggered": "ran a scheduled check",
+  "issue.monitor_cleared": "cleared a scheduled check",
+  "issue.monitor_skipped": "skipped a scheduled check",
+  "issue.monitor_exhausted": "paused a scheduled check",
+  "issue.monitor_recovery_wake_queued": "queued follow-up after a scheduled check",
+  "issue.monitor_recovery_issue_created": "opened follow-up after a scheduled check",
+  "issue.monitor_escalated_to_board": "asked for your attention",
+  "issue.deleted": "removed this request",
+  "approval.created": "asked for your decision",
+  "approval.approved": "recorded your approval",
+  "approval.rejected": "recorded your decline",
+};
+
+function formatDearMeUpdatedActivity(details: ActivityEvent["details"]) {
+  if (!details) return DEARME_ACTIVITY_ACTION_LABELS["issue.updated"];
+
+  const parts: string[] = [];
+  if (details.status !== undefined) parts.push("updated the status");
+  if (details.priority !== undefined) parts.push("updated the priority");
+  if (details.assigneeAgentId !== undefined || details.assigneeUserId !== undefined) {
+    parts.push("updated ownership");
+  }
+  if (details.title !== undefined) parts.push("updated the title");
+  if (details.description !== undefined) parts.push("updated the brief");
+
+  return parts.length > 0 ? parts.join(", ") : DEARME_ACTIVITY_ACTION_LABELS["issue.updated"];
+}
+
+function formatDearMeActivityAction(evt: ActivityEvent) {
+  if (evt.action === "issue.updated") return formatDearMeUpdatedActivity(evt.details);
+  if (evt.action === "issue.blockers_updated") return "updated blockers";
+  if (evt.action === "issue.reviewers_updated") return "updated reviewers";
+  if (evt.action === "issue.approvers_updated") return "updated approvers";
+  if (evt.action.startsWith("dearme.")) return "updated DearMe progress";
+  return DEARME_ACTIVITY_ACTION_LABELS[evt.action] ?? "updated DearMe progress";
+}
+
+function ActorIdentity({
+  evt,
+  agentMap,
+  userProfileMap,
+  hideSubstrateDetails = false,
+}: {
+  evt: ActivityEvent;
+  agentMap: Map<string, Agent>;
+  userProfileMap?: Map<string, import("../lib/company-members").CompanyUserProfile>;
+  hideSubstrateDetails?: boolean;
+}) {
   const id = evt.actorId;
+  if (hideSubstrateDetails && (evt.actorType === "agent" || evt.actorType === "system")) {
+    return <Identity name="DearMe team" size="sm" />;
+  }
   if (evt.actorType === "agent") {
     const agent = agentMap.get(id);
     return <Identity name={agent?.name ?? id.slice(0, 8)} size="sm" />;
@@ -1245,8 +1309,17 @@ function IssueDetailActivityTab({
           renderActivityEvent={(evt) => (
             <div className="space-y-1.5 rounded-lg border border-border/60 px-3 py-2 text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5">
-                <ActorIdentity evt={evt} agentMap={agentMap} userProfileMap={userProfileMap} />
-                <span>{formatIssueActivityAction(evt.action, evt.details, { agentMap, userProfileMap, currentUserId })}</span>
+                <ActorIdentity
+                  evt={evt}
+                  agentMap={agentMap}
+                  userProfileMap={userProfileMap}
+                  hideSubstrateDetails={hideRunSubstrateDetails}
+                />
+                <span>
+                  {hideRunSubstrateDetails
+                    ? formatDearMeActivityAction(evt)
+                    : formatIssueActivityAction(evt.action, evt.details, { agentMap, userProfileMap, currentUserId })}
+                </span>
                 <span className="ml-auto shrink-0">{relativeTime(evt.createdAt)}</span>
               </div>
               <IssueReferenceActivitySummary event={evt} />

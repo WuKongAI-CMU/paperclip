@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Agent, Approval, Issue, IssueComment, IssueTreeControlPreview, IssueTreeHold } from "@paperclipai/shared";
+import type { ActivityEvent, Agent, Approval, Issue, IssueComment, IssueTreeControlPreview, IssueTreeHold } from "@paperclipai/shared";
 import { act, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -249,9 +249,20 @@ vi.mock("../components/IssueProperties", () => ({
 }));
 
 vi.mock("../components/IssueRunLedger", () => ({
-  IssueRunLedger: (props: { hideRunSubstrateDetails?: boolean }) => {
+  IssueRunLedger: (props: {
+    hideRunSubstrateDetails?: boolean;
+    activityEvents?: ActivityEvent[];
+    renderActivityEvent?: (event: ActivityEvent) => ReactNode;
+  }) => {
     mockIssueRunLedgerRender(props);
-    return <div>{props.hideRunSubstrateDetails ? "DearMe work ledger" : "Runs"}</div>;
+    return (
+      <div data-testid="issue-run-ledger">
+        {props.hideRunSubstrateDetails ? "DearMe work ledger" : "Runs"}
+        {props.activityEvents?.map((event) => (
+          <div key={event.id}>{props.renderActivityEvent?.(event)}</div>
+        ))}
+      </div>
+    );
   },
 }));
 
@@ -305,7 +316,7 @@ vi.mock("../components/ApprovalCard", () => ({
 }));
 
 vi.mock("../components/Identity", () => ({
-  Identity: () => <span>Identity</span>,
+  Identity: ({ name }: { name?: string }) => <span>{name}</span>,
 }));
 
 vi.mock("@/components/ui/button", () => ({
@@ -474,6 +485,23 @@ function createAgent(overrides: Partial<Agent> = {}): Agent {
     metadata: null,
     createdAt: new Date("2026-04-21T00:00:00.000Z"),
     updatedAt: new Date("2026-04-21T00:00:00.000Z"),
+    ...overrides,
+  };
+}
+
+function createActivityEvent(overrides: Partial<ActivityEvent> = {}): ActivityEvent {
+  return {
+    id: "activity-1",
+    companyId: "company-1",
+    actorType: "agent",
+    actorId: "agent-1",
+    action: "issue.feedback_vote_saved",
+    entityType: "issue",
+    entityId: "issue-1",
+    agentId: "agent-1",
+    runId: "run-secret-1",
+    details: {},
+    createdAt: new Date("2026-05-08T12:00:00.000Z"),
     ...overrides,
   };
 }
@@ -1047,6 +1075,51 @@ describe("IssueDetail", () => {
     expect(container.textContent).not.toContain("Cost Summary");
     expect(container.textContent).not.toContain("Tokens");
     expect(container.textContent).not.toContain("$0.4200");
+  });
+
+  it("keeps DearMe activity event actors and actions product-safe", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({ originKind: "dearme_brand_blueprint_apply" }));
+    mockAgentsApi.list.mockResolvedValue([createAgent()]);
+    mockActivityApi.forIssue.mockResolvedValue([
+      createActivityEvent({
+        id: "activity-feedback",
+        action: "issue.feedback_vote_saved",
+        details: { source: "OpenClaw adapter", note: "AI output" },
+      }),
+      createActivityEvent({
+        id: "activity-monitor",
+        action: "issue.monitor_recovery_wake_queued",
+        details: { serviceName: "OpenClaw watchdog", agentId: "agent-1" },
+      }),
+    ]);
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    const activityButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent?.trim() === "Activity");
+    expect(activityButton).toBeTruthy();
+
+    await act(async () => {
+      activityButton!.click();
+    });
+
+    await waitForAssertion(() => {
+      const ledgerText = container.querySelector("[data-testid='issue-run-ledger']")?.textContent ?? "";
+      expect(ledgerText).toContain("DearMe team");
+      expect(ledgerText).toContain("saved your feedback on prepared work");
+      expect(ledgerText).toContain("queued follow-up after a scheduled check");
+      expect(ledgerText).not.toMatch(
+        /CodexCoder|agent-1|run-secret|AI output|monitor|wake|OpenClaw|adapter|provider|runtime|issue\.monitor_recovery_wake_queued/i,
+      );
+    });
   });
 
   it("keeps generic linked approval decisions on the issue detail", async () => {
