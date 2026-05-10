@@ -464,6 +464,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         riskGate: null,
         status: "pending",
         outputKind: null,
+        outputId: null,
         approvalId: "approval-ready",
         issueId: null,
         issueIdentifier: null,

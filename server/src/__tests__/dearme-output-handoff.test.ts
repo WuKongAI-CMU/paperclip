@@ -3,9 +3,11 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   agents,
+  approvals,
   companies,
   createDb,
   documents,
+  issueApprovals,
   issueComments,
   issueDocuments,
   issues,
@@ -1022,6 +1024,58 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       .from(issueWorkProducts)
       .where(eq(issueWorkProducts.id, workProductId));
     expect(workProductRow?.reviewState).toBe("approved");
+
+    const nextMoveApprovals = await db
+      .select({
+        id: approvals.id,
+        type: approvals.type,
+        status: approvals.status,
+        requestedByAgentId: approvals.requestedByAgentId,
+        requestedByUserId: approvals.requestedByUserId,
+        payload: approvals.payload,
+      })
+      .from(approvals)
+      .where(eq(approvals.companyId, companyId));
+    expect(nextMoveApprovals).toHaveLength(1);
+    expect(nextMoveApprovals[0]).toEqual(expect.objectContaining({
+      type: "dearme_output_next_move",
+      status: "pending",
+      requestedByAgentId: agentId,
+      requestedByUserId: null,
+    }));
+    expect(nextMoveApprovals[0]?.payload).toEqual(expect.objectContaining({
+      title: "Approve posts for publishing",
+      summary: expect.stringContaining("final approval"),
+      recommendedAction: expect.stringContaining("Publish"),
+      nextActionOnApproval: expect.stringContaining("Nothing publishes before this approval"),
+      riskGate: "publish_social",
+      outputId: `${issueId}:content_drafts`,
+      outputKind: "content_drafts",
+      issueId,
+      issueIdentifier: "DME-8",
+      preparedTitle: "Content drafts",
+      reviewNote: "This sounds like me.",
+    }));
+
+    const linkedApprovals = await db
+      .select({ issueId: issueApprovals.issueId, approvalId: issueApprovals.approvalId })
+      .from(issueApprovals)
+      .where(eq(issueApprovals.companyId, companyId));
+    expect(linkedApprovals).toEqual([
+      { issueId, approvalId: nextMoveApprovals[0]!.id },
+    ]);
+
+    await dearmeOutputHandoffService(db).reviewOutput(
+      companyId,
+      `${issueId}:content_drafts`,
+      { action: "approve", decisionNote: "Still good." },
+      { actorType: "user", actorId: "user-1", agentId: null, runId: null },
+    );
+    const approvalCountAfterRepeat = await db
+      .select({ id: approvals.id })
+      .from(approvals)
+      .where(eq(approvals.companyId, companyId));
+    expect(approvalCountAfterRepeat).toHaveLength(1);
 
     const serialized = JSON.stringify(result).toLowerCase();
     for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw", "symphony", "runtime"]) {

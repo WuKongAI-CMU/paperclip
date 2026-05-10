@@ -11,6 +11,8 @@ import {
 } from "@paperclipai/db";
 import {
   DEARME_MEMORY_UPDATE_KINDS,
+  DEARME_OUTPUT_KINDS,
+  DEARME_RISK_GATES,
   DEARME_TEAM_ROLES,
   dearMeWorkbenchResponseSchema,
   type DearMeActionGraph,
@@ -73,11 +75,14 @@ type DearMeSpendCheckpointRow = {
 
 const TEAM_ROLE_ORDER = new Map(DEARME_TEAM_ROLES.map((role, index) => [role, index]));
 const MEMORY_KIND_SET = new Set<string>(DEARME_MEMORY_UPDATE_KINDS);
+const OUTPUT_KIND_SET = new Set<string>(DEARME_OUTPUT_KINDS);
+const RISK_GATE_SET = new Set<string>(DEARME_RISK_GATES);
 const DEARME_MEMORY_UPDATED_ACTION = "dearme.memory_updated";
 const DEARME_MEMORY_ARCHIVED_ACTION = "dearme.memory_archived";
 const DEARME_MEMORY_ACTIONS = [DEARME_MEMORY_UPDATED_ACTION, DEARME_MEMORY_ARCHIVED_ACTION] as const;
 const DEARME_CHIEF_OF_STAFF_MESSAGE_ACTION = "dearme.chief_of_staff_message";
 const DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND = "dearme_chief_of_staff_message";
+const DEARME_NEXT_MOVE_APPROVAL_TYPE = "dearme_output_next_move";
 const DEARME_ACTION_GRAPH_CYCLE_NODE_ID = "cycle:weekly-growth-loop";
 const DEARME_ACTION_GRAPH_FALLBACK_UPDATED_AT = "1970-01-01T00:00:00.000Z";
 
@@ -261,6 +266,24 @@ function isDearMeMemoryKind(value: unknown): value is DearMeMemoryUpdateKind {
 function optionalStringFromRecord(record: Record<string, unknown>, key: string) {
   const value = record[key];
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function optionalPayloadString(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function outputKindFromPayload(value: unknown): DearMeOutputKind | null {
+  return typeof value === "string" && OUTPUT_KIND_SET.has(value) ? value as DearMeOutputKind : null;
+}
+
+function riskGateFromPayload(value: unknown): DearMeRiskGate {
+  return typeof value === "string" && RISK_GATE_SET.has(value)
+    ? value as NonNullable<DearMeRiskGate>
+    : null;
+}
+
+function outputIdFromApprovalPayload(payload: Record<string, unknown>) {
+  return optionalPayloadString(payload.outputId);
 }
 
 function previewText(value: string, maxLength = 700) {
@@ -800,7 +823,7 @@ function streamItemFromDecision(decision: DearMeWorkbenchDecision): DearMeWorkbe
     sourceLabel: sourceLabelForDecision(decision),
     costImpact: decision.riskGate === "spend_money" ? "Spend waits for the launch call" : null,
     nextAction: nextActionForDecision(decision),
-    relatedOutputId: decision.outputKind ? decision.id.replace(/^output:/, "") : null,
+    relatedOutputId: decision.outputId,
     issueId: decision.issueId,
     issueIdentifier: decision.issueIdentifier,
     approvalId: decision.approvalId,
@@ -1313,7 +1336,7 @@ function graphEdgeId(
 }
 
 function relatedOutputIdForDecision(decision: DearMeWorkbenchDecision) {
-  return decision.outputKind ? decision.id.replace(/^output:/, "") : null;
+  return decision.outputId;
 }
 
 function buildActionGraph(input: {
@@ -1592,6 +1615,7 @@ function decisionFromOutput(output: DearMeOutputItem): DearMeWorkbenchDecision {
     riskGate: OUTPUT_DECISION_GATE[output.kind],
     status: "needed",
     outputKind: output.kind,
+    outputId: output.id,
     approvalId: null,
     issueId: output.issueId,
     issueIdentifier: output.issueIdentifier,
@@ -1612,6 +1636,10 @@ function decisionFromApproval(input: {
   const rawSummary = typeof input.payload.summary === "string"
     ? input.payload.summary
     : "Review the pending DearMe action before the team moves forward.";
+  const outputKind = outputKindFromPayload(input.payload.outputKind);
+  const outputId = outputIdFromApprovalPayload(input.payload);
+  const issueId = optionalPayloadString(input.payload.issueId);
+  const issueIdentifier = optionalPayloadString(input.payload.issueIdentifier);
 
   return {
     id: `approval:${input.id}`,
@@ -1621,12 +1649,13 @@ function decisionFromApproval(input: {
       rawSummary,
       "Review the pending DearMe action before the team moves forward.",
     ),
-    riskGate: null,
+    riskGate: riskGateFromPayload(input.payload.riskGate),
     status: "pending",
-    outputKind: null,
+    outputKind,
+    outputId,
     approvalId: input.id,
-    issueId: null,
-    issueIdentifier: null,
+    issueId,
+    issueIdentifier,
     updatedAt: toIso(input.updatedAt),
     reviewLoop: null,
   };
@@ -2007,9 +2036,14 @@ export function dearmeWorkbenchService(db: Db) {
       const workReady = outputs
         .filter((output) => output.isReviewable)
         .map(workItemFromOutput);
-      const approvalDecisions = approvalRows
+      const dearMeApprovalRows = approvalRows
         .filter((approval) => approval.type.startsWith("dearme_"))
-        .filter((approval) => isRecord(approval.payload))
+        .filter((approval) => isRecord(approval.payload));
+      const pendingNextMoveOutputIds = new Set(dearMeApprovalRows
+        .filter((approval) => approval.type === DEARME_NEXT_MOVE_APPROVAL_TYPE)
+        .map((approval) => outputIdFromApprovalPayload(approval.payload))
+        .filter((outputId): outputId is string => Boolean(outputId)));
+      const approvalDecisions = dearMeApprovalRows
         .map((approval) => decisionFromApproval({
           id: approval.id,
           type: approval.type,
@@ -2019,6 +2053,7 @@ export function dearmeWorkbenchService(db: Db) {
       const outputDecisions = workReady
         .map((item) => outputs.find((output) => output.id === item.id))
         .filter((output): output is DearMeOutputItem => Boolean(output))
+        .filter((output) => !pendingNextMoveOutputIds.has(output.id))
         .map(decisionFromOutput);
       const decisionsNeeded = [...approvalDecisions, ...outputDecisions]
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))

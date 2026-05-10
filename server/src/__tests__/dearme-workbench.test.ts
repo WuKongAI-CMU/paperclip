@@ -911,6 +911,124 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     expect(customerPathJson).not.toContain("Paperclip");
   });
 
+  it("projects approved private output as the next final approval handoff", async () => {
+    const companyId = await seedCompany();
+    const chiefOfStaffId = await seedDearMeAgent({
+      companyId,
+      name: "DearMe Chief of Staff",
+      role: "chief_of_staff",
+      updatedAt: new Date("2026-05-09T09:00:00.000Z"),
+    });
+    const contentIssueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft first content batch",
+      identifier: "WB-42",
+      originFingerprint: "operation-draft_content_batch",
+      status: "done",
+      updatedAt: new Date("2026-05-09T09:20:00.000Z"),
+      assigneeAgentId: chiefOfStaffId,
+    });
+    const outputId = `${contentIssueId}:content_drafts`;
+
+    await attachDocument({
+      companyId,
+      issueId: contentIssueId,
+      key: "starter-posts",
+      title: "Starter posts",
+      body: "Draft body: Three proof-backed posts.\nApproval gate: publish social posts.",
+      updatedAt: new Date("2026-05-09T09:18:00.000Z"),
+    });
+    await db.insert(issueWorkProducts).values({
+      id: randomUUID(),
+      companyId,
+      issueId: contentIssueId,
+      type: "draft",
+      provider: "codex-local",
+      title: "Content draft batch",
+      url: null,
+      status: "ready",
+      reviewState: "approved",
+      summary: "Three private posts are approved as useful and waiting for launch approval.",
+      updatedAt: new Date("2026-05-09T09:19:00.000Z"),
+    });
+    const approvalId = randomUUID();
+    await db.insert(approvals).values({
+      id: approvalId,
+      companyId,
+      type: "dearme_output_next_move",
+      requestedByAgentId: chiefOfStaffId,
+      requestedByUserId: null,
+      status: "pending",
+      payload: {
+        title: "Approve posts for publishing",
+        summary: "DearMe marked the private drafts useful. The posts are ready for your final approval before anything public happens.",
+        recommendedAction: "Publish the approved posts from this content batch.",
+        nextActionOnApproval: "DearMe may publish the prepared posts through the selected channel. Nothing publishes before this approval.",
+        riskGate: "publish_social",
+        outputKind: "content_drafts",
+        outputId,
+        issueId: contentIssueId,
+        issueIdentifier: "WB-42",
+      },
+      updatedAt: new Date("2026-05-09T09:21:00.000Z"),
+    });
+
+    const result = await dearmeWorkbenchService(db).getWorkbench(companyId);
+
+    expect(result.decisionsNeeded).toEqual([
+      expect.objectContaining({
+        id: `approval:${approvalId}`,
+        kind: "approve_action",
+        title: "Approve posts for publishing",
+        summary: expect.stringContaining("final approval"),
+        riskGate: "publish_social",
+        outputKind: "content_drafts",
+        outputId,
+        approvalId,
+        issueId: contentIssueId,
+        issueIdentifier: "WB-42",
+        reviewLoop: null,
+      }),
+    ]);
+    expect(result.decisionsNeeded).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: `output:${outputId}`, kind: "review_output" }),
+      ]),
+    );
+    expect(result.batchDecisions).toEqual([
+      expect.objectContaining({
+        id: "batch:publish_social",
+        title: "Review content batch",
+        riskGate: "publish_social",
+        decisionIds: [`approval:${approvalId}`],
+        issueIds: [contentIssueId],
+        approvalIds: [approvalId],
+      }),
+    ]);
+    expect(result.workStream).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: `decision:approval:${approvalId}`,
+          relatedOutputId: outputId,
+          issueId: contentIssueId,
+          approvalId,
+        }),
+      ]),
+    );
+    expect(result.actionGraph.nodes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: `decision:approval:${approvalId}`,
+          relatedOutputId: outputId,
+        }),
+      ]),
+    );
+    expect(JSON.stringify(result)).not.toContain("codex-local");
+    expect(JSON.stringify(result)).not.toContain("provider");
+    expect(JSON.stringify(result)).not.toContain("Paperclip");
+    expect(JSON.stringify(result)).not.toContain("OpenClaw");
+  });
+
   it("projects only active Voice & Memory sources after revisions and retirements", async () => {
     const companyId = await seedCompany();
 

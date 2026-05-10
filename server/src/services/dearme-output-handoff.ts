@@ -1,6 +1,14 @@
 import { and, asc, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
-import { documents, issueComments, issueDocuments, issues, issueWorkProducts } from "@paperclipai/db";
+import {
+  approvals,
+  documents,
+  issueApprovals,
+  issueComments,
+  issueDocuments,
+  issues,
+  issueWorkProducts,
+} from "@paperclipai/db";
 import {
   DEARME_OUTPUT_KINDS,
   dearMeContentDraftPacketSchema,
@@ -93,10 +101,65 @@ const VOICE_OPERATION_FINGERPRINT = "operation-seed_voice_profile";
 const CONTENT_OPERATION_FINGERPRINT = "operation-draft_content_batch";
 const CONTENT_DRAFT_WORK_PRODUCT_PROVIDER = "dearme";
 const CYCLE_OUTPUT_WORK_PRODUCT_PROVIDER = "dearme-cycle-output";
+const DEARME_NEXT_MOVE_APPROVAL_TYPE = "dearme_output_next_move";
 const DEARME_OUTPUT_REVIEW_LOOP_MAX_ATTEMPTS = 3;
 const DEARME_FEEDBACK_TRACE_HIDDEN_TERMS =
   /\b(dearme decision|issue comment|work product|provider|adapter|setup[-_ ]?payload|paperclip|openclaw|symphony|runtime|agent|model-provider|model provider|codex)\b/i;
 const outputKindSet = new Set<string>(DEARME_OUTPUT_KINDS);
+
+const NEXT_MOVE_APPROVAL_COPY: Partial<Record<DearMeOutputKind, {
+  title: string;
+  summary: string;
+  recommendedAction: string;
+  nextActionOnApproval: string;
+  riskGate: string | null;
+  risks: readonly string[];
+}>> = {
+  content_drafts: {
+    title: "Approve posts for publishing",
+    summary: "DearMe marked the private drafts useful. The posts are ready for your final approval before anything public happens.",
+    recommendedAction: "Publish the approved posts from this content batch.",
+    nextActionOnApproval: "DearMe may publish the prepared posts through the selected channel. Nothing publishes before this approval.",
+    riskGate: "publish_social",
+    risks: [
+      "The posts will represent the customer publicly.",
+      "Any claim should match the approved private draft and proof.",
+    ],
+  },
+  opportunity_drafts: {
+    title: "Approve outreach to send",
+    summary: "DearMe marked the private outreach useful. The messages are ready for your final approval before anyone is contacted.",
+    recommendedAction: "Send the approved outreach drafts to the selected opportunity targets.",
+    nextActionOnApproval: "DearMe may send the prepared outreach. Nothing is sent before this approval.",
+    riskGate: "send_email",
+    risks: [
+      "The message will be received by another person.",
+      "The outreach should match the customer's voice, offer, and relationship context.",
+    ],
+  },
+  portfolio_update: {
+    title: "Approve portfolio update to publish",
+    summary: "DearMe marked the private portfolio update useful. The site change is ready for your final approval before deployment.",
+    recommendedAction: "Publish the approved portfolio proof update.",
+    nextActionOnApproval: "DearMe may deploy the prepared public site update. Nothing deploys before this approval.",
+    riskGate: "deploy_public_site",
+    risks: [
+      "The update changes public proof and positioning.",
+      "Claims should stay aligned with the approved proof source.",
+    ],
+  },
+  weekly_report: {
+    title: "Approve the next private cycle",
+    summary: "DearMe marked the private report useful. The next brand-growth cycle is ready for your final approval before more work starts.",
+    recommendedAction: "Start the next private cycle from the report's next bets.",
+    nextActionOnApproval: "DearMe may schedule the next private cycle. Nothing public is published, sent, or deployed from this approval.",
+    riskGate: "spend_money",
+    risks: [
+      "Starting the next cycle can spend credits or budget.",
+      "The next cycle should follow the approved private report and boundaries.",
+    ],
+  },
+};
 
 const OPERATION_DESCRIPTORS: Record<string, OutputDescriptor> = {
   [CONTENT_OPERATION_FINGERPRINT]: {
@@ -1129,9 +1192,101 @@ function outputDecisionCopy(action: DearMeOutputReviewAction, decisionNote: stri
   ].join("\n\n");
 }
 
+function outputWorkProductReviewState(action: DearMeOutputReviewAction) {
+  if (action === "approve") return "approved";
+  if (action === "not_useful") return "not_useful";
+  return "changes_requested";
+}
+
+function pendingNextMoveMatchesOutput(input: { payload: unknown; outputId: string }) {
+  return isRecord(input.payload) && input.payload.outputId === input.outputId;
+}
+
 export function dearmeOutputHandoffService(db: Db) {
   const documentsSvc = documentService(db);
   const voiceGate = dearMeVoiceGateService();
+
+  async function ensureNextMoveApproval(input: {
+    companyId: string;
+    output: DearMeOutputItem;
+    issue: { assigneeAgentId: string | null };
+    actor: DearMeOutputReviewActor;
+    decisionNote: string | null | undefined;
+    now: Date;
+  }) {
+    const copy = NEXT_MOVE_APPROVAL_COPY[input.output.kind];
+    if (!copy) return null;
+
+    const existing = await db
+      .select({
+        id: approvals.id,
+        payload: approvals.payload,
+      })
+      .from(approvals)
+      .where(and(
+        eq(approvals.companyId, input.companyId),
+        eq(approvals.type, DEARME_NEXT_MOVE_APPROVAL_TYPE),
+        eq(approvals.status, "pending"),
+      ))
+      .then((rows) => rows.find((row) =>
+        pendingNextMoveMatchesOutput({ payload: row.payload, outputId: input.output.id })
+      ) ?? null);
+    if (existing) return existing;
+
+    const requestedByAgentId =
+      input.issue.assigneeAgentId ?? (input.actor.actorType === "agent" ? input.actor.agentId : null);
+    const [approval] = await db
+      .insert(approvals)
+      .values({
+        companyId: input.companyId,
+        type: DEARME_NEXT_MOVE_APPROVAL_TYPE,
+        requestedByAgentId,
+        requestedByUserId: null,
+        status: "pending",
+        payload: {
+          title: copy.title,
+          summary: copy.summary,
+          recommendedAction: copy.recommendedAction,
+          nextActionOnApproval: copy.nextActionOnApproval,
+          risks: [...copy.risks],
+          riskGate: copy.riskGate,
+          outputId: input.output.id,
+          outputKind: input.output.kind,
+          issueId: input.output.issueId,
+          issueIdentifier: input.output.issueIdentifier,
+          preparedTitle: input.output.title,
+          preparedSummary: input.output.summary,
+          reviewNote: input.decisionNote?.trim() || null,
+        },
+        decisionNote: null,
+        decidedByUserId: null,
+        decidedAt: null,
+        createdAt: input.now,
+        updatedAt: input.now,
+      })
+      .returning({
+        id: approvals.id,
+        payload: approvals.payload,
+      });
+
+    if (!approval) {
+      throw new Error("Failed to create DearMe next move approval");
+    }
+
+    await db
+      .insert(issueApprovals)
+      .values({
+        companyId: input.companyId,
+        issueId: input.output.issueId,
+        approvalId: approval.id,
+        linkedByAgentId: requestedByAgentId,
+        linkedByUserId: input.actor.actorType === "user" ? input.actor.actorId : null,
+        createdAt: input.now,
+      })
+      .onConflictDoNothing();
+
+    return approval;
+  }
 
   async function latestIssueDocumentRevisionId(issueId: string, key: string) {
     return db
@@ -1708,13 +1863,24 @@ export function dearmeOutputHandoffService(db: Db) {
       await db
         .update(issueWorkProducts)
         .set({
-          reviewState: request.action === "approve" ? "approved" : "changes_requested",
+          reviewState: outputWorkProductReviewState(request.action),
           updatedAt: now,
         })
         .where(and(
           eq(issueWorkProducts.companyId, companyId),
           eq(issueWorkProducts.issueId, issueId),
         ));
+
+      if (request.action === "approve") {
+        await ensureNextMoveApproval({
+          companyId,
+          output,
+          issue,
+          actor,
+          decisionNote: request.decisionNote,
+          now,
+        });
+      }
 
       const refreshed = await service.listOutputs(companyId);
       const updatedOutput = refreshed.outputs.find((item) =>

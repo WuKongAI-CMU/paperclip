@@ -972,6 +972,7 @@ describe("DearMe brand blueprint contract", () => {
           riskGate: null,
           status: "pending",
           outputKind: null,
+          outputId: null,
           approvalId: "approval-1",
           issueId: null,
           issueIdentifier: null,

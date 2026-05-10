@@ -2,6 +2,29 @@
 
 Date: 2026-05-10
 
+## DM-183AJ Final Move Approval Gate - 2026-05-10
+
+Implementation slice:
+
+- Reused the existing `dearme_output_next_move` approval type instead of adding
+  a second DearMe launch queue or runtime surface.
+- When private prepared work is approved as useful, the output handoff now opens
+  one pending final-action approval linked to the original issue/output before
+  anything can publish, send, deploy, or start another spend-bearing cycle.
+- The workbench projection now carries `outputId` through approval decisions,
+  batches, work stream, and action graph, and suppresses the duplicate raw
+  output-review decision while the final approval is pending.
+- Focused DearMe routes can now match approval decisions by artifact id, so
+  Symphony handoffs can route users back to the same customer decision surface.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-output-handoff.test.ts server/src/__tests__/dearme-workbench.test.ts --maxWorkers=1`
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/shared typecheck`
+- `pnpm --filter @paperclipai/server typecheck`
+- `pnpm --filter @paperclipai/ui typecheck`
+
 ## DM-183AI Stale Prepared Work Preview - 2026-05-10
 
 Implementation slice:

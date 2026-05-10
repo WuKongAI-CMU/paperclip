@@ -2155,6 +2155,7 @@ function matchesIssueReference(
 function matchesDecisionFocus(decision: DearMeWorkbenchDecision, focus: DearMeDecisionFocus) {
   return Boolean(
     (focus.approvalId && decision.approvalId === focus.approvalId) ||
+      (focus.outputId && decision.outputId === focus.outputId) ||
       matchesIssueReference(decision, focus.issueReference),
   );
 }

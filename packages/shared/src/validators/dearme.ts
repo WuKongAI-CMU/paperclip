@@ -887,6 +887,7 @@ export const dearMeWorkbenchDecisionSchema = z.object({
   riskGate: z.enum(DEARME_RISK_GATES).nullable(),
   status: z.enum(["needed", "pending"]),
   outputKind: z.enum(DEARME_OUTPUT_KINDS).nullable(),
+  outputId: z.string().min(1).nullable(),
   approvalId: z.string().min(1).nullable(),
   issueId: z.string().min(1).nullable(),
   issueIdentifier: z.string().nullable(),
