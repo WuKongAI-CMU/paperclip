@@ -3,6 +3,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   agents,
+  activityLog,
   approvals,
   companies,
   createDb,
@@ -760,6 +761,93 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
 
     const allIssueRows = await db.select().from(issues).where(eq(issues.companyId, companyId));
     expect(allIssueRows).toHaveLength(7);
+  });
+
+  it("grounds output source evidence in active Voice & Memory rows", async () => {
+    const companyId = await seedCompany();
+    await seedIssue({
+      companyId,
+      title: "DearMe Draft: Content batch",
+      identifier: "DME-19",
+      originFingerprint: "operation-draft_content_batch",
+      status: "in_review",
+      updatedAt: new Date("2026-05-09T12:00:00.000Z"),
+    });
+
+    await db.insert(activityLog).values([
+      {
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: "memory-active-voice",
+        details: {
+          kind: "voice_sample",
+          title: "Operator note",
+          body: "Short, direct notes for founder-facing AI product updates.",
+          sourceLabel: "Manual note",
+        },
+        createdAt: new Date("2026-05-09T11:00:00.000Z"),
+      },
+      {
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: "memory-hidden-terms",
+        details: {
+          kind: "proof_point",
+          title: "Paperclip provider setup_payload",
+          body: "OpenClaw runtime workspace proof should stay private.",
+          sourceLabel: "Symphony issue route token",
+        },
+        createdAt: new Date("2026-05-09T11:01:00.000Z"),
+      },
+      {
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: "memory-retired",
+        details: {
+          kind: "proof_point",
+          title: "Retired proof",
+          body: "This retired claim should not appear.",
+        },
+        createdAt: new Date("2026-05-09T11:02:00.000Z"),
+      },
+      {
+        companyId,
+        actorType: "user",
+        actorId: "user-1",
+        action: "dearme.memory_archived",
+        entityType: "dearme_memory",
+        entityId: "memory-retired",
+        details: { kind: "proof_point" },
+        createdAt: new Date("2026-05-09T11:03:00.000Z"),
+      },
+    ]);
+
+    const result = await dearmeOutputHandoffService(db).listOutputs(companyId);
+    const contentOutput = result.outputs.find((output) => output.kind === "content_drafts")!;
+
+    expect(contentOutput.sourceEvidence).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: "voice_memory",
+        label: "Voice & Memory",
+        source: "derived",
+        summary: expect.stringContaining("Short, direct notes"),
+      }),
+    ]));
+    const serialized = JSON.stringify(contentOutput).toLowerCase();
+    expect(serialized).toContain("dearme services setup details");
+    expect(serialized).not.toContain("retired claim");
+    for (const hiddenTerm of ["paperclip", "openclaw", "symphony", "provider", "setup_payload", "runtime", "workspace", "issue route", "token"]) {
+      expect(serialized).not.toContain(hiddenTerm);
+    }
   });
 
   it("prefers the active output issue when a fingerprint has newer cancelled history", async () => {

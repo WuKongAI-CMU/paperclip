@@ -7,6 +7,10 @@ import {
   startEmbeddedPostgresTestDatabase,
 } from "./helpers/embedded-postgres.js";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "../services/dearme-brand-blueprint-apply.js";
+import {
+  buildDearMeVoiceMemoryAssignmentBrief,
+  buildDearMeVoiceMemoryEvidenceSummary,
+} from "../services/dearme-memory-brief.js";
 import { dearmeMemoryContextService } from "../services/dearme-memory-context.js";
 import { routineService } from "../services/routines.js";
 
@@ -26,6 +30,82 @@ function issuePrefix(id: string) {
 function countOccurrences(value: string, pattern: string) {
   return value.split(pattern).length - 1;
 }
+
+describe("buildDearMeVoiceMemoryAssignmentBrief", () => {
+  it("renders active private memory for hidden DearMe assignments", () => {
+    const brief = buildDearMeVoiceMemoryAssignmentBrief([
+      {
+        details: {
+          kind: "voice_sample",
+          title: "Operator note",
+          body: "Short, direct note.",
+          sourceLabel: "Manual note",
+        },
+      },
+      {
+        details: {
+          kind: "proof_point",
+          title: "Launch proof",
+          body: "Shipped a local AI workbench that turns private logs into reviewable outputs.",
+        },
+      },
+    ]);
+
+    expect(brief).toContain("DearMe Voice & Memory brief:");
+    expect(brief).toContain("- Use these active private sources before drafting or revising.");
+    expect(brief).toContain("Voice sample: Operator note: Short, direct note. Source: Manual note.");
+    expect(brief).toContain("Proof point: Launch proof: Shipped a local AI team progress view");
+    expect(brief).toContain("Keep the next version private until the user reviews it.");
+  });
+
+  it("keeps hidden assignment memory customer-safe", () => {
+    const brief = buildDearMeVoiceMemoryAssignmentBrief([
+      {
+        details: {
+          kind: "proof_point",
+          title: "Paperclip adapter provider workspace runtime setup_payload",
+          body: "OpenClaw model provider workbench issue route token should stay hidden.",
+          sourceLabel: "Symphony execution route API key",
+        },
+      },
+    ]);
+
+    expect(brief).toContain("DearMe connectors services private work areas private pass setup details");
+    expect(brief).toContain("DearMe services team progress view review links private credentials");
+    expect(brief).toContain("Source: DearMe private action links private credentials.");
+    expect(brief).not.toMatch(
+      /\b(Paperclip|OpenClaw|Symphony|adapter|provider|setup_payload|model provider|workbench|issue route|execution route|API key|token|workspace|runtime)\b/i,
+    );
+  });
+
+  it("renders customer-safe source evidence summaries for prepared outputs", () => {
+    const summary = buildDearMeVoiceMemoryEvidenceSummary([
+      {
+        details: {
+          kind: "voice_sample",
+          title: "Operator note",
+          body: "Short, direct notes for founder-facing AI product updates.",
+          sourceLabel: "Manual note",
+        },
+      },
+      {
+        details: {
+          kind: "proof_point",
+          title: "Paperclip provider setup_payload",
+          body: "OpenClaw runtime workspace proof should stay private.",
+          sourceLabel: "Symphony issue route token",
+        },
+      },
+    ]);
+
+    expect(summary).toContain("Voice sample: Operator note: Short, direct notes");
+    expect(summary).toContain("Proof point: DearMe services setup details");
+    expect(summary).toContain("DearMe private pass private work areas proof should stay private");
+    expect(summary).not.toMatch(
+      /\b(Paperclip|OpenClaw|Symphony|provider|setup_payload|runtime|workspace|issue route|token)\b/i,
+    );
+  });
+});
 
 describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
   let db!: ReturnType<typeof createDb>;

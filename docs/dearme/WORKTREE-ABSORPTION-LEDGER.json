@@ -506,6 +506,25 @@
       ]
     },
     {
+      "ticket": "DM-019",
+      "branch": "codex/dearme-dm-019-source-grounded-drafts",
+      "head": "5e7eb23bec5cfbea6db915ce629d30a4f955e1db",
+      "reviewedAt": "2026-05-10",
+      "reason": "The worker's source-grounded draft intent is adapted into the current activity-log Voice & Memory path through one customer-safe memory renderer used by hidden heartbeat briefs, routine refresh, and output-card source evidence; the stale reviewContext and separate grounding service were not replayed.",
+      "evidence": [
+        "server/src/services/dearme-memory-brief.ts",
+        "server/src/services/dearme-memory-context.ts",
+        "server/src/services/heartbeat.ts",
+        "server/src/services/dearme-output-handoff.ts",
+        "server/src/__tests__/dearme-memory-context.test.ts",
+        "server/src/__tests__/heartbeat-task-markdown.test.ts",
+        "server/src/__tests__/heartbeat-dearme-voice-memory.test.ts",
+        "server/src/__tests__/dearme-output-handoff.test.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
       "ticket": "DM-022",
       "branch": "codex/dearme-dm-022-source-change-refresh",
       "head": "b6916166cc7bb716ae8c05af5bd386636cddcddc",

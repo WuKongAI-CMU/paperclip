@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
 import {
+  activityLog,
   approvals,
   documents,
   issueApprovals,
@@ -34,6 +35,11 @@ import {
 import { notFound } from "../errors.js";
 import { DEARME_NEXT_MOVE_APPROVAL_TYPE } from "./dearme-approval-receipts.js";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "./dearme-brand-blueprint-apply.js";
+import {
+  buildDearMeVoiceMemoryEvidenceSummary,
+  DEARME_MEMORY_ACTIONS,
+  selectActiveDearMeMemoryRows,
+} from "./dearme-memory-brief.js";
 import { deriveDearMeOutputStatus } from "./dearme-output-status.js";
 import { dearMeVoiceGateService } from "./dearme-voice-gate.js";
 import { documentService } from "./documents.js";
@@ -1155,16 +1161,26 @@ function buildOutputSourceEvidence(input: {
   documents: DearMeOutputDocument[];
   workProducts: DearMeOutputWorkProduct[];
   latestUpdate: DearMeOutputUpdate | null;
+  voiceMemorySummary: string | null;
 }) {
   const items: DearMeOutputSourceEvidence[] = [];
 
-  addSourceEvidenceFromDetail(items, "voice_memory", "Voice & Memory", input.details, [
-    "voice_guidance",
-    "audience",
-    "positioning",
-    "why_relevant",
-    "hook",
-  ]);
+  if (input.voiceMemorySummary) {
+    items.push({
+      kind: "voice_memory",
+      label: "Voice & Memory",
+      summary: input.voiceMemorySummary,
+      source: "derived",
+    });
+  } else {
+    addSourceEvidenceFromDetail(items, "voice_memory", "Voice & Memory", input.details, [
+      "voice_guidance",
+      "audience",
+      "positioning",
+      "why_relevant",
+      "hook",
+    ]);
+  }
   addSourceEvidenceFromDetail(items, "proof", "Proof used", input.details, [
     "proof_used",
     "proof_source",
@@ -1188,6 +1204,7 @@ function buildOutputItem(input: {
   workProducts: DearMeOutputWorkProduct[];
   latestUpdate: DearMeOutputUpdate | null;
   reviewComments: DearMeReviewComment[];
+  voiceMemorySummary: string | null;
 }) {
   const hasProducedArtifact =
     input.documents.length > 0 ||
@@ -1242,6 +1259,7 @@ function buildOutputItem(input: {
       documents: input.documents,
       workProducts: input.workProducts,
       latestUpdate: input.latestUpdate,
+      voiceMemorySummary: input.voiceMemorySummary,
     }),
   } satisfies DearMeOutputItem;
 }
@@ -1252,6 +1270,7 @@ function buildOutputItems(input: {
   workProductsByIssue: Map<string, DearMeOutputWorkProduct[]>;
   latestUpdateByIssue: Map<string, DearMeOutputUpdate>;
   reviewCommentsByIssue: Map<string, DearMeReviewComment[]>;
+  voiceMemorySummary: string | null;
 }) {
   const byFingerprint = issueByOutputFingerprint(input.issues);
   const items: Array<DearMeOutputItem & { order: number }> = [];
@@ -1271,6 +1290,7 @@ function buildOutputItems(input: {
           workProducts: input.workProductsByIssue.get(brandOsIssue.id) ?? [],
           latestUpdate: input.latestUpdateByIssue.get(brandOsIssue.id) ?? null,
           reviewComments: input.reviewCommentsByIssue.get(brandOsIssue.id) ?? [],
+          voiceMemorySummary: input.voiceMemorySummary,
         }),
         order: descriptor.order,
       });
@@ -1286,6 +1306,7 @@ function buildOutputItems(input: {
           workProducts: input.workProductsByIssue.get(voiceIssue.id) ?? [],
           latestUpdate: input.latestUpdateByIssue.get(voiceIssue.id) ?? null,
           reviewComments: input.reviewCommentsByIssue.get(voiceIssue.id) ?? [],
+          voiceMemorySummary: input.voiceMemorySummary,
         }),
         order: VOICE_DESCRIPTOR.order,
       });
@@ -1303,6 +1324,7 @@ function buildOutputItems(input: {
         workProducts: input.workProductsByIssue.get(issue.id) ?? [],
         latestUpdate: input.latestUpdateByIssue.get(issue.id) ?? null,
         reviewComments: input.reviewCommentsByIssue.get(issue.id) ?? [],
+        voiceMemorySummary: input.voiceMemorySummary,
       }),
       order: descriptor.order,
     });
@@ -1592,7 +1614,7 @@ export function dearmeOutputHandoffService(db: Db) {
       }
 
       const issueIds = issueRows.map((issue) => issue.id);
-      const [documentRows, workProductRows, commentRows, reviewCommentRows] = await Promise.all([
+      const [documentRows, workProductRows, commentRows, reviewCommentRows, voiceMemorySummary] = await Promise.all([
         db
           .select({
             id: documents.id,
@@ -1656,6 +1678,18 @@ export function dearmeOutputHandoffService(db: Db) {
             inArray(issueComments.issueId, issueIds),
           ))
           .orderBy(desc(issueComments.createdAt)),
+        db
+          .select({
+            id: activityLog.id,
+            action: activityLog.action,
+            entityId: activityLog.entityId,
+            details: activityLog.details,
+          })
+          .from(activityLog)
+          .where(and(eq(activityLog.companyId, companyId), inArray(activityLog.action, [...DEARME_MEMORY_ACTIONS])))
+          .orderBy(desc(activityLog.createdAt))
+          .limit(80)
+          .then((rows) => buildDearMeVoiceMemoryEvidenceSummary(selectActiveDearMeMemoryRows(rows))),
       ]);
 
       const documentsByIssue = groupPayloadByIssue(
@@ -1718,6 +1752,7 @@ export function dearmeOutputHandoffService(db: Db) {
           workProductsByIssue,
           latestUpdateByIssue: updatesByIssue,
           reviewCommentsByIssue,
+          voiceMemorySummary,
         }),
       });
     },

@@ -2,6 +2,55 @@
 
 Date: 2026-05-10
 
+## DM-183BH DM-019 Source-Grounded Draft Absorption - 2026-05-10
+
+Product/architecture slice:
+
+- Kept Symphony as the cooperation spine and used the coordinator checkout as
+  the integration surface rather than starting a parallel runtime.
+- Reviewed exact DM-019 worker head
+  `5e7eb23bec5cfbea6db915ce629d30a4f955e1db`.
+- Adapted the useful worker intent to the current DearMe memory architecture:
+  active `dearme.memory_updated` rows are selected once, sanitized once, and
+  reused for hidden assignment briefs plus output-card source evidence.
+- Extracted the shared Voice & Memory renderer into
+  `server/src/services/dearme-memory-brief.ts` instead of replaying the stale
+  `dearme-voice-memory-grounding.ts` / `reviewContext` branch model.
+- Hidden DearMe heartbeat assignments now query the current active Voice &
+  Memory rows directly and render a sanitized brief through the shared helper,
+  so future private drafts start from saved voice/proof/context without
+  exposing runtime vocabulary or introducing a heartbeat/memory-context import
+  cycle.
+- DearMe output cards now prefer an active Voice & Memory source summary in
+  `sourceEvidence` before falling back to document/work-product details, making
+  prepared work feel grounded in the user's saved private sources.
+- Recorded the exact DM-019 worker head in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so future Symphony patrols stop
+  reopening the stale branch as fresh work.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status --json` passed with daemon pid `89569`,
+  dashboard `http://127.0.0.1:4100/`, and no running or retrying workers.
+- `pnpm exec vitest run server/src/__tests__/heartbeat-task-markdown.test.ts server/src/__tests__/dearme-memory-context.test.ts server/src/__tests__/heartbeat-dearme-voice-memory.test.ts server/src/__tests__/dearme-output-handoff.test.ts --maxWorkers=1`
+  passed for non-embedded suites: 3 files passed, 1 embedded Postgres file
+  skipped; 8 tests passed, 14 skipped.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
+  passed.
+- `pnpm run test:dearme-worktrees` passed, 13 tests.
+- `pnpm run dearme:worktrees -- --ticket=DM-019 --skip-dirty --limit=20`
+  passed and showed both DM-019 worktrees as `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` passed and
+  reported `reviewed_absorbed: 38`, `not_in_current: 75`, and `dirty: 0`.
+- `git diff --check` passed.
+
+Known gap:
+
+- The embedded Postgres DearMe memory/output-handoff tests skipped on this
+  host because the Postgres init script exited with code 1, matching the
+  existing local test-environment limitation.
+
 ## DM-183BG Integrated Baseline Absorption Follow-Up - 2026-05-10
 
 Coordination slice:

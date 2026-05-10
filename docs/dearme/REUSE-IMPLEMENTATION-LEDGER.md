@@ -44,6 +44,18 @@ The right reuse split is:
 - Symphony: development factory and cooperation spine only; not the DearMe
   product runtime.
 
+## Latest Symphony Absorption - 2026-05-10
+
+- DM-019 `5e7eb23bec5cfbea6db915ce629d30a4f955e1db` is absorbed by adapting
+  its source-grounded-draft intent onto the current activity-log Voice & Memory
+  path. DearMe now uses one customer-safe memory renderer for routine refresh,
+  hidden heartbeat assignment briefs, and output-card `sourceEvidence`, rather
+  than replaying the stale worker branch's separate `reviewContext` and
+  `dearme-voice-memory-grounding.ts` model.
+- This keeps Polsia-style "the work remembers me" momentum visible in the
+  product while preserving the Naive/Paperclip substrate and Symphony as a
+  development-coordination layer only.
+
 ## Latest Polsia vs Naive Read - 2026-05-09
 
 The refreshed comparison is captured in

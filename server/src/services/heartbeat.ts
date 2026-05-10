@@ -136,6 +136,11 @@ import {
   dearMeOutputArtifactTitleForOriginFingerprint,
   parseDearMeOutputReviewDecisionComments,
 } from "./dearme-output-handoff.js";
+import {
+  buildDearMeVoiceMemoryAssignmentBrief,
+  DEARME_MEMORY_ACTIONS,
+  selectActiveDearMeMemoryRows,
+} from "./dearme-memory-brief.js";
 import { withAgentStartLock } from "./agent-start-lock.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
 import { redactEventPayload } from "../redaction.js";
@@ -2082,6 +2087,31 @@ async function buildDearMeIssueRegenerationBrief(input: {
   });
 }
 
+export async function buildDearMeIssueVoiceMemoryBrief(input: {
+  db: Db;
+  companyId: string;
+  issue: {
+    originKind?: string | null;
+  } | null;
+}) {
+  const issue = input.issue;
+  if (!issue || issue.originKind !== DEARME_BRAND_BLUEPRINT_ORIGIN_KIND) return null;
+
+  const memoryRows = await input.db
+    .select({
+      id: activityLog.id,
+      action: activityLog.action,
+      entityId: activityLog.entityId,
+      details: activityLog.details,
+    })
+    .from(activityLog)
+    .where(and(eq(activityLog.companyId, input.companyId), inArray(activityLog.action, [...DEARME_MEMORY_ACTIONS])))
+    .orderBy(desc(activityLog.createdAt))
+    .limit(80);
+
+  return buildDearMeVoiceMemoryAssignmentBrief(selectActiveDearMeMemoryRows(memoryRows));
+}
+
 function isHeartbeatRunTerminalStatus(
   status: string | null | undefined,
 ): status is (typeof HEARTBEAT_RUN_TERMINAL_STATUSES)[number] {
@@ -2102,6 +2132,7 @@ export function buildPaperclipTaskMarkdown(input: {
     id: string;
     body: string;
   } | null;
+  dearMeVoiceMemoryBrief?: string | null;
   dearMeRegenerationBrief?: string | null;
 }) {
   const quoteTaskScalar = (value: string) => JSON.stringify(value);
@@ -2121,11 +2152,14 @@ export function buildPaperclipTaskMarkdown(input: {
   };
   const issue = input.issue;
   const wakeComment = input.wakeComment ?? null;
+  const dearMeVoiceMemoryBrief = input.dearMeVoiceMemoryBrief?.trim();
   const dearMeRegenerationBrief = input.dearMeRegenerationBrief?.trim();
   const issueDocuments = (input.issueDocuments ?? [])
     .filter((document) => document.key.trim().length > 0)
     .slice(0, PAPERCLIP_TASK_DOCUMENT_MAX_COUNT);
-  if (!issue && !wakeComment && issueDocuments.length === 0 && !dearMeRegenerationBrief) return null;
+  if (!issue && !wakeComment && issueDocuments.length === 0 && !dearMeVoiceMemoryBrief && !dearMeRegenerationBrief) {
+    return null;
+  }
 
   const lines = [
     "DearMe task context:",
@@ -2143,6 +2177,9 @@ export function buildPaperclipTaskMarkdown(input: {
   }
   if (wakeComment?.body.trim()) {
     lines.push("", "Latest wake comment:", fenceTaskText(wakeComment.body.trim()));
+  }
+  if (dearMeVoiceMemoryBrief) {
+    lines.push("", dearMeVoiceMemoryBrief);
   }
   if (dearMeRegenerationBrief) {
     lines.push("", dearMeRegenerationBrief);
@@ -6456,6 +6493,11 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
       companyId: agent.companyId,
       issue: issueRef,
     });
+    const dearMeVoiceMemoryBrief = await buildDearMeIssueVoiceMemoryBrief({
+      db,
+      companyId: agent.companyId,
+      issue: issueRef,
+    });
     const taskMarkdown = buildPaperclipTaskMarkdown({
       issue: issueRef
         ? {
@@ -6467,6 +6509,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
         : null,
       issueDocuments: issueDocumentsForTask,
       wakeComment: wakeCommentContext,
+      dearMeVoiceMemoryBrief,
       dearMeRegenerationBrief,
     });
     if (issueRef) {
