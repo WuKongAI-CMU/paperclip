@@ -1239,6 +1239,71 @@ describe("IssueDetail", () => {
     expect(container.querySelector('[data-priority-editable="false"]')).toBeTruthy();
   });
 
+  it("preserves the generic sub-issue list for generic issues", async () => {
+    const childIssue = createIssue({
+      id: "child-1",
+      parentId: "issue-1",
+      identifier: "PAP-2",
+      issueNumber: 2,
+      title: "Generic child",
+    });
+
+    mockIssuesApi.get.mockResolvedValue(createIssue());
+    mockIssuesApi.list.mockImplementation((_companyId, filters?: { descendantOf?: string }) =>
+      Promise.resolve(filters?.descendantOf === "issue-1" ? [childIssue] : []),
+    );
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(mockIssuesListRender).toHaveBeenCalled();
+      expect(container.textContent).toContain("Sub-issues");
+    });
+  });
+
+  it("hides the generic sub-issue list for DearMe issues", async () => {
+    const childIssue = createIssue({
+      id: "child-1",
+      parentId: "issue-1",
+      identifier: "PAP-2",
+      issueNumber: 2,
+      title: "Customer-facing child",
+    });
+
+    mockIssuesApi.get.mockResolvedValue(createIssue({ originKind: "dearme_brand_blueprint_apply" }));
+    mockIssuesApi.list.mockImplementation((_companyId, filters?: { descendantOf?: string }) =>
+      Promise.resolve(filters?.descendantOf === "issue-1" ? [childIssue] : []),
+    );
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("Issue detail smoke");
+      expect(container.textContent).toContain("Chat thread");
+    });
+
+    expect(mockIssuesListRender).not.toHaveBeenCalled();
+    expect(container.textContent).not.toContain("Sub-issues");
+    expect(container.textContent).not.toContain("New Sub-issue");
+  });
+
   it("hides tree pause controls for DearMe issues", async () => {
     const childIssue = createIssue({
       id: "child-1",
@@ -1381,7 +1446,7 @@ describe("IssueDetail", () => {
 
     await waitForAssertion(() => {
       expect(container.textContent).toContain("Issue detail smoke");
-      expect(mockIssuesListRender.mock.calls.at(-1)?.[0].liveIssueIds).toBeUndefined();
+      expect(mockIssuesListRender).not.toHaveBeenCalled();
     });
     expect(container.textContent).not.toContain("Live");
     expect(mockSetBreadcrumbs.mock.calls.some(([items]) =>

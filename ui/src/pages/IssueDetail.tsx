@@ -1697,7 +1697,9 @@ export function IssueDetail() {
     () => isDearMeDetailIssue ? [] : childIssues,
     [isDearMeDetailIssue, issuePanelKey],
   );
-  const showRichSubIssuesSection = shouldRenderRichSubIssuesSection(childIssuesLoading, childIssues.length);
+  const canShowSubIssueControls = !isDearMeDetailIssue;
+  const showRichSubIssuesSection =
+    canShowSubIssueControls && shouldRenderRichSubIssuesSection(childIssuesLoading, childIssues.length);
   const openNewSubIssue = useCallback(() => {
     if (!issue) return;
     openNewIssue(buildSubIssueDefaultsForViewer(issue, currentUserId));
@@ -3809,14 +3811,14 @@ export function IssueDetail() {
             onUpdateIssue={handleChildIssueUpdate}
           />
         </div>
-      ) : (
+      ) : canShowSubIssueControls ? (
         <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
           <Button variant="outline" size="sm" onClick={openNewSubIssue} className="shrink-0 shadow-none">
             <Plus className="mr-1.5 h-3.5 w-3.5" />
             New Sub-issue
           </Button>
         </div>
-      )}
+      ) : null}
 
       <IssueDocumentsSection
         issue={issue}
