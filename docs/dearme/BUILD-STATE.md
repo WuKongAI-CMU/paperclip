@@ -16,11 +16,15 @@ Implementation slice:
 Verification:
 
 - `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
-  passed: 1 file, 61 tests.
+  passed: 1 file, 62 tests.
 - `pnpm --filter @paperclipai/ui typecheck`
   passed.
 - `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
   passed.
+- Playwright fallback smoke on `http://127.0.0.1:3100/DEAAAAAAAAA/dearme`
+  confirmed the short-source guard stays local with no mutation request, no
+  horizontal overflow, and no console/page errors. Screenshot:
+  `/tmp/dearme-dm183am-voice-memory-guardrails.png`.
 
 ## DM-183AL First Payoff CTA Rail - 2026-05-10
 

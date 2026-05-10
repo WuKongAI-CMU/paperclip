@@ -189,17 +189,20 @@ Completed:
   and memory body maximum before create/update runs.
 - Added customer-safe guidance that private memory needs at least 20 characters
   and stays private copy, not public output.
-- Locked short-source and oversized-reference regressions in the onboarding
-  suite.
+- Locked short-source, oversized-title, oversized-body, and
+  oversized-reference regressions in the onboarding suite.
 
 Verification:
 
 - `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
-  passed: 1 file, 61 tests.
+  passed: 1 file, 62 tests.
 - `pnpm --filter @paperclipai/ui typecheck`
   passed.
 - `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
   passed.
+- Playwright fallback smoke on `http://127.0.0.1:3100/DEAAAAAAAAA/dearme`
+  confirmed the short-source guard stays local with no mutation request, no
+  horizontal overflow, and no console/page errors.
 
 ### DM-183AL: First Payoff CTA Rail
 

@@ -3223,6 +3223,62 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("keeps oversized private source titles and bodies local before saving", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      setInputValue(
+        container.querySelector("#dearme-memory-title") as HTMLInputElement,
+        "A".repeat(161),
+      );
+      setTextareaValue(
+        container.querySelector("#dearme-memory-body") as HTMLTextAreaElement,
+        "This source has enough private context for DearMe to learn from it.",
+      );
+    });
+
+    await act(async () => {
+      buttonByText(container, "Add to Voice & Memory")?.click();
+    });
+
+    expect(container.textContent).toContain("Keep the source title under 160 characters.");
+    expect(mockDearmeApi.recordMemoryUpdate).not.toHaveBeenCalled();
+
+    await act(async () => {
+      setInputValue(
+        container.querySelector("#dearme-memory-title") as HTMLInputElement,
+        "Launch note",
+      );
+      setTextareaValue(
+        container.querySelector("#dearme-memory-body") as HTMLTextAreaElement,
+        "A".repeat(4001),
+      );
+    });
+
+    await act(async () => {
+      buttonByText(container, "Add to Voice & Memory")?.click();
+    });
+
+    expect(container.textContent).toContain("Keep private sources under 4,000 characters for now.");
+    expect(mockDearmeApi.recordMemoryUpdate).not.toHaveBeenCalled();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("records source links as a typed Voice & Memory source path", async () => {
     const root = createRoot(container);
     const queryClient = new QueryClient({
