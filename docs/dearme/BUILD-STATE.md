@@ -2,6 +2,24 @@
 
 Date: 2026-05-10
 
+## DEA-7 OpenClaw Content Skill Drift Correction - 2026-05-10
+
+Implementation slice:
+
+- Regenerated the OpenClaw DearMe skills from the current
+  `@paperclipai/dearme-agent-prompts` registry instead of copying the older
+  DEA-7 worktree over the newer parent branch.
+- Brought the generated `dearme-content-producer` skill into the same contract
+  as the product prompt: private review packets, Voice Gate evidence, and no
+  publish/send/schedule/connect/spend/deploy actions.
+- Updated the OpenClaw skill generator test so future registry drift catches the
+  old Twitter rate-limit and character-limit contract before it ships again.
+
+Verification:
+
+- `pnpm --filter @paperclipai/dearme-openclaw run generate-skills` regenerated
+  12 skills and 4 bootstrap files.
+
 ## DEA-7 Voice-Gated Draft Handoff - 2026-05-10
 
 Implementation slice:

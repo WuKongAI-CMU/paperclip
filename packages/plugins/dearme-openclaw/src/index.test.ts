@@ -83,8 +83,12 @@ describe("dearme-openclaw skill generation", () => {
 
     const cp = DEARME_ROLE_REGISTRY.find((r) => r.role === "content-producer")!;
     const cpSkill = generateSkillForRole(cp);
-    expect(cpSkill.content).toContain("Rate limit:** 2/day");
-    expect(cpSkill.content).toContain("280");
+    expect(cpSkill.content).toContain("private brand");
+    expect(cpSkill.content).toContain("Voice Gate score");
+    expect(cpSkill.content).toContain("Do not publish, send, schedule");
+    expect(cpSkill.content).toContain("If the packet is not saved by a tool call");
+    expect(cpSkill.content).not.toContain("Rate limit:** 2/day");
+    expect(cpSkill.content).not.toContain("Char limit:** 280");
 
     const oh = DEARME_ROLE_REGISTRY.find((r) => r.role === "opportunity-hunter")!;
     const ohSkill = generateSkillForRole(oh);
