@@ -2,6 +2,73 @@
 
 Date: 2026-05-10
 
+## DEA-26 Connect-Channel Handoff Receipt Absorbed - 2026-05-10
+
+Product/architecture slice:
+
+- Absorbed the Symphony worker patch for channel readiness on approved launch
+  handoffs at coordinator commit `2b8aa781`.
+- Private handoff receipts now read the existing `launchHandoff` publish gate
+  from the approved next-move payload and surface the customer-safe next step:
+  `Connect X before DearMe can continue this approved handoff.`
+- The Workbench projection reuses the existing `execution_handoff_prepared`
+  progress item and the existing handoff panel. No launch queue, runtime
+  dashboard, dispatch path, or second approval surface was added.
+- Generic private handoff receipts remain unchanged when no launch handoff is
+  present.
+
+Coordination state:
+
+- Worker evidence was preserved under
+  `/private/tmp/dearme-symphony-workspaces/_handoffs/DEA-26-12277c95402b..4494284e289a-2026-05-10T20-21-31-830Z.*`.
+- Linear `DEA-26` was moved to `Done` only after coordinator absorption and
+  verification.
+- Symphony was idle after absorption: zero running workers and zero retries.
+
+Verification:
+
+- `git diff --check HEAD~1..HEAD` passed.
+- `pnpm exec vitest run server/src/__tests__/dearme-approval-receipts.test.ts server/src/__tests__/dearme-workbench-projection.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed with 75 tests.
+- `pnpm exec vitest run server/src/__tests__/dearme-approval-receipts.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-workbench-projection.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed with 75 tests and 5 embedded-Postgres-dependent tests skipped on this
+  host.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+
+## DEA-25 Approved Launch Handoff Executor Absorbed - 2026-05-10
+
+Product/architecture slice:
+
+- Absorbed the voice-gated content launch handoff lane across coordinator
+  commits `45a9ad64` and `12277c95`.
+- Content draft packets now carry `voiceFingerprintId` and store a
+  `launchHandoff` in output metadata, then copy that same handoff into the
+  next-move approval payload when the private draft is approved.
+- The approved-launch handoff service consumes approved
+  `dearme_output_next_move` payloads and calls the existing outbound wrapper
+  with `preapprovedApprovalId`, avoiding a second approval gate.
+- Missing X connection returns the existing `needs_oauth` outcome with
+  `gate: "connect_channel"` and customer-safe connect-channel language. No
+  channel action is dispatched without approval plus an active channel
+  connection.
+
+Coordination state:
+
+- Worker evidence was preserved under
+  `/private/tmp/dearme-symphony-workspaces/_handoffs/DEA-25-baa01a71..eb1130528bc9-2026-05-10T20-15-07-548Z.*`.
+- A read-only Codex review correctly flagged that the worker-created handoff
+  needed an approved-payload consumer. The coordinator added that consumer
+  before marking the lane absorbed.
+
+Verification:
+
+- `git diff --check HEAD~1..HEAD` passed for both absorbed commits.
+- `pnpm exec vitest run server/src/services/dearme-approved-launch-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts server/src/__tests__/approval-routes-idempotency.test.ts packages/shared/src/validators/dearme.test.ts`
+  passed with 40 tests.
+- `server/src/__tests__/dearme-output-handoff.test.ts` remained blocked by the
+  known local embedded-Postgres initialization failure on this host.
+
 ## DEA-23 Symphony Durable Handoff Artifacts - 2026-05-10
 
 Coordinator micro-tuning:

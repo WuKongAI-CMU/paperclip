@@ -46,6 +46,25 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DEA-26 is coordinator-absorbed as the connect-channel handoff receipt slice at
+  `2b8aa781`. It turns the existing `launchHandoff` publish gate into a
+  customer-safe private receipt and Workbench progress next step when X is not
+  connected, while reusing the current receipt service, activity projection, and
+  handoff panel. Do not create a separate launch queue, runtime dashboard, or
+  dispatch surface for this gap.
+- DEA-25 is coordinator-absorbed as the approved launch handoff executor across
+  `45a9ad64` and `12277c95`. The useful worker output was the content-packet
+  `launchHandoff` shape; the coordinator completed the missing approved-payload
+  consumer so final approval can call the existing outbound wrapper with
+  `preapprovedApprovalId`. Keep future launch work on this path: content draft
+  packet -> private approval -> next-move approval payload -> outbound wrapper
+  gate. Do not reopen a parallel publisher, direct X sender, or second approval
+  channel.
+- With DEA-25 and DEA-26 absorbed, the launch-handoff lane has enough proof to
+  stop adding writers on the same surface. The next useful product worker should
+  move to a disjoint trust/autonomy slice such as DM-149 emergency pause intent
+  or DM-153 default approval score on silence; keep DM-149 first if the goal is
+  a more human-feeling "I can stop it any time" moment.
 - DEA-23 hardens the Symphony development factory after the DEA-21 cleanup
   miss: worker terminal handoff now exports committed changes as durable
   `format-patch`, `git bundle`, and JSON summary artifacts under
