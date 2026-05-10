@@ -46,6 +46,13 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DEA-30 is coordinator-absorbed as the DM-143A proxy model-routing contract at
+  `3af18fc4`. The proxy package now exposes a customer-contract-facing
+  `./model-routing` subpath and root exports for complexity `1-10` to
+  `fast` / `balanced` / `deep` model rows, while reusing the canonical
+  prompt-package `MODEL_ROUTING_TABLE` and `pickModelForComplexity()` instead
+  of duplicating thresholds. The coordinator closed Linear `DEA-30` only after
+  rerunning proxy tests/typecheck and recording the durable handoff artifact.
 - DEA-28 is coordinator-absorbed as the DM-153 silence-default review slice at
   `d451d051`. It adapts the Polsia score-7 default into DearMe's current output
   review contract instead of adding a scheduler or second approval system:
@@ -54,7 +61,9 @@ The right reuse split is:
   and deliberately skips next-move approvals, issue approvals, launch handoffs,
   public posts, sends, deploys, and spend. Future autonomy work should reuse
   this explicit marker pattern for private learning defaults and must not infer
-  silence as approval for external actions.
+  silence as approval for external actions. Follow-up `86c65876` carries the
+  explicit private `7/10` score and launch-boundary reminder through the shared
+  contract, server projection, and DearMe UI.
 - DEA-27 is coordinator-absorbed as the DM-149 emergency pause intent slice at
   `70ef7f59`. Customer stop, pause, hold, not now, and do-not-send/publish/
   deploy/spend notes now short-circuit approved launch handoffs before outbound
@@ -76,13 +85,15 @@ The right reuse split is:
   packet -> private approval -> next-move approval payload -> outbound wrapper
   gate. Do not reopen a parallel publisher, direct X sender, or second approval
   channel.
-- With DEA-25, DEA-26, DEA-27, and DEA-28 absorbed, the launch-handoff,
-  trust-stop, and private-silence autonomy lanes have enough proof to stop
-  adding writers on those surfaces. The next useful product worker should be a
-  disjoint autonomy/quality slice, a read-only browser smoke/QA pass against the
-  now-paused/defaulted handoff paths, or one of the remaining moat/economics
-  slices in the roadmap. Do not add another writer to launch, connect-channel,
-  pause, or silence-default review unless a regression appears.
+- With DEA-25, DEA-26, DEA-27, DEA-28, and DEA-30 absorbed, the
+  launch-handoff, trust-stop, private-silence autonomy, and proxy
+  model-routing-contract lanes have enough proof to stop adding writers on
+  those surfaces. The next useful product worker should be a disjoint
+  autonomy/quality slice, a read-only browser smoke/QA pass against the
+  now-paused/defaulted handoff paths, or the remaining moat/economics slices
+  beyond the already-exported routing contract. Do not add another writer to
+  launch, connect-channel, pause, silence-default review, or proxy
+  model-routing unless a regression appears.
 - DEA-23 hardens the Symphony development factory after the DEA-21 cleanup
   miss: worker terminal handoff now exports committed changes as durable
   `format-patch`, `git bundle`, and JSON summary artifacts under
@@ -2983,19 +2994,16 @@ Next-up tickets unlocked by this scaffold:
 |---|---|---|
 | `src/functions.ts` | DM-145 | 6 production-verified OpenAI native function definitions (`create_task`, `search_memory`, `get_company_documents`, `create_report`, `web_search`, `content_generate`) ported verbatim from research-captured `buildToolDefinitions()` |
 | `src/contract.ts` | DM-145 / DM-143 / DM-155 | `dm_sk_*` API key prefix, dual-protocol cost-attribution headers (`task` for OpenAI, `X-Subscription-ID` for Anthropic), `agent/run` endpoint shape, `CostLedgerEvent`, `AgentRunRequest`/`AgentRunResponse` types |
+| `src/model-routing.ts` | DM-143A | Proxy-owned export surface for the canonical prompt-package complexity `1-10` model routing table and helpers; no duplicated thresholds |
 
 This package only owns the contract. The HTTP server implementation
-(routes, model picker, cache layer, ledger writer) is delivered in DM-145.
+(routes, cache layer, ledger writer) is delivered in DM-145.
 
-Verification (2026-05-09):
+Latest focused verification (2026-05-10):
 
 ```
-pnpm --filter @paperclipai/dearme-agent-prompts run typecheck   pass
-pnpm --filter @paperclipai/dearme-agent-prompts exec vitest run 16/16 pass
-pnpm --filter @paperclipai/dearme-ai-proxy run typecheck        pass
-pnpm --filter @paperclipai/dearme-ai-proxy exec vitest run      4/4 pass
-pnpm --filter @paperclipai/db run typecheck                     pass
-pnpm --filter @paperclipai/shared exec vitest run               92/92 pass
+pnpm --filter @paperclipai/dearme-ai-proxy test -- src/index.test.ts 8/8 pass
+pnpm --filter @paperclipai/dearme-ai-proxy typecheck                  pass
 ```
 
 Lineage and compliance posture documented per-package in README and
@@ -3038,7 +3046,7 @@ UI, not server-side runtime artifacts the user never sees).
 
 | Ticket | Slice | Donor mechanism | Path |
 |---|---|---|---|
-| DM-143 | Complexity-based model routing in proxy + agent metadata | Polsia complexity 1-3 / 4-6 / 7-10 routing | `packages/dearme-ai-proxy/` |
+| DM-143 | Complexity-based model routing in proxy + agent metadata | Polsia complexity 1-3 / 4-6 / 7-10 routing | `packages/dearme-ai-proxy/src/model-routing.ts` |
 | DM-145 | AI proxy: OpenAI/Anthropic-compatible endpoints + `dm_sk_` keys + cost-ledger fields (`task` + `X-Subscription-ID`) | Polsia dual-protocol proxy | new `packages/dearme-ai-proxy/` |
 | DM-155 | Anthropic prompt-cache economics (target ~90% cache-read ratio) | Naive cache utilization measurement | proxy cost/cache layer |
 | DM-144 | Lock MCP set to the proven minimum (audit + remove unused) | Polsia 9-of-22 active MCP | `packages/mcp-server/*`, tool registry |

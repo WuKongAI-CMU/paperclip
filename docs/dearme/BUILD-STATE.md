@@ -2,6 +2,48 @@
 
 Date: 2026-05-10
 
+## DEA-30 Proxy Model Routing Contract Absorbed - 2026-05-10
+
+Product/architecture slice:
+
+- Absorbed the Symphony worker patch for DM-143A at coordinator commit
+  `3af18fc4`.
+- `@paperclipai/dearme-ai-proxy` now exports a proxy-owned
+  `./model-routing` subpath plus package-root helpers for complexity `1-10`
+  to `fast`, `balanced`, or `deep` model routing.
+- The proxy package reuses the canonical prompt-package
+  `MODEL_ROUTING_TABLE` and `pickModelForComplexity()` instead of copying the
+  Polsia-style thresholds. Future threshold edits should stay single-sourced in
+  `@paperclipai/dearme-agent-prompts`.
+- During absorption, the coordinator also landed `86c65876` as a DEA-28
+  follow-up: quiet private-review progress now carries the explicit `7/10`
+  default score through shared/server/UI while still reminding the user that
+  public posts, sends, deploys, and spend wait for explicit approval.
+
+Coordination state:
+
+- Worker evidence was preserved under
+  `/private/tmp/dearme-symphony-workspaces/_handoffs/DEA-30-d7cb4520fb1d..bd0dcd99be5c-2026-05-10T21-26-14-230Z.*`.
+- Linear `DEA-30` was moved to `Done` only after coordinator absorption,
+  verification, and the coordinator closeout comment.
+- `.symphony/bin/dearme-symphony status` reported the daemon healthy with
+  `running: []` and `retrying: []`.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported 117
+  DearMe worktrees with `not_in_current: 0`, `dirty: 0`, and `prunable: 0`.
+
+Verification:
+
+- `pnpm --filter @paperclipai/dearme-ai-proxy test -- src/index.test.ts`
+  passed with 8 tests.
+- `pnpm --filter @paperclipai/dearme-ai-proxy typecheck` passed.
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-output-handoff.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed with 87 tests and 11 embedded-Postgres-dependent subtests skipped by
+  the host probe.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check` passed.
+
 ## DEA-28 Silence Default Review Score Absorbed - 2026-05-10
 
 Product/architecture slice:
@@ -18,6 +60,9 @@ Product/architecture slice:
 - The route memory projection reuses the existing review-feedback activity
   channel, so the product learns from silence without exposing Symphony,
   OpenClaw, Paperclip, provider, model, runtime, or queue language.
+- Follow-up `86c65876` projects the private default score and approval boundary
+  into the shared review-loop contract, server projection, and DearMe UI so the
+  product can show progress without implying launch approval.
 
 Coordination state:
 
