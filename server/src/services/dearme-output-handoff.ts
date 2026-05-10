@@ -25,6 +25,7 @@ import {
 } from "@paperclipai/shared";
 import { notFound } from "../errors.js";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "./dearme-brand-blueprint-apply.js";
+import { deriveDearMeOutputStatus } from "./dearme-output-status.js";
 import { dearMeVoiceGateService } from "./dearme-voice-gate.js";
 import { documentService } from "./documents.js";
 
@@ -222,15 +223,6 @@ function optionalUuid(value: string | null | undefined) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
     ? value
     : null;
-}
-
-function customerStatus(issueStatus: string, hasProducedArtifact: boolean): DearMeOutputStatus {
-  if (issueStatus === "cancelled") return "cancelled";
-  if (issueStatus === "blocked") return "blocked";
-  if (issueStatus === "done") return "complete";
-  if (issueStatus === "in_review" || hasProducedArtifact) return "ready_for_review";
-  if (issueStatus === "todo" || issueStatus === "in_progress") return "working";
-  return "queued";
 }
 
 function groupPayloadByIssue<T>(rows: Array<{ issueId: string; payload: T }>) {
@@ -979,7 +971,14 @@ function buildOutputItem(input: {
     input.documents.length > 0 ||
     input.workProducts.length > 0 ||
     !!input.latestUpdate;
-  const status = customerStatus(input.issue.status, hasProducedArtifact);
+  const hasRevisionRequest = input.workProducts.some((workProduct) =>
+    workProduct.reviewState === "changes_requested" || workProduct.reviewState === "not_useful"
+  );
+  const status = deriveDearMeOutputStatus({
+    issueStatus: input.issue.status,
+    hasProducedArtifact,
+    hasRevisionRequest,
+  });
   const details = buildOutputDetails({
     descriptor: input.descriptor,
     documents: input.documents,
