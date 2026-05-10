@@ -3014,7 +3014,8 @@ export function IssueDetail() {
     };
     const title = decodeEntities(issue.title);
     const body = decodeEntities(issue.description ?? "");
-    const md = `# ${issue.identifier}: ${title}\n\n${body}`.trimEnd();
+    const heading = isDearMeDetailIssue ? `# ${title}` : `# ${issue.identifier}: ${title}`;
+    const md = `${heading}\n\n${body}`.trimEnd();
     await navigator.clipboard.writeText(md);
     setCopied(true);
     pushToast({ title: "Copied to clipboard", tone: "success" });
@@ -3055,6 +3056,7 @@ export function IssueDetail() {
   const backHref = sourceBreadcrumb.href ?? "/inbox";
   const showInboxToolbar = isMobile && isFromInbox;
   const archivePending = archiveFromInbox.isPending;
+  const copyMarkdownLabel = isDearMeDetailIssue ? "Copy as markdown" : "Copy issue as markdown";
   const issueHidden = !!issue?.hiddenAt;
   const canArchiveFromInbox = isFromInbox && !!issue?.id && !issueHidden;
 
@@ -3545,7 +3547,7 @@ export function IssueDetail() {
                 variant="ghost"
                 size="icon-xs"
                 onClick={copyIssueToClipboard}
-                title="Copy issue as markdown"
+                title={copyMarkdownLabel}
               >
                 {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
               </Button>
@@ -3581,7 +3583,7 @@ export function IssueDetail() {
               variant="ghost"
               size="icon-xs"
               onClick={copyIssueToClipboard}
-              title="Copy issue as markdown"
+              title={copyMarkdownLabel}
             >
               {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
             </Button>

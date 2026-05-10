@@ -78,6 +78,7 @@ const mockInstanceSettingsApi = vi.hoisted(() => ({
 }));
 
 const mockNavigate = vi.hoisted(() => vi.fn());
+const mockClipboardWriteText = vi.hoisted(() => vi.fn());
 const mockOpenPanel = vi.hoisted(() => vi.fn());
 const mockClosePanel = vi.hoisted(() => vi.fn());
 const mockSetBreadcrumbs = vi.hoisted(() => vi.fn());
@@ -1023,6 +1024,12 @@ describe("IssueDetail", () => {
       keyboardShortcuts: false,
       feedbackDataSharingPreference: "prompt",
     });
+    mockClipboardWriteText.mockReset();
+    mockClipboardWriteText.mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: mockClipboardWriteText },
+    });
     mockNavigate.mockClear();
     mockPushToast.mockClear();
     mockTabsOnValueChange.current = null;
@@ -1154,6 +1161,61 @@ describe("IssueDetail", () => {
       expect(container.textContent).toContain("Chat thread");
     });
     expect(container.textContent).not.toContain("PAP-1");
+  });
+
+  it("preserves the raw identifier when copying generic issue markdown", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({
+      title: "Generic issue title",
+      description: "Generic issue body.",
+    }));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    const copyButton = container.querySelector<HTMLButtonElement>('button[title="Copy issue as markdown"]');
+    expect(copyButton).toBeTruthy();
+
+    await act(async () => {
+      copyButton?.click();
+    });
+
+    expect(mockClipboardWriteText).toHaveBeenCalledWith("# PAP-1: Generic issue title\n\nGeneric issue body.");
+  });
+
+  it("omits the raw identifier when copying DearMe issue markdown", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue({
+      originKind: "dearme_brand_blueprint_apply",
+      title: "Private launch brief",
+      description: "Customer-safe body.",
+    }));
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <IssueDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    expect(container.querySelector('button[title="Copy issue as markdown"]')).toBeNull();
+    const copyButton = container.querySelector<HTMLButtonElement>('button[title="Copy as markdown"]');
+    expect(copyButton).toBeTruthy();
+
+    await act(async () => {
+      copyButton?.click();
+    });
+
+    expect(mockClipboardWriteText).toHaveBeenCalledWith("# Private launch brief\n\nCustomer-safe body.");
+    expect(mockClipboardWriteText.mock.calls.at(-1)?.[0]).not.toContain("PAP-1");
   });
 
   it("preserves issue reference linkification for generic issue detail markdown", async () => {
