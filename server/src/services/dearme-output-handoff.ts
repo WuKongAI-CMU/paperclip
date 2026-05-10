@@ -3,6 +3,7 @@ import type { Db } from "@paperclipai/db";
 import { documents, issueComments, issueDocuments, issues, issueWorkProducts } from "@paperclipai/db";
 import {
   DEARME_OUTPUT_KINDS,
+  dearMeVoiceGateResultSchema,
   dearMeOutputReviewResultSchema,
   dearMeOutputsResponseSchema,
   isSystemIssueDocumentKey,
@@ -17,6 +18,7 @@ import {
   type DearMeOutputStatus,
   type DearMeOutputUpdate,
   type DearMeOutputWorkProduct,
+  type DearMeVoiceGateResult,
 } from "@paperclipai/shared";
 import { notFound } from "../errors.js";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "./dearme-brand-blueprint-apply.js";
@@ -529,6 +531,22 @@ function voiceGateKindForChannel(channel: string | null) {
   if (normalized.includes("newsletter")) return "newsletter-issue" as const;
   if (normalized.includes("email")) return "outbound-email" as const;
   return "x-tweet" as const;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function voiceGateFromMetadata(metadata: unknown): DearMeVoiceGateResult | null {
+  if (!isRecord(metadata)) return null;
+
+  const nestedDearMe = isRecord(metadata.dearme) ? metadata.dearme.voiceGate : undefined;
+  for (const candidate of [metadata.voiceGate, metadata.dearmeVoiceGate, nestedDearMe]) {
+    const parsed = dearMeVoiceGateResultSchema.safeParse(candidate);
+    if (parsed.success) return parsed.data;
+  }
+
+  return null;
 }
 
 function renderCycleOutputPacket(input: {
@@ -1095,6 +1113,7 @@ export function dearmeOutputHandoffService(db: Db) {
             status: issueWorkProducts.status,
             reviewState: issueWorkProducts.reviewState,
             summary: issueWorkProducts.summary,
+            metadata: issueWorkProducts.metadata,
             updatedAt: issueWorkProducts.updatedAt,
           })
           .from(issueWorkProducts)
@@ -1158,6 +1177,7 @@ export function dearmeOutputHandoffService(db: Db) {
             status: workProduct.status,
             reviewState: workProduct.reviewState,
             summary: workProduct.summary,
+            voiceGate: voiceGateFromMetadata(workProduct.metadata),
             updatedAt: toIso(workProduct.updatedAt),
           },
         })),

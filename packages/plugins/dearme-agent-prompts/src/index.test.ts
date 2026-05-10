@@ -153,7 +153,7 @@ describe("dearme-agent-prompts package", () => {
     expect(DEARME_ROLE_SEEDS.length).toBe(12);
   });
 
-  it("prompts preserve the production-verified hard rules verbatim", () => {
+  it("prompts preserve production-seeded hard rules and DearMe boundaries", () => {
     // Chief of Staff: 4-step workflow + 200-word email cap
     expect(CHIEF_OF_STAFF_PROMPT).toContain("WORKFLOW (Complete in Order)");
     expect(CHIEF_OF_STAFF_PROMPT).toContain("MONITOR");
@@ -165,10 +165,10 @@ describe("dearme-agent-prompts package", () => {
       "ALWAYS maintain queue ≥ 3 tasks",
     );
 
-    // Content Producer (Twitter): char limit + voice + 2/day rate
-    expect(CONTENT_PRODUCER_PROMPT).toContain("Rate limit:** 2/day");
-    expect(CONTENT_PRODUCER_PROMPT).toContain("280");
-    expect(CONTENT_PRODUCER_PROMPT).toContain("Dark humor, witty");
+    // Content Producer: private drafts + Voice Gate + no public action.
+    expect(CONTENT_PRODUCER_PROMPT).toContain("private brand");
+    expect(CONTENT_PRODUCER_PROMPT).toContain("Voice Gate score");
+    expect(CONTENT_PRODUCER_PROMPT).toContain("Do not publish, send, schedule");
     expect(CONTENT_PRODUCER_PROMPT).toContain(
       "NEVER reveal client relationships",
     );

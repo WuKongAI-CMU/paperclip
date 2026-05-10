@@ -724,6 +724,7 @@ export const dearMeOutputWorkProductSchema = z.object({
   status: z.string().min(1),
   reviewState: z.string().min(1),
   summary: z.string().nullable(),
+  voiceGate: dearMeVoiceGateResultSchema.nullable().optional(),
   updatedAt: z.string().datetime(),
 }).strict();
 

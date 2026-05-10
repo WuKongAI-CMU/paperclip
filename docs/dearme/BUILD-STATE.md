@@ -2,6 +2,35 @@
 
 Date: 2026-05-10
 
+## DEA-7 Voice-Gated Draft Handoff - 2026-05-10
+
+Implementation slice:
+
+- Integrated the Symphony DEA-7 worktree into the current main branch instead
+  of copying the older worktree over newer DearMe proof-pack changes.
+- Extended the shared DearMe output work-product contract with an optional
+  `voiceGate` result, allowing prepared drafts to carry the same review score,
+  approval gate, checks, and blocked-action language already used by the first
+  cycle preview.
+- Updated the output handoff service to read Voice Gate results from
+  `issue_work_products.metadata` (`voiceGate`, `dearmeVoiceGate`, or
+  `dearme.voiceGate`) and expose the parsed result without leaking provider
+  metadata.
+- Reworked the inherited content-producer prompt from a Twitter posting agent
+  into a DearMe private-draft role: it reads Brand OS, voice profile, reports,
+  and channel preferences, then stages reviewable draft packets without
+  publishing, sending, scheduling, connecting accounts, spending, or deploying.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts
+  server/src/__tests__/dearme-output-handoff.test.ts --maxWorkers=1` passed: 2
+  files, 21 tests.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/dearme-agent-prompts typecheck` passed.
+- `pnpm --filter @paperclipai/dearme-agent-prompts test` passed: 25 tests.
+
 ## DM-141 Frontstage Team Workstream Polish - 2026-05-10
 
 Implementation slice:
@@ -24,7 +53,7 @@ Implementation slice:
 Verification:
 
 - `pnpm exec vitest run ui/src/components/Layout.test.tsx
-  ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1` passed: 2 files, 49
+  ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1` passed: 2 files, 50
   tests.
 - `pnpm --filter @paperclipai/ui typecheck` passed.
 - `git diff --check -- ui/src/components/Layout.tsx

@@ -553,6 +553,29 @@ describe("DearMe brand blueprint contract", () => {
   });
 
   it("describes customer-visible DearMe outputs without provider internals", () => {
+    const voiceGate = evaluateDearMeVoiceGate({
+      brand: {
+        displayName: "Peter",
+        positioning: "Builder of local AI products",
+        goals: ["Turn shipping proof into clear public content"],
+        audiences: ["Founders evaluating local AI workflows"],
+        proofPoints: ["Shipped an autonomous local agent runtime"],
+        offers: ["Paid beta for personal brand growth"],
+        voiceSamples: ["Direct, specific, evidence-backed writing.", "Short notes with concrete next steps."],
+        preferredChannels: ["linkedin"],
+        constraints: ["No public claims without review."],
+        cadence: "weekly",
+        budgetMonthlyCents: 25_000,
+        autoDraftEnabled: true,
+      },
+      artifact: {
+        kind: "content_draft",
+        channel: "linkedin",
+        title: "Content draft batch",
+        text: "Here is a proof-backed draft for founders evaluating local AI workflows.",
+        proofUsed: "Shipped an autonomous local agent runtime",
+      },
+    });
     const response = dearMeOutputsResponseSchema.parse({
       companyId: "company-1",
       outputs: [
@@ -588,6 +611,7 @@ describe("DearMe brand blueprint contract", () => {
               status: "ready",
               reviewState: "pending",
               summary: "Three private drafts prepared for review.",
+              voiceGate,
               updatedAt: "2026-05-07T14:00:00.000Z",
             },
           ],
@@ -642,6 +666,11 @@ describe("DearMe brand blueprint contract", () => {
     expect(output.details[0]).toEqual(expect.objectContaining({
       kind: "completed_work",
       label: "Completed work",
+    }));
+    expect(workProduct.voiceGate).toEqual(expect.objectContaining({
+      approvalGate: "publish_social",
+      score: 100,
+      status: "ready_for_review",
     }));
     expect(workProduct).not.toHaveProperty("provider");
     expect(() =>

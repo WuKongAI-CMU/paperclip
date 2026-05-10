@@ -11,7 +11,10 @@ import {
   issues,
   issueWorkProducts,
 } from "@paperclipai/db";
-import { ISSUE_CONTINUATION_SUMMARY_DOCUMENT_KEY } from "@paperclipai/shared";
+import {
+  ISSUE_CONTINUATION_SUMMARY_DOCUMENT_KEY,
+  evaluateDearMeVoiceGate,
+} from "@paperclipai/shared";
 import {
   getEmbeddedPostgresTestSupport,
   startEmbeddedPostgresTestDatabase,
@@ -247,6 +250,32 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       ].join("\n"),
       updatedAt: new Date("2026-05-07T15:01:00.000Z"),
     });
+    const contentVoiceGate = evaluateDearMeVoiceGate({
+      brand: {
+        displayName: "Peter",
+        positioning: "Practical AI operator for local-first products.",
+        preferredChannels: ["linkedin"],
+        goals: ["Build visible proof."],
+        audiences: ["founders evaluating local AI workflows"],
+        offers: [],
+        proofPoints: ["shipped a local agent runtime"],
+        voiceSamples: [
+          "Short, direct, evidence-first notes.",
+          "Show the receipt before asking for trust.",
+        ],
+        constraints: ["No public claims without review."],
+        cadence: "weekly",
+        budgetMonthlyCents: 25_000,
+        autoDraftEnabled: true,
+      },
+      artifact: {
+        kind: "content_draft",
+        channel: "linkedin",
+        title: "Starter posts",
+        text: "A short proof-backed post about shipping local AI products.",
+        proofUsed: "shipped a local agent runtime",
+      },
+    });
     await attachDocument({
       companyId,
       issueId: opportunityIssueId,
@@ -298,6 +327,9 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       status: "ready",
       reviewState: "pending",
       summary: "Three private posts prepared for review.",
+      metadata: {
+        voiceGate: contentVoiceGate,
+      },
       updatedAt: new Date("2026-05-07T15:05:00.000Z"),
     });
     await db.insert(issueComments).values({
@@ -407,8 +439,20 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       expect.objectContaining({
         title: "Content draft batch",
         summary: "Three private posts prepared for review.",
+        voiceGate: expect.objectContaining({
+          status: "ready_for_review",
+          approvalGate: "publish_social",
+          score: 100,
+        }),
       }),
     );
+    expect(contentOutput.workProducts[0]?.voiceGate?.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: "proof_claim",
+        status: "pass",
+        evidence: ["shipped a local agent runtime"],
+      }),
+    ]));
     expect(contentOutput.workProducts[0]).not.toHaveProperty("provider");
     expect(opportunityOutput.details).toEqual(expect.arrayContaining([
       expect.objectContaining({ kind: "target", value: expect.stringContaining("podcast") }),

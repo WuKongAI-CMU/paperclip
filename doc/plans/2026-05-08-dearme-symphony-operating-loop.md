@@ -21,9 +21,10 @@ Symphony is treated as an execution factory, not as the product brain. The DearM
   - Polsia-style cycle controls over the existing workbench.
 - 2026-05-10 coordinator update: DM-139/DM-140 now bridges the shared cycle
   output packet through output handoff, workbench/report projection, and the
-  Dear me letter proof-pack review. Follow-on workers should deepen this same
-  packet-backed customer path instead of starting a second runtime or report
-  surface.
+  Dear me letter proof-pack review. DM-141 extends the same boundary across
+  workbench cards, focused review, live feed, run ledger, action graph, and
+  Voice & Memory. Follow-on workers should deepen this same packet-backed
+  customer path instead of starting a second runtime or report surface.
 
 ## Operating Split
 
