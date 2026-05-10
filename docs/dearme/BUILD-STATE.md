@@ -2,6 +2,47 @@
 
 Date: 2026-05-10
 
+## DM-183AZ Output Review Workspace Baseline Absorption - 2026-05-10
+
+Coordination slice:
+
+- Kept Symphony as the active cooperation spine and checked the live daemon
+  before absorbing another stale worker pair.
+- Reviewed the exact DM-006 worker head
+  `cc35837647b0213dfebc84a65a0e51148f48c3ec` and integration head
+  `44b7bfd69f93465d206561506259ac62eed80784`.
+- Matched DM-006's useful lesson to the current product path: output review now
+  uses output `details`, `sourceEvidence`, work-product Voice Gate results,
+  focused prepared-work controls, review-loop handoffs, and feedback traces.
+- Rejected replaying the stale `reviewContext` schema because current DearMe
+  already owns the richer packet-backed prepared-work review surface through the
+  existing handoff and focused decision paths.
+- Recorded both exact DM-006 heads in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so future Symphony workers do
+  not reopen the obsolete decision-desk baseline.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status --json`
+  passed with the daemon healthy and no retrying workers.
+- `git show --stat --oneline --no-renames cc35837647b0213dfebc84a65a0e51148f48c3ec`
+  and `git show --stat --oneline --no-renames 44b7bfd69f93465d206561506259ac62eed80784`
+  confirmed the old output-detail review workspace scope before absorption.
+- `rg` checks across current shared, server, UI, and test files confirmed the
+  current prepared-work review path carries details, source evidence, Voice
+  Gate, review handoff, focused review controls, and feedback traces.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('json ok')"`
+  passed.
+- `pnpm run test:dearme-worktrees`
+  passed.
+- `pnpm run dearme:worktrees -- --ticket=DM-006 --skip-dirty --limit=20`
+  passed and showed both DM-006 worktrees as `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty`
+  passed and reported `reviewed_absorbed: 18`, `not_in_current: 95`, and
+  `dirty: 0`.
+- `git diff --check -- docs/dearme/WORKTREE-ABSORPTION-LEDGER.json docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/BUILD-STATE.md`
+  passed.
+
 ## DM-183AY Source Management Baseline Absorption - 2026-05-10
 
 Coordination slice:

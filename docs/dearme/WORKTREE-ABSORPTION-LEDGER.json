@@ -92,6 +92,35 @@
       ]
     },
     {
+      "ticket": "DM-006",
+      "branch": "codex/dearme-dm-006-output-detail-review-workspace",
+      "head": "cc35837647b0213dfebc84a65a0e51148f48c3ec",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current output review has absorbed and adapted the DM-006 decision-desk intent into output details, source evidence, work-product Voice Gate results, focused prepared-work controls, review-loop handoffs, and feedback traces instead of preserving the old reviewContext schema.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/services/dearme-output-handoff.ts",
+        "server/src/__tests__/dearme-output-handoff.test.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-006",
+      "branch": "codex/dearme-dm-006-integrated",
+      "head": "44b7bfd69f93465d206561506259ac62eed80784",
+      "reviewedAt": "2026-05-10",
+      "reason": "The old DM-006 integration baseline carries the same output-detail review workspace concept as the worker head, but current DearMe absorbs it through the evolved packet-backed prepared-work review surface and launch-boundary controls.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/services/dearme-output-handoff.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
       "ticket": "DM-014",
       "branch": "codex/dearme-dm-014-mobile-nav-safe-area",
       "head": "65d7a59938bbf529d69e16a0907f07db3ae5e565",
