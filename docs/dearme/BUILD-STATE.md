@@ -2,6 +2,59 @@
 
 Date: 2026-05-10
 
+## DM-183AR Work Ready Inline Review Receipts - 2026-05-10
+
+Implementation slice:
+
+- Adapted the still-useful DM-093/DM-097 in-place review pattern onto the
+  current Symphony integration branch without replaying the stale
+  `OutputReviewActions` component.
+- Reused the existing `FocusedPreparedWorkReviewControls` and
+  output-review/continue mutation path so Work Ready cards can launch,
+  request changes, prepare another pass, or choose a new direction without
+  opening private issue UI.
+- Preserved the focused decision route: focused work items still use the same
+  review controls, while Work Ready cards now carry the same decision surface
+  directly on the board.
+- Kept review history visible by carrying private review receipts through the
+  output handoff, workbench projection, shared schema, and DearMe UI.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- `pnpm --filter @paperclipai/server exec vitest run src/__tests__/dearme-output-handoff.test.ts --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/shared exec vitest run src/validators/dearme.test.ts --maxWorkers=1`
+  passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx packages/shared/src/validators/dearme.ts packages/shared/src/validators/dearme.test.ts server/src/services/dearme-output-handoff.ts server/src/services/dearme-workbench.ts server/src/__tests__/dearme-output-handoff.test.ts docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
+## DM-183AQ Private Source Link Traceability - 2026-05-10
+
+Implementation slice:
+
+- Adapted the still-useful DM-016 private-source traceability intent onto the
+  current Symphony integration branch instead of replaying the stale
+  `referenceUrl` schema.
+- Kept the current Voice & Memory contract intact: source links remain
+  user-supplied `sourceInputMode: "link"` + `sourceLabel` values.
+- Rendered valid `http(s)` source labels as `Open private source` shortcuts on
+  saved Voice & Memory cards, source-review cards, and source-review detail.
+- Preserved the trust boundary: DearMe does not fetch, scrape, ingest, or
+  publish the link in this slice.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183AP Reviewed Worktree Absorption Ledger - 2026-05-10
 
 Implementation slice:

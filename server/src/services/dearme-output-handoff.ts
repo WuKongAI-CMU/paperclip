@@ -366,6 +366,10 @@ function latestReviewFeedback(decisions: DearMeParsedReviewDecision[]): DearMeOu
   return latestDecision as DearMeOutputReviewFeedback;
 }
 
+function isReviewFeedbackDecision(decision: DearMeParsedReviewDecision): decision is DearMeOutputReviewFeedback {
+  return decision.action !== "approve";
+}
+
 function customerSafeFeedbackText(value: string | null | undefined, maxLength = 260) {
   const preview = plainPreview(value, maxLength);
   if (!preview || DEARME_FEEDBACK_TRACE_HIDDEN_TERMS.test(preview)) return null;
@@ -415,8 +419,26 @@ function feedbackTraceLead(action: DearMeOutputReviewFeedback["action"]) {
   return "Prepared a replacement version from your direction.";
 }
 
+function reviewReceiptLabel(action: DearMeOutputReviewFeedback["action"]) {
+  if (action === "request_changes") return "Change requested";
+  if (action === "not_useful") return "New direction requested";
+  return "Another pass requested";
+}
+
+function buildReviewReceipts(decisions: DearMeParsedReviewDecision[]) {
+  const receipts = decisions
+    .filter(isReviewFeedbackDecision)
+    .map((decision) => {
+      const label = reviewReceiptLabel(decision.action);
+      const note = customerSafeFeedbackText(decision.notePreview, 180);
+      return note ? `${label}: ${note}` : label;
+    });
+  return Array.from(new Set(receipts)).slice(0, 4);
+}
+
 function buildFeedbackTrace(input: {
   reviewFeedback: DearMeOutputReviewFeedback | null;
+  decisions: DearMeParsedReviewDecision[];
   details: DearMeOutputDetail[];
   documents: DearMeOutputDocument[];
   latestUpdate: DearMeOutputUpdate | null;
@@ -451,12 +473,14 @@ function buildFeedbackTrace(input: {
     proof ? `Proof now in view: ${proof}` : null,
     "Still private until you approve it.",
   ].filter((change): change is string => Boolean(change));
+  const receipts = buildReviewReceipts(input.decisions);
 
   return {
     headline: "Feedback applied",
     summary: feedbackTraceSummary(input.reviewFeedback.action),
     userFeedback: customerSafeFeedbackText(input.reviewFeedback.notePreview),
     changes: changes.slice(0, 4),
+    ...(receipts.length > 0 ? { receipts } : {}),
   };
 }
 
@@ -1051,6 +1075,7 @@ function buildOutputItem(input: {
   const reviewDecisions = parseReviewDecisions(input.reviewComments);
   const feedbackTrace = buildFeedbackTrace({
     reviewFeedback: latestReviewFeedback(reviewDecisions),
+    decisions: reviewDecisions,
     details,
     documents: input.documents,
     latestUpdate: input.latestUpdate,

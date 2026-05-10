@@ -389,6 +389,9 @@ function projectDearMeReviewLoop(
           changes: reviewLoop.feedbackTrace.changes.map((change) =>
             dearMeWorkbenchProjectionText(change, "Private revision recorded."),
           ),
+          receipts: reviewLoop.feedbackTrace.receipts?.map((receipt) =>
+            dearMeWorkbenchProjectionText(receipt, "Review direction recorded."),
+          ),
         }
       : null,
   };

@@ -852,6 +852,9 @@ describe("DearMe brand blueprint contract", () => {
                 "Prepared a replacement version from your direction.",
                 "Still private until you approve it.",
               ],
+              receipts: [
+                "Another pass requested: Make it sharper.",
+              ],
             },
           }),
           details: [],
@@ -868,6 +871,7 @@ describe("DearMe brand blueprint contract", () => {
       headline: "Feedback applied",
       userFeedback: "Make it sharper.",
       changes: expect.arrayContaining(["Still private until you approve it."]),
+      receipts: ["Another pass requested: Make it sharper."],
     }));
     const result = dearMeOutputReviewResultSchema.parse({
       companyId: "company-1",

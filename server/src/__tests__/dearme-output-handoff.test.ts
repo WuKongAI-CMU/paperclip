@@ -1235,6 +1235,18 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       issueId,
       authorUserId: randomUUID(),
       body: [
+        "DearMe decision: regenerate this prepared work before review.",
+        "Try a stronger proof-led opening before the launch call.",
+      ].join("\n\n"),
+      createdAt: new Date("2026-05-07T19:01:30.000Z"),
+      updatedAt: new Date("2026-05-07T19:01:30.000Z"),
+    });
+    await db.insert(issueComments).values({
+      id: randomUUID(),
+      companyId,
+      issueId,
+      authorUserId: randomUUID(),
+      body: [
         "DearMe decision: requested changes before this represents me.",
         "Make the proof more concrete and less generic.",
       ].join("\n\n"),
@@ -1279,7 +1291,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
 
     expect(afterOutput.reviewLoop).toEqual(expect.objectContaining({
       state: "needs_user_review",
-      attemptCount: 1,
+      attemptCount: 2,
       lastAction: "request_changes",
       lastDecisionNotePreview: "Make the proof more concrete and less generic.",
       reviewHandoff: null,
@@ -1289,6 +1301,10 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
         changes: expect.arrayContaining([
           "Revised the private draft around your requested change.",
           "Still private until you approve it.",
+        ]),
+        receipts: expect.arrayContaining([
+          "Change requested: Make the proof more concrete and less generic.",
+          "Another pass requested: Try a stronger proof led opening before the launch call.",
         ]),
       }),
     }));

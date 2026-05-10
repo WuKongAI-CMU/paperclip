@@ -1499,6 +1499,12 @@ function buttonByLabel(container: HTMLElement, label: string) {
   ) as HTMLButtonElement | undefined;
 }
 
+function linkByText(container: HTMLElement, text: string) {
+  return [...container.querySelectorAll("a")].find((link) =>
+    link.textContent?.includes(text),
+  ) as HTMLAnchorElement | undefined;
+}
+
 function surfaceByLabel(container: HTMLElement, label: string) {
   const surface =
     [...container.querySelectorAll<HTMLElement>("[aria-label]")].find(
@@ -2122,6 +2128,52 @@ describe("DearMeOnboarding", () => {
       }),
     );
     expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=decisions&approval=approval-1");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("reviews a Work Ready card inline without opening a private issue", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const workReady = surfaceByLabel(container, "Work ready");
+    expect(workReady.textContent).toContain("Launch this work");
+    expect(workReady.textContent).toContain("Request changes");
+    expect(workReady.textContent).toContain("Prepare another pass");
+    expect(workReady.textContent).toContain("Choose new direction");
+
+    await act(async () => {
+      setTextareaValue(
+        workReady.querySelector("#dearme-work-ready-output-note-0") as HTMLTextAreaElement,
+        "Keep the proof concrete before this represents me.",
+      );
+      buttonByText(workReady, "Request changes")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.continueOutput).toHaveBeenCalledWith(
+      "company-1",
+      "issue-1:weekly_report",
+      {
+        intent: "continue_revision",
+        decisionNote: "Keep the proof concrete before this represents me.",
+      },
+    );
+    expect(mockDearmeApi.reviewOutput).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining("/issues/"));
 
     await act(async () => {
       root.unmount();
@@ -3292,6 +3344,26 @@ describe("DearMeOnboarding", () => {
   });
 
   it("records source links as a typed Voice & Memory source path", async () => {
+    mockDearmeApi.recordMemoryUpdate.mockResolvedValueOnce({
+      companyId: "company-1",
+      status: "recorded",
+      memory: {
+        id: "memory-3",
+        kind: "proof_point",
+        sourceInputMode: "link",
+        title: "Source link",
+        body: "This source proves the launch narrative should mention the shipped local workflow.",
+        bodyPreview: "This source proves the launch narrative should mention the shipped local workflow.",
+        sourceLabel: "https://example.com/proof-note",
+        createdAt: "2026-05-07T14:05:00.000Z",
+      },
+      growthCycles: {
+        checked: 2,
+        updated: 1,
+        unchanged: 1,
+        memorySources: 3,
+      },
+    });
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -3358,6 +3430,61 @@ describe("DearMeOnboarding", () => {
         sourceLabel: "https://example.com/proof-note",
       }),
     );
+    const savedSourceLink = linkByText(surfaceByLabel(container, "Voice & Memory"), "Open private source");
+    expect(savedSourceLink?.href).toBe("https://example.com/proof-note");
+    expect(savedSourceLink?.target).toBe("_blank");
+    expect(savedSourceLink?.rel).toContain("noreferrer");
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("renders valid source review links as private source shortcuts", async () => {
+    const sourceReviewWorkbench = workbenchResponse();
+    sourceReviewWorkbench.memory = {
+      ...sourceReviewWorkbench.memory,
+      sourceReviewQueue: sourceReviewWorkbench.memory.sourceReviewQueue.map((item) => ({
+        ...item,
+        sourceLabel: "https://example.com/build-log",
+      })),
+    };
+    mockDearmeApi.getWorkbench.mockResolvedValue(sourceReviewWorkbench);
+
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const voiceMemorySurface = surfaceByLabel(container, "Voice & Memory");
+    const sourceReviewCard = surfaceByLabel(container, "Voice & Memory source review");
+    const cardLink = linkByText(sourceReviewCard, "Open private source");
+    expect(cardLink?.href).toBe("https://example.com/build-log");
+
+    await act(async () => {
+      buttonByText(voiceMemorySurface, "Prepare fact")?.click();
+    });
+    await flushReact();
+
+    const sourceDetail = surfaceByLabel(container, "Source review detail");
+    const detailLink = linkByText(sourceDetail, "Open private source");
+    expect(sourceDetail.textContent).toContain("Private source");
+    expect(detailLink?.href).toBe("https://example.com/build-log");
+    expect(mockDearmeApi.recordMemoryUpdate).not.toHaveBeenCalled();
     expectNoHiddenProductTerms(container.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
       HIDDEN_PRODUCT_TERMS.bridgeName,
@@ -4437,6 +4564,10 @@ describe("DearMeOnboarding", () => {
               "Current draft focus: Refreshed positioning and prepared next bets.",
               "Still private until you approve it.",
             ],
+            receipts: [
+              "Change requested: Make the proof more concrete and less generic.",
+              "Another pass requested: Try a stronger proof-led opening before the launch call.",
+            ],
           },
         },
       ),
@@ -4471,6 +4602,8 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Feedback applied");
     expect(container.textContent).toContain("You asked: Make the proof more concrete and less generic.");
     expect(container.textContent).toContain("Still private until you approve it.");
+    expect(container.textContent).toContain("Review path");
+    expect(container.textContent).toContain("Another pass requested: Try a stronger proof-led opening before the launch call.");
     expect(container.textContent).toContain("1 private reference prepared");
     expect(container.textContent).not.toContain("/issues/");
     expect(focusedCardsInSurface(container, "Work ready").some((card) =>

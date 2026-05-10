@@ -779,6 +779,7 @@ export const dearMeOutputFeedbackTraceSchema = z.object({
   summary: mediumTextSchema,
   userFeedback: mediumTextSchema.nullable(),
   changes: z.array(mediumTextSchema).min(1).max(4),
+  receipts: z.array(mediumTextSchema).max(4).optional(),
 }).strict();
 
 export const dearMeOutputReviewLoopSchema = z.object({

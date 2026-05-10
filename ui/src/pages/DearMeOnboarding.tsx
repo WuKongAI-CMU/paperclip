@@ -101,6 +101,7 @@ import {
   CheckCircle2,
   CircleDollarSign,
   CreditCard,
+  ExternalLink,
   FileText,
   Gauge,
   MessageSquare,
@@ -1021,6 +1022,9 @@ function ReviewAppliedFeedbackCard({
   const changes = trace.changes
     .map((change) => customerProofPackSummary(change).trim())
     .filter(Boolean);
+  const receipts = (trace.receipts ?? [])
+    .map((receipt) => customerProofPackSummary(receipt).trim())
+    .filter(Boolean);
 
   return (
     <div
@@ -1044,6 +1048,19 @@ function ReviewAppliedFeedbackCard({
             </li>
           ))}
         </ul>
+      ) : null}
+      {receipts.length > 0 ? (
+        <div className="mt-3 border-t border-border pt-3">
+          <p className="text-xs font-medium text-muted-foreground">Review path</p>
+          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+            {receipts.map((receipt) => (
+              <li key={receipt} className="flex gap-2">
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>{receipt}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
     </div>
   );
@@ -1578,6 +1595,37 @@ function defaultSourceInputModeForGuide(
 function sourceLabelForChip(value: string) {
   const customerLabel = customerProofPackSummary(value);
   return customerLabel.length > 42 ? `${customerLabel.slice(0, 39)}...` : customerLabel;
+}
+
+function privateSourceLink(
+  sourceInputMode: DearMeMemorySourceInputMode,
+  sourceLabel: string | null | undefined,
+) {
+  if (sourceInputMode !== "link" || !sourceLabel) return null;
+
+  try {
+    const url = new URL(sourceLabel);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function PrivateSourceLink({ href, className }: { href: string; className?: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className={cn(
+        "inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline",
+        className,
+      )}
+    >
+      <ExternalLink className="h-3 w-3" aria-hidden="true" />
+      Open private source
+    </a>
+  );
 }
 
 const MEMORY_SOURCE_PLAN_STATUS_LABELS: Record<DearMeWorkbenchMemory["sourcePlan"]["status"], string> = {
@@ -2351,6 +2399,7 @@ function FocusedPreparedWorkReviewControls({
   noteId,
   description,
   disabledReason,
+  compact = false,
   isReviewable = true,
   reviewState,
   onReviewOutput,
@@ -2359,6 +2408,7 @@ function FocusedPreparedWorkReviewControls({
   noteId: string;
   description: string;
   disabledReason?: string;
+  compact?: boolean;
   isReviewable?: boolean;
   reviewState: DearMeOutputReviewState;
   onReviewOutput: (outputId: string, action: DearMeOutputReviewAction, decisionNote: string) => void;
@@ -2378,7 +2428,12 @@ function FocusedPreparedWorkReviewControls({
   }
 
   return (
-    <div className="mt-4 rounded-md border border-border bg-background/80 p-4">
+    <div
+      className={cn(
+        "mt-4 rounded-md border border-border bg-background/80",
+        compact ? "p-3" : "p-4",
+      )}
+    >
       <FieldLabel
         htmlFor={noteId}
         label="What should your team do next?"
@@ -2390,7 +2445,7 @@ function FocusedPreparedWorkReviewControls({
       <Textarea
         id={noteId}
         aria-label="DearMe prepared work review note"
-        rows={3}
+        rows={compact ? 2 : 3}
         value={decisionNote}
         placeholder="Optional note for your team."
         onChange={(event) => setDecisionNote(event.target.value)}
@@ -3017,6 +3072,8 @@ function SourceReviewDetailPanel({
   onDismiss: () => void;
   onClose: () => void;
 }) {
+  const sourceHref = privateSourceLink(item.sourceInputMode, item.sourceLabel);
+
   return (
     <aside
       aria-label="Source review detail"
@@ -3042,6 +3099,13 @@ function SourceReviewDetailPanel({
         ) : null}
         <Badge variant="outline">{shortDate(item.createdAt)}</Badge>
       </div>
+
+      {sourceHref ? (
+        <div className="mt-3 rounded-md border border-border bg-muted/20 px-3 py-2">
+          <p className="text-xs font-medium text-muted-foreground">Private source</p>
+          <PrivateSourceLink href={sourceHref} className="mt-1" />
+        </div>
+      ) : null}
 
       <div className="mt-4 rounded-md border border-border bg-muted/20 p-3">
         <p className="text-xs font-medium text-muted-foreground">What DearMe found</p>
@@ -3650,10 +3714,14 @@ function WorkReadyPanel({
   items,
   decisionFocus,
   onOpenWorkItem,
+  outputReviewState,
+  onReviewOutput,
 }: {
   items: DearMeWorkbenchWorkItem[];
   decisionFocus?: DearMeDecisionFocus | null;
   onOpenWorkItem: (item: DearMeWorkbenchWorkItem, intent?: DearMeReviewEntryIntent | null) => void;
+  outputReviewState: DearMeOutputReviewState;
+  onReviewOutput: (outputId: string, action: DearMeOutputReviewAction, decisionNote: string) => void;
 }) {
   return (
     <DearMePanel aria-label="Work ready">
@@ -3673,11 +3741,13 @@ function WorkReadyPanel({
         />
       ) : (
         <div className="mt-4 space-y-3">
-          {items.map((item) => {
+          {items.map((item, index) => {
             const outputKind = item.outputKind ?? "brand_os";
             const issueReference = workItemTarget(item);
             const routeIntent = reviewLoopRouteIntent(item.reviewLoop);
             const focused = decisionFocus ? matchesWorkItemFocus(item, decisionFocus) : false;
+            const isReviewable =
+              item.status === "ready_for_review" || item.reviewLoop.state === "needs_user_review";
             return (
               <DearMeActionCard
                 key={item.id}
@@ -3733,6 +3803,16 @@ function WorkReadyPanel({
                   </div>
                 </DearMeEvidenceGrid>
                 <ReviewHandoffCard loop={item.reviewLoop} className="mt-3" />
+                <FocusedPreparedWorkReviewControls
+                  outputId={item.id}
+                  noteId={`dearme-work-ready-output-note-${index}`}
+                  description="Review this launch-ready item without leaving the board. Launch it, send changes back, ask for another private pass, or choose a new direction."
+                  disabledReason="This lane is still in private work; DearMe will bring it back when it needs your call."
+                  compact
+                  isReviewable={isReviewable}
+                  reviewState={outputReviewState}
+                  onReviewOutput={onReviewOutput}
+                />
               </DearMeActionCard>
             );
           })}
@@ -3837,60 +3917,67 @@ function DecisionsNeededPanel({
       {sourceReviews.length > 0 ? (
         <div className="mt-4 space-y-3">
           <p className="text-xs font-medium text-muted-foreground">Source reviews</p>
-          {sourceReviews.map((item) => (
-            <DearMeActionCard
-              key={item.id}
-              className="p-4"
-              title={customerProofPackSummary(item.sourceTitle)}
-              summary={customerProofPackSummary(item.summary)}
-              attention={{
-                kind: "decision_needed",
-                label: "Waiting on your review",
-                detail: customerProofPackSummary(item.nextAction),
-              }}
-              statusBadges={[
-                {
-                  label: MEMORY_SOURCE_INPUT_MODE_LABELS[item.sourceInputMode],
-                  variant: "outline",
-                },
-                {
-                  label: MEMORY_KIND_LABELS[item.proposedKind],
-                  variant: "outline",
-                },
-              ]}
-              chips={[
-                ...(item.sourceLabel
-                  ? [{ label: sourceLabelForChip(item.sourceLabel), variant: "outline" as const }]
-                  : []),
-                { label: shortDate(item.createdAt), variant: "outline" },
-              ]}
-              calloutLabel="Why it matters"
-              callout="Your team found a private source it can use, but it should become reviewed memory before guiding future public work."
-              action={{
-                label: "Review source",
-                ariaLabel: `Review source ${item.sourceTitle}`,
-                onClick: () => onOpenSourceReview(item),
-                variant: "default",
-              }}
-            >
-              <DearMeEvidenceGrid>
-                <div className="rounded-md border border-border bg-background/80 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Prepared source</p>
-                  <p className="mt-1 text-sm">{customerProofPackSummary(item.sourceTitle)}</p>
+          {sourceReviews.map((item) => {
+            const sourceHref = privateSourceLink(item.sourceInputMode, item.sourceLabel);
+
+            return (
+              <DearMeActionCard
+                key={item.id}
+                className="p-4"
+                title={customerProofPackSummary(item.sourceTitle)}
+                summary={customerProofPackSummary(item.summary)}
+                attention={{
+                  kind: "decision_needed",
+                  label: "Waiting on your review",
+                  detail: customerProofPackSummary(item.nextAction),
+                }}
+                statusBadges={[
+                  {
+                    label: MEMORY_SOURCE_INPUT_MODE_LABELS[item.sourceInputMode],
+                    variant: "outline",
+                  },
+                  {
+                    label: MEMORY_KIND_LABELS[item.proposedKind],
+                    variant: "outline",
+                  },
+                ]}
+                chips={[
+                  ...(item.sourceLabel
+                    ? [{ label: sourceLabelForChip(item.sourceLabel), variant: "outline" as const }]
+                    : []),
+                  { label: shortDate(item.createdAt), variant: "outline" },
+                ]}
+                calloutLabel="Why it matters"
+                callout="Your team found a private source it can use, but it should become reviewed memory before guiding future public work."
+                action={{
+                  label: "Review source",
+                  ariaLabel: `Review source ${item.sourceTitle}`,
+                  onClick: () => onOpenSourceReview(item),
+                  variant: "default",
+                }}
+              >
+                <div className="space-y-3">
+                  {sourceHref ? <PrivateSourceLink href={sourceHref} /> : null}
+                  <DearMeEvidenceGrid>
+                    <div className="rounded-md border border-border bg-background/80 p-3">
+                      <p className="text-xs font-medium text-muted-foreground">Prepared source</p>
+                      <p className="mt-1 text-sm">{customerProofPackSummary(item.sourceTitle)}</p>
+                    </div>
+                    <div className="rounded-md border border-border bg-background/80 p-3">
+                      <p className="text-xs font-medium text-muted-foreground">Suggested memory</p>
+                      <p className="mt-1 text-sm text-foreground/85">
+                        {customerProofPackSummary(item.proposedTitle)}
+                      </p>
+                    </div>
+                    <div className="rounded-md border border-border bg-background/80 p-3">
+                      <p className="text-xs font-medium text-muted-foreground">Your next step</p>
+                      <p className="mt-1 text-sm text-foreground/85">{customerProofPackSummary(item.nextAction)}</p>
+                    </div>
+                  </DearMeEvidenceGrid>
                 </div>
-                <div className="rounded-md border border-border bg-background/80 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Suggested memory</p>
-                  <p className="mt-1 text-sm text-foreground/85">
-                    {customerProofPackSummary(item.proposedTitle)}
-                  </p>
-                </div>
-                <div className="rounded-md border border-border bg-background/80 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Your next step</p>
-                  <p className="mt-1 text-sm text-foreground/85">{customerProofPackSummary(item.nextAction)}</p>
-                </div>
-              </DearMeEvidenceGrid>
-            </DearMeActionCard>
-          ))}
+              </DearMeActionCard>
+            );
+          })}
         </div>
       ) : null}
       {waitingCount === 0 ? (
@@ -4969,6 +5056,7 @@ function VoiceMemoryPanel({
               {memory.sourceReviewQueue.map((item) => {
                 const focused = sourceReviewFocus?.id === item.id;
                 const selected = selectedSourceReviewId === item.id;
+                const sourceHref = privateSourceLink(item.sourceInputMode, item.sourceLabel);
                 return (
                   <div
                     key={item.id}
@@ -5000,7 +5088,9 @@ function VoiceMemoryPanel({
                         onClick: () => handleSourceReviewSelect(item),
                         variant: selected ? "default" : "outline",
                       }}
-                    />
+                    >
+                      {sourceHref ? <PrivateSourceLink href={sourceHref} /> : null}
+                    </DearMeActionCard>
                   </div>
                 );
               })}
@@ -5222,6 +5312,7 @@ function VoiceMemoryPanel({
           {visibleLatestMemory.slice(0, 6).map((item) => {
             const justSaved = recordedMemory?.id === item.id;
             const sourceWorkPath = MEMORY_SOURCE_WORK_PATHS[item.kind];
+            const sourceHref = privateSourceLink(item.sourceInputMode, item.sourceLabel);
             const chips = [
               { label: MEMORY_SOURCE_INPUT_MODE_LABELS[item.sourceInputMode], variant: "outline" as const },
               ...(justSaved
@@ -5254,7 +5345,8 @@ function VoiceMemoryPanel({
                   onClick: () => handleReviseSource(item),
                 }}
               >
-                <div className="flex justify-end">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  {sourceHref ? <PrivateSourceLink href={sourceHref} /> : null}
                   <Button
                     type="button"
                     size="sm"
@@ -5834,6 +5926,8 @@ function TeamWorkbenchPanel({
           items={readyItems}
           decisionFocus={decisionFocus}
           onOpenWorkItem={openWorkItem}
+          outputReviewState={outputReviewState}
+          onReviewOutput={onReviewOutput}
         />
         <DecisionsNeededPanel
           batches={batches}
