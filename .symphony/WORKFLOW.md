@@ -31,17 +31,32 @@ hooks:
     corepack enable
     pnpm install --frozen-lockfile
 agent:
-  max_concurrent_agents: 4
+  max_concurrent_agents: 2
   max_turns: 12
   max_concurrent_agents_by_state:
     Backlog: 1
     Todo: 2
-    In Progress: 4
-    In Review: 2
+    In Progress: 2
+    In Review: 1
 codex:
   command: codex --config shell_environment_policy.inherit=all --config 'model="gpt-5.4-mini"' --config model_reasoning_effort=high app-server
   approval_policy: never
   thread_sandbox: workspace-write
+  bootstrap_timeout_ms: 120000
+  bootstrap_commands:
+    - git log -1 --oneline
+    - git status --short --branch
+    - |
+      if pnpm dearme:worktrees -- --summary-only --skip-dirty; then
+        true
+      else
+        status=$?
+        echo "pnpm dearme:worktrees failed with exit ${status}; falling back to pnpm paperclipai worktree:list --json"
+        pnpm paperclipai worktree:list --json
+      fi
+  first_command_timeout_ms: 120000
+  first_command_max_total_tokens: 120000
+  first_command_pause_state: Todo
   # Workers need localhost access for DearMe dev-server and Playwright smokes.
   # Keep writes confined to Symphony workspaces instead of granting broad
   # filesystem write access.
@@ -64,15 +79,10 @@ DearMe is the customer-facing personal brand growth team. Keep the team visible
 and the machinery hidden: do not expose Paperclip, OpenClaw, Symphony, adapter,
 provider, setup payload, model, or raw runtime language in paid-beta UI/copy.
 
-Start every run with bootstrap evidence before any product analysis. Your first
-assistant action must be a shell command that runs:
-
-- `git log -1 --oneline`
-- `git status --short --branch`
-- `pnpm dearme:worktrees -- --summary-only --skip-dirty`
-
-If the DearMe worktree script is missing, record the exact failure and run
-`pnpm paperclipai worktree:list --json` instead.
+Symphony runs bootstrap evidence before Codex turn 1 and prepends the output to
+this prompt. Read that runner-provided evidence before any product analysis. If
+the runner evidence is missing, stale, or contradicts the issue, run the same
+bootstrap commands yourself and record the exact failure/fallback.
 
 Then read:
 
