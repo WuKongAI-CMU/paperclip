@@ -15,6 +15,13 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-10
 
+- Symphony worker lanes now have an explicit coordinator watchdog boundary in
+  `.symphony/WORKFLOW.md`: bounded `turn_timeout_ms` / `stall_timeout_ms`
+  values, a first-turn instruction to hand off on context compaction or
+  no-diff narrow inspection, and a coordinator expectation that large-context
+  runs end in patch/no-code/blocker evidence rather than open-ended donor
+  research. This keeps implementation workers absorbable while the persistent
+  Goal thread owns architecture and product direction.
 - DEA-36 turns the first proof pack into one launch-ready next step by reusing
   the existing output handoff, `dearme_output_next_move` approval payload,
   private receipt activity, Workbench projection, and onboarding proof-pack

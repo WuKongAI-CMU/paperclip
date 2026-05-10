@@ -2,6 +2,30 @@
 
 Date: 2026-05-10
 
+## Symphony Worker Watchdog Tightened - 2026-05-10
+
+Coordination slice:
+
+- Tightened `.symphony/WORKFLOW.md` so DearMe worker lanes now carry explicit
+  `turn_timeout_ms` and `stall_timeout_ms` bounds in addition to the existing
+  first-command fuse and single-lane first-cycle/proof rule.
+- Strengthened the first-turn guard: context compaction, approaching the turn
+  timeout, or completing the narrow inspection without a diff now means the
+  worker should produce a terminal handoff artifact with a patch, no-code
+  evidence, or blocker instead of continuing broad research.
+- This keeps Symphony as the development factory and coordinator-reviewed
+  evidence spine. It does not change customer runtime behavior or add another
+  product surface.
+
+Verification:
+
+- `ruby -e "require 'yaml'; ..."` parsed `.symphony/WORKFLOW.md` frontmatter
+  and confirmed `codex.turn_timeout_ms == 900000` plus
+  `codex.stall_timeout_ms == 120000`.
+- `pnpm test:dearme-symphony-preflight` passed: 4 node tests.
+- `pnpm test:dearme-symphony-handoff` passed: 4 node tests.
+- `git diff --check` passed.
+
 ## DEA-36 DM-147 Launch-Ready Next Step Absorbed - 2026-05-10
 
 Product/architecture slice:

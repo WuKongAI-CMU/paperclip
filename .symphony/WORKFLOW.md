@@ -72,6 +72,11 @@ codex:
   first_command_timeout_ms: 120000
   first_command_max_total_tokens: 120000
   first_command_pause_state: Todo
+  # Keep DearMe issue lanes bounded. A worker that is still streaming after a
+  # focused product slice should hand off a patch/blocker instead of consuming a
+  # long-lived coordinator-sized context window.
+  turn_timeout_ms: 900000
+  stall_timeout_ms: 120000
   # Workers need localhost access for DearMe dev-server and Playwright smokes.
   # Keep writes confined to Symphony workspaces instead of granting broad
   # filesystem write access.
@@ -138,9 +143,11 @@ Operating rules:
    only the issue-named product paths and run the narrow shell smoke or focused
    test before any broad synthesis. End turn 1 with one of three outcomes:
    committed patch, explicit no-code evidence, or blocker/handoff artifact. If
-   the work starts context compaction, or if no diff exists after the narrow
-   inspection and focused check, run the terminal handoff command and stop
-   instead of continuing analysis.
+   the work starts context compaction, if total turn time approaches the
+   configured turn timeout, or if no diff exists after the narrow inspection
+   and focused check, run the terminal handoff command and stop instead of
+   continuing analysis. Context compaction without a patch is a signal to
+   produce explicit no-code/blocker evidence, not to keep researching.
 5. Git readiness guard: the bootstrap runs
    `pnpm dearme:symphony-preflight -- .` before implementation. If it fails,
    stop with the failing command and workspace path instead of continuing to a
@@ -199,6 +206,11 @@ Operating rules:
     an absorbable commit, explicit no-code evidence, or blocker/patch handoff.
     Use read-only review help for architecture/product checks instead of adding
     another writer against the same surface.
+16. Coordinator watchdog expectation: if a worker has consumed a large context
+    window or has been running for the configured turn timeout without a durable
+    handoff artifact, the correct next step is a bounded patch/blocker handoff
+    and coordinator review. Do not keep expanding the issue into architecture
+    analysis, donor research, or adjacent product redesign.
 
 Final response contract:
 
