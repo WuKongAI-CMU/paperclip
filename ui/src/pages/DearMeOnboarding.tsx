@@ -32,6 +32,7 @@ import {
   type DearMeWorkbenchBatchDecision,
   type DearMeWorkbenchDecision,
   type DearMeWorkbenchMemory,
+  type DearMeWorkbenchProgressItem,
   type DearMeWorkbenchReport,
   type DearMeWorkbenchResponse,
   type DearMeWorkbenchRunLedgerEntry,
@@ -1995,6 +1996,55 @@ function TeamWorkstreamPanel({
         />
       </aside>
     </section>
+  );
+}
+
+function PrivateExecutionHandoffPanel({
+  handoff,
+  onOpenIssue,
+}: {
+  handoff: DearMeWorkbenchProgressItem;
+  onOpenIssue: (issueReference: string, outputId?: string | null) => void;
+}) {
+  const issueReference = handoff.issueIdentifier ?? handoff.issueId ?? null;
+  const artifact = handoff.outputKind ? OUTPUT_KIND_LABELS[handoff.outputKind] : "Prepared move";
+  const summary = customerProofPackSummary(handoff.summary);
+  const nextStep = handoff.nextStep
+    ? customerProofPackSummary(handoff.nextStep)
+    : "DearMe prepared the private brief. Nothing public or external runs until the next governed move is ready.";
+
+  return (
+    <DearMeFocusSurface aria-label="Private handoff ready" className="space-y-4">
+      <DearMeWorkbenchSectionHeader
+        icon={ShieldCheck}
+        eyebrow="Private handoff"
+        title={customerProofPackSummary(handoff.title)}
+        description={summary}
+        trailing={
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">External action not run</Badge>
+            <Badge variant="outline">{artifact}</Badge>
+          </div>
+        }
+      />
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <div className="rounded-md border border-primary/20 bg-background/80 p-3">
+          <p className="text-xs font-medium uppercase text-muted-foreground">Next</p>
+          <p className="mt-1 text-sm text-foreground">{nextStep}</p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full lg:w-auto"
+          onClick={() => issueReference && onOpenIssue(issueReference, handoff.outputId ?? null)}
+          disabled={!issueReference}
+        >
+          Open brief
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">Prepared {shortDate(handoff.createdAt)}</p>
+    </DearMeFocusSurface>
   );
 }
 
@@ -5826,6 +5876,10 @@ function TeamWorkbenchPanel({
   const batches = workbench.batchDecisions.slice(0, 3);
   const sourceReviews = workbench.memory.sourceReviewQueue.slice(0, 3);
   const liveStream = workbench.workStream.slice(0, 6);
+  const privateExecutionHandoff = workbench.recentProgress.find((item) =>
+    item.kind === "execution_handoff_prepared" &&
+    item.executionReadiness === "private_handoff_ready",
+  ) ?? null;
   const visibleRunLedger = memoryArchiveMutation.data
     ? workbench.runLedger.filter((entry) => entry.id !== `ledger:memory:${memoryArchiveMutation.data.memoryId}`)
     : workbench.runLedger;
@@ -5900,6 +5954,13 @@ function TeamWorkbenchPanel({
       ) : null}
 
       <TeamFocusWorkbenchPanel workbench={workbench} paidBetaActive={paidBetaActive} livePulse={livePulse} />
+
+      {privateExecutionHandoff ? (
+        <PrivateExecutionHandoffPanel
+          handoff={privateExecutionHandoff}
+          onOpenIssue={onOpenIssue}
+        />
+      ) : null}
 
       {selectedView === "opportunities" ? (
         <OpportunityWorkbenchPanel

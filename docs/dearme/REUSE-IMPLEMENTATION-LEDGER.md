@@ -120,6 +120,12 @@ private execution handoff, hides the stale prepared-work decision, and leaves a
 Workbench trace that says the final approval was captured without claiming that
 anything was published, sent, deployed, or spent.
 
+Coordinator note: DM-012 is now absorbed as the visible private-handoff surface
+after final approval. The Workbench reads the existing
+`execution_handoff_prepared` progress item and shows a compact customer-safe
+panel with the artifact, next step, and private brief link; keep this on the
+current workbench/read-model path instead of adding a separate execution queue.
+
 Coordinator note: DM-183M extends the Output review and decisions boundary into
 server responses and approval preflight, so DearMe auth, validation, and stale
 Brand OS approval failures stay product-safe before state changes.

@@ -278,6 +278,40 @@
       ]
     },
     {
+      "ticket": "DM-012",
+      "branch": "codex/dearme-dm-012-private-execution-handoff",
+      "head": "17f7581057b5c15f8fc7fb4cb4f3ba4f5182f6ad",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbed the useful private execution handoff after final approval into the approval receipt activity, workbench progress model, focused customer UI panel, and shared handoff readiness contract without running an external action.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "packages/shared/src/index.ts",
+        "packages/shared/src/validators/index.ts",
+        "server/src/services/dearme-approval-receipts.ts",
+        "server/src/services/dearme-output-handoff.ts",
+        "server/src/services/dearme-workbench.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-012",
+      "branch": "codex/dearme-dm-012-integrated",
+      "head": "b6bfffb45c558c852d27ce3b5f85d4801e0a7027",
+      "reviewedAt": "2026-05-10",
+      "reason": "The old DM-012 integration baseline is absorbed by the current DearMe final-approval receipt plus private handoff UI path; replaying it would duplicate a narrower server-only handoff projection.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/services/dearme-approval-receipts.ts",
+        "server/src/services/dearme-workbench.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
       "ticket": "DM-014",
       "branch": "codex/dearme-dm-014-mobile-nav-safe-area",
       "head": "65d7a59938bbf529d69e16a0907f07db3ae5e565",

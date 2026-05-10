@@ -32,6 +32,7 @@ import {
   type DearMeVoiceGateResult,
 } from "@paperclipai/shared";
 import { notFound } from "../errors.js";
+import { DEARME_NEXT_MOVE_APPROVAL_TYPE } from "./dearme-approval-receipts.js";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "./dearme-brand-blueprint-apply.js";
 import { deriveDearMeOutputStatus } from "./dearme-output-status.js";
 import { dearMeVoiceGateService } from "./dearme-voice-gate.js";
@@ -107,7 +108,6 @@ const VOICE_OPERATION_FINGERPRINT = "operation-seed_voice_profile";
 const CONTENT_OPERATION_FINGERPRINT = "operation-draft_content_batch";
 const CONTENT_DRAFT_WORK_PRODUCT_PROVIDER = "dearme";
 const CYCLE_OUTPUT_WORK_PRODUCT_PROVIDER = "dearme-cycle-output";
-const DEARME_NEXT_MOVE_APPROVAL_TYPE = "dearme_output_next_move";
 const DEARME_OUTPUT_REVIEW_LOOP_MAX_ATTEMPTS = 3;
 const DEARME_FEEDBACK_TRACE_HIDDEN_TERMS =
   /\b(dearme decision|issue comment|work product|provider|adapter|setup[-_ ]?payload|paperclip|openclaw|symphony|runtime|agent|model-provider|model provider|codex)\b/i;

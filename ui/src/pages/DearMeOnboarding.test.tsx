@@ -4175,6 +4175,62 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("surfaces private handoff readiness after final approval", async () => {
+    const response = workbenchResponse();
+    response.recentProgress = [
+      {
+        id: "activity-private-handoff",
+        kind: "execution_handoff_prepared",
+        title: "Private publishing handoff prepared",
+        summary: "DearMe prepared the private execution brief. Nothing external has run yet.",
+        outputKind: "content_drafts",
+        outputId: "issue-2:content_drafts",
+        riskGate: "publish_social",
+        approvalId: "approval-publish",
+        issueId: "issue-2",
+        issueIdentifier: "PET-8",
+        executionReadiness: "private_handoff_ready",
+        nextStep: "DearMe will prepare the channel-ready posting brief before any post goes live.",
+        createdAt: "2026-05-07T14:06:00.000Z",
+      },
+      ...response.recentProgress,
+    ];
+    mockDearmeApi.getWorkbench.mockResolvedValue(response);
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const handoffPanel = surfaceByLabel(container, "Private handoff ready");
+    expect(handoffPanel.textContent).toContain("Private handoff");
+    expect(handoffPanel.textContent).toContain("Private publishing handoff prepared");
+    expect(handoffPanel.textContent).toContain("External action not run");
+    expect(handoffPanel.textContent).toContain("channel-ready posting brief");
+    expect(handoffPanel.textContent).toContain("Content drafts");
+
+    await act(async () => {
+      buttonByText(handoffPanel, "Open brief")?.click();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/dearme?view=decisions&work=PET-8&artifact=issue-2%3Acontent_drafts",
+    );
+    expect(container.textContent).not.toContain("/issues/");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("renders a DearMe-owned approval decision detail from URL params", async () => {
     mockLocation.search = "?view=decisions&approval=approval-ready";
     const root = createRoot(container);

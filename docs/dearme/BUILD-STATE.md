@@ -2,6 +2,44 @@
 
 Date: 2026-05-10
 
+## DM-183BE DM-012 Private Handoff Surface Absorption - 2026-05-10
+
+Product/UI slice:
+
+- Kept Symphony as the cooperation spine and treated DM-012 as the next
+  follow-on to the just-landed final-approval receipt path.
+- Reviewed exact DM-012 heads `17f7581057b5c15f8fc7fb4cb4f3ba4f5182f6ad`
+  and `b6bfffb45c558c852d27ce3b5f85d4801e0a7027`.
+- Reused the current `execution_handoff_prepared` progress item instead of
+  creating a separate execution queue, route, or runtime surface.
+- Added a focused DearMe Workbench panel for the private handoff after final
+  approval, showing the artifact, "external action not run" boundary, next
+  step, and a DearMe-owned private brief link.
+- Exported the shared handoff readiness constant through the shared package
+  entry points so UI and future workers can consume the typed read model.
+- Reused the receipt service's `DEARME_NEXT_MOVE_APPROVAL_TYPE` from output
+  handoff code so the final-approval type stays owned by one service boundary.
+- Recorded both exact DM-012 heads in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so Symphony patrols stop
+  treating them as unresolved development candidates.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "surfaces private handoff readiness"`
+  passed.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('json ok')"`
+  passed.
+- `pnpm run dearme:worktrees -- --ticket=DM-012 --skip-dirty --limit=20`
+  passed and showed both DM-012 worktrees as `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` passed and
+  reported `reviewed_absorbed: 30`, `not_in_current: 83`, and `dirty: 0`.
+- `pnpm exec vitest run server/src/__tests__/dearme-output-handoff.test.ts --maxWorkers=1`
+  was attempted, but the embedded Postgres suite skipped on this host because
+  the Postgres init script exited with code 1.
+
 ## DM-183BD DM-011 Final Approval Receipt Absorption - 2026-05-10
 
 Coordination slice:
