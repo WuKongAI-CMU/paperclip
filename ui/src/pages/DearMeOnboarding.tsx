@@ -1110,6 +1110,13 @@ function outputReviewDetails(output: DearMeOutputItem) {
   return orderedDetails.slice(0, OUTPUT_DETAIL_DISPLAY_LIMIT);
 }
 
+function outputLaunchBoundaryPreview(output: DearMeOutputItem) {
+  const boundaryDetail = output.details.find((detail) =>
+    detail.kind === "approval_gate" || detail.kind === "deploy_gate",
+  );
+  return customerProofPackSummary(boundaryDetail?.value ?? "").trim();
+}
+
 const OUTPUT_KIND_OWNER_ROLE: Record<
   DearMeOutputItem["kind"],
   DearMeWorkbenchWorkItem["ownerRole"]
@@ -6002,6 +6009,7 @@ function PrivateWorkPanel({
               const voiceGate = primaryOutputVoiceGate(output);
               const routeIntent = reviewLoopRouteIntent(output.reviewLoop);
               const focused = decisionFocus ? matchesOutputFocus(output, decisionFocus) : false;
+              const launchBoundary = outputLaunchBoundaryPreview(output);
               const footer = `Updated ${shortDate(output.updatedAt)}${
                 output.documents.length > 0
                   ? ` / ${output.documents.length} private reference${output.documents.length === 1 ? "" : "s"}`
@@ -6064,6 +6072,19 @@ function PrivateWorkPanel({
                   <p className="mt-3 rounded-md border border-border bg-background/80 p-2 text-xs text-muted-foreground">
                     {customerProofPackSummary(output.reviewLoop.nextStep)}
                   </p>
+
+                  {launchBoundary ? (
+                    <div
+                      className="mt-3 rounded-md border border-border bg-muted/30 px-3 py-2"
+                      aria-label={`${customerProofPackSummary(output.title)} launch boundary`}
+                    >
+                      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        Launch boundary
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-sm text-foreground/85">{launchBoundary}</p>
+                    </div>
+                  ) : null}
 
                   <OutputSourceEvidenceList output={output} limit={2} compact className="mt-3" />
 

@@ -3348,6 +3348,9 @@ describe("DearMeOnboarding", () => {
     expect(text).toContain("Proof used");
     expect(text).toContain("Launch boundary");
     expect(text).toContain("Approve before publishing.");
+    expect(surfaceByLabel(container, "LinkedIn starter post launch boundary").textContent).toContain(
+      "Approve before publishing.",
+    );
 
     await act(async () => {
       root.unmount();

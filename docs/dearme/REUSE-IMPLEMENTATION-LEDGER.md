@@ -112,6 +112,36 @@ Brand OS approval failures stay product-safe before state changes.
 
 ## Recently Completed
 
+### DM-183Y: Launch Boundary Cards
+
+Goal: make public-action caution visible while users scan prepared private work,
+before they open a focused decision panel.
+
+Donor grounding:
+
+- DM-030: reuse the review-boundary card idea without depending on the old
+  `reviewContext.approvalBoundary` shape.
+- Polsia: keep the control surface simple; the user sees what is safe and what
+  waits for review in place.
+- Naive/Paperclip: reuse existing output detail contracts rather than adding
+  a parallel card-specific field.
+
+Completed:
+
+- Added a `Launch boundary` strip to ready private work cards when
+  `approval_gate` or `deploy_gate` detail text is present.
+- Kept the existing detail grid intact so focused review and first-week detail
+  coverage continue to use the same source payload.
+- Added UI coverage for the launch boundary strip on a prepared content card.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ### DM-183X: Team Progress Map Copy
 
 Goal: keep the growth map customer-owned by removing the last visible workstream

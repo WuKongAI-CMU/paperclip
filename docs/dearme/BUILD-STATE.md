@@ -2,6 +2,26 @@
 
 Date: 2026-05-10
 
+## DM-183Y Launch Boundary Cards - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the still-useful DM-030 review-boundary card direction onto the
+  current DearMe output contract instead of raw-merging the stale worker branch.
+- Reused existing `approval_gate` and `deploy_gate` output details as the
+  customer-facing launch boundary preview on private work cards; no schema,
+  route, or query-key changes.
+- Added UI coverage that checks a prepared content card exposes its launch
+  boundary while users scan the ready-work surface.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183X Team Progress Map Copy - 2026-05-10
 
 Implementation slice:
