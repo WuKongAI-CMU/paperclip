@@ -30,6 +30,14 @@ Verification:
   `http://127.0.0.1:4100/` with no running or retrying workers.
 - `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported 117
   worktrees and 0 dirty worker records.
+- Browser plugin connection was unavailable for `iab`, so the rendered smoke
+  used Playwright fallback against the already-running local app at
+  `http://127.0.0.1:3100/DEAA/dearme?view=decisions`.
+- Playwright desktop `1440x1100` and mobile `390x844` smokes passed: HTTP 200,
+  non-blank DearMe surface, no framework overlay, no console/page errors, no
+  horizontal overflow, and `Review Dear me report` opened the focused work URL.
+  Screenshots: `/tmp/dearme-dm183h-desktop.png` and
+  `/tmp/dearme-dm183h-mobile.png`.
 
 ## DM-183G Symphony Cooperation Spine - 2026-05-10
 
