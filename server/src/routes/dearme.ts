@@ -167,6 +167,40 @@ function defaultDearMeContinuationNote(intent: DearMeOutputContinuationIntent) {
   return "Use this feedback to choose a clearer direction before the next private version.";
 }
 
+function compactDearMeMemoryTitle(value: string) {
+  const compact = value.replace(/\s+/g, " ").trim();
+  if (compact.length <= 160) return compact;
+  return `${compact.slice(0, 157).trimEnd()}...`;
+}
+
+function dearMeReviewFeedbackMemoryTitle(outputTitle: string) {
+  return compactDearMeMemoryTitle(`Review feedback for ${outputTitle}`);
+}
+
+function dearMeReviewFeedbackActionText(action: Exclude<DearMeOutputReviewAction, "approve">) {
+  if (action === "request_changes") return "asked for changes before approving this prepared work";
+  if (action === "regenerate") return "asked DearMe to prepare another private pass";
+  return "said this prepared work was not useful yet";
+}
+
+function dearMeReviewFeedbackMemoryBody(input: {
+  action: Exclude<DearMeOutputReviewAction, "approve">;
+  outputTitle: string;
+  decisionNote: string | null;
+  continuationIntent?: DearMeOutputContinuationIntent;
+}) {
+  const note = input.decisionNote?.trim();
+  const actionText = dearMeReviewFeedbackActionText(input.action);
+  const feedback = note && note.length > 0
+    ? ` Feedback: ${note}`
+    : " Treat this as a signal to sharpen the next private version before review.";
+  const continuation = input.continuationIntent
+    ? ` Next move: ${defaultDearMeContinuationNote(input.continuationIntent)}`
+    : "";
+
+  return `For ${input.outputTitle}, the owner ${actionText}.${feedback}${continuation}`;
+}
+
 function contentDraftIssueIdFromOutputId(outputId: string) {
   const separatorIndex = outputId.lastIndexOf(":");
   if (separatorIndex <= 0 || separatorIndex === outputId.length - 1) {
@@ -261,6 +295,40 @@ export function dearmeRoutes(db: Db) {
         continuationIntent: input.continuationIntent ?? null,
       },
     });
+
+    if (result.action !== "approve") {
+      await logActivity(db, {
+        companyId: input.companyId,
+        actorType: input.actor.actorType,
+        actorId: input.actor.actorId,
+        agentId: input.actor.agentId,
+        runId: input.actor.runId,
+        action: DEARME_MEMORY_UPDATED_ACTION,
+        entityType: "dearme_memory",
+        entityId: `review-feedback:${result.comment.id}`,
+        details: {
+          kind: "review_feedback",
+          sourceInputMode: "paste",
+          title: dearMeReviewFeedbackMemoryTitle(result.output.title),
+          body: dearMeReviewFeedbackMemoryBody({
+            action: result.action,
+            outputTitle: result.output.title,
+            decisionNote: input.request.decisionNote,
+            continuationIntent: input.continuationIntent,
+          }),
+          sourceLabel: result.output.title,
+          outputId: result.outputId,
+          outputKind: result.output.kind,
+          issueId: result.output.issueId,
+          issueIdentifier: result.output.issueIdentifier,
+          reviewAction: result.action,
+          continuationIntent: input.continuationIntent ?? null,
+          commentId: result.comment.id,
+        },
+      });
+
+      await refreshDearMeMemoryCycles(input.companyId, input.actor);
+    }
 
     return result;
   }

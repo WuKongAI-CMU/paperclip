@@ -104,6 +104,73 @@ describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
     ]);
   }
 
+  it("uses output review feedback as future Voice & Memory context", async () => {
+    const companyId = await seedCompany();
+    const brandOsIssue = await seedParentIssue(
+      companyId,
+      DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
+      "DearMe: Review Brand OS for Peter",
+    );
+    const routinesSvc = routineService(db);
+    const dearmeRoutine = await routinesSvc.create(
+      companyId,
+      {
+        projectId: null,
+        goalId: null,
+        parentIssueId: brandOsIssue.id,
+        title: "DearMe weekly growth loop",
+        description: [
+          "Prepare private growth work.",
+          "",
+          "Operating boundary:",
+          "This routine may plan, research, and draft privately.",
+        ].join("\n"),
+        assigneeAgentId: null,
+        priority: "medium",
+        status: "active",
+        concurrencyPolicy: "coalesce_if_active",
+        catchUpPolicy: "skip_missed",
+        variables: [],
+      },
+      { userId: "user-1" },
+    );
+    await db.insert(activityLog).values({
+      companyId,
+      actorType: "user",
+      actorId: "user-1",
+      action: "dearme.memory_updated",
+      entityType: "dearme_memory",
+      entityId: "review-feedback:comment-2",
+      details: {
+        kind: "review_feedback",
+        sourceInputMode: "paste",
+        title: "Review feedback for Dear me report",
+        body: "For Dear me report, the owner said this prepared work was not useful yet. Feedback: This does not help.",
+        sourceLabel: "Dear me report",
+      },
+      createdAt: new Date("2026-05-08T14:06:00.000Z"),
+    });
+
+    const refresh = await dearmeMemoryContextService(db).refreshRoutineMemoryContext(
+      companyId,
+      { userId: "user-1" },
+    );
+    const [updatedDearMeRoutine] = await db
+      .select()
+      .from(routines)
+      .where(eq(routines.id, dearmeRoutine.id));
+
+    expect(refresh).toEqual({
+      memoryCount: 1,
+      routineCount: 1,
+      updated: 1,
+      skipped: 0,
+    });
+    expect(updatedDearMeRoutine.description ?? "").toContain(
+      "Review feedback: Review feedback for Dear me report: For Dear me report, the owner said this prepared work was not useful yet. Feedback: This does not help. Source: Dear me report.",
+    );
+  });
+
   it("refreshes already-created DearMe routines with latest Voice & Memory updates", async () => {
     const companyId = await seedCompany();
     const brandOsIssue = await seedParentIssue(

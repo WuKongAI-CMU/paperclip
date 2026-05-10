@@ -218,6 +218,7 @@ export const DEARME_MEMORY_UPDATE_KINDS = [
   "constraint",
   "relationship",
   "preference",
+  "review_feedback",
 ] as const;
 export const DEARME_MEMORY_SOURCE_INPUT_MODES = [
   "paste",

@@ -1244,6 +1244,7 @@ describe("DearMe brand blueprint routes", () => {
     );
     expect(mockDearMePaidBetaAccessService.getAccess).not.toHaveBeenCalled();
     expect(mockQueueIssueAssignmentWakeup).not.toHaveBeenCalled();
+    expect(mockLogActivity).toHaveBeenCalledTimes(1);
     expect(mockLogActivity).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -1252,6 +1253,7 @@ describe("DearMe brand blueprint routes", () => {
         entityId: "comment-1",
       }),
     );
+    expect(mockDearMeMemoryContextService.refreshRoutineMemoryContext).not.toHaveBeenCalled();
   });
 
   it("queues not-useful output feedback without exposing wake internals", async () => {
@@ -1302,13 +1304,40 @@ describe("DearMe brand blueprint routes", () => {
       mutation: "dearme.output_review",
       contextSource: "dearme.output_review",
     }));
-    expect(mockLogActivity).toHaveBeenCalledWith(
+    expect(mockLogActivity).toHaveBeenNthCalledWith(
+      1,
       expect.anything(),
       expect.objectContaining({
         action: "dearme.output_marked_not_useful",
         entityType: "issue_comment",
         entityId: "comment-2",
       }),
+    );
+    expect(mockLogActivity).toHaveBeenNthCalledWith(
+      2,
+      expect.anything(),
+      expect.objectContaining({
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: "review-feedback:comment-2",
+        details: expect.objectContaining({
+          kind: "review_feedback",
+          sourceInputMode: "paste",
+          title: "Review feedback for Dear me report",
+          body: "For Dear me report, the owner said this prepared work was not useful yet. Feedback: This does not help.",
+          sourceLabel: "Dear me report",
+          outputId: "issue-1:weekly_report",
+          reviewAction: "not_useful",
+        }),
+      }),
+    );
+    expect(mockDearMeMemoryContextService.refreshRoutineMemoryContext).toHaveBeenCalledWith(
+      "company-1",
+      {
+        userId: "user-1",
+        agentId: null,
+        runId: null,
+      },
     );
   });
 
@@ -1365,7 +1394,8 @@ describe("DearMe brand blueprint routes", () => {
       mutation: "dearme.output_continue",
       contextSource: "dearme.output_continue",
     }));
-    expect(mockLogActivity).toHaveBeenCalledWith(
+    expect(mockLogActivity).toHaveBeenNthCalledWith(
+      1,
       expect.anything(),
       expect.objectContaining({
         action: "dearme.output_regeneration_requested",
@@ -1375,6 +1405,33 @@ describe("DearMe brand blueprint routes", () => {
           continuationIntent: "prepare_another_pass",
         }),
       }),
+    );
+    expect(mockLogActivity).toHaveBeenNthCalledWith(
+      2,
+      expect.anything(),
+      expect.objectContaining({
+        action: "dearme.memory_updated",
+        entityType: "dearme_memory",
+        entityId: "review-feedback:comment-3",
+        details: expect.objectContaining({
+          kind: "review_feedback",
+          body: [
+            "For Dear me report, the owner asked DearMe to prepare another private pass.",
+            "Feedback: Try a sharper angle.",
+            "Next move: Prepare another private pass for review.",
+          ].join(" "),
+          reviewAction: "regenerate",
+          continuationIntent: "prepare_another_pass",
+        }),
+      }),
+    );
+    expect(mockDearMeMemoryContextService.refreshRoutineMemoryContext).toHaveBeenCalledWith(
+      "company-1",
+      {
+        userId: "user-1",
+        agentId: null,
+        runId: null,
+      },
     );
   });
 

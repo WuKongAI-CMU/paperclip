@@ -137,6 +137,7 @@ const MEMORY_KIND_LABELS: Record<DearMeMemoryUpdateKind, string> = {
   constraint: "Boundary",
   relationship: "Relationship",
   preference: "Preference",
+  review_feedback: "Review feedback",
 };
 
 const MEMORY_SOURCE_REVIEW_MODE_LABELS: Record<
