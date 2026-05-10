@@ -2,6 +2,57 @@
 
 Date: 2026-05-10
 
+## DEA-8 Live Proof Pack Handoff v0 - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the useful docs-only Symphony handoff from Linear issue `DEA-8`
+  without merging the worker checkout, because that checkout showed unrelated
+  file deletions outside the issue scope.
+- Verified from the worker evidence that the first-run DearMe aha path already
+  reuses `DearMeFirstCyclePreviewResponse.proofSequence`,
+  `prepareFirstCycleProofOutputs(...)`, `prepareCycleOutputPacket(...)`, output
+  handoff, and workbench projection.
+- Confirmed no second first-run packet, schema, or runtime surface is needed:
+  first-cycle start prepares identity, audience, content, opportunity,
+  private-site, and report proof through existing private output records.
+
+Live proof evidence from DEA-8:
+
+- Local API health at `http://127.0.0.1:3100/api/health` returned `status: ok`,
+  `deploymentMode: local_trusted`, `deploymentExposure: private`, and
+  `authReady: true`.
+- API smoke against paid-beta company `39391bbc-ffc9-430b-bac5-171de2fbc57f`
+  posted `/api/dearme/companies/:companyId/first-cycle/start` and returned the
+  three prepared proof steps: `Brand OS dossier + Voice profile`,
+  `Starter content drafts + Opportunity shortlist`, and
+  `Private site proof draft + Dear me report note`.
+- The same smoke returned three starter posts, an opportunity lead gated by
+  `send_email`, and a portfolio proof card gated by `deploy_public_site`.
+- `/outputs` projected six ready-for-review outputs: `brand_os`,
+  `voice_profile`, `content_drafts`, `opportunity_drafts`, `portfolio_update`,
+  and `weekly_report`.
+- `/workbench` projected those records into the visible review experience:
+  `workReady: 6`, `decisionsNeeded: 6`, `batchDecisions: 5`,
+  `recentProgress: 4`, `workStream: 10`, `runLedger: 10`, and `outputs: 6`.
+- Hidden runtime/donor terms checked in the first-cycle start response had no
+  hits for Paperclip, OpenClaw, Symphony, adapter, provider, setup payload,
+  model, or raw runtime language.
+
+Verification:
+
+- Linear `DEA-8` contains the Symphony worker completion comment with the live
+  proof evidence above.
+- The worker's focused test command exited 0: 2 test files passed, 3
+  embedded-Postgres-backed server files skipped on this host, 82 tests passed,
+  and 15 tests skipped.
+- The skipped server files reported the known embedded Postgres data-directory
+  init blocker.
+- Current coordinator inventory after absorption:
+  `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported 117 DearMe
+  worktrees with 0 dirty workers.
+- `git diff --check` passed after absorbing this docs-only handoff.
+
 ## DM-183O DearMe Approval/Profile UI Boundaries - 2026-05-10
 
 Implementation slice:

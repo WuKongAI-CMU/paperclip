@@ -101,11 +101,49 @@ shared UI entry points, so DearMe approval cards, detail pages, approval lists,
 and inbox rows return to the DearMe decisions surface instead of exposing raw
 approval/issue chrome.
 
+Coordinator note: DEA-8 verified the live first-cycle proof handoff without a
+code change. Do not reopen this as another first-run schema or runtime task:
+`prepareFirstCycleProofOutputs(...)`, `prepareCycleOutputPacket(...)`, output
+handoff, and workbench projection already carry the paid-beta proof pack.
+
 Coordinator note: DM-183M extends the Output review and decisions boundary into
 server responses and approval preflight, so DearMe auth, validation, and stale
 Brand OS approval failures stay product-safe before state changes.
 
 ## Recently Completed
+
+### DEA-8: Live Proof Pack Handoff v0
+
+Goal: prove the first-run DearMe aha moment with real prepared proof flowing
+through the existing handoff and workbench path, without adding a parallel
+first-run contract.
+
+Donor grounding:
+
+- Polsia: the first session should show concrete team progress quickly.
+- Naive/Paperclip: reuse documents, output records, approval gates, and the
+  workbench read model as the hidden execution substrate.
+- Lindy: keep proof cards and review actions compact and customer-readable.
+
+Completed:
+
+- Absorbed the useful docs-only Symphony handoff from Linear `DEA-8` without
+  merging the worker checkout's unrelated file deletions.
+- Verified the existing first-cycle start path prepares source-labelled
+  identity, audience, content, opportunity, private-site, and report proof.
+- Confirmed `/outputs` returns all six ready-for-review output kinds and
+  `/workbench` projects them into Work Ready, Decisions, batch decisions,
+  recent progress, stream, ledger, and output surfaces.
+- Recorded the verification in `docs/dearme/BUILD-STATE.md`; no code or schema
+  changes were needed.
+
+Verification:
+
+- Linear `DEA-8` Symphony completion comment
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty`
+- DEA-8 focused DearMe Vitest target
+- DEA-8 local API health check and shell API smoke against `/first-cycle/start`,
+  `/outputs`, and `/workbench`
 
 ### DM-183O: DearMe Approval/Profile UI Boundaries
 
