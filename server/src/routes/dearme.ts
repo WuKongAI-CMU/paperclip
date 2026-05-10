@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { Router, type Response } from "express";
+import { Router, type ErrorRequestHandler, type Response } from "express";
+import { ZodError } from "zod";
 import type { Db } from "@paperclipai/db";
 import {
   dearMeApprovalResolveRequestSchema,
@@ -41,7 +42,7 @@ import {
   getDearMeSseBus,
   type DearMeSseEvent,
 } from "../services/dearme-sse-bus.js";
-import { forbidden, notFound } from "../errors.js";
+import { forbidden, HttpError, notFound } from "../errors.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { heartbeatService } from "../services/heartbeat.js";
 import { queueIssueAssignmentWakeup } from "../services/issue-assignment-wakeup.js";
@@ -49,6 +50,26 @@ import { queueIssueAssignmentWakeup } from "../services/issue-assignment-wakeup.
 function memoryBodyPreview(body: string) {
   return body.length > 700 ? `${body.slice(0, 697)}...` : body;
 }
+
+const dearMeAuthErrorMessages = new Map<string, string>([
+  ["Unauthorized", "Sign in to continue with DearMe."],
+  ["Board access required", "This DearMe action needs an owner account."],
+  [
+    "Company membership or instance admin access required",
+    "This DearMe profile is not available to your account.",
+  ],
+  ["Instance admin access required", "This DearMe action needs an owner account."],
+  [
+    "Agent key cannot access another company",
+    "This DearMe profile is not available to your account.",
+  ],
+  [
+    "User does not have access to this company",
+    "This DearMe profile is not available to your account.",
+  ],
+  ["User does not have active company access", "Your DearMe access is not active."],
+  ["Viewer access is read-only", "Your DearMe access is read-only."],
+]);
 
 const CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND = "dearme_chief_of_staff_message";
 const FIRST_CYCLE_START_ORIGIN_KIND = "dearme_first_cycle_start";
@@ -70,6 +91,24 @@ function writeDearMeSseEvent(res: Response, event: DearMeSseEvent) {
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
+function normalizeDearMeRouteError(err: unknown) {
+  if (err instanceof ZodError) {
+    return new HttpError(400, "Validation error");
+  }
+  if (!(err instanceof HttpError)) {
+    return err;
+  }
+  const safeMessage = dearMeAuthErrorMessages.get(err.message);
+  if (!safeMessage) {
+    return err;
+  }
+  return new HttpError(err.status, safeMessage);
+}
+
+const dearMeRouteErrorBoundary: ErrorRequestHandler = (err, _req, _res, next) => {
+  next(normalizeDearMeRouteError(err));
+};
 
 function trimTitleFragment(value: string) {
   const firstLine = value
@@ -898,6 +937,8 @@ export function dearmeRoutes(db: Db) {
       res.status(201).json(result);
     },
   );
+
+  router.use(dearMeRouteErrorBoundary);
 
   return router;
 }

@@ -2,6 +2,32 @@
 
 Date: 2026-05-10
 
+## DM-183M DearMe Server Safe Boundaries - 2026-05-10
+
+Implementation slice:
+
+- Absorbed concurrent DearMe server boundary changes as one narrow
+  customer-safety pass.
+- Normalized DearMe route Zod failures and common auth/access failures into
+  product-safe messages before the shared Express error handler serializes
+  them.
+- Added Brand OS approval preflight so malformed legacy approval payloads stay
+  pending instead of being marked approved before apply fails.
+- Added route regression assertions for company-access and owner-account
+  failures, plus approval/apply coverage for stale payloads, so internal
+  board/company/auth/setup wording stays backstage.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts --maxWorkers=1`
+  passed: 37 tests.
+- `pnpm exec vitest run server/src/__tests__/approvals-service.test.ts --maxWorkers=1`
+  passed: 6 tests.
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-apply.test.ts --maxWorkers=1`
+  passed: 3 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `git diff --check` passed.
+
 ## DM-183L Visible Learning Loop - 2026-05-10
 
 Implementation slice:

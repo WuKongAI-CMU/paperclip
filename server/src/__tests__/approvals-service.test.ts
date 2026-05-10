@@ -11,6 +11,18 @@ const mockDearMeBrandBlueprintApplyService = vi.hoisted(() => ({
   applyApprovedBlueprint: vi.fn(),
 }));
 
+const mockValidateDearMeBrandBlueprintApplyPayload = vi.hoisted(() =>
+  vi.fn((payload: unknown) => {
+    if (payload && typeof payload === "object" && "setup_payload" in payload) {
+      throw Object.assign(
+        new Error("This DearMe approval needs to be refreshed before it can be approved."),
+        { status: 422 },
+      );
+    }
+    return payload;
+  }),
+);
+
 const mockNotifyHireApproved = vi.hoisted(() => vi.fn());
 
 vi.mock("../services/agents.js", () => ({
@@ -22,6 +34,10 @@ vi.mock("../services/hire-hook.js", () => ({
 }));
 
 vi.mock("../services/dearme-brand-blueprint-apply.js", () => ({
+  DEARME_BRAND_BLUEPRINT_ORIGIN_KIND: "dearme_brand_blueprint_apply",
+  DEARME_BRAND_BLUEPRINT_INVALID_APPROVAL_MESSAGE:
+    "This DearMe approval needs to be refreshed before it can be approved.",
+  validateDearMeBrandBlueprintApplyPayload: mockValidateDearMeBrandBlueprintApplyPayload,
   dearmeBrandBlueprintApplyService: vi.fn(() => mockDearMeBrandBlueprintApplyService),
 }));
 
@@ -69,6 +85,7 @@ function createDbStub(selectResults: ApprovalRecord[][], updateResults: Approval
 
   return {
     db: { select, update },
+    update,
     selectWhere,
     returning,
   };
@@ -145,6 +162,36 @@ describe("approvalService resolution idempotency", () => {
     const result = await svc.approve("approval-1", "board", "retry");
 
     expect(result.applied).toBe(false);
+    expect(mockDearMeBrandBlueprintApplyService.applyApprovedBlueprint).not.toHaveBeenCalled();
+  });
+
+  it("preflights DearMe Brand OS payloads before approving them", async () => {
+    const dbStub = createDbStub(
+      [[{
+        ...createDearMeApproval("pending"),
+        payload: {
+          summary: "Legacy malformed payload",
+          setup_payload: { adapterType: "codex_local" },
+        },
+      }]],
+      [],
+    );
+
+    const svc = approvalService(dbStub.db as any);
+    let caught: unknown;
+    try {
+      await svc.approve("approval-1", "board", "ship it");
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toMatchObject({
+      status: 422,
+      message: "This DearMe approval needs to be refreshed before it can be approved.",
+    });
+    expect((caught as { details?: unknown }).details).toBeUndefined();
+    expect(dbStub.update).not.toHaveBeenCalled();
+    expect(dbStub.returning).not.toHaveBeenCalled();
     expect(mockDearMeBrandBlueprintApplyService.applyApprovedBlueprint).not.toHaveBeenCalled();
   });
 });

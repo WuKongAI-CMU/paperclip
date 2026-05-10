@@ -45,6 +45,13 @@ const mockIssueService = vi.hoisted(() => ({
 const mockLogActivity = vi.hoisted(() => vi.fn());
 const mockQueueIssueAssignmentWakeup = vi.hoisted(() => vi.fn());
 
+const DEARME_ROUTE_INTERNAL_ERROR_PATTERN =
+  /agent key|board access|company|workspace|provider|adapter|paperclip|openclaw|setup[_ -]?payload/i;
+
+function expectDearMeRouteErrorBodySafe(body: unknown) {
+  expect(JSON.stringify(body)).not.toMatch(DEARME_ROUTE_INTERNAL_ERROR_PATTERN);
+}
+
 function registerModuleMocks() {
   vi.doMock("../services/index.js", () => ({
     agentService: () => mockAgentService,
@@ -707,6 +714,8 @@ describe("DearMe brand blueprint routes", () => {
       .get("/api/dearme/companies/company-1/events");
 
     expect(res.status).toBe(403);
+    expect(res.body.error).toBe("This DearMe profile is not available to your account.");
+    expectDearMeRouteErrorBodySafe(res.body);
     expect(mockDearMeWorkbenchService.getWorkbench).not.toHaveBeenCalled();
   });
 
@@ -826,6 +835,8 @@ describe("DearMe brand blueprint routes", () => {
       .get("/api/dearme/companies/company-1/workbench");
 
     expect(res.status).toBe(403);
+    expect(res.body.error).toBe("This DearMe profile is not available to your account.");
+    expectDearMeRouteErrorBodySafe(res.body);
     expect(mockDearMeWorkbenchService.getWorkbench).not.toHaveBeenCalled();
   });
 
@@ -1142,9 +1153,11 @@ describe("DearMe brand blueprint routes", () => {
       .send({
         kind: "voice_sample",
         body: "Short, direct note.",
-      });
+    });
 
     expect(res.status).toBe(403);
+    expect(res.body.error).toBe("This DearMe action needs an owner account.");
+    expectDearMeRouteErrorBodySafe(res.body);
     expect(mockLogActivity).not.toHaveBeenCalled();
     expect(mockDearMeMemoryContextService.refreshRoutineMemoryContext).not.toHaveBeenCalled();
   });
@@ -1557,6 +1570,8 @@ describe("DearMe brand blueprint routes", () => {
       });
 
     expect(res.status).toBe(403);
+    expect(res.body.error).toBe("This DearMe action needs an owner account.");
+    expectDearMeRouteErrorBodySafe(res.body);
     expect(mockDearMePaidBetaAccessService.recordPayment).not.toHaveBeenCalled();
   });
 
@@ -1905,6 +1920,8 @@ describe("DearMe brand blueprint routes", () => {
       });
 
     expect(res.status).toBe(403);
+    expect(res.body.error).toBe("This DearMe profile is not available to your account.");
+    expectDearMeRouteErrorBodySafe(res.body);
     expect(mockDearMeBrandBlueprintService.preview).not.toHaveBeenCalled();
   });
 
@@ -1919,6 +1936,8 @@ describe("DearMe brand blueprint routes", () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("Validation error");
+    expect(res.body.details).toBeUndefined();
+    expectDearMeRouteErrorBodySafe(res.body);
     expect(mockDearMeBrandBlueprintService.createApplyRequest).not.toHaveBeenCalled();
   });
 });

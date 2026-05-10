@@ -5,7 +5,11 @@ import { notFound, unprocessable } from "../errors.js";
 import { redactCurrentUserText } from "../log-redaction.js";
 import { agentService } from "./agents.js";
 import { budgetService } from "./budgets.js";
-import { dearmeBrandBlueprintApplyService } from "./dearme-brand-blueprint-apply.js";
+import {
+  DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
+  dearmeBrandBlueprintApplyService,
+  validateDearMeBrandBlueprintApplyPayload,
+} from "./dearme-brand-blueprint-apply.js";
 import { notifyHireApproved } from "./hire-hook.js";
 import { instanceSettingsService } from "./instance-settings.js";
 
@@ -41,6 +45,7 @@ export function approvalService(db: Db) {
     targetStatus: "approved" | "rejected",
     decidedByUserId: string,
     decisionNote: string | null | undefined,
+    options: { preflight?: (approval: ApprovalRecord) => void } = {},
   ): Promise<ResolutionResult> {
     const existing = await getExistingApproval(id);
     if (!canResolveStatuses.has(existing.status)) {
@@ -51,6 +56,8 @@ export function approvalService(db: Db) {
         `Only pending or revision requested approvals can be ${targetStatus === "approved" ? "approved" : "rejected"}`,
       );
     }
+
+    options.preflight?.(existing);
 
     const now = new Date();
     const updated = await db
@@ -107,6 +114,13 @@ export function approvalService(db: Db) {
         "approved",
         decidedByUserId,
         decisionNote,
+        {
+          preflight: (approval) => {
+            if (approval.type === DEARME_BRAND_BLUEPRINT_ORIGIN_KIND) {
+              validateDearMeBrandBlueprintApplyPayload(approval.payload);
+            }
+          },
+        },
       );
 
       let hireApprovedAgentId: string | null = null;

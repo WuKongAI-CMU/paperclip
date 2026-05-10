@@ -22,7 +22,11 @@ import {
   DEARME_SIX_HOUR_GROWTH_ROUTINE,
 } from "@paperclipai/dearme-agent-prompts";
 import { approvalService } from "../services/approvals.js";
-import { DEARME_BRAND_BLUEPRINT_AGENT_ADAPTER_TYPE } from "../services/dearme-brand-blueprint-apply.js";
+import {
+  DEARME_BRAND_BLUEPRINT_AGENT_ADAPTER_TYPE,
+  DEARME_BRAND_BLUEPRINT_INVALID_APPROVAL_MESSAGE,
+  DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
+} from "../services/dearme-brand-blueprint-apply.js";
 import { dearmeBrandBlueprintService } from "../services/dearme-brand-blueprints.js";
 import { documentService } from "../services/documents.js";
 import { instanceSettingsService } from "../services/instance-settings.js";
@@ -485,5 +489,55 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(artifacts.issues).toHaveLength(6);
     expect(artifacts.issues.every((issue) => issue.status === "backlog")).toBe(true);
     expect(artifacts.issues.every((issue) => Boolean(issue.assigneeAgentId))).toBe(true);
+  });
+
+  it("keeps invalid Brand OS approvals pending with customer-safe preflight errors", async () => {
+    const companyId = await seedCompany();
+    const approvalId = randomUUID();
+    const approvalsSvc = approvalService(db);
+
+    await db.insert(approvals).values({
+      id: approvalId,
+      companyId,
+      type: DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
+      requestedByUserId: "user-1",
+      requestedByAgentId: null,
+      status: "pending",
+      payload: {
+        summary: "Legacy malformed payload",
+        setup_payload: { adapterType: "codex_local" },
+      },
+      decisionNote: null,
+      decidedByUserId: null,
+      decidedAt: null,
+      updatedAt: new Date(),
+    });
+
+    let caught: unknown;
+    try {
+      await approvalsSvc.approve(approvalId, "user-1", "approved");
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toMatchObject({
+      status: 422,
+      message: DEARME_BRAND_BLUEPRINT_INVALID_APPROVAL_MESSAGE,
+    });
+    expect((caught as { details?: unknown }).details).toBeUndefined();
+
+    const [approval] = await db.select().from(approvals).where(eq(approvals.id, approvalId));
+    expect(approval?.status).toBe("pending");
+    expect(approval?.decisionNote).toBeNull();
+    expect(approval?.decidedByUserId).toBeNull();
+    expect(approval?.decidedAt).toBeNull();
+
+    const artifacts = await countAppliedArtifacts(companyId);
+    expect(artifacts.agents).toHaveLength(0);
+    expect(artifacts.routines).toHaveLength(0);
+    expect(artifacts.triggers).toHaveLength(0);
+    expect(artifacts.issues).toHaveLength(0);
+    expect(artifacts.issueDocuments).toHaveLength(0);
+    expect(artifacts.activity).toHaveLength(0);
   });
 });

@@ -97,6 +97,40 @@ Working rule:
 
 ## Recently Completed
 
+### DM-183M: DearMe Server Safe Boundaries
+
+Goal: make DearMe server failures match the customer-safe product boundary so
+the UI does not receive raw board, company, auth, validation, or access-control
+wording, and stale approvals cannot look approved before they fail.
+
+Donor grounding:
+
+- Polsia: the customer surface should explain the next product step, not expose
+  internal control-plane labels.
+- Lindy: approval/review failures should stay short and actionable.
+- Naive/Paperclip/Symphony: keep authz, company access, validation, and
+  approval payload shape as the hidden substrate; DearMe translates or
+  preflights the error before it reaches the customer path.
+
+Completed:
+
+- Added a DearMe route error boundary that converts Zod failures and common
+  access failures into product-safe messages.
+- Preserved unknown server errors and non-DearMe route behavior by keeping the
+  boundary inside `dearmeRoutes(...)`.
+- Added Brand OS approval preflight before approval mutation, keeping malformed
+  legacy payload approvals pending with a customer-safe refresh message.
+- Added route, approval-service, and embedded apply regression coverage for
+  company-access, owner-account, validation, and stale-payload failures.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts --maxWorkers=1`
+- `pnpm exec vitest run server/src/__tests__/approvals-service.test.ts --maxWorkers=1`
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-apply.test.ts --maxWorkers=1`
+- `pnpm --filter @paperclipai/server typecheck`
+- `git diff --check`
+
 ### DM-183L: Visible Learning Loop
 
 Goal: make the operating rhythm read as a full autonomous loop by showing

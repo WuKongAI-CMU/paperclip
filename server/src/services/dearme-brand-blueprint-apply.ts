@@ -29,6 +29,8 @@ type DearMeVoiceMemorySectionKey = "goals" | "audiences" | "offers" | "proof" | 
 
 export const DEARME_BRAND_BLUEPRINT_ORIGIN_KIND = "dearme_brand_blueprint_apply";
 export const DEARME_BRAND_BLUEPRINT_AGENT_ADAPTER_TYPE = "codex_local";
+export const DEARME_BRAND_BLUEPRINT_INVALID_APPROVAL_MESSAGE =
+  "This DearMe approval needs to be refreshed before it can be approved.";
 const DEARME_BRAND_BLUEPRINT_AUTO_START_OPERATION_ID = "draft_content_batch" satisfies DearMeOperationId;
 const DEARME_WEEKLY_REPORT_DOCUMENT_KEY = "dear-me-report";
 const DEARME_OUTPUT_KIND_BY_OPERATION_ID: Partial<Record<DearMeOperationId, DearMeOutputKind>> = {
@@ -134,10 +136,10 @@ function actorForApproval(approval: ApprovalRecord) {
   };
 }
 
-function parsePayload(rawPayload: unknown): DearMeBrandBlueprintApplyPayload {
+export function validateDearMeBrandBlueprintApplyPayload(rawPayload: unknown): DearMeBrandBlueprintApplyPayload {
   const parsed = dearMeBrandBlueprintApplyPayloadSchema.safeParse(rawPayload);
   if (!parsed.success) {
-    throw unprocessable("Invalid DearMe brand blueprint approval payload", parsed.error.issues);
+    throw unprocessable(DEARME_BRAND_BLUEPRINT_INVALID_APPROVAL_MESSAGE);
   }
   return parsed.data;
 }
@@ -530,7 +532,7 @@ export function dearmeBrandBlueprintApplyService(db: Db) {
   const routinesSvc = routineService(db);
 
   async function applyApprovedBlueprint(approval: ApprovalRecord): Promise<DearMeBrandBlueprintApplyArtifacts> {
-    const payload = parsePayload(approval.payload);
+    const payload = validateDearMeBrandBlueprintApplyPayload(approval.payload);
     const { brandBlueprint: blueprint } = payload;
     const { serviceActor, activityActor } = actorForApproval(approval);
     const agentsByRole = new Map<DearMeTeamRole, { id: string; name: string }>();
