@@ -4,19 +4,19 @@
  *
  * Why a generator (and not 12 hand-edited SKILL.md files):
  *   The registry is the SSOT (PRODUCT-ARCHITECTURE.md §9.4). Hand-edited
- *   SKILL.md would drift the moment a prompt, tier, or proxy tool changes.
+ *   SKILL.md would drift the moment a prompt, tier, or private capability changes.
  *   The generator keeps the wire surface deterministic: change the registry,
  *   regenerate, ship.
  *
- * What is preserved verbatim (runtime-port doctrine §9.0):
+ * What is preserved from the DearMe role registry:
  *   - the full system prompt for the role (used as the SKILL.md body intro)
- *   - state-machine references, proxy-tool whitelist, complexity range
+ *   - operating rails, private capability labels, complexity range
  *
- * What the generator adds on top (OpenClaw integration glue, not product copy):
- *   - YAML frontmatter (`name`, `description`, `metadata.openclaw.{...}`)
+ * What the generator adds on top (skill routing metadata, not product copy):
+ *   - YAML frontmatter (`name`, `description`, `metadata.dearme.{...}`)
  *   - Slash-command hint (`/dearme:<role>`)
  *   - Routing hints (which inbound messages should land on this role)
- *   - Reference back to the registry source for audit
+ *   - Maintenance notes for generated-file hygiene
  */
 
 import type {
@@ -48,9 +48,9 @@ const ROLE_EMOJI: Record<string, string> = {
 };
 
 const TIER_LABEL: Record<RoleTier, string> = {
-  fast: "fast (low-latency model)",
-  balanced: "balanced (mid-tier model)",
-  deep: "deep (frontier model)",
+  fast: "fast execution",
+  balanced: "balanced execution",
+  deep: "deep execution",
 };
 
 const GROUP_LABEL: Record<RoleGroup, string> = {
@@ -60,6 +60,26 @@ const GROUP_LABEL: Record<RoleGroup, string> = {
   ops: "Ops",
   intelligence: "Intelligence",
   interface: "Interface",
+};
+
+const PRIVATE_CAPABILITY_LABEL: Record<DearMeRoleSpec["proxyTools"][number], string> = {
+  create_task: "Create private team tasks",
+  search_memory: "Search approved memory",
+  get_company_documents: "Read approved documents",
+  create_report: "Save private reports",
+  web_search: "Research public sources",
+  content_generate: "Prepare private draft content",
+};
+
+const OPERATING_RAIL_LABEL: Record<DearMeRoleSpec["stateMachines"][number], string> = {
+  "opportunity-state": "Opportunity lifecycle",
+  "meta-ads": "Paid promotion approvals",
+  "budget-tier": "Budget boundary",
+  "mood-face-library": "Team status cues",
+  "model-routing": "Execution effort routing",
+  "sse-events": "Live work updates",
+  "work-loop": "Team work loop",
+  "approval-gates": "Launch approval gates",
 };
 
 /**
@@ -74,7 +94,7 @@ function frontmatterFor(spec: DearMeRoleSpec): string {
     `name: dearme-${spec.role}`,
     `description: ${JSON.stringify(summary)}`,
     `metadata:`,
-    `  openclaw:`,
+    `  dearme:`,
     `    emoji: "${emoji}"`,
     `    group: "${spec.group}"`,
     `    plugin: "dearme"`,
@@ -82,12 +102,11 @@ function frontmatterFor(spec: DearMeRoleSpec): string {
     `    displayName: ${JSON.stringify(spec.displayName)}`,
     `    ticket: "${spec.ticket}"`,
     `    status: "${spec.status}"`,
-    `    proxyTools: ${JSON.stringify([...spec.proxyTools])}`,
-    `    stateMachines: ${JSON.stringify([...spec.stateMachines])}`,
+    `    capabilities: ${JSON.stringify(spec.proxyTools.map((tool) => PRIVATE_CAPABILITY_LABEL[tool]))}`,
+    `    operatingRails: ${JSON.stringify(spec.stateMachines.map((rail) => OPERATING_RAIL_LABEL[rail]))}`,
     `    templates: ${JSON.stringify([...spec.templates])}`,
-    `    complexityRange: [${spec.complexityRange[0]}, ${spec.complexityRange[1]}]`,
-    `    defaultTier: "${spec.defaultTier}"`,
-    `    pluginPackage: ${JSON.stringify(spec.pluginPackage)}`,
+    `    complexityBand: [${spec.complexityRange[0]}, ${spec.complexityRange[1]}]`,
+    `    executionTier: "${spec.defaultTier}"`,
     "---",
   ];
   return lines.join("\n");
@@ -120,7 +139,7 @@ function routingHintFor(spec: DearMeRoleSpec): string {
     case "health-monitor":
       return "Triggered by cron (every 6 hours) for state snapshots. Not user-invoked.";
     case "chat":
-      return "Default conversational shell for the OpenClaw interface (used by Chief of Staff under the hood). Routes to specialists via `find_best_agent`.";
+      return "Default conversational shell for DearMe team messages. Routes to specialists behind the scenes.";
     case "browser-agent":
       return "Triggered when the user asks to fill a form, post on a non-API site, sign up somewhere, or scrape something.";
     default:
@@ -129,17 +148,17 @@ function routingHintFor(spec: DearMeRoleSpec): string {
 }
 
 function bodyFor(spec: DearMeRoleSpec): string {
-  const stateMachineList =
+  const operatingRailsList =
     spec.stateMachines.length > 0
-      ? spec.stateMachines.map((sm) => `- \`${sm}\``).join("\n")
+      ? spec.stateMachines.map((sm) => `- ${OPERATING_RAIL_LABEL[sm]}`).join("\n")
       : "_None — this role is stateless._";
   const templatesList =
     spec.templates.length > 0
       ? spec.templates.map((t) => `- \`${t}\``).join("\n")
       : "_None._";
-  const proxyToolsList =
+  const capabilityList =
     spec.proxyTools.length > 0
-      ? spec.proxyTools.map((t) => `- \`${t}\``).join("\n")
+      ? spec.proxyTools.map((t) => `- ${PRIVATE_CAPABILITY_LABEL[t]}`).join("\n")
       : "_None — chat-only._";
   return [
     `# ${ROLE_EMOJI[spec.role] ?? "🦞"} ${spec.displayName} — ${GROUP_LABEL[spec.group]}`,
@@ -150,28 +169,28 @@ function bodyFor(spec: DearMeRoleSpec): string {
     "",
     routingHintFor(spec),
     "",
-    "## Tier",
+    "## Execution",
     "",
-    `Default model tier: **${TIER_LABEL[spec.defaultTier]}**. Complexity range \`${spec.complexityRange[0]}–${spec.complexityRange[1]}\` (1–10).`,
+    `Default execution tier: **${TIER_LABEL[spec.defaultTier]}**. Complexity band \`${spec.complexityRange[0]}-${spec.complexityRange[1]}\` (1-10).`,
     "",
-    "## State machines",
+    "## Operating rails",
     "",
-    stateMachineList,
+    operatingRailsList,
     "",
     "## Templates",
     "",
     templatesList,
     "",
-    "## Proxy tools (DearMe AI proxy `dm_sk_*`)",
+    "## Private capabilities",
     "",
-    proxyToolsList,
+    capabilityList,
     "",
     "## System prompt",
     "",
-    "_Verbatim from `@paperclipai/dearme-agent-prompts` — runtime-port doctrine §9.0. Mechanical brand substitution only; do not paraphrase._",
+    "_Full role instructions. Follow them exactly, and keep private machinery out of customer-facing replies._",
     "",
     "<details>",
-    "<summary>Click to expand the full prompt this role will be invoked with.</summary>",
+    "<summary>Click to expand the role instructions.</summary>",
     "",
     "```",
     spec.prompt,
@@ -179,15 +198,11 @@ function bodyFor(spec: DearMeRoleSpec): string {
     "",
     "</details>",
     "",
-    "## Source of truth",
-    "",
-    `Registry entry: \`packages/plugins/dearme-agent-prompts/src/registry.ts\` → \`DEARME_ROLE_REGISTRY[role="${spec.role}"]\`.`,
+    "## Maintenance",
     "",
     `Owner ticket: \`${spec.ticket}\` (status: \`${spec.status}\`).`,
     "",
-    `Plugin package that wires this skill into the DearMe outbound surface: \`${spec.pluginPackage}\`.`,
-    "",
-    "_This file was generated by `@paperclipai/dearme-openclaw` from the registry. Do not edit by hand — regenerate with `pnpm --filter @paperclipai/dearme-openclaw run generate-skills`._",
+    "_Generated from the DearMe role registry. Do not edit by hand; update the registry or prompt source, then regenerate skills._",
     "",
   ].join("\n");
 }

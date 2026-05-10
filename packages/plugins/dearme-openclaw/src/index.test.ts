@@ -33,11 +33,11 @@ describe("dearme-openclaw skill generation", () => {
       expect(skill.content.startsWith("---\n")).toBe(true);
       expect(skill.content).toContain(`name: ${skill.folder}`);
       expect(skill.content).toContain('description: "');
-      expect(skill.content).toContain("openclaw:");
+      expect(skill.content).toContain("dearme:");
       expect(skill.content).toContain('plugin: "dearme"');
       expect(skill.content).toContain('emoji: "');
-      expect(skill.content).toContain("complexityRange:");
-      expect(skill.content).toContain("defaultTier:");
+      expect(skill.content).toContain("complexityBand:");
+      expect(skill.content).toContain("executionTier:");
     }
   });
 
@@ -48,15 +48,28 @@ describe("dearme-openclaw skill generation", () => {
     }
   });
 
-  it("each SKILL.md surfaces routing, tier, state machines, and proxy tools", () => {
+  it("each SKILL.md surfaces routing, execution, operating rails, and private capabilities", () => {
     const skills = generateAllSkills(DEARME_ROLE_REGISTRY);
     for (const skill of skills) {
       expect(skill.content).toContain("## Routing");
-      expect(skill.content).toContain("## Tier");
-      expect(skill.content).toContain("## State machines");
-      expect(skill.content).toContain("## Proxy tools");
+      expect(skill.content).toContain("## Execution");
+      expect(skill.content).toContain("## Operating rails");
+      expect(skill.content).toContain("## Private capabilities");
       expect(skill.content).toContain("## System prompt");
-      expect(skill.content).toContain("## Source of truth");
+      expect(skill.content).toContain("## Maintenance");
+    }
+  });
+
+  it("generated skill wrapper copy stays DearMe-facing", () => {
+    const roles = ["opportunity-hunter", "browser-agent"] as const;
+    for (const role of roles) {
+      const spec = DEARME_ROLE_REGISTRY.find((entry) => entry.role === role)!;
+      const skill = generateSkillForRole(spec);
+      expect(skill.content).not.toMatch(
+        /openclaw:|OpenClaw interface|runtime-port|@paperclipai|proxy tools|Default model tier|Plugin package|Registry entry/i,
+      );
+      expect(skill.content).toContain("Full role instructions");
+      expect(skill.content).toContain("Private capabilities");
     }
   });
 
