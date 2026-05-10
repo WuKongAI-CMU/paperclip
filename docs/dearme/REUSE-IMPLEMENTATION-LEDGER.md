@@ -46,6 +46,15 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DEA-28 is coordinator-absorbed as the DM-153 silence-default review slice at
+  `d451d051`. It adapts the Polsia score-7 default into DearMe's current output
+  review contract instead of adding a scheduler or second approval system:
+  `silenceDefault` can only resolve private review as approve, writes a
+  customer-safe "kept moving after no response" receipt plus memory feedback,
+  and deliberately skips next-move approvals, issue approvals, launch handoffs,
+  public posts, sends, deploys, and spend. Future autonomy work should reuse
+  this explicit marker pattern for private learning defaults and must not infer
+  silence as approval for external actions.
 - DEA-27 is coordinator-absorbed as the DM-149 emergency pause intent slice at
   `70ef7f59`. Customer stop, pause, hold, not now, and do-not-send/publish/
   deploy/spend notes now short-circuit approved launch handoffs before outbound
@@ -67,12 +76,13 @@ The right reuse split is:
   packet -> private approval -> next-move approval payload -> outbound wrapper
   gate. Do not reopen a parallel publisher, direct X sender, or second approval
   channel.
-- With DEA-25, DEA-26, and DEA-27 absorbed, the launch-handoff and trust-stop
-  lane has enough proof to stop adding writers on the same surface. The next
-  useful product worker should be a disjoint autonomy/quality slice such as
-  DM-153 default approval score on silence, or a read-only browser smoke/QA pass
-  against the now-paused handoff path. Do not add another writer to launch,
-  connect-channel, or pause unless a regression appears.
+- With DEA-25, DEA-26, DEA-27, and DEA-28 absorbed, the launch-handoff,
+  trust-stop, and private-silence autonomy lanes have enough proof to stop
+  adding writers on those surfaces. The next useful product worker should be a
+  disjoint autonomy/quality slice, a read-only browser smoke/QA pass against the
+  now-paused/defaulted handoff paths, or one of the remaining moat/economics
+  slices in the roadmap. Do not add another writer to launch, connect-channel,
+  pause, or silence-default review unless a regression appears.
 - DEA-23 hardens the Symphony development factory after the DEA-21 cleanup
   miss: worker terminal handoff now exports committed changes as durable
   `format-patch`, `git bundle`, and JSON summary artifacts under
@@ -3022,7 +3032,7 @@ UI, not server-side runtime artifacts the user never sees).
 | DM-141 | Opportunity Hunter plugin + opportunities schema + 6-state machine | Polsia Cold Outreach + Naive 5-touch deliverable | new `packages/db/src/schema/opportunities.ts`, `packages/plugins/dearme-opportunity-hunter/` |
 | DM-183BV | Work-event metadata on the current workStream | DM-087/DM-097 work-event contract, adapted without stale branch replay | `packages/shared/src/validators/dearme.ts`, `server/src/services/dearme-workbench.ts` |
 | DM-149 | Emergency pause intent in chief-of-staff messaging | Polsia `pause_ads()` highest-priority pattern | `server/src/services/dearme-workbench.ts` |
-| DM-153 | Default approval score on silence + cross-tenant feedback wiring | Polsia score-7 default | approvals service |
+| DM-153 | Default approval score on silence + private review feedback wiring | Polsia score-7 default | `packages/shared/src/validators/dearme.ts`, `server/src/services/dearme-output-handoff.ts`, `server/src/routes/dearme.ts` |
 
 ### Sprint 3 - Moat and economics
 

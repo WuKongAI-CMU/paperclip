@@ -2,6 +2,41 @@
 
 Date: 2026-05-10
 
+## DEA-28 Silence Default Review Score Absorbed - 2026-05-10
+
+Product/architecture slice:
+
+- Coordinator-implemented the DM-153 silence-default review slice at commit
+  `d451d051` after two Symphony worker retries consumed context without leaving
+  an absorbable diff.
+- DearMe private output reviews now accept an explicit `silenceDefault` marker
+  that resolves only as a private approve signal with fixed score `7/10`.
+- The default path records a customer-safe receipt and review memory feedback,
+  then marks the private work approved for learning. It does not create
+  `dearme_output_next_move` approvals, issue approvals, launch handoffs, public
+  posts, outbound sends, deploys, or spend.
+- The route memory projection reuses the existing review-feedback activity
+  channel, so the product learns from silence without exposing Symphony,
+  OpenClaw, Paperclip, provider, model, runtime, or queue language.
+
+Coordination state:
+
+- Linear `DEA-28` was moved to `Done` after coordinator implementation,
+  verification, and a Linear closeout comment.
+- No durable worker handoff artifact exists for this lane because the worker
+  retries left no useful diff. The coordinator kept Symphony idle and absorbed
+  the slice directly on the coordination branch.
+- Symphony was idle after absorption: zero running workers and zero retries.
+
+Verification:
+
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm vitest run server/src/__tests__/dearme-output-handoff.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts packages/shared/src/validators/dearme.test.ts`
+  passed with 57 tests and 11 embedded-Postgres-dependent subtests skipped by
+  the host probe.
+- `git diff --check` passed.
+
 ## DEA-27 Emergency Pause Handoff Absorbed - 2026-05-10
 
 Product/architecture slice:
