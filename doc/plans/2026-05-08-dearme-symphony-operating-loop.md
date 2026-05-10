@@ -24,7 +24,9 @@ Symphony is treated as an execution factory, not as the product brain. The DearM
   Dear me letter proof-pack review. DM-141 extends the same boundary across
   workbench cards, focused review, live feed, run ledger, action graph, and
   Voice & Memory. Follow-on workers should deepen this same packet-backed
-  customer path instead of starting a second runtime or report surface.
+  customer path instead of starting a second runtime or report surface. DEA-7
+  extends the same lane with a persistable private content draft packet and
+  customer-safe Voice check surfaces on prepared work/proof-pack cards.
 
 ## Operating Split
 

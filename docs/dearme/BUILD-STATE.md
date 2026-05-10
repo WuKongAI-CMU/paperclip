@@ -16,20 +16,35 @@ Implementation slice:
   `issue_work_products.metadata` (`voiceGate`, `dearmeVoiceGate`, or
   `dearme.voiceGate`) and expose the parsed result without leaking provider
   metadata.
+- Added a typed `dearMeContentDraftPacketSchema` and
+  `persistContentDraftPacket(...)` path so a content worker can save one private
+  review packet into the existing output handoff tables, preserving cycle
+  evidence, draft body, proof used, launch boundary, and the strictest Voice
+  Gate result.
 - Reworked the inherited content-producer prompt from a Twitter posting agent
   into a DearMe private-draft role: it reads Brand OS, voice profile, reports,
   and channel preferences, then stages reviewable draft packets without
   publishing, sending, scheduling, connecting accounts, spending, or deploying.
+- Surfaced the parsed Voice Gate as a customer-safe "Voice check" on focused
+  prepared work, private work cards, and first proof-pack content/report cards.
+  The UI shows score, status, and clean check summaries only; blocked actions,
+  provider metadata, and raw runtime terms stay backstage.
 
 Verification:
 
 - `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts
   server/src/__tests__/dearme-output-handoff.test.ts --maxWorkers=1` passed: 2
-  files, 21 tests.
+  files, 23 tests.
 - `pnpm --filter @paperclipai/shared typecheck` passed.
 - `pnpm --filter @paperclipai/server typecheck` passed.
 - `pnpm --filter @paperclipai/dearme-agent-prompts typecheck` passed.
 - `pnpm --filter @paperclipai/dearme-agent-prompts test` passed: 25 tests.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx
+  --maxWorkers=1` passed: 41 tests.
+- `pnpm exec vitest run ui/src/components/Layout.test.tsx
+  ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1` passed: 2 files, 50
+  tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
 
 ## DM-141 Frontstage Team Workstream Polish - 2026-05-10
 
