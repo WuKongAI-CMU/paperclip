@@ -2,6 +2,23 @@
 
 Date: 2026-05-10
 
+## DM-183AM Voice & Memory Source Guardrails - 2026-05-10
+
+Implementation slice:
+
+- Adapted the still-useful DM-089 form-guardrail idea onto the current Voice &
+  Memory source guide form instead of replaying its stale input path.
+- Kept weak private source drafts local when the memory body is too thin, too
+  large, or when the title/reference exceeds the current customer-safe limits.
+- Preserved the existing source guide, source path, source label, and memory
+  mutation contract; the UI now explains the 20-character minimum before save.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+
 ## DM-183AL First Payoff CTA Rail - 2026-05-10
 
 Implementation slice:

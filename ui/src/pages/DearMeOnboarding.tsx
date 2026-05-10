@@ -1389,6 +1389,11 @@ const MEMORY_SOURCE_INPUT_MODE_HELPERS: Record<DearMeMemorySourceInputMode, stri
   import_note: "Describe a file, transcript, profile, or backlog item DearMe should fold in next.",
 };
 
+const VOICE_MEMORY_SOURCE_TITLE_MAX_LENGTH = 160;
+const VOICE_MEMORY_SOURCE_REFERENCE_MAX_LENGTH = 500;
+const VOICE_MEMORY_SOURCE_BODY_MIN_LENGTH = 20;
+const VOICE_MEMORY_SOURCE_BODY_MAX_LENGTH = 4_000;
+
 type MemorySourceGuideId =
   | "writing_sample"
   | "proof_point"
@@ -4624,10 +4629,27 @@ function VoiceMemoryPanel({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const trimmedTitle = title.trim();
     const trimmedBody = body.trim();
     const trimmedSourceLabel = sourceLabel.trim();
     if (!trimmedBody) {
       setLocalError("Add source material before saving.");
+      return;
+    }
+    if (trimmedBody.length < VOICE_MEMORY_SOURCE_BODY_MIN_LENGTH) {
+      setLocalError("Add a little more context so DearMe can learn from this source.");
+      return;
+    }
+    if (trimmedBody.length > VOICE_MEMORY_SOURCE_BODY_MAX_LENGTH) {
+      setLocalError("Keep private sources under 4,000 characters for now.");
+      return;
+    }
+    if (trimmedTitle.length > VOICE_MEMORY_SOURCE_TITLE_MAX_LENGTH) {
+      setLocalError("Keep the source title under 160 characters.");
+      return;
+    }
+    if (trimmedSourceLabel.length > VOICE_MEMORY_SOURCE_REFERENCE_MAX_LENGTH) {
+      setLocalError("Keep the source reference under 500 characters.");
       return;
     }
     if (sourceInputMode === "link") {
@@ -4651,7 +4673,7 @@ function VoiceMemoryPanel({
     const update = {
       kind,
       sourceInputMode,
-      title: title.trim() || selectedGuide.label,
+      title: trimmedTitle || selectedGuide.label,
       body: trimmedBody,
       sourceLabel: trimmedSourceLabel || null,
     };
@@ -5074,6 +5096,9 @@ function VoiceMemoryPanel({
               placeholder={selectedGuide.bodyPlaceholder}
               onChange={(event) => setBody(event.target.value)}
             />
+            <p className="mt-2 text-xs text-muted-foreground">
+              Add at least 20 characters. DearMe uses this as private memory, not public copy.
+            </p>
             {localError || error ? (
               <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {localError ?? error}
