@@ -3829,16 +3829,21 @@ describe("DearMeOnboarding", () => {
     const commandCenter = surfaceByLabel(container, "Opportunity command center");
     expect(commandCenter.textContent).toContain("Opportunities, ready before outreach.");
     expect(commandCenter.textContent).toContain("No outbound message sends until you approve.");
+    expect(commandCenter.textContent).toContain("Lead batches");
+    expect(commandCenter.textContent).toContain("Current opportunity draft");
     expect(commandCenter.textContent).toContain("Opportunity Scout is working on Opportunity leads");
     expect(commandCenter.textContent).toContain("Target, fit reason, outreach angle, first message, and follow-up plan.");
+    expect(commandCenter.textContent).not.toMatch(/lead packets|opportunity packet/i);
 
     const opportunitySurface = surfaceByLabel(container, "Opportunity work ready");
     expect(opportunitySurface.textContent).toContain("Opportunities ready / Launch calls");
+    expect(opportunitySurface.textContent).toContain("Prepared opportunity drafts");
     expect(opportunitySurface.textContent).toContain("Warm collaboration lead");
     expect(opportunitySurface.textContent).toContain("Practical AI Builders podcast");
     expect(opportunitySurface.textContent).toContain("Outreach angle");
     expect(opportunitySurface.textContent).toContain("No outbound message sends until Peter approves");
     expect(opportunitySurface.textContent).not.toContain("Dear me report");
+    expect(opportunitySurface.textContent).not.toMatch(/opportunity packet|prepared opportunity packets/i);
     expect(
       opportunitySurface.querySelectorAll('[data-dearme-surface="action-card"]').length,
     ).toBe(1);

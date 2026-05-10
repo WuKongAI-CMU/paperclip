@@ -110,7 +110,8 @@ Donor grounding:
   and the existing workbench projection instead of adding another content
   runtime table.
 - OpenClaw/Symphony: workers provide packet ids as stable rerun keys; the
-  customer sees proof-pack continuity, not runtime ids or provider fields.
+  customer sees proof-pack continuity and live private-team motion, not runtime
+  ids, provider fields, or orchestration names.
 
 Completed:
 
@@ -124,10 +125,14 @@ Completed:
   from proof pack to next move to launch call visible before users inspect the
   supporting cards.
 - Added a `Live team pulse` projection from existing workbench SSE events so
-  worker progress becomes visible customer momentum without exposing runtime
-  event names or provider fields.
+  worker progress becomes visible customer momentum without exposing Symphony,
+  OpenClaw, runtime, provider, or model terms.
+- Renamed the opportunity workbench surface from packet wording to lead
+  batches, opportunity drafts, and launch calls so the scout lane stays in the
+  same customer language system.
 - Extended route/service/UI tests to cover missing packet ids, retry updates,
-  hidden-term-free continuity copy, and hidden-term-free live pulse copy.
+  hidden-term-free continuity copy, hidden-term-free live pulse copy, and
+  packet-free opportunity copy.
 
 Verification:
 
@@ -135,6 +140,9 @@ Verification:
 - `pnpm --filter @paperclipai/shared typecheck`
 - `pnpm --filter @paperclipai/server typecheck`
 - `pnpm --filter @paperclipai/ui typecheck`
+- Playwright smoke on `http://127.0.0.1:3100/DEAAAAAAAAA/dearme`
+- Playwright smoke on `http://127.0.0.1:3100/DEAAAAAAAAA/dearme?view=opportunities`
+- `.symphony/bin/dearme-symphony status`
 
 ### DM-138A: First-Cycle Start Bridge
 

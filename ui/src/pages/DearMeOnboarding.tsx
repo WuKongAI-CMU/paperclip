@@ -1484,6 +1484,11 @@ function cyclePacketWorkProducts(output: DearMeOutputItem) {
 
 function customerProofPackSummary(text: string) {
   return text
+    .replace(/\blead packets\b/gi, "lead batches")
+    .replace(/\bcurrent opportunity packet\b/gi, "current opportunity draft")
+    .replace(/\bprepared opportunity packets\b/gi, "prepared opportunity drafts")
+    .replace(/\bopportunity packets\b/gi, "opportunity drafts")
+    .replace(/\bopportunity packet\b/gi, "opportunity draft")
     .replace(/\bsame private (?:cycle output|cycle|evidence) packet\b/gi, "same private proof pack")
     .replace(/\bprivate (?:cycle output|cycle|evidence) packet\b/gi, "private proof pack")
     .replace(/\bshared (?:cycle output|cycle|evidence) packet\b/gi, "shared proof pack")
@@ -3015,7 +3020,7 @@ function OpportunityWorkbenchPanel({
       />
 
       <DearMeMetricStrip>
-        <Metric icon={Telescope} label="Lead packets" value={opportunityItems.length} />
+        <Metric icon={Telescope} label="Lead batches" value={opportunityItems.length} />
         <Metric icon={CheckCircle2} label="Ready" value={readyItems.length} />
         <Metric icon={Workflow} label="In motion" value={activeItems.length} />
         <Metric icon={ShieldCheck} label="Launch calls" value={sendDecisions.length} />
@@ -3023,7 +3028,7 @@ function OpportunityWorkbenchPanel({
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]">
         <DearMeWorkbenchCard
-          eyebrow="Current opportunity packet"
+          eyebrow="Current opportunity draft"
           title={currentItem ? customerProofPackSummary(currentItem.title) : "Scout the next practical opening"}
           description={
             currentItem
@@ -5554,7 +5559,7 @@ function PrivateWorkPanel({
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {isOpportunityView
-              ? "Prepared opportunity packets: targets, fit reasons, outreach angles, draft messages, and launch boundaries."
+              ? "Prepared opportunity drafts: targets, fit reasons, outreach angles, draft messages, and launch boundaries."
               : "Private work ready for review: reports, drafts, voice guidance, and portfolio work DearMe has prepared."}
           </p>
         </div>

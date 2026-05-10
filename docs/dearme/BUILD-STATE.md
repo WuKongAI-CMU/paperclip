@@ -14,13 +14,30 @@ Implementation slice:
   shape was added.
 - Kept hidden Symphony/OpenClaw/runtime/provider/model terms backstage by
   sanitizing live event payload copy before it reaches the paid-beta surface.
+- Cleaned the opportunity workbench language from packet wording into lead
+  batches, opportunity drafts, and launch calls so the customer surface stays
+  aligned with proof-pack language.
 
 Verification:
 
 - `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx
-  --maxWorkers=1`
-- `pnpm --filter @paperclipai/ui typecheck`
-- `git diff --check`
+  --maxWorkers=1` passed: 42 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check -- docs/dearme/BUILD-STATE.md
+  docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md
+  ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed.
+- Playwright smoke on `http://127.0.0.1:3100/DEAAAAAAAAA/dearme` found the
+  workbench focus and proof-pack continuity surfaces, no console errors, and no
+  hidden Symphony/OpenClaw/Paperclip/provider/runtime/model terms. Screenshot:
+  `/tmp/dearme-live-team-pulse-smoke.png`.
+- Playwright smoke on
+  `http://127.0.0.1:3100/DEAAAAAAAAA/dearme?view=opportunities` found lead
+  batches, current opportunity draft, and prepared opportunity drafts with no
+  packet wording or console errors. Screenshot:
+  `/tmp/dearme-opportunity-drafts-smoke.png`.
+- `.symphony/bin/dearme-symphony status` confirmed the real Symphony daemon on
+  `http://127.0.0.1:4100/` with no active agents or retries.
 - Chrome DevTools opened `http://127.0.0.1:4174/DEAA/dearme`, confirmed
   the workbench and proof-pack continuity render, found no console errors or
   warnings, and saw 200s for the relevant workbench, outputs, paid-beta, and
