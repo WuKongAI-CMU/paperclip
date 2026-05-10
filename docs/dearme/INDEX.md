@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-10 (post DEA-11 private launch-handoff proof and DM-064/078 absorption)
+Last updated: 2026-05-10 (post DEA-11 private launch-handoff proof and DM-083/089 absorption)
 
 ---
 
@@ -152,12 +152,14 @@ approval error, comment-link, and rejection-route helpers. DM-064 through
 DM-078 are now recorded as reviewed absorptions on the current issue-chat
 run/transcript projection, work-history surface, activity-event projection,
 scheduled follow-up card, generic issue-control boundaries, read-only state
-controls, and raw issue-reference suppression. The next likely batch starts at
-DM-083 and then the residual DM-084 through DM-089 worker/integration cluster,
-followed by DM-095, DM-097, DM-098, and DM-101; inspect exact heads before
-recording any closure. Reuse only still-valuable
-product surfaces; do not add another first-run contract, packet schema,
-runtime dashboard, queue system, or customer-visible substrate surface.
+controls, and raw issue-reference suppression. DM-083 through DM-089 are now
+recorded as reviewed absorptions on the current review-feedback learning,
+review-preference, donor-reuse, team-progress, decision-first workstream, and
+typed Voice & Memory source-ingestion paths. The next likely residual batch is
+DM-095, DM-097, DM-098, and DM-101, with any still-listed historical
+integration branch inspected by exact head before closure. Reuse only
+still-valuable product surfaces; do not add another first-run contract, packet
+schema, runtime dashboard, queue system, or customer-visible substrate surface.
 
 ### Roadmap (compressed by aggressive port + tri-substrate integration)
 

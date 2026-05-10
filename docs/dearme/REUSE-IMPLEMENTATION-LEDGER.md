@@ -94,6 +94,39 @@ The right reuse split is:
   keep raw run routes, agent links, model-profile details, liveness substrate
   failures, cost summaries, monitor metadata, raw issue identifiers, and
   generic operator controls behind the product boundary.
+- DM-083 output-feedback-learning head
+  `1eba64eab3e819abe1aa0d643d5199369442d2f6` is recorded as absorbed by the
+  current review-feedback learning path: review comments save as
+  `review_feedback` Voice & Memory activity, project through customer-safe
+  `feedbackTrace`, and render as `Review preferences`.
+- DM-084 review-learning-summary head
+  `344b913d8f6e422054da3c61865abb41f3591a59` is recorded as absorbed by the
+  evolved review preference and feedback trace surface, without restoring the
+  stale separate review-learning service shape.
+- DM-085 review-preferences head
+  `02042e9c29136413d5066702796705176724032f` is recorded as absorbed because
+  current refreshed private work carries last-feedback context and shows saved
+  review notes as next-draft guidance before anything public happens.
+- DM-086 donor-reuse-architecture head
+  `fc584f31326d35397a45e2ef4bafbb4e75d45136` is recorded as absorbed by the
+  current integrated architecture and reuse ledger: Polsia choreography,
+  Naive/Paperclip substrate, Lindy interaction grammar, and Symphony
+  development factory stay in their product-fit lanes.
+- DM-087 work-event-contract head
+  `aea19d9057dca08ed91e4d6f0ee7716306e39252` is recorded as absorbed by the
+  current team-progress event projection, where `team_progress` activity turns
+  into `progress_recorded` workbench progress across activity, routine, and
+  spend signals.
+- DM-088 Lindy/workstream UI heads
+  `ff5a745f611ab6475b81877e6d6863a2faf98d4b` and
+  `0ed881448c0a5b32004dfd6ed81307969bf69cd6` are recorded as absorbed by the
+  current decision-first team progress surface: `TeamWorkstreamPanel`,
+  `Team progress map`, `Private progress letter`, `See progress`, and
+  `Review work`.
+- DM-089 Voice & Memory source-ingestion head
+  `b13a17c9cac6950898e3a1f70ec1a872f2532e4c` is recorded as absorbed by the
+  current typed source paths for paste, private link, and import note, plus
+  source review queues, private source shortcuts, and source mutation APIs.
 - DM-043 memory-label safety head
   `f3b3f7420c556aa6103c32c4b31654bd515edce6` is recorded as absorbed by the
   current Voice & Memory context normalization path, without restoring the

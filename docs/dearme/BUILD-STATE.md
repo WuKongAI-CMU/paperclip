@@ -2,6 +2,68 @@
 
 Date: 2026-05-10
 
+## DM-183BU DM-083/089 Learning/Progress/Source Absorption - 2026-05-10
+
+Product/architecture slice:
+
+- Kept Symphony as the cooperation spine and treated DM-083 through DM-089 as
+  learning, team-progress, donor-reuse, and Voice & Memory source-ingestion
+  absorption work, not fresh replay targets.
+- Recorded exact-head reviewed absorptions for DM-083, DM-084, DM-085,
+  DM-086, DM-087, both DM-088 workers, and DM-089 in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`.
+- Mapped DM-083 to the current review-feedback learning path: review comments
+  save as `review_feedback` Voice & Memory activity, project through
+  customer-safe `feedbackTrace`, and render as `Review preferences`.
+- Mapped DM-084 to the current review-learning summary surface without
+  restoring the stale separate review-learning service shape.
+- Mapped DM-085 to the current next-draft guidance path: saved review feedback
+  appears as future private-work guidance and refreshed work acknowledges the
+  last feedback before anything public happens.
+- Mapped DM-086 to the current donor-reuse architecture docs: Polsia supplies
+  choreography, Naive/Paperclip supplies durable substrate, Lindy supplies
+  interaction grammar, and Symphony remains the development factory.
+- Mapped DM-087 to the current team-progress event projection:
+  `team_progress` activity becomes `progress_recorded` workbench progress
+  across activity, routine, and spend signals.
+- Mapped both DM-088 workers to the current decision-first workstream surface:
+  `TeamWorkstreamPanel`, `Team progress map`, `Private progress letter`,
+  `See progress`, and `Review work` keep progress visible without exposing
+  runtime machinery.
+- Mapped DM-089 to the current Voice & Memory source path: paste, private
+  link, and import-note inputs flow into source review queues, private source
+  shortcuts, and source mutation APIs.
+- Left the active DEA-11 Symphony workspace untouched; it remains a separate
+  daemon-owned lane while the coordinator reduces stale worker replay pressure
+  on the live branch.
+
+Verification:
+
+- `rg -n "dearMeReviewFeedbackMemoryTitle|dearMeReviewFeedbackMemoryBody|review-feedback|review_preferences|reviewPreferences|Review preferences|feedbackTrace|last feedback|review notes as next-draft guidance|review_feedback|reviewFeedback" packages/shared/src/validators/dearme.ts server/src/routes/dearme.ts server/src/services/dearme-workbench.ts ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  confirmed the current review-feedback learning and preference surfaces are
+  present.
+- `rg -n "DearMeWorkbenchWorkEvent|workEvents|work events|workEvent|team_progress|progress_recorded|TeamWorkstreamPanel|Team progress map|Private progress letter|See progress|Review work" packages/shared/src/validators/dearme.ts server/src/services/dearme-workbench.ts ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  confirmed the current work-event and progress surfaces are present.
+- `rg -n "sourceInputMode|DEARME_MEMORY_SOURCE_INPUT_MODES|sourceReviewQueue|Source review|Source path|Source type|Voice & Memory source path|import_note|link|manual_note|recordMemoryUpdate|updateMemorySource|archiveMemorySource|restoreMemorySource" packages/shared/src/validators/dearme.ts server/src/routes/dearme.ts server/src/services/dearme-workbench.ts ui/src/api/dearme.ts ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  confirmed the current typed Voice & Memory source-ingestion path is present.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
+  passed.
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-workbench-projection.test.ts ui/src/api/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed for 4 test files with 97 tests; the embedded-Postgres
+  `server/src/__tests__/dearme-workbench.test.ts` file skipped 5 tests on this
+  host after the repo's existing Postgres init guard reported code 1.
+- `pnpm --filter @paperclipai/shared typecheck`,
+  `pnpm --filter @paperclipai/server typecheck`, and
+  `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm run dearme:worktrees -- --status=reviewed-absorbed --skip-dirty --limit=140`
+  showed the exact DM-083 through DM-089 heads as `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` reported
+  `reviewed_absorbed: 106`, `not_in_current: 7`, and `dirty: 0`.
+- `.symphony/bin/dearme-symphony status --json` reported Symphony running with
+  one active DEA-11 worker and no retrying workers.
+- `git diff --check -- docs/dearme/BUILD-STATE.md docs/dearme/INDEX.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`
+  passed.
+
 ## DM-183BT DM-064/078 Chat/Issue Surface Safety Absorption - 2026-05-10
 
 Product/architecture slice:

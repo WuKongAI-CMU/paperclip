@@ -1325,6 +1325,107 @@
         "ui/src/pages/IssueDetail.tsx",
         "ui/src/pages/IssueDetail.test.tsx"
       ]
+    },
+    {
+      "ticket": "DM-083",
+      "branch": "codex/dearme-dm-083-output-feedback-learning",
+      "head": "1eba64eab3e819abe1aa0d643d5199369442d2f6",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the output-feedback learning worker through the live review_feedback memory kind, route-level review feedback capture, customer-safe feedbackTrace projection, and Review preferences surface.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/routes/dearme.ts",
+        "server/src/services/dearme-workbench.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-084",
+      "branch": "codex/dearme-dm-084-review-learning-summary",
+      "head": "344b913d8f6e422054da3c61865abb41f3591a59",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the review-learning summary worker through the evolved review preferences and feedbackTrace projection instead of restoring the stale separate review-learning service shape.",
+      "evidence": [
+        "server/src/services/dearme-workbench.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-085",
+      "branch": "codex/dearme-dm-085-review-preferences",
+      "head": "02042e9c29136413d5066702796705176724032f",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the review-preferences worker by saving review feedback into Voice & Memory, showing it as next-draft guidance, and carrying last-feedback context into refreshed private work.",
+      "evidence": [
+        "server/src/routes/dearme.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-086",
+      "branch": "codex/dearme-dm-086-donor-reuse-architecture",
+      "head": "fc584f31326d35397a45e2ef4bafbb4e75d45136",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the donor-reuse architecture worker through the current integrated architecture and reuse ledger, keeping Polsia, Naive/Paperclip, Lindy, and Symphony in their product-fit lanes.",
+      "evidence": [
+        "docs/dearme/INTEGRATED-ARCHITECTURE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md",
+        "docs/dearme/INDEX.md"
+      ]
+    },
+    {
+      "ticket": "DM-087",
+      "branch": "codex/dearme-dm-087-work-event-contract",
+      "head": "aea19d9057dca08ed91e4d6f0ee7716306e39252",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the work-event contract worker through team_progress memory activity, progress_recorded workbench projection, and customer-safe progress mapping across activity, routine, and spend signals.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/services/dearme-workbench.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-088",
+      "branch": "codex/dearme-dm-088-lindy-workstream-ui",
+      "head": "ff5a745f611ab6475b81877e6d6863a2faf98d4b",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the Lindy workstream UI worker through the evolved TeamWorkstreamPanel, Team progress map, Private progress letter, and customer-safe progress card surfaces.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-088",
+      "branch": "codex/dearme-dm-088-workstream-ui",
+      "head": "0ed881448c0a5b32004dfd6ed81307969bf69cd6",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the decision-first workstream UI worker through current See progress, Review work, Team progress map, and progress_recorded surfaces without replaying the stale branch UI.",
+      "evidence": [
+        "server/src/services/dearme-workbench.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx"
+      ]
+    },
+    {
+      "ticket": "DM-089",
+      "branch": "codex/dearme-dm-089-voice-memory-ingestion",
+      "head": "b13a17c9cac6950898e3a1f70ec1a872f2532e4c",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe absorbs the Voice & Memory ingestion worker through typed source paths for paste, link, and import note, source review queues, private source shortcuts, and source mutation APIs.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/routes/dearme.ts",
+        "server/src/services/dearme-workbench.ts",
+        "ui/src/api/dearme.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx"
+      ]
     }
   ]
 }
