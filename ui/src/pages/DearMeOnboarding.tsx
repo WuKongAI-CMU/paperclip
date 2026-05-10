@@ -5726,12 +5726,17 @@ function TeamWorkbenchPanel({
       );
     },
   });
+  function refreshVoiceMemoryDependentSurfaces() {
+    queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(companyId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.dearme.outputs(companyId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
+  }
+
   const memoryMutation = useMutation({
     mutationFn: (input: DearMeMemoryUpdate) => dearmeApi.recordMemoryUpdate(companyId, input),
     onSuccess: () => {
       setMemoryError(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(companyId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
+      refreshVoiceMemoryDependentSurfaces();
     },
     onError: (err) => {
       setMemoryError(
@@ -5747,8 +5752,7 @@ function TeamWorkbenchPanel({
       dearmeApi.updateMemorySource(companyId, input.memoryId, input.update),
     onSuccess: () => {
       setMemoryError(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(companyId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
+      refreshVoiceMemoryDependentSurfaces();
     },
     onError: (err) => {
       setMemoryError(
@@ -5763,8 +5767,7 @@ function TeamWorkbenchPanel({
     mutationFn: (memoryId: string) => dearmeApi.archiveMemorySource(companyId, memoryId),
     onSuccess: () => {
       setMemoryError(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(companyId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
+      refreshVoiceMemoryDependentSurfaces();
     },
     onError: (err) => {
       setMemoryError(
@@ -5779,8 +5782,7 @@ function TeamWorkbenchPanel({
     mutationFn: (memoryId: string) => dearmeApi.restoreMemorySource(companyId, memoryId),
     onSuccess: () => {
       setMemoryError(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(companyId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
+      refreshVoiceMemoryDependentSurfaces();
     },
     onError: (err) => {
       setMemoryError(

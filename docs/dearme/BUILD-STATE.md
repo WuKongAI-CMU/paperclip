@@ -2,6 +2,41 @@
 
 Date: 2026-05-10
 
+## DM-183AW Source Change Review Refresh Absorption - 2026-05-10
+
+Coordination slice:
+
+- Re-checked Symphony and kept the active DEA worker lane running while the
+  coordinator absorbed the stale DM-022 source-refresh worker into the current
+  branch.
+- Compared `/private/tmp/dearme-dm-022-source-change-refresh` at
+  `b6916166cc7bb716ae8c05af5bd386636cddcddc` against current Voice & Memory
+  source mutations.
+- Reused the still-valid DM-022 lesson by making Voice & Memory source create,
+  revise, retire, and restore refresh Workbench, private output review, and
+  activity together.
+- Recorded the exact DM-022 worker head in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so future Symphony workers do
+  not replay the obsolete panel-level patch.
+
+Verification:
+
+- `.symphony/bin/dearme-symphony status --json`
+  passed and showed an active DEA worker running.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- `pnpm run test:dearme-worktrees`
+  passed.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty`
+  passed and reported `reviewed_absorbed: 14`, `not_in_current: 99`, and
+  `dirty: 0`.
+- `pnpm run dearme:worktrees -- --status=reviewed-absorbed --skip-dirty --limit=25`
+  passed and listed DM-022 with the other reviewed entries.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/WORKTREE-ABSORPTION-LEDGER.json docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183AU Symphony First-Turn Guard - 2026-05-10
 
 Coordination slice:

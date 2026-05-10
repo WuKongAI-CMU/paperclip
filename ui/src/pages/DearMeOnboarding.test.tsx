@@ -3153,6 +3153,9 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
+    const workbenchFetchesBeforeSave = mockDearmeApi.getWorkbench.mock.calls.length;
+    const outputFetchesBeforeSave = mockDearmeApi.getOutputs.mock.calls.length;
+
     await act(async () => {
       buttonByText(container, "Boundaries")?.click();
     });
@@ -3183,6 +3186,7 @@ describe("DearMeOnboarding", () => {
       buttonByText(container, "Add to Voice & Memory")?.click();
     });
     await flushReact();
+    await flushReact();
 
     expect(mockDearmeApi.recordMemoryUpdate).toHaveBeenCalledWith(
       "company-1",
@@ -3194,6 +3198,8 @@ describe("DearMeOnboarding", () => {
         sourceLabel: "Voice review note",
       }),
     );
+    expect(mockDearmeApi.getWorkbench.mock.calls.length).toBeGreaterThan(workbenchFetchesBeforeSave);
+    expect(mockDearmeApi.getOutputs.mock.calls.length).toBeGreaterThan(outputFetchesBeforeSave);
     expectNoHiddenProductTerms(container.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
       HIDDEN_PRODUCT_TERMS.bridgeName,

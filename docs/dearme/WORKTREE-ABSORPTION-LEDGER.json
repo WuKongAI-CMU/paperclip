@@ -141,6 +141,19 @@
       ]
     },
     {
+      "ticket": "DM-022",
+      "branch": "codex/dearme-dm-022-source-change-refresh",
+      "head": "b6916166cc7bb716ae8c05af5bd386636cddcddc",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current Voice & Memory source mutations now invalidate Workbench, private outputs, and activity after source changes, absorbing the stale source-refresh worker without adding a new source runtime.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
       "ticket": "DM-024",
       "branch": "codex/dearme-dm-024-output-review-refresh",
       "head": "1d6673ecf4c8db6dee4153f719c39c4301d235ee",
