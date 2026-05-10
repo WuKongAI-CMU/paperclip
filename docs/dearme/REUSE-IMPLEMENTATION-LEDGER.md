@@ -13,6 +13,19 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Symphony Worker Boundary - 2026-05-10
+
+- DM-145B is now anchored on the existing `agent_api_keys` substrate rather
+  than a second DearMe key store. The proxy runtime should resolve `dm_sk_*`
+  bearer tokens to authenticated company/agent context from that table, then
+  ignore spoofable company/agent headers on the normal path.
+- `agentService.createApiKey()` now has a conservative `pcp_` / `dm_sk_`
+  prefix option so the current `pcp_*` agent-key family remains the default
+  while DM-145 can mint `dm_sk_*` keys later without a parallel generator.
+- Remaining follow-up for the reuse lane: add the actual DearMe proxy-key
+  issuance surface, then keep all later proxy calls on the same agent-key
+  storage and revocation path.
+
 DearMe should maximize reuse, but "reuse" means adapting the strongest proven
 primitive into the DearMe product surface. It does not mean importing a whole
 foreign UI, exposing donor terms to customers, or replacing the working

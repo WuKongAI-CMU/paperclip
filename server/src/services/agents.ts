@@ -25,8 +25,10 @@ function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-function createToken() {
-  return `pcp_${randomBytes(24).toString("hex")}`;
+type AgentApiKeyTokenPrefix = "pcp_" | "dm_sk_";
+
+function createToken(prefix: AgentApiKeyTokenPrefix = "pcp_") {
+  return `${prefix}${randomBytes(24).toString("hex")}`;
 }
 
 const CONFIG_REVISION_FIELDS = [
@@ -604,7 +606,7 @@ export function agentService(db: Db) {
       });
     },
 
-    createApiKey: async (id: string, name: string) => {
+    createApiKey: async (id: string, name: string, options?: { prefix?: AgentApiKeyTokenPrefix }) => {
       const existing = await getById(id);
       if (!existing) throw notFound("Agent not found");
       if (existing.status === "pending_approval") {
@@ -614,7 +616,7 @@ export function agentService(db: Db) {
         throw conflict("Cannot create keys for terminated agents");
       }
 
-      const token = createToken();
+      const token = createToken(options?.prefix);
       const keyHash = hashToken(token);
       const created = await db
         .insert(agentApiKeys)

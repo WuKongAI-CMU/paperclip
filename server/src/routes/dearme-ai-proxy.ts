@@ -1,8 +1,9 @@
-import { randomUUID } from "node:crypto";
-import { Router, type NextFunction, type Request, type Response } from "express";
+import { createHash, randomUUID } from "node:crypto";
+import { Router, type Request, type RequestHandler, type Response } from "express";
 import { z } from "zod";
 import type { Db } from "@paperclipai/db";
-import { costEvents } from "@paperclipai/db";
+import { agentApiKeys, costEvents } from "@paperclipai/db";
+import { and, eq, isNull } from "drizzle-orm";
 import {
   buildDearMeCostLedgerEvent,
   DM_PROXY_BASE_URL_DEFAULT,
@@ -17,7 +18,7 @@ import {
   type DearMeProxyModelRoutingTier,
   type DearMeProxyUsageLike,
 } from "@paperclipai/dearme-ai-proxy";
-import { HttpError, unauthorized, unprocessable } from "../errors.js";
+import { HttpError, unauthorized } from "../errors.js";
 import { validate } from "../middleware/validate.js";
 
 const DEARME_PROXY_BASE_PATH = new URL(DM_PROXY_BASE_URL_DEFAULT).pathname;
@@ -92,12 +93,55 @@ function bearerTokenFromAuthorizationHeader(rawHeader: string | undefined): stri
   return token;
 }
 
-function requireDearMeApiKey(req: Request, _res: Response, next: NextFunction) {
-  const token = bearerTokenFromAuthorizationHeader(req.get(DM_PROXY_HEADERS.authorization));
-  if (!token || !isDearMeApiKey(token)) {
-    throw unauthorized("DearMe API key required");
-  }
-  next();
+function hashToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function requireDearMeApiKey(db: Db): RequestHandler {
+  return async (req, _res, next) => {
+    const token = bearerTokenFromAuthorizationHeader(req.get(DM_PROXY_HEADERS.authorization));
+    if (!token || !isDearMeApiKey(token)) {
+      throw unauthorized("DearMe API key required");
+    }
+
+    if (req.actor?.type === "agent") {
+      next();
+      return;
+    }
+
+    const keyHash = hashToken(token);
+    const key = await db
+      .select({
+        id: agentApiKeys.id,
+        agentId: agentApiKeys.agentId,
+        companyId: agentApiKeys.companyId,
+      })
+      .from(agentApiKeys)
+      .where(and(eq(agentApiKeys.keyHash, keyHash), isNull(agentApiKeys.revokedAt)))
+      .then((rows) => rows[0] ?? null);
+
+    if (!key) {
+      throw unauthorized("DearMe API key required");
+    }
+
+    const agentId = key.agentId;
+    const companyId = key.companyId;
+    const keyId = key.id;
+
+    if (!agentId || !companyId || !keyId) {
+      throw unauthorized("DearMe API key required");
+    }
+
+    req.actor = {
+      type: "agent",
+      agentId,
+      companyId,
+      keyId,
+      source: "agent_key",
+    };
+
+    next();
+  };
 }
 
 function pickTier(input: { tier?: string | null; complexity?: number | null }): {
@@ -205,25 +249,23 @@ async function resolveProxyContext(
     return resolveProxyContextOverride(req);
   }
 
-  const companyIdHeader = req.get("X-DearMe-Company-ID")?.trim();
-  const agentIdHeader = req.get("X-DearMe-Agent-ID")?.trim();
   const actor = req.actor;
 
-  const companyId =
-    (actor?.type === "agent" ? actor.companyId : null) ||
-    (actor?.type === "board" ? actor.companyIds?.[0] ?? null : null) ||
-    companyIdHeader ||
-    null;
-  const agentId =
-    (actor?.type === "agent" ? actor.agentId ?? null : null) ||
-    agentIdHeader ||
-    null;
-
-  if (!companyId || !agentId) {
-    throw unprocessable("DearMe proxy company and agent context required");
+  if (actor?.type !== "agent") {
+    throw unauthorized("DearMe API key required");
   }
 
-  return { companyId, agentId };
+  const companyId = actor.companyId;
+  const agentId = actor.agentId;
+
+  if (!companyId || !agentId) {
+    throw unauthorized("DearMe API key required");
+  }
+
+  return {
+    companyId,
+    agentId,
+  };
 }
 
 function routeCostEvent(input: {
@@ -378,7 +420,7 @@ export function dearMeAiProxyRoutes(db: Db, opts: DearMeProxyRoutesOptions = {})
 
   router.post(
     "/v1/chat/completions",
-    requireDearMeApiKey,
+    requireDearMeApiKey(db),
     validate(openAiChatRequestSchema),
     async (req, res) => {
       await handleOpenAiChat(req, res, db, opts);
@@ -387,7 +429,7 @@ export function dearMeAiProxyRoutes(db: Db, opts: DearMeProxyRoutesOptions = {})
 
   router.post(
     "/v1/messages",
-    requireDearMeApiKey,
+    requireDearMeApiKey(db),
     validate(anthropicMessagesRequestSchema),
     async (req, res) => {
       await handleAnthropicMessages(req, res, db, opts);

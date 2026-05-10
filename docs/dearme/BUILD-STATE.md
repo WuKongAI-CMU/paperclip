@@ -2,6 +2,36 @@
 
 Date: 2026-05-10
 
+## DEA-33 DM-145B Proxy Auth Boundary Absorbed - 2026-05-10
+
+Product/architecture slice:
+
+- The DearMe proxy now treats the bearer token as the source of truth for
+  cost attribution. `dm_sk_*` keys resolve to authenticated `companyId` and
+  `agentId` through the existing `agent_api_keys` table pattern, and the proxy
+  route no longer trusts `X-DearMe-Company-ID` / `X-DearMe-Agent-ID` headers on
+  the normal path.
+- The proxy route keeps the DEA-32 fail-closed posture: missing keys,
+  malformed bearer tokens, revoked keys, and non-DearMe prefixes all reject
+  before any provider call or ledger write.
+- `agentService.createApiKey()` now accepts a narrowed optional token prefix
+  (`pcp_` or `dm_sk_`) while
+  preserving the default `pcp_*` family. That keeps the current agent API-key
+  contract stable while opening a conservative path for DM-145 issuance.
+- Reuse decision: keep the existing `agent_api_keys` storage and auth
+  semantics. Do not add a second DearMe key store or a separate proxy runtime
+  auth model.
+- Remaining DM-145 follow-up: add the actual DearMe proxy-key issuance flow so
+  the `dm_sk_*` prefix can be minted intentionally instead of only being
+  accepted by the proxy/auth path.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-ai-proxy-routes.test.ts server/src/__tests__/dearme-voice-gate-routes.test.ts server/src/__tests__/agent-api-key-service.test.ts --maxWorkers=1`
+- `pnpm --filter @paperclipai/server typecheck`
+- `pnpm --filter @paperclipai/dearme-ai-proxy typecheck`
+- `git diff --check`
+
 ## DEA-31 Prompt-Cache Economics Contract Absorbed - 2026-05-10
 
 Product/architecture slice:
