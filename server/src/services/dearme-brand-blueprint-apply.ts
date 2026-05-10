@@ -420,6 +420,7 @@ function renderPortfolioSeedDocument(input: {
       `- Title: ${portfolioProofCard.title}`,
       `- Placement: ${portfolioProofCard.placement}`,
       `- Proof source: ${portfolioProofCard.proofSource}`,
+      `- Private preview route: ${input.preview.sitePreview.route}`,
       `- Approval gate: ${portfolioProofCard.approvalGate}`,
       "",
       "Proposed copy:",
@@ -466,7 +467,7 @@ function renderDearMeReportDocument(
     ? [
         `- Content: ${preview.starterPosts.length} private starter posts seeded for review.`,
         `- Opportunity: five-target shortlist held for send approval, first lead for ${preview.opportunityLead.target}.`,
-        `- Portfolio: ${preview.portfolioProofCard.placement} proof copy held for deploy approval.`,
+        `- Portfolio: ${preview.sitePreview.route} proof copy held for deploy approval.`,
       ]
     : ["- No reviewable drafts have been reported yet."];
   return [

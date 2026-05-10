@@ -439,6 +439,12 @@ function makeFirstCycleResult() {
       ownerRole: "portfolio_builder",
       approvalGate: "deploy_public_site",
     },
+    sitePreview: {
+      handle: "peter-studio",
+      route: "dearme.app/peter-studio",
+      status: "private_preview",
+      approvalBoundary: "Private preview stays live only in DearMe until one deploy decision is approved.",
+    },
     growthPlan: {
       title: "First growth plan",
       summary: "Start with one positioning decision.",
@@ -1801,6 +1807,7 @@ describe("DearMe brand blueprint routes", () => {
     const res = await request(await createApp())
       .post("/api/dearme/companies/company-1/first-cycle/preview")
       .send({
+        handle: "Peter Studio",
         brand: {
           displayName: "Peter",
           positioning: "Known for practical AI products",
@@ -1826,10 +1833,13 @@ describe("DearMe brand blueprint routes", () => {
     expect(res.body.opportunityShortlist).toHaveLength(5);
     expect(res.body.opportunityShortlist[0]?.target).toBe("Founders");
     expect(res.body.opportunityShortlist[4]?.relevanceScore).toBe(8);
+    expect(res.body.sitePreview.route).toBe("dearme.app/peter-studio");
+    expect(res.body.sitePreview.status).toBe("private_preview");
     expect(res.body.voiceGate.approvalGate).toBe("publish_social");
     expect(mockDearMeBrandBlueprintService.previewFirstCycle).toHaveBeenCalledWith(
       "company-1",
       expect.objectContaining({
+        handle: "Peter Studio",
         brand: expect.objectContaining({
           displayName: "Peter",
           positioning: "Known for practical AI products",

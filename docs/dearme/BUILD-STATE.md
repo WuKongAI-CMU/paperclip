@@ -2,6 +2,44 @@
 
 Date: 2026-05-10
 
+## DEA-21 Private Site Host Smoke Absorbed - 2026-05-10
+
+Product/architecture slice:
+
+- Absorbed the Symphony worker patch for the 3-5 minute private site proof
+  without adding a second site runtime, deployment path, or public launch claim.
+- The first-cycle preview now accepts an optional handle, normalizes it into a
+  safe private site handle, and returns a concrete private route at
+  `dearme.app/<handle>`.
+- The service keeps that explicit handle while enriching the preview from
+  existing memory, so API callers do not silently fall back to display name after
+  memory hydration.
+- The customer-facing proof package now shows that route inside the portfolio
+  proof card with the launch boundary intact: the site remains private until
+  one deploy decision is approved.
+- Server proof documents and apply/report artifacts now carry the same private
+  preview route so the Brand OS, first-cycle issues, and onboarding surface tell
+  one story.
+
+Coordination state:
+
+- `DEA-21` was marked Done by Symphony before the coordinator could absorb a
+  reachable worker commit. The worker workspace had already been cleaned, so
+  this coordinator pass recovered the inspected patch onto the current main
+  checkout and fixed the handle-preservation gap found during absorption.
+- Do not add another product implementation agent on this same first-cycle
+  surface; the next useful extra agent is read-only QA or a separate tooling
+  lane.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-brand-blueprints.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed with 121 tests and 4 embedded-Postgres tests skipped on this host.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check` passed.
+
 ## DM-183CA Symphony Git Preflight - 2026-05-10
 
 Coordinator micro-tuning:

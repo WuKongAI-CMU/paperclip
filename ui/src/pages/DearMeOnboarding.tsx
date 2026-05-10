@@ -2328,9 +2328,18 @@ function FirstCycleProofPackage({
           description={preview.portfolioProofCard.proposedCopy}
           badge={<FileText className="h-4 w-4 text-muted-foreground" />}
         >
-          <Badge variant="outline" className="h-auto max-w-full justify-start whitespace-normal text-left leading-snug">
-            Source proof: {preview.portfolioProofCard.proofSource}
-          </Badge>
+          <div className="space-y-2">
+            <Badge variant="outline" className="h-auto max-w-full justify-start whitespace-normal text-left leading-snug">
+              Source proof: {preview.portfolioProofCard.proofSource}
+            </Badge>
+            <div className="rounded-md border border-border bg-background/60 px-3 py-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Private preview</p>
+              <p className="mt-1 text-sm text-foreground/80">{preview.sitePreview.route}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ready for approval. The site stays private until you approve it.
+              </p>
+            </div>
+          </div>
         </DearMeWorkbenchCard>
         <DearMeWorkbenchCard
           eyebrow="First growth plan"

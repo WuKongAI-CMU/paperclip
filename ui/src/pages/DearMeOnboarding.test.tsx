@@ -3002,6 +3002,8 @@ describe("DearMeOnboarding", () => {
     expect(mockDearmeApi.startFirstCycle).not.toHaveBeenCalled();
     expect(container.textContent).toContain("First-run proof sequence");
     expect(container.textContent).toContain("Prepared from private Brand OS work");
+    expect(container.textContent).toContain("dearme.app/peter-studio");
+    expect(container.textContent).toContain("Ready for approval");
     expect(container.textContent).not.toContain("Sample team package");
 
     await act(async () => {

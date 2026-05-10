@@ -387,6 +387,7 @@ function renderFirstCycleProofIssues(preview: DearMeFirstCyclePreviewResponse): 
           body: firstCycleLines([
             `Page section: ${preview.portfolioProofCard.placement}`,
             `Proof source: ${preview.portfolioProofCard.proofSource}`,
+            `Private preview route: ${preview.sitePreview.route}`,
             `Proposed copy: ${preview.portfolioProofCard.proposedCopy}`,
             "Deploy boundary: The public site update waits for one launch decision.",
           ]),
@@ -489,6 +490,7 @@ export function dearmeBrandBlueprintService(db: Db) {
     const memory = await loadFirstCycleMemorySeed(companyId);
 
     return {
+      ...(parsed.handle ? { handle: parsed.handle } : {}),
       brand: {
         ...parsed.brand,
         audiences: mergeUniqueText(parsed.brand.audiences, memory.audiences, 8),

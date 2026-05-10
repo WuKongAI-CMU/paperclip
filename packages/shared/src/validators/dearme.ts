@@ -287,6 +287,22 @@ function optionalText(maxLength: number) {
   );
 }
 
+function slugifyDearMeHandle(value: string) {
+  const normalized = value
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/[\u0300-\u036f]/g, "");
+  const slug = normalized
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug.length > 0 ? slug : null;
+}
+
+function resolveDearMeSiteHandle(handle: string | null | undefined, fallback: string) {
+  return slugifyDearMeHandle(handle ?? "") ?? slugifyDearMeHandle(fallback) ?? "private-preview";
+}
+
 function isHttpUrl(value: string) {
   try {
     const url = new URL(value);
@@ -503,6 +519,7 @@ export const dearMeBrandBlueprintSummarySchema = z.object({
 }).strict();
 
 export const dearMeFirstCyclePreviewSchema = z.object({
+  handle: optionalText(120),
   brand: dearMeBrandBlueprintSeedSchema,
 }).strict();
 
@@ -620,6 +637,13 @@ const dearMeFirstCyclePortfolioProofCardSchema = z.object({
   approvalGate: z.literal("deploy_public_site"),
 }).strict();
 
+const dearMeFirstCycleSitePreviewSchema = z.object({
+  handle: shortTextSchema,
+  route: shortTextSchema,
+  status: z.literal("private_preview"),
+  approvalBoundary: mediumTextSchema,
+}).strict();
+
 const dearMeFirstCycleGrowthPlanSchema = z.object({
   title: shortTextSchema,
   summary: mediumTextSchema,
@@ -655,6 +679,7 @@ export const dearMeFirstCyclePreviewResponseSchema = z.object({
   opportunityLead: dearMeFirstCycleOpportunityLeadSchema,
   opportunityShortlist: z.array(dearMeFirstCycleOpportunityShortlistItemSchema).length(5),
   portfolioProofCard: dearMeFirstCyclePortfolioProofCardSchema,
+  sitePreview: dearMeFirstCycleSitePreviewSchema,
   growthPlan: dearMeFirstCycleGrowthPlanSchema,
   autonomyPlan: dearMeFirstCycleAutonomyPlanSchema,
   voiceGate: dearMeVoiceGateResultSchema,
@@ -1795,6 +1820,8 @@ export function createDearMeFirstCyclePreview(
   const primaryOffer = firstPresent(blueprint.brand.offers, "a useful next conversation", 160);
   const warnings = collectDearMeBrandBlueprintWarnings(blueprint);
   const suppliedProof = blueprint.brand.proofPoints[0];
+  const siteHandle = resolveDearMeSiteHandle(preview.handle, displayName);
+  const siteRoute = `dearme.app/${siteHandle}`;
   const opportunityShortlist: DearMeFirstCyclePreviewResponse["opportunityShortlist"] = [
     {
       title: "Direct customer lead",
@@ -1958,6 +1985,12 @@ export function createDearMeFirstCyclePreview(
       placement: "Homepage proof section",
       ownerRole: "portfolio_builder",
       approvalGate: "deploy_public_site",
+    },
+    sitePreview: {
+      handle: siteHandle,
+      route: siteRoute,
+      status: "private_preview",
+      approvalBoundary: "Private preview stays live only in DearMe until one deploy decision is approved.",
     },
     growthPlan: {
       title: "First growth plan",

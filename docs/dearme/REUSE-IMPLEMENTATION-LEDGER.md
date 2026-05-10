@@ -46,21 +46,24 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DEA-21 is coordinator-absorbed as the Private Site Host Smoke slice. The
+  first-cycle preview now carries a handle-safe `dearme.app/<handle>` private
+  preview route through the shared contract, server proof documents, apply
+  artifacts, and onboarding proof card. This keeps the aha moment concrete
+  without claiming public deploy or adding another site runtime; the route stays
+  behind the existing deploy approval boundary. Symphony had already marked the
+  worker lane Done and cleaned its workspace before coordinator absorption, so
+  this pass recovered the inspected patch onto current main and fixed the
+  explicit-handle preservation gap in the memory-enriched service path.
 - Symphony worker startup now includes `pnpm dearme:symphony-preflight -- .`
   as both workspace-creation and Codex bootstrap evidence. This keeps the
   DEA-19 `.git/index.lock` failure mode from recurring after a worker has
   already produced a useful patch: future lanes should stop before
   implementation if Git metadata is locked, stale, dirty, or unwritable.
-- Current active handoff target is `DEA-21`: make the 3-5 minute private site
-  proof feel like a concrete, handle-specific private site preview or host smoke
-  without deploying or adding another public site runtime. This lane should
-  reuse the existing first-cycle preview, `portfolioProofCard`, proof sequence,
-  Brand OS preview/apply, output handoff, Workbench projection, Brand Site
-  Builder role, and deploy-gate contracts. A briefly opened overlapping
-  `DEA-22` launch-decision ticket was closed as duplicate of `DEA-21`; keep
-  `DEA-21` as the only product writer lane while active and use extra Codex help
-  for read-only review or coordinator absorption, not parallel writes to the
-  same customer surface.
+- A briefly opened overlapping `DEA-22` launch-decision ticket was closed as
+  duplicate of `DEA-21`; keep that pattern for the next lanes too: one product
+  writer on a customer-facing surface, with extra Codex help limited to
+  read-only review, QA, or disjoint infrastructure work.
 - DEA-20 is absorbed as a no-code OpenClaw Chief pairing smoke: the existing
   plugin package already proves the manifest, generated skills, bootstrap
   files, required config, and outbound approval-gate bindings. This keeps

@@ -188,6 +188,7 @@ describe("DearMe brand blueprint contract", () => {
 
   it("creates a 90-second first cycle preview from one positioning answer", () => {
     const previewInput = dearMeFirstCyclePreviewSchema.parse({
+      handle: "Peter Studio",
       brand: {
         displayName: "Peter",
         positioning: "Known for turning AI research into practical local products",
@@ -255,6 +256,9 @@ describe("DearMe brand blueprint contract", () => {
       "Peter helps Founders evaluating local AI workflows",
     );
     expect(firstCycle.portfolioProofCard.proposedCopy).toContain("Recent proof:");
+    expect(firstCycle.sitePreview.handle).toBe("peter-studio");
+    expect(firstCycle.sitePreview.route).toBe("dearme.app/peter-studio");
+    expect(firstCycle.sitePreview.status).toBe("private_preview");
     expect(firstCycle.growthPlan.approvalGate).toBe("public_claim");
     expect(firstCycle.voiceGate.status).toBe("ready_for_review");
     expect(firstCycle.voiceGate.approvalGate).toBe("publish_social");
@@ -287,6 +291,29 @@ describe("DearMe brand blueprint contract", () => {
     for (const hiddenTerm of ["provider", "adapter", "setup_payload", "mcp", "paperclip", "openclaw"]) {
       expect(serialized).not.toContain(hiddenTerm);
     }
+  });
+
+  it("falls back to a safe preview handle when the supplied handle is unusable", () => {
+    const firstCycle = createDearMeFirstCyclePreview("company-1", {
+      handle: "!!!",
+      brand: {
+        displayName: "Peter Studio",
+        positioning: "Known for practical AI products",
+        goals: [],
+        audiences: [],
+        proofPoints: [],
+        offers: [],
+        voiceSamples: [],
+        preferredChannels: [],
+        constraints: [],
+        cadence: "weekly",
+        budgetMonthlyCents: 25_000,
+        autoDraftEnabled: true,
+      },
+    });
+
+    expect(firstCycle.sitePreview.handle).toBe("peter-studio");
+    expect(firstCycle.sitePreview.route).toBe("dearme.app/peter-studio");
   });
 
   it("evaluates Voice Gate v0 before public content moves", () => {

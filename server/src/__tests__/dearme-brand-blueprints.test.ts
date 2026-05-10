@@ -240,6 +240,7 @@ describeEmbeddedPostgres("DearMe brand blueprint service", () => {
     ]);
 
     const result = await dearmeBrandBlueprintService(db).previewFirstCycle(companyId, {
+      handle: "Peter Studio",
       brand: {
         displayName: "Peter",
         positioning: "Build local-first AI products with public proof.",
@@ -424,7 +425,34 @@ describeEmbeddedPostgres("DearMe brand blueprint service", () => {
     expect(result.proofSequence[2]?.sourceLabel).toBe("Prepared from private site proof and Dear me report");
     expect(result.proofSequence[2]?.summary).toContain("Brand Site Builder staged private site copy");
     expect(result.proofSequence[2]?.summary).toContain("turn proof cards into one private site update");
+    expect(result.sitePreview.handle).toBe("peter-studio");
+    expect(result.sitePreview.route).toBe("dearme.app/peter-studio");
     expect(JSON.stringify(result.proofSequence)).not.toContain("worker output");
+  });
+
+  it("falls back to a safe private site preview handle when the supplied handle is unusable", async () => {
+    const companyId = await seedCompany();
+
+    const result = await dearmeBrandBlueprintService(db).previewFirstCycle(companyId, {
+      handle: "!!!",
+      brand: {
+        displayName: "Peter Studio",
+        positioning: "Build local-first AI products with public proof.",
+        goals: ["turn shipped work into paid beta conversations"],
+        audiences: ["founders evaluating local AI workflows"],
+        proofPoints: ["manual proof should be replaced by prepared output"],
+        offers: ["a paid beta personal brand growth cycle"],
+        voiceSamples: ["I write in short, concrete notes with proof first."],
+        preferredChannels: ["linkedin"],
+        constraints: [],
+        cadence: "weekly",
+        budgetMonthlyCents: 25_000,
+        autoDraftEnabled: true,
+      },
+    });
+
+    expect(result.sitePreview.handle).toBe("peter-studio");
+    expect(result.sitePreview.route).toBe("dearme.app/peter-studio");
   });
 
   it("prepares first-cycle proof outputs through the existing output handoff path", async () => {
