@@ -2,6 +2,31 @@
 
 Date: 2026-05-10
 
+## DM-183BZ First-Cycle Sample Demo Proof Card - 2026-05-10
+
+Product/architecture slice:
+
+- Closed DEA-15 as a no-code proof lane: the current first-cycle start,
+  private handoff, Workbench projection, and DearMe onboarding surfaces already
+  show a concrete sample/demo package with Chief of Staff work and a focused
+  review decision card.
+- Kept the proof on the existing DEA-13 path instead of adding another
+  first-run runtime contract, queue surface, or customer-visible machinery.
+- Confirmed Symphony's current role for this lane: one implementation worker
+  produced absorbable no-code evidence, while the coordinator kept the main
+  branch as the integration truth.
+
+Verification:
+
+- Worker focused proof smoke passed:
+  `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-workbench-projection.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "first cycle|private handoff readiness|Focused decision|Chief of Staff brief|90-second first cycle|private sample team package"`
+  with 2 test files passed, 1 filtered file skipped, and 13 matched tests
+  passed.
+- Worker projection smoke passed:
+  `pnpm exec vitest run server/src/__tests__/dearme-workbench-projection.test.ts --maxWorkers=1 -t "keeps projected workbench text customer-safe|projects nested output payloads before the workbench response returns them"`
+  with 1 file and 2 tests passed.
+- Linear `DEA-15` is `Done` with no file changes and no blocker.
+
 ## DM-139A First-Cycle Chief Of Staff Private Run Proof - 2026-05-10
 
 Product/architecture slice:

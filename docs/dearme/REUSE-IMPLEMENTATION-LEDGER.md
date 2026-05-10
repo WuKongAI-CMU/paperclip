@@ -46,6 +46,13 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DEA-15 / DM-183BZ closed as a no-code proof lane: the existing
+  first-cycle start, private handoff, Workbench projection, and DearMe
+  onboarding surfaces already produce a sample/demo package with Chief of Staff
+  private work plus a focused review decision card. The useful coordination
+  lesson is that first-cycle aha proof lanes do not need more writers once the
+  path is test-proven; they need terminal evidence, one coordinator absorption
+  point, and then the next single bounded product lane.
 - DM-183BY adds a Symphony terminal handoff guard: worker lanes must leave a
   local commit, explicit no-code evidence, or a blocker/patch handoff before a
   terminal claim is acceptable. This keeps Linear state from becoming a proxy
