@@ -138,6 +138,24 @@ function buttonByText(container: HTMLElement, text: string) {
   );
 }
 
+async function renderApprovalDetail(container: HTMLElement) {
+  const root = createRoot(container);
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+
+  await act(async () => {
+    root.render(
+      <QueryClientProvider client={queryClient}>
+        <ApprovalDetail />
+      </QueryClientProvider>,
+    );
+  });
+  await flushReact();
+
+  return root;
+}
+
 describe("ApprovalDetail", () => {
   let container: HTMLDivElement;
 
@@ -252,6 +270,93 @@ describe("ApprovalDetail", () => {
       "/dearme?view=decisions&approval=approval-1",
       { replace: true },
     );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("returns DearMe rejection and revision actions to the DearMe surface", async () => {
+    mockApprovalsApi.get.mockResolvedValue(createDearMeOutputApproval());
+    mockApprovalsApi.reject.mockResolvedValue({
+      ...createDearMeOutputApproval(),
+      status: "rejected",
+    });
+    mockApprovalsApi.requestRevision.mockResolvedValue({
+      ...createDearMeOutputApproval(),
+      status: "revision_requested",
+    });
+    const root = await renderApprovalDetail(container);
+
+    await act(async () => {
+      buttonByText(container, "Reject")?.click();
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Request revision")?.click();
+    });
+    await flushReact();
+
+    expect(mockApprovalsApi.reject).toHaveBeenCalledWith("approval-1");
+    expect(mockApprovalsApi.requestRevision).toHaveBeenCalledWith("approval-1");
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/dearme?view=decisions&approval=approval-1",
+      { replace: true },
+    );
+    expect(mockNavigate).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("returns DearMe resubmissions to the DearMe surface", async () => {
+    const revisionRequestedApproval = {
+      ...createDearMeOutputApproval(),
+      status: "revision_requested",
+    };
+    mockApprovalsApi.get.mockResolvedValue(revisionRequestedApproval);
+    mockApprovalsApi.resubmit.mockResolvedValue({
+      ...revisionRequestedApproval,
+      status: "pending",
+    });
+    const root = await renderApprovalDetail(container);
+
+    await act(async () => {
+      buttonByText(container, "Mark resubmitted")?.click();
+    });
+    await flushReact();
+
+    expect(mockApprovalsApi.resubmit).toHaveBeenCalledWith("approval-1");
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/dearme?view=decisions&approval=approval-1",
+      { replace: true },
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps DearMe approval detail action failures product-safe", async () => {
+    mockApprovalsApi.get.mockResolvedValue(createDearMeOutputApproval());
+    mockApprovalsApi.approve.mockRejectedValue(
+      new Error("OpenClaw adapter provider token failed in /approvals/approval-1"),
+    );
+    const root = await renderApprovalDetail(container);
+
+    await act(async () => {
+      buttonByText(container, "Approve")?.click();
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Failed to update the DearMe decision.");
+    expect(container.textContent).not.toContain("OpenClaw");
+    expect(container.textContent).not.toContain("adapter");
+    expect(container.textContent).not.toContain("provider");
+    expect(container.textContent).not.toContain("token");
+    expect(container.textContent).not.toContain("/approvals/approval-1");
 
     await act(async () => {
       root.unmount();

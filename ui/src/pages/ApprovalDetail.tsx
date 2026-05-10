@@ -13,9 +13,10 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, ChevronRight, Sparkles } from "lucide-react";
-import type { ApprovalComment } from "@paperclipai/shared";
+import type { Approval, ApprovalComment } from "@paperclipai/shared";
 import { MarkdownBody } from "../components/MarkdownBody";
 import {
+  approvalActionErrorMessage,
   approvalResolvedHref,
   dearMeApprovalDecisionHref,
   isDearMeApprovalType,
@@ -97,6 +98,13 @@ export function ApprovalDetail() {
     }
   };
 
+  const navigateDearMeDecision = (updatedApproval?: Pick<Approval, "id" | "type"> | null) => {
+    const resolvedApprovalId = updatedApproval?.id ?? approvalId;
+    const resolvedApprovalType = updatedApproval?.type ?? approval?.type;
+    if (!resolvedApprovalId || !isDearMeApprovalType(resolvedApprovalType)) return;
+    navigate(dearMeApprovalDecisionHref(resolvedApprovalId), { replace: true });
+  };
+
   const approveMutation = useMutation({
     mutationFn: () => approvalsApi.approve(approvalId!),
     onSuccess: (updatedApproval) => {
@@ -107,34 +115,37 @@ export function ApprovalDetail() {
         { replace: true },
       );
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Approve failed"),
+    onError: (err) => setError(approvalActionErrorMessage(err, "Approve failed", approval?.type)),
   });
 
   const rejectMutation = useMutation({
     mutationFn: () => approvalsApi.reject(approvalId!),
-    onSuccess: () => {
+    onSuccess: (updatedApproval) => {
       setError(null);
       refresh();
+      navigateDearMeDecision(updatedApproval);
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Reject failed"),
+    onError: (err) => setError(approvalActionErrorMessage(err, "Reject failed", approval?.type)),
   });
 
   const revisionMutation = useMutation({
     mutationFn: () => approvalsApi.requestRevision(approvalId!),
-    onSuccess: () => {
+    onSuccess: (updatedApproval) => {
       setError(null);
       refresh();
+      navigateDearMeDecision(updatedApproval);
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Revision request failed"),
+    onError: (err) => setError(approvalActionErrorMessage(err, "Revision request failed", approval?.type)),
   });
 
   const resubmitMutation = useMutation({
     mutationFn: () => approvalsApi.resubmit(approvalId!),
-    onSuccess: () => {
+    onSuccess: (updatedApproval) => {
       setError(null);
       refresh();
+      navigateDearMeDecision(updatedApproval);
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Resubmit failed"),
+    onError: (err) => setError(approvalActionErrorMessage(err, "Resubmit failed", approval?.type)),
   });
 
   const addCommentMutation = useMutation({
@@ -144,7 +155,10 @@ export function ApprovalDetail() {
       setError(null);
       refresh();
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Comment failed"),
+    onError: (err) =>
+      setError(
+        approvalActionErrorMessage(err, "Comment failed", approval?.type, "Failed to post your note."),
+      ),
   });
 
   const deleteAgentMutation = useMutation({
