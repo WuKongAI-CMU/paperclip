@@ -6,6 +6,12 @@ export {
 } from "./dearme-brand-blueprint-apply.js";
 export { dearmeBrandBlueprintService } from "./dearme-brand-blueprints.js";
 export { dearMeApprovalResolverService } from "./dearme-approval-resolver.js";
+export {
+  callOutboundInputFromApprovedNextMove,
+  dearMeApprovedLaunchHandoffService,
+  defaultDearMeApprovedLaunchHandoffService,
+  type ApprovedLaunchHandoffService,
+} from "./dearme-approved-launch-handoff.js";
 export { dearmeMemoryContextService } from "./dearme-memory-context.js";
 export { dearmeOutputHandoffService } from "./dearme-output-handoff.js";
 export { dearmePaidBetaAccessService, summarizeDearMePaidBetaAccess } from "./dearme-paid-beta-access.js";

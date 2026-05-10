@@ -187,6 +187,31 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
     });
   });
 
+  it("delivers a preapproved next-move handoff without opening a second gate", async () => {
+    const dispatch = vi.fn(async () => ({
+      kind: "delivered" as const,
+      externalId: "tweet_1",
+      externalUrl: "https://x.com/tester/status/tweet_1",
+      paid: false,
+    }));
+    const { deps, resolveCalls } = makeDeps({
+      channelDispatch: { post_x: dispatch as ChannelDispatch },
+    });
+    const wrapper = dearMeOutboundToolWrapper(deps);
+    const result = await wrapper.callOutbound({
+      ...baseInput,
+      preapprovedApprovalId: "approval-final-1",
+    });
+
+    expect(result.kind).toBe("delivered");
+    expect(resolveCalls).toHaveLength(0);
+    expect(dispatch).toHaveBeenCalledWith({
+      toolName: "post_x",
+      encryptedCredential: "enc:secret",
+      payload: baseInput.payload,
+    });
+  });
+
   it("returns rejected and moves work loop gate->review on rejected approval", async () => {
     const dispatch = vi.fn(async () => ({
       kind: "delivered" as const,

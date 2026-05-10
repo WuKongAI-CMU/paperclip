@@ -99,6 +99,11 @@ export interface CallOutboundInput {
   voiceFingerprintId: string | null;
   /** Money estimate for spend gates; 0 elsewhere. */
   estimatedUsd: number;
+  /**
+   * A final user approval that already governs this handoff. When present,
+   * the wrapper reuses that approval instead of creating a second gate row.
+   */
+  preapprovedApprovalId?: string;
   /** Per-tenant config (cap + min-score). */
   config: {
     minVoiceGateScore: number;
@@ -167,21 +172,27 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
       }
 
       // Step 2 — resolve approval
-      const approval = await deps.approvalResolver.resolve({
-        companyId: input.companyId,
-        requestedByUserId: input.userId,
-        requestedByAgentId: input.agentId ?? null,
-        issueId: input.issueId,
-        toolName: input.toolName,
-        channel: binding.channel,
-        gate: binding.gate,
-        estimatedUsd: input.estimatedUsd,
-        voiceGateScore,
-        reason: binding.voiceGateRequired
-          ? "outbound-tool-call-voice-gated"
-          : "outbound-tool-call",
-        config: input.config,
-      });
+      const approval = input.preapprovedApprovalId
+        ? {
+            decision: "approved" as const,
+            reason: "preapproved-next-move",
+            approvalId: input.preapprovedApprovalId,
+          }
+        : await deps.approvalResolver.resolve({
+            companyId: input.companyId,
+            requestedByUserId: input.userId,
+            requestedByAgentId: input.agentId ?? null,
+            issueId: input.issueId,
+            toolName: input.toolName,
+            channel: binding.channel,
+            gate: binding.gate,
+            estimatedUsd: input.estimatedUsd,
+            voiceGateScore,
+            reason: binding.voiceGateRequired
+              ? "outbound-tool-call-voice-gated"
+              : "outbound-tool-call",
+            config: input.config,
+          });
 
       if (approval.decision === "rejected") {
         await deps.workLoop.transition({

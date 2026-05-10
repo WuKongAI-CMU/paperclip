@@ -20,6 +20,12 @@ import {
   DEARME_NEXT_MOVE_APPROVAL_TYPE,
   recordDearMeNextMoveApprovalReceipt,
 } from "../services/dearme-approval-receipts.js";
+import {
+  defaultDearMeApprovedLaunchHandoffService,
+  type ApprovedLaunchHandoffService,
+} from "../services/dearme-approved-launch-handoff.js";
+import type { ChannelDispatch } from "../services/dearme-outbound-tool-wrapper.js";
+import type { DearMeOutboundToolName } from "@paperclipai/dearme-openclaw";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { redactEventPayload } from "../redaction.js";
 import type { PluginWorkerManager } from "../services/plugin-worker-manager.js";
@@ -33,7 +39,11 @@ function redactApprovalPayload<T extends { payload: Record<string, unknown> }>(a
 
 export function approvalRoutes(
   db: Db,
-  options: { pluginWorkerManager?: PluginWorkerManager } = {},
+  options: {
+    pluginWorkerManager?: PluginWorkerManager;
+    dearMeLaunchHandoffService?: ApprovedLaunchHandoffService;
+    dearMeOutboundChannelDispatch?: Partial<Record<DearMeOutboundToolName, ChannelDispatch>>;
+  } = {},
 ) {
   const router = Router();
   const svc = approvalService(db);
@@ -42,6 +52,9 @@ export function approvalRoutes(
   });
   const issueApprovalsSvc = issueApprovalService(db);
   const secretsSvc = secretService(db);
+  const launchHandoffService =
+    options.dearMeLaunchHandoffService ??
+    defaultDearMeApprovedLaunchHandoffService(db, options.dearMeOutboundChannelDispatch);
   const strictSecretsMode = process.env.PAPERCLIP_SECRETS_STRICT_MODE === "true";
 
   async function requireApprovalAccess(req: Request, id: string) {
@@ -171,6 +184,10 @@ export function approvalRoutes(
           approval,
           actorUserId: decidedByUserId,
           linkedIssueIds,
+        });
+        await launchHandoffService.executeApprovedNextMove({
+          approval,
+          actorUserId: decidedByUserId,
         });
       }
 

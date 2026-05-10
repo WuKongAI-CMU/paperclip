@@ -44,7 +44,10 @@ function registerModuleMocks() {
   }));
 }
 
-async function createApp(actorOverrides: Record<string, unknown> = {}) {
+async function createApp(
+  actorOverrides: Record<string, unknown> = {},
+  routeOptions: Record<string, unknown> = {},
+) {
   const [{ errorHandler }, { approvalRoutes }] = await Promise.all([
     import("../middleware/index.js"),
     import("../routes/approvals.js"),
@@ -62,7 +65,7 @@ async function createApp(actorOverrides: Record<string, unknown> = {}) {
     };
     next();
   });
-  app.use("/api", approvalRoutes({} as any));
+  app.use("/api", approvalRoutes({} as any, routeOptions as any));
   app.use(errorHandler);
   return app;
 }
@@ -185,6 +188,47 @@ describe("approval routes idempotent retries", () => {
     expect(mockHeartbeatService.wakeup).toHaveBeenCalledWith("agent-1", expect.objectContaining({
       reason: "approval_approved",
     }));
+  });
+
+  it("executes an approved DearMe launch handoff only when a next-move approval is newly applied", async () => {
+    const launchService = {
+      executeApprovedNextMove: vi.fn(async () => ({
+        kind: "called" as const,
+        outcome: { kind: "delivered" as const, voiceGateScore: 96, externalId: "tweet-1" },
+      })),
+    };
+    const approval = {
+      id: "approval-8",
+      companyId: "company-1",
+      type: "dearme_output_next_move",
+      status: "approved",
+      payload: {
+        outputId: "issue-1:content_drafts",
+        issueId: "issue-1",
+        launchHandoff: {
+          toolName: "post_x",
+          payload: { text: "Ready to publish." },
+        },
+      },
+      requestedByAgentId: "agent-1",
+    };
+    mockApprovalService.getById.mockResolvedValue({
+      ...approval,
+      status: "pending",
+    });
+    mockApprovalService.approve.mockResolvedValue({ approval, applied: true });
+
+    const res = await request(await createApp({}, {
+      dearMeLaunchHandoffService: launchService,
+    }))
+      .post("/api/approvals/approval-8/approve")
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(launchService.executeApprovedNextMove).toHaveBeenCalledWith({
+      approval,
+      actorUserId: "user-1",
+    });
   });
 
   it("does not emit duplicate rejection logs when reject is already resolved", async () => {
