@@ -25,6 +25,11 @@ export const DEARME_TEAM_ROLES = [
   "growth_analyst",
 ] as const;
 
+export const DEARME_TEAM_EXECUTION_LANES = ["direct", "worker"] as const;
+export const DEARME_TEAM_WORKSPACE_MODES = ["local", "remote"] as const;
+export const DEARME_DIRECT_HEARTBEAT_CADENCE_HOURS = 2;
+export const DEARME_WORKER_HEARTBEAT_CADENCE_HOURS = 8;
+
 export const DEARME_RISK_GATES = [
   "publish_social",
   "send_email",
@@ -284,12 +289,37 @@ export const dearMeBrandBlueprintSeedSchema = z.object({
   autoDraftEnabled: z.boolean().default(true),
 }).strict();
 
+function defaultDearMeTeamExecutionTemplate(role: (typeof DEARME_TEAM_ROLES)[number]) {
+  return role === "chief_of_staff"
+    ? {
+        executionLane: "direct" as const,
+        workspaceMode: "local" as const,
+        heartbeatCadenceHours: DEARME_DIRECT_HEARTBEAT_CADENCE_HOURS,
+      }
+    : {
+        executionLane: "worker" as const,
+        workspaceMode: "remote" as const,
+        heartbeatCadenceHours: DEARME_WORKER_HEARTBEAT_CADENCE_HOURS,
+      };
+}
+
 const dearMeTeamMemberSchema = z.object({
   role: z.enum(DEARME_TEAM_ROLES),
   name: shortTextSchema,
   mission: mediumTextSchema,
   approvalBoundary: mediumTextSchema,
-}).strict();
+  executionLane: z.enum(DEARME_TEAM_EXECUTION_LANES).optional(),
+  workspaceMode: z.enum(DEARME_TEAM_WORKSPACE_MODES).optional(),
+  heartbeatCadenceHours: z.number().int().min(1).max(24).optional(),
+}).strict().transform((member) => {
+  const defaults = defaultDearMeTeamExecutionTemplate(member.role);
+  return {
+    ...member,
+    executionLane: member.executionLane ?? defaults.executionLane,
+    workspaceMode: member.workspaceMode ?? defaults.workspaceMode,
+    heartbeatCadenceHours: member.heartbeatCadenceHours ?? defaults.heartbeatCadenceHours,
+  };
+});
 
 const dearMeRiskGateSchema = z.object({
   kind: z.enum(DEARME_RISK_GATES),
@@ -1064,42 +1094,49 @@ const teamTemplate: DearMeBrandBlueprint["team"] = [
     name: "Chief of Staff",
     mission: "Turn goals into weekly plans, live progress, and launch decisions.",
     approvalBoundary: "Can plan and draft automatically; external actions run inside launch boundaries.",
+    ...defaultDearMeTeamExecutionTemplate("chief_of_staff"),
   },
   {
     role: "brand_strategist",
     name: "Brand Strategist",
     mission: "Shape positioning, audiences, proof points, and weekly growth themes.",
     approvalBoundary: "Can recommend strategy changes; public claims run inside launch boundaries.",
+    ...defaultDearMeTeamExecutionTemplate("brand_strategist"),
   },
   {
     role: "voice_editor",
     name: "Voice Editor",
     mission: "Learn the user's voice and keep drafts consistent with the voice profile.",
     approvalBoundary: "Can edit drafts; publishing or sending runs inside launch boundaries.",
+    ...defaultDearMeTeamExecutionTemplate("voice_editor"),
   },
   {
     role: "content_producer",
     name: "Content Producer",
     mission: "Create content drafts from proof, ideas, and weekly priorities.",
     approvalBoundary: "Can draft and queue content; public posting runs inside launch boundaries.",
+    ...defaultDearMeTeamExecutionTemplate("content_producer"),
   },
   {
     role: "opportunity_scout",
     name: "Opportunity Scout",
     mission: "Find relevant opportunities and prepare outreach drafts.",
     approvalBoundary: "Can research and draft outreach; sending messages run inside launch boundaries.",
+    ...defaultDearMeTeamExecutionTemplate("opportunity_scout"),
   },
   {
     role: "portfolio_builder",
     name: "Portfolio Builder",
     mission: "Turn proof into portfolio, case study, and site updates.",
     approvalBoundary: "Can draft site changes; public page changes run inside launch boundaries.",
+    ...defaultDearMeTeamExecutionTemplate("portfolio_builder"),
   },
   {
     role: "growth_analyst",
     name: "Growth Analyst",
     mission: "Summarize progress, gaps, and next week's growth bets.",
     approvalBoundary: "Can analyze and report; spend and channel changes run inside launch boundaries.",
+    ...defaultDearMeTeamExecutionTemplate("growth_analyst"),
   },
 ];
 

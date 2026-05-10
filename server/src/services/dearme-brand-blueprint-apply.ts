@@ -19,6 +19,7 @@ import { logActivity } from "./activity-log.js";
 import { routineService } from "./routines.js";
 
 type ApprovalRecord = typeof approvals.$inferSelect;
+type DearMeTeamMember = DearMeBrandBlueprint["team"][number];
 type DearMeTeamRole = DearMeBrandBlueprint["team"][number]["role"];
 type DearMeRiskGate = DearMeBrandBlueprint["gates"][number];
 type DearMeMemorySeedKind = DearMeBrandBlueprint["memorySeeds"][number]["kind"];
@@ -43,11 +44,33 @@ const DEARME_BRAND_BLUEPRINT_AGENT_ADAPTER_CONFIG = {
   extraArgs: DEARME_BRAND_BLUEPRINT_CODEX_SANDBOX_ARGS,
 } as const;
 
-const DEARME_BRAND_BLUEPRINT_AGENT_RUNTIME_CONFIG = {
-  heartbeat: {
-    maxConcurrentRuns: 1,
-  },
-} as const;
+function buildDearMeBrandBlueprintAgentAdapterConfig(member: DearMeTeamMember) {
+  return {
+    ...DEARME_BRAND_BLUEPRINT_AGENT_ADAPTER_CONFIG,
+    dearmeExecutionTemplate: {
+      role: member.role,
+      executionLane: member.executionLane,
+      workspaceMode: member.workspaceMode,
+    },
+  };
+}
+
+function buildDearMeBrandBlueprintAgentRuntimeConfig(member: DearMeTeamMember) {
+  return {
+    heartbeat: {
+      enabled: true,
+      cadenceHours: member.heartbeatCadenceHours,
+      maxConcurrentRuns: 1,
+      wakeOnDemand: true,
+    },
+    dearmeExecutionTemplate: {
+      role: member.role,
+      executionLane: member.executionLane,
+      workspaceMode: member.workspaceMode,
+      heartbeatCadenceHours: member.heartbeatCadenceHours,
+    },
+  };
+}
 
 const DEARME_BRAND_BLUEPRINT_ISSUE_ASSIGNEE_OVERRIDES = {
   modelProfile: "cheap",
@@ -488,13 +511,16 @@ export function dearmeBrandBlueprintApplyService(db: Db) {
         reportsTo: null,
         capabilities: `${member.mission}\n\nLaunch boundary: ${member.approvalBoundary}`,
         adapterType: DEARME_BRAND_BLUEPRINT_AGENT_ADAPTER_TYPE,
-        adapterConfig: DEARME_BRAND_BLUEPRINT_AGENT_ADAPTER_CONFIG,
-        runtimeConfig: DEARME_BRAND_BLUEPRINT_AGENT_RUNTIME_CONFIG,
+        adapterConfig: buildDearMeBrandBlueprintAgentAdapterConfig(member),
+        runtimeConfig: buildDearMeBrandBlueprintAgentRuntimeConfig(member),
         budgetMonthlyCents: 0,
         metadata: {
           source: DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
           approvalId: approval.id,
           dearmeRole: member.role,
+          executionLane: member.executionLane,
+          workspaceMode: member.workspaceMode,
+          heartbeatCadenceHours: member.heartbeatCadenceHours,
           brandDisplayName: blueprint.brand.displayName,
           canDraftPrivately: true,
           externalActionsRequireApproval: true,

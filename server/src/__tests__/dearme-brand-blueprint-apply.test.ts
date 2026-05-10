@@ -156,6 +156,54 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(
       artifacts.agents.every((agent) => (agent.runtimeConfig as any).heartbeat?.maxConcurrentRuns === 1),
     ).toBe(true);
+    const agentsByRole = new Map(artifacts.agents.map((agent) => [agent.role, agent]));
+    const chiefOfStaff = agentsByRole.get("chief_of_staff");
+    expect(chiefOfStaff).toBeTruthy();
+    expect((chiefOfStaff?.adapterConfig as any).dearmeExecutionTemplate).toEqual(
+      expect.objectContaining({
+        role: "chief_of_staff",
+        executionLane: "direct",
+        workspaceMode: "local",
+      }),
+    );
+    expect((chiefOfStaff?.runtimeConfig as any).heartbeat).toEqual(
+      expect.objectContaining({
+        enabled: true,
+        cadenceHours: 2,
+        maxConcurrentRuns: 1,
+        wakeOnDemand: true,
+      }),
+    );
+    expect((chiefOfStaff?.runtimeConfig as any).dearmeExecutionTemplate).toEqual(
+      expect.objectContaining({
+        role: "chief_of_staff",
+        executionLane: "direct",
+        workspaceMode: "local",
+        heartbeatCadenceHours: 2,
+      }),
+    );
+    expect(chiefOfStaff?.metadata).toEqual(
+      expect.objectContaining({
+        dearmeRole: "chief_of_staff",
+        executionLane: "direct",
+        workspaceMode: "local",
+        heartbeatCadenceHours: 2,
+      }),
+    );
+    const workerAgents = artifacts.agents.filter((agent) => agent.role !== "chief_of_staff");
+    expect(workerAgents).toHaveLength(6);
+    expect(
+      workerAgents.every(
+        (agent) =>
+          (agent.adapterConfig as any).dearmeExecutionTemplate?.executionLane === "worker" &&
+          (agent.adapterConfig as any).dearmeExecutionTemplate?.workspaceMode === "remote" &&
+          (agent.runtimeConfig as any).heartbeat?.cadenceHours === 8 &&
+          (agent.runtimeConfig as any).dearmeExecutionTemplate?.heartbeatCadenceHours === 8 &&
+          (agent.metadata as any).executionLane === "worker" &&
+          (agent.metadata as any).workspaceMode === "remote" &&
+          (agent.metadata as any).heartbeatCadenceHours === 8,
+      ),
+    ).toBe(true);
     expect(artifacts.agents.every((agent) => (agent.permissions as any).canCreateAgents === false)).toBe(true);
     expect(
       artifacts.agents.every((agent) => (agent.metadata as any).externalActionsRequireApproval === true),

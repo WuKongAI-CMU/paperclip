@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   DEARME_BRAND_BLUEPRINT_OPERATION_ORDER,
+  DEARME_DIRECT_HEARTBEAT_CADENCE_HOURS,
+  DEARME_WORKER_HEARTBEAT_CADENCE_HOURS,
   buildDearMeBrandBlueprintExecutionPlan,
   collectDearMeBrandBlueprintWarnings,
   createDearMeBrandBlueprint,
@@ -8,6 +10,7 @@ import {
   dearMeBrandBlueprintApplyPayloadSchema,
   dearMeBrandBlueprintApplyRequestSchema,
   dearMeBrandBlueprintPreviewSchema,
+  dearMeBrandBlueprintSchema,
   dearMeFirstCyclePreviewResponseSchema,
   dearMeFirstCyclePreviewSchema,
   dearMeMemoryArchiveResultSchema,
@@ -71,6 +74,57 @@ describe("DearMe brand blueprint contract", () => {
       "portfolio_builder",
       "growth_analyst",
     ]);
+    expect(
+      blueprint.team.map(({ role, executionLane, workspaceMode, heartbeatCadenceHours }) => ({
+        role,
+        executionLane,
+        workspaceMode,
+        heartbeatCadenceHours,
+      })),
+    ).toEqual([
+      {
+        role: "chief_of_staff",
+        executionLane: "direct",
+        workspaceMode: "local",
+        heartbeatCadenceHours: DEARME_DIRECT_HEARTBEAT_CADENCE_HOURS,
+      },
+      {
+        role: "brand_strategist",
+        executionLane: "worker",
+        workspaceMode: "remote",
+        heartbeatCadenceHours: DEARME_WORKER_HEARTBEAT_CADENCE_HOURS,
+      },
+      {
+        role: "voice_editor",
+        executionLane: "worker",
+        workspaceMode: "remote",
+        heartbeatCadenceHours: DEARME_WORKER_HEARTBEAT_CADENCE_HOURS,
+      },
+      {
+        role: "content_producer",
+        executionLane: "worker",
+        workspaceMode: "remote",
+        heartbeatCadenceHours: DEARME_WORKER_HEARTBEAT_CADENCE_HOURS,
+      },
+      {
+        role: "opportunity_scout",
+        executionLane: "worker",
+        workspaceMode: "remote",
+        heartbeatCadenceHours: DEARME_WORKER_HEARTBEAT_CADENCE_HOURS,
+      },
+      {
+        role: "portfolio_builder",
+        executionLane: "worker",
+        workspaceMode: "remote",
+        heartbeatCadenceHours: DEARME_WORKER_HEARTBEAT_CADENCE_HOURS,
+      },
+      {
+        role: "growth_analyst",
+        executionLane: "worker",
+        workspaceMode: "remote",
+        heartbeatCadenceHours: DEARME_WORKER_HEARTBEAT_CADENCE_HOURS,
+      },
+    ]);
     expect(blueprint.gates.map((gate) => gate.kind)).toContain("publish_social");
     expect(executionPlan.operations.map((operation) => operation.id)).toEqual(
       DEARME_BRAND_BLUEPRINT_OPERATION_ORDER,
@@ -82,6 +136,51 @@ describe("DearMe brand blueprint contract", () => {
       }),
     );
     expect(summary.title).toBe("Create Brand OS for Peter");
+  });
+
+  it("defaults legacy Brand OS team members into the CEO/direct and worker/remote template", () => {
+    const blueprint = createDearMeBrandBlueprint({
+      displayName: "Peter",
+      goals: ["Build visible proof"],
+      audiences: ["founders"],
+      proofPoints: [],
+      offers: [],
+      voiceSamples: ["Direct and precise.", "Evidence first."],
+      preferredChannels: ["linkedin"],
+      constraints: [],
+      cadence: "weekly",
+      budgetMonthlyCents: 25_000,
+      autoDraftEnabled: true,
+    });
+    const legacyBlueprint = {
+      ...blueprint,
+      team: blueprint.team.map((member) => ({
+        role: member.role,
+        name: member.name,
+        mission: member.mission,
+        approvalBoundary: member.approvalBoundary,
+      })),
+    };
+
+    const parsed = dearMeBrandBlueprintSchema.parse(legacyBlueprint);
+
+    expect(parsed.team.find((member) => member.role === "chief_of_staff")).toEqual(
+      expect.objectContaining({
+        executionLane: "direct",
+        workspaceMode: "local",
+        heartbeatCadenceHours: DEARME_DIRECT_HEARTBEAT_CADENCE_HOURS,
+      }),
+    );
+    expect(
+      parsed.team
+        .filter((member) => member.role !== "chief_of_staff")
+        .every(
+          (member) =>
+            member.executionLane === "worker" &&
+            member.workspaceMode === "remote" &&
+            member.heartbeatCadenceHours === DEARME_WORKER_HEARTBEAT_CADENCE_HOURS,
+        ),
+    ).toBe(true);
   });
 
   it("creates a 90-second first cycle preview from one positioning answer", () => {

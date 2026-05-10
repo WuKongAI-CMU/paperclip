@@ -143,8 +143,8 @@ Plugin reuse map:
 
 1. DM-S01: fix company mass assignment before paid beta. (✅ done)
 2. DM-142: configure DearMe cycle routine. (✅ seed + runtime provisioning done)
-3. DM-146: verify execution-workspace skill mounting.
-4. DM-154: configure CEO/direct and worker/remote role templates.
+3. DM-146: verify execution-workspace skill mounting. (✅ runtime adapter skill projection done)
+4. DM-154: configure CEO/direct and worker/remote role templates. (✅ Brand OS apply template config done)
 5. Keep `REBRAND-AND-PROVENANCE.md` aligned with reuse docs.
 
 #### Sprint 0 seed corpus (landed 2026-05-09)
@@ -166,8 +166,12 @@ issue renderer, and tests are in place. Runtime provisioning is also wired in
 `server/src/services/dearme-brand-blueprint-apply.ts`: approved Brand OS
 blueprints create the high-priority six-hour routine, chief-of-staff assignee,
 `0 */6 * * *` trigger, and customer-safe routine description through the
-existing routines service. The next Sprint 0 slice is DM-146 skill mounting in
-execution workspaces.
+existing routines service. DM-146 also projects DearMe skills into runtime
+execution configs, and DM-154 now provisions the Naive-style two-tier team
+template: chief-of-staff as the direct/local lead on a 2-hour heartbeat cadence,
+with all teammate roles configured as worker/remote lanes on 8-hour cadence.
+The remaining Sprint 0 upkeep is keeping provenance/rebrand docs aligned before
+moving into Sprint 1's first-run proof sequence.
 
 ### Sprint 1 - Aha moment
 
