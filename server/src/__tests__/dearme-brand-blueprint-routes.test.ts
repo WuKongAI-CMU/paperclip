@@ -1441,6 +1441,21 @@ describe("DearMe brand blueprint routes", () => {
     expect(mockDearMeOutputHandoffService.persistContentDraftPacket).not.toHaveBeenCalled();
   });
 
+  it("requires content packet saves to include a stable packet id", async () => {
+    const { packetId: _packetId, ...packet } = makeContentDraftPacket();
+
+    const res = await request(await createApp({
+      type: "agent",
+      companyId: "company-1",
+      agentId: "agent-1",
+    }))
+      .post("/api/dearme/companies/company-1/outputs/issue-1%3Acontent_drafts/content-draft-packets")
+      .send(packet);
+
+    expect(res.status).toBe(400);
+    expect(mockDearMeOutputHandoffService.persistContentDraftPacket).not.toHaveBeenCalled();
+  });
+
   it("blocks output regeneration cycles when paid-beta spend reaches the guardrail", async () => {
     mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("active", "hard_stop"));
 

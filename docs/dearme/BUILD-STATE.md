@@ -2,6 +2,24 @@
 
 Date: 2026-05-10
 
+## DEA-7 Content Packet Rerun Key - 2026-05-10
+
+Implementation slice:
+
+- Made `packetId` required on `dearMeContentDraftPacketSchema`, turning it into
+  the stable rerun key every Symphony content worker must send.
+- Reused the existing output handoff `externalId` update path, so a retry with
+  the same packet id updates one private review work product instead of stacking
+  duplicate artifacts.
+- Added route validation coverage that rejects packet saves without a stable
+  packet id before any work product write runs.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-output-handoff.test.ts
+  server/src/__tests__/dearme-brand-blueprint-routes.test.ts
+  ui/src/api/dearme.test.ts --maxWorkers=1` passed: 58 tests.
+
 ## DM-170 Voice Gate Contract Route - 2026-05-10
 
 Implementation slice:

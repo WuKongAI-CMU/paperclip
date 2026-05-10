@@ -70,6 +70,7 @@ describe("dearmeApi", () => {
 
   it("posts private content draft packets through the DearMe company endpoint", async () => {
     const payload = {
+      packetId: "cycle-2026-05-10-content",
       title: "Proof-backed content drafts",
       cycleEvidence: [
         {

@@ -578,7 +578,7 @@ function strictestVoiceGate(packet: DearMeContentDraftPacket) {
 }
 
 function contentDraftPacketExternalId(packet: DearMeContentDraftPacket) {
-  return packet.packetId ? `content-drafts:${packet.packetId}` : null;
+  return `content-drafts:${packet.packetId}`;
 }
 
 function formatContentDraftPacket(packet: DearMeContentDraftPacket) {
@@ -1316,7 +1316,7 @@ export function dearmeOutputHandoffService(db: Db) {
         voiceGate,
         dearme: {
           outputKind: "content_drafts",
-          packetId: packet.packetId ?? null,
+          packetId: packet.packetId,
           draftCount: packet.drafts.length,
           cycleEvidence: packet.cycleEvidence,
           drafts: packet.drafts.map((draft) => ({
@@ -1335,19 +1335,17 @@ export function dearmeOutputHandoffService(db: Db) {
       };
 
       const row = await db.transaction(async (tx) => {
-        const existing = externalId
-          ? await tx
-            .select({ id: issueWorkProducts.id })
-            .from(issueWorkProducts)
-            .where(and(
-              eq(issueWorkProducts.companyId, companyId),
-              eq(issueWorkProducts.issueId, issueId),
-              eq(issueWorkProducts.provider, CONTENT_DRAFT_WORK_PRODUCT_PROVIDER),
-              eq(issueWorkProducts.externalId, externalId),
-            ))
-            .limit(1)
-            .then((rows) => rows[0] ?? null)
-          : null;
+        const existing = await tx
+          .select({ id: issueWorkProducts.id })
+          .from(issueWorkProducts)
+          .where(and(
+            eq(issueWorkProducts.companyId, companyId),
+            eq(issueWorkProducts.issueId, issueId),
+            eq(issueWorkProducts.provider, CONTENT_DRAFT_WORK_PRODUCT_PROVIDER),
+            eq(issueWorkProducts.externalId, externalId),
+          ))
+          .limit(1)
+          .then((rows) => rows[0] ?? null);
 
         const values = {
           projectId: issue.projectId ?? null,

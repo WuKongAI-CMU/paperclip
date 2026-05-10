@@ -265,6 +265,144 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     }
   });
 
+  it("updates the same content packet when a worker retries with the same rerun key", async () => {
+    const companyId = await seedCompany();
+    const issueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft first content batch",
+      identifier: "DME-0",
+      originFingerprint: "operation-draft_content_batch",
+      status: "in_progress",
+      updatedAt: new Date("2026-05-10T13:00:00.000Z"),
+    });
+    const voiceGate = evaluateDearMeVoiceGate({
+      brand: {
+        displayName: "Peter",
+        positioning: "Practical AI operator for local-first products.",
+        preferredChannels: ["linkedin"],
+        goals: ["Build visible proof."],
+        audiences: ["founders evaluating local-first workflows"],
+        offers: [],
+        proofPoints: ["shipped a local-first product launch"],
+        voiceSamples: [
+          "Short, direct, evidence-first notes.",
+          "Show the receipt before asking for trust.",
+        ],
+        constraints: ["No public claims without review."],
+        cadence: "weekly",
+        budgetMonthlyCents: 25_000,
+        autoDraftEnabled: true,
+      },
+      artifact: {
+        kind: "content_draft",
+        channel: "linkedin",
+        title: "Proof-backed post",
+        text: "A short proof-backed post about turning private work into public receipts.",
+        proofUsed: "shipped a local-first product launch",
+      },
+    });
+
+    const first = await dearmeOutputHandoffService(db).persistContentDraftPacket(
+      companyId,
+      issueId,
+      {
+        packetId: "cycle-2026-05-10-content",
+        title: "Proof-backed content drafts",
+        summary: "First private review packet from this cycle's proof.",
+        cycleEvidence: [
+          {
+            label: "Proof",
+            source: "proof",
+            summary: "The launch note showed concrete receipts from the latest private work.",
+          },
+        ],
+        drafts: [
+          {
+            id: "proof-post",
+            title: "Proof-backed post",
+            channel: "linkedin",
+            audience: "Founders evaluating local-first workflows",
+            hook: "Your personal brand should show proof while you keep building.",
+            body: "First body about turning private work into public receipts.",
+            proofUsed: "shipped a local-first product launch",
+            voiceGate,
+            launchBoundary: "publish social posts",
+          },
+        ],
+      },
+    );
+
+    const second = await dearmeOutputHandoffService(db).persistContentDraftPacket(
+      companyId,
+      issueId,
+      {
+        packetId: "cycle-2026-05-10-content",
+        title: "Proof-backed content drafts updated",
+        summary: "Second private review packet from the same worker retry.",
+        cycleEvidence: [
+          {
+            label: "Proof",
+            source: "proof",
+            summary: "The launch note showed concrete receipts from the latest private work.",
+          },
+        ],
+        drafts: [
+          {
+            id: "proof-post",
+            title: "Proof-backed post",
+            channel: "linkedin",
+            audience: "Founders evaluating local-first workflows",
+            hook: "Your personal brand should show proof while you keep building.",
+            body: "Second body after the worker retried with refined copy.",
+            proofUsed: "shipped a local-first product launch",
+            voiceGate,
+            launchBoundary: "publish social posts",
+          },
+        ],
+      },
+    );
+
+    expect(second.id).toBe(first.id);
+    expect(second.title).toBe("Proof-backed content drafts updated");
+    expect(second.summary).toContain("Second body after the worker retried");
+
+    const rows = await db
+      .select({
+        id: issueWorkProducts.id,
+        title: issueWorkProducts.title,
+        summary: issueWorkProducts.summary,
+        externalId: issueWorkProducts.externalId,
+        isPrimary: issueWorkProducts.isPrimary,
+        metadata: issueWorkProducts.metadata,
+      })
+      .from(issueWorkProducts)
+      .where(and(
+        eq(issueWorkProducts.companyId, companyId),
+        eq(issueWorkProducts.issueId, issueId),
+        eq(issueWorkProducts.provider, "dearme"),
+        eq(issueWorkProducts.externalId, "content-drafts:cycle-2026-05-10-content"),
+      ));
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toEqual(expect.objectContaining({
+      id: first.id,
+      title: "Proof-backed content drafts updated",
+      externalId: "content-drafts:cycle-2026-05-10-content",
+      isPrimary: true,
+      summary: expect.stringContaining("Second body after the worker retried"),
+    }));
+    expect(rows[0]?.metadata).toEqual(expect.objectContaining({
+      dearme: expect.objectContaining({
+        packetId: "cycle-2026-05-10-content",
+        drafts: expect.arrayContaining([
+          expect.objectContaining({
+            body: "Second body after the worker retried with refined copy.",
+          }),
+        ]),
+      }),
+    }));
+  });
+
   it("returns customer-visible DearMe outputs and strips system/provider internals", async () => {
     const companyId = await seedCompany();
     const agentId = await seedAgent(companyId);

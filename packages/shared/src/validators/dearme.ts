@@ -532,7 +532,7 @@ const dearMeContentDraftPacketDraftSchema = z.object({
 }).strict();
 
 export const dearMeContentDraftPacketSchema = z.object({
-  packetId: shortTextSchema.optional(),
+  packetId: shortTextSchema,
   title: shortTextSchema.optional().default("Content draft packet"),
   summary: mediumTextSchema.nullable().optional(),
   cycleEvidence: z.array(dearMeContentDraftPacketEvidenceSchema).min(1).max(12),
