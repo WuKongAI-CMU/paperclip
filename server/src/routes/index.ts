@@ -1,5 +1,6 @@
 export { healthRoutes } from "./health.js";
 export { dearmeRoutes } from "./dearme.js";
+export { dearMeVoiceGateRoutes } from "./dearme-voice-gate.js";
 export { companyRoutes } from "./companies.js";
 export { companySkillRoutes } from "./company-skills.js";
 export { agentRoutes } from "./agents.js";

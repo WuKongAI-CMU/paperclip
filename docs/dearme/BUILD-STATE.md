@@ -2,6 +2,28 @@
 
 Date: 2026-05-10
 
+## DM-170 Voice Gate Contract Route - 2026-05-10
+
+Implementation slice:
+
+- Added root `POST /v1/voice/score` as the DearMe cloud voice-check contract
+  route, mounted outside `/api` so OpenClaw/Symphony workers can call the same
+  path defined by `@paperclipai/dearme-ai-proxy`.
+- Reused the existing `dearMeVoiceGateService` deterministic scorer instead of
+  creating a second scoring path. The route accepts the shared
+  `VoiceGateScoreRequest` shape and returns the shared score response.
+- Added the current contract-shape auth gate: `Authorization: Bearer dm_sk_*`.
+  Persisted key issuance/revocation and the trained voice fingerprint model
+  remain the next production-hardening layer.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-voice-gate.test.ts
+  server/src/__tests__/dearme-voice-gate-routes.test.ts --maxWorkers=1` passed
+  the server voice-gate suite: 10 tests.
+- `pnpm --filter @paperclipai/dearme-ai-proxy test` passed: 6 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+
 ## DM-141 Opportunity Workbench and Team Skill Rails - 2026-05-10
 
 Implementation slice:

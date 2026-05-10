@@ -307,7 +307,7 @@ The integration only works if these glue artifacts ship:
 
 | Ticket | Slice | Why it's the next critical path |
 |---|---|---|
-| DM-170 | Cloud `/v1/voice/score` endpoint | DM-S07 ships the **stub scorer service**; impl ticket swaps in the trained fingerprint model and adds the Express route. |
+| DM-170 | Cloud `/v1/voice/score` endpoint | **Route shipped.** The Express contract route now reuses the DM-S07 stub scorer; next impl swaps in the trained fingerprint model and persisted key issuer. |
 | DM-171 | OpenClaw plugin install flow + onboarding bridge | Without this, no user gets to first run. |
 | DM-172 | `post_x` outbound tool — `ChannelDispatch` impl | First proof the work loop closes end-to-end. Wrapper already runs gate/approval/audit; this ticket is just the X API call. |
 | DM-173 | Per-user X OAuth flow → writes `channel_connections` | DM-172's prerequisite. Schema and Drizzle service shipped. |
@@ -335,7 +335,7 @@ slot and never re-implement the gate / approval / audit pipeline.
 | SSE bus | `dearme-sse-bus.ts` | Process-local typed `EventEmitter`; cross-tenant scoped; backs the DearMe live workbench SSE route. |
 | SSE route | `server/src/routes/dearme.ts` | `GET /api/dearme/companies/:companyId/events`; enforces company access, emits an initial `sync` workbench snapshot, then forwards typed runtime events by company. |
 | Channel connections | `dearme-channel-connections.ts` | Drizzle queries over `channel_connections`. `getActive` / `markUsed` / `markNeedsReauth` / `upsertActive`. |
-| Voice gate | `dearme-voice-gate.ts` | `scoreVoice(req)`. Default = deterministic stub (5 phrase rules, length floor/ceiling, evidence reward). DM-170-impl swaps in the trained model. |
+| Voice gate | `dearme-voice-gate.ts` + `routes/dearme-voice-gate.ts` | `scoreVoice(req)` plus root `POST /v1/voice/score`. Default = deterministic stub (5 phrase rules, length floor/ceiling, evidence reward). Next DM-170 impl swaps in the trained model. |
 | Work loop | `dearme-work-loop.ts` | `transition(...)` validates via `canTransitionWorkLoop`, mirrors state into `issues.status`, writes `activity_log`, emits `work_loop_transition` SSE. |
 | Approval resolver | `dearme-approval-resolver.ts` + `server/src/routes/dearme.ts` | Wraps `resolveApproval` with past-approved + daily-spend lookups; writes `approvals` + `issue_approvals` with actor attribution; emits approval SSE; exposed by the DM-180 company-scoped resolve route. |
 | **Outbound tool wrapper** | `dearme-outbound-tool-wrapper.ts` | The lynchpin. `callOutbound()` runs voice-gate → approval → OAuth → injected `ChannelDispatch` → audit (cost_event + SSE + work-loop transition). |
