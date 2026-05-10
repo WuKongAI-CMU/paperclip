@@ -1815,7 +1815,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Private work can continue, but external moves wait for you.");
     expect(container.textContent).toContain("Can work privately");
     expect(container.textContent).toContain("Must ask first");
-    expect(container.textContent).toContain("Stops stale loops");
+    expect(container.textContent).toContain("Stops repeat work");
     expect(container.textContent).toContain("Spend is visible");
     expect(container.textContent).toContain("Public posts, outbound messages, site changes, new spend");
     expect(container.textContent).toContain("Private spend appears as plain checkpoints and monthly guardrails");

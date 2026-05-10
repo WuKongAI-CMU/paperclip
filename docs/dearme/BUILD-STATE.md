@@ -2,6 +2,43 @@
 
 Date: 2026-05-10
 
+## DM-183BN DM-031/042 Symphony Absorption Cleanup - 2026-05-10
+
+Product/architecture slice:
+
+- Treated Symphony as the cooperation spine and confirmed the live daemon is
+  active before touching coordinator docs. The current worker lane is DEA-11 in
+  `/private/tmp/dearme-symphony-workspaces/DEA-11`, so this pass avoided its
+  files and reduced stale worker ambiguity from the coordinator branch.
+- Recorded exact-head reviewed absorptions for DM-031, DM-032, DM-033,
+  DM-034, DM-035, DM-036, DM-037, DM-038, DM-040, DM-041, and DM-042 in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`.
+- Kept the useful product value from those branches on the current DearMe
+  surface: prepared-by team attribution, customer-safe `work=` and
+  `artifact=` focused decision links, compact but specific work-card actions,
+  customer-owned review/count copy, natural decision notes, missing-context
+  guidance, and product-safe error boundaries.
+- Replayed the still-useful DM-037 copy cleanup only where current customer UI
+  still exposed stale loop wording: the operating policy panel now says
+  `Stops repeat work` and counts repeated `path`s instead of stale loops.
+- Did not import old worker schemas, route shapes, or donor/runtime vocabulary.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/dearme/WORKTREE-ABSORPTION-LEDGER.json','utf8')); console.log('ledger json ok')"`
+  passed.
+- `pnpm run dearme:worktrees -- --status=reviewed-absorbed --skip-dirty --limit=80`
+  showed the exact DM-031, DM-032, DM-033, DM-034, DM-035, DM-036, DM-037,
+  DM-038, DM-040, DM-041, and DM-042 heads as `reviewed_absorbed`.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` reported
+  `reviewed_absorbed: 62`, `not_in_current: 51`, and `dirty: 0`.
+- `.symphony/bin/dearme-symphony status --json` reported Symphony running with
+  one active DEA-11 worker and no retrying workers.
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`
+  passed.
+
 ## DM-183BM DM-028/039 Voice & Memory Assignment Brief Absorption - 2026-05-10
 
 Product/architecture slice:

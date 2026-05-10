@@ -46,6 +46,40 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DM-031 output-card team-attribution head
+  `061078fe0611710e78dcb09b53851134ebdd4aa4` is recorded as absorbed because
+  current private-work cards already show customer-safe prepared-by team
+  attribution on the evolved Work Ready and focused review surfaces.
+- DM-032 internal-work-id route head
+  `b0412ed2000435ff3cc8ce1b0a82911a9ee6eddd` is recorded as absorbed because
+  DearMe-generated decision links now focus prepared work through `work=` while
+  preserving legacy `issue=` parsing for old handoffs.
+- DM-033 artifact-link head
+  `c55177c1db83779c2742baed6711afb20e9a7132` is recorded as absorbed because
+  current focused-work links canonicalize through `artifact=` and keep legacy
+  `output=` parsing readable.
+- DM-034 work-card action-label head
+  `82af6bdd3dc9c4447507a4f5f085d19221b47a41` is recorded as absorbed because
+  current prepared-work cards keep compact `Review`/`Open` controls with
+  artifact-specific accessible labels and missing-context guidance.
+- DM-035, DM-036, DM-041, and DM-042 heads are recorded as absorbed by the
+  current customer-safe review-copy and error-boundary surface: review counts
+  are customer-owned, panels speak as prepared DearMe work, default decision
+  notes read naturally, and inherited provider/adapter/runtime failures stay
+  behind DearMe guidance.
+- DM-037 loop-copy-cleanup head
+  `2bac3955a70d5416be2f8d3d08a54f22ebf1b225` is recorded as absorbed because
+  the old Brand OS/work loop phrases are gone from the current customer path,
+  and the remaining policy panel now says `Stops repeat work` with repeated
+  `path`s instead of stale loops.
+- DM-038 team-progress-copy head
+  `3630c1353ac014f3c8f713b623b4c2075f3b0f6a` is recorded as absorbed because
+  the visible growth-map surface already uses customer-owned team progress
+  language while internal workstream contracts remain backstage.
+- DM-040 missing-source-context head
+  `d555d9c1b60c3c126eb00781068dbff7ab6dfe3f` is recorded as absorbed because
+  focused Work Ready review filters blank source evidence and gives a Voice &
+  Memory missing-context empty state on the current review route.
 - DM-028 source-reference-briefs head
   `dd3f3503b00793e2da8acedcf8bba8d87ee01baf` is absorbed by adapting its
   private reference-link grounding onto the current `dearme-memory-brief.ts`

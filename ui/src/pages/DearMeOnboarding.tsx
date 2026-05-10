@@ -3677,7 +3677,7 @@ function TeamOperatingPolicyPanel({
     : decisionCount > 0
       ? "Private work can continue, but external moves wait for you."
       : staleLoopCount > 0
-        ? "The team stops stale loops and asks for better direction."
+        ? "The team stops repeated paths and asks for better direction."
         : "The team can keep preparing private work inside your guardrails.";
   const rules: Array<{
     key: string;
@@ -3709,11 +3709,11 @@ function TeamOperatingPolicyPanel({
     {
       key: "stale-loops",
       icon: RefreshCw,
-      label: "Stops stale loops",
+      label: "Stops repeat work",
       summary: staleLoopCount > 0
         ? "A prepared path has reached its limit, so DearMe needs your direction before spending more effort there."
         : "If a path repeats without better proof, DearMe brings it back for a decision instead of burning attempts.",
-      signal: staleLoopCount > 0 ? pluralizeCount(staleLoopCount, "loop") : `${maxAttempts}-pass limit`,
+      signal: staleLoopCount > 0 ? pluralizeCount(staleLoopCount, "path") : `${maxAttempts}-pass limit`,
       variant: staleLoopCount > 0 ? "secondary" : "outline",
     },
     {

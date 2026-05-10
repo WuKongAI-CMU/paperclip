@@ -725,6 +725,149 @@
         "ui/src/pages/DearMeOnboarding.tsx",
         "ui/src/pages/DearMeOnboarding.test.tsx"
       ]
+    },
+    {
+      "ticket": "DM-031",
+      "branch": "codex/dearme-dm-031-output-card-team-attribution",
+      "head": "061078fe0611710e78dcb09b53851134ebdd4aa4",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current private-work cards already show customer-safe prepared-by team attribution on the evolved Work Ready and focused review surfaces, so the stale worker branch should not be replayed.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-032",
+      "branch": "codex/dearme-dm-032-customer-safe-work-route",
+      "head": "b0412ed2000435ff3cc8ce1b0a82911a9ee6eddd",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe-generated decision links use customer-safe work focus while preserving legacy issue deep-link parsing, so the internal-id route cleanup is absorbed by the current focused decision route.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-033",
+      "branch": "codex/dearme-dm-033-customer-safe-artifact-route",
+      "head": "c55177c1db83779c2742baed6711afb20e9a7132",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current focused-work links canonicalize on artifact-aware decision routes while keeping old output links readable, absorbing the stale artifact-link worker without reviving its route patch.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-034",
+      "branch": "codex/dearme-dm-034-output-card-action-labels",
+      "head": "82af6bdd3dc9c4447507a4f5f085d19221b47a41",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current prepared-work card actions keep compact visible Review/Open controls while providing artifact-specific accessible labels and missing-context guidance, superseding the stale action-label worker.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-035",
+      "branch": "codex/dearme-dm-035-private-work-count-copy",
+      "head": "20f73dcc299823fd7ec83639a00c2adcf0f5da47",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe review surfaces use customer-owned prepared-work and decision copy instead of generic surface counts, so the useful UI residue is already absorbed.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-036",
+      "branch": "codex/dearme-dm-036-private-work-panel-copy",
+      "head": "fbc174a747136aac2d232bcd97dcc5e47cd6ad65",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current private review panels speak as prepared DearMe work waiting on the customer, and the older customer-copy worker is superseded by the combined review-copy pass.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-037",
+      "branch": "codex/dearme-dm-037-loop-copy-cleanup",
+      "head": "2bac3955a70d5416be2f8d3d08a54f22ebf1b225",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe no longer exposes the stale Brand OS/work loop phrases from the worker branch, and the remaining customer policy panel now describes repeated paths as repeat work instead of stale loops.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/__tests__/dearme-brand-blueprint-routes.test.ts"
+      ]
+    },
+    {
+      "ticket": "DM-038",
+      "branch": "codex/dearme-dm-038-workbench-copy-cleanup",
+      "head": "3630c1353ac014f3c8f713b623b4c2075f3b0f6a",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe already renamed the visible growth-map surface to customer-owned team progress language while keeping internal workstream contracts backstage.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-040",
+      "branch": "codex/dearme-dm-040-focused-memory-empty-state",
+      "head": "d555d9c1b60c3c126eb00781068dbff7ab6dfe3f",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current focused Work Ready review filters blank source evidence and gives a Voice & Memory missing-context empty state, absorbing the stale source-context guidance worker.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-041",
+      "branch": "codex/dearme-dm-041-decision-note-copy",
+      "head": "7d0b6c28a056b2344a9a17c41b03a3fceb07223b",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current approval, rejection, revision, and new-direction defaults read as natural DearMe review decisions, so the stale natural-note worker is absorbed by the customer-safe review-copy pass.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "server/src/routes/dearme.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DM-042",
+      "branch": "codex/dearme-dm-042-customer-safe-errors",
+      "head": "ca8d5f558c6ed5f1cdc3c55b7d10e6012e10b319",
+      "reviewedAt": "2026-05-10",
+      "reason": "Current DearMe panel/action error boundaries collapse inherited provider, adapter, runtime, and substrate failures into customer-safe guidance, absorbing the stale internal-error-leak worker.",
+      "evidence": [
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
     }
   ]
 }
