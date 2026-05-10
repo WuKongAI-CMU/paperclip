@@ -13,6 +13,7 @@ export const typeLabel: Record<string, string> = {
   budget_override_required: "Budget Override",
   request_board_approval: "Board Approval",
   dearme_brand_blueprint_apply: "Brand OS",
+  dearme_output_next_move: "DearMe Decision",
 };
 
 function firstNonEmptyString(...values: unknown[]): string | null {
@@ -49,6 +50,7 @@ export const typeIcon: Record<string, typeof UserPlus> = {
   budget_override_required: ShieldAlert,
   request_board_approval: ShieldCheck,
   dearme_brand_blueprint_apply: Sparkles,
+  dearme_output_next_move: Sparkles,
 };
 
 export const defaultTypeIcon = ShieldCheck;
@@ -519,7 +521,7 @@ export function ApprovalPayloadRenderer({
 }) {
   if (type === "hire_agent") return <HireAgentPayload payload={payload} />;
   if (type === "budget_override_required") return <BudgetOverridePayload payload={payload} />;
-  if (type === "request_board_approval") {
+  if (type === "request_board_approval" || type === "dearme_output_next_move") {
     return <BoardApprovalPayload payload={payload} hideTitle={hidePrimaryTitle} />;
   }
   if (type === "dearme_brand_blueprint_apply") {

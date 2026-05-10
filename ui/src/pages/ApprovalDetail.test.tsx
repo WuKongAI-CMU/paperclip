@@ -49,6 +49,10 @@ vi.mock("@/lib/router", () => ({
   useSearchParams: () => [new URLSearchParams(), vi.fn()],
 }));
 
+vi.mock("../components/MarkdownBody", () => ({
+  MarkdownBody: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+}));
+
 vi.mock("../context/CompanyContext", () => ({
   useCompany: () => ({
     selectedCompanyId: "company-1",
@@ -106,11 +110,32 @@ function createDearMeApproval() {
   };
 }
 
+function createDearMeOutputApproval() {
+  return {
+    ...createDearMeApproval(),
+    type: "dearme_output_next_move",
+    requestedByAgentId: "agent-1",
+    payload: {
+      title: "Review launch plan",
+      summary: "DearMe prepared a private launch decision.",
+      recommendedAction: "Launch after one review.",
+      nextActionOnApproval: "Queue the public move.",
+      proposedComment: "Launch this when ready.",
+    },
+  };
+}
+
 async function flushReact() {
   await act(async () => {
     await Promise.resolve();
     await new Promise((resolve) => window.setTimeout(resolve, 0));
   });
+}
+
+function buttonByText(container: HTMLElement, text: string) {
+  return Array.from(container.querySelectorAll("button")).find(
+    (button) => button.textContent?.trim() === text,
+  );
 }
 
 describe("ApprovalDetail", () => {
@@ -152,9 +177,81 @@ describe("ApprovalDetail", () => {
     expect(container.textContent).toContain("First operations");
     expect(container.textContent).toContain("Approve");
     expect(container.textContent).not.toContain("See full request");
+    expect(container.textContent).not.toContain("Requested by");
+    expect(container.textContent).not.toContain("Linked Issues");
     expect(container.textContent).not.toContain("\"brandBlueprint\"");
     expect(container.textContent).not.toContain("setup_payload");
     expect(container.textContent).not.toContain("Paperclip");
+    expect(mockAgentsApi.list).not.toHaveBeenCalled();
+    expect(mockApprovalsApi.listIssues).not.toHaveBeenCalled();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps DearMe output approval decisions inside the DearMe surface", async () => {
+    mockApprovalsApi.get.mockResolvedValue(createDearMeOutputApproval());
+    mockApprovalsApi.approve.mockResolvedValue({
+      ...createDearMeOutputApproval(),
+      status: "approved",
+    });
+    mockApprovalsApi.listComments.mockResolvedValue([
+      {
+        id: "comment-agent",
+        authorAgentId: "agent-1",
+        body: "Private draft is ready for your decision.",
+        createdAt: "2026-05-07T01:00:00.000Z",
+      },
+      {
+        id: "comment-user",
+        authorAgentId: null,
+        body: "Please make it sharper.",
+        createdAt: "2026-05-07T01:05:00.000Z",
+      },
+    ]);
+    mockApprovalsApi.listIssues.mockResolvedValue([
+      {
+        id: "issue-1",
+        identifier: "PET-7",
+        title: "Internal linked issue",
+      },
+    ]);
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <ApprovalDetail />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("DearMe Decision: Review launch plan");
+    expect(container.textContent).toContain("DearMe team");
+    expect(container.textContent).toContain("You");
+    expect(container.textContent).not.toContain("approval-1");
+    expect(container.textContent).not.toContain("Requested by");
+    expect(container.textContent).not.toContain("Linked Issues");
+    expect(container.textContent).not.toContain("See full request");
+    expect(container.textContent).not.toContain("Board");
+    expect(mockAgentsApi.list).not.toHaveBeenCalled();
+    expect(mockApprovalsApi.listIssues).not.toHaveBeenCalled();
+
+    await act(async () => {
+      buttonByText(container, "Approve")?.click();
+    });
+    await flushReact();
+
+    expect(mockApprovalsApi.approve).toHaveBeenCalledWith("approval-1");
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/dearme?view=decisions&approval=approval-1",
+      { replace: true },
+    );
 
     await act(async () => {
       root.unmount();

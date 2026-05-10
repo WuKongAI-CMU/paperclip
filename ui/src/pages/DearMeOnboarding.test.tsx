@@ -48,6 +48,14 @@ const mockLocation = vi.hoisted(() => ({
   pathname: "/PET/dearme",
   search: "",
 }));
+const mockCompanyContext = vi.hoisted(() => ({
+  selectedCompanyId: "company-1" as string | null,
+  selectedCompany: {
+    id: "company-1",
+    issuePrefix: "PET",
+    name: "Peter Studio",
+  } as { id: string; issuePrefix: string; name: string } | null,
+}));
 
 vi.mock("../api/dearme", () => ({
   dearmeApi: mockDearmeApi,
@@ -77,8 +85,8 @@ vi.mock("@/lib/router", () => ({
 
 vi.mock("../context/CompanyContext", () => ({
   useCompany: () => ({
-    selectedCompanyId: "company-1",
-    selectedCompany: { id: "company-1", issuePrefix: "PET", name: "Peter Studio" },
+    selectedCompanyId: mockCompanyContext.selectedCompanyId,
+    selectedCompany: mockCompanyContext.selectedCompany,
   }),
 }));
 
@@ -1526,6 +1534,8 @@ describe("DearMeOnboarding", () => {
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
+    mockCompanyContext.selectedCompanyId = "company-1";
+    mockCompanyContext.selectedCompany = { id: "company-1", issuePrefix: "PET", name: "Peter Studio" };
     FakeDearMeEventSource.instances = [];
     mockDearmeApi.getWorkbench.mockResolvedValue(workbenchResponse());
     mockDearmeApi.openWorkbenchEvents.mockImplementation(
@@ -1679,6 +1689,34 @@ describe("DearMeOnboarding", () => {
     container.remove();
     document.body.innerHTML = "";
     vi.clearAllMocks();
+  });
+
+  it("asks for a DearMe profile before loading the team surface", async () => {
+    mockCompanyContext.selectedCompanyId = null;
+    mockCompanyContext.selectedCompany = null;
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Choose a DearMe profile first.");
+    expect(container.textContent).not.toContain("Select a company first.");
+    expect(mockDearmeApi.getWorkbench).not.toHaveBeenCalled();
+    expect(mockDearmeApi.getOutputs).not.toHaveBeenCalled();
+    expect(mockDearmeApi.getPaidBetaAccess).not.toHaveBeenCalled();
+
+    await act(async () => {
+      root.unmount();
+    });
   });
 
   it("previews a Brand OS seed and creates an approval request", async () => {
@@ -1992,10 +2030,10 @@ describe("DearMeOnboarding", () => {
 
   it("keeps DearMe panel load errors customer-safe", async () => {
     mockDearmeApi.getWorkbench.mockRejectedValueOnce(
-      new Error("Paperclip adapter provider workspace failed"),
+      new Error("Codex model token failed inside Symphony execution route."),
     );
-    mockDearmeApi.getOutputs.mockRejectedValueOnce(new Error("Issue route provider failed"));
-    mockDearmeApi.getPaidBetaAccess.mockRejectedValueOnce(new Error("OpenClaw runtime unavailable"));
+    mockDearmeApi.getOutputs.mockRejectedValueOnce(new Error("Gemini provider failed inside issue route"));
+    mockDearmeApi.getPaidBetaAccess.mockRejectedValueOnce(new Error("Claude API key failed inside OMX runtime"));
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -2014,13 +2052,16 @@ describe("DearMeOnboarding", () => {
     expect(text).toContain("DearMe team progress needs attention. Try again before reviewing private work.");
     expect(text).toContain("Prepared work needs attention. Try again before reviewing private drafts.");
     expect(text).toContain("Paid beta status needs attention. Try again before recording a payment.");
-    expect(text).not.toContain("Paperclip");
-    expect(text).not.toContain("OpenClaw");
-    expect(text).not.toContain("adapter");
+    expect(text).not.toContain("Codex");
+    expect(text).not.toContain("Symphony");
+    expect(text).not.toContain("Claude");
+    expect(text).not.toContain("Gemini");
+    expect(text).not.toContain("API key");
+    expect(text).not.toContain("token");
     expect(text).not.toContain("provider");
     expect(text).not.toContain("runtime");
-    expect(text).not.toContain("workspace");
-    expect(text).not.toContain("Issue route");
+    expect(text).not.toContain("execution route");
+    expect(text).not.toMatch(/issue route/i);
 
     await act(async () => {
       root.unmount();
@@ -2362,6 +2403,46 @@ describe("DearMeOnboarding", () => {
       HIDDEN_PRODUCT_TERMS.setupRecord,
       HIDDEN_PRODUCT_TERMS.vendorName,
     ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps first-cycle action errors customer-safe", async () => {
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
+    mockDearmeApi.startFirstCycle.mockRejectedValueOnce(
+      new Error("Codex model token failed inside Symphony execution route."),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      setTextareaValue(
+        container.querySelector("#dearme-first-cycle-intent") as HTMLTextAreaElement,
+        "Known for turning research into practical AI products",
+      );
+      buttonByText(container, "Start first cycle")?.click();
+    });
+    await flushReact();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("First cycle needs attention. Try again before starting private work.");
+    expect(text).not.toContain("Codex");
+    expect(text).not.toContain("Symphony");
+    expect(text).not.toContain("token");
+    expect(text).not.toContain("execution route");
 
     await act(async () => {
       root.unmount();
@@ -3458,6 +3539,44 @@ describe("DearMeOnboarding", () => {
     expect(mockApprovalsApi.requestRevision).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining("/approvals/"));
     expect(container.textContent).not.toContain("/approvals/");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps focused DearMe decision errors customer-safe", async () => {
+    mockLocation.search = "?view=decisions&approval=approval-ready";
+    mockApprovalsApi.reject.mockRejectedValueOnce(
+      new Error("Claude API key token failed inside OMX decision route."),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Reject")?.click();
+    });
+    await flushReact();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("DearMe decision needs attention. Try again before moving this forward.");
+    expect(text).not.toContain("Claude");
+    expect(text).not.toContain("API key");
+    expect(text).not.toContain("token");
+    expect(text).not.toContain("OMX");
+    expect(text).not.toContain("decision route");
+    expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining("/approvals/"));
 
     await act(async () => {
       root.unmount();

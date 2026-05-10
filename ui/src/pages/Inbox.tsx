@@ -33,6 +33,11 @@ import {
   rememberIssueDetailLocationState,
   withIssueDetailHeaderSeed,
 } from "../lib/issueDetailBreadcrumb";
+import {
+  approvalResolvedHref,
+  dearMeApprovalDecisionHref,
+  isDearMeApprovalType,
+} from "../lib/dearmeApprovals";
 import { prefetchIssueDetail } from "../lib/issueDetailCache";
 import {
   hasBlockingShortcutDialog,
@@ -410,6 +415,10 @@ function ApprovalInboxRow({
 }) {
   const Icon = typeIcon[approval.type] ?? defaultTypeIcon;
   const label = approvalLabel(approval.type, approval.payload as Record<string, unknown> | null);
+  const isDearMeApproval = isDearMeApprovalType(approval.type);
+  const approvalHref = isDearMeApproval
+    ? dearMeApprovalDecisionHref(approval.id)
+    : `/approvals/${approval.id}`;
   const showResolutionButtons =
     approval.type !== "budget_override_required" &&
     ACTIONABLE_APPROVAL_STATUSES.has(approval.status);
@@ -456,7 +465,7 @@ function ApprovalInboxRow({
           </span>
         ) : null}
         <Link
-          to={`/approvals/${approval.id}`}
+          to={approvalHref}
           className={cn(
             "flex min-w-0 flex-1 items-start gap-2 no-underline text-inherit transition-colors",
             selected ? "hover:bg-transparent" : "hover:bg-accent/50",
@@ -473,7 +482,7 @@ function ApprovalInboxRow({
             </span>
             <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
               <span className="capitalize">{approvalStatusLabel(approval.status)}</span>
-              {requesterName ? <span>requested by {requesterName}</span> : null}
+              {requesterName && !isDearMeApproval ? <span>requested by {requesterName}</span> : null}
               <span>updated {timeAgo(approval.updatedAt)}</span>
             </span>
           </span>
@@ -1316,10 +1325,10 @@ export function Inbox() {
 
   const approveMutation = useMutation({
     mutationFn: (id: string) => approvalsApi.approve(id),
-    onSuccess: (_approval, id) => {
+    onSuccess: (approval, id) => {
       setActionError(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.approvals.list(selectedCompanyId!) });
-      navigate(`/approvals/${id}?resolved=approved`);
+      navigate(approvalResolvedHref(approval?.type, id));
     },
     onError: (err) => {
       setActionError(err instanceof Error ? err.message : "Failed to approve");
@@ -1798,7 +1807,11 @@ export function Inbox() {
               void prefetchIssueDetail(queryClient, pathId, { issue: item.issue });
               act.navigate(createIssueDetailPath(pathId), { state: detailState });
             } else if (item.kind === "approval") {
-              act.navigate(`/approvals/${item.approval.id}`);
+              act.navigate(
+                isDearMeApprovalType(item.approval.type)
+                  ? dearMeApprovalDecisionHref(item.approval.id)
+                  : `/approvals/${item.approval.id}`,
+              );
             } else if (item.kind === "failed_run") {
               act.navigate(`/agents/${item.run.agentId}/runs/${item.run.id}`);
             }

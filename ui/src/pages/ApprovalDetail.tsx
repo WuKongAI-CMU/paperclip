@@ -15,6 +15,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, ChevronRight, Sparkles } from "lucide-react";
 import type { ApprovalComment } from "@paperclipai/shared";
 import { MarkdownBody } from "../components/MarkdownBody";
+import {
+  approvalResolvedHref,
+  dearMeApprovalDecisionHref,
+  isDearMeApprovalType,
+} from "@/lib/dearmeApprovals";
 
 export function ApprovalDetail() {
   const { approvalId } = useParams<{ approvalId: string }>();
@@ -32,6 +37,7 @@ export function ApprovalDetail() {
     queryFn: () => approvalsApi.get(approvalId!),
     enabled: !!approvalId,
   });
+  const isDearMeApproval = isDearMeApprovalType(approval?.type);
   const resolvedCompanyId = approval?.companyId ?? selectedCompanyId;
 
   const { data: comments } = useQuery({
@@ -43,13 +49,13 @@ export function ApprovalDetail() {
   const { data: linkedIssues } = useQuery({
     queryKey: queryKeys.approvals.issues(approvalId!),
     queryFn: () => approvalsApi.listIssues(approvalId!),
-    enabled: !!approvalId,
+    enabled: !!approvalId && !!approval && !isDearMeApproval,
   });
 
   const { data: agents } = useQuery({
     queryKey: queryKeys.agents.list(resolvedCompanyId ?? ""),
     queryFn: () => agentsApi.list(resolvedCompanyId ?? ""),
-    enabled: !!resolvedCompanyId,
+    enabled: !!resolvedCompanyId && !!approval && !isDearMeApproval,
   });
 
   useEffect(() => {
@@ -64,11 +70,18 @@ export function ApprovalDetail() {
   }, [agents]);
 
   useEffect(() => {
+    if (isDearMeApproval) {
+      setBreadcrumbs([
+        { label: "DearMe", href: "/dearme" },
+        { label: "Decision" },
+      ]);
+      return;
+    }
     setBreadcrumbs([
       { label: "Approvals", href: "/approvals" },
       { label: approval?.id?.slice(0, 8) ?? approvalId ?? "Approval" },
     ]);
-  }, [setBreadcrumbs, approval, approvalId]);
+  }, [setBreadcrumbs, approval, approvalId, isDearMeApproval]);
 
   const refresh = () => {
     if (!approvalId) return;
@@ -86,10 +99,13 @@ export function ApprovalDetail() {
 
   const approveMutation = useMutation({
     mutationFn: () => approvalsApi.approve(approvalId!),
-    onSuccess: () => {
+    onSuccess: (updatedApproval) => {
       setError(null);
       refresh();
-      navigate(`/approvals/${approvalId}?resolved=approved`, { replace: true });
+      navigate(
+        approvalResolvedHref(updatedApproval?.type ?? approval?.type, approvalId!),
+        { replace: true },
+      );
     },
     onError: (err) => setError(err instanceof Error ? err.message : "Approve failed"),
   });
@@ -148,24 +164,16 @@ export function ApprovalDetail() {
   const linkedAgentId = typeof payload.agentId === "string" ? payload.agentId : null;
   const isActionable = approval.status === "pending" || approval.status === "revision_requested";
   const isBudgetApproval = approval.type === "budget_override_required";
-  const isDearMeBrandOsApproval = approval.type === "dearme_brand_blueprint_apply";
   const TypeIcon = typeIcon[approval.type] ?? defaultTypeIcon;
   const showApprovedBanner = searchParams.get("resolved") === "approved" && approval.status === "approved";
-  const primaryLinkedIssue = linkedIssues?.[0] ?? null;
+  const primaryLinkedIssue = isDearMeApproval ? null : linkedIssues?.[0] ?? null;
+  const dearMeDecisionHref = dearMeApprovalDecisionHref(approvalId);
   const resolvedCta =
-    isDearMeBrandOsApproval
-      ? primaryLinkedIssue
-        ? {
-            label:
-              (linkedIssues?.length ?? 0) > 1
-                ? "Review DearMe work"
-                : "Review Brand OS issue",
-            to: `/issues/${primaryLinkedIssue.identifier ?? primaryLinkedIssue.id}`,
-          }
-        : {
-            label: "Open work queue",
-            to: "/issues",
-          }
+    isDearMeApproval
+      ? {
+          label: "Open in DearMe",
+          to: dearMeDecisionHref,
+        }
       : primaryLinkedIssue
       ? {
           label:
@@ -197,8 +205,8 @@ export function ApprovalDetail() {
               <div>
                 <p className="text-sm text-green-800 dark:text-green-100 font-medium">Approval confirmed</p>
                 <p className="text-xs text-green-700 dark:text-green-200/90">
-                  {isDearMeBrandOsApproval
-                    ? "DearMe created the private Brand OS artifacts, recurring cycles, and gated draft work queue."
+                  {isDearMeApproval
+                    ? "DearMe recorded the decision and is ready for the next private review."
                     : "Requesting agent was notified to review this approval and linked issues."}
                 </p>
               </div>
@@ -220,13 +228,15 @@ export function ApprovalDetail() {
             <TypeIcon className="h-5 w-5 text-muted-foreground shrink-0" />
             <div>
               <h2 className="text-lg font-semibold">{approvalLabel(approval.type, approval.payload as Record<string, unknown> | null)}</h2>
-              <p className="text-xs text-muted-foreground font-mono">{approval.id}</p>
+              {!isDearMeApproval && (
+                <p className="text-xs text-muted-foreground font-mono">{approval.id}</p>
+              )}
             </div>
           </div>
           <StatusBadge status={approval.status} />
         </div>
         <div className="text-sm space-y-1">
-          {approval.requestedByAgentId && (
+          {approval.requestedByAgentId && !isDearMeApproval && (
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground text-xs">Requested by</span>
               <Identity
@@ -236,7 +246,7 @@ export function ApprovalDetail() {
             </div>
           )}
           <ApprovalPayloadRenderer type={approval.type} payload={payload} />
-          {!isDearMeBrandOsApproval && (
+          {!isDearMeApproval && (
             <>
               <button
                 type="button"
@@ -258,7 +268,7 @@ export function ApprovalDetail() {
           )}
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
-        {linkedIssues && linkedIssues.length > 0 && (
+        {!isDearMeApproval && linkedIssues && linkedIssues.length > 0 && (
           <div className="pt-2 border-t border-border/60">
             <p className="text-xs text-muted-foreground mb-1.5">Linked Issues</p>
             <div className="space-y-1.5">
@@ -349,7 +359,9 @@ export function ApprovalDetail() {
           {(comments ?? []).map((comment: ApprovalComment) => (
             <div key={comment.id} className="border border-border/60 rounded-md p-3">
               <div className="flex items-center justify-between mb-1">
-                {comment.authorAgentId ? (
+                {isDearMeApproval ? (
+                  <Identity name={comment.authorAgentId ? "DearMe team" : "You"} size="sm" />
+                ) : comment.authorAgentId ? (
                   <Link to={`/agents/${comment.authorAgentId}`} className="hover:underline">
                     <Identity
                       name={agentNameById.get(comment.authorAgentId) ?? comment.authorAgentId.slice(0, 8)}

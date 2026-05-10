@@ -2,6 +2,45 @@
 
 Date: 2026-05-10
 
+## DM-183O DearMe Approval/Profile UI Boundaries - 2026-05-10
+
+Implementation slice:
+
+- Replayed the still-useful Symphony DM-050/DM-051/DM-052/DM-058 residue onto
+  the current UI instead of merging stale worker branches.
+- Added a tiny DearMe approval helper so DearMe approval types route from the
+  approval card, approval detail, approval list, and inbox back into the
+  DearMe decisions surface.
+- Registered `dearme_output_next_move` in the shared approval type contract so
+  the UI and API validator agree that DearMe output decisions are first-class
+  approvals.
+- Hid raw approval IDs, requester identity, linked issue chrome, and full
+  request payload controls for DearMe approvals while leaving generic approval
+  behavior unchanged.
+- Changed the DearMe missing-profile state from inherited company wording to a
+  DearMe profile prompt.
+- Expanded DearMe action-error sanitization for orchestration/model/key/token
+  failure terms so private execution failures stay product-safe.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/lib/dearmeApprovals.test.ts ui/src/components/ApprovalCard.test.tsx ui/src/components/ApprovalPayload.test.tsx ui/src/pages/ApprovalDetail.test.tsx --maxWorkers=1`
+  passed: 16 tests.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 49 tests.
+- `pnpm exec vitest run ui/src/pages/Inbox.test.tsx --maxWorkers=1`
+  passed: 9 tests.
+- `pnpm exec vitest run ui/src/lib/dearmeApprovals.test.ts ui/src/components/ApprovalCard.test.tsx ui/src/components/ApprovalPayload.test.tsx ui/src/pages/ApprovalDetail.test.tsx ui/src/pages/DearMeOnboarding.test.tsx ui/src/pages/Inbox.test.tsx --maxWorkers=1`
+  passed: 74 tests.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `git diff --check` passed.
+- `.symphony/bin/dearme-symphony status` confirmed the daemon at
+  `http://127.0.0.1:4100/`; `DEA-8` was running in an isolated Symphony
+  workspace with 0 retrying workers.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty` reported 117 DearMe
+  worktrees with 0 dirty workers.
+
 ## DM-183N Scannable First-Week Output Details - 2026-05-10
 
 Implementation slice:

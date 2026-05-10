@@ -12,6 +12,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { ShieldCheck } from "lucide-react";
 import { ApprovalCard } from "../components/ApprovalCard";
 import { PageSkeleton } from "../components/PageSkeleton";
+import { approvalResolvedHref } from "@/lib/dearmeApprovals";
 
 type StatusFilter = "pending" | "all";
 
@@ -46,7 +47,7 @@ export function Approvals() {
     onSuccess: (_approval, id) => {
       setActionError(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.approvals.list(selectedCompanyId!) });
-      navigate(`/approvals/${id}?resolved=approved`);
+      navigate(approvalResolvedHref(_approval?.type, id));
     },
     onError: (err) => {
       setActionError(err instanceof Error ? err.message : "Failed to approve");

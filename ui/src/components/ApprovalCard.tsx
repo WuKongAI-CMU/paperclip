@@ -13,6 +13,7 @@ import {
 import { timeAgo } from "../lib/timeAgo";
 import type { Approval, Agent } from "@paperclipai/shared";
 import { cn } from "@/lib/utils";
+import { dearMeApprovalDecisionHref, isDearMeApprovalType } from "@/lib/dearmeApprovals";
 
 function statusIcon(status: string) {
   if (status === "approved") return <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />;
@@ -45,11 +46,15 @@ export function ApprovalCard({
   const Icon = typeIcon[approval.type] ?? defaultTypeIcon;
   const kindLabel = typeLabel[approval.type] ?? approval.type;
   const subject = approvalSubject(payload);
+  const isDearMeApproval = isDearMeApprovalType(approval.type);
+  const effectiveDetailLink =
+    detailLink && isDearMeApproval ? dearMeApprovalDecisionHref(approval.id) : detailLink;
+  const detailCtaLabel = isDearMeApproval ? "Open in DearMe" : "View details";
   const showResolutionButtons =
     Boolean(onApprove && onReject) &&
     approval.type !== "budget_override_required" &&
     (approval.status === "pending" || approval.status === "revision_requested");
-  const hasFooter = showResolutionButtons || Boolean(detailLink || onOpen);
+  const hasFooter = showResolutionButtons || Boolean(effectiveDetailLink || onOpen);
 
   return (
     <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
@@ -67,7 +72,7 @@ export function ApprovalCard({
                 >
                   {kindLabel}
                 </Badge>
-                {requesterAgent && (
+                {requesterAgent && !isDearMeApproval && (
                   <div className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                     <span>Requested by</span>
                     <Identity name={requesterAgent.name} size="sm" className="inline-flex" />
@@ -131,17 +136,17 @@ export function ApprovalCard({
               </>
             )}
           </div>
-          {(detailLink || onOpen) ? (
-            detailLink ? (
+          {(effectiveDetailLink || onOpen) ? (
+            effectiveDetailLink ? (
               <Link
-                to={detailLink}
+                to={effectiveDetailLink}
                 className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "h-auto px-2 text-xs text-muted-foreground")}
               >
-                View details
+                {detailCtaLabel}
               </Link>
             ) : (
               <Button variant="ghost" size="sm" className="h-auto px-2 text-xs text-muted-foreground" onClick={onOpen}>
-                View details
+                {detailCtaLabel}
               </Button>
             )
           ) : null}

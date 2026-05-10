@@ -355,6 +355,7 @@ export const APPROVAL_TYPES = [
   "budget_override_required",
   "request_board_approval",
   "dearme_brand_blueprint_apply",
+  "dearme_output_next_move",
 ] as const;
 export type ApprovalType = (typeof APPROVAL_TYPES)[number];
 

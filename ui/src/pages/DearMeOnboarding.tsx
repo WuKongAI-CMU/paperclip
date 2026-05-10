@@ -361,7 +361,9 @@ function livePulseText(text: string): string {
 }
 
 const DEARME_INTERNAL_ERROR_TERMS =
-  /\b(workbench|workstream|work stream|paperclip|openclaw|omx|symphony|setup[-_ ]?payload|adapter|provider|workspace|runtime|agent|issue route|approval route|model-provider|model provider)\b/i;
+  /\b(workbench|workstream|work stream|paperclip|openclaw|omx|symphony|claude|gemini|codex|setup[-_ ]?payload|adapter|provider|workspace|runtime|agent|issue route|approval route|execution route|decision route|model-provider|model provider|model|api[-_ ]?key|token)\b/i;
+
+const DEARME_PROFILE_REQUIRED_MESSAGE = "Choose a DearMe profile first.";
 
 function dearMeCustomerErrorMessage(error: unknown, fallback: string) {
   if (!(error instanceof Error)) return fallback;
@@ -5933,7 +5935,7 @@ export function DearMeOnboarding() {
   const paidBetaAccessQuery = useQuery({
     queryKey: queryKeys.dearme.paidBetaAccess(selectedCompanyId ?? "__none__"),
     queryFn: () => {
-      if (!selectedCompanyId) throw new Error("Select a company first.");
+      if (!selectedCompanyId) throw new Error(DEARME_PROFILE_REQUIRED_MESSAGE);
       return dearmeApi.getPaidBetaAccess(selectedCompanyId);
     },
     enabled: !!selectedCompanyId,
@@ -5958,7 +5960,7 @@ export function DearMeOnboarding() {
       nextForm: DearMeBrandBlueprintFormState;
       startPrivateWork: boolean;
     }) => {
-      if (!selectedCompanyId) throw new Error("Select a company first.");
+      if (!selectedCompanyId) throw new Error(DEARME_PROFILE_REQUIRED_MESSAGE);
       const firstCycleRequest = { brand: input.brand };
       return input.startPrivateWork
         ? dearmeApi.startFirstCycle(selectedCompanyId, firstCycleRequest)
@@ -5983,7 +5985,7 @@ export function DearMeOnboarding() {
 
   const previewMutation = useMutation({
     mutationFn: (input: { signature: string }) => {
-      if (!selectedCompanyId) throw new Error("Select a company first.");
+      if (!selectedCompanyId) throw new Error(DEARME_PROFILE_REQUIRED_MESSAGE);
       return dearmeApi.previewBrandBlueprint(selectedCompanyId, {
         brand: buildDearMeBrandBlueprintSeed(form, selectedCompany?.name),
       });
@@ -6005,7 +6007,7 @@ export function DearMeOnboarding() {
 
   const applyRequestMutation = useMutation({
     mutationFn: () => {
-      if (!selectedCompanyId) throw new Error("Select a company first.");
+      if (!selectedCompanyId) throw new Error(DEARME_PROFILE_REQUIRED_MESSAGE);
       return dearmeApi.createBrandBlueprintApplyRequest(
         selectedCompanyId,
         buildDearMeBrandBlueprintApplyRequest(form, selectedCompany?.name),
@@ -6079,7 +6081,7 @@ export function DearMeOnboarding() {
       decisionNote: string;
     }) => {
       const decisionNote = input.decisionNote.trim() || defaultDearMeOutputReviewNote(input.action);
-      if (!selectedCompanyId) throw new Error("Select a company first.");
+      if (!selectedCompanyId) throw new Error(DEARME_PROFILE_REQUIRED_MESSAGE);
       const continuationIntent = outputContinuationIntentForAction(input.action);
       if (continuationIntent) {
         return dearmeApi.continueOutput(selectedCompanyId, input.outputId, {
@@ -6206,7 +6208,7 @@ export function DearMeOnboarding() {
   }
 
   if (!selectedCompanyId) {
-    return <p className="text-sm text-muted-foreground">Select a company first.</p>;
+    return <p className="text-sm text-muted-foreground">{DEARME_PROFILE_REQUIRED_MESSAGE}</p>;
   }
 
   const requestDisabled =

@@ -29,6 +29,14 @@ describe("approvalLabel", () => {
       }),
     ).toBe("Brand OS: Create Brand OS for Peter");
   });
+
+  it("uses product language for DearMe output decisions", () => {
+    expect(
+      approvalLabel("dearme_output_next_move", {
+        title: "Review the weekly letter",
+      }),
+    ).toBe("DearMe Decision: Review the weekly letter");
+  });
 });
 
 describe("ApprovalPayloadRenderer", () => {
@@ -93,6 +101,36 @@ describe("ApprovalPayloadRenderer", () => {
 
     expect(container.textContent).toContain("Board asked for approval before posting the frog.");
     expect(container.textContent).not.toContain("TitleReply with an ASCII frog");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("renders DearMe output approvals without raw JSON fallback", () => {
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <ApprovalPayloadRenderer
+          type="dearme_output_next_move"
+          payload={{
+            title: "Review the weekly letter",
+            summary: "DearMe prepared a private draft for review.",
+            recommendedAction: "Launch it after one pass.",
+            nextActionOnApproval: "Queue the public move.",
+            proposedComment: "Launch after final review.",
+          }}
+        />,
+      );
+    });
+
+    expect(container.textContent).toContain("Review the weekly letter");
+    expect(container.textContent).toContain("DearMe prepared a private draft for review.");
+    expect(container.textContent).toContain("Launch it after one pass.");
+    expect(container.textContent).toContain("Queue the public move.");
+    expect(container.textContent).not.toContain("\"recommendedAction\"");
+    expect(container.textContent).not.toContain("\"proposedComment\"");
 
     act(() => {
       root.unmount();
