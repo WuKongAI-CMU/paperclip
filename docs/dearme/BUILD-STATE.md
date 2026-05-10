@@ -2,6 +2,29 @@
 
 Date: 2026-05-10
 
+## DM-183AU Symphony First-Turn Guard - 2026-05-10
+
+Coordination slice:
+
+- Paused `DEA-9` after its first Symphony worker turn consumed roughly 2.5M
+  tokens while the worker workspace remained clean.
+- Kept the issue alive by moving it back to `Todo`, which let Symphony stop the
+  single worker without stopping the daemon or canceling the product lane.
+- Tuned `.symphony/WORKFLOW.md` so future workers use medium reasoning and must
+  run shell evidence, current-branch status, and the DearMe worktree summary
+  before broad synthesis.
+- Added an explicit one-ticket worker boundary: Symphony workers should not
+  spawn their own subagents; the coordinator owns parallelization.
+
+Verification:
+
+- `curl -fsS http://127.0.0.1:4100/api/v1/DEA-9` showed `DEA-9` running with
+  `2511967` total tokens and a clean worker workspace before the pause.
+- Moving `DEA-9` to `Todo` stopped tracking the issue; the issue API returned
+  404 and `.symphony/bin/dearme-symphony status` reported `running: []`.
+- `git -C /private/tmp/dearme-symphony-workspaces/DEA-9 status --short --branch`
+  stayed clean after the worker was stopped.
+
 ## DM-183AT Early Voice/Review Worktree Absorption - 2026-05-10
 
 Coordination slice:

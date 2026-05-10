@@ -39,7 +39,7 @@ agent:
     In Progress: 4
     In Review: 2
 codex:
-  command: codex --config shell_environment_policy.inherit=all --config 'model="gpt-5.5"' --config model_reasoning_effort=high app-server
+  command: codex --config shell_environment_policy.inherit=all --config 'model="gpt-5.5"' --config model_reasoning_effort=medium app-server
   approval_policy: never
   thread_sandbox: workspace-write
   # Workers need localhost access for DearMe dev-server and Playwright smokes.
@@ -101,18 +101,26 @@ Operating rules:
    that root script is missing on the selected branch, record the exact failure
    and use `pnpm paperclipai worktree:list --json` instead. Do not block the
    issue on this compatibility gap.
-4. Keep code edits scoped to the issue. Stage explicit paths only; never use
+4. First-turn execution guard: after reading the required docs, run
+   `git log -1 --oneline`, `git status --short --branch`, and the worktree
+   summary before any broad synthesis. For proof/smoke issues, inspect the
+   current product paths and run the narrow shell smoke or focused test before
+   searching old worktrees. If those checks show no code gap, report the
+   evidence and stop instead of continuing analysis.
+5. Keep code edits scoped to the issue. Stage explicit paths only; never use
    `git add -A` or broad cleanup commands.
-5. Preserve approval boundaries: public send/deploy/spend/sensitive actions
+6. Preserve approval boundaries: public send/deploy/spend/sensitive actions
    require approval.
-6. For UI work, ship a real product surface, not internal substrate controls.
+7. For UI work, ship a real product surface, not internal substrate controls.
    The experience should be simple, beautiful, autonomous, and show a concrete
    first proof artifact whenever the issue touches onboarding or first-run.
-7. Verify with the narrowest meaningful command first, then broader checks if
+8. Verify with the narrowest meaningful command first, then broader checks if
    the touched surface warrants it. Report exact commands and outcomes.
-8. If blocked by missing credentials or permissions, stop with a concise blocker
+9. If blocked by missing credentials or permissions, stop with a concise blocker
    brief. Do not fabricate external access.
-9. For rendered/browser smoke work, use repo-local headless verification from
+10. Do not spawn additional subagents from inside a Symphony worker. The
+   coordinator owns parallelization; a worker owns one bounded Linear issue.
+11. For rendered/browser smoke work, use repo-local headless verification from
    the shell (Playwright, Vitest, or an existing script). Do not call
    `tool_search` for browser tools, `chrome-devtools`, `browser-use`, or
    `computer-use`: those MCP/browser surfaces can trigger interactive
