@@ -2,6 +2,35 @@
 
 Date: 2026-05-10
 
+## DM-183BX Voice Gate Scorer Recovery - 2026-05-10
+
+Product/architecture slice:
+
+- Audited the Symphony/Linear DEA-12 lane after it was marked Done and found
+  that its worker workspace had been cleaned before any absorbable branch or
+  commit landed on the coordination head.
+- Ported the useful Voice Gate direction directly onto the current branch as a
+  smaller, safer scorer: concrete first-person private work can pass the
+  default `92` floor on the first request, while accepted same-voice samples
+  give follow-up drafts a bounded continuity boost.
+- Added a hidden-process-language penalty so private work that still names the
+  backstage machinery gets blocked before customer review.
+- Kept all customer-visible scoring notes in plain DearMe language; blocked
+  reasons no longer echo hidden substrate terms such as model/fingerprint,
+  runtime, provider, adapter, queue, admin, or donor names.
+- Left DEA-13 queued until this recovery slice is committed, so Symphony does
+  not spawn another overlapping Voice Gate lane from stale assumptions.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-voice-gate.test.ts server/src/__tests__/dearme-voice-gate-routes.test.ts --maxWorkers=1`
+  passed: 2 files, 14 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `.symphony/bin/dearme-symphony status --json` reported no active or retrying
+  workers.
+- `pnpm run dearme:worktrees -- --summary-only --skip-dirty` reported
+  `not_in_current: 0` and `dirty: 0`.
+
 ## DM-183BW Symphony Worker Bootstrap Hardening - 2026-05-10
 
 Product/architecture slice:

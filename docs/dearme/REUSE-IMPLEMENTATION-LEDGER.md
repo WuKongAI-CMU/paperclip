@@ -46,6 +46,13 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DEA-12 was marked Done in Linear/Symphony without leaving an absorbable
+  branch or live workspace on the coordination head, so the coordinator
+  recovered the useful Voice Gate slice directly: the current scorer now passes
+  concrete first-person private work at the default floor, remembers accepted
+  same-voice samples for a bounded continuity boost, and blocks hidden process
+  language without echoing model/fingerprint/runtime/provider/adapter/queue or
+  donor terms into customer-facing scoring reasons.
 - DEA-11 / DM-183BO is absorbed on the current coordination head as a
   browser/API proof rather than a stale workspace replay. The smoke follows the
   real approval path from prepared output review to final launch-call approval,

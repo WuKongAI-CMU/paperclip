@@ -1,29 +1,80 @@
 /**
- * Voice-gate stub scorer coverage.
+ * Voice-gate scorer coverage.
  *
- * The stub is deterministic and is the contract surface every other layer
- * sees until DM-170-impl swaps in the real fingerprint model. Lock down
- * the rules so the integration pipe behaves identically across runs.
+ * The scorer is deterministic and is the contract surface every other layer
+ * sees. Lock down product behavior, not private implementation details.
  */
 
 import { describe, expect, it } from "vitest";
 import { dearMeVoiceGateService } from "./dearme-voice-gate.js";
 
 const svc = dearMeVoiceGateService();
+const hiddenCustomerTerms = [
+  "paperclip",
+  "openclaw",
+  "symphony",
+  "adapter",
+  "provider",
+  "runtime",
+  "model",
+  "token",
+  "setup payload",
+  "codex",
+  "workbench",
+  "queue",
+  "admin",
+  "fingerprint",
+] as const;
 
-describe("dearMeVoiceGateService stub scorer", () => {
-  it("passes a normal-length, in-voice tweet", async () => {
-    const r = await svc.scoreVoice({
+describe("dearMeVoiceGateService scorer", () => {
+  it("passes a concrete first draft at the default floor without prior samples", async () => {
+    const freshSvc = dearMeVoiceGateService();
+
+    const r = await freshSvc.scoreVoice({
       fingerprintId: "vf_test",
-      text: "Shipped tri-substrate runtime today. Voice gate now blocks slop at the cloud edge: https://dearme.app/log/12.",
-      kind: "x-tweet",
-      minScore: 70,
+      text: "I spent the morning turning three rough launch notes into one decision: lead with the proof people can inspect, then ask for the next safe yes.",
+      kind: "linkedin-post",
     });
+
     expect(r.passed).toBe(true);
-    expect(r.score).toBeGreaterThanOrEqual(70);
+    expect(r.score).toBeGreaterThanOrEqual(r.floor);
   });
 
-  it("flags 'as an AI' disclaimers", async () => {
+  it("remembers accepted writing for later voice-continuity scoring", async () => {
+    const freshSvc = dearMeVoiceGateService();
+    await freshSvc.scoreVoice({
+      fingerprintId: "vf_repeat",
+      text: "I keep coming back to the same lesson from launch calls: proof beats polish when a buyer can inspect the work before we ask.",
+      kind: "linkedin-post",
+    });
+
+    const r = await freshSvc.scoreVoice({
+      fingerprintId: "vf_repeat",
+      text: "I keep coming back to that proof beats polish lesson because buyers trust the work faster when they can inspect it first.",
+      kind: "linkedin-post",
+    });
+
+    expect(r.reasons.some((reason) => reason.rule === "voice_continuity")).toBe(true);
+  });
+
+  it("keeps accepted writing isolated by fingerprint id", async () => {
+    const freshSvc = dearMeVoiceGateService();
+    await freshSvc.scoreVoice({
+      fingerprintId: "vf_seed",
+      text: "I keep coming back to the same lesson from launch calls: proof beats polish when a buyer can inspect the work before we ask.",
+      kind: "linkedin-post",
+    });
+
+    const r = await freshSvc.scoreVoice({
+      fingerprintId: "vf_other",
+      text: "I keep coming back to that proof beats polish lesson because buyers trust the work faster when they can inspect it first.",
+      kind: "linkedin-post",
+    });
+
+    expect(r.reasons.some((reason) => reason.rule === "voice_continuity")).toBe(false);
+  });
+
+  it("flags disclaimers", async () => {
     const r = await svc.scoreVoice({
       fingerprintId: "vf_test",
       text: "As an AI, I think you should consider this.",
@@ -32,6 +83,21 @@ describe("dearMeVoiceGateService stub scorer", () => {
     });
     expect(r.score).toBeLessThan(75);
     expect(r.reasons.some((reason) => reason.rule === "ai_disclaimer")).toBe(true);
+  });
+
+  it("flags hidden process language without echoing it in customer-facing notes", async () => {
+    const r = await svc.scoreVoice({
+      fingerprintId: "vf_test",
+      text: "As an AI, the OpenClaw model runtime queue used a provider adapter token in the Paperclip workbench.",
+      kind: "linkedin-post",
+      minScore: 70,
+    });
+    const reasonText = r.reasons.map((reason) => reason.note).join(" ").toLowerCase();
+
+    expect(r.reasons.some((reason) => reason.rule === "hidden_process_language")).toBe(true);
+    for (const term of hiddenCustomerTerms) {
+      expect(reasonText).not.toContain(term);
+    }
   });
 
   it("flags hype words on tweets", async () => {
@@ -66,17 +132,18 @@ describe("dearMeVoiceGateService stub scorer", () => {
   });
 
   it("returns deterministic output for identical inputs", async () => {
-    const a = await svc.scoreVoice({
+    const freshSvc = dearMeVoiceGateService();
+    const a = await freshSvc.scoreVoice({
       fingerprintId: "vf_test",
       text: "I hope this email finds you well.",
       kind: "outbound-email",
-      minScore: 70,
+      minScore: 90,
     });
-    const b = await svc.scoreVoice({
+    const b = await freshSvc.scoreVoice({
       fingerprintId: "vf_test",
       text: "I hope this email finds you well.",
       kind: "outbound-email",
-      minScore: 70,
+      minScore: 90,
     });
     expect(a.score).toBe(b.score);
     expect(a.reasons).toEqual(b.reasons);
