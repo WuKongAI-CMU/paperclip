@@ -6,7 +6,7 @@
 - **Handle:** _to be set during onboarding_
 - **Display name:** _to be set during onboarding_
 - **Pronouns:** _to be set during onboarding_
-- **Primary public surface:** _LinkedIn / X / personal site / GitHub_
+- **Primary public surface:** _connected social profile / newsletter / personal site / GitHub_
 - **Audience:** _to be detected by Identity Researcher_
 - **Voice fingerprint id:** _set after voice clone_
 - **Goals (next 90 days):** _set during onboarding_

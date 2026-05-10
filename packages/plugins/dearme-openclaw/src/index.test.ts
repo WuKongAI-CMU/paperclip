@@ -146,9 +146,10 @@ describe("dearme-openclaw bootstrap files", () => {
 
   it("bootstrap prompt copy stays on customer-safe DearMe rails", () => {
     const combined = DEARME_BOOTSTRAP_FILES.map((file) => file.content).join("\n");
-    expect(combined).not.toMatch(/Twitter|280-char|Naive\/Paperclip|OpenClaw|adapters|provider/i);
-    expect(combined).toContain("channel-specific length limits");
-    expect(combined).toContain("social post or thread");
+    expect(combined).not.toMatch(/\bX\b|Twitter|280-char|Naive\/Paperclip|OpenClaw|adapters|provider/i);
+    expect(combined).toContain("channel-specific publishing limits");
+    expect(combined).toContain("connected public channels");
+    expect(combined).toContain("public post or note");
   });
 });
 

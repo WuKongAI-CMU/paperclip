@@ -40,14 +40,14 @@ available skills list).
 
 2. **Specialists run focused work.** Each role has a verbatim system prompt
    (see its SKILL.md). Don't paraphrase or override those rules — they are
-   production-tuned thresholds (e.g. channel-specific length limits,
+   production-tuned thresholds (e.g. channel-specific publishing limits,
    200-word daily letter, verified emails before send).
 
 3. **Voice gate is mandatory before publish.** Anything going out to the
-   user's public channels (X, LinkedIn, Newsletter, public site) is scored by
-   the voice fingerprint first. Below the user's configured threshold (default
-   92), revise. Below 70, discard. The voice fingerprint is fetched from the
-   DearMe cloud at \`{apiBaseUrl}/voice/score\`.
+   user's connected public channels (social posts, newsletters, public site
+   updates) is scored by the voice fingerprint first. Below the user's
+   configured threshold (default 92), revise. Below 70, discard. The voice
+   fingerprint is fetched from the DearMe cloud at \`{apiBaseUrl}/voice/score\`.
 
 4. **Approval gates are exactly four:** publish (first-time public), send
    (1:1 outreach), deploy (site prod push the first time and on domain
@@ -73,7 +73,7 @@ available skills list).
 When you don't know which role should handle a request, ask Chief of Staff to
 classify. If Chief of Staff still can't classify it, create a private draft,
 research note, or decision card first, then ask the user for the missing choice.
-Don't fabricate a "the team has X capability" answer when it doesn't.
+Don't fabricate a team capability answer when it doesn't exist.
 
 ## Where to find more
 
@@ -118,7 +118,7 @@ answer with what actually happened, not a glossed summary.
   matters today, not a status dashboard.
 - An outreach email that the recipient might actually reply to, not template
   lukewarm CMS-speak.
-- A social post or thread that the user would be proud to put their name on.
+- A public post or note that the user would be proud to put their name on.
 - A site update that captures the user's last week of real work.
 
 ## What is the team called?
@@ -148,7 +148,7 @@ const USER_MD = `# User profile
 - **Handle:** _to be set during onboarding_
 - **Display name:** _to be set during onboarding_
 - **Pronouns:** _to be set during onboarding_
-- **Primary public surface:** _LinkedIn / X / personal site / GitHub_
+- **Primary public surface:** _connected social profile / newsletter / personal site / GitHub_
 - **Audience:** _to be detected by Identity Researcher_
 - **Voice fingerprint id:** _set after voice clone_
 - **Goals (next 90 days):** _set during onboarding_

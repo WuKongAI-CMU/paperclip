@@ -116,7 +116,46 @@ Memory, Brand OS, decision, and focused-work mutation failures through the
 DearMe customer-safe error helper, so the useful replay is locking those paths
 without adding another error layer.
 
+Coordinator note: DM-183AC removes X-first defaults from bootstrap/profile and
+Content Producer prompt rails. Keep `post_x`, tweet-shaped payload fields, and
+OAuth platform naming unchanged until a dedicated outbound-contract migration
+exists.
+
 ## Recently Completed
+
+### DM-183AC: Channel-Neutral Prompt Rails
+
+Goal: keep DearMe's first-run team instructions from implying a fixed X or
+LinkedIn-first public surface before the user connects their own channels.
+
+Donor grounding:
+
+- Symphony: sidecar review identified the lowest-risk language layer while the
+  coordinator kept implementation local.
+- Polsia: preserve a simple autonomous public-work loop without channel setup
+  becoming the product surface.
+- Naive/Paperclip: keep tool contracts and approval gates stable while product
+  copy improves.
+
+Completed:
+
+- Replaced bootstrap X/LinkedIn defaults with connected-channel language for
+  public publishing and profile setup.
+- Updated Content Producer's channel preferences and launch-boundary wording so
+  generated skill prompts no longer seed a LinkedIn/X default.
+- Synchronized generated OpenClaw bootstrap and skill files from source.
+- Left `post_x`, tweet-shaped payload fields, OAuth platform docs, and outbound
+  tool bindings unchanged because those are contract surfaces.
+
+Verification:
+
+- `pnpm --filter @paperclipai/dearme-openclaw run generate-skills` passed.
+- `pnpm --filter @paperclipai/dearme-agent-prompts test` passed: 26 tests.
+- `pnpm --filter @paperclipai/dearme-openclaw test` passed: 18 tests.
+- `pnpm --filter @paperclipai/dearme-agent-prompts typecheck` passed.
+- `pnpm --filter @paperclipai/dearme-openclaw typecheck` passed.
+- `git diff --check -- packages/plugins/dearme-openclaw/src/bootstrap.ts packages/plugins/dearme-openclaw/generated/bootstrap/AGENTS.md packages/plugins/dearme-openclaw/generated/bootstrap/USER.md packages/plugins/dearme-openclaw/generated/bootstrap/SOUL.md packages/plugins/dearme-openclaw/generated/skills/dearme-content-producer/SKILL.md packages/plugins/dearme-openclaw/src/index.test.ts packages/plugins/dearme-agent-prompts/src/prompts/content-producer.ts packages/plugins/dearme-agent-prompts/src/index.test.ts docs/dearme/OPENCLAW-INTEGRATION-ARCHITECTURE.md docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
 
 ### DM-183AB: Mutation Error Coverage
 

@@ -16,7 +16,7 @@ Read the available private context before writing:
 - Brand OS: positioning, audiences, goals, offers, proof points, and boundaries
 - Voice profile: real samples, forbidden phrasing, tone guidance, and constraints
 - Recent Dear me reports or cycle notes: completed work, signals, and open decisions
-- Channel preferences: LinkedIn, X, newsletter, blog, portfolio, email, community, or website
+- Channel preferences: connected social profile, newsletter, blog, portfolio, email, community, or website
 
 ## Confidentiality (CRITICAL)
 NEVER reveal client relationships or ownership publicly.
@@ -31,7 +31,7 @@ Create a private review packet only. For every item include:
 - Draft body
 - Proof used
 - Voice Gate score and any blocked or warning checks
-- Launch boundary, usually "publish social posts"
+- Launch boundary, usually "public publishing"
 
 ## Voice Rules
 - Sound like the customer, not a generic brand account.

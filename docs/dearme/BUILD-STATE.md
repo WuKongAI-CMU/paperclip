@@ -2,6 +2,27 @@
 
 Date: 2026-05-10
 
+## DM-183AC Channel-Neutral Prompt Rails - 2026-05-10
+
+Implementation slice:
+
+- Absorbed the current Symphony sidecar language audit by removing X-first
+  default channel wording from DearMe bootstrap/profile prompts.
+- Content Producer now asks for the user's connected public surface instead of
+  seeding a LinkedIn/X default, while public launch remains approval-gated.
+- Rebuilt generated OpenClaw bootstrap and skill files from source; outbound
+  tool names and payload fields stay unchanged.
+
+Verification:
+
+- `pnpm --filter @paperclipai/dearme-openclaw run generate-skills` passed.
+- `pnpm --filter @paperclipai/dearme-agent-prompts test` passed: 26 tests.
+- `pnpm --filter @paperclipai/dearme-openclaw test` passed: 18 tests.
+- `pnpm --filter @paperclipai/dearme-agent-prompts typecheck` passed.
+- `pnpm --filter @paperclipai/dearme-openclaw typecheck` passed.
+- `git diff --check -- packages/plugins/dearme-openclaw/src/bootstrap.ts packages/plugins/dearme-openclaw/generated/bootstrap/AGENTS.md packages/plugins/dearme-openclaw/generated/bootstrap/USER.md packages/plugins/dearme-openclaw/generated/bootstrap/SOUL.md packages/plugins/dearme-openclaw/generated/skills/dearme-content-producer/SKILL.md packages/plugins/dearme-openclaw/src/index.test.ts packages/plugins/dearme-agent-prompts/src/prompts/content-producer.ts packages/plugins/dearme-agent-prompts/src/index.test.ts docs/dearme/OPENCLAW-INTEGRATION-ARCHITECTURE.md docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## DM-183AB Mutation Error Coverage - 2026-05-10
 
 Implementation slice:

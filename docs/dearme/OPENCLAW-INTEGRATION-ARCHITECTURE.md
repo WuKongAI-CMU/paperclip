@@ -122,7 +122,7 @@ OpenClaw's mental model is "one agent with many skills." DearMe inverts that sli
 |---|---|---|
 | `chief-of-staff` | `dearme-chief-of-staff` | Default conversational shell. |
 | `reporting` | `dearme-reporting` | Cron (daily 06:00 user-tz) → writes 200-word letter → sends via configured `dailyLetterChannel`. |
-| `content-producer` | `dearme-content-producer` | Triggered by Chief of Staff or by user voice/text intent ("draft a tweet"). Voice-gate blocks publish below threshold. |
+| `content-producer` | `dearme-content-producer` | Triggered by Chief of Staff or by user voice/text intent ("draft a public post"). Voice-gate blocks publish below threshold. |
 | `opportunity-hunter` | `dearme-opportunity-hunter` | Triggered for outreach intents. Calls DearMe cloud `/opportunities/*` (Hunter.io verified). |
 | `brand-site-builder` | `dearme-brand-site-builder` | Triggered for site updates. Deploys to `dearme.app/<handle>` via cloud `/site/*`. |
 | `ads-manager` | `dearme-ads-manager` | Default off. Triggered only on explicit user intent. Hard-stop at `defaults.budget.dailyUsdCap`. |

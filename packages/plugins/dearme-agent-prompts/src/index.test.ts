@@ -172,6 +172,8 @@ describe("dearme-agent-prompts package", () => {
     expect(CONTENT_PRODUCER_PROMPT).toContain("Voice Gate score");
     expect(CONTENT_PRODUCER_PROMPT).toContain("Do not publish, send, schedule");
     expect(CONTENT_PRODUCER_PROMPT).toContain("If the packet is not saved");
+    expect(CONTENT_PRODUCER_PROMPT).toContain("connected social profile");
+    expect(CONTENT_PRODUCER_PROMPT).not.toMatch(/LinkedIn, X|publish social posts/i);
     expect(CONTENT_PRODUCER_PROMPT).toContain(
       "NEVER reveal client relationships",
     );
