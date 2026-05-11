@@ -288,7 +288,7 @@ describeEmbeddedPostgres("DearMe brand blueprint service", () => {
     const companyId = await seedCompany();
     const brandIssueId = await seedDearMeIssue({
       companyId,
-      title: "DearMe: Review Brand OS for Peter",
+      title: "DearMe: Review private team profile for Peter",
       identifier: "DME-1",
       originFingerprint: "brand-os-review",
       status: "done",
@@ -331,7 +331,7 @@ describeEmbeddedPostgres("DearMe brand blueprint service", () => {
       companyId,
       issueId: brandIssueId,
       key: "brand-os",
-      title: "Brand OS",
+      title: "Private team profile",
       body: [
         "Positioning: practical AI operator for local-first builders",
         "Proof Points: shipped a local agent runtime with approval gates",
@@ -420,9 +420,9 @@ describeEmbeddedPostgres("DearMe brand blueprint service", () => {
     });
 
     expect(result.proofSequence.map((step) => step.window)).toEqual(["0-30s", "60-120s", "3-5min"]);
-    expect(result.proofSequence[0]?.preparedArtifact).toBe("Brand OS dossier + Voice profile");
-    expect(result.proofSequence[0]?.sourceLabel).toBe("Prepared from private Brand OS work and voice work");
-    expect(result.proofSequence[0]?.summary).toContain("Identity Researcher turned the private Brand OS");
+    expect(result.proofSequence[0]?.preparedArtifact).toBe("Profile dossier + Voice profile");
+    expect(result.proofSequence[0]?.sourceLabel).toBe("Prepared from private profile work and voice work");
+    expect(result.proofSequence[0]?.summary).toContain("Identity Researcher turned the private profile");
     expect(result.proofSequence[0]?.summary).toContain("Voice Editor attached voice guidance");
     expect(result.proofSequence[1]?.preparedArtifact).toBe("Starter content drafts + Opportunity shortlist");
     expect(result.proofSequence[1]?.sourceLabel).toBe(
@@ -491,8 +491,8 @@ describeEmbeddedPostgres("DearMe brand blueprint service", () => {
       runId: "run-first-cycle-1",
     });
 
-    expect(result.proofSequence[0]?.preparedArtifact).toBe("Brand OS dossier + Voice profile");
-    expect(result.proofSequence[0]?.sourceLabel).toBe("Prepared from private Brand OS work and voice work");
+    expect(result.proofSequence[0]?.preparedArtifact).toBe("Profile dossier + Voice profile");
+    expect(result.proofSequence[0]?.sourceLabel).toBe("Prepared from private profile work and voice work");
     expect(result.proofSequence[1]?.preparedArtifact).toBe("Starter content drafts + Opportunity shortlist");
     expect(result.proofSequence[1]?.sourceLabel).toBe(
       "Prepared from private content drafts and opportunity work",
@@ -573,7 +573,7 @@ describeEmbeddedPostgres("DearMe brand blueprint service", () => {
     });
 
     expect(restoredResult.proofSequence[0]?.sourceLabel).toBe(
-      "Prepared from private Brand OS work and voice work",
+      "Prepared from private profile work and voice work",
     );
     const restoredOutputIssues = await db
       .select({ id: issues.id, status: issues.status, cancelledAt: issues.cancelledAt })

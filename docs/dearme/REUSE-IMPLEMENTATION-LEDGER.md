@@ -15,6 +15,14 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- The first-use shell now treats private proof as the product promise and the
+  full profile as secondary controls. The hero exposes `Start with one
+  sentence` plus `View private proof`; profile preview/start now lives under
+  `Full profile controls`, and customer-visible approval/entitlement/workbench
+  labels say `private team profile` / `private team` instead of `Brand OS`.
+  Future workers should keep deepening this proof-first path and leave
+  `brand_os` as an internal compatibility model, not a customer-facing setup
+  surface.
 - `pnpm dearme:host-rehearsal` is now the repeatable local bridge between the
   Naive/Paperclip-style private-site packet and the provider-smoke host proof:
   it exports `dist/dearme-private-proof`, starts a loopback static host, and

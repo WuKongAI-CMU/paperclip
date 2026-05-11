@@ -12,7 +12,7 @@ export const typeLabel: Record<string, string> = {
   approve_ceo_strategy: "CEO Strategy",
   budget_override_required: "Budget Override",
   request_board_approval: "Board Approval",
-  dearme_brand_blueprint_apply: "Brand OS",
+  dearme_brand_blueprint_apply: "Private team profile",
   dearme_output_next_move: "DearMe Decision",
 };
 
@@ -363,7 +363,7 @@ function DearMeBrandSummary({ blueprint }: { blueprint: DearMeBrandBlueprint }) 
           <DearMeList values={blueprint.brand.proofPoints} empty="Proof collection is part of the first cycle." />
         </DearMeSection>
         <DearMeSection title="Offers">
-          <DearMeList values={blueprint.brand.offers} empty="Offers can be added after Brand OS creation." />
+          <DearMeList values={blueprint.brand.offers} empty="Offers can be added after the private team starts." />
         </DearMeSection>
       </div>
       <DearMeSection title="Channels and constraints">

@@ -719,7 +719,7 @@ export function dearmeRoutes(
         title: issue.title,
         nextStep: chiefOfStaff
           ? "Chief of Staff has the brief and will prepare the next private move for review."
-          : "The brief was saved. Launch Brand OS to create the DearMe team and start private work.",
+          : "The brief was saved. Start the private team to create the DearMe team and start private work.",
       });
       res.status(201).json(responseBody);
     },

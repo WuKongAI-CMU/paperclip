@@ -25,9 +25,9 @@ describe("approvalLabel", () => {
   it("uses product language for DearMe brand blueprint approvals", () => {
     expect(
       approvalLabel("dearme_brand_blueprint_apply", {
-        title: "Create Brand OS for Peter",
+        title: "Create private team profile for Peter",
       }),
-    ).toBe("Brand OS: Create Brand OS for Peter");
+    ).toBe("Private team profile: Create private team profile for Peter");
   });
 
   it("uses product language for DearMe output decisions", () => {

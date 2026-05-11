@@ -180,7 +180,7 @@ function createPreview() {
       artifact: {
         kind: "brand_positioning",
         channel: "linkedin",
-        title: "Brand OS positioning",
+        title: "Profile positioning",
         text: blueprint.brand.positioning,
         proofUsed: seed.proofPoints[0],
       },
@@ -211,7 +211,7 @@ function createFirstCyclePreview() {
     proofSequence: [
       {
         ...preview.proofSequence[0]!,
-        sourceLabel: "Prepared from private Brand OS work",
+        sourceLabel: "Prepared from private profile work",
       },
       preview.proofSequence[1]!,
       preview.proofSequence[2]!,
@@ -461,7 +461,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
       {
         id: "approval:approval-ready",
         kind: "approve_brand_os",
-        title: "Launch Brand OS for Peter Studio",
+        title: "Start private team for Peter Studio",
         summary: "Review the first growth-team plan before DearMe starts private work.",
         riskGate: null,
         status: "pending",
@@ -675,7 +675,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
           reason: null,
           riskGate: null,
         },
-        sourceLabel: "Brand OS",
+        sourceLabel: "Private team profile",
         costImpact: "Work stays inside paid-beta guardrails",
         nextAction: "Start or steer the first private growth cycle from the Chief of Staff.",
         relatedOutputId: null,
@@ -792,7 +792,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         role: "chief_of_staff",
         title: "Growth team created",
         summary: "DearMe created the team, cycles, and first private work lanes.",
-        evidenceLabel: "Brand OS / Growth team: Work stays inside paid-beta guardrails",
+        evidenceLabel: "Private team profile / Growth team: Work stays inside paid-beta guardrails",
         status: "recorded",
         needsApproval: false,
         nextAction: "Start or steer the first private growth cycle from the Chief of Staff.",
@@ -1892,7 +1892,7 @@ describe("DearMeOnboarding", () => {
     });
   });
 
-  it("previews a Brand OS seed and creates an approval request", async () => {
+  it("previews a full profile and creates an approval request", async () => {
     mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
     const root = createRoot(container);
     const queryClient = new QueryClient({
@@ -1909,7 +1909,7 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     expect(mockDearmeApi.getWorkbench).toHaveBeenCalledWith("company-1");
-    expect(container.textContent).toContain("Brand OS");
+    expect(container.textContent).toContain("Private team profile");
     expect(container.textContent).toContain("Your personal brand growth team");
     expect(container.textContent).toContain("Dear me, your team is working");
     expect(container.textContent).toContain("Team working");
@@ -1924,8 +1924,12 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Team focus");
     expect(container.textContent).toContain("Open next decision");
     expect(buttonByText(container, "Start with one sentence")?.getAttribute("data-variant")).toBe("default");
-    expect(buttonByText(container, "Preview Brand OS")?.getAttribute("data-variant")).toBe("outline");
-    expect(buttonByText(container, "Start Brand OS")?.getAttribute("data-variant")).toBe("secondary");
+    expect(buttonByText(container, "View private proof")?.getAttribute("data-variant")).toBe("outline");
+    expect(buttonByText(container, "Preview profile")?.getAttribute("data-variant")).toBe("outline");
+    expect(buttonByText(container, "Start private team")?.getAttribute("data-variant")).toBe("secondary");
+    expect(container.textContent).toContain("Full profile controls");
+    expect(container.textContent).not.toContain("Preview Brand OS");
+    expect(container.textContent).not.toContain("Start Brand OS");
     const topFocus = surfaceByLabel(container, "Today's brand team focus");
     expect(topFocus.textContent).toContain("While you were away");
     expect(topFocus.textContent).toContain("Next decision");
@@ -2059,7 +2063,7 @@ describe("DearMeOnboarding", () => {
       buttonByText(firstPayoff, "Start with one sentence")?.click();
     });
     expect(document.activeElement).toBe(container.querySelector("#dearme-first-cycle-intent"));
-    expect(container.textContent).toContain("Launch Brand OS for Peter Studio");
+    expect(container.textContent).toContain("Start private team for Peter Studio");
     expect(container.textContent).toContain("Batch decisions");
     expect(container.textContent).toContain("Review content batch");
     expect(container.textContent).toContain("Review posts");
@@ -2225,7 +2229,7 @@ describe("DearMeOnboarding", () => {
     });
 
     await act(async () => {
-      buttonByText(container, "Preview Brand OS")?.click();
+      buttonByText(container, "Preview profile")?.click();
     });
     await flushReact();
 
@@ -2240,7 +2244,7 @@ describe("DearMeOnboarding", () => {
         }),
       }),
     );
-    expect(container.textContent).toContain("Create Brand OS for Peter Studio");
+    expect(container.textContent).toContain("Create private team profile for Peter Studio");
     expect(container.textContent).toContain("Voice check");
     expect(container.textContent).toContain("Voice 100/100");
     expect(container.textContent).toContain("Ready for review");
@@ -2251,7 +2255,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).not.toContain("First operations");
 
     await act(async () => {
-      buttonByText(container, "Start Brand OS")?.click();
+      buttonByText(container, "Start private team")?.click();
     });
     await flushReact();
 
@@ -2968,7 +2972,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Audience map");
     expect(container.textContent).toContain("Private site proof");
     expect(container.textContent).toContain("Voice profile and known-for line");
-    expect(container.textContent).toContain("Prepared from private Brand OS work");
+    expect(container.textContent).toContain("Prepared from private profile work");
     expect(container.textContent).toContain("Audience shortlist and first opportunity");
     expect(container.textContent).toContain("Private proof page move");
     expect(container.textContent).toContain("Draft Voice Profile");
@@ -3096,7 +3100,7 @@ describe("DearMeOnboarding", () => {
     expect(mockDearmeApi.startFirstCycle).not.toHaveBeenCalled();
     expect(container.textContent).toContain("First-run proof sequence");
     expect(container.textContent).toContain("Your first five minutes are ready.");
-    expect(container.textContent).toContain("Prepared from private Brand OS work");
+    expect(container.textContent).toContain("Prepared from private profile work");
     expect(container.textContent).toContain("dearme.app/peter-studio");
     expect(container.textContent).toContain("Ready for approval");
     expect(container.textContent).not.toContain("Sample team package");
@@ -3113,7 +3117,7 @@ describe("DearMeOnboarding", () => {
     });
   });
 
-  it("keeps Brand OS apply locked during trial preview", async () => {
+  it("keeps private team start locked during trial preview", async () => {
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -3146,13 +3150,13 @@ describe("DearMeOnboarding", () => {
     });
 
     await act(async () => {
-      buttonByText(container, "Preview Brand OS")?.click();
+      buttonByText(container, "Preview profile")?.click();
     });
     await flushReact();
 
-    const requestButton = buttonByText(container, "Start Brand OS");
+    const requestButton = buttonByText(container, "Start private team");
     expect(requestButton?.disabled).toBe(true);
-    expect(container.textContent).toContain("unlock the private Brand OS cycle");
+    expect(container.textContent).toContain("unlock the private team cycle");
     expect(mockDearmeApi.createBrandBlueprintApplyRequest).not.toHaveBeenCalled();
 
     await act(async () => {
@@ -3160,7 +3164,7 @@ describe("DearMeOnboarding", () => {
     });
   });
 
-  it("keeps Brand OS preview errors customer-safe", async () => {
+  it("keeps profile preview errors customer-safe", async () => {
     mockDearmeApi.previewBrandBlueprint.mockRejectedValueOnce(
       new Error("Paperclip adapter provider could not prepare setup_payload."),
     );
@@ -3179,12 +3183,12 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     await act(async () => {
-      buttonByText(container, "Preview Brand OS")?.click();
+      buttonByText(container, "Preview profile")?.click();
     });
     await flushReact();
 
     const text = container.textContent ?? "";
-    expect(text).toContain("Brand OS preview needs attention. Try again before starting private work.");
+    expect(text).toContain("Profile preview needs attention. Try again before starting private work.");
     expect(text).not.toContain("Paperclip adapter provider");
     expect(text).not.toContain("setup_payload");
 
@@ -3193,7 +3197,7 @@ describe("DearMeOnboarding", () => {
     });
   });
 
-  it("keeps Brand OS start errors customer-safe", async () => {
+  it("keeps private team start errors customer-safe", async () => {
     mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
     mockDearmeApi.createBrandBlueprintApplyRequest.mockRejectedValueOnce(
       new Error("Approval route provider failed inside Paperclip workspace."),
@@ -3213,17 +3217,17 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     await act(async () => {
-      buttonByText(container, "Preview Brand OS")?.click();
+      buttonByText(container, "Preview profile")?.click();
     });
     await flushReact();
 
     await act(async () => {
-      buttonByText(container, "Start Brand OS")?.click();
+      buttonByText(container, "Start private team")?.click();
     });
     await flushReact();
 
     const text = container.textContent ?? "";
-    expect(text).toContain("Approval request needs attention. Try again before moving the Brand OS forward.");
+    expect(text).toContain("Approval request needs attention. Try again before moving the private team forward.");
     expect(text).not.toContain("Approval route provider");
     expect(text).not.toContain("Paperclip workspace");
     expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining("approval-1"));
@@ -4356,11 +4360,11 @@ describe("DearMeOnboarding", () => {
       ...response.workStream[0]!,
       id: "decision:approval:approval-ready",
       role: "brand_strategist",
-      title: "Your call: Launch Brand OS for Peter Studio",
+      title: "Your call: Start private team for Peter Studio",
       summary: "Review the first growth-team plan before private work starts.",
-      artifact: "Brand OS",
+      artifact: "Private team profile",
       sourceLabel: "Launch call",
-      nextAction: "Launch Brand OS when the first cycle and launch boundaries match your brand.",
+      nextAction: "Start the private team when the first cycle and launch boundaries match your brand.",
       relatedOutputId: null,
       issueId: null,
       issueIdentifier: null,
@@ -4614,7 +4618,7 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     expect(container.textContent).toContain("Decision focused");
-    expect(container.textContent).toContain("Launch Brand OS for Peter Studio");
+    expect(container.textContent).toContain("Start private team for Peter Studio");
     expect(container.textContent).toContain("Review the first growth-team plan");
     expect(container.textContent).toContain("The team keeps preparing; public launch waits for your boundary");
     expect(container.textContent).toContain("Launch prepared move");
@@ -4623,7 +4627,7 @@ describe("DearMeOnboarding", () => {
     expectMobileSafeFocusedDecision(surfaceByLabel(container, "Focused decision"), "approval-review");
     expect(container.textContent).not.toContain("/approvals/");
     expect(focusedCardsInSurface(container, "Decisions needed").some((card) =>
-      card.textContent?.includes("Launch Brand OS for Peter Studio"),
+      card.textContent?.includes("Start private team for Peter Studio"),
     )).toBe(true);
 
     await act(async () => {

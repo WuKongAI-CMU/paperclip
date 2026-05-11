@@ -329,7 +329,7 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     ).toBe(true);
     expect(artifacts.issues.map((issue) => issue.title)).toEqual(
       expect.arrayContaining([
-        "DearMe: Review Brand OS for Peter",
+        "DearMe: Review private team profile for Peter",
         "DearMe Draft: Seed voice profile",
         "DearMe Draft: Draft first content batch",
         "DearMe Draft: Draft opportunity list",
@@ -436,7 +436,7 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(reportIssue?.description).toContain("completed work, draft deliverables, decisions needed");
     expectTextBefore(reportIssue?.description, "Goals to serve:", "Proof to use:");
 
-    const brandOsIssue = artifacts.issues.find((issue) => issue.title === "DearMe: Review Brand OS for Peter");
+    const brandOsIssue = artifacts.issues.find((issue) => issue.title === "DearMe: Review private team profile for Peter");
     expect(brandOsIssue).toBeTruthy();
     const brandOsDocuments = await documentService(db).listIssueDocuments(brandOsIssue!.id);
     expect(brandOsDocuments.map((document) => document.key).sort()).toEqual([

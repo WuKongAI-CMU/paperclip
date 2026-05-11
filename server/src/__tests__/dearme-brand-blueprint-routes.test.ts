@@ -275,8 +275,8 @@ function makePreviewResult() {
       brand: { displayName: "Peter" },
     },
     summary: {
-      title: "Create Brand OS for Peter",
-      summary: "DearMe will prepare the first Brand OS.",
+      title: "Create private team profile for Peter",
+      summary: "DearMe will prepare the first private team profile.",
       recommendedAction: "Approve after review.",
       nextActionOnApproval: "Prepare private drafts.",
       teamMemberCount: 7,
@@ -371,7 +371,7 @@ function makeFirstCycleResult() {
         title: "Identity dossier",
         summary: "Peter is positioned around practical AI products.",
         preparedArtifact: "Voice profile and known-for line",
-        sourceLabel: "Prepared from private Brand OS work",
+        sourceLabel: "Prepared from private profile work",
         approvalBoundary: "Sensitive or public claims wait for review.",
       },
       {
@@ -903,7 +903,7 @@ describe("DearMe brand blueprint routes", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe("recorded");
-    expect(res.body.nextStep).toContain("Launch Brand OS");
+    expect(res.body.nextStep).toContain("Start the private team");
     expect(mockIssueService.create).toHaveBeenCalledWith(
       "company-1",
       expect.objectContaining({
@@ -925,7 +925,7 @@ describe("DearMe brand blueprint routes", () => {
       });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toBe("Add a paid beta credit purchase to unlock the private Brand OS cycle.");
+    expect(res.body.error).toBe("Add a paid beta credit purchase to unlock the private team cycle.");
     expect(mockIssueService.create).not.toHaveBeenCalled();
     expect(mockAgentService.list).not.toHaveBeenCalled();
     expect(mockQueueIssueAssignmentWakeup).not.toHaveBeenCalled();
@@ -1923,7 +1923,7 @@ describe("DearMe brand blueprint routes", () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.summary.title).toBe("Create Brand OS for Peter");
+    expect(res.body.summary.title).toBe("Create private team profile for Peter");
     expect(res.body.voiceGate.status).toBe("needs_voice_review");
     expect(mockDearMeBrandBlueprintService.preview).toHaveBeenCalledWith(
       "company-1",
@@ -2002,9 +2002,9 @@ describe("DearMe brand blueprint routes", () => {
       proofSequence: [
         {
           ...basePreview.proofSequence[0],
-          summary: "Prepared Brand OS and voice evidence are ready for review.",
-          preparedArtifact: "Brand OS dossier + Voice profile",
-          sourceLabel: "Prepared from private Brand OS work",
+          summary: "Prepared profile and voice evidence are ready for review.",
+          preparedArtifact: "Profile dossier + Voice profile",
+          sourceLabel: "Prepared from private profile work",
         },
         {
           ...basePreview.proofSequence[1],
@@ -2021,7 +2021,7 @@ describe("DearMe brand blueprint routes", () => {
       ],
     };
     const artifactOrder = [
-      "0-30s Identity dossier: Brand OS dossier + Voice profile (Prepared from private Brand OS work)",
+      "0-30s Identity dossier: Profile dossier + Voice profile (Prepared from private profile work)",
       "60-120s Audience map: Audience shortlist + opportunity brief (Prepared from audience research)",
       "3-5min Private site proof: Portfolio proof card + launch boundary (Prepared from portfolio proof work)",
     ];
@@ -2232,7 +2232,7 @@ describe("DearMe brand blueprint routes", () => {
       });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toBe("Add a paid beta credit purchase to unlock the private Brand OS cycle.");
+    expect(res.body.error).toBe("Add a paid beta credit purchase to unlock the private team cycle.");
     expect(mockDearMeBrandBlueprintService.createApplyRequest).not.toHaveBeenCalled();
     expect(mockLogActivity).not.toHaveBeenCalledWith(
       expect.anything(),

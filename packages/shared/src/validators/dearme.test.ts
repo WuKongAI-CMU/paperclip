@@ -140,7 +140,7 @@ describe("DearMe brand blueprint contract", () => {
         description: expect.stringContaining("private weekly report"),
       }),
     );
-    expect(summary.title).toBe("Create Brand OS for Peter");
+    expect(summary.title).toBe("Create private team profile for Peter");
   });
 
   it("defaults legacy Brand OS team members into the CEO/direct and worker/remote template", () => {
@@ -225,13 +225,13 @@ describe("DearMe brand blueprint contract", () => {
         proofSequence: [
           {
             ...firstCycle.proofSequence[0]!,
-            sourceLabel: "Prepared from private Brand OS work",
+            sourceLabel: "Prepared from private profile work",
           },
           firstCycle.proofSequence[1],
           firstCycle.proofSequence[2],
         ],
       }).proofSequence[0]?.sourceLabel,
-    ).toBe("Prepared from private Brand OS work");
+    ).toBe("Prepared from private profile work");
     expect(firstCycle.starterPosts.every((post) => post.approvalGate === "publish_social")).toBe(true);
     expect(firstCycle.starterPosts[0]?.body).toContain(
       "The positioning to test this week: Known for turning AI research into practical local products.",
@@ -1151,7 +1151,7 @@ describe("DearMe brand blueprint contract", () => {
         {
           id: "approval:approval-1",
           kind: "approve_brand_os",
-          title: "Launch Brand OS for Peter",
+          title: "Start private team for Peter",
           summary: "Review the first growth-team plan before private work starts.",
           riskGate: null,
           status: "pending",
@@ -1184,7 +1184,7 @@ describe("DearMe brand blueprint contract", () => {
           id: "activity-1",
           kind: "brand_os_applied",
           title: "Growth team created",
-          summary: "DearMe created the team, cycles, Brand OS documents, and first private work lanes.",
+          summary: "DearMe created the team, cycles, profile documents, and first private work lanes.",
           createdAt: "2026-05-07T14:00:00.000Z",
         },
         {
@@ -1283,22 +1283,22 @@ describe("DearMe brand blueprint contract", () => {
           cycleStage: "review",
           action: "approve",
           role: "brand_strategist",
-          title: "Your call: Launch Brand OS for Peter",
+          title: "Your call: Start private team for Peter",
           summary: "Review the first growth-team plan before private work starts.",
           customerSummary: "Review the first growth-team plan before private work starts.",
-          artifact: "Brand OS",
-          artifactTarget: "Brand OS",
+          artifact: "Private team profile",
+          artifactTarget: "Private team profile",
           status: "decision_needed",
           needsApproval: true,
           decisionNeed: {
             needed: true,
             label: "Review needed",
-            reason: "Launch Brand OS when the first cycle and launch boundaries match how you want to be represented.",
+            reason: "Start the private team when the first cycle and launch boundaries match how you want to be represented.",
             riskGate: null,
           },
           sourceLabel: "Launch call",
           costImpact: null,
-          nextAction: "Launch Brand OS when the first cycle and launch boundaries match how you want to be represented.",
+          nextAction: "Start the private team when the first cycle and launch boundaries match how you want to be represented.",
           relatedOutputId: null,
           issueId: null,
           issueIdentifier: null,
@@ -1315,12 +1315,12 @@ describe("DearMe brand blueprint contract", () => {
           id: "ledger:decision:approval:approval-1",
           kind: "needs_decision",
           role: "brand_strategist",
-          title: "Your call: Launch Brand OS for Peter",
+          title: "Your call: Start private team for Peter",
           summary: "Review the first growth-team plan before private work starts.",
-          evidenceLabel: "Launch call / Brand OS",
+          evidenceLabel: "Launch call / Private team profile",
           status: "decision_needed",
           needsApproval: true,
-          nextAction: "Launch Brand OS when the first cycle and launch boundaries match how you want to be represented.",
+          nextAction: "Start the private team when the first cycle and launch boundaries match how you want to be represented.",
           relatedOutputId: null,
           issueId: null,
           issueIdentifier: null,
@@ -1353,7 +1353,7 @@ describe("DearMe brand blueprint contract", () => {
         issueIdentifier: "PET-7",
         bodyPreview: "Completed work and decisions needed.",
         accomplished: ["Cycle check-in completed and prepared the first private work."],
-        decisions: ["Launch Brand OS before any public-facing move starts."],
+        decisions: ["Start the private team before any public-facing move starts."],
         learnings: ["Voice Editor has one direct writing sample to learn from."],
         nextBets: ["Review the prepared work and sharpen the next audience bet."],
         updatedAt: "2026-05-07T14:00:00.000Z",
@@ -1378,7 +1378,7 @@ describe("DearMe brand blueprint contract", () => {
           {
             id: "decision:approval:approval-1",
             kind: "decision",
-            label: "Launch Brand OS for Peter",
+            label: "Start private team for Peter",
             summary: "Review the first growth-team plan before private work starts.",
             role: "brand_strategist",
             status: "pending",
@@ -1436,13 +1436,13 @@ describe("DearMe brand blueprint contract", () => {
       status: "decision_needed",
       needsApproval: true,
       sourceLabel: "Launch call",
-      nextAction: expect.stringContaining("Launch Brand OS"),
+      nextAction: expect.stringContaining("Start the private team"),
     }));
     expect(response.runLedger.map((entry) => entry.kind)).toEqual(
       expect.arrayContaining(["needs_decision", "learned"]),
     );
     expect(response.runLedger[0]).toEqual(expect.objectContaining({
-      evidenceLabel: "Launch call / Brand OS",
+      evidenceLabel: "Launch call / Private team profile",
       needsApproval: true,
     }));
     expect(response.actionGraph.nodes.map((node) => node.kind)).toEqual(

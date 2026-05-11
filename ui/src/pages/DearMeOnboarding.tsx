@@ -1093,7 +1093,7 @@ function voiceGateCheckVariant(status: DearMeVoiceGateResult["checks"][number]["
 }
 
 const OUTPUT_KIND_LABELS: Record<DearMeOutputItem["kind"], string> = {
-  brand_os: "Brand OS",
+  brand_os: "Private team profile",
   voice_profile: "Voice Profile",
   content_drafts: "Content drafts",
   opportunity_drafts: "Opportunity leads",
@@ -1696,7 +1696,7 @@ function memoryUpdateFeedback(result: DearMeMemoryUpdateResult | null) {
   if (!result) return null;
   const cycles = result.growthCycles;
   if (cycles.checked === 0) {
-    return "Saved. Future growth cycles will use this after Brand OS starts.";
+    return "Saved. Future growth cycles will use this after the private team starts.";
   }
   if (cycles.updated > 0) {
     return `Saved. ${pluralizeGrowthCycle(cycles.updated)} refreshed with your latest Voice & Memory.`;
@@ -3036,7 +3036,7 @@ function FocusedDecisionPanel({
           <div className="rounded-md border border-border bg-background/80 p-3">
             <p className="text-xs font-medium text-muted-foreground">Prepared work</p>
             <p className="mt-1 text-sm">
-              {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Brand OS launch decision"}
+              {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Private team decision"}
             </p>
           </div>
           <div className="rounded-md border border-border bg-background/80 p-3">
@@ -3800,7 +3800,7 @@ function TeamFocusWorkbenchPanel({
           description={
             latestProof
               ? customerProofPackSummary(latestProof.summary)
-              : "Create your Brand OS and the first private cycle will begin here."
+              : "Create the full profile and the first private cycle will begin here."
           }
           badge={<Workflow className="h-4 w-4 text-muted-foreground" />}
           footer={
@@ -4436,7 +4436,7 @@ function DecisionsNeededPanel({
                   {
                     label: decision.outputKind
                       ? OUTPUT_KIND_LABELS[decision.outputKind]
-                      : "Brand OS launch decision",
+                      : "Private team decision",
                     variant: "outline",
                   },
                 ]}
@@ -4454,7 +4454,7 @@ function DecisionsNeededPanel({
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">Prepared artifact</p>
                     <p className="mt-1 text-sm">
-                      {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Brand OS launch decision"}
+                      {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Private team decision"}
                     </p>
                   </div>
                   <div className="rounded-md border border-border bg-background/80 p-3">
@@ -4517,7 +4517,7 @@ function OperatingLoopPanel({
       icon: Gauge,
       label: "Plan",
       title: "Chief of Staff sets the cycle",
-      summary: "Turns your Brand OS into the few moves that should compound your public surface this week.",
+      summary: "Turns your profile into the few moves that should compound your public surface this week.",
       signal: pluralizeCount(workbench.team.length, "team role"),
     },
     {
@@ -6457,10 +6457,10 @@ function PreviewPanel({
   }
 
   return (
-    <section className="space-y-4" aria-label="Brand OS preview">
+    <section className="space-y-4" aria-label="Profile preview">
       {!previewMatchesForm ? (
         <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-          Refresh the preview before starting Brand OS.
+          Refresh the preview before starting the private team.
         </div>
       ) : null}
 
@@ -6886,7 +6886,7 @@ function PrivateWorkPanel({
           className="mt-4"
           icon={isOpportunityView ? Telescope : Workflow}
           title={isOpportunityView ? "Opportunity scouting has not produced reviewable leads yet" : "Private work has not started yet"}
-          description={isOpportunityView ? "Ask the Chief of Staff to scout practical openings and stage outreach behind the launch boundary." : "Launch Brand OS to start your private team."}
+          description={isOpportunityView ? "Ask the Chief of Staff to scout practical openings and stage outreach behind the launch boundary." : "Start your private team."}
         />
       ) : (
         <>
@@ -7131,7 +7131,7 @@ export function DearMeOnboarding() {
       setActionError(
         dearMeCustomerErrorMessage(
           err,
-          "Brand OS preview needs attention. Try again before starting private work.",
+          "Profile preview needs attention. Try again before starting private work.",
         ),
       );
     },
@@ -7158,7 +7158,7 @@ export function DearMeOnboarding() {
       setActionError(
         dearMeCustomerErrorMessage(
           err,
-          "Approval request needs attention. Try again before moving the Brand OS forward.",
+          "Approval request needs attention. Try again before moving the private team forward.",
         ),
       );
     },
@@ -7288,13 +7288,13 @@ export function DearMeOnboarding() {
 
   function handleApplyRequest() {
     if (!previewResult || !previewMatchesForm) {
-      setActionError("Refresh the preview before starting Brand OS.");
+      setActionError("Refresh the preview before starting the private team.");
       return;
     }
     if (!canRequestPaidBetaWork) {
       setActionError(
         paidBetaEntitlement?.nextActionDescription ??
-          "Paid beta access is required before starting private Brand OS work.",
+          "Paid beta access is required before starting private team work.",
       );
       return;
     }
@@ -7394,20 +7394,12 @@ export function DearMeOnboarding() {
             <Button
               type="button"
               variant="outline"
-              onClick={handlePreview}
-              disabled={previewMutation.isPending || applyRequestMutation.isPending}
+              onClick={() => handleOpenFirstCyclePreview(
+                (firstCyclePreview ?? SAMPLE_FIRST_CYCLE_PREVIEW).sitePreview.handle,
+              )}
             >
-              {previewMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              Preview Brand OS
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleApplyRequest}
-              disabled={requestDisabled}
-            >
-              {applyRequestMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              Start Brand OS
+              <ExternalLink className="h-4 w-4" />
+              View private proof
               <ArrowRight className="h-4 w-4" />
             </Button>
           </>
@@ -7491,7 +7483,7 @@ export function DearMeOnboarding() {
       />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        <DearMePanel className="space-y-5" aria-label="Brand OS seed">
+        <DearMePanel className="space-y-5" aria-label="Full profile controls">
           <div>
             <div className="flex items-center gap-2 text-sm font-medium">
               <Sparkles className="h-4 w-4" />
@@ -7612,6 +7604,36 @@ export function DearMeOnboarding() {
             rows={3}
             onChange={(value) => updateField("approvalNote", value)}
           />
+
+          <div className="flex flex-col gap-3 rounded-md border border-border bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium">Full profile controls</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Use these after the first proof pack when the team needs a richer operating profile.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePreview}
+                disabled={previewMutation.isPending || applyRequestMutation.isPending}
+              >
+                {previewMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                Preview profile
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleApplyRequest}
+                disabled={requestDisabled}
+              >
+                {applyRequestMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                Start private team
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </DearMePanel>
 
         <PreviewPanel

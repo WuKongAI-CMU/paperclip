@@ -211,7 +211,7 @@ const OPERATION_DESCRIPTORS: Record<string, OutputDescriptor> = {
 
 const BRAND_OS_DESCRIPTOR: OutputDescriptor = {
   kind: "brand_os",
-  title: "Brand OS",
+  title: "Private team profile",
   summary: "Private positioning, goals, proof, offers, and launch boundaries.",
   order: 10,
   documentKeys: ["brand-os", "approval-gates"],
@@ -1156,7 +1156,7 @@ function renderCycleOutputPacket(input: {
     portfolioUpdate ? "site proof draft" : null,
   ], "private draft packet");
   const completedWork = compactList([
-    brandOs ? "Brand OS" : null,
+    brandOs ? "private team profile" : null,
     voiceProfile ? "voice profile" : null,
     contentDrafts ? "starter content" : null,
     opportunityDrafts ? "opportunity angle" : null,

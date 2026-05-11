@@ -140,7 +140,7 @@ const OUTPUT_DECISION_GATE: Record<DearMeOutputKind, DearMeRiskGate | null> = {
 };
 
 const OUTPUT_KIND_ARTIFACT_LABELS: Record<DearMeOutputKind, string> = {
-  brand_os: "Brand OS",
+  brand_os: "Private team profile",
   voice_profile: "Voice profile",
   content_drafts: "Content drafts",
   opportunity_drafts: "Opportunity leads",
@@ -635,7 +635,7 @@ function roleForDecision(decision: DearMeWorkbenchDecision): DearMeTeamRole {
 
 function artifactForDecision(decision: DearMeWorkbenchDecision) {
   if (decision.outputKind) return OUTPUT_KIND_ARTIFACT_LABELS[decision.outputKind];
-  if (decision.kind === "approve_brand_os") return "Brand OS";
+  if (decision.kind === "approve_brand_os") return "Private team profile";
   return "Approval";
 }
 
@@ -760,7 +760,7 @@ function sourceLabelForWork(input: {
 
 function nextActionForDecision(decision: DearMeWorkbenchDecision) {
   if (decision.kind === "approve_brand_os") {
-    return "Launch Brand OS when the first cycle and launch boundaries match how you want to be represented.";
+    return "Start the private team when the first cycle and launch boundaries match how you want to be represented.";
   }
   if (decisionHasCyclePacketEvidence(decision)) {
     return SHARED_LAUNCH_READY_NEXT_STEP;
@@ -806,7 +806,7 @@ function sourceLabelForProgress(item: DearMeWorkbenchProgressItem) {
   if (item.kind === "execution_handoff_prepared") return "Launch brief";
   if (item.kind === "next_move_delivery_recorded") return "Delivery receipt";
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "Voice & Memory";
-  if (item.kind === "brand_os_requested" || item.kind === "brand_os_applied") return "Brand OS";
+  if (item.kind === "brand_os_requested" || item.kind === "brand_os_applied") return "Private team profile";
   if (item.kind === "paid_beta") return "Paid beta access";
   if (item.kind === "cycle_check_in") return "Cycle cadence";
   if (item.kind === "spend_checkpoint") return "Spend guardrail";
@@ -894,7 +894,7 @@ function nextActionForProgress(item: DearMeWorkbenchProgressItem) {
     return "No approval needed; DearMe will use this source in the next private cycle.";
   }
   if (item.kind === "brand_os_requested") {
-    return "Review the Brand OS request before private work starts.";
+    return "Review the private team request before private work starts.";
   }
   if (item.kind === "brand_os_applied") {
     return "Start or steer the first private growth cycle from the Chief of Staff.";
@@ -1923,7 +1923,7 @@ export function dearmeWorkbenchProgressFromActivity(input: {
     return {
       id: input.id,
       kind: "brand_os_requested",
-      title: "Brand OS launch requested",
+      title: "Private team requested",
       summary: "The first growth-team plan is waiting for the launch call.",
       createdAt: toIso(input.createdAt),
     };
@@ -2012,7 +2012,7 @@ export function dearmeWorkbenchProgressFromActivity(input: {
       id: input.id,
       kind: "brand_os_applied",
       title: "Growth team created",
-      summary: "DearMe created the team, cycles, Brand OS documents, and first private work lanes.",
+      summary: "DearMe created the team, cycles, profile documents, and first private work lanes.",
       createdAt: toIso(input.createdAt),
     };
   }
@@ -2147,7 +2147,7 @@ function buildSummary(input: {
   decisionCount: number;
 }) {
   if (input.teamCount === 0) {
-    return "Preview Brand OS, record paid beta access, and approve the first private growth cycle to create the team.";
+    return "Preview the private team, record paid beta access, and approve the first private growth cycle to create the team.";
   }
 
   return [

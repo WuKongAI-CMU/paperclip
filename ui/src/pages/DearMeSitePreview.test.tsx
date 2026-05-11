@@ -58,7 +58,7 @@ function createPreview() {
     proofSequence: [
       {
         ...preview.proofSequence[0]!,
-        sourceLabel: "Prepared from private Brand OS work",
+        sourceLabel: "Prepared from private profile work",
       },
       preview.proofSequence[1]!,
       preview.proofSequence[2]!,

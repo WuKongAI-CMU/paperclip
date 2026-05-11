@@ -366,7 +366,7 @@ function cronForCadence(cadence: DearMeBrandBlueprint["cycles"][number]["cadence
 function renderBrandOsDocument(payload: DearMeBrandBlueprintApplyPayload) {
   const { brandBlueprint: blueprint } = payload;
   return [
-    `# Brand OS: ${blueprint.brand.displayName}`,
+    `# Private team profile: ${blueprint.brand.displayName}`,
     "",
     "## Positioning",
     blueprint.brand.positioning,
@@ -449,7 +449,7 @@ function renderContentSeedDocument(input: {
   return {
     key: "starter-posts",
     title: "Starter posts",
-    changeSummary: "Seeded first-week content brief from DearMe Brand OS approval",
+    changeSummary: "Seeded first-week content brief from DearMe private team approval",
     body: [
       `# Starter content batch: ${blueprint.brand.displayName}`,
       "",
@@ -457,7 +457,7 @@ function renderContentSeedDocument(input: {
       `Approval gate: ${approvalGateText(input.gate, "Publish approval is required before any starter post moves public.")}`,
       "",
       "## Purpose",
-      "Turn the approved Brand OS into starter posts the user can review before any public publishing.",
+      "Turn the approved profile into starter posts the user can review before any public publishing.",
       "",
       "## Private starter posts",
       ...input.preview.starterPosts.flatMap((post, index) => [
@@ -517,7 +517,7 @@ function renderOpportunitySeedDocument(input: {
   return {
     key: "opportunity-list",
     title: "Opportunity list",
-    changeSummary: "Seeded first-week opportunity brief from DearMe Brand OS approval",
+    changeSummary: "Seeded first-week opportunity brief from DearMe private team approval",
     body: [
       `# Opportunity shortlist: ${blueprint.brand.displayName}`,
       "",
@@ -547,7 +547,7 @@ function renderPortfolioSeedDocument(input: {
   return {
     key: "portfolio-update",
     title: "Portfolio update",
-    changeSummary: "Seeded first-week portfolio brief from DearMe Brand OS approval",
+    changeSummary: "Seeded first-week portfolio brief from DearMe private team approval",
     body: [
       `# Portfolio proof update: ${blueprint.brand.displayName}`,
       "",
@@ -639,7 +639,7 @@ function renderDearMeReportDocument(
     "",
     "## Work Completed",
     preview
-      ? "- Brand OS, Voice Profile, approval gates, recurring cycles, and private first-week work lanes were created."
+      ? "- Private team profile, Voice Profile, approval gates, recurring cycles, and private first-week work lanes were created."
       : "- No completed work has been reported yet.",
     "",
     "## Drafts and Assets Ready for Review",
@@ -717,10 +717,10 @@ function renderBrandOsIssueDescription(payload: DearMeBrandBlueprintApplyPayload
   return [
     payload.summary,
     "",
-    "DearMe has persisted the Brand OS documents on this issue. Review these before enabling public output.",
+    "DearMe has persisted the private team profile documents on this issue. Review these before enabling public output.",
     "",
     "Acceptance:",
-    "- Brand OS document reflects identity, positioning, goals, audiences, proof, offers, channels, constraints, and budget.",
+    "- Private team profile reflects identity, positioning, goals, audiences, proof, offers, channels, constraints, and budget.",
     "- Voice profile document records whether more samples are needed.",
     "- Launch boundaries document lists every public, outbound, spend, and channel action that still needs the user's launch call.",
     "",
@@ -793,7 +793,7 @@ function renderDraftIssueDescription(
         "- After updating the attached report document, leave only a short issue comment summarizing what changed.",
         "- Summarize completed work, draft deliverables, decisions needed, budget notes, outcomes, and next bets.",
         "- Reference issue identifiers, attached documents, or stated assumptions for every concrete claim.",
-        "- If no work has completed yet, write a setup report that explains Brand OS status, queued first operations, and the next review path.",
+        "- If no work has completed yet, write a setup report that explains private team profile status, queued first operations, and the next review path.",
         "- Keep the report private; do not publish, send, or share it externally.",
       ]
     : [];
@@ -811,9 +811,9 @@ function renderDraftIssueDescription(
     ? [
         "",
         "Content scope:",
-        "- Draft personal-brand content for the preferred channels using the Brand OS goals, proof points, offers, and pillars.",
+        "- Draft personal-brand content for the preferred channels using the profile goals, proof points, offers, and pillars.",
         "- Focus on audience value, proof-backed point of view, portfolio credibility, and approved offers.",
-        "- Do not draft generic greeting-card, birthday, reminder, or app-marketing copy unless the Brand OS explicitly requests it.",
+        "- Do not draft generic greeting-card, birthday, reminder, or app-marketing copy unless the profile explicitly requests it.",
         "- Include channel, audience, hook, draft body, proof used, and required launch boundary for every item.",
       ]
     : [];
@@ -943,7 +943,7 @@ export function dearmeBrandBlueprintApplyService(db: Db) {
     }
 
     const brandOsIssue = await issuesSvc.create(approval.companyId, {
-      title: `DearMe: Review Brand OS for ${blueprint.brand.displayName}`,
+      title: `DearMe: Review private team profile for ${blueprint.brand.displayName}`,
       description: renderBrandOsIssueDescription(payload),
       status: "backlog",
       priority: "high",
@@ -966,7 +966,7 @@ export function dearmeBrandBlueprintApplyService(db: Db) {
     const documentInputs = [
       {
         key: "brand-os",
-        title: "Brand OS",
+        title: "Private team profile",
         body: renderBrandOsDocument(payload),
       },
       {

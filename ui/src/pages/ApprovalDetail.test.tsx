@@ -189,7 +189,7 @@ describe("ApprovalDetail", () => {
     });
     await flushReact();
 
-    expect(container.textContent).toContain("Brand OS: Create Brand OS for Peter Studio");
+    expect(container.textContent).toContain("Private team profile: Create private team profile for Peter Studio");
     expect(container.textContent).toContain("DearMe will create");
     expect(container.textContent).toContain("Review before approving");
     expect(container.textContent).toContain("First operations");

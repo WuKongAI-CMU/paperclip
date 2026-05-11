@@ -2,6 +2,36 @@
 
 Date: 2026-05-11
 
+## First Screen Moves From Brand OS Setup To Private Proof - 2026-05-11
+
+Product/architecture slice:
+
+- Kept the Polsia-style one-sentence proof path as the primary first-screen
+  action and replaced the old peer-level Brand OS setup buttons with a
+  `View private proof` action.
+- Moved the richer profile/approval controls into a secondary
+  `Full profile controls` block after the proof-first surfaces, preserving the
+  existing DearMe profile workflow without making setup the first product
+  promise.
+- Reworded customer-facing preview, paid-beta, approval, workbench, and apply
+  request labels from `Brand OS` to `private team profile` / `private team`
+  language while keeping the internal `brand_os` model boundary intact.
+- This keeps Naive/Paperclip/OpenClaw substrate backstage and makes the first
+  use promise closer to Polsia: one short answer becomes visible private work,
+  then the full operating profile can deepen the team.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-brand-blueprint-apply.test.ts server/src/__tests__/dearme-brand-blueprints.test.ts server/src/__tests__/dearme-workbench.test.ts server/src/__tests__/dearme-memory-context.test.ts server/src/__tests__/dearme-output-handoff.test.ts ui/src/components/ApprovalPayload.test.tsx ui/src/components/DearMeShell.test.tsx ui/src/pages/ApprovalDetail.test.tsx ui/src/pages/DearMeOnboarding.test.tsx ui/src/pages/DearMeSitePreview.test.tsx --maxWorkers=1`
+  - Result: 160 passed, 28 skipped. The skipped cases are embedded
+    Postgres-backed DearMe service tests; this host reported
+    `Postgres init script exited with code 1`.
+- `pnpm typecheck`
+- `pnpm --silent dearme:proof -- --check`
+- `pnpm --silent dearme:worktrees -- --summary-json --skip-dirty --handoffs`
+- `pnpm --silent dearme:status`
+- `git diff --check`
+
 ## Real Loopback Host Rehearsal Command Lands - 2026-05-11
 
 Product/architecture slice:

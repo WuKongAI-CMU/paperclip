@@ -1372,24 +1372,24 @@ export function describeDearMePaidBetaEntitlement(
     return dearMePaidBetaEntitlementSchema.parse({
       state: "paid_beta_active",
       label: "Paid beta active",
-      summary: "Paid beta is active. DearMe can start the Brand OS cycle and prepare launch-ready work.",
+      summary: "Paid beta is active. DearMe can start the private team cycle and prepare launch-ready work.",
       canPreviewBrandOs: true,
       canRequestBrandOsApproval: true,
       canStartPrivateWork: true,
-      nextActionLabel: "Start Brand OS",
-      nextActionDescription: "Start Brand OS to create the growth team, cycles, and first launch-ready outputs.",
+      nextActionLabel: "Start private team",
+      nextActionDescription: "Start the private team to create the growth team, cycles, and first launch-ready outputs.",
     });
   }
 
   return dearMePaidBetaEntitlementSchema.parse({
     state: "trial_preview",
     label: "Trial preview",
-    summary: "Preview Brand OS for free. Record paid beta access before starting private DearMe work.",
+    summary: "Preview the private team for free. Record paid beta access before starting private DearMe work.",
     canPreviewBrandOs: true,
     canRequestBrandOsApproval: false,
     canStartPrivateWork: false,
     nextActionLabel: "Record paid beta payment",
-    nextActionDescription: "Add a paid beta credit purchase to unlock the private Brand OS cycle.",
+    nextActionDescription: "Add a paid beta credit purchase to unlock the private team cycle.",
   });
 }
 
@@ -1826,7 +1826,7 @@ export function createDearMeBrandBlueprint(input: DearMeBrandBlueprintSeed): Dea
       },
     ],
     assets: [
-      { id: "brand_os", title: "Brand OS", kind: "brand_os", ownerRole: "brand_strategist" },
+      { id: "brand_os", title: "Private team profile", kind: "brand_os", ownerRole: "brand_strategist" },
       { id: "voice_profile", title: "Voice profile", kind: "voice_profile", ownerRole: "voice_editor" },
       { id: "content_pipeline", title: "Content pipeline", kind: "content_pipeline", ownerRole: "content_producer" },
       { id: "opportunity_pipeline", title: "Opportunity pipeline", kind: "opportunity_pipeline", ownerRole: "opportunity_scout" },
@@ -1847,10 +1847,10 @@ export function summarizeDearMeBrandBlueprint(
   blueprint: DearMeBrandBlueprint,
 ): DearMeBrandBlueprintSummary {
   return dearMeBrandBlueprintSummarySchema.parse({
-    title: `Create Brand OS for ${blueprint.brand.displayName}`,
-    summary: `DearMe will create a ${blueprint.team.length}-member personal brand growth team, seed Brand OS memory, start ${blueprint.cycles.length} recurring cycles, and keep public moves inside launch boundaries.`,
-    recommendedAction: "Start the Brand OS once the goals, audience, channels, budget, and launch boundaries match the user's intent.",
-    nextActionOnApproval: "DearMe will prepare the Brand OS, voice profile, content pipeline, opportunity pipeline, portfolio draft, and weekly Dear me report.",
+    title: `Create private team profile for ${blueprint.brand.displayName}`,
+    summary: `DearMe will create a ${blueprint.team.length}-member personal brand growth team, seed profile memory, start ${blueprint.cycles.length} recurring cycles, and keep public moves inside launch boundaries.`,
+    recommendedAction: "Start the private team once the goals, audience, channels, budget, and launch boundaries match the user's intent.",
+    nextActionOnApproval: "DearMe will prepare the profile memory, voice profile, content pipeline, opportunity pipeline, portfolio draft, and weekly Dear me report.",
     teamMemberCount: blueprint.team.length,
     cycleCount: blueprint.cycles.length,
     riskGateCount: blueprint.gates.length,
@@ -1864,7 +1864,7 @@ export function buildDearMeBrandBlueprintExecutionPlan(
     operations: [
       {
         id: "create_brand_os",
-        title: "Create Brand OS memory",
+        title: "Create profile memory",
         description: "Persist identity, positioning, goals, audience, proof, offers, constraints, and voice samples.",
         ownerRole: "brand_strategist",
         approvalGate: null,

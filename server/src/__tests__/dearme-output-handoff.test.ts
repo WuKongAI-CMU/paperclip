@@ -478,7 +478,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     const agentId = await seedAgent(companyId);
     const brandIssueId = await seedIssue({
       companyId,
-      title: "DearMe: Review Brand OS for Peter",
+      title: "DearMe: Review private team profile for Peter",
       identifier: "DME-1",
       originFingerprint: "brand-os-review",
       status: "done",
@@ -539,7 +539,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       companyId,
       issueId: brandIssueId,
       key: "brand-os",
-      title: "Brand OS",
+      title: "Private team profile",
       body: [
         "# Brand OS",
         "## Positioning",
@@ -974,7 +974,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     const companyId = await seedCompany();
     const brandIssueId = await seedIssue({
       companyId,
-      title: "DearMe: Review Brand OS for Peter",
+      title: "DearMe: Review private team profile for Peter",
       identifier: "DME-20",
       originFingerprint: "brand-os-review",
       status: "in_review",
@@ -1017,7 +1017,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       companyId,
       issueId: brandIssueId,
       key: "brand-os",
-      title: "Brand OS",
+      title: "Private team profile",
       body: [
         "Positioning: practical AI operator for local-first builders",
         "Proof Points: shipped a local-first product launch with approval gates",

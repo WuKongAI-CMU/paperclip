@@ -60,7 +60,7 @@ describe("DearMeShell", () => {
           eyebrow="DearMe / Team workbench"
           title="Your personal brand growth team"
           description="Your team prepares the moves. You approve what represents you."
-          actions={<button type="button">Preview Brand OS</button>}
+          actions={<button type="button">Preview profile</button>}
         />
         <DearMePanel aria-label="Decisions needed">Review 3 prepared moves</DearMePanel>
       </DearMePageShell>,
@@ -70,7 +70,7 @@ describe("DearMeShell", () => {
     expect(page.querySelector('[data-dearme-surface="hero"]')).not.toBeNull();
     expect(page.querySelector('[data-dearme-surface="panel"]')).not.toBeNull();
     expect(page.textContent).toContain("Your personal brand growth team");
-    expect(page.textContent).toContain("Preview Brand OS");
+    expect(page.textContent).toContain("Preview profile");
     expect(page.textContent).toContain("Review 3 prepared moves");
   });
 

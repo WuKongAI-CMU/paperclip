@@ -170,7 +170,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
 
     const brandIssueId = await seedIssue({
       companyId,
-      title: "DearMe: Review Brand OS for Peter",
+      title: "DearMe: Review private team profile for Peter",
       identifier: "WB-1",
       originFingerprint: "brand-os-review",
       status: "done",
@@ -219,7 +219,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
       companyId,
       issueId: brandIssueId,
       key: "brand-os",
-      title: "Brand OS",
+      title: "Private team profile",
       body: "# Brand OS\n\nPositioning and proof are ready.",
       updatedAt: new Date("2026-05-07T14:05:00.000Z"),
     });
@@ -645,7 +645,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
           role: "chief_of_staff",
           artifact: "Growth team",
           status: "recorded",
-          sourceLabel: "Brand OS",
+          sourceLabel: "Private team profile",
           costImpact: "Work stays inside paid-beta guardrails",
           nextAction: expect.stringContaining("Start or steer"),
         }),

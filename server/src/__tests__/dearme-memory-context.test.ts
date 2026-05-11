@@ -244,7 +244,7 @@ describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
     const brandOsIssue = await seedParentIssue(
       companyId,
       DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
-      "DearMe: Review Brand OS for Peter",
+      "DearMe: Review private team profile for Peter",
     );
     const routinesSvc = routineService(db);
     const dearmeRoutine = await routinesSvc.create(
@@ -311,7 +311,7 @@ describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
     const brandOsIssue = await seedParentIssue(
       companyId,
       DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
-      "DearMe: Review Brand OS for Peter",
+      "DearMe: Review private team profile for Peter",
     );
     const otherIssue = await seedParentIssue(companyId, "manual", "Manual routine parent");
     const routinesSvc = routineService(db);
@@ -459,7 +459,7 @@ describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
     const brandOsIssue = await seedParentIssue(
       companyId,
       DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
-      "DearMe: Review Brand OS for Peter",
+      "DearMe: Review private team profile for Peter",
     );
     const routinesSvc = routineService(db);
     const dearmeRoutine = await routinesSvc.create(
@@ -521,7 +521,7 @@ describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
     const brandOsIssue = await seedParentIssue(
       companyId,
       DEARME_BRAND_BLUEPRINT_ORIGIN_KIND,
-      "DearMe: Review Brand OS for Peter",
+      "DearMe: Review private team profile for Peter",
     );
     const routinesSvc = routineService(db);
 

@@ -31,7 +31,7 @@ const primaryItems: DearMeNavItem[] = [
 
 const growthItems: DearMeNavItem[] = [
   { to: "/dearme?view=voice", label: "Voice & Memory", icon: Mic2 },
-  { to: "/dearme?view=brand-os", label: "Brand OS", icon: NotebookText },
+  { to: "/dearme?view=brand-os", label: "Profile", icon: NotebookText },
   { to: "/dearme?view=content", label: "Content", icon: PenLine },
   { to: "/dearme?view=opportunities", label: "Opportunities", icon: Telescope },
   { to: "/dearme?view=portfolio", label: "Portfolio", icon: BriefcaseBusiness },
@@ -180,7 +180,7 @@ export function DearMeSidebar() {
           <p className="mt-1 text-xs text-muted-foreground">Team is working. Decisions stay with you.</p>
         </div>
         <DearMeNavSection label="Today" items={primaryItems} />
-        <DearMeNavSection label="Brand OS" items={growthItems} />
+        <DearMeNavSection label="Team profile" items={growthItems} />
       </nav>
     </aside>
   );

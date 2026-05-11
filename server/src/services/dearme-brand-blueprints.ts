@@ -206,7 +206,7 @@ function hydrateProofSequenceFromOutputs(
   const proposedCopy = firstDetailValue(portfolioUpdate, ["proposed_copy"], 260);
   const nextBet = firstDetailValue(weeklyReport, ["next_bets"], 220);
   const identitySourceLabel = proofSourceLabel([
-    brandOs ? "private Brand OS work" : null,
+    brandOs ? "private profile work" : null,
     voiceProfile ? "voice work" : null,
   ]);
   const audienceSourceLabel = proofSourceLabel([
@@ -223,12 +223,12 @@ function hydrateProofSequenceFromOutputs(
       ? {
           ...identityFallback,
           summary: joinProofParts([
-            positioning ? `Identity Researcher turned the private Brand OS into a known-for line: ${positioning}.` : null,
+            positioning ? `Identity Researcher turned the private profile into a known-for line: ${positioning}.` : null,
             voiceGuidance ? `Voice Editor attached voice guidance: ${voiceGuidance}.` : null,
             proof ? `Proof used: ${proof}.` : null,
           ]) || identityFallback.summary,
           preparedArtifact: artifactLabel([
-            brandOs ? "Brand OS dossier" : null,
+            brandOs ? "Profile dossier" : null,
             voiceProfile ? "Voice profile" : null,
           ], identityFallback.preparedArtifact),
           ...(identitySourceLabel ? { sourceLabel: identitySourceLabel } : {}),
@@ -303,13 +303,13 @@ function renderFirstCycleProofIssues(preview: DearMeFirstCyclePreviewResponse): 
   return [
     {
       originFingerprint: "brand-os-review",
-      title: `DearMe: First-cycle Brand OS proof for ${preview.positioning}`,
+      title: `DearMe: First-cycle profile proof for ${preview.positioning}`,
       description: "Prepared identity, voice, and five-target opportunity proof for the first 5-minute private proof package.",
       priority: "high",
       documents: [
         {
           key: "brand-os",
-          title: "Brand OS",
+          title: "Private team profile",
           body: firstCycleLines([
             `Positioning: ${preview.positioning}`,
             `Proof Points: ${preview.portfolioProofCard.proofSource}`,
@@ -539,7 +539,7 @@ export function dearmeBrandBlueprintService(
       artifact: {
         kind: "brand_positioning",
         channel: blueprint.brand.preferredChannels[0] ?? null,
-        title: "Brand OS positioning",
+        title: "Profile positioning",
         text: blueprint.brand.positioning,
         ...(blueprint.brand.proofPoints[0] ? { proofUsed: blueprint.brand.proofPoints[0] } : {}),
       },
