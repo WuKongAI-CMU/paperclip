@@ -2,6 +2,26 @@
   "updatedAt": "2026-05-11",
   "reviewedAbsorptions": [
     {
+      "ticket": "DEA-50",
+      "branch": "codex/dearme-dm-136-sample-demo-proof",
+      "head": "17854e15e5522f9e28962e8296a546a3a058a36b",
+      "reviewedAt": "2026-05-11",
+      "reason": "The DEA-50 Symphony handoff is absorbed into the coordinator head through the X callback persistence route, route/service tests, updated architecture/build docs, and landing-doc alignment; the worker tip was replayed as coordinator commits with the required OmX coauthor trailer, so replaying the original worker head would duplicate the same proof.",
+      "evidence": [
+        "server/src/routes/dearme-channel-connections.ts",
+        "server/src/__tests__/dearme-channel-connections-routes.test.ts",
+        "server/src/services/dearme-channel-connections.test.ts",
+        "server/src/app.ts",
+        "server/src/routes/index.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/INDEX.md",
+        "docs/dearme/PRODUCT-ARCHITECTURE.md",
+        "docs/dearme/README.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md",
+        "docs/dearme/TRI-SUBSTRATE-ARCHITECTURE.md"
+      ]
+    },
+    {
       "ticket": "DEA-49",
       "branch": "codex/dearme-dm-136-sample-demo-proof",
       "head": "1e3088647b1157cd62c11443b1172f13d8ac75a0",
