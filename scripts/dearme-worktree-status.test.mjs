@@ -258,6 +258,11 @@ test("parseArgs tolerates the pnpm argument separator", () => {
 
   const handoffEqualsOptions = parseArgs(["--handoff-root=/tmp/dearme-handoffs-equals"]);
   assert.equal(handoffEqualsOptions.handoffRoot, "/tmp/dearme-handoffs-equals");
+
+  const summaryJsonOptions = parseArgs(["--summary-json", "--handoffs"]);
+  assert.equal(summaryJsonOptions.summaryJson, true);
+  assert.equal(summaryJsonOptions.summaryOnly, true);
+  assert.equal(summaryJsonOptions.includeHandoffs, true);
 });
 
 test("parseArgs supports DEA tickets and Symphony workspace options", () => {

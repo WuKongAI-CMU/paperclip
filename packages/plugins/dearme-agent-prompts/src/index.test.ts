@@ -5,11 +5,13 @@ import {
   APPROVAL_GATES,
   APPROVAL_GATE_CONFIG,
   BRAND_SITE_BUILDER_PROMPT,
+  BRAND_SITE_BUILDER_ROLE,
   BROWSER_AGENT_PROMPT,
   BUDGET_TIERS,
   CHIEF_OF_STAFF_PROMPT,
   CHIEF_OF_STAFF_ROLE,
   CONTENT_PRODUCER_PROMPT,
+  CONTENT_PRODUCER_ROLE,
   DEARME_CYCLE_STAGE_IDS,
   DEARME_ROLE_REGISTRY,
   DEARME_ROLE_SEEDS,
@@ -19,6 +21,7 @@ import {
   MODEL_ROUTING_TABLE,
   MOOD_FACE_LIBRARY,
   OPPORTUNITY_HUNTER_PROMPT,
+  OPPORTUNITY_HUNTER_ROLE,
   OPPORTUNITY_STATES,
   OUTBOUND_5_TOUCH,
   REPORTING_PROMPT,
@@ -30,6 +33,7 @@ import {
   canTransitionOpportunity,
   canTransitionWorkLoop,
   getMoodFace,
+  getPreviewRoles,
   getRoleSeed,
   getRoleSpec,
   getRolesByGroup,
@@ -309,6 +313,18 @@ describe("dearme-agent-prompts package", () => {
       "reporting",
     ]);
     expect(getShippedRoles().length).toBe(0);
+  });
+
+  it("registry separates first-wow preview roles from shipped roles", () => {
+    expect(getPreviewRoles().map((spec) => spec.role)).toEqual([
+      CHIEF_OF_STAFF_ROLE,
+      CONTENT_PRODUCER_ROLE,
+      OPPORTUNITY_HUNTER_ROLE,
+      BRAND_SITE_BUILDER_ROLE,
+    ]);
+    expect(getShippedRoles()).toEqual([]);
+    expect(getPreviewRoles().length).toBeLessThan(DEARME_ROLE_REGISTRY.length);
+    expect(DEARME_ROLE_REGISTRY.filter((spec) => spec.status === "planned").length).toBe(8);
   });
 
   it("each role declares only state machines / templates / tools that exist", () => {

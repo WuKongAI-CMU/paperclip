@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { access } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import {
@@ -55,7 +56,7 @@ export interface DearMeProofReadiness {
 }
 
 export interface DearMeProofStatusBlocker {
-  lane: Exclude<DearMeProofLane, "all">;
+  lane: Exclude<DearMeProofLane, "all"> | "integration";
   target: string;
   missingCount: number;
   liveConfirmationRequired?: boolean;
@@ -64,6 +65,7 @@ export interface DearMeProofStatusBlocker {
 export interface DearMeProofStatusSection {
   key:
     | "first_wow_aha_proof"
+    | "integration_absorption_proof"
     | "local_safe_proof"
     | "voice_semantic_proof"
     | "live_provider_proof";
@@ -79,6 +81,7 @@ export interface DearMeProofStatus {
   sections: DearMeProofStatusSection[];
   commands: {
     ahaProof: string;
+    integrationAudit: string;
     printEnvTemplate: string;
     runSafe: string;
     check: string;
@@ -106,9 +109,50 @@ export interface DearMeProofSafeOptions {
   now?: () => Date;
 }
 
+export interface DearMeIntegrationAuditStatus {
+  ready: boolean;
+  command: string;
+  worktrees: number | null;
+  reviewedAbsorbed: number | null;
+  inCurrent: number | null;
+  notInCurrent: number | null;
+  dirty: number | null;
+  latestHandoffs: number | null;
+  latestCommittedHandoffs: number | null;
+  latestDirtyHandoffs: number | null;
+  latestNoFileChangesHandoffs: number | null;
+  unavailableReason?: string;
+}
+
+interface DearMeWorktreeSummaryJson {
+  summary?: {
+    total?: number;
+    reviewed_absorbed?: number;
+    in_current?: number;
+    not_in_current?: number;
+    dirty?: number;
+  };
+  handoffSummary?: {
+    latestIssueCount?: number;
+    latestByIssue?: Record<string, unknown>;
+    latestByMode?: {
+      committed_patch?: number;
+      dirty_patch_handoff?: number;
+      no_file_changes?: number;
+    };
+  };
+}
+
 const PROOF_ENV_FILE = ".dearme-proof.env";
 const PRIVATE_SITE_EXPORT_COMMAND =
   "pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof";
+const INTEGRATION_AUDIT_COMMAND =
+  "pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs";
+const INTEGRATION_AUDIT_SCRIPT_ARGS = [
+  "--summary-json",
+  "--skip-dirty",
+  "--handoffs",
+] as const;
 
 function includesLane(selected: DearMeProofLane, lane: Exclude<DearMeProofLane, "all">) {
   return selected === "all" || selected === lane;
@@ -309,6 +353,81 @@ export function dearMeProofOperatorCommands(
   ];
 }
 
+function numberOrNull(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+export function parseDearMeIntegrationAuditStatus(
+  jsonText: string,
+): DearMeIntegrationAuditStatus {
+  const parsed = JSON.parse(jsonText) as DearMeWorktreeSummaryJson;
+  const summary = parsed.summary ?? {};
+  const handoffSummary = parsed.handoffSummary;
+  const latestHandoffs = numberOrNull(handoffSummary?.latestIssueCount)
+    ?? (handoffSummary?.latestByIssue
+      ? Object.keys(handoffSummary.latestByIssue).length
+      : null);
+  const latestCommittedHandoffs = numberOrNull(
+    handoffSummary?.latestByMode?.committed_patch,
+  ) ?? 0;
+  const latestDirtyHandoffs = numberOrNull(
+    handoffSummary?.latestByMode?.dirty_patch_handoff,
+  ) ?? 0;
+  const latestNoFileChangesHandoffs = numberOrNull(
+    handoffSummary?.latestByMode?.no_file_changes,
+  ) ?? 0;
+  const notInCurrent = numberOrNull(summary.not_in_current) ?? 0;
+  const dirty = numberOrNull(summary.dirty) ?? 0;
+  const latestHandoffBlocked = latestHandoffs !== null
+    && (latestCommittedHandoffs !== latestHandoffs
+      || latestDirtyHandoffs > 0
+      || latestNoFileChangesHandoffs > 0);
+
+  return {
+    ready: notInCurrent === 0 && dirty === 0 && !latestHandoffBlocked,
+    command: INTEGRATION_AUDIT_COMMAND,
+    worktrees: numberOrNull(summary.total),
+    reviewedAbsorbed: numberOrNull(summary.reviewed_absorbed),
+    inCurrent: numberOrNull(summary.in_current),
+    notInCurrent,
+    dirty,
+    latestHandoffs,
+    latestCommittedHandoffs,
+    latestDirtyHandoffs,
+    latestNoFileChangesHandoffs,
+  };
+}
+
+export function inspectDearMeIntegrationAuditStatus(): DearMeIntegrationAuditStatus {
+  const scriptPath = fileURLToPath(new URL("./dearme-worktree-status.mjs", import.meta.url));
+
+  try {
+    return parseDearMeIntegrationAuditStatus(
+      execFileSync("node", [scriptPath, ...INTEGRATION_AUDIT_SCRIPT_ARGS], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 20_000,
+        maxBuffer: 1024 * 1024,
+      }),
+    );
+  } catch (error) {
+    return {
+      ready: false,
+      command: INTEGRATION_AUDIT_COMMAND,
+      worktrees: null,
+      reviewedAbsorbed: null,
+      inCurrent: null,
+      notInCurrent: null,
+      dirty: null,
+      latestHandoffs: null,
+      latestCommittedHandoffs: null,
+      latestDirtyHandoffs: null,
+      latestNoFileChangesHandoffs: null,
+      unavailableReason: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 function providerLane(readiness: DearMeProofReadiness) {
   return readiness.lanes.find((lane) => lane.lane === "provider");
 }
@@ -373,9 +492,94 @@ function firstWowAhaSection(report: DearMeAhaProofReport): DearMeProofStatusSect
   };
 }
 
+function integrationAuditDescription(audit: DearMeIntegrationAuditStatus) {
+  if (audit.unavailableReason) {
+    return `Coordinator integration audit could not run. Run ${audit.command} for the current worktree and handoff state.`;
+  }
+
+  const handoffText = audit.latestHandoffs === null
+    ? "latest Symphony handoffs were not included"
+    : `latest Symphony handoffs ${audit.latestCommittedHandoffs}/${audit.latestHandoffs} committed`;
+  return [
+    `Worktree audit shows ${audit.worktrees ?? "unknown"} tracked worktrees`,
+    `${audit.reviewedAbsorbed ?? 0} reviewed absorptions`,
+    `${audit.inCurrent ?? 0} already in current head`,
+    `${audit.notInCurrent ?? 0} not-in-current replay candidates`,
+    `${audit.dirty ?? 0} dirty lanes`,
+    `${handoffText}`,
+  ].join(", ") + ".";
+}
+
+function integrationAuditBlockers(
+  audit: DearMeIntegrationAuditStatus,
+): DearMeProofStatusBlocker[] {
+  const blockers: DearMeProofStatusBlocker[] = [];
+  if (audit.unavailableReason) {
+    blockers.push({
+      lane: "integration",
+      target: "integration_audit_unavailable",
+      missingCount: 1,
+    });
+  }
+  if ((audit.notInCurrent ?? 0) > 0) {
+    blockers.push({
+      lane: "integration",
+      target: "not_in_current_worktrees",
+      missingCount: audit.notInCurrent ?? 0,
+    });
+  }
+  if ((audit.dirty ?? 0) > 0) {
+    blockers.push({
+      lane: "integration",
+      target: "dirty_worktrees",
+      missingCount: audit.dirty ?? 0,
+    });
+  }
+  if ((audit.latestDirtyHandoffs ?? 0) > 0) {
+    blockers.push({
+      lane: "integration",
+      target: "latest_dirty_handoffs",
+      missingCount: audit.latestDirtyHandoffs ?? 0,
+    });
+  }
+  if ((audit.latestNoFileChangesHandoffs ?? 0) > 0) {
+    blockers.push({
+      lane: "integration",
+      target: "latest_no_file_change_handoffs",
+      missingCount: audit.latestNoFileChangesHandoffs ?? 0,
+    });
+  }
+  if (
+    audit.latestHandoffs !== null
+    && audit.latestCommittedHandoffs !== null
+    && audit.latestCommittedHandoffs < audit.latestHandoffs
+  ) {
+    blockers.push({
+      lane: "integration",
+      target: "latest_uncommitted_handoffs",
+      missingCount: audit.latestHandoffs - audit.latestCommittedHandoffs,
+    });
+  }
+  return blockers;
+}
+
+function integrationAuditSection(
+  audit: DearMeIntegrationAuditStatus,
+): DearMeProofStatusSection {
+  return {
+    key: "integration_absorption_proof",
+    label: "Integration absorption proof",
+    ready: audit.ready,
+    description: integrationAuditDescription(audit),
+    targets: ["worktree_absorption", "latest_symphony_handoffs"],
+    blockedTargets: integrationAuditBlockers(audit),
+  };
+}
+
 export function summarizeDearMeProofStatus(
   readiness: DearMeProofReadiness,
   lane: DearMeProofLane = "all",
+  integrationAudit?: DearMeIntegrationAuditStatus,
 ): DearMeProofStatus {
   const provider = providerLane(readiness);
   const voice = voiceLane(readiness);
@@ -384,6 +588,9 @@ export function summarizeDearMeProofStatus(
 
   if (lane === "all") {
     sections.push(firstWowAhaSection(runDearMeAhaProof().report));
+    if (integrationAudit) {
+      sections.push(integrationAuditSection(integrationAudit));
+    }
   }
 
   const localTargets: string[] = [];
@@ -448,6 +655,7 @@ export function summarizeDearMeProofStatus(
     sections,
     commands: {
       ahaProof: "pnpm --silent dearme:aha-proof -- --check",
+      integrationAudit: INTEGRATION_AUDIT_COMMAND,
       printEnvTemplate: `pnpm --silent dearme:proof -- --print-env-template${laneFlag(lane)} > ${PROOF_ENV_FILE}`,
       runSafe: proofCommand("--run-safe", lane),
       check: proofCommand("--check", lane),
@@ -470,15 +678,19 @@ function statusSection(
 
 function formatProductVerdict(status: DearMeProofStatus) {
   const aha = statusSection(status, "first_wow_aha_proof");
+  const integration = statusSection(status, "integration_absorption_proof");
   const local = statusSection(status, "local_safe_proof");
   const voice = statusSection(status, "voice_semantic_proof");
   const live = statusSection(status, "live_provider_proof");
 
-  if (aha?.ready && local?.ready && voice?.ready && live?.ready) {
-    return "Product verdict: first-wow, local safe proof, voice fit, and live provider proof are ready.";
+  if (integration && !integration.ready) {
+    return "Product verdict: product proof exists, but the integration audit still has replay or handoff blockers.";
   }
-  if ((aha?.ready ?? true) && local?.ready && voice?.ready && live && !live.ready) {
-    return "Product verdict: Naive/Paperclip substrate proof is strong and the private DearMe first-wow now includes recurring work; Polsia-style live, phone-reachable wow is still blocked on live provider proof.";
+  if ((integration?.ready ?? true) && aha?.ready && local?.ready && voice?.ready && live?.ready) {
+    return "Product verdict: first-wow, local safe proof, voice fit, integration absorption, and live provider proof are ready.";
+  }
+  if ((integration?.ready ?? true) && (aha?.ready ?? true) && local?.ready && voice?.ready && live && !live.ready) {
+    return "Product verdict: Naive/Paperclip substrate proof is strong, integration absorption is clean, and the private DearMe first-wow now includes recurring work; Polsia-style live, phone-reachable wow is still blocked on live provider proof.";
   }
   if (aha && !aha.ready) {
     return "Product verdict: the product is not ready for a first-wow claim until the local aha proof passes.";
@@ -505,6 +717,7 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
   lines.push("Commands:");
   if (status.lane === "all") {
     lines.push(`- ${status.commands.ahaProof}`);
+    lines.push(`- ${status.commands.integrationAudit}`);
   }
   lines.push(`- ${status.commands.printEnvTemplate}`);
   lines.push(`- ${status.commands.runSafe}`);
@@ -747,7 +960,11 @@ async function main() {
 
     const readiness = inspectDearMeProofReadiness(env, parsed.lane);
     if (parsed.status) {
-      const status = summarizeDearMeProofStatus(readiness, parsed.lane);
+      const status = summarizeDearMeProofStatus(
+        readiness,
+        parsed.lane,
+        parsed.lane === "all" ? inspectDearMeIntegrationAuditStatus() : undefined,
+      );
       if (parsed.json) {
         console.log(JSON.stringify({ status }, null, 2));
       } else {

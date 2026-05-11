@@ -445,7 +445,7 @@ Each entry pins:
 | `proxyTools` | subset of the 6 proxy `function`s this role may call |
 | `pluginPackage` | `@paperclipai/dearme-<role>` — the plugin npm pkg that owns runtime |
 | `ticket` | `DM-NNN` ticket that owns implementation |
-| `status` | `shipped` / `in-progress` / `planned` |
+| `status` | `shipped` / `preview` / `planned`; `preview` means the role produces customer-visible proof in the first-wow loop but is not yet a fully autonomous shipped runtime |
 | `group` | `leadership` / `growth` / `build` / `ops` / `intelligence` / `interface` for UI clustering |
 | `description` | one-sentence PM copy |
 

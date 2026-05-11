@@ -15,6 +15,23 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `pnpm dearme:status` now includes an Integration absorption proof section
+  backed by `pnpm dearme:worktrees -- --summary-json --skip-dirty --handoffs`.
+  Current evidence is 122 tracked worktrees, 118 reviewed absorptions, 3
+  already in current head, 0 not-in-current replay candidates, 0 dirty lanes,
+  and latest Symphony handoffs 28/28 committed. Treat branch/worktree
+  absorption as closed unless this status section blocks; the next valuable
+  work is live host/provider proof, not replaying stale heads.
+- The phone-ready private-site export now renders starter draft and opportunity
+  cards from the current first-cycle preview schema: hook/body, channel, proof,
+  approval gate, lead target, draft message, and contact evidence. Future
+  workers should keep the export on this customer-safe proof schema instead of
+  reintroducing old preview fields or a second proof-page renderer.
+- `DEARME_ROLE_REGISTRY` now separates product-readable `preview` roles from
+  truly `shipped` runtime roles. The first-wow team is Chief of Staff, Content
+  Producer, Opportunity Hunter, and Brand Site Builder; the other eight roles
+  stay `planned` until runtime proof exists. Future customer surfaces must not
+  claim all 12 roles are live from the prompt registry alone.
 - DEA-60 is narrowed to real host activation, not another worker-build slice.
   The coordinator has exported `dist/dearme-private-proof`, stored the
   non-secret `peter-studio` artifact/manifest refs in the ignored

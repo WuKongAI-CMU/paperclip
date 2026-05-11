@@ -111,8 +111,15 @@ test("DearMe aha proof renders a static private site artifact without hidden ter
   assert.match(html, /dearme\.app\/peter-studio/);
   assert.match(html, /From one sentence to private proof/);
   assert.match(html, /Keeps working after the first proof/);
+  assert.match(html, /What Peter wants to become known for/);
+  assert.match(html, /The positioning to test this week/);
+  assert.match(html, /Direct customer lead/);
+  assert.match(html, /Outreach waits for approval/);
   assert.match(html, /Nothing is sent, published, deployed, or spent until approved/);
   assert.equal((html.match(/aria-label="Launch boundary"/g) ?? []).length, 1);
+  assert.doesNotMatch(html, /undefined/);
+  assert.doesNotMatch(html, /<p><\/p>/);
+  assert.doesNotMatch(html, /<h3><\/h3>/);
   assert.doesNotMatch(html, /OpenClaw|Paperclip|Symphony|provider|credential|token|workbench/i);
 });
 

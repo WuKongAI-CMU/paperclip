@@ -10,6 +10,7 @@ import {
   formatDearMeProofStatus,
   inspectDearMeProofReadiness,
   loadDearMeProofEnv,
+  parseDearMeIntegrationAuditStatus,
   parseDearMeProofArgs,
   resolveDearMeProofEnvFiles,
   runDearMeProofSafe,
@@ -132,6 +133,82 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.equal(JSON.stringify(status).includes("OPENCLAW_GATEWAY_URL"), false);
   assert.equal(JSON.stringify(status).includes("DEARME_LINKEDIN_DM_CREDENTIAL_JSON"), false);
   assert.equal(live?.blockedTargets.every((item) => item.missingCount > 0), true);
+});
+
+test("DearMe proof status carries current integration absorption evidence", () => {
+  const integrationAudit = parseDearMeIntegrationAuditStatus(JSON.stringify({
+    summary: {
+      total: 122,
+      reviewed_absorbed: 118,
+      in_current: 3,
+      not_in_current: 0,
+      dirty: 0,
+    },
+    handoffSummary: {
+      latestIssueCount: 2,
+      latestByMode: {
+        committed_patch: 2,
+        dirty_patch_handoff: 0,
+        no_file_changes: 0,
+      },
+    },
+  }));
+  const status = summarizeDearMeProofStatus(
+    inspectDearMeProofReadiness({ DEARME_VOICE_SEMANTIC_SCORER: "profile-token" }),
+    "all",
+    integrationAudit,
+  );
+  const formatted = formatDearMeProofStatus(status).join("\n");
+  const integration = status.sections.find((section) =>
+    section.key === "integration_absorption_proof"
+  );
+
+  assert.equal(integration?.ready, true);
+  assert.deepEqual(integration?.blockedTargets, []);
+  assert.match(integration?.description ?? "", /122 tracked worktrees/);
+  assert.match(integration?.description ?? "", /118 reviewed absorptions/);
+  assert.match(integration?.description ?? "", /latest Symphony handoffs 2\/2 committed/);
+  assert.equal(status.commands.integrationAudit, "pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs");
+  assert.match(formatted, /Product verdict: Naive\/Paperclip substrate proof is strong, integration absorption is clean/);
+  assert.match(formatted, /Integration absorption proof: ready/);
+  assert.match(formatted, /pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs/);
+});
+
+test("DearMe proof integration audit blocks on replay candidates or dirty handoffs", () => {
+  const integrationAudit = parseDearMeIntegrationAuditStatus(JSON.stringify({
+    summary: {
+      total: 4,
+      reviewed_absorbed: 1,
+      in_current: 1,
+      not_in_current: 1,
+      dirty: 1,
+    },
+    handoffSummary: {
+      latestIssueCount: 2,
+      latestByMode: {
+        committed_patch: 1,
+        dirty_patch_handoff: 1,
+        no_file_changes: 0,
+      },
+    },
+  }));
+  const status = summarizeDearMeProofStatus(
+    inspectDearMeProofReadiness({ DEARME_VOICE_SEMANTIC_SCORER: "profile-token" }),
+    "all",
+    integrationAudit,
+  );
+  const integration = status.sections.find((section) =>
+    section.key === "integration_absorption_proof"
+  );
+
+  assert.equal(integration?.ready, false);
+  assert.deepEqual(integration?.blockedTargets.map((item) => item.target), [
+    "not_in_current_worktrees",
+    "dirty_worktrees",
+    "latest_dirty_handoffs",
+    "latest_uncommitted_handoffs",
+  ]);
+  assert.match(formatDearMeProofStatus(status).join("\n"), /integration audit still has replay or handoff blockers/);
 });
 
 test("DearMe proof status can be lane scoped", () => {

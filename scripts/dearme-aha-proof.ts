@@ -188,6 +188,48 @@ function renderCard(title: string, body: string, details: readonly string[]) {
   </article>`;
 }
 
+function formatEnumLabel(value: string): string {
+  return value
+    .split("_")
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
+function approvalGateLabel(gate: string | null): string {
+  switch (gate) {
+    case "publish_social":
+      return "Posting waits for approval";
+    case "send_email":
+      return "Outreach waits for approval";
+    case "deploy_public_site":
+      return "Public page changes wait for approval";
+    case "spend_money":
+      return "Spend waits for approval";
+    case "sensitive_material":
+      return "Sensitive material waits for review";
+    case "public_claim":
+      return "Public claims wait for review";
+    case null:
+      return "Private work can continue";
+    default:
+      return "Launch action waits for approval";
+  }
+}
+
+function contactEvidenceLabel(status: string): string {
+  switch (status) {
+    case "confirmed":
+      return "Contact ready";
+    case "pending":
+      return "Contact needs owner confirmation";
+    case "unavailable":
+      return "Warm intro or more research needed";
+    default:
+      return formatEnumLabel(status);
+  }
+}
+
 function privateSiteDisplayName(preview: DearMeFirstCyclePreviewResponse): string {
   return preview.sitePreview.handle
     .split("-")
@@ -221,16 +263,19 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
     ]),
   ).join("\n");
   const starterPostCards = preview.starterPosts.map((post) =>
-    renderCard(post.title, post.text, [
-      `Voice check: ${post.voiceScore}`,
+    renderCard(post.title, `${post.hook}\n\n${post.body}`, [
+      `Channel: ${formatEnumLabel(post.channel)}`,
       `Proof: ${post.proofUsed}`,
-      `Waits: ${post.approvalBoundary}`,
+      `Waits: ${approvalGateLabel(post.approvalGate)}`,
     ]),
   ).join("\n");
   const opportunityCards = preview.opportunityShortlist.slice(0, 3).map((lead) =>
-    renderCard(lead.label, lead.whyRelevant, [
+    renderCard(lead.title, lead.whyRelevant, [
+      `Target: ${lead.target}`,
       `Angle: ${lead.outreachAngle}`,
-      `Waits: ${lead.approvalBoundary}`,
+      `Draft: ${lead.draftMessage}`,
+      `Contact: ${contactEvidenceLabel(lead.contactEvidence.status)}`,
+      `Waits: ${approvalGateLabel(lead.approvalGate)}`,
     ]),
   ).join("\n");
 

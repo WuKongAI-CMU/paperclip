@@ -540,6 +540,7 @@ export function collectWorktreeStatus({
 export function parseArgs(argv) {
   const options = {
     json: false,
+    summaryJson: false,
     summaryOnly: false,
     skipDirty: false,
     dirtyOnly: false,
@@ -561,6 +562,12 @@ export function parseArgs(argv) {
 
     if (arg === "--json") {
       options.json = true;
+      continue;
+    }
+
+    if (arg === "--summary-json") {
+      options.summaryJson = true;
+      options.summaryOnly = true;
       continue;
     }
 
@@ -817,6 +824,32 @@ function printHandoffSummary(summary) {
   }
 }
 
+function compactWorktreeSummary(summary) {
+  return {
+    total: summary.total,
+    dirty: summary.dirty,
+    current: summary.current ?? 0,
+    in_current: summary.in_current ?? 0,
+    patch_equivalent: summary.patch_equivalent ?? 0,
+    reviewed_absorbed: summary.reviewed_absorbed ?? 0,
+    not_in_current: summary.not_in_current ?? 0,
+    subject_matched: summary.subject_matched ?? 0,
+    detached: summary.detached ?? 0,
+    prunable: summary.prunable ?? 0,
+    byPurpose: summary.byPurpose,
+  };
+}
+
+function compactHandoffSummary(summary) {
+  return {
+    total: summary.total,
+    byMode: summary.byMode,
+    historicalByMode: summary.historicalByMode,
+    latestByMode: summary.latestByMode,
+    latestIssueCount: Object.keys(summary.latestByIssue).length,
+  };
+}
+
 function main() {
   const options = parseArgs(process.argv.slice(2));
   const handoffRoot = options.handoffRoot ?? join(options.symphonyRoot, "_handoffs");
@@ -831,14 +864,26 @@ function main() {
   const handoffs = options.includeHandoffs
     ? filterSymphonyHandoffs(collectSymphonyHandoffs({ handoffRoot }), options)
     : [];
+  const summary = summarize(records);
+  const handoffSummary = options.includeHandoffs
+    ? summarizeSymphonyHandoffs(handoffs)
+    : null;
+
+  if (options.summaryJson) {
+    console.log(JSON.stringify({
+      summary: compactWorktreeSummary(summary),
+      ...(handoffSummary ? { handoffSummary: compactHandoffSummary(handoffSummary) } : {}),
+    }, null, 2));
+    return;
+  }
 
   if (options.json) {
     console.log(JSON.stringify({
-      summary: summarize(records),
+      summary,
       worktrees: records,
       ...(options.includeHandoffs
         ? {
-            handoffSummary: summarizeSymphonyHandoffs(handoffs),
+            handoffSummary,
             handoffs,
           }
         : {}),
@@ -847,10 +892,10 @@ function main() {
   }
 
   if (options.summaryOnly) {
-    printSummary(summarize(records));
+    printSummary(summary);
     printActionSummary(records);
-    if (options.includeHandoffs) {
-      printHandoffSummary(summarizeSymphonyHandoffs(handoffs));
+    if (handoffSummary) {
+      printHandoffSummary(handoffSummary);
     }
     return;
   }

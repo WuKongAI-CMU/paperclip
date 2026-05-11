@@ -11,7 +11,7 @@
  *   - the complexity range / default tier the AI proxy will route on
  *   - the plugin npm package that owns its runtime
  *   - the ticket that owns implementation
- *   - shipped / in-progress / planned status
+ *   - shipped / preview / planned status
  *
  * Compliance: the prompt strings come from `./prompts/`. The state-machine
  * names refer to `./state-machines/`. The proxy tool names refer to
@@ -47,7 +47,7 @@ import {
   RESEARCH_AGENT_ROLE,
 } from "./prompts/index.js";
 
-export type RoleStatus = "shipped" | "in-progress" | "planned";
+export type RoleStatus = "shipped" | "preview" | "planned";
 
 export type RoleTier = "fast" | "balanced" | "deep";
 
@@ -166,7 +166,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     ],
     pluginPackage: "@paperclipai/dearme-chief-of-staff",
     ticket: "DM-139",
-    status: "planned",
+    status: "preview",
     group: "leadership",
     description:
       "Always-on private team lead: monitors state, reviews shipped work, keeps the queue full, writes the Dear-me letter.",
@@ -202,7 +202,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     proxyTools: ["search_memory", "content_generate", "get_company_documents"],
     pluginPackage: "@paperclipai/dearme-content-producer",
     ticket: "DM-140",
-    status: "planned",
+    status: "preview",
     group: "growth",
     description:
       "Prepares voice-gated private content drafts for review and holds every public move behind approval.",
@@ -220,7 +220,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     proxyTools: ["search_memory", "web_search", "create_task"],
     pluginPackage: "@paperclipai/dearme-opportunity-hunter",
     ticket: "DM-141",
-    status: "planned",
+    status: "preview",
     group: "growth",
     description:
       "Finds podcasts, sponsorships, paid clients, retainers, partnerships; runs the 5-touch outbound and 8-state lifecycle.",
@@ -238,7 +238,7 @@ export const DEARME_ROLE_REGISTRY: ReadonlyArray<DearMeRoleSpec> = [
     proxyTools: ["create_task", "create_report"],
     pluginPackage: "@paperclipai/dearme-brand-site-builder",
     ticket: "DM-147",
-    status: "planned",
+    status: "preview",
     group: "build",
     description:
       "Owns the personal site: writes code, fixes bugs, deploys. Web-only, single-Express, 512MB RAM, push-after-each-change.",
@@ -392,6 +392,10 @@ export function getShippedRoles(): ReadonlyArray<DearMeRoleSpec> {
   return DEARME_ROLE_REGISTRY.filter((spec) => spec.status === "shipped");
 }
 
+export function getPreviewRoles(): ReadonlyArray<DearMeRoleSpec> {
+  return DEARME_ROLE_REGISTRY.filter((spec) => spec.status === "preview");
+}
+
 /** All complexity ranges should fall inside the proxy's 1-10 contract. */
 export function validateRegistry(
   registry: ReadonlyArray<DearMeRoleSpec> = DEARME_ROLE_REGISTRY,
@@ -411,6 +415,7 @@ export function validateRegistry(
     "documents",
   ]);
   const validPolsia = new Set(["plan", "work", "review", "learn", "report"]);
+  const validStatus = new Set<RoleStatus>(["shipped", "preview", "planned"]);
   for (const spec of registry) {
     if (seen.has(spec.role)) problems.push(`duplicate role: ${spec.role}`);
     seen.add(spec.role);
@@ -436,6 +441,11 @@ export function validateRegistry(
     if (spec.promptSourceChars <= 0 || spec.promptSourceChars > 100000) {
       problems.push(
         `${spec.role}: promptSourceChars out of range (got ${spec.promptSourceChars})`,
+      );
+    }
+    if (!validStatus.has(spec.status)) {
+      problems.push(
+        `${spec.role}: status invalid (got ${spec.status})`,
       );
     }
     if (!validOpenclaw.has(spec.substrate.openclaw)) {

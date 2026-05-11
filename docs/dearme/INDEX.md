@@ -181,10 +181,12 @@ the host-smoke artifact and handle-local `host-smoke.json`; do not create a
 second demo packet or route.
 The internal `pnpm dearme:status` command is the compact product/coordinator
 answer for "can DearMe prove itself now?": first-wow aha proof, local no-send
-proof, voice semantic proof, and live provider proof are separated so the
-coordinator does not have to read raw provider setup every time. It reuses the
-same `dearme:aha-proof` report, so recurring private work is part of the main
-product verdict instead of living in a side proof. `pnpm dearme:aha-proof -- --export-site`
+proof, integration absorption proof, voice semantic proof, and live provider
+proof are separated so the coordinator does not have to read raw provider setup
+or manual worktree triage every time. It reuses the same `dearme:aha-proof`
+report plus the compact `dearme:worktrees -- --summary-json --skip-dirty
+--handoffs` audit, so recurring private work and branch/Symphony absorption are
+part of the main product verdict instead of living in side proofs. `pnpm dearme:aha-proof -- --export-site`
 also writes the same proof as a phone-ready static private site artifact plus a
 host-smoke manifest before real host smoke is available. When live provider
 proof is blocked, the same status/setup output now prints that export command

@@ -15,6 +15,9 @@ DearMe is now **internal-demo ready** for the private first-five-minute loop:
 the local no-send proof is ready, the browser can show the same customer-safe
 progress stream, the aha proof can export a phone-ready static private-site
 artifact, and the voice-fit lane can pass against a customer-like local corpus.
+The branch/worktree integration question is also now answered by the product
+status path: the current coordinator head has no replay candidates or latest
+dirty Symphony handoffs.
 
 DearMe is **not paid-beta launch ready** yet. The missing part is no longer a
 planning/permission problem; it is live customer proof:
@@ -44,10 +47,15 @@ Current DearMe branch:
 - `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
   - 122 DearMe worktrees tracked
   - 118 reviewed as already absorbed
+  - 3 already in the current head
   - 0 dirty or not-in-current replay candidates
   - 417 Symphony handoff records; latest handoffs by issue are all committed
-    patches
+    patches, 28/28 committed
   - latest DEA-60 handoff is a committed patch at head `88f8483a9f84`
+- `pnpm --silent dearme:worktrees -- --summary-json --skip-dirty --handoffs`
+  - compact status JSON carries the same integration counts without serializing
+    full worktree rows or handoff artifacts
+  - `latestIssueCount` is 28 and `latestByMode.committed_patch` is 28
 - `pnpm --silent dearme:aha-proof -- --check`
   - local private first-five-minute aha proof is ready
   - recurring private work is ready in the first proof pack
@@ -74,6 +82,10 @@ Current DearMe branch:
     phone-reachable proof
 - `pnpm --silent dearme:proof -- --status --json`
   - first-wow aha proof is now part of the unified product status
+  - integration absorption proof is now part of the unified product status
+    with 122 tracked worktrees, 118 reviewed absorptions, 3 in current head,
+    0 replay candidates, 0 dirty lanes, and latest Symphony handoffs 28/28
+    committed
   - local no-send proof is ready
   - voice semantic proof is ready on the coordinator Mac through the local
     profile-token scorer and customer-like custom corpus
@@ -137,7 +149,8 @@ DearMe is closer to Naive/Paperclip on substrate than it is to Polsia on
 first-wow. The control-plane reuse is strong. The first-five-minute private
 contract is runnable, visible in the browser, and exportable as a host-smoke
 artifact, and the local voice proof now requires customer-like corpus evidence.
-The external/live provider lane is not yet strong enough.
+The Symphony/worktree absorption lane is clean. The external/live provider lane
+is not yet strong enough.
 
 ## Current Maturity
 
@@ -146,9 +159,9 @@ The external/live provider lane is not yet strong enough.
 | Substrate/control plane reuse | 82 / 100 | Strong. DearMe is using the Paperclip-style company, issue, approval, route, service, dispatch, handoff, and proof machinery instead of rebuilding it. |
 | DearMe product semantics | 76 / 100 | Good. Brand OS, voice, portfolio, opportunity, reports, Work Ready, launch gates, review memory, and customer-corpus voice proof are now DearMe-owned concepts. |
 | UX simplicity | 67 / 100 | Improving. The browser now shows one-sentence-to-first-five-minute progress and the proof can become a static private site, but onboarding is still heavier than Polsia's one-input activation. |
-| Autonomous runtime proof | 70 / 100 | Real but not externally proven. Local safe proof, private aha proof, browser-visible progress, static private-site export, customer-corpus voice proof, recurring private-work contract, and fail-closed host-smoke readiness are ready; the host-smoke packet now proves next-cycle work detail, but live provider proof remains open. |
+| Autonomous runtime proof | 71 / 100 | Real but not externally proven. Local safe proof, private aha proof, browser-visible progress, static private-site export, customer-corpus voice proof, recurring private-work contract, clean integration absorption, and fail-closed host-smoke readiness are ready; the host-smoke packet now proves next-cycle work detail, but live provider proof remains open. |
 | Polsia-style first-wow | 76 / 100 | Private proof is runnable, watchable, exportable as a phone-ready artifact, deep enough to show five private drafts, and now tied to a real host-smoke packet with recurring-work detail. The missing main moment is serving it from a real host plus provider-backed execution. |
-| Naive-style durable team runtime | 79 / 100 | Solid substrate fit. Symphony/worktree coordination is clean and the Paperclip-style runtime is reused; the recurring private-work contract is now visible in the hostable artifact, but live provider smoke is still missing. |
+| Naive-style durable team runtime | 80 / 100 | Solid substrate fit. Symphony/worktree coordination is clean, latest handoffs are committed, and that absorption proof now appears in `dearme:status`; the recurring private-work contract is visible in the hostable artifact, but live provider smoke is still missing. |
 
 ## What DearMe Has Actually Done
 
@@ -174,7 +187,8 @@ DearMe has already built the product/kernel split correctly:
   host lane a concrete artifact and host-smoke manifest without claiming
   production hosting is live.
 - Coordination: Symphony is the active worker lane, and current worktree status
-  is visible through `pnpm dearme:worktrees`.
+  is visible through `pnpm dearme:worktrees`; the same absorption signal is now
+  also part of `pnpm dearme:status`.
 
 That is enough to call the architecture real. It is not enough to call the
 product launch-ready.
@@ -373,4 +387,5 @@ five-draft private proof packet from a phone-reachable host with live provider
 evidence on top of the proof gate that now exists. The provider-smoke production
 lane now requires that concrete artifact plus its exported host-smoke manifest
 or an explicit expected-text override before it will run; the remaining work is
-the real host and provider proof, not another local proof command.
+the real host and provider proof, not another local proof command or branch
+replay pass.

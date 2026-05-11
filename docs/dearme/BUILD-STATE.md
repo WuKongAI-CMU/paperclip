@@ -2,6 +2,38 @@
 
 Date: 2026-05-11
 
+## Unified Status Carries Integration Absorption Proof - 2026-05-11
+
+Product/architecture slice:
+
+- Reused the existing `dearme:worktrees` and Symphony handoff audit inside
+  `dearme:status`, so the compact product answer now covers both product proof
+  and branch/handoff absorption. The coordinator no longer has to answer
+  "did we integrate the branches?" from a separate manual worktree read.
+- Added compact `--summary-json` output to `dearme:worktrees` for the status
+  path. It keeps detailed worktree and handoff rows out of the product status
+  while preserving the counts that matter for integration readiness.
+- Current live evidence: 122 tracked worktrees, 118 reviewed absorptions, 3
+  already in current head, 0 not-in-current replay candidates, 0 dirty lanes,
+  and latest Symphony handoffs 28/28 committed. Branch replay is not the
+  active blocker; the remaining product gap is still real host/provider proof.
+- Cleaned the private-site export card rendering to use the current preview
+  schema for starter drafts and opportunity leads. The exported phone-ready
+  proof page now renders customer-safe draft/channel/approval/contact details
+  without blank cards or `undefined` text.
+- Tightened role readiness truth in `DEARME_ROLE_REGISTRY`: first-wow roles are
+  `preview`, fully autonomous runtime roles remain `planned`, and
+  `getShippedRoles()` cannot imply all 12 roles are live.
+
+Verification:
+
+- `pnpm test:dearme-proof`
+- `pnpm test:dearme-worktrees`
+- `pnpm --silent dearme:worktrees -- --summary-json --skip-dirty --handoffs`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:proof -- --check`
+- `pnpm --silent --filter @paperclipai/dearme-agent-prompts test`
+
 ## DEA-60 Host Proof Activation Narrowed - 2026-05-11
 
 Product/architecture slice:
