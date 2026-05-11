@@ -17,11 +17,15 @@ Product/architecture slice:
   local env-file loading, scoped env templates, live-send guards, OpenClaw
   message grouping, custom-domain fail-closed handling, and production host
   content verification.
+- `WORKTREE-ABSORPTION-LEDGER.json` now records both the latest DEA-60 handoff
+  head and the DEA-60 clone head as reviewed absorptions, so Symphony status
+  keeps them as audit trails instead of active replay candidates.
 
 Verification:
 
 - `pnpm test:dearme-provider-smoke`
 - `pnpm --silent dearme:provider-smoke -- --print-env-template --target deploy_site_production`
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs --ticket DEA-60`
 
 ## Symphony Dirty-Handoff File Count Cleanup - 2026-05-11
 

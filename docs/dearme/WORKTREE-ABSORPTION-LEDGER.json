@@ -30,6 +30,32 @@
       ]
     },
     {
+      "ticket": "DEA-60",
+      "branch": "codex/dearme-dm-136-sample-demo-proof",
+      "head": "2256f0fc0bdb7567baf09b16a7dfd6c0aa917df6",
+      "reviewedAt": "2026-05-11",
+      "reason": "The latest DEA-60 Symphony committed patch extends the already-reviewed env-file/bootstrap head with only the sample production-host proof alignment. Coordinator commit 3b484c83 absorbs that remaining detail by making the generated local template use peter-studio for both the smoke handle and expected page text while preserving newer OpenClaw grouping, scoped templates, and host-proof guards.",
+      "evidence": [
+        "scripts/dearme-provider-smoke.ts",
+        "scripts/dearme-provider-smoke.test.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DEA-60",
+      "branch": "codex/dearme-dm-136-sample-demo-proof",
+      "head": "c61108eb1afd7becf124576569cd3dbb044f0ff5",
+      "reviewedAt": "2026-05-11",
+      "reason": "The DEA-60 clone head contains the same sample production-host proof alignment as the latest DEA-60 patch: change the starter template handle and expected text from dearme-smoke to peter-studio. Coordinator commit 3b484c83 has absorbed that exact product-proof detail on top of the current provider-smoke implementation, so this clone should not be replayed.",
+      "evidence": [
+        "scripts/dearme-provider-smoke.ts",
+        "scripts/dearme-provider-smoke.test.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
       "ticket": "DEA-63",
       "branch": "dea63-live-replay",
       "head": "7384cfa455b55798752abee084da4ed10c3d9219",
