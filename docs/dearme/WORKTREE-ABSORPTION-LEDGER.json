@@ -19,6 +19,20 @@
       ]
     },
     {
+      "ticket": "DEA-63",
+      "branch": "codex/dearme-dm-136-sample-demo-proof",
+      "head": "de1a39c6b525e156af279fc4b617eee8443e38b8",
+      "reviewedAt": "2026-05-11",
+      "reason": "The follow-on DEA-63 Symphony head is a docs-only coordination note on the already-reviewed d6990ee4 base. Current coordinator docs already carry the richer DM-170C durable Voice Gate store state, migration-backfill warning, and reusable profile-store boundary, while the active implementation keeps the stronger scoped DB store from f070d26a. Replaying this older-base doc head would duplicate status text without adding implementation value.",
+      "evidence": [
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md",
+        "packages/db/src/migrations/0078_simple_quicksilver.sql",
+        "packages/db/src/schema/dearme_voice_profiles.ts",
+        "server/src/services/dearme-voice-profile-store.ts"
+      ]
+    },
+    {
       "ticket": "DEA-51",
       "branch": "codex/dearme-dm-136-sample-demo-proof",
       "head": "29e9e9831c58e831026d5b3a4f06e6e30a349232",

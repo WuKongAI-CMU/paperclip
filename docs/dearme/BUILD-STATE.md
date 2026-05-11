@@ -19,6 +19,9 @@ Product/architecture slice:
 - Remaining customer claim: live DNS/host proof. The code path is wired, but
   production/custom-domain delivery should still be claimed only after the
   smoke URL serves the expected page text.
+- Reviewed Symphony DEA-63 follow-on head `de1a39c6` as already covered by the
+  current durable Voice Gate store docs and scoped DB-store implementation, so
+  the older-base docs-only head is recorded instead of replayed.
 
 Verification:
 
@@ -30,6 +33,8 @@ Verification:
   passed.
 - `pnpm --filter @paperclipai/server typecheck`
   passed.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty`
+  passed after the absorption ledger update with `not_in_current: 0`.
 
 ## DEA-60 / DM-177D Production Host Smoke Evidence - 2026-05-11
 
