@@ -158,6 +158,6 @@ export function renderDearMeSixHourCycleIssue(input: DearMeCycleIssueContext): s
     "- If one of those moves is the right next step, prepare the launch decision and keep the risky action paused.",
     "",
     "Output:",
-    '- A private artifact or decision queue update, plus a short "Dear me" report under 200 words.',
+    '- A private artifact or decision update, plus a short "Dear me" report under 200 words.',
   ].join("\n");
 }

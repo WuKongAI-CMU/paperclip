@@ -1418,7 +1418,7 @@ const teamTemplate: DearMeBrandBlueprint["team"] = [
     role: "content_producer",
     name: "Content Producer",
     mission: "Create content drafts from proof, ideas, and weekly priorities.",
-    approvalBoundary: "Can draft and queue content; public posting runs inside launch boundaries.",
+    approvalBoundary: "Can draft and prepare content; public posting runs inside launch boundaries.",
     ...defaultDearMeTeamExecutionTemplate("content_producer"),
   },
   {
@@ -2183,7 +2183,7 @@ export function createDearMeFirstCyclePreview(
         },
         {
           id: "queue-next-private-pass",
-          title: "Queue the next private pass",
+          title: "Prepare the next private pass",
           phase: "report",
           ownerRole: "chief_of_staff",
           summary: "Write the first plan and next actions so the team can continue privately after the preview.",

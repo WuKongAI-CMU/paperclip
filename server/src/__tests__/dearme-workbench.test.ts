@@ -325,7 +325,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         status: "approved",
         payload: {
           title: "Old Brand OS approval",
-          summary: "This handled approval should not stay in the decision queue.",
+          summary: "This handled approval should not stay in the decision list.",
         },
         requestedByUserId: "user-1",
         updatedAt: new Date("2026-05-07T16:40:00.000Z"),
@@ -810,7 +810,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
       key: "dear-me-report",
       title: "Dear me report",
       body: [
-        "Completed work: content draft packet and private report are ready in the review queue.",
+        "Completed work: content draft packet and private report are ready for review.",
         "Drafts and Assets Ready for Review: content draft packet; voice fit 97/100 ready for review.",
         "Decisions needed: Review, request changes, or regenerate the prepared work.",
         "Next bets: Pick the strongest draft and revise once from feedback.",
@@ -892,7 +892,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     }));
     expect(contentLedgerEntry).toEqual(expect.objectContaining({
       evidenceLabel: "Private cycle packet / Content drafts",
-      nextAction: expect.stringContaining("public move"),
+      nextAction: expect.stringContaining("proof pack"),
     }));
     expect(result.actionGraph.nodes).toEqual(
       expect.arrayContaining([

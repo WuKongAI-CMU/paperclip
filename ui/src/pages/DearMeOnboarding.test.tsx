@@ -2958,7 +2958,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Voice check");
     expect(container.textContent).toContain("Voice 100/100");
     expect(container.textContent).toContain("Autopilot until launch");
-    expect(container.textContent).toContain("Queue the next private pass");
+    expect(container.textContent).toContain("Prepare the next private pass");
     expect(container.textContent).toContain("Only waits here");
     expect(container.textContent).toContain("Starter post: point of view");
     expect(container.textContent).toContain("Starter post: proof of work");
@@ -2978,6 +2978,7 @@ describe("DearMeOnboarding", () => {
     expect((container.querySelector("#dearme-positioning") as HTMLTextAreaElement | null)?.value).toBe(
       "Known for turning research into practical AI products",
     );
+    expect(container.textContent).not.toMatch(/\bqueue\b/i);
     expectNoHiddenProductTerms(container.textContent, [
       HIDDEN_PRODUCT_TERMS.setupRecord,
       HIDDEN_PRODUCT_TERMS.vendorName,
@@ -3322,7 +3323,7 @@ describe("DearMeOnboarding", () => {
     expect((container.querySelector("#dearme-memory-kind") as HTMLSelectElement | null)?.value).toBe("constraint");
     expect(container.textContent).toContain("Chief of Staff");
     expect(container.textContent).toContain("will hold sensitive wording and claims");
-    expect(container.textContent).toContain("Improves approval queues, review notes, and safe next actions.");
+    expect(container.textContent).toContain("Improves approval notes, review notes, and safe next actions.");
 
     await act(async () => {
       setInputValue(

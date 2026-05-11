@@ -645,7 +645,7 @@ function buildFeedbackTrace(input: {
 
 function reviewLoopNextStep(state: DearMeOutputReviewLoop["state"]) {
   const sharedLaunchReadyNextStep =
-    "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.";
+    "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate. Every public move still waits for your launch approval.";
   switch (state) {
     case "fresh":
       return "Your team is preparing this privately.";
@@ -1165,7 +1165,7 @@ function renderCycleOutputPacket(input: {
     "Pick the strongest draft, revise once from feedback, then prepare the next private proof.",
   );
   const launchReadyNextStep =
-    "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.";
+    "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate. Every public move still waits for your launch approval.";
   const launchBoundaryReminder =
     "Publishing, sending, and deployment still wait for explicit approval.";
   const whyItMatters =
@@ -1187,7 +1187,7 @@ function renderCycleOutputPacket(input: {
     "Cycle packet: The content draft and Dear me report now use the same private evidence packet.",
   ]);
   const reportBody = packetLines([
-    `Completed work: ${completedWork} are ready in the private review queue.`,
+    `Completed work: ${completedWork} are ready for private review.`,
     `Drafts and Assets Ready for Review: ${contentReady}; voice fit ${voiceFit}.`,
     `Next step: ${launchReadyNextStep}`,
     `Why it matters: ${whyItMatters}`,

@@ -1556,7 +1556,7 @@ const MEMORY_SOURCE_TEAM_PREVIEWS: Record<
   forbidden_phrase: {
     role: "Chief of Staff",
     action: "will hold sensitive wording and claims for your decision.",
-    outcome: "Improves approval queues, review notes, and safe next actions.",
+    outcome: "Improves approval notes, review notes, and safe next actions.",
   },
   audience_note: {
     role: "Brand Strategist",
@@ -3067,7 +3067,7 @@ function FocusedDecisionPanel({
         Decision focus unavailable
       </div>
       <p className="mt-2 text-sm text-muted-foreground">
-        The selected item is no longer waiting here. The current decision queue is still below.
+        The selected item is no longer waiting here. The current decision list is still below.
       </p>
     </DearMeFocusSurface>
   );

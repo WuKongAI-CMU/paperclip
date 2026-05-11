@@ -520,7 +520,7 @@ function makeFirstCycleResult() {
         },
         {
           id: "queue-next-private-pass",
-          title: "Queue the next private pass",
+          title: "Prepare the next private pass",
           phase: "report",
           ownerRole: "chief_of_staff",
           summary: "Write the first plan and next actions so the team can continue privately after the preview.",

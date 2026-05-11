@@ -77,7 +77,7 @@ type DearMeNextMoveDeliveryStatus =
   | "errored";
 
 export const SHARED_LAUNCH_READY_NEXT_STEP =
-  "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.";
+  "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate. Every public move still waits for your launch approval.";
 
 type DearMeRoutineRunRow = {
   id: string;
@@ -1412,15 +1412,17 @@ function buildWorkStream(input: {
 }) {
   const items = [
     ...input.decisionsNeeded.map(streamItemFromDecision),
+    ...input.recentProgress.map(streamItemFromProgress),
     ...input.activeWork.map(streamItemFromWork),
     ...input.workReady.map(streamItemFromWork),
-    ...input.recentProgress.map(streamItemFromProgress),
   ];
 
   const seen = new Set<string>();
   return items
     .filter((item) => {
-      const key = item.relatedOutputId ?? item.id;
+      const key = item.kind === "progress_recorded" || item.kind === "memory_recorded"
+        ? item.id
+        : item.relatedOutputId ?? item.id;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -2088,7 +2090,7 @@ function progressFromRoutineRun(input: DearMeRoutineRunRow): DearMeWorkbenchProg
     id: `cycle:${input.id}`,
     kind: "cycle_check_in",
     title: "Cycle check-in received",
-    summary: `${title} is queued for private team work. No public move happens without approval.`,
+    summary: `${title} is prepared for private team work. No public move happens without approval.`,
     createdAt: toIso(createdAt),
   };
 }
