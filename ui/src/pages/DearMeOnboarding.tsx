@@ -4364,7 +4364,7 @@ function OperatingLoopPanel({
         icon={Workflow}
         eyebrow="Growth cycle"
         title="Plan, work, review, then learn."
-        description="DearMe keeps the operating rhythm visible while private work keeps moving in the background."
+        description="DearMe keeps the operating rhythm visible while the team moves, the work becomes reviewable, and the launch call stays separate from private motion."
         trailing={
           <Badge variant={paidBetaActive ? "default" : "secondary"}>
             {paidBetaActive ? "Cycle active" : "Preview mode"}
@@ -6574,14 +6574,16 @@ function FirstCyclePacketSpotlight({
             First proof pack ready
           </div>
           <p className="mt-1 text-sm text-foreground/85">
-            One launch-ready next step is ready for your call. The same private proof pack carries the draft, report,
-            proof, and launch boundary.
+            One launch-ready next step is ready for your call. The same private proof pack feeds Work Ready and
+            Decisions, so the team moved, the work is reviewable, and one launch call still controls anything public
+            or external.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline">
             {readyCount || packetOutputs.length} ready
           </Badge>
+          <Badge variant="outline">Work Ready path</Badge>
           <Badge variant="outline">Private until approved</Badge>
         </div>
       </div>
@@ -6609,14 +6611,14 @@ function FirstCyclePacketSpotlight({
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">
-          Nothing public moves until you approve it.
+          Review it in Work Ready. Decisions keeps the launch boundary in one place.
         </p>
         <Button
           type="button"
           size="sm"
           onClick={() => onOpenOutput(primaryOutput, reviewLoopRouteIntent(primaryOutput.reviewLoop))}
         >
-          Review proof pack
+          Open Work Ready
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
@@ -6663,7 +6665,7 @@ function PrivateWorkPanel({
           <p className="mt-1 text-sm text-muted-foreground">
             {isOpportunityView
               ? "Prepared opportunity drafts: targets, contact evidence, fit reasons, outreach angles, draft messages, and launch boundaries."
-              : "Private work ready for review: reports, drafts, voice guidance, and portfolio work DearMe has prepared."}
+              : "Private work ready for review: reports, drafts, voice guidance, and portfolio work DearMe has prepared. Decisions carries the launch call for anything external."}
           </p>
         </div>
         {outputs.length > 0 ? (

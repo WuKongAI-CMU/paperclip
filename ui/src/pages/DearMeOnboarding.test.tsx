@@ -5739,10 +5739,13 @@ describe("DearMeOnboarding", () => {
     expect(packetSurface.textContent).toContain("First proof pack ready");
     expect(packetSurface.textContent).toContain("One launch-ready next step is ready for your call.");
     expect(packetSurface.textContent).toContain("2 ready");
+    expect(packetSurface.textContent).toContain("Work Ready path");
     expect(packetSurface.textContent).toContain("Private until approved");
     expect(packetSurface.textContent).toContain("Starter post draft prepared from the first proof pack");
     expect(container.textContent).toContain("Prepared by Content Producer");
     expect(packetSurface.textContent).toContain("Report prepared from the same first proof pack");
+    expect(packetSurface.textContent).toContain("Work Ready and Decisions");
+    expect(packetSurface.textContent).toContain("Review it in Work Ready. Decisions keeps the launch boundary in one place.");
     expect(packetSurface.textContent).toContain("Voice check");
     expect(packetSurface.textContent).toContain("Voice ");
     expect(packetSurface.textContent).toContain("/100");
@@ -5752,7 +5755,7 @@ describe("DearMeOnboarding", () => {
     expect(container.querySelector('button[aria-label="Review Starter post batch"]')).not.toBeNull();
 
     await act(async () => {
-      buttonByText(packetSurface, "Review proof pack")?.click();
+      buttonByText(packetSurface, "Open Work Ready")?.click();
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
