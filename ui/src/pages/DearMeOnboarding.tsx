@@ -4037,6 +4037,44 @@ function TeamOperatingPolicyPanel({
       : staleLoopCount > 0
         ? "The team stops repeated paths and asks for better direction."
         : "The team can keep preparing private work inside your guardrails.";
+  const readinessItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "private-proof",
+      icon: CheckCircle2,
+      label: "Private proof",
+      signal: paidBetaActive ? "Usable now" : "Paid beta needed",
+      summary: paidBetaActive
+        ? "DearMe can keep drafting, scouting, reporting, and packaging proof without touching your public surface."
+        : "Activate paid beta before the private team starts moving.",
+      variant: paidBetaActive ? "default" : "secondary",
+    },
+    {
+      key: "public-launch",
+      icon: XCircle,
+      label: "Public launch",
+      signal: "Not ready yet",
+      summary:
+        "Public posts, outbound messages, page changes, and spend still need live channel receipts plus your launch call.",
+      variant: "secondary",
+    },
+    {
+      key: "next-step",
+      icon: ArrowRight,
+      label: "Next best step",
+      signal: decisionCount > 0 ? "Review call" : "Keep moving",
+      summary: decisionCount > 0
+        ? "Open the waiting launch call; approve, revise, pause, or ask for another private pass from one place."
+        : "Let the team prepare the next private proof pack until a launch call is actually needed.",
+      variant: decisionCount > 0 ? "default" : "outline",
+    },
+  ];
   const rules: Array<{
     key: string;
     icon: LucideIcon;
@@ -4094,6 +4132,45 @@ function TeamOperatingPolicyPanel({
         description="DearMe keeps useful private work moving, asks before anything that represents or spends for you, and stops work that needs a clearer call."
         trailing={<Badge variant={paidBetaActive ? "default" : "secondary"}>{policyLabel}</Badge>}
       />
+
+      <section
+        aria-label="Launch readiness"
+        className="mt-5 rounded-md border border-primary/25 bg-primary/5 p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Readiness</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              Private proof is usable; public launch is still gated.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              DearMe keeps work moving privately, then turns any public, outbound, spend, or page-changing move into
+              one reviewable call.
+            </p>
+          </div>
+          <Badge variant={paidBetaActive ? "default" : "secondary"}>
+            {paidBetaActive ? "Private proof ready" : "Setup needed"}
+          </Badge>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {readinessItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-background/80 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {rules.map((rule) => {

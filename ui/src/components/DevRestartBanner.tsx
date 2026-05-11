@@ -30,7 +30,10 @@ export function DevRestartBanner({ devServer }: { devServer?: DevServerHealthSta
   if (!devServer?.enabled || !devServer.restartRequired) return null;
 
   const changedAt = formatRelativeTimestamp(devServer.lastChangedAt);
-  const sample = devServer.changedPathsSample.slice(0, 3);
+  const changedFileSummary =
+    devServer.changedPathCount > 0
+      ? `${devServer.changedPathCount} changed file${devServer.changedPathCount === 1 ? "" : "s"}`
+      : null;
 
   return (
     <div className="border-b border-amber-300/60 bg-amber-50 text-amber-950 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-100">
@@ -50,12 +53,7 @@ export function DevRestartBanner({ devServer }: { devServer?: DevServerHealthSta
             {changedAt ? ` · updated ${changedAt}` : ""}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-amber-900/80 dark:text-amber-100/75">
-            {sample.length > 0 ? (
-              <span>
-                Changed: {sample.join(", ")}
-                {devServer.changedPathCount > sample.length ? ` +${devServer.changedPathCount - sample.length} more` : ""}
-              </span>
-            ) : null}
+            {changedFileSummary ? <span>{changedFileSummary}</span> : null}
             {devServer.pendingMigrations.length > 0 ? (
               <span>
                 Pending migrations: {devServer.pendingMigrations.slice(0, 2).join(", ")}

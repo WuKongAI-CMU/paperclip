@@ -1979,6 +1979,16 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Dear me, your team has decisions ready");
     expect(container.textContent).toContain("Team operating policy");
     expect(container.textContent).toContain("Private work can continue, but external moves wait for you.");
+    const launchReadiness = surfaceByLabel(container, "Launch readiness");
+    expect(launchReadiness.textContent).toContain("Private proof is usable; public launch is still gated.");
+    expect(launchReadiness.textContent).toContain("Private proof");
+    expect(launchReadiness.textContent).toContain("Usable now");
+    expect(launchReadiness.textContent).toContain("Public launch");
+    expect(launchReadiness.textContent).toContain("Not ready yet");
+    expect(launchReadiness.textContent).toContain("live channel receipts plus your launch call");
+    expect(launchReadiness.textContent).toContain("Next best step");
+    expect(launchReadiness.textContent).toContain("Review call");
+    expectNoHiddenProductTerms(launchReadiness.textContent, Object.values(HIDDEN_PRODUCT_TERMS));
     expect(container.textContent).toContain("Can work privately");
     expect(container.textContent).toContain("Must ask first");
     expect(container.textContent).toContain("Stops repeat work");
