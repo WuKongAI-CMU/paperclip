@@ -3,6 +3,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -112,6 +113,56 @@ test("writes patch, bundle, and summary artifacts for committed worker changes",
     const summary = JSON.parse(readFileSync(result.summaryPath, "utf8"));
     assert.equal(summary.mode, "committed_patch");
     assert.deepEqual(summary.changedFiles, ["README.md"]);
+  } finally {
+    cleanup(repo, outputRoot);
+  }
+});
+
+test("reuses existing committed handoff artifacts for the same issue and head", () => {
+  const { repo, baseHead } = makeRepo();
+  const outputRoot = makeOutputRoot();
+  try {
+    writeFileSync(join(repo, "README.md"), "# Test\n\nCommitted handoff\n");
+    commit(repo, "worker change");
+    const head = git(repo, ["rev-parse", "HEAD"]);
+
+    const first = createSymphonyHandoff({
+      workspace: repo,
+      issue: "DEA-23",
+      outputRoot,
+    });
+    const jsonCountAfterFirst = readdirSync(outputRoot).filter((name) =>
+      name.endsWith(".json"),
+    ).length;
+
+    const second = createSymphonyHandoff({
+      workspace: repo,
+      issue: "DEA-23",
+      outputRoot,
+    });
+    const jsonCountAfterSecond = readdirSync(outputRoot).filter((name) =>
+      name.endsWith(".json"),
+    ).length;
+
+    assert.equal(second.mode, "committed_patch");
+    assert.equal(second.baseHead, baseHead);
+    assert.equal(second.head, head);
+    assert.equal(second.duplicate, true);
+    assert.equal(second.patchPath, first.patchPath);
+    assert.equal(second.bundlePath, first.bundlePath);
+    assert.equal(second.summaryPath, first.summaryPath);
+    assert.equal(jsonCountAfterSecond, jsonCountAfterFirst);
+
+    const cli = execFileSync(process.execPath, [
+      SCRIPT,
+      "--issue",
+      "DEA-23",
+      "--output-root",
+      outputRoot,
+      repo,
+    ], { encoding: "utf8" });
+    assert.match(cli, /DearMe Symphony handoff: COMMITTED_PATCH/);
+    assert.match(cli, /Already recorded: yes/);
   } finally {
     cleanup(repo, outputRoot);
   }

@@ -2,6 +2,27 @@
 
 Date: 2026-05-11
 
+## Symphony Handoff Artifact Deduplication - 2026-05-11
+
+Product/architecture slice:
+
+- Absorbed the pending Symphony handoff coordination fix in the dirty main
+  checkout. Re-running the handoff command for the same issue, base head, and
+  worker head now reuses the existing committed patch/bundle/summary artifacts
+  instead of minting duplicate JSON/patch files.
+- Kept this in the backstage Symphony lane: no customer surface, no new
+  runtime, and no provider/proof semantics changed. The change reduces
+  coordination noise while many workers are reporting through the same
+  `_handoffs` directory.
+- Made existing-artifact selection deterministic by sorting matching summary
+  filenames before selecting the latest reusable committed handoff.
+
+Verification:
+
+- `node --test scripts/dearme-symphony-handoff.test.mjs`
+- `git diff --check -- scripts/dearme-symphony-handoff.mjs scripts/dearme-symphony-handoff.test.mjs`
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
+
 ## Product Maturity Status Verdict - 2026-05-11
 
 Product/architecture slice:

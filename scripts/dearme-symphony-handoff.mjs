@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   writeFileSync,
@@ -83,6 +84,14 @@ function writeJson(path, value) {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function readJsonIfPossible(path) {
+  try {
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
 function createArtifactPrefix(issue, baseHead, head) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const parts = [sanitizeName(issue)];
@@ -125,6 +134,33 @@ function writeCommittedArtifacts({ root, outputRoot, issue, baseHead, head }) {
   writeJson(summaryPath, summary);
 
   return { ...summary, summaryPath };
+}
+
+function findExistingCommittedArtifacts({ root, outputRoot, issue, baseHead, head }) {
+  if (!existsSync(outputRoot)) return null;
+
+  const candidates = readdirSync(outputRoot, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+    .sort((left, right) => left.name.localeCompare(right.name))
+    .map((entry) => join(outputRoot, entry.name))
+    .map((summaryPath) => {
+      const summary = readJsonIfPossible(summaryPath);
+      if (!summary || summary.mode !== "committed_patch") return null;
+      if (summary.issue !== issue || summary.baseHead !== baseHead || summary.head !== head) {
+        return null;
+      }
+      if (!summary.patchPath || !summary.bundlePath) return null;
+      if (!existsSync(summary.patchPath) || !existsSync(summary.bundlePath)) return null;
+      return {
+        ...summary,
+        workspace: realpathSync(root),
+        summaryPath,
+        duplicate: true,
+      };
+    })
+    .filter(Boolean);
+
+  return candidates.at(-1) ?? null;
 }
 
 function writeDirtyArtifacts({ root, outputRoot, issue, baseHead, head, status }) {
@@ -201,8 +237,15 @@ export function createSymphonyHandoff({
     };
   }
 
+  const existing = findExistingCommittedArtifacts({
+    root,
+    outputRoot,
+    issue,
+    baseHead: base,
+    head,
+  });
   return {
-    ...writeCommittedArtifacts({ root, outputRoot, issue, baseHead: base, head }),
+    ...(existing ?? writeCommittedArtifacts({ root, outputRoot, issue, baseHead: base, head })),
     branch,
   };
 }
@@ -259,6 +302,9 @@ function printResult(result) {
     console.log("No file changes");
   } else if (result.mode === "committed_patch") {
     console.log("DearMe Symphony handoff: COMMITTED_PATCH");
+    if (result.duplicate) {
+      console.log("Already recorded: yes");
+    }
     console.log(`Patch: ${result.patchPath}`);
     console.log(`Bundle: ${result.bundlePath}`);
     console.log(`Summary: ${result.summaryPath}`);
