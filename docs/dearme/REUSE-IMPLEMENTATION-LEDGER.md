@@ -20,7 +20,10 @@ It answers three questions before another worker starts building:
   gap is real provider/host credentials, not another config-discovery pass.
   Targeted checks also respect `--target`, so operators can work one channel at
   a time. Targeted env templates now do the same, keeping Telegram/OpenClaw,
-  iMessage/OpenClaw, LinkedIn, Meta, and deploy-site proof setup narrow.
+  iMessage/OpenClaw, LinkedIn, Meta, and deploy-site proof setup narrow. The
+  OpenClaw message proof also has one explicit group target, `openclaw_messages`
+  (alias `openclaw`), so Telegram plus iMessage can share the same gateway
+  setup without dragging unrelated providers into the operator checklist.
 - `.symphony/WORKFLOW.md` no longer makes the 2026-05-08 operating-loop plan a
   default worker read. Use that plan only for Symphony lifecycle/coordinator
   workflow changes; ordinary product workers should start from their assigned

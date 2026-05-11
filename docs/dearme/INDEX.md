@@ -163,10 +163,11 @@ recipient/body requirements for Telegram/iMessage, and the production site URL
 content smoke once host env is enabled. It now supports a local ignored
 `.dearme-provider-smoke.env` file through `--env-file` plus a clean
 `--print-env-template` bootstrap, and production host failures now report the
-exact URL plus fetch/HTTP status evidence. Real credentials and custom-domain
-host smoke should enter the proof lane there instead of through a new UI,
-connector store, or command-history paste. Do not replace it with another
-settings page or dispatch path.
+exact URL plus fetch/HTTP status evidence. It also supports targeted templates
+and the `openclaw` / `openclaw_messages` group for the shared Telegram+iMessage
+gateway smoke. Real credentials and custom-domain host smoke should enter the
+proof lane there instead of through a new UI, connector store, or command-history
+paste. Do not replace it with another settings page or dispatch path.
 For DM-170, the route and deterministic scorer now also have the durable
 profile-store boundary, DB backing store, persisted `dm_sk_*` key auth, and a
 semantic scorer seam wired through a profile-token calibration scorer; the

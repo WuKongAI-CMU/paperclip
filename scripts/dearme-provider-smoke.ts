@@ -60,7 +60,13 @@ export const DEARME_PROVIDER_SMOKE_TARGETS = [
 ] as const;
 
 export type DearMeProviderSmokeTarget = (typeof DEARME_PROVIDER_SMOKE_TARGETS)[number];
-type TargetArg = DearMeProviderSmokeTarget | "all";
+
+const DEARME_PROVIDER_SMOKE_TARGET_GROUPS = {
+  openclaw_messages: ["telegram_message", "imessage_message"],
+} as const satisfies Record<string, readonly DearMeProviderSmokeTarget[]>;
+
+type DearMeProviderSmokeTargetGroup = keyof typeof DEARME_PROVIDER_SMOKE_TARGET_GROUPS;
+type TargetArg = DearMeProviderSmokeTarget | DearMeProviderSmokeTargetGroup | "all";
 
 export interface DearMeProviderSmokeReadiness {
   target: DearMeProviderSmokeTarget;
@@ -132,19 +138,22 @@ function providerSmokeRunCommand(target: DearMeProviderSmokeTarget): string {
 }
 
 function includesTemplateTarget(targetArg: TargetArg, ...targets: DearMeProviderSmokeTarget[]) {
-  return targetArg === "all" || targets.includes(targetArg);
+  return expandProviderSmokeTargets(targetArg).some((target) => targets.includes(target));
 }
 
 export function dearMeProviderSmokeEnvTemplate(targetArg: TargetArg = "all"): string {
   const targetFlag = targetArg === "all" ? "" : ` --target ${targetArg}`;
+  const selectedRunCommands = targetArg === "all"
+    ? [`${PROVIDER_SMOKE_BASE_COMMAND} --target deploy_site_preview`]
+    : expandProviderSmokeTargets(targetArg).map(providerSmokeRunCommand);
   const sections = [`# DearMe provider smoke local env.
 # Keep this file local. The repository ignores .dearme-provider-smoke.env.
 #
 # Check readiness:
 # ${PROVIDER_SMOKE_BASE_COMMAND} --check${targetFlag}
 #
-# Run the selected smoke:
-# ${targetArg === "all" ? `${PROVIDER_SMOKE_BASE_COMMAND} --target deploy_site_preview` : providerSmokeRunCommand(targetArg)}
+# Run the selected smoke${selectedRunCommands.length > 1 ? "s" : ""}:
+${selectedRunCommands.map((command) => `# ${command}`).join("\n")}
 #
 # Run live provider smokes only after setting DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1
 # and passing --live on the command line.
@@ -217,8 +226,13 @@ DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0`);
 
 export function dearMeProviderSmokeOperatorCommands(
   blockedTargets: readonly DearMeProviderSmokeTarget[] = [],
+  targetArg: TargetArg = "all",
 ): string[] {
-  const scopedTarget = blockedTargets.length === 1 ? blockedTargets[0] : null;
+  const scopedTarget = targetArg !== "all"
+    ? targetArg
+    : blockedTargets.length === 1
+      ? blockedTargets[0]
+      : null;
   const targetFlag = scopedTarget ? ` --target ${scopedTarget}` : "";
   const commands = [
     `pnpm --silent dearme:provider-smoke -- --print-env-template${targetFlag} > ${PROVIDER_SMOKE_ENV_FILE}`,
@@ -279,6 +293,13 @@ function targetDescription(target: DearMeProviderSmokeTarget) {
 
 function credentialRequirement(env: Env, jsonKey: string, fileKey: string) {
   return firstEnv(env, [jsonKey, fileKey]) ? [] : [`${jsonKey} or ${fileKey}`];
+}
+
+function expandProviderSmokeTargets(targetArg: TargetArg): readonly DearMeProviderSmokeTarget[] {
+  if (targetArg === "all") return DEARME_PROVIDER_SMOKE_TARGETS;
+  const group = DEARME_PROVIDER_SMOKE_TARGET_GROUPS[targetArg as DearMeProviderSmokeTargetGroup];
+  if (group) return group;
+  return [targetArg as DearMeProviderSmokeTarget];
 }
 
 function openClawGatewayRequirement(env: Env) {
@@ -357,10 +378,7 @@ export function inspectDearMeProviderSmokeReadiness(
   env: Env = process.env,
   targetArg: TargetArg = "all",
 ): DearMeProviderSmokeReadiness[] {
-  const targets = targetArg === "all"
-    ? DEARME_PROVIDER_SMOKE_TARGETS
-    : [targetArg];
-  return targets.map((target) => {
+  return expandProviderSmokeTargets(targetArg).map((target) => {
     const missing = targetMissingRequirements(target, env);
     return {
       target,
@@ -453,12 +471,20 @@ function normalizeTarget(value: string): TargetArg {
     imessage: "imessage_message",
     imessage_message: "imessage_message",
     send_imessage: "imessage_message",
+    openclaw: "openclaw_messages",
+    openclaw_message: "openclaw_messages",
+    openclaw_messages: "openclaw_messages",
+    gateway_messages: "openclaw_messages",
     meta: "meta_campaign",
     meta_ads: "meta_campaign",
     meta_campaign: "meta_campaign",
   };
   const target = aliases[normalized] ?? normalized;
-  if (target === "all" || DEARME_PROVIDER_SMOKE_TARGETS.includes(target as DearMeProviderSmokeTarget)) {
+  if (
+    target === "all"
+    || DEARME_PROVIDER_SMOKE_TARGETS.includes(target as DearMeProviderSmokeTarget)
+    || Object.prototype.hasOwnProperty.call(DEARME_PROVIDER_SMOKE_TARGET_GROUPS, target)
+  ) {
     return target as TargetArg;
   }
   throw new Error(`unknown provider smoke target: ${value}`);
@@ -879,11 +905,8 @@ async function runTarget(
 export async function runDearMeProviderSmoke(
   options: DearMeProviderSmokeOptions,
 ): Promise<DearMeProviderSmokeResult[]> {
-  const targets = options.target === "all"
-    ? DEARME_PROVIDER_SMOKE_TARGETS
-    : [options.target];
   const results: DearMeProviderSmokeResult[] = [];
-  for (const target of targets) {
+  for (const target of expandProviderSmokeTargets(options.target)) {
     results.push(await runTarget(target, options));
   }
   return results;
@@ -898,12 +921,14 @@ Targets:
   linkedin_dm               Live partner endpoint smoke. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
   telegram_message          Live Telegram smoke through OpenClaw gateway. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
   imessage_message          Live iMessage/SMS smoke through OpenClaw gateway. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
+  openclaw_messages         Group: Telegram + iMessage through the shared OpenClaw gateway config.
   meta_campaign             Live Meta Marketing API smoke. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
   all                       Run every target.
 
 Setup:
   pnpm --silent dearme:provider-smoke -- --print-env-template > .dearme-provider-smoke.env
   pnpm --silent dearme:provider-smoke -- --print-env-template --target telegram > .dearme-provider-smoke.env
+  pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw > .dearme-provider-smoke.env
   pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check
 
 Default with no target is --check. Secret JSON can be passed directly or by file:
@@ -912,7 +937,7 @@ Default with no target is --check. Secret JSON can be passed directly or by file
   DEARME_META_CAMPAIGN_CREDENTIAL_JSON(_FILE)`);
 }
 
-function printReadiness(readiness: readonly DearMeProviderSmokeReadiness[]) {
+function printReadiness(readiness: readonly DearMeProviderSmokeReadiness[], targetArg: TargetArg = "all") {
   console.log("DearMe provider smoke readiness");
   for (const item of readiness) {
     const state = item.ready ? "ready" : `blocked: ${item.missing.join(", ")}`;
@@ -929,7 +954,7 @@ function printReadiness(readiness: readonly DearMeProviderSmokeReadiness[]) {
 
   console.log("");
   console.log("Next provider-smoke setup:");
-  for (const command of dearMeProviderSmokeOperatorCommands(blockedTargets)) {
+  for (const command of dearMeProviderSmokeOperatorCommands(blockedTargets, targetArg)) {
     console.log(`- ${command}`);
   }
 }
@@ -971,7 +996,7 @@ async function main() {
       if (parsed.json) {
         console.log(JSON.stringify({ readiness }, null, 2));
       } else {
-        printReadiness(readiness);
+        printReadiness(readiness, parsed.target ?? "all");
       }
       return;
     }

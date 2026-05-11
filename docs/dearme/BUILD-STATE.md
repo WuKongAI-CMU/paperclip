@@ -2,6 +2,28 @@
 
 Date: 2026-05-11
 
+## OpenClaw Message Provider-Smoke Group - 2026-05-11
+
+Product/architecture slice:
+
+- `pnpm dearme:provider-smoke` now accepts `--target openclaw`,
+  `--target openclaw_messages`, and `gateway-messages` as one shared OpenClaw
+  gateway proof lane for Telegram plus iMessage/SMS.
+- The OpenClaw message group keeps setup scoped to the common gateway
+  URL/token/auth and the two message recipient/body variables; it does not pull
+  LinkedIn, Meta, or deploy-site setup into the same operator checklist.
+- Group readiness preserves the existing per-target result shape while printing
+  one scoped env-template command, one scoped readiness recheck, and the two
+  guarded live send commands.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+- `pnpm --silent dearme:provider-smoke -- --check --target openclaw`
+- `pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw`
+- `pnpm --silent dearme:provider-smoke -- --check --target openclaw --json`
+- `pnpm typecheck`
+
 ## Provider Smoke Operator Next-Step Cleanup - 2026-05-11
 
 Product/architecture slice:

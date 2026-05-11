@@ -49,6 +49,14 @@ test("provider smoke readiness reports missing live provider config without secr
   const telegramOnly = inspectDearMeProviderSmokeReadiness({}, "telegram_message");
   assert.deepEqual(telegramOnly.map((item) => item.target), ["telegram_message"]);
   assert.deepEqual(telegramOnly[0]?.missing, telegram?.missing);
+
+  const openClawMessages = inspectDearMeProviderSmokeReadiness({}, "openclaw_messages");
+  assert.deepEqual(openClawMessages.map((item) => item.target), [
+    "telegram_message",
+    "imessage_message",
+  ]);
+  assert.deepEqual(openClawMessages[0]?.missing, telegram?.missing);
+  assert.deepEqual(openClawMessages[1]?.missing, imessage?.missing);
 });
 
 test("provider smoke parses target aliases", () => {
@@ -56,6 +64,8 @@ test("provider smoke parses target aliases", () => {
   assert.equal(parseDearMeProviderSmokeArgs(["site-production"]).target, "deploy_site_production");
   assert.equal(parseDearMeProviderSmokeArgs(["telegram"]).target, "telegram_message");
   assert.equal(parseDearMeProviderSmokeArgs(["send-imessage"]).target, "imessage_message");
+  assert.equal(parseDearMeProviderSmokeArgs(["--target", "openclaw"]).target, "openclaw_messages");
+  assert.equal(parseDearMeProviderSmokeArgs(["gateway-messages"]).target, "openclaw_messages");
   assert.equal(parseDearMeProviderSmokeArgs(["--live", "--json"]).live, true);
   assert.equal(parseDearMeProviderSmokeArgs(["--", "--check"]).check, true);
   assert.deepEqual(
@@ -112,6 +122,7 @@ test("provider smoke env files override base env and merge in order", async () =
 test("provider smoke env template is local-only and keeps live actions disabled", () => {
   const template = dearMeProviderSmokeEnvTemplate();
   const telegramTemplate = dearMeProviderSmokeEnvTemplate("telegram_message");
+  const openClawTemplate = dearMeProviderSmokeEnvTemplate("openclaw_messages");
 
   assert.match(template, /DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=0/);
   assert.match(template, /DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=0/);
@@ -135,6 +146,17 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   assert.doesNotMatch(telegramTemplate, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=/);
   assert.doesNotMatch(telegramTemplate, /DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/);
   assert.doesNotMatch(telegramTemplate, /DEARME_DEPLOY_SITE_BASE_URL=/);
+
+  assert.match(openClawTemplate, /--check --target openclaw_messages/);
+  assert.match(openClawTemplate, /--target telegram_message --live/);
+  assert.match(openClawTemplate, /--target imessage_message --live/);
+  assert.match(openClawTemplate, /OPENCLAW_GATEWAY_URL=/);
+  assert.match(openClawTemplate, /OPENCLAW_GATEWAY_TOKEN=/);
+  assert.match(openClawTemplate, /DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT=/);
+  assert.match(openClawTemplate, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=/);
+  assert.doesNotMatch(openClawTemplate, /DEARME_LINKEDIN_DM_MESSAGES_URL=/);
+  assert.doesNotMatch(openClawTemplate, /DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/);
+  assert.doesNotMatch(openClawTemplate, /DEARME_DEPLOY_SITE_BASE_URL=/);
 });
 
 test("provider smoke operator commands give local-only setup and live guards", () => {
@@ -156,6 +178,49 @@ test("provider smoke operator commands give local-only setup and live guards", (
     "pnpm --silent dearme:provider-smoke -- --print-env-template --target telegram_message > .dearme-provider-smoke.env",
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check --target telegram_message",
     "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target telegram_message --live",
+  ]);
+
+  assert.deepEqual(
+    dearMeProviderSmokeOperatorCommands(
+      ["telegram_message", "imessage_message"],
+      "openclaw_messages",
+    ),
+    [
+      "pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages > .dearme-provider-smoke.env",
+      "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check --target openclaw_messages",
+      "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target telegram_message --live",
+      "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target imessage_message --live",
+    ],
+  );
+});
+
+test("provider smoke expands the OpenClaw message group to both gateway smokes", async () => {
+  const results = await runDearMeProviderSmoke({
+    target: "openclaw_messages",
+    env: {},
+    now,
+  });
+
+  assert.deepEqual(results.map((result) => result.target), [
+    "telegram_message",
+    "imessage_message",
+  ]);
+  assert.deepEqual(results.map((result) => result.status), ["blocked", "blocked"]);
+  assert.deepEqual(results[0]?.status === "blocked" ? results[0].missing : [], [
+    "OPENCLAW_GATEWAY_URL",
+    "OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH",
+    "DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT",
+    "DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY",
+    "--live",
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1",
+  ]);
+  assert.deepEqual(results[1]?.status === "blocked" ? results[1].missing : [], [
+    "OPENCLAW_GATEWAY_URL",
+    "OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH",
+    "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+    "DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY",
+    "--live",
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1",
   ]);
 });
 
