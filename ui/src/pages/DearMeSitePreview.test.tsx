@@ -120,6 +120,24 @@ describe("DearMeSitePreview", () => {
       expect(container.textContent).toContain(item.preparedArtifact);
       expect(container.textContent).toContain(item.approvalBoundary);
     }
+    expect(container.textContent).toContain("Prepared drafts");
+    expect(container.textContent).toContain("Starter posts are ready to review");
+    for (const post of preview.starterPosts) {
+      expect(container.textContent).toContain(post.title);
+      expect(container.textContent).toContain(post.hook);
+      expect(container.textContent).toContain(post.body);
+      expect(container.textContent).toContain(post.proofUsed);
+    }
+    expect(container.textContent).toContain("Opportunity shortlist");
+    expect(container.textContent).toContain("Five private targets are prepared");
+    for (const lead of preview.opportunityShortlist) {
+      expect(container.textContent).toContain(lead.title);
+      expect(container.textContent).toContain(lead.target);
+      expect(container.textContent).toContain(lead.whyRelevant);
+      expect(container.textContent).toContain(lead.outreachAngle);
+      expect(container.textContent).toContain(lead.draftMessage);
+      expect(container.textContent).toContain(lead.contactEvidence.sourceSignal);
+    }
     expect(container.textContent).toContain("Private address");
     expect(container.textContent).not.toContain("Private preview path");
     expect(container.textContent).not.toContain("/PET/dearme/site-preview");

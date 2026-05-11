@@ -2,6 +2,25 @@
 
 Date: 2026-05-11
 
+## Browser Private Preview Shows The Actual First-Wow Packet - 2026-05-11
+
+Product/architecture slice:
+
+- Extended the DearMe private preview route to render the current first-cycle
+  preview schema's prepared starter drafts and five-target opportunity
+  shortlist, not only the proof trail and launch boundary.
+- This keeps the Polsia-style "one sentence becomes visible work" proof on the
+  product surface users can inspect, while preserving Naive/Paperclip's
+  backstage team/runtime boundary and existing approval gates.
+- Reused the existing shared first-cycle schema, session-storage preview path,
+  DearMe shell components, and customer-safe hidden-language test. No new setup
+  surface, dependency, provider prompt, or branch replay lane was added.
+
+Verification:
+
+- `pnpm exec vitest ui/src/pages/DearMeSitePreview.test.tsx --run --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+
 ## Integration Audit Timeout Matches Current Worktree Scale - 2026-05-11
 
 Product/architecture slice:

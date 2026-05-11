@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- The browser private preview route now renders the same product-level
+  first-wow payload as the proof/export lane: starter draft hook/body/proof
+  cards and the five-target opportunity shortlist with fit, source signal,
+  contact evidence, outreach angle, and draft message. Future workers should
+  keep private preview, static export, and shared first-cycle schema aligned
+  instead of creating a second demo page or pushing users into setup concerns.
 - `pnpm dearme:status` integration absorption is green again after raising the
   embedded worktree/handoff audit timeout to match current coordinator scale.
   The audit command itself was succeeding, but the status wrapper could time

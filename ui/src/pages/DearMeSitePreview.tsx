@@ -1,8 +1,9 @@
 import { useMemo } from "react";
+import type { DearMeFirstCyclePreviewResponse } from "@paperclipai/shared";
 import { Link, useParams } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, FileText, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { useCompany } from "../context/CompanyContext";
 import {
   DearMeChecklist,
@@ -15,9 +16,38 @@ import {
   readDearMeFirstCyclePreview,
 } from "../lib/dearme-site-preview";
 
+type StarterPost = DearMeFirstCyclePreviewResponse["starterPosts"][number];
+type OpportunityLead = DearMeFirstCyclePreviewResponse["opportunityShortlist"][number];
+
+const CHANNEL_LABELS: Record<StarterPost["channel"], string> = {
+  linkedin: "LinkedIn",
+  x: "X",
+  newsletter: "Newsletter",
+  blog: "Blog",
+  portfolio: "Portfolio",
+  email: "Email",
+  community: "Community",
+  website: "Website",
+};
+
+const CONTACT_STATUS_LABELS: Record<OpportunityLead["contactEvidence"]["status"], string> = {
+  verified: "Contact verified",
+  pending: "Contact pending",
+  unavailable: "No direct contact yet",
+};
+
 function normalizePrefix(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed.toUpperCase() : null;
+}
+
+function contactEvidenceLine(lead: OpportunityLead): string {
+  return [
+    lead.contactEvidence.contactEmail,
+    lead.contactEvidence.contactHandle,
+    lead.contactEvidence.contactUrl,
+  ].filter((value): value is string => Boolean(value && value.trim().length > 0)).join(" · ") ||
+    "No direct contact record yet";
 }
 
 export function DearMeSitePreview() {
@@ -151,6 +181,97 @@ export function DearMeSitePreview() {
                       <span className="font-medium text-foreground/80">Waits:</span>{" "}
                       {item.approvalBoundary}
                     </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </DearMeWorkbenchCard>
+
+          <DearMeWorkbenchCard
+            eyebrow="Prepared drafts"
+            title="Starter posts are ready to review"
+            description="DearMe turns the first sentence into proof-backed drafts while publishing still waits for your call."
+            badge={<FileText className="h-4 w-4 text-muted-foreground" />}
+          >
+            <div className="grid gap-3 lg:grid-cols-3" aria-label="Prepared starter drafts">
+              {preview.starterPosts.map((post) => (
+                <div key={post.id} className="rounded-md border border-border bg-muted/20 p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">{CHANNEL_LABELS[post.channel]}</Badge>
+                    <Badge variant="secondary">Draft</Badge>
+                  </div>
+                  <p className="mt-3 text-sm font-medium">{post.title}</p>
+                  <p className="mt-2 text-sm text-foreground/80">{post.hook}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{post.body}</p>
+                  <div className="mt-3 rounded-md border border-border bg-background/60 px-3 py-2">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Source proof
+                    </p>
+                    <p className="mt-1 text-sm text-foreground/80">{post.proofUsed}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </DearMeWorkbenchCard>
+
+          <DearMeWorkbenchCard
+            eyebrow="Opportunity shortlist"
+            title="Five private targets are prepared"
+            description="DearMe researches fit, contact evidence, and first-message angles before any outreach is sent."
+            badge={<Users className="h-4 w-4 text-muted-foreground" />}
+          >
+            <div className="grid gap-4 md:grid-cols-2" aria-label="Private opportunity shortlist">
+              {preview.opportunityShortlist.map((lead, index) => (
+                <div key={`${lead.title}-${lead.target}`} className="rounded-md border border-border bg-muted/20 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Lead {index + 1}
+                      </p>
+                      <p className="mt-1 text-sm font-medium">{lead.title}</p>
+                      <p className="text-xs text-muted-foreground">{lead.target}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <Badge variant="secondary">{lead.relevanceScore}/10</Badge>
+                      <Badge
+                        variant={lead.contactEvidence.status === "verified" ? "default" : "outline"}
+                        className="h-auto"
+                      >
+                        {CONTACT_STATUS_LABELS[lead.contactEvidence.status]}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-3 text-sm">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Contact evidence
+                      </p>
+                      <p className="mt-1 text-foreground/80">{contactEvidenceLine(lead)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Source signal
+                      </p>
+                      <p className="mt-1 text-foreground/80">{lead.contactEvidence.sourceSignal}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Why this target
+                      </p>
+                      <p className="mt-1 text-foreground/80">{lead.whyRelevant}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        First message angle
+                      </p>
+                      <p className="mt-1 text-foreground/80">{lead.outreachAngle}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Draft message
+                      </p>
+                      <p className="mt-1 text-foreground/80">{lead.draftMessage}</p>
+                    </div>
                   </div>
                 </div>
               ))}
