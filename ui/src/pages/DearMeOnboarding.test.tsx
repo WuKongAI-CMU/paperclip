@@ -1105,6 +1105,40 @@ function workbenchResponseWithPacketWorkbench(): DearMeWorkbenchResponse {
   };
 }
 
+type DearMeDeliveryStatus = "delivered" | "needs_channel_connection" | "pending" | "rejected" | "errored";
+
+function workbenchResponseWithDeliveryReceipt(
+  deliveryStatus: DearMeDeliveryStatus,
+  title: string,
+  summary: string,
+  nextStep: string,
+  deliveryExternalId?: string,
+  deliveryExternalUrl?: string,
+): DearMeWorkbenchResponse {
+  const response = workbenchResponse();
+  response.recentProgress = [
+    {
+      id: "activity-delivery",
+      kind: "next_move_delivery_recorded",
+      title,
+      summary,
+      outputKind: "content_drafts",
+      outputId: "issue-2:content_drafts",
+      riskGate: "publish_social",
+      approvalId: "approval-publish",
+      issueId: "issue-2",
+      issueIdentifier: "PET-8",
+      deliveryStatus,
+      deliveryExternalId,
+      deliveryExternalUrl,
+      nextStep,
+      createdAt: "2026-05-07T14:06:00.000Z",
+    },
+    ...response.recentProgress,
+  ];
+  return response;
+}
+
 function workbenchResponseWithChiefBrief() {
   const response = workbenchResponse();
   const chiefUpdatedAt = "2026-05-07T16:30:00.000Z";
@@ -2843,6 +2877,15 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("First growth plan");
     expect(container.textContent).toContain("Ready to launch, with you in control");
     expect(container.textContent).toContain("Source proof: Ran 42 customer interviews that changed a pricing launch");
+    expect(container.textContent).toContain("Delivery receipts");
+    expect(container.textContent).toContain("Approved work comes back with a result");
+    expect(container.textContent).toContain("Approved LinkedIn post delivered");
+    expect(container.textContent).toContain("Reference linkedin-post-42");
+    expect(container.textContent).toContain("Review the delivered post, then let DearMe prepare the next proof-backed opportunity.");
+    expect(container.textContent).toContain("Approved newsletter send needs connection");
+    expect(container.textContent).toContain("Needs connection");
+    expect(container.textContent).toContain("Connect the newsletter channel before DearMe continues this approved send.");
+    expect(container.textContent).not.toContain("needs_channel_connection");
     expect(container.textContent).not.toContain("Approval-gated by default");
     expect(mockDearmeApi.previewFirstCycle).not.toHaveBeenCalled();
     expect(mockDearmeApi.startFirstCycle).not.toHaveBeenCalled();
@@ -5722,28 +5765,16 @@ describe("DearMeOnboarding", () => {
   });
 
   it("surfaces a delivered next-move receipt with a safe external reference", async () => {
-    const response = workbenchResponse();
-    response.recentProgress = [
-      {
-        id: "activity-delivery",
-        kind: "next_move_delivery_recorded",
-        title: "Approved next step delivered",
-        summary: "DearMe delivered the approved X step and recorded the receipt.",
-        outputKind: "content_drafts",
-        outputId: "issue-2:content_drafts",
-        riskGate: "publish_social",
-        approvalId: "approval-publish",
-        issueId: "issue-2",
-        issueIdentifier: "PET-8",
-        deliveryStatus: "delivered",
-        deliveryExternalId: "tweet-1",
-        deliveryExternalUrl: "https://x.com/tester/status/tweet-1",
-        nextStep: "Review the delivered X result or continue with the next approved step.",
-        createdAt: "2026-05-07T14:06:00.000Z",
-      },
-      ...response.recentProgress,
-    ];
-    mockDearmeApi.getWorkbench.mockResolvedValue(response);
+    mockDearmeApi.getWorkbench.mockResolvedValue(
+      workbenchResponseWithDeliveryReceipt(
+        "delivered",
+        "Approved next step delivered",
+        "DearMe delivered the approved X step and recorded the receipt.",
+        "Review the delivered X result or continue with the next approved step.",
+        "tweet-1",
+        "https://x.com/tester/status/tweet-1",
+      ),
+    );
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -5761,9 +5792,98 @@ describe("DearMeOnboarding", () => {
     const handoffPanel = surfaceByLabel(container, "Delivery receipt delivered");
     expect(handoffPanel.textContent).toContain("Approved next step delivered");
     expect(handoffPanel.textContent).toContain("Delivered");
+    expect(handoffPanel.textContent).toContain("Receipt recorded");
     expect(handoffPanel.textContent).toContain("Reference tweet-1");
     expect(handoffPanel.textContent).toContain("Open result");
     expect(handoffPanel.textContent).toContain("Review the delivered X result or continue with the next approved step.");
+    expect(handoffPanel.textContent).not.toContain("External action not run");
+    expectNoHiddenProductTerms(handoffPanel.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.orchestrationName,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+      HIDDEN_PRODUCT_TERMS.modelName,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+      HIDDEN_PRODUCT_TERMS.workbenchName,
+      HIDDEN_PRODUCT_TERMS.workspaceName,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("surfaces a delivery receipt that still needs channel connection", async () => {
+    mockDearmeApi.getWorkbench.mockResolvedValue(
+      workbenchResponseWithDeliveryReceipt(
+        "needs_channel_connection",
+        "Approved next step needs connection",
+        "DearMe recorded the receipt but the connection is not ready yet.",
+        "Connect the channel before DearMe can retry the approved step.",
+      ),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const handoffPanel = surfaceByLabel(container, "Delivery receipt needs connection");
+    expect(handoffPanel.textContent).toContain("Approved next step needs connection");
+    expect(handoffPanel.textContent).toContain("Needs connection");
+    expect(handoffPanel.textContent).toContain("Connection needed");
+    expect(handoffPanel.textContent).not.toContain("External action not run");
+    expectNoHiddenProductTerms(handoffPanel.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.orchestrationName,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+      HIDDEN_PRODUCT_TERMS.modelName,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+      HIDDEN_PRODUCT_TERMS.workbenchName,
+      HIDDEN_PRODUCT_TERMS.workspaceName,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("surfaces a safely failed delivery receipt without claiming it was not run", async () => {
+    mockDearmeApi.getWorkbench.mockResolvedValue(
+      workbenchResponseWithDeliveryReceipt(
+        "errored",
+        "Approved next step failed safely",
+        "DearMe recorded the receipt but the delivery failed safely.",
+        "Review the safe failure and choose the next approved step.",
+      ),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const handoffPanel = surfaceByLabel(container, "Delivery receipt failed safely");
+    expect(handoffPanel.textContent).toContain("Approved next step failed safely");
+    expect(handoffPanel.textContent).toContain("Failed safely");
+    expect(handoffPanel.textContent).not.toContain("External action not run");
     expectNoHiddenProductTerms(handoffPanel.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
       HIDDEN_PRODUCT_TERMS.orchestrationName,

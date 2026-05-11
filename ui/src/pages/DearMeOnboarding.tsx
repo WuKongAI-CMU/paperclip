@@ -1801,6 +1801,39 @@ const SAMPLE_FIRST_CYCLE_PREVIEW = createDearMeFirstCyclePreview("sample-company
   },
 });
 
+const SAMPLE_FIRST_CYCLE_DELIVERY_RECEIPTS: DearMeWorkbenchProgressItem[] = [
+  {
+    id: "sample-delivery-receipt-delivered",
+    kind: "next_move_delivery_recorded",
+    title: "Approved LinkedIn post delivered",
+    summary: "DearMe sent Maya's approved proof-backed post and recorded the result.",
+    outputKind: "content_drafts",
+    outputId: "sample-content-drafts",
+    riskGate: "publish_social",
+    approvalId: "sample-approval-publish",
+    issueIdentifier: "MAYA-8",
+    deliveryStatus: "delivered",
+    deliveryExternalId: "linkedin-post-42",
+    deliveryExternalUrl: "https://www.linkedin.com/feed/update/urn:li:activity:42",
+    nextStep: "Review the delivered post, then let DearMe prepare the next proof-backed opportunity.",
+    createdAt: "2026-05-07T14:08:00.000Z",
+  },
+  {
+    id: "sample-delivery-receipt-connection",
+    kind: "next_move_delivery_recorded",
+    title: "Approved newsletter send needs connection",
+    summary: "DearMe kept the newsletter draft private because the sending channel still needs to be connected.",
+    outputKind: "weekly_report",
+    outputId: "sample-weekly-report",
+    riskGate: "send_email",
+    approvalId: "sample-approval-send",
+    issueIdentifier: "MAYA-9",
+    deliveryStatus: "needs_channel_connection",
+    nextStep: "Connect the newsletter channel before DearMe continues this approved send.",
+    createdAt: "2026-05-07T14:09:00.000Z",
+  },
+];
+
 function outputPreview(output: DearMeOutputItem) {
   const candidates = [
     ...output.documents.map((document) => document.bodyPreview),
@@ -2063,6 +2096,17 @@ function PrivateExecutionHandoffPanel({
       : "DearMe prepared the launch-ready brief. Nothing public or external runs until the next governed move is ready.";
   const externalUrl = isDeliveryReceipt && handoff.deliveryStatus === "delivered" ? handoff.deliveryExternalUrl ?? null : null;
   const externalId = isDeliveryReceipt && handoff.deliveryStatus === "delivered" ? handoff.deliveryExternalId ?? null : null;
+  const deliveryReceiptSignalLabel = isDeliveryReceipt
+    ? deliveryStatus === "delivered"
+      ? "Receipt recorded"
+      : deliveryStatus === "needs_channel_connection"
+        ? "Connection needed"
+        : deliveryStatus === "pending"
+          ? "Waiting to send"
+          : deliveryStatus === "rejected"
+            ? "Needs a new decision"
+            : "Failed safely"
+    : "External action not run";
   const trailingVariant = isDeliveryReceipt
     ? deliveryStatus === "delivered"
       ? "default"
@@ -2083,9 +2127,7 @@ function PrivateExecutionHandoffPanel({
         trailing={
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={trailingVariant}>{statusLabel}</Badge>
-            <Badge variant="secondary">
-              {isDeliveryReceipt && deliveryStatus === "delivered" ? "External action completed" : "External action not run"}
-            </Badge>
+            <Badge variant="secondary">{deliveryReceiptSignalLabel}</Badge>
             <Badge variant="outline">{artifact}</Badge>
           </div>
         }
@@ -2296,6 +2338,26 @@ function FirstCycleProofPackage({
           ))}
         </div>
       </DearMeWorkbenchCard>
+
+      {isSample ? (
+        <div className="space-y-3" aria-label="Sample delivery receipt replay">
+          <DearMeWorkbenchSectionHeader
+            icon={ShieldCheck}
+            eyebrow="Delivery receipts"
+            title="Approved work comes back with a result"
+            description="The sample first run shows one approved post delivered and one private send held safely until its channel is connected."
+          />
+          <div className="grid gap-3 xl:grid-cols-2">
+            {SAMPLE_FIRST_CYCLE_DELIVERY_RECEIPTS.map((receipt) => (
+              <PrivateExecutionHandoffPanel
+                key={receipt.id}
+                handoff={receipt}
+                onOpenIssue={() => onOpenPreview(preview.sitePreview.handle)}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <DearMeWorkbenchCard
         title={preview.voiceProfile.title}
