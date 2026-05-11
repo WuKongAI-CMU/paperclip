@@ -15,6 +15,14 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- DEA-60 adds an internal provider smoke harness on top of the existing
+  `ChannelDispatch` implementations instead of adding another connector or
+  settings surface. `pnpm dearme:provider-smoke -- --check` now tells the
+  coordinator which live values are missing; safe preview site receipt smokes
+  can run directly, production site smoke verifies the returned URL content
+  once host env is enabled, and LinkedIn DM / Meta campaign smokes require both
+  `--live` and `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`. Keep future live proof
+  on this harness unless the provider contract itself changes.
 - DEA-59 / DM-176B/DM-178B put provider dispatch config on the default app handoff
   path instead of leaving it as a constructor-only test seam. LinkedIn partner
   endpoint env now decides whether the direct `send_linkedin_dm` dispatcher is

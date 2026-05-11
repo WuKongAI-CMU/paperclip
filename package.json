@@ -41,6 +41,8 @@
     "test:dearme-symphony-preflight": "node --test scripts/dearme-symphony-git-preflight.test.mjs",
     "dearme:worktrees": "node scripts/dearme-worktree-status.mjs",
     "test:dearme-worktrees": "node --test scripts/dearme-worktree-status.test.mjs",
+    "dearme:provider-smoke": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-provider-smoke.ts",
+    "test:dearme-provider-smoke": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-provider-smoke.test.ts",
     "docs:dev": "cd docs && npx mintlify dev",
     "smoke:openclaw-join": "./scripts/smoke/openclaw-join.sh",
     "smoke:openclaw-docker-ui": "./scripts/smoke/openclaw-docker-ui.sh",

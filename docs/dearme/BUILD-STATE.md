@@ -2,6 +2,34 @@
 
 Date: 2026-05-11
 
+## DEA-60 Provider Smoke Harness - 2026-05-11
+
+Product/architecture slice:
+
+- Added `pnpm dearme:provider-smoke -- --check` as the internal operator gate
+  for the remaining live provider proof. It reports exactly which env values
+  are missing for preview site receipts, production site host smoke,
+  LinkedIn partner DM smoke, and Meta Marketing API campaign smoke.
+- The command runs safe preview `deploy_site` receipt smoke without external
+  send/spend side effects. When production deploy is explicitly enabled, the
+  production target now GETs the returned site URL and verifies expected page
+  text before claiming delivery. LinkedIn DM and Meta campaign smokes are live
+  provider actions, so they require both `--live` and
+  `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1` before dispatch.
+- Credential JSON can be supplied directly or by `*_CREDENTIAL_JSON_FILE`, so
+  operators do not need to paste tokens into command history. The result
+  intentionally reports provider ids/URLs/receipt ids only, not token material.
+- This keeps the remaining work bounded to real credential/provider smoke
+  evidence; it does not create a customer settings surface, a second connector
+  store, or a separate dispatch path.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+  passed: 9 node:test checks.
+- `pnpm dearme:provider-smoke -- --check`
+  passed and reported live-provider missing config without running live sends.
+
 ## DEA-59 / DM-176B / DM-178B Provider Dispatch Config Gates - 2026-05-11
 
 Product/architecture slice:
