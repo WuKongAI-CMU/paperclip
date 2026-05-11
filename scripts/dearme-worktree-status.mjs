@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_LIMIT = 0;
 const DEFAULT_SYMPHONY_ROOT = "/private/tmp/dearme-symphony-workspaces";
+const DEFAULT_SYMPHONY_HANDOFF_ROOT = join(DEFAULT_SYMPHONY_ROOT, "_handoffs");
 const DEFAULT_REVIEWED_ABSORPTION_LEDGER = "docs/dearme/WORKTREE-ABSORPTION-LEDGER.json";
 const WORKTREE_STATUSES = new Set([
   "current",
@@ -180,6 +181,10 @@ function commitSubject(revision, cwd) {
   }
 }
 
+function shortSha(value) {
+  return typeof value === "string" && value.length > 12 ? value.slice(0, 12) : value;
+}
+
 function collectCurrentSubjects(currentHead, repoRoot) {
   return new Set(runGit(["log", "--format=%s", currentHead], repoRoot).split("\n").filter(Boolean));
 }
@@ -282,6 +287,70 @@ export function listSymphonyWorkspacePaths(root = DEFAULT_SYMPHONY_ROOT) {
   }
 
   return [...paths].sort();
+}
+
+export function collectSymphonyHandoffs({
+  handoffRoot = DEFAULT_SYMPHONY_HANDOFF_ROOT,
+} = {}) {
+  if (!existsSync(handoffRoot)) return [];
+
+  return readdirSync(handoffRoot, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+    .map((entry) => {
+      const summaryPath = join(handoffRoot, entry.name);
+      const stat = statSync(summaryPath);
+      const parsed = JSON.parse(readFileSync(summaryPath, "utf8"));
+      return {
+        mode: parsed.mode ?? "unknown",
+        issue: parsed.issue ?? null,
+        workspace: parsed.workspace ?? null,
+        baseHead: parsed.baseHead ?? null,
+        head: parsed.head ?? null,
+        commits: Array.isArray(parsed.commits) ? parsed.commits : [],
+        changedFiles: Array.isArray(parsed.changedFiles) ? parsed.changedFiles : [],
+        patchPath: parsed.patchPath ?? null,
+        bundlePath: parsed.bundlePath ?? null,
+        summaryPath,
+        updatedAt: stat.mtime.toISOString(),
+        updatedAtMs: stat.mtimeMs,
+      };
+    })
+    .sort((a, b) => b.updatedAtMs - a.updatedAtMs || a.summaryPath.localeCompare(b.summaryPath));
+}
+
+export function filterSymphonyHandoffs(handoffs, options) {
+  if (!options?.tickets || options.tickets.size === 0) return handoffs;
+  return handoffs.filter((handoff) => handoff.issue && options.tickets.has(handoff.issue));
+}
+
+export function summarizeSymphonyHandoffs(handoffs) {
+  const latestByIssue = {};
+  const summary = {
+    total: 0,
+    byMode: {},
+    latestByIssue,
+  };
+
+  for (const handoff of handoffs) {
+    summary.total += 1;
+    summary.byMode[handoff.mode] = (summary.byMode[handoff.mode] ?? 0) + 1;
+
+    if (handoff.issue && !latestByIssue[handoff.issue]) {
+      latestByIssue[handoff.issue] = {
+        mode: handoff.mode,
+        head: handoff.head,
+        baseHead: handoff.baseHead,
+        commits: handoff.commits,
+        changedFiles: handoff.changedFiles,
+        patchPath: handoff.patchPath,
+        bundlePath: handoff.bundlePath,
+        summaryPath: handoff.summaryPath,
+        updatedAt: handoff.updatedAt,
+      };
+    }
+  }
+
+  return summary;
 }
 
 export function summarize(records) {
@@ -392,6 +461,8 @@ export function parseArgs(argv) {
     limit: DEFAULT_LIMIT,
     includeSymphony: true,
     symphonyRoot: DEFAULT_SYMPHONY_ROOT,
+    includeHandoffs: false,
+    handoffRoot: null,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -423,6 +494,23 @@ export function parseArgs(argv) {
 
     if (arg === "--no-symphony") {
       options.includeSymphony = false;
+      continue;
+    }
+
+    if (arg === "--handoffs") {
+      options.includeHandoffs = true;
+      continue;
+    }
+
+    if (arg === "--handoff-root") {
+      i += 1;
+      if (!argv[i]) throw new Error("--handoff-root requires a value");
+      options.handoffRoot = argv[i];
+      continue;
+    }
+
+    if (arg.startsWith("--handoff-root=")) {
+      options.handoffRoot = arg.slice("--handoff-root=".length);
       continue;
     }
 
@@ -596,8 +684,31 @@ function printActionSummary(records) {
   }
 }
 
+function printHandoffSummary(summary) {
+  console.log("");
+  console.log(
+    [
+      `Symphony handoffs: ${summary.total}`,
+      `committed_patch: ${summary.byMode.committed_patch ?? 0}`,
+      `dirty_patch_handoff: ${summary.byMode.dirty_patch_handoff ?? 0}`,
+      `no_file_changes: ${summary.byMode.no_file_changes ?? 0}`,
+    ].join(" | "),
+  );
+
+  const latest = Object.entries(summary.latestByIssue).sort(([a], [b]) => a.localeCompare(b));
+  if (latest.length === 0) return;
+
+  console.log("Latest Symphony handoffs:");
+  for (const [issue, handoff] of latest) {
+    console.log(
+      `- ${issue}: ${handoff.mode} head=${shortSha(handoff.head) ?? "-"} files=${handoff.changedFiles.length} updated=${handoff.updatedAt} patch=${handoff.patchPath ?? "-"}`,
+    );
+  }
+}
+
 function main() {
   const options = parseArgs(process.argv.slice(2));
+  const handoffRoot = options.handoffRoot ?? join(options.symphonyRoot, "_handoffs");
   const records = filterWorktreeRecords(
     collectWorktreeStatus({
       skipDirty: options.skipDirty,
@@ -606,20 +717,38 @@ function main() {
     }),
     options,
   );
+  const handoffs = options.includeHandoffs
+    ? filterSymphonyHandoffs(collectSymphonyHandoffs({ handoffRoot }), options)
+    : [];
 
   if (options.json) {
-    console.log(JSON.stringify({ summary: summarize(records), worktrees: records }, null, 2));
+    console.log(JSON.stringify({
+      summary: summarize(records),
+      worktrees: records,
+      ...(options.includeHandoffs
+        ? {
+            handoffSummary: summarizeSymphonyHandoffs(handoffs),
+            handoffs,
+          }
+        : {}),
+    }, null, 2));
     return;
   }
 
   if (options.summaryOnly) {
     printSummary(summarize(records));
     printActionSummary(records);
+    if (options.includeHandoffs) {
+      printHandoffSummary(summarizeSymphonyHandoffs(handoffs));
+    }
     return;
   }
 
   printTable(records);
   printActionSummary(records);
+  if (options.includeHandoffs) {
+    printHandoffSummary(summarizeSymphonyHandoffs(handoffs));
+  }
 }
 
 const isMainModule = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];

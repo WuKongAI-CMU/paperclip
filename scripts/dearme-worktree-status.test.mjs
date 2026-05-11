@@ -1,21 +1,24 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
 import {
   classifyWorktree,
+  collectSymphonyHandoffs,
   collectWorktreeStatus,
   deriveWorktreeTicket,
   enrichWorktreeRecord,
+  filterSymphonyHandoffs,
   filterWorktreeRecords,
   listSymphonyWorkspacePaths,
   loadReviewedAbsorptions,
   markReviewedAbsorption,
   parseArgs,
   parseWorktrees,
+  summarizeSymphonyHandoffs,
   summarize,
 } from "./dearme-worktree-status.mjs";
 
@@ -238,6 +241,17 @@ test("parseArgs tolerates the pnpm argument separator", () => {
 
   const rootEqualsOptions = parseArgs(["--symphony-root=/tmp/dearme-symphony-equals"]);
   assert.equal(rootEqualsOptions.symphonyRoot, "/tmp/dearme-symphony-equals");
+
+  const handoffOptions = parseArgs([
+    "--handoffs",
+    "--handoff-root",
+    "/tmp/dearme-handoffs",
+  ]);
+  assert.equal(handoffOptions.includeHandoffs, true);
+  assert.equal(handoffOptions.handoffRoot, "/tmp/dearme-handoffs");
+
+  const handoffEqualsOptions = parseArgs(["--handoff-root=/tmp/dearme-handoffs-equals"]);
+  assert.equal(handoffEqualsOptions.handoffRoot, "/tmp/dearme-handoffs-equals");
 });
 
 test("parseArgs supports DEA tickets and Symphony workspace options", () => {
@@ -511,6 +525,67 @@ test("collectWorktreeStatus includes real Symphony workspace repos by default", 
   } finally {
     rmSync(repo, { recursive: true, force: true });
     rmSync(symphonyRoot, { recursive: true, force: true });
+  }
+});
+
+test("collectSymphonyHandoffs summarizes latest handoff by issue", () => {
+  const handoffRoot = mkdtempSync(join(tmpdir(), "dearme-symphony-handoffs-"));
+  const olderPath = join(handoffRoot, "DEA-60-old.json");
+  const newerPath = join(handoffRoot, "DEA-60-new.json");
+  const otherPath = join(handoffRoot, "DEA-61-new.json");
+
+  try {
+    writeFileSync(olderPath, JSON.stringify({
+      mode: "no_file_changes",
+      issue: "DEA-60",
+      head: "1111111111111111111111111111111111111111",
+      changedFiles: [],
+    }));
+    writeFileSync(newerPath, JSON.stringify({
+      mode: "committed_patch",
+      issue: "DEA-60",
+      baseHead: "0000000000000000000000000000000000000000",
+      head: "2222222222222222222222222222222222222222",
+      commits: ["22222222 wire proof"],
+      changedFiles: ["scripts/dearme-provider-smoke.ts"],
+      patchPath: "/tmp/DEA-60.patch",
+      bundlePath: "/tmp/DEA-60.bundle",
+    }));
+    writeFileSync(otherPath, JSON.stringify({
+      mode: "dirty_patch_handoff",
+      issue: "DEA-61",
+      head: "3333333333333333333333333333333333333333",
+      patchPath: "/tmp/DEA-61.patch",
+    }));
+
+    const older = new Date("2026-05-11T01:00:00.000Z");
+    const newer = new Date("2026-05-11T02:00:00.000Z");
+    const other = new Date("2026-05-11T03:00:00.000Z");
+    utimesSync(olderPath, older, older);
+    utimesSync(newerPath, newer, newer);
+    utimesSync(otherPath, other, other);
+
+    const handoffs = collectSymphonyHandoffs({ handoffRoot });
+    assert.equal(handoffs[0].issue, "DEA-61");
+    assert.equal(handoffs[1].head, "2222222222222222222222222222222222222222");
+
+    const summary = summarizeSymphonyHandoffs(handoffs);
+    assert.equal(summary.total, 3);
+    assert.equal(summary.byMode.committed_patch, 1);
+    assert.equal(summary.byMode.dirty_patch_handoff, 1);
+    assert.equal(summary.latestByIssue["DEA-60"].mode, "committed_patch");
+    assert.deepEqual(summary.latestByIssue["DEA-60"].changedFiles, [
+      "scripts/dearme-provider-smoke.ts",
+    ]);
+
+    assert.deepEqual(
+      filterSymphonyHandoffs(handoffs, { tickets: new Set(["DEA-60"]) }).map((handoff) =>
+        handoff.issue
+      ),
+      ["DEA-60", "DEA-60"],
+    );
+  } finally {
+    rmSync(handoffRoot, { recursive: true, force: true });
   }
 });
 
