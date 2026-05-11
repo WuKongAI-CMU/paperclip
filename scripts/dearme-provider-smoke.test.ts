@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import type { AdapterExecutionContext } from "@paperclipai/adapter-utils";
 import {
   dearMeProviderSmokeEnvTemplate,
+  dearMeProviderSmokeOperatorCommands,
   inspectDearMeProviderSmokeReadiness,
   loadDearMeProviderSmokeEnv,
   parseDearMeProviderSmokeArgs,
@@ -120,6 +121,22 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   assert.equal(template.includes("accessToken"), false);
   assert.equal(template.includes("li-token"), false);
   assert.equal(template.includes("meta-token"), false);
+});
+
+test("provider smoke operator commands give local-only setup and live guards", () => {
+  const commands = dearMeProviderSmokeOperatorCommands([
+    "deploy_site_production",
+    "telegram_message",
+  ]);
+
+  assert.deepEqual(commands, [
+    "pnpm --silent dearme:provider-smoke -- --print-env-template > .dearme-provider-smoke.env",
+    "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check",
+    "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target deploy_site_production",
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target telegram_message --live",
+  ]);
+  assert.equal(commands.join("\n").includes("accessToken"), false);
+  assert.equal(commands.join("\n").includes("OPENCLAW_GATEWAY_TOKEN="), false);
 });
 
 test("provider smoke delivers a safe deploy_site preview receipt", async () => {

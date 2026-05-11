@@ -170,6 +170,30 @@ DEARME_META_CAMPAIGN_SMOKE_LEARNING_WINDOW_HOURS=168
 DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0`;
 }
 
+const PROVIDER_SMOKE_ENV_FILE = ".dearme-provider-smoke.env";
+const PROVIDER_SMOKE_BASE_COMMAND =
+  `pnpm --silent dearme:provider-smoke -- --env-file ${PROVIDER_SMOKE_ENV_FILE}`;
+
+function providerSmokeRunCommand(target: DearMeProviderSmokeTarget): string {
+  const command = `${PROVIDER_SMOKE_BASE_COMMAND} --target ${target}`;
+  return LIVE_TARGETS.has(target)
+    ? `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 ${command} --live`
+    : command;
+}
+
+export function dearMeProviderSmokeOperatorCommands(
+  blockedTargets: readonly DearMeProviderSmokeTarget[] = [],
+): string[] {
+  const commands = [
+    `pnpm --silent dearme:provider-smoke -- --print-env-template > ${PROVIDER_SMOKE_ENV_FILE}`,
+    `${PROVIDER_SMOKE_BASE_COMMAND} --check`,
+  ];
+  for (const target of blockedTargets) {
+    commands.push(providerSmokeRunCommand(target));
+  }
+  return commands;
+}
+
 function nonEmpty(value: string | undefined): string | null {
   return value && value.trim().length > 0 ? value.trim() : null;
 }
@@ -855,6 +879,17 @@ function printReadiness(readiness: readonly DearMeProviderSmokeReadiness[]) {
       ? " Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 to run."
       : "";
     console.log(`- ${item.target}: ${state}. ${item.description}.${live}`);
+  }
+
+  const blockedTargets = readiness
+    .filter((item) => !item.ready)
+    .map((item) => item.target);
+  if (blockedTargets.length === 0) return;
+
+  console.log("");
+  console.log("Next provider-smoke setup:");
+  for (const command of dearMeProviderSmokeOperatorCommands(blockedTargets)) {
+    console.log(`- ${command}`);
   }
 }
 

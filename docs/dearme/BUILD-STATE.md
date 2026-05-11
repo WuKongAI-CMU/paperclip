@@ -2,6 +2,27 @@
 
 Date: 2026-05-11
 
+## Provider Smoke Operator Next-Step Cleanup - 2026-05-11
+
+Product/architecture slice:
+
+- `pnpm dearme:provider-smoke -- --check` now turns blocked live provider
+  readiness into concrete local operator commands: create the ignored
+  `.dearme-provider-smoke.env`, re-run readiness with `--env-file`, and run the
+  blocked target smoke command with the required live guard where needed.
+- Kept JSON readiness stable and secret-free so automation can continue reading
+  the original readiness shape while human operators get direct next steps.
+- This keeps the remaining product proof gap bounded to real live provider
+  credentials and host proof instead of another documentation lookup.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke` passed with 19 node:test tests.
+- `pnpm --silent dearme:provider-smoke -- --check` prints the next setup
+  commands for production site, LinkedIn, Telegram, iMessage, and Meta smokes.
+- `pnpm --silent dearme:provider-smoke -- --check --json` still emits the
+  readiness payload without operator commands or secret values.
+
 ## Symphony Historical Queue Default-Read Cleanup - 2026-05-11
 
 Product/architecture slice:

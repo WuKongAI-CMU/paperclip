@@ -15,6 +15,9 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- Provider smoke readiness now prints the exact local setup/recheck/live-smoke
+  commands for blocked targets while keeping JSON output stable. The remaining
+  gap is real provider/host credentials, not another config-discovery pass.
 - `.symphony/WORKFLOW.md` no longer makes the 2026-05-08 operating-loop plan a
   default worker read. Use that plan only for Symphony lifecycle/coordinator
   workflow changes; ordinary product workers should start from their assigned
