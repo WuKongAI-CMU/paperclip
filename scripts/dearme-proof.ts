@@ -3,7 +3,6 @@ import { access } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import {
   dearMeProviderSmokeEnvTemplate,
-  dearMeProviderSmokeOperatorCommands,
   formatDearMeProviderSmokeReadiness,
   inspectDearMeProviderSmokeReadiness,
   loadDearMeProviderSmokeEnv,
@@ -445,13 +444,53 @@ function needsPrivateSiteExport(
     blockedTargets.includes("deploy_site_host_rehearsal");
 }
 
+function nextProofSetupTargets(
+  blockedTargets: readonly DearMeProviderSmokeReadiness["target"][],
+) {
+  const blockedTargetSet = new Set(blockedTargets);
+  const targets: string[] = [];
+  if (blockedTargetSet.has("deploy_site_preview")) targets.push("deploy_site_preview");
+  if (blockedTargetSet.has("deploy_site_host_rehearsal")) {
+    targets.push("deploy_site_host_rehearsal");
+  }
+  if (blockedTargetSet.has("deploy_site_production")) {
+    targets.push("deploy_site_production");
+  }
+  if (blockedTargetSet.has("linkedin_dm")) targets.push("linkedin_dm");
+  if (
+    blockedTargetSet.has("telegram_message") ||
+    blockedTargetSet.has("imessage_message")
+  ) {
+    targets.push("openclaw_messages");
+  }
+  if (blockedTargetSet.has("meta_campaign")) targets.push("meta_campaign");
+  return targets;
+}
+
+function providerSmokeRunCommandForNextProofTarget(target: string) {
+  const command =
+    `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --target ${target}`;
+  if (
+    target === "linkedin_dm" ||
+    target === "openclaw_messages" ||
+    target === "telegram_message" ||
+    target === "imessage_message" ||
+    target === "meta_campaign"
+  ) {
+    return `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 ${command} --live`;
+  }
+  return command;
+}
+
 export function dearMeProofOperatorCommands(
   readiness: DearMeProofReadiness,
   lane: DearMeProofLane = "all",
 ): string[] {
   const printEnvCommand =
     `pnpm --silent dearme:proof -- --print-env-template${laneFlag(lane)} > ${PROOF_ENV_FILE}`;
-  const precheckCommands: string[] = [];
+  const includeProofEnvTemplate = readiness.lanes.some((laneReadiness) =>
+    laneReadiness.lane === "voice" && laneReadiness.readiness.some((item) => !item.ready),
+  );
   const setupCommands: string[] = [];
 
   for (const laneReadiness of readiness.lanes) {
@@ -461,11 +500,10 @@ export function dearMeProofOperatorCommands(
     if (blockedTargets.length === 0) continue;
 
     if (laneReadiness.lane === "provider") {
-      if (needsPrivateSiteExport(blockedTargets)) {
-        precheckCommands.push(PRIVATE_SITE_EXPORT_COMMAND);
-      }
       setupCommands.push(
-        ...childRunCommands(dearMeProviderSmokeOperatorCommands(blockedTargets)),
+        ...liveProviderSetupCommands(
+          blockedTargets as DearMeProviderSmokeReadiness["target"][],
+        ),
       );
     } else {
       setupCommands.push(
@@ -477,9 +515,10 @@ export function dearMeProofOperatorCommands(
   }
 
   return uniqueCommands([
-    printEnvCommand,
-    ...precheckCommands,
-    `pnpm --silent dearme:proof -- --check${laneFlag(lane)}`,
+    ...(includeProofEnvTemplate ? [
+      printEnvCommand,
+      `pnpm --silent dearme:proof -- --check${laneFlag(lane)}`,
+    ] : []),
     ...setupCommands,
   ]);
 }
@@ -751,18 +790,18 @@ function blockedVoiceTargets(
 
 function liveProviderSetupCommands(
   blockedTargets: readonly DearMeProviderSmokeReadiness["target"][],
-  lane: DearMeProofLane,
 ): string[] {
   if (blockedTargets.length === 0) return [];
-  const commands = [
-    `pnpm --silent dearme:proof -- --print-env-template${laneFlag(lane)} > ${PROOF_ENV_FILE}`,
-  ];
+  const setupTargets = nextProofSetupTargets(blockedTargets);
+  const commands = setupTargets.map(
+    (target) => `pnpm --silent dearme:next-proof -- --target ${target}`,
+  );
   if (needsPrivateSiteExport(blockedTargets)) {
     commands.push(PRIVATE_SITE_EXPORT_COMMAND);
   }
   commands.push(
     `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --check`,
-    ...childRunCommands(dearMeProviderSmokeOperatorCommands(blockedTargets)),
+    ...setupTargets.map(providerSmokeRunCommandForNextProofTarget),
   );
   return uniqueCommands(commands);
 }
@@ -1008,7 +1047,6 @@ export function summarizeDearMeProofStatus(
     const blockedTargets = blockedProviderTargets(provider.readiness, targets);
     liveProviderSetup = liveProviderSetupCommands(
       blockedTargets.map((item) => item.target as DearMeProviderSmokeReadiness["target"]),
-      lane,
     );
     liveProviderFocus = liveProviderFocusPlan(provider);
     sections.push({

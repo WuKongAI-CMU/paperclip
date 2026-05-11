@@ -15,14 +15,17 @@ It answers three questions before another worker starts building:
 
 ## Latest Public-Readiness Handoff Boundary - 2026-05-11
 
+- `pnpm dearme:next-proof` is now the coordinator-facing setup command for the
+  next blocked provider proof. It creates or preserves `.dearme-proof.env`,
+  prints no-send readiness, and emits the guarded live/run command while
+  keeping provider-smoke redirection details out of Symphony handoffs.
 - Symphony workers now inherit an explicit no-send lane for the current release
   posture: `private-proof` can be used for design-partner/internal product
   review, while `public-launch` remains blocked until live OpenClaw/channel
   and provider smokes prove real delivery.
 - The lane reuses existing scripts instead of adding another dashboard:
   `dearme:release-gate`, provider-lane proof plus goal-audit checks, targeted
-  `dearme:provider-smoke -- --print-env-template --target openclaw_messages`,
-  and a readiness check with `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0`.
+  `dearme:next-proof -- --target openclaw_messages`, and a readiness check.
 - The next external facts are explicit and should be handed to Linear/Symphony
   as blockers before any live command: owned iMessage smoke recipient,
   LinkedIn endpoint/credential/recipient/body facts, and Meta campaign
@@ -34,9 +37,9 @@ It answers three questions before another worker starts building:
 ## Latest Safe OpenClaw Goal-Audit Next Action - 2026-05-11
 
 - `dearme:goal-audit` now treats a blocked shared `openclaw_messages` proof as
-  setup work first: generate the target provider-smoke env template into
-  `.dearme-proof.env`, run the targeted no-send readiness check, and only then
-  use the guarded live command after explicit recipient/provider facts exist.
+  setup work first: run `dearme:next-proof -- --target openclaw_messages`,
+  then the targeted no-send readiness check, and only then use the guarded live
+  command after explicit recipient/provider facts exist.
 - Its loopback host rehearsal now exports into an isolated temporary directory
   for each audit run, keeping concurrent Symphony checks from racing on the
   shared proof packet and misrouting the next action.

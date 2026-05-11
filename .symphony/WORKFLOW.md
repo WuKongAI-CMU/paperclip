@@ -143,8 +143,8 @@ no-send evidence first:
 - `pnpm --silent dearme:release-gate -- --json`
 - `pnpm --silent dearme:proof -- --check --lane provider`
 - `pnpm --silent dearme:goal-audit -- --check`
-- `pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages > .dearme-proof.env`
-- `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages`
+- `pnpm --silent dearme:next-proof -- --target openclaw_messages`
+- `pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages`
 
 If `dearme:goal-audit -- --check` exits non-zero only because the live
 provider proof is still blocked, record that as the expected public-readiness
@@ -234,7 +234,7 @@ Operating rules:
    `pnpm --silent dearme:openclaw-message-rehearsal -- --json` so workers see
    that Telegram and iMessage share one OpenClaw gateway contract before
    treating the remaining message blocker as live gateway auth plus smoke
-   recipients/bodies.
+   recipient facts.
    Use these outputs as the first proof map, then drop to
    `dearme:provider-smoke` only for live provider credentials or
    `dearme:voice-smoke` only for scorer-specific calibration.

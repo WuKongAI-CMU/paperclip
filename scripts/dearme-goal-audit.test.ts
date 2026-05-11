@@ -444,15 +444,15 @@ test("DearMe goal audit routes blocked OpenClaw message proof through no-send se
   assert.equal(audit.nextAction.label, "OpenClaw shared Telegram/iMessage message proof");
   assert.equal(
     audit.nextAction.command,
-    "pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages > .dearme-proof.env",
+    "pnpm --silent dearme:next-proof -- --target openclaw_messages",
   );
   assert.deepEqual(openClawProof?.blockers, ["imessage_message"]);
   assert.deepEqual(openClawProof?.commands, [
-    "pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages > .dearme-proof.env",
+    "pnpm --silent dearme:next-proof -- --target openclaw_messages",
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages",
     "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
   ]);
-  assert.match(formatted, /Run: pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages > \.dearme-proof\.env/);
+  assert.match(formatted, /Run: pnpm --silent dearme:next-proof -- --target openclaw_messages/);
 });
 
 test("DearMe goal audit passes only when every required proof item is ready", () => {

@@ -219,7 +219,7 @@ function targetedProviderSetupCommands(
   liveCommand?: string,
 ): string[] {
   return [
-    `pnpm --silent dearme:provider-smoke -- --print-env-template --target ${target} > ${PROOF_ENV_FILE}`,
+    `pnpm --silent dearme:next-proof -- --target ${target}`,
     `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --check --target ${target}`,
     ...(liveCommand ? [liveCommand] : []),
   ];

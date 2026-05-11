@@ -51,7 +51,7 @@ function goalAudit(
       complete ? "met" : "blocked",
       complete ? [] : ["imessage_message"],
       complete ? [] : [
-        "pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages > .dearme-proof.env",
+        "pnpm --silent dearme:next-proof -- --target openclaw_messages",
         "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages",
         "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
       ],
@@ -79,7 +79,7 @@ function goalAudit(
       : {
         label: "OpenClaw shared Telegram/iMessage message proof",
         reason: "Blocked by imessage_message.",
-        command: "pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages > .dearme-proof.env",
+        command: "pnpm --silent dearme:next-proof -- --target openclaw_messages",
       },
   };
 }
@@ -105,7 +105,7 @@ test("DearMe release gate allows private proof while blocking public launch", ()
   assert.match(formatted, /OpenClaw shared Telegram\/iMessage message proof: imessage_message/);
   assert.match(
     formatted,
-    /Run: pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages > \.dearme-proof\.env/,
+    /Run: pnpm --silent dearme:next-proof -- --target openclaw_messages/,
   );
 });
 

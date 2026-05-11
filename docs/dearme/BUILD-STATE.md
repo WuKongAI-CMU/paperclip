@@ -6,13 +6,17 @@ Date: 2026-05-11
 
 Product/architecture slice:
 
+- Added `pnpm dearme:next-proof` as the coordinator-safe setup entry for the
+  next blocked provider proof. It creates or preserves `.dearme-proof.env`,
+  prints no-send readiness, and returns the guarded live/run command without
+  asking Symphony workers to copy shell redirection snippets.
 - Updated the Symphony worker workflow so the current release posture is
   unambiguous: DearMe is usable for private/internal proof, but public launch
   remains blocked until live channel/provider proof exists.
 - The public-readiness lane now starts with no-send evidence only:
   `dearme:release-gate`, provider-lane proof plus goal-audit checks, and a
-  targeted `openclaw_messages` env-template plus readiness check with
-  `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0`.
+  targeted `dearme:next-proof -- --target openclaw_messages` setup plus
+  readiness check.
 - The handoff now names the external facts future workers should collect
   before any live smoke: an owned iMessage smoke recipient, LinkedIn endpoint
   and credential facts, and Meta campaign credential/budget facts. This keeps
@@ -22,6 +26,7 @@ Product/architecture slice:
 Verification:
 
 - `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:next-proof -- --target openclaw_messages --env-file /tmp/dearme-next-proof.env --force --json`
 - `pnpm --silent dearme:proof -- --check --lane provider`
 - `pnpm --silent dearme:goal-audit -- --check` (expected non-zero until live
   provider proof is complete)
@@ -34,9 +39,9 @@ Product/architecture slice:
 
 - `pnpm dearme:goal-audit` now routes a blocked shared
   `openclaw_messages` proof through no-send setup before showing the live
-  operator command: generate the target env template, run the targeted
-  readiness check, then use the guarded live command only after the explicit
-  recipient/provider facts exist.
+  operator command: run `pnpm dearme:next-proof -- --target openclaw_messages`,
+  then the targeted readiness check, then the guarded live command only after
+  the explicit recipient/provider facts exist.
 - The goal audit now runs its loopback host rehearsal against an isolated
   temporary export directory, so concurrent Symphony workers do not race on the
   same `dist/dearme-private-proof` files and falsely block the release gate.

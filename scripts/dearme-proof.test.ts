@@ -179,6 +179,22 @@ test("DearMe proof readiness can scope to one lane", () => {
     "pnpm --silent dearme:proof -- --check --lane voice",
   ]);
   assert.equal(commands.some((command) => command.includes("dearme:provider-smoke")), false);
+
+  const providerCommands = dearMeProofOperatorCommands(
+    inspectDearMeProofReadiness({}, "provider"),
+    "provider",
+  );
+  assert.equal(providerCommands.some((command) => command.includes("--print-env-template")), false);
+  assert.equal(
+    providerCommands.includes("pnpm --silent dearme:next-proof -- --target openclaw_messages"),
+    true,
+  );
+  assert.equal(
+    providerCommands.some((command) =>
+      command.includes("pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check")
+    ),
+    true,
+  );
 });
 
 test("DearMe proof parses lane aliases and env files", () => {
@@ -224,7 +240,10 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     "meta_campaign",
   ]);
   assert.deepEqual(status.commands.liveProviderSetup, [
-    "pnpm --silent dearme:proof -- --print-env-template > .dearme-proof.env",
+    "pnpm --silent dearme:next-proof -- --target deploy_site_production",
+    "pnpm --silent dearme:next-proof -- --target linkedin_dm",
+    "pnpm --silent dearme:next-proof -- --target openclaw_messages",
+    "pnpm --silent dearme:next-proof -- --target meta_campaign",
     "pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof",
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target deploy_site_production",
