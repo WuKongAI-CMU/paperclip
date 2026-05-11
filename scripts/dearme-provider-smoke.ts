@@ -319,8 +319,12 @@ function targetMissingRequirements(target: DearMeProviderSmokeTarget, env: Env) 
 
 export function inspectDearMeProviderSmokeReadiness(
   env: Env = process.env,
+  targetArg: TargetArg = "all",
 ): DearMeProviderSmokeReadiness[] {
-  return DEARME_PROVIDER_SMOKE_TARGETS.map((target) => {
+  const targets = targetArg === "all"
+    ? DEARME_PROVIDER_SMOKE_TARGETS
+    : [targetArg];
+  return targets.map((target) => {
     const missing = targetMissingRequirements(target, env);
     return {
       target,
@@ -926,7 +930,7 @@ async function main() {
     const env = await loadDearMeProviderSmokeEnv(parsed.envFiles, process.env);
 
     if (!parsed.target || parsed.check) {
-      const readiness = inspectDearMeProviderSmokeReadiness(env);
+      const readiness = inspectDearMeProviderSmokeReadiness(env, parsed.target ?? "all");
       if (parsed.json) {
         console.log(JSON.stringify({ readiness }, null, 2));
       } else {

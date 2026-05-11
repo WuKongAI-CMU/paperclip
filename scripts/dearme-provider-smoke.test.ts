@@ -45,6 +45,10 @@ test("provider smoke readiness reports missing live provider config without secr
     "DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY",
   ]);
   assert.equal(JSON.stringify(readiness).includes("accessToken"), false);
+
+  const telegramOnly = inspectDearMeProviderSmokeReadiness({}, "telegram_message");
+  assert.deepEqual(telegramOnly.map((item) => item.target), ["telegram_message"]);
+  assert.deepEqual(telegramOnly[0]?.missing, telegram?.missing);
 });
 
 test("provider smoke parses target aliases", () => {

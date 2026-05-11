@@ -10,6 +10,8 @@ Product/architecture slice:
   readiness into concrete local operator commands: create the ignored
   `.dearme-provider-smoke.env`, re-run readiness with `--env-file`, and run the
   blocked target smoke command with the required live guard where needed.
+- Targeted readiness checks such as `--check --target telegram` now narrow both
+  the readiness output and the printed next command to the requested provider.
 - Kept JSON readiness stable and secret-free so automation can continue reading
   the original readiness shape while human operators get direct next steps.
 - This keeps the remaining product proof gap bounded to real live provider
@@ -20,6 +22,8 @@ Verification:
 - `pnpm test:dearme-provider-smoke` passed with 19 node:test tests.
 - `pnpm --silent dearme:provider-smoke -- --check` prints the next setup
   commands for production site, LinkedIn, Telegram, iMessage, and Meta smokes.
+- `pnpm --silent dearme:provider-smoke -- --check --target telegram` narrows the
+  readiness and next command to the Telegram OpenClaw gateway smoke.
 - `pnpm --silent dearme:provider-smoke -- --check --json` still emits the
   readiness payload without operator commands or secret values.
 
