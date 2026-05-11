@@ -133,6 +133,37 @@ Do not follow historical queue sections in older docs when they conflict with
 `INDEX.md`, `TRI-SUBSTRATE-ARCHITECTURE.md`, this workflow file, or runtime
 code.
 
+Proof lane: public-readiness handoff (no live send)
+
+When the bootstrap or coordinator evidence says DearMe is private-proof-ready
+but not public-launch-ready, treat the remaining work as operator handoff, not
+as a customer-facing setup redesign or permission to send. Run and record only
+no-send evidence first:
+
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:proof -- --check --lane provider`
+- `pnpm --silent dearme:goal-audit -- --check`
+- `pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages > .dearme-proof.env`
+- `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages`
+
+If `dearme:goal-audit -- --check` exits non-zero only because the live
+provider proof is still blocked, record that as the expected public-readiness
+blocker evidence rather than treating the workflow itself as failed.
+
+The handoff artifact or Linear note should name the exact missing external
+facts before any live command is considered:
+
+- iMessage: set an explicit, owned smoke recipient in
+  `DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT`.
+- LinkedIn: provide the partner endpoint, credential JSON file, smoke
+  recipient, subject, and body.
+- Meta: provide the campaign credential JSON file and approved smoke budget
+  scope.
+
+Do not run a `--live` provider smoke from this lane unless the concrete
+recipient/credential facts are present and the command is explicitly guarded
+with `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`.
+
 Read `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` only when the
 issue touches Symphony lifecycle, coordinator workflow, or worker handoff
 rules. That plan is process history/context, not the default ticket queue.

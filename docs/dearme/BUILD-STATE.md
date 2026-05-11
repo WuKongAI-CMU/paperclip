@@ -2,6 +2,32 @@
 
 Date: 2026-05-11
 
+## Public-Readiness Handoff Is No-Send First - 2026-05-11
+
+Product/architecture slice:
+
+- Updated the Symphony worker workflow so the current release posture is
+  unambiguous: DearMe is usable for private/internal proof, but public launch
+  remains blocked until live channel/provider proof exists.
+- The public-readiness lane now starts with no-send evidence only:
+  `dearme:release-gate`, provider-lane proof plus goal-audit checks, and a
+  targeted `openclaw_messages` env-template plus readiness check with
+  `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0`.
+- The handoff now names the external facts future workers should collect
+  before any live smoke: an owned iMessage smoke recipient, LinkedIn endpoint
+  and credential facts, and Meta campaign credential/budget facts. This keeps
+  the Polsia-style private wow moving while preventing live sends from becoming
+  the default next action.
+
+Verification:
+
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:proof -- --check --lane provider`
+- `pnpm --silent dearme:goal-audit -- --check` (expected non-zero until live
+  provider proof is complete)
+- `pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages --json`
+- `git diff --check`
+
 ## Safe OpenClaw Next Action For Goal Audit - 2026-05-11
 
 Product/architecture slice:

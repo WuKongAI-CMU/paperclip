@@ -13,6 +13,24 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Public-Readiness Handoff Boundary - 2026-05-11
+
+- Symphony workers now inherit an explicit no-send lane for the current release
+  posture: `private-proof` can be used for design-partner/internal product
+  review, while `public-launch` remains blocked until live OpenClaw/channel
+  and provider smokes prove real delivery.
+- The lane reuses existing scripts instead of adding another dashboard:
+  `dearme:release-gate`, provider-lane proof plus goal-audit checks, targeted
+  `dearme:provider-smoke -- --print-env-template --target openclaw_messages`,
+  and a readiness check with `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0`.
+- The next external facts are explicit and should be handed to Linear/Symphony
+  as blockers before any live command: owned iMessage smoke recipient,
+  LinkedIn endpoint/credential/recipient/body facts, and Meta campaign
+  credential plus approved smoke budget scope.
+- Product comparison: DearMe is already past the local-demo stage for the
+  private aha packet and reuse spine, but it should not be marketed as
+  publishable until those live provider facts are proven.
+
 ## Latest Safe OpenClaw Goal-Audit Next Action - 2026-05-11
 
 - `dearme:goal-audit` now treats a blocked shared `openclaw_messages` proof as
