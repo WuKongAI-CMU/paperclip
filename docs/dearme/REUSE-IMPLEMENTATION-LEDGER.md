@@ -15,6 +15,17 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- The direct provider-smoke operator path now starts production-host setup with
+  the existing `pnpm --silent dearme:aha-proof -- --export-site
+  dist/dearme-private-proof` command whenever `deploy_site_production` is a
+  blocked target. The same production readiness gate now rejects localhost,
+  loopback, private-network, and non-HTTPS base URLs, so a loopback host cannot
+  be mistaken for Polsia-style phone proof. Future workers should keep using
+  that single phone-proof export plus the provider-smoke harness instead of
+  relying on remembered coordinator steps or adding another host proof script.
+  The unified `dearme:proof` setup list dedupes that shared export after
+  composing direct provider-smoke commands, so coordinator proof remains one
+  lane with one phone-packet export.
 - DearMe now has a native employee handoff primitive whitelist over the
   existing outbound tool bindings. Execution and approval receipts both resolve
   through that primitive projection, so governed moves keep a DearMe employee,

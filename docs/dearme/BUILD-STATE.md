@@ -2,6 +2,46 @@
 
 Date: 2026-05-11
 
+## Direct Provider Smoke Setup Exports The Phone Packet First - 2026-05-11
+
+Product/architecture slice:
+
+- Tightened the direct `pnpm dearme:provider-smoke -- --check` operator path
+  so blocked production-host setup now starts with the existing
+  `pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof`
+  command before it prints the env template or host smoke command.
+- Reused the current private first-wow export and provider-smoke harness. No
+  new setup page, deploy wrapper, provider path, customer-facing copy, or
+  runtime surface was added.
+- Kept the unified `pnpm dearme:proof -- --check` setup list deduped when it
+  composes the direct provider-smoke commands, so the same phone packet export
+  is shown once instead of creating a second proof lane.
+- Added a production-host reachability guard so localhost, loopback,
+  private-network, and non-HTTPS base URLs cannot make
+  `deploy_site_production` look ready. Phone proof must point at a public HTTPS
+  host unless a custom domain path is explicitly configured.
+- This removes one more coordinator-memory step from the Polsia-style
+  phone-reachable proof: the direct provider lane now tells workers to produce
+  the private proof packet first, then configure the real host/provider values.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:provider-smoke -- --check --target deploy_site_production`
+- `pnpm --silent dearme:proof -- --check`
+- Loopback guard:
+
+  ```sh
+  DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=1 \
+    DEARME_DEPLOY_SITE_BASE_URL=https://127.0.0.1:8787 \
+    DEARME_DEPLOY_SITE_SMOKE_HANDLE=peter-studio \
+    DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=dist/dearme-private-proof/peter-studio/index.html \
+    DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT="Peter Studio has a private growth team already working" \
+    pnpm --silent dearme:provider-smoke -- --check --target deploy_site_production
+  ```
+- `git diff --check`
+
 ## Employee Handoff Primitive Whitelist Lands - 2026-05-11
 
 Product/architecture slice:

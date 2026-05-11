@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { isIP } from "node:net";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -166,6 +167,8 @@ const LIVE_TARGETS = new Set<DearMeProviderSmokeTarget>([
 ]);
 
 const PROVIDER_SMOKE_ENV_FILE = ".dearme-provider-smoke.env";
+const PRIVATE_SITE_EXPORT_COMMAND =
+  "pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof";
 const PROVIDER_SMOKE_BASE_COMMAND =
   `pnpm --silent dearme:provider-smoke -- --env-file ${PROVIDER_SMOKE_ENV_FILE}`;
 
@@ -239,6 +242,7 @@ ${selectedRunCommands.map((command) => `# ${command}`).join("\n")}
 # Production host smoke artifact:
 # pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof
 # Host the dist/dearme-private-proof/peter-studio directory at the production URL.
+# The production URL must be public HTTPS; localhost/private-network URLs are not phone-reachable proof.
 # The smoke reads dist/dearme-private-proof/peter-studio/host-smoke.json for expected text/checksums.
 # DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT is only needed as a manual override.
 # DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=dist/dearme-private-proof/peter-studio/index.html
@@ -324,6 +328,9 @@ export function dearMeProviderSmokeOperatorCommands(
     `pnpm --silent dearme:provider-smoke -- --print-env-template${targetFlag} > ${PROVIDER_SMOKE_ENV_FILE}`,
     `${PROVIDER_SMOKE_BASE_COMMAND} --check${targetFlag}`,
   ];
+  if (blockedTargets.includes("deploy_site_production")) {
+    commands.unshift(PRIVATE_SITE_EXPORT_COMMAND);
+  }
   for (const target of providerSmokeRunTargetsForCommands(blockedTargets, targetArg)) {
     commands.push(providerSmokeRunCommand(target));
   }
@@ -407,6 +414,73 @@ function deploySiteBaseUrlRequirement(env: Env) {
   ])
     ? []
     : ["DEARME_DEPLOY_SITE_BASE_URL or DEARME_SITE_BASE_URL or DEARME_PUBLIC_SITE_BASE_URL"];
+}
+
+function isPrivateIpv4(hostname: string) {
+  const octets = hostname.split(".").map((part) => Number(part));
+  if (octets.length !== 4 || octets.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+    return false;
+  }
+  const [a, b] = octets;
+  return (
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168)
+  );
+}
+
+function isLocalProductionHost(hostname: string) {
+  const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (
+    normalized === "localhost" ||
+    normalized.endsWith(".localhost") ||
+    normalized.endsWith(".local") ||
+    normalized === "::1"
+  ) {
+    return true;
+  }
+  if (isIP(normalized) === 4) return isPrivateIpv4(normalized);
+  if (isIP(normalized) === 6) {
+    if (normalized.startsWith("::ffff:")) {
+      return isPrivateIpv4(normalized.slice("::ffff:".length));
+    }
+    return (
+      normalized === "::" ||
+      normalized.startsWith("fc") ||
+      normalized.startsWith("fd") ||
+      normalized.startsWith("fe80:")
+    );
+  }
+  return false;
+}
+
+function deploySiteProductionHostRequirement(env: Env) {
+  if (nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN)) return [];
+  const baseUrl = firstEnv(env, [
+    "DEARME_DEPLOY_SITE_BASE_URL",
+    "DEARME_SITE_BASE_URL",
+    "DEARME_PUBLIC_SITE_BASE_URL",
+  ]);
+  if (!baseUrl) return [];
+
+  let parsed: URL;
+  try {
+    parsed = new URL(baseUrl);
+  } catch {
+    return ["DEARME_DEPLOY_SITE_BASE_URL must be a valid public https URL"];
+  }
+
+  const missing: string[] = [];
+  if (parsed.protocol !== "https:") {
+    missing.push("DEARME_DEPLOY_SITE_BASE_URL must use https for phone-reachable proof");
+  }
+  if (isLocalProductionHost(parsed.hostname)) {
+    missing.push("DEARME_DEPLOY_SITE_BASE_URL must be a phone-reachable public host, not localhost or a private network");
+  }
+  return missing;
 }
 
 function deploySiteProductionArtifactRequirement(env: Env) {
@@ -656,6 +730,7 @@ function targetMissingRequirements(target: DearMeProviderSmokeTarget, env: Env) 
           ? ["DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=1"]
           : []),
         ...deploySiteBaseUrlRequirement(env),
+        ...deploySiteProductionHostRequirement(env),
         ...deploySiteProductionArtifactRequirement(env),
         ...deploySiteExpectedTextRequirement(env),
       ];

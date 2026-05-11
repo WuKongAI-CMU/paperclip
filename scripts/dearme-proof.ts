@@ -309,6 +309,15 @@ function childRunCommands(commands: readonly string[]) {
     .map(replaceChildEnvFile);
 }
 
+function uniqueCommands(commands: readonly string[]) {
+  const seen = new Set<string>();
+  return commands.filter((command) => {
+    if (seen.has(command)) return false;
+    seen.add(command);
+    return true;
+  });
+}
+
 function needsPrivateSiteExport(
   blockedTargets: readonly DearMeProviderSmokeReadiness["target"][],
 ) {
@@ -346,12 +355,12 @@ export function dearMeProofOperatorCommands(
     }
   }
 
-  return [
+  return uniqueCommands([
     printEnvCommand,
     ...precheckCommands,
     `pnpm --silent dearme:proof -- --check${laneFlag(lane)}`,
     ...setupCommands,
-  ];
+  ]);
 }
 
 function numberOrNull(value: unknown): number | null {
@@ -479,7 +488,7 @@ function liveProviderSetupCommands(
     `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --check`,
     ...childRunCommands(dearMeProviderSmokeOperatorCommands(blockedTargets)),
   );
-  return commands;
+  return uniqueCommands(commands);
 }
 
 function firstWowAhaSection(report: DearMeAhaProofReport): DearMeProofStatusSection {

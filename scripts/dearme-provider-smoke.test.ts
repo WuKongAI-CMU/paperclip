@@ -278,6 +278,10 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   );
   assert.match(
     productionTemplate,
+    /production URL must be public HTTPS; localhost\/private-network URLs are not phone-reachable proof/,
+  );
+  assert.match(
+    productionTemplate,
     /reads dist\/dearme-private-proof\/peter-studio\/host-smoke\.json for expected text\/checksums/,
   );
 
@@ -310,6 +314,7 @@ test("provider smoke operator commands give local-only setup and live guards", (
   ]);
 
   assert.deepEqual(commands, [
+    "pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof",
     "pnpm --silent dearme:provider-smoke -- --print-env-template > .dearme-provider-smoke.env",
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check",
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target deploy_site_production",
@@ -344,6 +349,7 @@ test("provider smoke operator commands give local-only setup and live guards", (
       "meta_campaign",
     ]),
     [
+      "pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof",
       "pnpm --silent dearme:provider-smoke -- --print-env-template > .dearme-provider-smoke.env",
       "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check",
       "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target deploy_site_production",
@@ -434,6 +440,53 @@ test("provider smoke requires a real first-wow artifact before production host p
   assert.equal(result.status, "blocked");
   assert.deepEqual(result.missing, [
     "DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=dist/dearme-private-proof/<handle>/index.html",
+  ]);
+});
+
+test("provider smoke refuses loopback production hosts as phone proof", async () => {
+  for (const baseUrl of [
+    "https://127.0.0.1:8787",
+    "https://[::ffff:127.0.0.1]:8787",
+  ]) {
+    const env = {
+      DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
+      DEARME_DEPLOY_SITE_BASE_URL: baseUrl,
+      DEARME_DEPLOY_SITE_SMOKE_HANDLE: "peter-studio",
+      DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: "dist/dearme-private-proof/peter-studio/index.html",
+      DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT: "Peter Studio has a private growth team already working",
+    };
+    const readiness = inspectDearMeProviderSmokeReadiness(env, "deploy_site_production");
+    const [result] = await runDearMeProviderSmoke({
+      target: "deploy_site_production",
+      env,
+      now,
+    });
+
+    assert.equal(readiness[0]?.ready, false);
+    assert.deepEqual(readiness[0]?.missing, [
+      "DEARME_DEPLOY_SITE_BASE_URL must be a phone-reachable public host, not localhost or a private network",
+    ]);
+    assert.equal(result.status, "blocked");
+    assert.deepEqual(result.missing, readiness[0]?.missing);
+  }
+});
+
+test("provider smoke requires https for production phone proof", async () => {
+  const [result] = await runDearMeProviderSmoke({
+    target: "deploy_site_production",
+    env: {
+      DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
+      DEARME_DEPLOY_SITE_BASE_URL: "http://dearme.example.test",
+      DEARME_DEPLOY_SITE_SMOKE_HANDLE: "peter-studio",
+      DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: "dist/dearme-private-proof/peter-studio/index.html",
+      DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT: "Peter Studio has a private growth team already working",
+    },
+    now,
+  });
+
+  assert.equal(result.status, "blocked");
+  assert.deepEqual(result.missing, [
+    "DEARME_DEPLOY_SITE_BASE_URL must use https for phone-reachable proof",
   ]);
 });
 
