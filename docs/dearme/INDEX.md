@@ -164,7 +164,10 @@ bootstrap, and offers `pnpm dearme:proof -- --run-safe` for the no-send,
 no-production-deploy, no-spend, no-live-model proof path. Drop to
 `pnpm dearme:provider-smoke -- --check` for live provider credential work or
 `pnpm dearme:voice-smoke -- --check` for scorer-specific calibration work; do
-not add another setup dashboard or dispatch path.
+not add another setup dashboard or dispatch path. Symphony worker bootstrap
+also runs this command before worktree/handoff triage, so assigned DEA issues
+should treat the proof readiness output as current evidence instead of
+rebuilding provider or voice setup discovery.
 The internal `pnpm dearme:provider-smoke -- --check` command now owns that
 operator proof checklist, including the OpenClaw gateway URL/token/auth plus
 recipient/body requirements for Telegram/iMessage, and the production site URL

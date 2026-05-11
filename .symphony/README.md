@@ -123,6 +123,20 @@ The Symphony workflow runs this during workspace creation and again in Codex
 bootstrap evidence. A failure means the lane should stop with the workspace path
 and exact command output instead of producing an uncommittable patch.
 
+## Worker Proof Readiness
+
+Worker bootstrap also runs the unified local proof map:
+
+```sh
+pnpm --silent dearme:proof -- --check
+```
+
+Use that output as the first proof triage surface. It composes provider dispatch
+readiness and voice calibration readiness without sending, deploying to
+production, spending, or calling a live model. Drop to
+`pnpm dearme:provider-smoke` only for live provider credential work, or
+`pnpm dearme:voice-smoke` only for scorer-specific calibration work.
+
 ## Worker Handoff Artifacts
 
 Worker creation records the coordinator source head in the worker Git metadata.

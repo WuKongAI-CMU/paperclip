@@ -2,6 +2,26 @@
 
 Date: 2026-05-11
 
+## Symphony Proof Bootstrap - 2026-05-11
+
+Product/architecture slice:
+
+- Wired `.symphony/WORKFLOW.md` so every new worker bootstrap now runs
+  `pnpm --silent dearme:proof -- --check` after the Git preflight and before
+  worktree/handoff triage.
+- Added a proof readiness guard to the Symphony worker prompt: start from the
+  unified proof map, then drop to `dearme:provider-smoke` only for live
+  provider credentials or `dearme:voice-smoke` only for scorer-specific
+  calibration.
+- Documented the same lane in `.symphony/README.md` and added a contract test
+  so the worker bootstrap does not drift back to fragmented proof commands.
+
+Verification:
+
+- `pnpm test:dearme-symphony-workflow`
+- `pnpm --silent dearme:proof -- --check`
+- `pnpm dearme:symphony-preflight -- .`
+
 ## Unified DearMe Proof Entry - 2026-05-11
 
 Product/architecture slice:

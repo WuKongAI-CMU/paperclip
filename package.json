@@ -39,6 +39,7 @@
     "test:dearme-symphony-handoff": "node --test scripts/dearme-symphony-handoff.test.mjs",
     "dearme:symphony-preflight": "node scripts/dearme-symphony-git-preflight.mjs",
     "test:dearme-symphony-preflight": "node --test scripts/dearme-symphony-git-preflight.test.mjs",
+    "test:dearme-symphony-workflow": "node --test scripts/dearme-symphony-workflow-contract.test.mjs",
     "dearme:worktrees": "node scripts/dearme-worktree-status.mjs",
     "test:dearme-worktrees": "node --test scripts/dearme-worktree-status.test.mjs",
     "dearme:provider-smoke": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-provider-smoke.ts",

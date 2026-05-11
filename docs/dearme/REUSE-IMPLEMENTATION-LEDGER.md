@@ -15,6 +15,13 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- Symphony bootstrap now runs `pnpm --silent dearme:proof -- --check` between
+  the Git preflight and worktree/handoff triage. Future workers should treat
+  that output as the first provider/voice proof map, then use
+  `dearme:provider-smoke` or `dearme:voice-smoke` only for the lane-specific
+  credential or scorer work. This keeps Symphony coordination centered on one
+  proof surface instead of reintroducing separate setup dashboards or duplicate
+  proof commands.
 - `pnpm dearme:proof` is now the single local proof entrypoint over the
   provider and voice smoke lanes. It composes the existing provider-smoke and
   voice-smoke harnesses, emits one ignored `.dearme-proof.env` bootstrap, and

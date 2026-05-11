@@ -61,6 +61,7 @@ codex:
     - git log -1 --oneline
     - git status --short --branch
     - pnpm dearme:symphony-preflight -- .
+    - pnpm --silent dearme:proof -- --check
     - |
       if pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs; then
         true
@@ -114,9 +115,12 @@ Then read the coordination surface without bulk-loading append-only logs:
 - `docs/dearme/PRODUCT-ARCHITECTURE.md`
 - `docs/dearme/POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`
 
-Current work comes from the Linear issue plus the bootstrap
-`pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs` evidence,
-not from historical DM queues or old worktree-integration plans.
+Current work comes from the Linear issue plus bootstrap proof/worktree evidence:
+`pnpm --silent dearme:proof -- --check` for current provider and voice proof
+readiness, and
+`pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs` for
+coordinator absorption state. It does not come from historical DM queues or old
+worktree-integration plans.
 Do not follow historical queue sections in older docs when they conflict with
 `INDEX.md`, `TRI-SUBSTRATE-ARCHITECTURE.md`, this workflow file, or runtime
 code.
@@ -178,26 +182,31 @@ Operating rules:
    `pnpm dearme:symphony-preflight -- .` before implementation. If it fails,
    stop with the failing command and workspace path instead of continuing to a
    patch that cannot be committed.
-6. Keep code edits scoped to the issue. Stage explicit paths only; never use
+6. Proof readiness guard: the bootstrap runs
+   `pnpm --silent dearme:proof -- --check` so workers see the current provider
+   and voice proof gaps before selecting a narrow smoke. Use it as the first
+   proof map, then drop to `dearme:provider-smoke` only for live provider
+   credentials or `dearme:voice-smoke` only for scorer-specific calibration.
+7. Keep code edits scoped to the issue. Stage explicit paths only; never use
    `git add -A` or broad cleanup commands.
-7. Preserve approval boundaries: public send/deploy/spend/sensitive actions
+8. Preserve approval boundaries: public send/deploy/spend/sensitive actions
    require approval.
-8. For UI work, ship a real product surface, not internal substrate controls.
+9. For UI work, ship a real product surface, not internal substrate controls.
    The experience should be simple, beautiful, autonomous, and show a concrete
    first proof artifact whenever the issue touches onboarding or first-run.
-9. Verify with the narrowest meaningful command first, then broader checks if
+10. Verify with the narrowest meaningful command first, then broader checks if
    the touched surface warrants it. Report exact commands and outcomes.
-10. If blocked by missing credentials or permissions, stop with a concise blocker
+11. If blocked by missing credentials or permissions, stop with a concise blocker
    brief. Do not fabricate external access.
-11. Do not spawn additional subagents from inside a Symphony worker. The
+12. Do not spawn additional subagents from inside a Symphony worker. The
    coordinator owns parallelization; a worker owns one bounded Linear issue.
-12. Never leave long-running development servers, watchers, or Storybook in the
+13. Never leave long-running development servers, watchers, or Storybook in the
    foreground. For smoke work, prefer an existing bounded script. If a local
    server is required, start it in the background with a PID/log file, wait for
    the target health check, run the smoke, then kill and wait for the process
    before ending the turn. Do not run `pnpm dev`, watch commands, or other
    non-exiting commands as the foreground command.
-13. For rendered/browser smoke work, use repo-local headless verification from
+14. For rendered/browser smoke work, use repo-local headless verification from
    the shell (Playwright, Vitest, or an existing script). Do not call
    `tool_search` for browser tools, `chrome-devtools`, `browser-use`, or
    `computer-use`: those MCP/browser surfaces can trigger interactive
@@ -206,7 +215,7 @@ Operating rules:
    `pnpm exec playwright install chromium` once and retry the same shell smoke
    before falling back to API/DOM evidence. If Playwright is otherwise
    unavailable, record the exact shell blocker and fall back to API/DOM evidence.
-14. Terminal handoff gate: do not claim complete, move the issue to a terminal
+15. Terminal handoff gate: do not claim complete, move the issue to a terminal
     state, or leave a final response that can be interpreted as terminal unless
     the coordinator can absorb the work from durable evidence. If files changed,
     run `git status --short`, `git diff --check`, focused verification, stage
@@ -229,13 +238,13 @@ Operating rules:
     into `Done`, `Canceled`, or `Duplicate`. Terminal state authority belongs to
     the coordinator after artifact verification; workers leave Linear
     non-terminal.
-15. Critical product proof lanes stay effectively single-lane. When a first-cycle
+16. Critical product proof lanes stay effectively single-lane. When a first-cycle
     private run, launch handoff, or similar aha-proof ticket is active, do not
     start or request another product implementation lane until that ticket leaves
     an absorbable commit, explicit no-code evidence, or blocker/patch handoff.
     Use read-only review help for architecture/product checks instead of adding
     another writer against the same surface.
-16. Coordinator watchdog expectation: if a worker has consumed a large context
+17. Coordinator watchdog expectation: if a worker has consumed a large context
     window or has been running for the configured turn timeout without a durable
     handoff artifact, the correct next step is a bounded patch/blocker handoff
     and coordinator review. Do not keep expanding the issue into architecture
