@@ -1,8 +1,14 @@
+import { createHash, createHmac } from "node:crypto";
 import { resolveDearMeChannelCredential } from "./dearme-channel-credential.js";
 import type { ChannelDispatch } from "./dearme-outbound-tool-wrapper.js";
 
 const DEFAULT_RESEND_EMAILS_URL = "https://api.resend.com/emails";
+const DEFAULT_SES_PATH = "/v2/email/outbound-emails";
+const AWS_ALGORITHM = "AWS4-HMAC-SHA256";
+const AWS_TERMINATOR = "aws4_request";
+const AWS_SES_SERVICE = "ses";
 const RESEND_USER_AGENT = "DearMe/0.1";
+const SES_USER_AGENT = "DearMe/0.1 aws-sigv4";
 const EMAIL_SUBJECT_LIMIT = 998;
 const EMAIL_BODY_LIMIT = 200_000;
 
@@ -20,9 +26,11 @@ interface FetchInitLike {
 }
 
 type FetchLike = (url: string, init?: FetchInitLike) => Promise<FetchResponseLike>;
+type EmailProvider = "resend" | "ses";
 
 export interface DearMeSendEmailDispatchConfig {
   emailsUrl?: string;
+  sesEndpointForRegion?: (region: string) => string;
   fetch?: FetchLike;
   now?: () => Date;
   resolveCredential?: (encryptedCredential: string) => Promise<string>;
@@ -36,7 +44,19 @@ interface DearMeResendCredential {
   expiresAt: Date | null;
 }
 
+interface DearMeSesCredential {
+  provider: "ses";
+  accessKeyId: string;
+  secretAccessKey: string;
+  sessionToken?: string;
+  region: string;
+  fromEmail: string;
+  configurationSetName?: string;
+  expiresAt: Date | null;
+}
+
 interface SendEmailPayload {
+  provider: EmailProvider;
   toEmail: string;
   fromHandle: string;
   subject: string;
@@ -77,6 +97,14 @@ function textLength(value: string) {
   return Array.from(value).length;
 }
 
+function isAwsRegion(value: string) {
+  return /^[a-z0-9-]{3,32}$/.test(value);
+}
+
+function isProvider(value: string): value is EmailProvider {
+  return value === "resend" || value === "ses";
+}
+
 function error(message: string): Awaited<ReturnType<ChannelDispatch>> {
   return { kind: "errored", error: message };
 }
@@ -102,7 +130,7 @@ function parseSendEmailPayload(
   const provider = optionalStringField(record, "provider", "email-provider-invalid");
   if (!provider.ok) return provider;
   const providerName = provider.value ?? "resend";
-  if (providerName !== "resend") {
+  if (!isProvider(providerName)) {
     return { ok: false, error: "email-provider-unsupported" };
   }
 
@@ -135,6 +163,7 @@ function parseSendEmailPayload(
   return {
     ok: true,
     value: {
+      provider: providerName,
       toEmail,
       fromHandle,
       subject,
@@ -144,7 +173,22 @@ function parseSendEmailPayload(
   };
 }
 
-function parseCredentialPayload(plaintext: string, now: Date) {
+function parseOptionalExpiry(record: Record<string, unknown>, now: Date) {
+  const expiresAtRaw = record.expiresAt;
+  if (typeof expiresAtRaw !== "string" || expiresAtRaw.trim().length === 0) {
+    return { ok: true as const, expiresAt: null };
+  }
+  const expiresAt = new Date(expiresAtRaw);
+  if (Number.isNaN(expiresAt.getTime())) {
+    return { ok: false as const, reason: "email-credential-invalid-expiry" };
+  }
+  if (expiresAt.getTime() <= now.getTime()) {
+    return { ok: false as const, reason: "email-credential-expired" };
+  }
+  return { ok: true as const, expiresAt };
+}
+
+function parseCredentialPayload(plaintext: string, provider: EmailProvider, now: Date) {
   let parsed: unknown;
   try {
     parsed = JSON.parse(plaintext);
@@ -153,36 +197,57 @@ function parseCredentialPayload(plaintext: string, now: Date) {
   }
 
   const record = asRecord(parsed);
-  if (!record || stringField(record, "provider") !== "resend") {
+  if (!record || stringField(record, "provider") !== provider) {
     return authError("email-credential-invalid-provider");
   }
-
-  const apiKey = stringField(record, "apiKey");
-  if (!apiKey) return authError("email-credential-missing-api-key");
 
   const fromEmail = stringField(record, "fromEmail");
   if (!fromEmail) return authError("email-credential-missing-from-email");
   if (!isEmailAddress(fromEmail)) return authError("email-credential-invalid-from-email");
 
-  const fromName = stringField(record, "fromName") ?? undefined;
+  const expires = parseOptionalExpiry(record, now);
+  if (!expires.ok) return authError(expires.reason);
 
-  const expiresAtRaw = record.expiresAt;
-  let expiresAt: Date | null = null;
-  if (typeof expiresAtRaw === "string" && expiresAtRaw.trim().length > 0) {
-    expiresAt = new Date(expiresAtRaw);
-    if (Number.isNaN(expiresAt.getTime())) return authError("email-credential-invalid-expiry");
-    if (expiresAt.getTime() <= now.getTime()) return authError("email-credential-expired");
+  if (provider === "resend") {
+    const apiKey = stringField(record, "apiKey");
+    if (!apiKey) return authError("email-credential-missing-api-key");
+
+    const fromName = stringField(record, "fromName") ?? undefined;
+
+    return {
+      kind: "credential" as const,
+      credential: {
+        provider: "resend",
+        apiKey,
+        fromEmail,
+        ...(fromName ? { fromName } : {}),
+        expiresAt: expires.expiresAt,
+      } satisfies DearMeResendCredential,
+    };
   }
+
+  const accessKeyId = stringField(record, "accessKeyId");
+  if (!accessKeyId) return authError("email-credential-missing-access-key-id");
+  const secretAccessKey = stringField(record, "secretAccessKey");
+  if (!secretAccessKey) return authError("email-credential-missing-secret-access-key");
+  const region = stringField(record, "region");
+  if (!region) return authError("email-credential-missing-region");
+  if (!isAwsRegion(region)) return authError("email-credential-invalid-region");
+  const sessionToken = stringField(record, "sessionToken") ?? undefined;
+  const configurationSetName = stringField(record, "configurationSetName") ?? undefined;
 
   return {
     kind: "credential" as const,
     credential: {
-      provider: "resend",
-      apiKey,
+      provider: "ses",
+      accessKeyId,
+      secretAccessKey,
+      ...(sessionToken ? { sessionToken } : {}),
+      region,
       fromEmail,
-      ...(fromName ? { fromName } : {}),
-      expiresAt,
-    } satisfies DearMeResendCredential,
+      ...(configurationSetName ? { configurationSetName } : {}),
+      expiresAt: expires.expiresAt,
+    } satisfies DearMeSesCredential,
   };
 }
 
@@ -209,10 +274,149 @@ function buildResendEmailRequest(payload: SendEmailPayload, credential: DearMeRe
   };
 }
 
+function buildSesEmailRequest(payload: SendEmailPayload, credential: DearMeSesCredential) {
+  return {
+    ...(credential.configurationSetName
+      ? { ConfigurationSetName: credential.configurationSetName }
+      : {}),
+    FromEmailAddress: credential.fromEmail,
+    Destination: {
+      ToAddresses: [payload.toEmail],
+    },
+    Content: {
+      Simple: {
+        Subject: {
+          Charset: "UTF-8",
+          Data: payload.subject,
+        },
+        Body: {
+          Text: {
+            Charset: "UTF-8",
+            Data: payload.body,
+          },
+        },
+      },
+    },
+  };
+}
+
+function defaultSesEndpointForRegion(region: string) {
+  return `https://email.${region}.amazonaws.com${DEFAULT_SES_PATH}`;
+}
+
+function sha256Hex(value: string) {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+function hmac(key: string | Buffer, value: string) {
+  return createHmac("sha256", key).update(value, "utf8").digest();
+}
+
+function hmacHex(key: string | Buffer, value: string) {
+  return createHmac("sha256", key).update(value, "utf8").digest("hex");
+}
+
+function formatAmzDate(date: Date) {
+  return date.toISOString().replace(/[:-]|\.\d{3}/g, "");
+}
+
+function encodeRfc3986(value: string) {
+  return encodeURIComponent(value).replace(/[!'()*]/g, (char) =>
+    `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+}
+
+function canonicalQueryString(url: URL) {
+  return Array.from(url.searchParams.entries())
+    .sort(([leftKey, leftValue], [rightKey, rightValue]) =>
+      leftKey === rightKey
+        ? leftValue.localeCompare(rightValue)
+        : leftKey.localeCompare(rightKey),
+    )
+    .map(([key, value]) => `${encodeRfc3986(key)}=${encodeRfc3986(value)}`)
+    .join("&");
+}
+
+function canonicalHeaderValue(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function signedSesHeaders(input: {
+  url: URL;
+  body: string;
+  credential: DearMeSesCredential;
+  signingDate: Date;
+}) {
+  const amzDate = formatAmzDate(input.signingDate);
+  const dateStamp = amzDate.slice(0, 8);
+  const payloadHash = sha256Hex(input.body);
+  const credentialScope = [
+    dateStamp,
+    input.credential.region,
+    AWS_SES_SERVICE,
+    AWS_TERMINATOR,
+  ].join("/");
+  const signedHeaders = [
+    "content-type",
+    "host",
+    "x-amz-content-sha256",
+    "x-amz-date",
+    ...(input.credential.sessionToken ? ["x-amz-security-token"] : []),
+  ];
+  const headerValues: Record<string, string> = {
+    "content-type": "application/json",
+    host: input.url.host,
+    "x-amz-content-sha256": payloadHash,
+    "x-amz-date": amzDate,
+    ...(input.credential.sessionToken
+      ? { "x-amz-security-token": input.credential.sessionToken }
+      : {}),
+  };
+  const canonicalHeaders = signedHeaders
+    .map((header) => `${header}:${canonicalHeaderValue(headerValues[header] ?? "")}\n`)
+    .join("");
+  const canonicalRequest = [
+    "POST",
+    input.url.pathname || "/",
+    canonicalQueryString(input.url),
+    canonicalHeaders,
+    signedHeaders.join(";"),
+    payloadHash,
+  ].join("\n");
+  const stringToSign = [
+    AWS_ALGORITHM,
+    amzDate,
+    credentialScope,
+    sha256Hex(canonicalRequest),
+  ].join("\n");
+  const dateKey = hmac(`AWS4${input.credential.secretAccessKey}`, dateStamp);
+  const regionKey = hmac(dateKey, input.credential.region);
+  const serviceKey = hmac(regionKey, AWS_SES_SERVICE);
+  const signingKey = hmac(serviceKey, AWS_TERMINATOR);
+  const signature = hmacHex(signingKey, stringToSign);
+  const authorization = [
+    `${AWS_ALGORITHM} Credential=${input.credential.accessKeyId}/${credentialScope}`,
+    `SignedHeaders=${signedHeaders.join(";")}`,
+    `Signature=${signature}`,
+  ].join(", ");
+
+  return {
+    Authorization: authorization,
+    "Content-Type": "application/json",
+    "User-Agent": SES_USER_AGENT,
+    "X-Amz-Content-Sha256": payloadHash,
+    "X-Amz-Date": amzDate,
+    ...(input.credential.sessionToken
+      ? { "X-Amz-Security-Token": input.credential.sessionToken }
+      : {}),
+  };
+}
+
 export function createDearMeSendEmailDispatch(
   config: DearMeSendEmailDispatchConfig = {},
 ): ChannelDispatch {
   const emailsUrl = config.emailsUrl ?? DEFAULT_RESEND_EMAILS_URL;
+  const sesEndpointForRegion = config.sesEndpointForRegion ?? defaultSesEndpointForRegion;
   const fetchImpl: FetchLike =
     config.fetch ?? ((url, init) => fetch(url, init as RequestInit));
   const now = config.now ?? (() => new Date());
@@ -233,8 +437,53 @@ export function createDearMeSendEmailDispatch(
       return authError("email-credential-resolve-failed");
     }
 
-    const parsedCredential = parseCredentialPayload(plaintextCredential, now());
+    const signingDate = now();
+    const parsedCredential = parseCredentialPayload(
+      plaintextCredential,
+      payload.value.provider,
+      signingDate,
+    );
     if (parsedCredential.kind !== "credential") return parsedCredential;
+
+    if (parsedCredential.credential.provider === "ses") {
+      const url = new URL(sesEndpointForRegion(parsedCredential.credential.region));
+      const body = JSON.stringify(buildSesEmailRequest(
+        payload.value,
+        parsedCredential.credential,
+      ));
+      let response: FetchResponseLike;
+      try {
+        response = await fetchImpl(url.toString(), {
+          method: "POST",
+          headers: signedSesHeaders({
+            url,
+            body,
+            credential: parsedCredential.credential,
+            signingDate,
+          }),
+          body,
+        });
+      } catch {
+        return error("email-send-request-failed");
+      }
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          return authError(`email-send-auth-failed:${response.status}`);
+        }
+        return error(`email-send-failed:${response.status}`);
+      }
+
+      const responseBody = asRecord(await safeJson(response));
+      const providerMessageId = responseBody ? stringField(responseBody, "MessageId") : null;
+      if (!providerMessageId) return error("email-send-returned-incomplete-data");
+
+      return {
+        kind: "delivered",
+        externalId: providerMessageId,
+        paid: false,
+      };
+    }
 
     let response: FetchResponseLike;
     try {

@@ -43,6 +43,20 @@ function credential(overrides: Record<string, unknown> = {}) {
   });
 }
 
+function sesCredential(overrides: Record<string, unknown> = {}) {
+  return JSON.stringify({
+    provider: "ses",
+    accessKeyId: "AKIDEXAMPLE",
+    secretAccessKey: "aws_secret",
+    sessionToken: "aws_session_token",
+    region: "us-east-1",
+    fromEmail: "peter@dearme.app",
+    configurationSetName: "dearme-prod",
+    expiresAt: "2026-05-11T14:00:00.000Z",
+    ...overrides,
+  });
+}
+
 describe("createDearMeSendEmailDispatch", () => {
   it("resolves local-encrypted channel credential envelopes", async () => {
     const previousMasterKey = process.env.PAPERCLIP_SECRETS_MASTER_KEY;
@@ -114,6 +128,79 @@ describe("createDearMeSendEmailDispatch", () => {
         subject: "Quick proof packet",
         text: "Thought this would be useful.",
       }),
+    });
+  });
+
+  it("sends approved email payloads through SES with a signed v2 request", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ MessageId: "ses_message_123" }));
+    const dispatch = createDearMeSendEmailDispatch({
+      sesEndpointForRegion: (region) =>
+        `https://email.${region}.amazonaws.com/v2/email/outbound-emails`,
+      fetch: fetchMock,
+      now: () => new Date("2026-05-11T12:00:00.000Z"),
+      resolveCredential: async () => sesCredential(),
+    });
+
+    const result = await dispatch({
+      toolName: "send_email",
+      encryptedCredential: "opaque",
+      payload: {
+        provider: "ses",
+        issueId: "issue-1",
+        openclawRunId: "run-1",
+        idempotencyKey: "run-1",
+        toEmail: "lead@example.com",
+        fromHandle: "Peter",
+        subject: "Quick proof packet",
+        body: "Thought this would be useful.",
+      },
+      dispatchContext: {
+        ...dispatchContext,
+        channel: "ses",
+      },
+    });
+
+    expect(result).toEqual({
+      kind: "delivered",
+      externalId: "ses_message_123",
+      paid: false,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, fetchInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      { headers: Record<string, string>; body: string },
+    ];
+    expect(url).toBe("https://email.us-east-1.amazonaws.com/v2/email/outbound-emails");
+    expect(fetchInit.headers).toMatchObject({
+      "Content-Type": "application/json",
+      "User-Agent": "DearMe/0.1 aws-sigv4",
+      "X-Amz-Date": "20260511T120000Z",
+      "X-Amz-Security-Token": "aws_session_token",
+    });
+    expect(fetchInit.headers.Authorization).toMatch(
+      /^AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE\/20260511\/us-east-1\/ses\/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date;x-amz-security-token, Signature=[a-f0-9]{64}$/,
+    );
+    expect(JSON.stringify(fetchInit.headers)).not.toContain("aws_secret");
+    expect(JSON.parse(fetchInit.body)).toEqual({
+      ConfigurationSetName: "dearme-prod",
+      FromEmailAddress: "peter@dearme.app",
+      Destination: {
+        ToAddresses: ["lead@example.com"],
+      },
+      Content: {
+        Simple: {
+          Subject: {
+            Charset: "UTF-8",
+            Data: "Quick proof packet",
+          },
+          Body: {
+            Text: {
+              Charset: "UTF-8",
+              Data: "Thought this would be useful.",
+            },
+          },
+        },
+      },
     });
   });
 
@@ -215,7 +302,7 @@ describe("createDearMeSendEmailDispatch", () => {
       toolName: "send_email",
       encryptedCredential: "opaque",
       payload: {
-        provider: "ses",
+        provider: "mailgun",
         toEmail: "lead@example.com",
         fromHandle: "Peter",
         subject: "Quick proof packet",

@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { VOICE_GATE_PATH } from "@paperclipai/dearme-ai-proxy";
 import { errorHandler } from "../middleware/error-handler.js";
 import { dearMeVoiceGateRoutes } from "../routes/dearme-voice-gate.js";
+import { createInMemoryDearMeVoiceProfileStore } from "../services/dearme-voice-gate.js";
 
-function createApp() {
+function createApp(options: Parameters<typeof dearMeVoiceGateRoutes>[0] = {}) {
   const app = express();
   app.use(express.json());
-  app.use(dearMeVoiceGateRoutes());
+  app.use(dearMeVoiceGateRoutes(options));
   app.use(errorHandler);
   return app;
 }
@@ -52,6 +53,31 @@ describe("dearMeVoiceGateRoutes", () => {
       rewrite: null,
     });
     expect(res.body.reasons).toEqual(expect.any(Array));
+  });
+
+  it("uses the injected profile store behind the route contract", async () => {
+    const profileStore = createInMemoryDearMeVoiceProfileStore();
+    await request(createApp({ profileStore }))
+      .post(VOICE_GATE_PATH)
+      .set("Authorization", "Bearer dm_sk_test_123")
+      .send({
+        ...validBody,
+        fingerprintId: "vf_route_store",
+        text: "I keep coming back to the same lesson from launch calls: proof beats polish when a buyer can inspect the work before we ask.",
+      })
+      .expect(200);
+
+    const res = await request(createApp({ profileStore }))
+      .post(VOICE_GATE_PATH)
+      .set("Authorization", "Bearer dm_sk_test_123")
+      .send({
+        ...validBody,
+        fingerprintId: "vf_route_store",
+        text: "I keep coming back to that proof beats polish lesson because buyers trust the work faster when they can inspect it first.",
+      })
+      .expect(200);
+
+    expect(res.body.reasons.some((reason: { rule: string }) => reason.rule === "voice_continuity")).toBe(true);
   });
 
   it("does not echo hidden process terms in scoring reasons", async () => {

@@ -187,9 +187,10 @@ export const DEARME_OUTBOUND_TOOLS = [
 export type DearMeOutboundToolName = (typeof DEARME_OUTBOUND_TOOLS)[number];
 
 /**
- * Maps each tool to its (gate, channel) — used by the work-loop adapter
- * to know which approval gate fires and which channel_connections row
- * to look up.
+ * Maps each tool to its default (gate, channel) — used by the work-loop
+ * adapter to know which approval gate fires and which channel_connections
+ * row to look up. `send_email` defaults to Resend, and the cloud wrapper
+ * resolves payload `provider: "ses"` to the SES channel before lookup.
  */
 export const DEARME_OUTBOUND_TOOL_BINDINGS: Readonly<
   Record<

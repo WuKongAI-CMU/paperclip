@@ -33,14 +33,28 @@ type VoiceCorpusProfile = {
   tokenCounts: Map<string, number>;
 };
 
+export type DearMeVoiceProfileScope = {
+  companyId?: string | null;
+  userId?: string | null;
+};
+
+export type DearMeVoiceGateScoreInput = VoiceGateScoreRequest & DearMeVoiceProfileScope;
+
 export type DearMeVoiceCorpusProfileSnapshot = {
   acceptedSamples: number;
   tokenCounts: Record<string, number>;
 };
 
 export interface DearMeVoiceProfileStore {
-  readProfile(fingerprintId: string): Promise<DearMeVoiceCorpusProfileSnapshot | null>;
-  writeProfile(fingerprintId: string, profile: DearMeVoiceCorpusProfileSnapshot): Promise<void>;
+  readProfile(
+    fingerprintId: string,
+    scope?: DearMeVoiceProfileScope,
+  ): Promise<DearMeVoiceCorpusProfileSnapshot | null>;
+  writeProfile(
+    fingerprintId: string,
+    profile: DearMeVoiceCorpusProfileSnapshot,
+    scope?: DearMeVoiceProfileScope,
+  ): Promise<void>;
 }
 
 const MAX_PROFILE_TOKENS = 160;
@@ -139,7 +153,7 @@ const STOP_WORDS = new Set([
 ]);
 
 export interface DearMeVoiceGateService {
-  scoreVoice(req: VoiceGateScoreRequest): Promise<VoiceGateScoreResponse>;
+  scoreVoice(req: DearMeVoiceGateScoreInput): Promise<VoiceGateScoreResponse>;
 }
 
 /**
@@ -147,7 +161,7 @@ export interface DearMeVoiceGateService {
  * tests and DM-170 swap in a real model by passing `{ scorer }`.
  */
 export function dearMeVoiceGateService(options?: {
-  scorer?: (req: VoiceGateScoreRequest) => Promise<VoiceGateScoreResponse>;
+  scorer?: (req: DearMeVoiceGateScoreInput) => Promise<VoiceGateScoreResponse>;
   profileStore?: DearMeVoiceProfileStore;
 }): DearMeVoiceGateService {
   const profileStore = options?.profileStore ?? createInMemoryDearMeVoiceProfileStore();
@@ -164,21 +178,21 @@ export function createInMemoryDearMeVoiceProfileStore(): DearMeVoiceProfileStore
   return {
     async readProfile(fingerprintId) {
       const profile = profiles.get(fingerprintId);
-      return profile ? cloneProfileSnapshot(profile) : null;
+      return profile ? normalizeDearMeVoiceProfileSnapshot(profile) : null;
     },
     async writeProfile(fingerprintId, profile) {
-      profiles.set(fingerprintId, cloneProfileSnapshot(profile));
+      profiles.set(fingerprintId, normalizeDearMeVoiceProfileSnapshot(profile));
     },
   };
 }
 
 async function scoreWithCorpus(
-  req: VoiceGateScoreRequest,
+  req: DearMeVoiceGateScoreInput,
   profileStore: DearMeVoiceProfileStore,
 ): Promise<VoiceGateScoreResponse> {
   const floor = req.minScore ?? VOICE_GATE_DEFAULT_FLOOR;
   const tuning = ARTIFACT_KIND_TUNING[req.kind];
-  const profile = profileFromSnapshot(await profileStore.readProfile(req.fingerprintId));
+  const profile = profileFromSnapshot(await profileStore.readProfile(req.fingerprintId, req));
   const signalTokens = extractSignalTokens(req.text);
 
   const reasons: VoiceGateScoreReason[] = [];
@@ -273,7 +287,7 @@ async function scoreWithCorpus(
   const passed = score >= floor;
   if (passed) {
     rememberAcceptedSample(profile, signalTokens);
-    await profileStore.writeProfile(req.fingerprintId, snapshotFromProfile(profile));
+    await profileStore.writeProfile(req.fingerprintId, snapshotFromProfile(profile), req);
   }
 
   return {
@@ -310,7 +324,9 @@ function snapshotFromProfile(profile: VoiceCorpusProfile): DearMeVoiceCorpusProf
   };
 }
 
-function cloneProfileSnapshot(snapshot: DearMeVoiceCorpusProfileSnapshot): DearMeVoiceCorpusProfileSnapshot {
+export function normalizeDearMeVoiceProfileSnapshot(
+  snapshot: DearMeVoiceCorpusProfileSnapshot,
+): DearMeVoiceCorpusProfileSnapshot {
   return snapshotFromProfile(profileFromSnapshot(snapshot));
 }
 

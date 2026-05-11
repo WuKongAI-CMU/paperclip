@@ -39,7 +39,11 @@ import {
   hasDearMePauseIntent,
 } from "./dearme-approval-receipts.js";
 import { getDearMeSseBus } from "./dearme-sse-bus.js";
-import { dearMeVoiceGateService } from "./dearme-voice-gate.js";
+import {
+  dearMeVoiceGateService,
+  type DearMeVoiceProfileStore,
+} from "./dearme-voice-gate.js";
+import { createDbDearMeVoiceProfileStore } from "./dearme-voice-profile-store.js";
 import { dearMeWorkLoopService } from "./dearme-work-loop.js";
 
 type ApprovalRecord = typeof approvals.$inferSelect;
@@ -186,6 +190,7 @@ export function defaultDearMeApprovedLaunchHandoffService(
   dearMeLinkedInDmDispatchConfig: DearMeLinkedInDmDispatchConfig | null = null,
   dearMeMetaCampaignDispatchConfig: DearMeMetaCampaignDispatchConfig | null = null,
   dearMeDeploySiteDispatchConfig: DearMeDeploySiteDispatchConfig | null = null,
+  options: { voiceProfileStore?: DearMeVoiceProfileStore } = {},
 ): ApprovedLaunchHandoffService {
   const sseBus = getDearMeSseBus();
   const defaultGatewayDispatch = createDearMeOpenClawGatewayDispatchMap(
@@ -202,9 +207,12 @@ export function defaultDearMeApprovedLaunchHandoffService(
   );
   const defaultSendEmailDispatch = createDearMeSendEmailDispatch();
   const defaultXPostDispatch = createDearMeXPostDispatch();
+  const voiceGate = dearMeVoiceGateService({
+    profileStore: options.voiceProfileStore ?? createDbDearMeVoiceProfileStore(db),
+  });
   const wrapper = dearMeOutboundToolWrapper({
     db,
-    voiceGate: dearMeVoiceGateService(),
+    voiceGate,
     approvalResolver: dearMeApprovalResolverService(db, sseBus),
     channelConnections: dearMeChannelConnectionsService(db),
     workLoop: dearMeWorkLoopService(db, sseBus),

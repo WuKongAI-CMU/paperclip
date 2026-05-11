@@ -2,6 +2,44 @@
 
 Date: 2026-05-11
 
+## DEA-63 / DM-170C Durable Voice Profile Store + Migration Backfill - 2026-05-11
+
+Product/architecture slice:
+
+- Added the `dearme_voice_profiles` Drizzle table so accepted Voice Gate
+  samples survive API restarts instead of staying only in memory.
+- Wired the Express app, `/dearme` routes, approval launch handoff, output
+  handoff, brand blueprint, workbench, and outbound wrapper through the same
+  DB-backed `DearMeVoiceProfileStore`; the public `/v1/voice/score` contract
+  and customer-facing review language stay unchanged.
+- The store remains company/user scoped where that context exists and can
+  derive company scope from internal `company:<id>:...` fingerprints for
+  service-owned outputs.
+- Profile rows use a `scope_key + fingerprint_id` unique boundary, so the same
+  internal fingerprint can exist independently for global, company, and
+  company-user scopes without cross-tenant overwrites.
+- The persisted snapshot reuses the bounded DEA-62 profile shape
+  (`acceptedSamples` plus capped token counts), so this is storage reuse rather
+  than a second voice-memory system.
+- Generated `0078_simple_quicksilver.sql`, which creates
+  `dearme_voice_profiles` and also backfills earlier schema-only
+  `channel_connections` and `opportunities` tables so migration history now
+  matches the server features already depending on them.
+- This is still the deterministic bounded profile store. The trained semantic
+  voice scorer remains a separate DM-170 follow-up.
+
+Verification:
+
+- `pnpm db:generate`
+  passed and generated `0078_simple_quicksilver.sql`.
+- `pnpm exec vitest run server/src/services/dearme-send-email-dispatch.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts server/src/services/dearme-voice-gate.test.ts server/src/__tests__/dearme-voice-gate-routes.test.ts server/src/services/dearme-voice-profile-store.test.ts --maxWorkers=1`
+  passed: 5 files, 48 tests; 4 embedded Postgres DB-store tests skipped on
+  this host because the embedded Postgres init script reported failure.
+- `pnpm --filter @paperclipai/db typecheck`
+  passed.
+- `pnpm --filter @paperclipai/server typecheck`
+  passed.
+
 ## DEA-62 / DM-170 Voice Profile Store Boundary - 2026-05-11
 
 Product/architecture slice:
@@ -266,10 +304,10 @@ Product/architecture slice:
   tool + approval/run + payload hash, so one approved run can send multiple
   distinct emails without sharing the same provider key. Customer-facing
   connection prompts say "email"; Resend stays internal.
-- `ses` remains intentionally fail-closed in this static binding path because
-  the current OpenClaw `send_email` binding resolves `channel_connections` with
-  `channel: "resend"`. Future SES support needs a dynamic channel binding or a
-  separate tool/channel route; this slice does not add a connector dashboard.
+- SES remains behind the same approval/OAuth wrapper and still needs a real
+  credential smoke before operator use. A follow-up slice added the dynamic
+  `send_email` provider binding and direct SES dispatcher; this slice does not
+  add a connector dashboard.
 - This closes the approved-email send path in mocked tests. It still has not
   performed a live external send because no real Resend credential was used in
   this verification pass.
@@ -278,6 +316,35 @@ Verification:
 
 - `pnpm exec vitest run server/src/services/dearme-send-email-dispatch.test.ts server/src/services/dearme-x-post-dispatch.test.ts server/src/services/dearme-approved-launch-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts --maxWorkers=1`
   passed: 4 files, 35 tests.
+- `pnpm --filter @paperclipai/server typecheck`
+  passed.
+
+## DM-174B Dynamic SES `send_email` Binding - 2026-05-11
+
+Product/architecture slice:
+
+- The outbound wrapper now resolves `send_email` payload
+  `provider: "resend" | "ses"` before approval and channel lookup. Resend
+  remains the default; SES payloads now look up `channel_connections` with
+  `channel: "ses"` instead of being pinned to the default Resend row.
+- `dearme-send-email-dispatch.ts` now supports an SES v2 `SendEmail` request
+  with AWS Signature Version 4 headers, using the stored per-user SES
+  credential payload. The dispatcher keeps HTML email fail-closed until the
+  sanitizer path exists.
+- The SES credential shape is intentionally small and opaque to the channel
+  table: `{ provider: "ses", accessKeyId, secretAccessKey, sessionToken?,
+  region, fromEmail, configurationSetName?, expiresAt? }`.
+- Unsupported email providers fail before voice gate, approval, channel lookup,
+  or credential resolution. Customer-facing reconnect copy still says
+  "email"; provider names stay internal.
+- This closes the SES channel split in mocked tests. Live SES sending still
+  requires an active `ses` channel row with a real credential and a provider
+  smoke run.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-send-email-dispatch.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts --maxWorkers=1`
+  passed.
 - `pnpm --filter @paperclipai/server typecheck`
   passed.
 

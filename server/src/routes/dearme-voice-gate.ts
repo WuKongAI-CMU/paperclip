@@ -9,7 +9,11 @@ import {
 } from "@paperclipai/dearme-ai-proxy";
 import { unauthorized } from "../errors.js";
 import { validate } from "../middleware/validate.js";
-import { dearMeVoiceGateService } from "../services/dearme-voice-gate.js";
+import {
+  dearMeVoiceGateService,
+  type DearMeVoiceGateService,
+  type DearMeVoiceProfileStore,
+} from "../services/dearme-voice-gate.js";
 
 const voiceGateScoreRequestSchema = z.object({
   fingerprintId: z.string().trim().min(1).max(256),
@@ -33,9 +37,14 @@ function requireDearMeApiKey(req: Request, _res: Response, next: NextFunction) {
   next();
 }
 
-export function dearMeVoiceGateRoutes() {
+export function dearMeVoiceGateRoutes(options: {
+  voiceGate?: DearMeVoiceGateService;
+  profileStore?: DearMeVoiceProfileStore;
+} = {}) {
   const router = Router();
-  const voiceGate = dearMeVoiceGateService();
+  const voiceGate = options.voiceGate ?? dearMeVoiceGateService({
+    profileStore: options.profileStore,
+  });
 
   router.post(
     VOICE_GATE_PATH,

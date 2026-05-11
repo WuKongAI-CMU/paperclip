@@ -26,6 +26,7 @@ import { approvalService } from "./approvals.js";
 import { documentService } from "./documents.js";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "./dearme-brand-blueprint-apply.js";
 import { dearmeOutputHandoffService } from "./dearme-output-handoff.js";
+import type { DearMeVoiceProfileStore } from "./dearme-voice-gate.js";
 import { issueService } from "./issues.js";
 
 export interface DearMeBrandBlueprintActor {
@@ -428,11 +429,16 @@ function renderFirstCycleProofIssues(preview: DearMeFirstCyclePreviewResponse): 
   ];
 }
 
-export function dearmeBrandBlueprintService(db: Db) {
+export function dearmeBrandBlueprintService(
+  db: Db,
+  options: { voiceProfileStore?: DearMeVoiceProfileStore } = {},
+) {
   const approvals = approvalService(db);
   const documentsSvc = documentService(db);
   const issuesSvc = issueService(db);
-  const outputHandoff = dearmeOutputHandoffService(db);
+  const outputHandoff = dearmeOutputHandoffService(db, {
+    voiceProfileStore: options.voiceProfileStore,
+  });
 
   function firstCycleMemorySeedFromDetails(details: unknown): FirstCycleMemorySeed | null {
     if (!isRecord(details) || !isDearMeMemoryKind(details.kind)) return null;

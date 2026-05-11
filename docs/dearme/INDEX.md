@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-11 (post DM-170 profile-store boundary, DM-172B X, DM-174 Resend, DM-176B/DM-178B provider config gates, and DM-177B/DM-177C deploy dispatch proof)
+Last updated: 2026-05-11 (post DM-170C durable voice profile store, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, and DM-177B/DM-177C deploy dispatch proof)
 
 ---
 
@@ -75,7 +75,7 @@ These are not "prompts in a doc" — they are typed entries in `DEARME_ROLE_REGI
 └─────────────────────────────────────────────────────────────┘
                        │ Drizzle
                        ▼
-┌─── packages/db (75+ Paperclip tables + opportunities) ─────┐
+┌─── packages/db (Paperclip tables + DearMe additions) ───────┐
 └─────────────────────────────────────────────────────────────┘
 
 ★ Source of truth for the 12 roles:
@@ -91,11 +91,11 @@ These are not "prompts in a doc" — they are typed entries in `DEARME_ROLE_REGI
 - **`packages/plugins/dearme-openclaw`** — OpenClaw plugin: registry → 12 SKILL.md generator, bootstrap files, outbound channel tool surface (post_x, send_linkedin_dm, send_email, deploy_site, create_meta_campaign). Ships generated skills under `generated/skills/`.
 - **`packages/plugins/dearme-agent-prompts`** — typed seed corpus: 12 prompts + 6 state machines + 2 templates + the **role registry** (`DEARME_ROLE_REGISTRY`) that pins everything together. **No runtime; pure data.** Consumed by `dearme-openclaw` and by cloud worker plugins.
 - **`packages/dearme-ai-proxy`** — wire contract for the LLM proxy: `dm_sk_` keys, dual-protocol cost-attribution headers (`X-DearMe-Task` for OpenAI, `X-Subscription-ID` for Anthropic), 6 OpenAI native function definitions ported verbatim.
-- **`packages/db`** — Drizzle schema. 75+ tables inherited from Paperclip + `opportunities` (DM-141 slice already landed) + `channel_connections` (DM-175 shipped).
-- **`server/` (DearMe cloud)** — Express. Hosts AI proxy, voice scoring, opportunities, site host, billing, audit. Stateless w.r.t. the user — state lives at the OpenClaw edge.
+- **`packages/db`** — Drizzle schema. 85 tables inherited from Paperclip + `opportunities` (DM-141), `channel_connections` (DM-175), and `dearme_voice_profiles` (DM-170C); migration `0078_simple_quicksilver.sql` backfills the current schema history.
+- **`server/` (DearMe cloud)** — Express. Hosts AI proxy, voice scoring, voice profile persistence, opportunities, site host, billing, audit. Stateless w.r.t. the user transcript — durable product state lives in the Naive/Paperclip tables or at the OpenClaw edge.
 - **`ui/`** — secondary workbench-style surface for batch approvals, audit, /live feed. Conversation lives on whichever channel the user picked in OpenClaw, not in this UI.
 
-> **The big shift (DM-S05 / DM-S06):** DearMe is the integration of three substrates. **OpenClaw** runs on the user's device (channels, voice, sandbox, cron, skill loader). **Naive/Paperclip** runs in the cloud (76 Drizzle tables, durable execution, approvals, cost ledger). **Polsia** is verbatim choreography (12 prompts, 6 fns, 4 approval gates, 5-stage cycle). DearMe's own IP is the voice fingerprint, the personal site host, the opportunities database, the daily letter, and the wire that ties the three together. See `TRI-SUBSTRATE-ARCHITECTURE.md` for the full integration contract; see `OPENCLAW-INTEGRATION-ARCHITECTURE.md` for the OpenClaw layer specifically.
+> **The big shift (DM-S05 / DM-S06):** DearMe is the integration of three substrates. **OpenClaw** runs on the user's device (channels, voice, sandbox, cron, skill loader). **Naive/Paperclip** runs in the cloud (85 Drizzle tables, durable execution, approvals, cost ledger). **Polsia** is verbatim choreography (12 prompts, 6 fns, 4 approval gates, 5-stage cycle). DearMe's own IP is the voice fingerprint, the personal site host, the opportunities database, the daily letter, and the wire that ties the three together. See `TRI-SUBSTRATE-ARCHITECTURE.md` for the full integration contract; see `OPENCLAW-INTEGRATION-ARCHITECTURE.md` for the OpenClaw layer specifically.
 
 ---
 
@@ -130,11 +130,11 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DEA-9 / DM-183AS repeatable review-memory proof** — the current branch browser/API smoke proves another-pass feedback, fresh private report work, and focused `Feedback applied` receipts on the same Work Ready path without hidden donor/runtime terms.
 - **DEA-11 / DM-183BO private launch-handoff proof** — the current branch browser/API smoke proves a prepared output can be approved, converted into the final launch-call approval, accepted, and surfaced as a private handoff brief through DearMe `work=` / `artifact=` navigation without leaking hidden substrate terms or claiming external execution already happened.
 - **DEA-47 approved X delivery receipts + DEA-51 DM-173B live connect path + DM-172B X dispatch** — the current branch browser/API and UI proof shows the approved `post_x` handoff path records either a delivered receipt or the existing customer-safe connection-needed receipt; the fallback now carries a DearMe-owned `oauthStartUrl` to `GET /v1/channels/:companyId/x/start`, which builds a PKCE X authorize URL when configured and stays 503 when config is missing. The browser callback consumes server-side state, exchanges the X code for tokens, loads the X profile, and persists an active `x` connection row with an opaque credential. Approved X publishing now has a server-side dispatcher that decrypts the stored credential, validates expiry/scope/payload, posts to X API v2, and maps auth failures back to reauth. Live external posting still needs a real credential smoke.
-- **DM-174 live Resend `send_email` dispatch** — approved `send_email` launch handoffs now run through the same voice-gate -> approval -> `channel_connections` -> per-tool dispatch -> audit wrapper as X. The new Resend dispatcher resolves the stored per-user credential through the secret-provider registry, validates sender/recipient/subject/plain-text body/expiry, calls Resend `POST /emails` with a tool+approval/run+payload idempotency key, maps auth failures back to reauth, and records delivered receipts from the provider email id. Customer prompts say "email"; Resend stays internal. HTML remains fail-closed until a sanitizer path is added, and SES remains intentionally fail-closed until the tool binding can resolve an `ses` channel credential instead of the current static `resend` binding. Live external email still needs a real Resend credential smoke.
+- **DM-174 live Resend/SES `send_email` dispatch** — approved `send_email` launch handoffs now run through the same voice-gate -> approval -> `channel_connections` -> per-tool dispatch -> audit wrapper as X. The dispatcher resolves the stored per-user provider credential through the secret-provider registry, validates sender/recipient/subject/plain-text body/expiry, calls Resend `POST /emails` or SES v2 `SendEmail` with provider idempotency/signing where applicable, maps auth failures back to reauth, and records delivered receipts from the provider email id. Customer prompts say "email"; provider names stay internal. HTML remains fail-closed until a sanitizer path is added. Live external email still needs a real Resend or SES credential smoke.
 - **DM-176A/DM-176B `send_linkedin_dm` partner dispatch** — approved LinkedIn DM handoffs now have a DearMe-owned partner dispatcher and app-level env bridge for `DEARME_LINKEDIN_DM_MESSAGES_URL` / partner endpoint aliases. The dispatcher stays unregistered when no endpoint is configured, so gateway fallback is not shadowed by an empty direct path. Live customer use still needs a real approved partner endpoint + credential smoke.
 - **DM-177B/DM-177C `deploy_site` dispatch** — approved private-site proof handoffs now run through a DearMe-owned `deploy_site` dispatcher instead of needing OpenClaw gateway config. The dispatcher validates safe handles and bounded artifact refs, rejects custom domains in this slice, returns stable preview receipts at `dearme.app/<handle>?preview=*`, and keeps production deploy fail-closed unless the DearMe-owned host is explicitly enabled by env.
 - **DM-178/DM-178B `create_meta_campaign` dispatch** — approved paid-ad handoffs now run through a DearMe-owned Meta Ads dispatcher on the same approval/OAuth/audit wrapper path. The dispatcher validates the simplified campaign payload, enforces test/ramp/scale daily budget tiers, respects the 7-day learning window, creates a paused Meta campaign receipt, and maps provider auth failures to reconnect without exposing tokens. App startup can override the Graph API base URL from operator env for live smoke/tooling; live customer use still needs a real Meta OAuth/Marketing API smoke.
-- **DEA-62 / DM-170 Voice profile store boundary** — the cloud Voice Gate scorer now keeps accepted-sample continuity behind an injectable, serializable, bounded profile store instead of a route-local process `Map`. Current route behavior stays in-memory by default, but the trained scorer/DB-backed profile can now replace storage without changing the `/v1/voice/score` contract.
+- **DEA-62 / DEA-63 / DM-170 Voice profile store** — the cloud Voice Gate scorer keeps accepted-sample continuity behind an injectable, serializable, bounded profile store and now persists that profile in `dearme_voice_profiles` on the default app/handoff paths. The trained scorer can replace the deterministic scorer without changing the `/v1/voice/score` contract or customer review surface.
 - **DM-183BV Symphony cooperation spine** — the current branch now treats Symphony as the coordinator/worker cooperation center while keeping it backstage. Workbench stream items have a typed work-event contract (`action`, `customerSummary`, `artifactTarget`, `decisionNeed`, `traceRefs`) for customer-safe decision cards, and the remaining DM-084, DM-086, DM-095, DM-097, DM-098, and DM-101 stale worktree heads are recorded as reviewed absorptions.
 - **DEA-20 / Chief pairing smoke** — Symphony closed the OpenClaw Chief pairing lane as no-code evidence: the current OpenClaw plugin manifest, 12 generated skills, 4 bootstrap files, required config, and outbound approval-gate bindings already prove the backstage pairing surface without adding customer-visible substrate language.
 - **DEA-21 / private site preview smoke** — the first-cycle proof package now carries a handle-safe `dearme.app/<handle>` private preview route through shared schema, server proof documents, apply/report artifacts, and onboarding UI while keeping public deploy behind the existing launch decision.
@@ -147,13 +147,14 @@ These four rules make the rest of the docs internally consistent. If any older d
 The stale local worktree queue is closed by exact-head reviewed absorptions.
 Future collaboration should start from a Linear `DEA` issue and a Symphony
 workspace on the current coordinator head, then land only one bounded
-customer-facing slice at a time. DM-172, the Resend half of DM-174, the
+customer-facing slice at a time. DM-172, Resend + SES DM-174,
 partner-dispatch + endpoint-config half of DM-176, the preview + configured
 production host gate half of DM-177, and the Meta dispatcher + Graph-base-url
 config half of DM-178 are now on the canonical `ChannelDispatch` path. The
-next product-dispatch gap is live credential/provider smoke: LinkedIn partner
-endpoint + credential, Meta OAuth/Marketing API, or the remaining DM-177 live
-host/custom-domain deploy smoke. It is not another connector/settings surface.
+next product-dispatch gap is live credential/provider smoke: SES or Resend
+email, LinkedIn partner endpoint + credential, Meta OAuth/Marketing API, or
+the remaining DM-177 live host/custom-domain deploy smoke. It is not another
+connector/settings surface.
 The internal `pnpm dearme:provider-smoke -- --check` command now owns that
 operator proof checklist, including the production site URL content smoke once
 host env is enabled. It now supports a local ignored
@@ -162,8 +163,9 @@ host env is enabled. It now supports a local ignored
 lane there instead of through a new UI, connector store, or command-history
 paste. Do not replace it with another settings page or dispatch path.
 For DM-170, the route and deterministic scorer now also have the durable
-profile-store boundary; the remaining voice gap is the trained scorer and
-actual backing store, not another `/v1/voice/score` route or review surface.
+profile-store boundary and DB backing store; the remaining voice gap is the
+trained scorer and persisted key issuer, not another `/v1/voice/score` route,
+voice-memory service, or review surface.
 Reuse still means adapting Polsia choreography, Lindy action-card/source
 patterns, and Naive/Paperclip substrate behind the DearMe product shell; do
 not add another first-run contract, packet schema, runtime dashboard, queue

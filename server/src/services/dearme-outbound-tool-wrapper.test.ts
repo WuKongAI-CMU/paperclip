@@ -402,6 +402,115 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
     expect(dispatch).not.toHaveBeenCalled();
   });
 
+  it("routes SES email payloads through the SES channel connection", async () => {
+    const getActiveCalls: Array<unknown> = [];
+    const dispatch = vi.fn(async () => ({
+      kind: "delivered" as const,
+      externalId: "ses_message_1",
+      paid: false,
+    }));
+    const { deps, resolveCalls, emitted } = makeDeps({
+      channelConnections: {
+        getActive: async (req) => {
+          getActiveCalls.push(req);
+          return {
+            id: "cc_ses_1",
+            companyId: "co_test",
+            userId: "u_test",
+            channel: "ses",
+            externalAccountId: "ses_acc_1",
+            externalDisplayName: "Peter Studio",
+            encryptedCredential: "enc:ses",
+            scopes: [],
+            expiresAt: null,
+            status: "active",
+            lastUsedAt: null,
+            lastRefreshedAt: null,
+            lastError: null,
+            metadata: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          } as never;
+        },
+        markUsed: async () => undefined,
+        markNeedsReauth: async () => undefined,
+        upsertActive: async () => {
+          throw new Error("not used");
+        },
+      },
+      channelDispatch: { send_email: dispatch as ChannelDispatch },
+    });
+    const wrapper = dearMeOutboundToolWrapper(deps);
+    const payload = {
+      provider: "ses",
+      toEmail: "lead@example.com",
+      fromHandle: "Peter",
+      subject: "Proof packet",
+      body: "Thought this would be useful.",
+    };
+    const result = await wrapper.callOutbound({
+      ...baseInput,
+      toolName: "send_email",
+      payload,
+      voiceGateText: "Thought this would be useful.",
+      voiceGateArtifactKind: "outbound-email",
+    });
+
+    expect(result.kind).toBe("delivered");
+    expect(resolveCalls[0]).toMatchObject({ toolName: "send_email", channel: "ses" });
+    expect(getActiveCalls).toEqual([{
+      companyId: "co_test",
+      userId: "u_test",
+      channel: "ses",
+    }]);
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      toolName: "send_email",
+      encryptedCredential: "enc:ses",
+      payload,
+      dispatchContext: expect.objectContaining({
+        channel: "ses",
+      }),
+    }));
+    expect(emitted.find((event) => event.type === "channel_action_fired")?.payload)
+      .toMatchObject({ toolName: "send_email", channel: "ses", externalId: "ses_message_1" });
+  });
+
+  it("rejects unsupported email providers before gate or channel lookup", async () => {
+    const getActive = vi.fn();
+    const { deps, resolveCalls, scoreCalls } = makeDeps({
+      channelConnections: {
+        getActive,
+        markUsed: async () => undefined,
+        markNeedsReauth: async () => undefined,
+        upsertActive: async () => {
+          throw new Error("not used");
+        },
+      },
+    });
+    const wrapper = dearMeOutboundToolWrapper(deps);
+    const result = await wrapper.callOutbound({
+      ...baseInput,
+      toolName: "send_email",
+      payload: {
+        provider: "mailgun",
+        toEmail: "lead@example.com",
+        fromHandle: "Peter",
+        subject: "Proof packet",
+        body: "Thought this would be useful.",
+      },
+      voiceGateText: "Thought this would be useful.",
+      voiceGateArtifactKind: "outbound-email",
+    });
+
+    expect(result).toEqual({
+      kind: "errored",
+      error: "email-provider-unsupported",
+    });
+    expect(scoreCalls).toHaveLength(0);
+    expect(resolveCalls).toHaveLength(0);
+    expect(getActive).not.toHaveBeenCalled();
+  });
+
   it("carries the approval id into the channel connect start URL for preapproved retries", async () => {
     const { deps } = makeDeps({
       channelConnections: {

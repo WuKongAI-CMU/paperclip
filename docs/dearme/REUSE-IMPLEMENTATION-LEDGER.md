@@ -15,6 +15,19 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- DEA-63 / DM-170C completes the Voice Gate store boundary by adding the
+  `dearme_voice_profiles` table and DB-backed `DearMeVoiceProfileStore` on the
+  default app, launch-handoff, output-handoff, and outbound-wrapper paths. This
+  reuses Naive/Paperclip persistence for a compact accepted-sample snapshot
+  instead of reviving a standalone voice-memory service; the remaining DM-170
+  gap is trained scoring/key issuance, not another storage path. Migration
+  `0078` also backfills earlier schema-only `channel_connections` and
+  `opportunities` tables, so future workers should not regenerate a competing
+  migration for those schemas.
+- DM-174 now covers both Resend and SES inside the existing `send_email`
+  wrapper path. The customer contract stays "email"; provider selection is a
+  backstage channel credential choice, and future email providers should route
+  through the same resolved-channel boundary rather than adding new tools.
 - DEA-62 / DM-170 moves Voice Gate continuity behind an injectable
   `DearMeVoiceProfileStore` instead of leaving accepted writing in one
   process-local scorer map. The default store stays in-memory, but its
@@ -3039,7 +3052,7 @@ DM-S06 shipped the typed contracts. DM-S07 wires them into the running cloud as 
 | `server/src/services/dearme-deploy-site-dispatch-config.ts` | DM-177C | Env bridge for default approved `deploy_site` dispatch. It maps DearMe site host env into the dispatcher config so production receipts can be enabled by operator intent without reopening OpenClaw gateway fallback or custom-domain automation. |
 | `server/src/services/dearme-meta-campaign-dispatch.ts` | DM-178 | Default approved `create_meta_campaign` dispatcher for the `meta_ads` channel. It keeps the existing spend approval/wrapper/audit path, resolves the opaque Meta ads credential through the shared secret-provider registry, requires `ads_management`, normalizes ad account ids, validates campaign refs/budget tier/learning window, creates a paused Meta campaign receipt, and returns provider auth failures as wrapper reauth errors without exposing tokens. |
 | `server/src/services/dearme-meta-campaign-dispatch-config.ts` | DM-178B | Env bridge for default approved `create_meta_campaign` dispatch. It maps DearMe Meta Graph API base URL env into the dispatcher config so live smoke can target the intended Graph version/base without a customer-facing connector surface. |
-| `server/src/services/dearme-voice-gate.ts` | DM-S07 / DM-170 / DEA-62 | `dearMeVoiceGateService({ scorer?, profileStore? })`. Default scorer is deterministic: negative phrase rules (`ai_disclaimer`, `hype_word`, `stale_template`, `press_release_voice`, `punctuation_storm`, hidden-process language), per-artifact length floor/ceiling, concrete/evidence/shape rewards, and same-fingerprint continuity from accepted samples. The profile store is now injectable, serializable, and token-capped; the real fingerprint model lands by replacing `scorer` and/or the backing store without a second route. |
+| `server/src/services/dearme-voice-gate.ts` + `server/src/services/dearme-voice-profile-store.ts` + `packages/db/src/schema/dearme_voice_profiles.ts` | DM-S07 / DM-170 / DEA-62 / DEA-63 | `dearMeVoiceGateService({ scorer?, profileStore? })`. Default scorer is deterministic: negative phrase rules (`ai_disclaimer`, `hype_word`, `stale_template`, `press_release_voice`, `punctuation_storm`, hidden-process language), per-artifact length floor/ceiling, concrete/evidence/shape rewards, and same-fingerprint continuity from accepted samples. The profile store is injectable, serializable, token-capped, and now DB-backed on the app/handoff paths; the real fingerprint model lands by replacing `scorer` without a second route or standalone voice-memory service. |
 | `server/src/routes/dearme-voice-gate.ts` | DM-170 | Root `POST /v1/voice/score` route over the shared proxy contract. Requires `Authorization: Bearer dm_sk_*`, validates `VoiceGateScoreRequest`, and returns `VoiceGateScoreResponse` from the existing cloud-side voice gate service. |
 | `server/src/services/dearme-work-loop.ts` | DM-S07 / DM-179 / DM-180 | `transition({ companyId, issueId, from, to, role, reason, openclawSessionId?, agentId? })` — validates via `canTransitionWorkLoop`, mirrors the new 8-state into `issues.status`, writes `activity_log`, emits `work_loop_transition` SSE. Plus `legalNext(from)`. |
 | `server/src/services/dearme-approval-resolver.ts` | DM-S07 / DM-180 | Wraps the pure `resolveApproval` with two Drizzle reads (past approved count for the (channel, gate) pair, today's `cost_events` total) + writes the decision into `approvals`/`issue_approvals` with user/agent attribution + emits `approval_pending` or `approval_resolved`. DM-180 exposes this through the company-scoped DearMe route after normalizing issue identifiers. Stores gate in `approvals.type = "dearme.gate.<gate>"`. |
@@ -3117,7 +3130,7 @@ This commit unblocks all the next-up tickets that wire each substrate to the oth
 
 | Ticket | What it enables |
 |---|---|
-| DM-170 | Cloud `/v1/voice/score` endpoint — Express route is shipped over the deterministic scorer and now has an injectable bounded profile-store boundary; trained fingerprint model, durable backing store, and persisted key issuer remain |
+| DM-170 | Cloud `/v1/voice/score` endpoint — Express route is shipped over the deterministic scorer and now has an injectable bounded DB-backed profile store; trained fingerprint model and persisted key issuer remain |
 | DM-171 | OpenClaw plugin install + onboarding bridge |
 | DM-172 | `post_x` impl using the typed envelope. Server dispatcher shipped; live external smoke remains credential-dependent. |
 | DM-173A | Per-user X OAuth callback persistence proof writing into `channel_connections`. |
@@ -3175,7 +3188,7 @@ Next-up tickets unlocked by this scaffold:
 | DM-171 | OpenClaw plugin install flow + onboarding bridge (paste device pairing code at `dearme.app/onboard`) | server + dearme-openclaw |
 | DM-172 | `post_x` outbound tool (X publish), voice-gate-blocked below threshold | dearme-openclaw |
 | DM-173A/DM-173B | Per-user X OAuth start + callback exchange (just-in-time, on first publish) | server (`channel_connections`, X OAuth service) |
-| DM-174 | `send_email` outbound tool via Resend/SES (Resend shipped; SES needs dynamic channel binding) | server + dearme-openclaw |
+| DM-174 | `send_email` outbound tool via Resend/SES (Resend and SES channel dispatch shipped; live credential smoke next) | server + dearme-openclaw |
 | DM-175 | `channel_connections` Drizzle table + encrypted token storage | packages/db |
 
 ### AI Proxy Contract Package — `@paperclipai/dearme-ai-proxy` (NEW 2026-05-09)

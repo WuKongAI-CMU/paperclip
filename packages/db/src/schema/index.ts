@@ -46,6 +46,12 @@ export {
   type ChannelConnectionStatus,
   type NewChannelConnection,
 } from "./channel_connections.js";
+export {
+  dearmeVoiceProfiles,
+  type DearMeVoiceProfile,
+  type DearMeVoiceProfileSnapshot,
+  type NewDearMeVoiceProfile,
+} from "./dearme_voice_profiles.js";
 export { issueWorkProducts } from "./issue_work_products.js";
 export { labels } from "./labels.js";
 export { issueLabels } from "./issue_labels.js";

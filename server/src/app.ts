@@ -65,6 +65,7 @@ import { resolveDearMeLinkedInDmDispatchConfigFromEnv } from "./services/dearme-
 import { resolveDearMeMetaCampaignDispatchConfigFromEnv } from "./services/dearme-meta-campaign-dispatch-config.js";
 import { resolveDearMeOpenClawGatewayDispatchConfigFromEnv } from "./services/dearme-openclaw-gateway-dispatch-config.js";
 import { createDearMeXOAuthConnectionServiceFromEnv } from "./services/dearme-x-oauth-connection.js";
+import { createDbDearMeVoiceProfileStore } from "./services/dearme-voice-profile-store.js";
 import { pluginRegistryService } from "./services/plugin-registry.js";
 import { createHostClientHandlers } from "@paperclipai/plugin-sdk";
 import type { BetterAuthSessionResult } from "./auth/better-auth.js";
@@ -181,9 +182,10 @@ export async function createApp(
     app.all("/api/auth/{*authPath}", opts.betterAuthHandler);
   }
   const dearMeXOAuthConnection = createDearMeXOAuthConnectionServiceFromEnv();
+  const dearMeVoiceProfileStore = createDbDearMeVoiceProfileStore(db);
   app.use(llmRoutes(db));
   app.use(DEARME_PROXY_BASE_PATH, dearMeAiProxyRoutes(db, createDearMeAiProxyRouteOptions()));
-  app.use(dearMeVoiceGateRoutes());
+  app.use(dearMeVoiceGateRoutes({ profileStore: dearMeVoiceProfileStore }));
   app.use(
     "/v1/channels",
     boardMutationGuard(),
@@ -213,7 +215,7 @@ export async function createApp(
       companyDeletionEnabled: opts.companyDeletionEnabled,
     }),
   );
-  api.use("/dearme", dearmeRoutes(db));
+  api.use("/dearme", dearmeRoutes(db, { voiceProfileStore: dearMeVoiceProfileStore }));
   api.use("/companies", companyRoutes(db, opts.storageService));
   api.use(companySkillRoutes(db));
   api.use(agentRoutes(db, { pluginWorkerManager: workerManager }));
@@ -235,6 +237,7 @@ export async function createApp(
       dearMeLinkedInDmDispatchConfig: resolveDearMeLinkedInDmDispatchConfigFromEnv(),
       dearMeMetaCampaignDispatchConfig: resolveDearMeMetaCampaignDispatchConfigFromEnv(),
       dearMeDeploySiteDispatchConfig: resolveDearMeDeploySiteDispatchConfigFromEnv(),
+      voiceProfileStore: dearMeVoiceProfileStore,
     }),
   );
   api.use(secretRoutes(db));

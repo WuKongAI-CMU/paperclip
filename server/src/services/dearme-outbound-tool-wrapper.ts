@@ -29,7 +29,7 @@
  */
 
 import { createHash } from "node:crypto";
-import type { Db } from "@paperclipai/db";
+import type { ChannelConnectionChannel, Db } from "@paperclipai/db";
 import { costEvents } from "@paperclipai/db";
 import {
   DEARME_OUTBOUND_TOOL_BINDINGS,
@@ -164,6 +164,40 @@ function customerChannelLabel(channel: string) {
   return "this channel";
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function stringField(record: Record<string, unknown>, key: string) {
+  const value = record[key];
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function resolveOutboundChannel(
+  toolName: DearMeOutboundToolName,
+  defaultChannel: string,
+  payload: unknown,
+): { ok: true; channel: string } | { ok: false; error: string } {
+  if (toolName !== "send_email") return { ok: true, channel: defaultChannel };
+
+  const record = asRecord(payload);
+  const provider = record ? stringField(record, "provider") ?? "resend" : "resend";
+  if (provider === "resend" || provider === "ses") {
+    return { ok: true, channel: provider };
+  }
+  return { ok: false, error: "email-provider-unsupported" };
+}
+
+function isOauthChannel(channel: string): channel is ChannelConnectionChannel {
+  return channel === "x" ||
+    channel === "linkedin" ||
+    channel === "resend" ||
+    channel === "ses" ||
+    channel === "meta_ads";
+}
+
 function stableStringify(value: unknown): string {
   if (value === null || typeof value !== "object") {
     return JSON.stringify(value) ?? "null";
@@ -201,6 +235,8 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
   return {
     async callOutbound(input: CallOutboundInput): Promise<CallOutboundOutcome> {
       const binding = DEARME_OUTBOUND_TOOL_BINDINGS[input.toolName];
+      const channel = resolveOutboundChannel(input.toolName, binding.channel, input.payload);
+      if (!channel.ok) return { kind: "errored", error: channel.error };
       const now = () => new Date().toISOString();
       const baseScope = {
         companyId: input.companyId,
@@ -220,6 +256,8 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
         }
         const result = await deps.voiceGate.scoreVoice({
           fingerprintId: input.voiceFingerprintId,
+          companyId: input.companyId,
+          userId: input.userId,
           text: input.voiceGateText,
           kind: input.voiceGateArtifactKind,
           minScore: input.config.minVoiceGateScore,
@@ -252,7 +290,7 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
             requestedByAgentId: input.agentId ?? null,
             issueId: input.issueId,
             toolName: input.toolName,
-            channel: binding.channel,
+            channel: channel.channel,
             gate: binding.gate,
             estimatedUsd: input.estimatedUsd,
             voiceGateScore,
@@ -284,19 +322,18 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
       // spend = meta_ads which we treat the same way) but every other
       // tool does need an active row.
       let connection: Awaited<ReturnType<DearMeChannelConnectionsService["getActive"]>> = null;
-      const oauthChannels: ReadonlyArray<string> = ["x", "linkedin", "resend", "ses", "meta_ads"];
-      if (oauthChannels.includes(binding.channel)) {
+      if (isOauthChannel(channel.channel)) {
         connection = await deps.channelConnections.getActive({
           companyId: input.companyId,
           userId: input.userId,
-          channel: binding.channel as "x" | "linkedin" | "resend" | "ses" | "meta_ads",
+          channel: channel.channel,
         });
         if (!connection) {
-          const channelLabel = customerChannelLabel(binding.channel);
-          const oauthStartUrl = buildChannelOAuthStartUrl(input, binding.channel);
+          const channelLabel = customerChannelLabel(channel.channel);
+          const oauthStartUrl = buildChannelOAuthStartUrl(input, channel.channel);
           return {
             kind: "needs_oauth",
-            channel: binding.channel,
+            channel: channel.channel,
             oauthStartUrl,
             reason: "no-active-channel-connection",
             gate: "connect_channel",
@@ -321,7 +358,7 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
           companyId: input.companyId,
           userId: input.userId,
           issueId: input.issueId,
-          channel: binding.channel,
+          channel: channel.channel,
           openclawRunId: input.openclawRunId,
           openclawSessionId: input.openclawSessionId,
           agentId: input.agentId,
@@ -341,11 +378,11 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
         }
         return {
           kind: "needs_oauth",
-          channel: binding.channel,
-          oauthStartUrl: buildChannelOAuthStartUrl(input, binding.channel),
+          channel: channel.channel,
+          oauthStartUrl: buildChannelOAuthStartUrl(input, channel.channel),
           reason: reauthReason,
           gate: "connect_channel",
-          message: `Connect ${customerChannelLabel(binding.channel)} before DearMe can continue this approved next step.`,
+          message: `Connect ${customerChannelLabel(channel.channel)} before DearMe can continue this approved next step.`,
         };
       }
       if (dispatchResult.kind === "errored") {
@@ -373,7 +410,7 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
           agentId: input.agentId,
           issueId: input.issueId,
           billingCode: `dearme.outbound.${input.toolName}`,
-          provider: binding.channel,
+          provider: channel.channel,
           biller: "dearme",
           billingType: "outbound_tool",
           model: input.toolName,
@@ -401,7 +438,7 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
         scope: { ...baseScope, workLoopState: "deliver" },
         payload: {
           toolName: input.toolName,
-          channel: binding.channel,
+          channel: channel.channel,
           externalId: dispatchResult.externalId,
           externalUrl: dispatchResult.externalUrl,
           paid: dispatchResult.paid,

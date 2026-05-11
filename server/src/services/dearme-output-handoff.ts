@@ -42,7 +42,11 @@ import {
   selectActiveDearMeMemoryRows,
 } from "./dearme-memory-brief.js";
 import { deriveDearMeOutputStatus } from "./dearme-output-status.js";
-import { dearMeVoiceGateService } from "./dearme-voice-gate.js";
+import {
+  dearMeVoiceGateService,
+  type DearMeVoiceProfileStore,
+} from "./dearme-voice-gate.js";
+import { createDbDearMeVoiceProfileStore } from "./dearme-voice-profile-store.js";
 import { documentService } from "./documents.js";
 
 type DearMeIssueRow = {
@@ -1563,9 +1567,14 @@ function pendingNextMoveMatchesOutput(input: { payload: unknown; outputId: strin
   return isRecord(input.payload) && input.payload.outputId === input.outputId;
 }
 
-export function dearmeOutputHandoffService(db: Db) {
+export function dearmeOutputHandoffService(
+  db: Db,
+  options: { voiceProfileStore?: DearMeVoiceProfileStore } = {},
+) {
   const documentsSvc = documentService(db);
-  const voiceGate = dearMeVoiceGateService();
+  const voiceGate = dearMeVoiceGateService({
+    profileStore: options.voiceProfileStore ?? createDbDearMeVoiceProfileStore(db),
+  });
 
   async function ensureNextMoveApproval(input: {
     companyId: string;
