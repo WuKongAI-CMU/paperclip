@@ -2,6 +2,31 @@
 
 Date: 2026-05-11
 
+## DEA-49 DM-171B Onboarding Bridge Absorbed - 2026-05-11
+
+Product/architecture slice:
+
+- Absorbed Symphony's DM-171B no-code bridge proof into the canonical DearMe
+  docs, reuse ledger, and tri-substrate architecture table.
+- The existing first-run onboarding path already opens with the team-ready
+  state, keeps the proof-pack surface visible, and preserves the launch-call
+  boundary for public/send/spend moves.
+- The coordinator did not add a second setup wizard, second manifest, runtime
+  dashboard, or customer-visible substrate surface.
+- The worktree absorption ledger records Symphony worker head `1e308864` as
+  reviewed_absorbed so patrols stop treating the equivalent worker note as an
+  unintegrated branch.
+
+Verification:
+
+- `pnpm --filter @paperclipai/ui exec vitest run src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 1 file, 73 tests.
+- `pnpm exec vitest run server/src/__tests__/dearme-workbench-projection.test.ts
+  server/src/__tests__/dearme-approval-receipts.test.ts --maxWorkers=1`
+  passed: 2 files, 16 tests.
+- `pnpm run test:dearme-worktrees` passed: 13 node tests.
+- `git diff --check` passed before and after the architecture-table absorption.
+
 ## DEA-47 Approved X Delivery Receipts Absorbed - 2026-05-11
 
 Product/architecture slice:
@@ -3532,6 +3557,10 @@ Implementation slice:
   `Review proof pack`, `Dear me letter`, `Voice check`, `Voice 100/100`,
   `Private until approved`, and `Work Ready` while keeping runtime and donor
   machinery backstage.
+- That same first-run surface also carries the DM-171B bridge: the onboarding
+  page already opens with `Your team is ready to start` and keeps the proof-pack
+  card visible without introducing a second setup flow or hidden-substrate
+  language.
 
 Verification:
 

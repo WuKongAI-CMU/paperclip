@@ -253,7 +253,8 @@ The right reuse split is:
   `./generated/skills`, all 12 generated skill folders contain `SKILL.md`, the
   four bootstrap files are present, and the config schema requires `apiKey` plus
   `handle`. This finishes the plugin-install proof portion of DM-171; the
-  customer onboarding bridge remains a separate slice if needed.
+  customer onboarding bridge is already represented by the existing first-run
+  surface and does not require a second setup wizard.
 - DEA-15 / DM-183BZ closed as a no-code proof lane: the existing
   first-cycle start, private handoff, Workbench projection, and DearMe
   onboarding surfaces already produce a sample/demo package with Chief of Staff
