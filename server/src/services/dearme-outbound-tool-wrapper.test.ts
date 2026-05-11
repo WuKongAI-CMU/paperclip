@@ -434,4 +434,24 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
     if (result.kind !== "errored") return;
     expect(result.error).toBe("no-dispatcher-registered:post_x");
   });
+
+  it("returns errored when dispatcher is missing for deploy_site", async () => {
+    const { deps } = makeDeps({ channelDispatch: {} });
+    const wrapper = dearMeOutboundToolWrapper(deps);
+    const result = await wrapper.callOutbound({
+      ...baseInput,
+      toolName: "deploy_site",
+      payload: {
+        handle: "peter-studio",
+        artifactRef: "document:portfolio-update:r2",
+        target: "preview",
+      },
+      voiceGateText: null,
+      voiceGateArtifactKind: null,
+      voiceFingerprintId: null,
+    });
+    expect(result.kind).toBe("errored");
+    if (result.kind !== "errored") return;
+    expect(result.error).toBe("no-dispatcher-registered:deploy_site");
+  });
 });

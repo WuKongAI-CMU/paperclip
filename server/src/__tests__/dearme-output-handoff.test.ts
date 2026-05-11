@@ -1263,6 +1263,109 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     }
   });
 
+  it("attaches a deploy-site launch handoff for an approved private site proof and keeps approval idempotent", async () => {
+    const companyId = await seedCompany();
+    const agentId = await seedAgent(companyId);
+    const issueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Prepare portfolio update",
+      identifier: "DME-29",
+      originFingerprint: "operation-prepare_portfolio_update",
+      status: "in_review",
+      assigneeAgentId: agentId,
+      updatedAt: new Date("2026-05-07T16:30:00.000Z"),
+    });
+    await attachDocument({
+      companyId,
+      issueId,
+      key: "portfolio-update",
+      title: "Portfolio update",
+      body: [
+        "Page section: proof cards",
+        "Proof source: local-first product launch notes",
+        "Private preview route: dearme.app/peter-studio",
+        "Proposed copy: Built a local-first AI operating layer with approval gates.",
+        "Deploy boundary: The public site update waits for one launch decision.",
+      ].join("\n"),
+      updatedAt: new Date("2026-05-07T16:31:00.000Z"),
+    });
+
+    const result = await dearmeOutputHandoffService(db).reviewOutput(
+      companyId,
+      `${issueId}:portfolio_update`,
+      { action: "approve", decisionNote: "This is the right proof path." },
+      { actorType: "user", actorId: "user-1", agentId: null, runId: null },
+    );
+
+    expect(result.status).toBe("recorded");
+    expect(result.output.reviewLoop).toEqual(expect.objectContaining({
+      state: "approved",
+      lastAction: "approve",
+    }));
+    expect(result.comment.bodyPreview).toContain("approved");
+
+    const nextMoveApprovals = await db
+      .select({
+        id: approvals.id,
+        type: approvals.type,
+        status: approvals.status,
+        requestedByAgentId: approvals.requestedByAgentId,
+        requestedByUserId: approvals.requestedByUserId,
+        payload: approvals.payload,
+      })
+      .from(approvals)
+      .where(eq(approvals.companyId, companyId));
+    expect(nextMoveApprovals).toHaveLength(1);
+    expect(nextMoveApprovals[0]).toEqual(expect.objectContaining({
+      type: "dearme_output_next_move",
+      status: "pending",
+      requestedByAgentId: agentId,
+      requestedByUserId: null,
+    }));
+    expect(nextMoveApprovals[0]?.payload).toEqual(expect.objectContaining({
+      title: "Approve portfolio update to publish",
+      summary: expect.stringContaining("final approval"),
+      recommendedAction: expect.stringContaining("Publish"),
+      nextActionOnApproval: expect.stringContaining("Nothing deploys before this approval"),
+      riskGate: "deploy_public_site",
+      outputId: `${issueId}:portfolio_update`,
+      outputKind: "portfolio_update",
+      issueId,
+      issueIdentifier: "DME-29",
+      preparedTitle: "Portfolio updates",
+      reviewNote: "This is the right proof path.",
+      launchHandoff: expect.objectContaining({
+        toolName: "deploy_site",
+        channel: "dearme-cloud",
+        gate: "deploy",
+        riskGate: "deploy_public_site",
+        payload: {
+          handle: "peter-studio",
+          artifactRef: expect.stringMatching(/^document:/),
+          customDomain: null,
+          target: "preview",
+        },
+      }),
+    }));
+
+    await dearmeOutputHandoffService(db).reviewOutput(
+      companyId,
+      `${issueId}:portfolio_update`,
+      { action: "approve", decisionNote: "Still good." },
+      { actorType: "user", actorId: "user-1", agentId: null, runId: null },
+    );
+    const approvalCountAfterRepeat = await db
+      .select({ id: approvals.id })
+      .from(approvals)
+      .where(eq(approvals.companyId, companyId));
+    expect(approvalCountAfterRepeat).toHaveLength(1);
+
+    const serialized = JSON.stringify(result).toLowerCase();
+    for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw", "symphony", "runtime"]) {
+      expect(serialized).not.toContain(hiddenTerm);
+    }
+  });
+
   it("records a private default score on silence without creating launch approval", async () => {
     const companyId = await seedCompany();
     const agentId = await seedAgent(companyId);

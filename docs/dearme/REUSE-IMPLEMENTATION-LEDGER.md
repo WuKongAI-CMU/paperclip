@@ -195,6 +195,12 @@ The right reuse split is:
   worker lane Done and cleaned its workspace before coordinator absorption, so
   this pass recovered the inspected patch onto current main and fixed the
   explicit-handle preservation gap in the memory-enriched service path.
+- DEA-44 extends that same boundary: the approved private-site handoff now
+  turns the `dearme.app/<handle>` proof route into an existing `deploy_site`
+  dispatch attempt when the launch handoff is approved, and falls back to a
+  safe `needs_connection`/pending-style receipt when the required config or
+  channel connection is absent. Keep using the outbound wrapper and approval
+  receipt surfaces rather than introducing a separate deploy lane.
 - Symphony worker startup now includes `pnpm dearme:symphony-preflight -- .`
   as both workspace-creation and Codex bootstrap evidence. This keeps the
   DEA-19 `.git/index.lock` failure mode from recurring after a worker has

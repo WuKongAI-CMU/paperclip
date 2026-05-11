@@ -459,6 +459,12 @@ Product/architecture slice:
 - Server proof documents and apply/report artifacts now carry the same private
   preview route so the Brand OS, first-cycle issues, and onboarding surface tell
   one story.
+- DEA-44 is coordinator-absorbed as the approved private-site handoff boundary
+  slice. Approved `portfolio_update` proof now reuses the existing `deploy_site`
+  dispatch boundary from the private preview route, and missing config or
+  connection still fails closed with a customer-safe receipt instead of a
+  public deploy claim. Keep this on the existing approval and outbound wrapper
+  path; do not add a second launch runtime or dashboard.
 
 Coordination state:
 

@@ -16,6 +16,19 @@ const launchHandoff = {
   payload: { text: "A private proof packet is ready for owner-approved publishing." },
 };
 
+const deployLaunchHandoff = {
+  toolName: "deploy_site",
+  channel: "dearme-cloud",
+  gate: "deploy",
+  riskGate: "deploy_public_site",
+  payload: {
+    handle: "peter-studio",
+    artifactRef: "document:portfolio-update:r2",
+    customDomain: null,
+    target: "preview",
+  },
+};
+
 function approval(overrides: Record<string, unknown> = {}) {
   return {
     id: "approval-1",
@@ -72,6 +85,40 @@ describe("dearMeApprovedLaunchHandoffService", () => {
       approval: approval({ status: "pending" }),
       actorUserId: "user-1",
     })).toBeNull();
+  });
+
+  it("maps an approved portfolio update into a deploy-site outbound call", async () => {
+    const callOutbound = vi.fn(async () => ({
+      kind: "delivered" as const,
+      voiceGateScore: null,
+      externalId: "deploy_1",
+    }));
+    const svc = dearMeApprovedLaunchHandoffService({ callOutbound });
+
+    const result = await svc.executeApprovedNextMove({
+      approval: approval({
+        payload: {
+          issueId: "issue-1",
+          launchHandoff: deployLaunchHandoff,
+        },
+      }),
+      actorUserId: "user-1",
+    });
+
+    expect(result.kind).toBe("called");
+    expect(callOutbound).toHaveBeenCalledWith(expect.objectContaining({
+      toolName: "deploy_site",
+      companyId: "company-1",
+      userId: "user-1",
+      issueId: "issue-1",
+      agentId: "agent-1",
+      payload: deployLaunchHandoff.payload,
+      voiceGateText: null,
+      voiceGateArtifactKind: null,
+      voiceFingerprintId: null,
+      preapprovedApprovalId: "approval-1",
+      config: { minVoiceGateScore: 92, dailyUsdCap: 5 },
+    }));
   });
 
   it("treats a pause intent as a no-dispatch approved next move", async () => {

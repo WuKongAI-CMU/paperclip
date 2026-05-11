@@ -964,6 +964,19 @@ type DearMeContentDraftLaunchHandoff = {
   voiceGate: DearMeVoiceGateResult;
 };
 
+type DearMePortfolioUpdateLaunchHandoff = {
+  toolName: "deploy_site";
+  channel: "dearme-cloud";
+  gate: "deploy";
+  riskGate: "deploy_public_site";
+  payload: {
+    handle: string;
+    artifactRef: string;
+    customDomain: null;
+    target: "preview";
+  };
+};
+
 function buildContentDraftLaunchHandoff(
   packet: DearMeContentDraftPacket,
 ): DearMeContentDraftLaunchHandoff | null {
@@ -993,6 +1006,57 @@ function buildContentDraftLaunchHandoff(
     sourceDraftTitle: draft.title,
     launchBoundary: draft.launchBoundary,
     voiceGate: draft.voiceGate,
+  };
+}
+
+function privatePreviewRouteFromOutputText(input: {
+  documents: DearMeOutputDocument[];
+  workProducts: DearMeOutputWorkProduct[];
+  latestUpdate: DearMeOutputUpdate | null;
+}) {
+  for (const segment of outputTextSegments(input)) {
+    const match = segment.value.match(/\bdearme\.app\/([a-z0-9-]+)\b/i);
+    if (!match) continue;
+    const handle = match[1].toLowerCase();
+    const route = `dearme.app/${handle}`;
+    const matchedDocument = input.documents.find((document) => document.bodyPreview.includes(route)) ?? null;
+    const artifactRef = matchedDocument
+      ? `document:${matchedDocument.id}:r${matchedDocument.revisionNumber}`
+      : input.latestUpdate
+        ? `update:${input.latestUpdate.id}`
+        : input.workProducts[0]
+          ? `work-product:${input.workProducts[0].id}`
+          : `route:${route}`;
+
+    return {
+      handle,
+      route,
+      artifactRef,
+    };
+  }
+
+  return null;
+}
+
+export function buildPortfolioUpdateLaunchHandoff(input: {
+  documents: DearMeOutputDocument[];
+  workProducts: DearMeOutputWorkProduct[];
+  latestUpdate: DearMeOutputUpdate | null;
+}): DearMePortfolioUpdateLaunchHandoff | null {
+  const privatePreview = privatePreviewRouteFromOutputText(input);
+  if (!privatePreview) return null;
+
+  return {
+    toolName: "deploy_site",
+    channel: "dearme-cloud",
+    gate: "deploy",
+    riskGate: "deploy_public_site",
+    payload: {
+      handle: privatePreview.handle,
+      artifactRef: privatePreview.artifactRef,
+      customDomain: null,
+      target: "preview",
+    },
   };
 }
 
@@ -2214,6 +2278,12 @@ export function dearmeOutputHandoffService(db: Db) {
       if (request.action === "approve" && !request.silenceDefault) {
         const launchHandoff = output.kind === "content_drafts"
           ? await latestLaunchHandoffForOutput({ companyId, issueId })
+          : output.kind === "portfolio_update"
+            ? buildPortfolioUpdateLaunchHandoff({
+                documents: output.documents,
+                workProducts: output.workProducts,
+                latestUpdate: output.latestUpdate,
+              })
           : null;
         await ensureNextMoveApproval({
           companyId,
