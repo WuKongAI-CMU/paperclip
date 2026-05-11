@@ -3995,7 +3995,7 @@ function WorkReadyPanel({
         icon={FileText}
         eyebrow="Work ready"
         title="Prepared work waiting for review"
-        description="The strongest finished drafts, proof assets, and reports are first so the next customer action is obvious."
+        description="The strongest finished drafts, proof assets, and reports are first so the next customer action and proof lane are obvious."
         trailing={items.length > 0 ? <Badge variant="outline">{items.length} ready</Badge> : null}
       />
       {items.length === 0 ? (
@@ -6621,8 +6621,8 @@ function FirstCyclePacketSpotlight({
           </div>
           <p className="mt-1 text-sm text-foreground/85">
             One launch-ready next step is ready for your call. The same private proof pack feeds Work Ready and
-            Decisions, so the team moved, the work is reviewable, and one launch call still controls anything public
-            or external.
+            Decisions, so the team moved, the proof lane stays visible, and one launch call still controls anything
+            public or external.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -6630,6 +6630,7 @@ function FirstCyclePacketSpotlight({
             {readyCount || packetOutputs.length} ready
           </Badge>
           <Badge variant="outline">Work Ready path</Badge>
+          <Badge variant="outline">Proof lane</Badge>
           <Badge variant="outline">Private until approved</Badge>
         </div>
       </div>

@@ -5744,6 +5744,7 @@ describe("DearMeOnboarding", () => {
     expect(packetSurface.textContent).toContain("One launch-ready next step is ready for your call.");
     expect(packetSurface.textContent).toContain("2 ready");
     expect(packetSurface.textContent).toContain("Work Ready path");
+    expect(packetSurface.textContent).toContain("Proof lane");
     expect(packetSurface.textContent).toContain("Private until approved");
     expect(packetSurface.textContent).toContain("Starter post draft prepared from the first proof pack");
     expect(container.textContent).toContain("Prepared by Content Producer");
@@ -5754,6 +5755,7 @@ describe("DearMeOnboarding", () => {
     expect(packetSurface.textContent).toContain("Voice ");
     expect(packetSurface.textContent).toContain("/100");
     expect(packetSurface.textContent).not.toContain("cycle packet");
+    expect(packetSurface.textContent).not.toMatch(/Paperclip|OpenClaw|provider|setup_payload/i);
     expect(container.textContent).not.toContain("dearme-cycle-output");
     expect(container.querySelector('button[aria-label="Review Dear me report"]')).not.toBeNull();
     expect(container.querySelector('button[aria-label="Review Starter post batch"]')).not.toBeNull();

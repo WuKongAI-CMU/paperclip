@@ -15,6 +15,11 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- DEA-58 reuses the existing Work Ready / Decisions Needed / first proof pack
+  choreography and Lindy-style action-card grammar to make the next decision
+  and proof lane explicit in the customer cockpit. The cut stays on the
+  current DearMe shell and output-handoff contract; it does not add a new
+  dashboard, runtime queue, or settings surface.
 - DM-178 closes the fifth outbound tool dispatch seam by adding
   `dearme-meta-campaign-dispatch.ts` instead of replaying Polsia's larger
   12-tool ads surface. The coordinator cut reuses the shared wrapper,
