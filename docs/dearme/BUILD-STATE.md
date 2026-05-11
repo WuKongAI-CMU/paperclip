@@ -2,6 +2,47 @@
 
 Date: 2026-05-11
 
+## Symphony Launchd Log Rotation - 2026-05-11
+
+Product/architecture slice:
+
+- Added `.symphony/bin/dearme-symphony rotate-logs` so the coordinator can
+  archive and truncate oversized launchd stdout/stderr logs without restarting
+  the live Symphony daemon or touching active worker workspaces.
+- Documented the command in `.symphony/README.md`. The default threshold is
+  100 MB and can be overridden with `--max-bytes N`.
+
+Verification:
+
+- `bash -n .symphony/bin/dearme-symphony`
+- `.symphony/bin/dearme-symphony rotate-logs --max-bytes 999999999`
+- `.symphony/bin/dearme-symphony status`
+
+## DearMe Proof Status Surface - 2026-05-11
+
+Product/architecture slice:
+
+- Added `pnpm dearme:status` as the coordinator/product status surface over
+  `pnpm dearme:proof -- --status`. It reuses the unified proof readiness map
+  and separates the local no-send proof from voice semantic calibration and
+  live provider proof.
+- The status output intentionally avoids repeating raw provider credential
+  variables. Detailed setup remains in `pnpm dearme:proof -- --check`, while
+  the status view answers the product question: what can be proven locally now,
+  what needs real external configuration, and which commands to run next.
+- The JSON status shape reports blocked targets plus missing counts, not raw
+  credential or secret variable names.
+- No provider dispatch behavior, live-send guard, scorer route, customer UI, or
+  setup dashboard was added.
+
+Verification:
+
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:proof -- --status --json`
+- `pnpm --silent dearme:proof -- --check`
+- `pnpm typecheck`
+
 ## Symphony Proof Bootstrap - 2026-05-11
 
 Product/architecture slice:

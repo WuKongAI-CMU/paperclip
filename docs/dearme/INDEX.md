@@ -157,7 +157,11 @@ iMessage through the configured OpenClaw gateway, SES or Resend email,
 LinkedIn partner endpoint + credential, Meta OAuth/Marketing API, or the
 remaining DM-177 live DNS/host deploy smoke. It is not another
 connector/settings surface.
-The internal `pnpm dearme:proof -- --check` command is the first local proof
+The internal `pnpm dearme:status` command is the compact product/coordinator
+answer for "can DearMe prove itself now?": local no-send proof, voice semantic
+proof, and live provider proof are separated so the coordinator does not have
+to read raw provider setup every time. The underlying
+`pnpm dearme:proof -- --check` command is still the first detailed local proof
 entrypoint for coordinators and Symphony workers. It composes the existing
 provider and voice smoke lanes, prints one ignored `.dearme-proof.env`
 bootstrap, and offers `pnpm dearme:proof -- --run-safe` for the no-send,

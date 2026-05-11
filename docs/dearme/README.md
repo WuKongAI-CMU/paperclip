@@ -50,6 +50,7 @@ If anything in this folder contradicts `INDEX.md`, `INDEX.md` wins.
 - [`server/src/services/dearme-openclaw-gateway-dispatch.ts`](../../server/src/services/dearme-openclaw-gateway-dispatch.ts) + [`server/src/services/dearme-openclaw-gateway-dispatch-config.ts`](../../server/src/services/dearme-openclaw-gateway-dispatch-config.ts) — OpenClaw gateway bridge used by `send_telegram_message` / `send_imessage` and by the provider smoke harness.
 - [`server/src/services/dearme-send-email-dispatch.ts`](../../server/src/services/dearme-send-email-dispatch.ts) — DM-174 Resend `send_email` dispatcher. It plugs into the same outbound wrapper as X, resolves the stored per-user credential through the server secret-provider registry, validates plain-text payload/expiry, calls Resend `POST /emails`, and maps provider auth failures back to reauth without customer-facing provider language.
 - [`scripts/dearme-proof.ts`](../../scripts/dearme-proof.ts) — single local proof entrypoint that composes the provider and voice smoke lanes without adding another product surface.
+- `pnpm dearme:status` — compact coordinator/product status over the same proof map: local no-send proof, voice semantic proof, and live provider proof.
 - [`scripts/dearme-provider-smoke.ts`](../../scripts/dearme-provider-smoke.ts) — internal operator proof harness for live provider readiness and smoke execution, including Telegram/iMessage OpenClaw gateway message targets.
 - [`scripts/dearme-voice-smoke.ts`](../../scripts/dearme-voice-smoke.ts) — internal operator proof harness for deterministic Voice Gate and opt-in profile-token semantic scorer calibration.
 - [`packages/db/src/schema/opportunities.ts`](../../packages/db/src/schema/opportunities.ts) — opportunities lifecycle (DM-141).
@@ -58,9 +59,13 @@ If anything in this folder contradicts `INDEX.md`, `INDEX.md` wins.
 
 These are not stale, but they are not the load-bearing docs. Use them when researching a specific decision: `POLSIA-NAIVE-MECHANISMS-DEEP-DIVE.md`, `POLSIA-NAIVE-PM-ANALYSIS.md`, `POLSIA-NAIVE-COMPARISON.md`, `POLSIA-NAIVE-REUSE-PLAN.md`, `POLSIA-MARKETING-PACKAGING-GUIDE.md`, `LINDY-ASSISTANT-REUSE-PLAN.md`, `ACTION-GRAPH-ARCHITECTURE.md`, `INTEGRATED-ARCHITECTURE.md`, `AGENCY-AGENTS-REFERENCE.md`, `BUILD-STATE.md`, `BASELINE-SPINE-MANIFEST.md`, `CODE-PROVENANCE-FACT-CHECK.md`, `2026-05-09-WRAP-UP-RETROSPECTIVE.md`.
 
+## Governance
+
+- [`AUTOMATION-RELIABILITY-COST-POLICY.md`](AUTOMATION-RELIABILITY-COST-POLICY.md) — current cost, approval, retry, and stoppability boundary for autonomous work.
+
 ## Superseded (do not follow as guidance)
 
-Banner-marked at the top of each file: `BACKLOG.md`, `BACKLOG-PART-2.md`, `COMPARISON-FINAL.md`, `POLSIA-VS-DEARME.md`, `POLSIA-VS-DEARME-PART-2.md`, `V3-ARCHITECTURE*.md`, `V4-ARCHITECTURE*.md`, `ARCHITECTURE-PART-2.md`, `ARCHITECTURE-PART-3.md`, `PRODUCT-SPEC*.md`, `PAPERCLIP-EVALUATION.md`, `WEB-UI-REUSE-ARCHITECTURE.md`, `WORKTREE-INTEGRATION-PLAN.md`, `AUTOMATION-RELIABILITY-COST-POLICY.md`.
+Banner-marked at the top of each file: `BACKLOG.md`, `BACKLOG-PART-2.md`, `COMPARISON-FINAL.md`, `POLSIA-VS-DEARME.md`, `POLSIA-VS-DEARME-PART-2.md`, `V3-ARCHITECTURE*.md`, `V4-ARCHITECTURE*.md`, `ARCHITECTURE-PART-2.md`, `ARCHITECTURE-PART-3.md`, `PRODUCT-SPEC*.md`, `PAPERCLIP-EVALUATION.md`, `WEB-UI-REUSE-ARCHITECTURE.md`, `WORKTREE-INTEGRATION-PLAN.md`.
 
 ## Run locally
 

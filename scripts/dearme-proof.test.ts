@@ -7,10 +7,12 @@ import {
   dearMeProofEnvTemplate,
   dearMeProofOperatorCommands,
   formatDearMeProofReadiness,
+  formatDearMeProofStatus,
   inspectDearMeProofReadiness,
   loadDearMeProofEnv,
   parseDearMeProofArgs,
   runDearMeProofSafe,
+  summarizeDearMeProofStatus,
 } from "./dearme-proof.ts";
 
 const now = () => new Date("2026-05-11T12:00:00.000Z");
@@ -62,12 +64,58 @@ test("DearMe proof readiness can scope to one lane", () => {
 test("DearMe proof parses lane aliases and env files", () => {
   assert.equal(parseDearMeProofArgs(["--lane", "providers"]).lane, "provider");
   assert.equal(parseDearMeProofArgs(["voice-gate"]).lane, "voice");
+  assert.equal(parseDearMeProofArgs(["--status"]).status, true);
   assert.equal(parseDearMeProofArgs(["--safe", "--json"]).runSafe, true);
   assert.deepEqual(
     parseDearMeProofArgs(["--env-file", ".one.env", "--env-file=.two.env"]).envFiles,
     [".one.env", ".two.env"],
   );
   assert.equal(parseDearMeProofArgs(["--print-env-template"]).printEnvTemplate, true);
+});
+
+test("DearMe proof status separates local proof from live provider setup", () => {
+  const status = summarizeDearMeProofStatus(inspectDearMeProofReadiness({}));
+  const formatted = formatDearMeProofStatus(status).join("\n");
+  const local = status.sections.find((section) => section.key === "local_safe_proof");
+  const semantic = status.sections.find((section) => section.key === "voice_semantic_proof");
+  const live = status.sections.find((section) => section.key === "live_provider_proof");
+
+  assert.equal(local?.ready, true);
+  assert.equal(semantic?.ready, false);
+  assert.equal(live?.ready, false);
+  assert.deepEqual(live?.blockedTargets.map((item) => item.target), [
+    "deploy_site_production",
+    "linkedin_dm",
+    "telegram_message",
+    "imessage_message",
+    "meta_campaign",
+  ]);
+  assert.match(formatted, /DearMe product proof status/);
+  assert.match(formatted, /Local no-send proof: ready/);
+  assert.match(formatted, /Voice semantic proof: blocked/);
+  assert.match(formatted, /Live provider proof: blocked/);
+  assert.match(formatted, /pnpm --silent dearme:proof -- --env-file \.dearme-proof\.env --run-safe/);
+  assert.doesNotMatch(formatted, /OPENCLAW_GATEWAY_URL/);
+  assert.doesNotMatch(formatted, /DEARME_LINKEDIN_DM_CREDENTIAL_JSON/);
+  assert.equal(JSON.stringify(status).includes("OPENCLAW_GATEWAY_URL"), false);
+  assert.equal(JSON.stringify(status).includes("DEARME_LINKEDIN_DM_CREDENTIAL_JSON"), false);
+  assert.equal(live?.blockedTargets.every((item) => item.missingCount > 0), true);
+});
+
+test("DearMe proof status can be lane scoped", () => {
+  const status = summarizeDearMeProofStatus(
+    inspectDearMeProofReadiness({ DEARME_VOICE_SEMANTIC_SCORER: "profile-token" }, "voice"),
+    "voice",
+  );
+
+  assert.deepEqual(status.sections.map((section) => section.key), [
+    "local_safe_proof",
+    "voice_semantic_proof",
+  ]);
+  assert.equal(status.sections.every((section) => section.ready), true);
+  assert.equal(status.commands.printEnvTemplate, "pnpm --silent dearme:proof -- --print-env-template --lane voice > .dearme-proof.env");
+  assert.equal(status.commands.runSafe, "pnpm --silent dearme:proof -- --env-file .dearme-proof.env --run-safe --lane voice");
+  assert.equal(status.commands.check, "pnpm --silent dearme:proof -- --env-file .dearme-proof.env --check --lane voice");
 });
 
 test("DearMe proof env template is a single local file bootstrap", () => {

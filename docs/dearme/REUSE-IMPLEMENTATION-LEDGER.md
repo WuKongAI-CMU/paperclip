@@ -15,6 +15,11 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `pnpm dearme:status` is now the compact coordinator/product status surface
+  over the unified proof map. It tells whether the local no-send proof is ready,
+  whether the local voice semantic scorer proof is configured, and whether live
+  provider proof is still blocked, without repeating raw provider credential
+  keys. Use `pnpm dearme:proof -- --check` for the detailed operator setup.
 - Symphony bootstrap now runs `pnpm --silent dearme:proof -- --check` between
   the Git preflight and worktree/handoff triage. Future workers should treat
   that output as the first provider/voice proof map, then use

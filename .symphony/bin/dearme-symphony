@@ -15,13 +15,18 @@ ACK_ARG="--i-understand-that-this-will-be-running-without-the-usual-guardrails"
 
 usage() {
   cat <<'USAGE'
-Usage: dearme-symphony <start|run|status|stop|smoke>
+Usage: dearme-symphony <start|run|status|stop|smoke|rotate-logs>
 
 Environment:
   LINEAR_API_KEY              Linear token; preferred for CI/temp shells.
   LINEAR_KEYCHAIN_SERVICE     macOS Keychain service name. Default: dearme-linear-api-key.
   SYMPHONY_PORT               Dashboard/API port for real Linear run. Default: 4100.
   SYMPHONY_SMOKE_PORT         Dashboard/API port for local smoke run. Default: 4101.
+
+Log maintenance:
+  dearme-symphony rotate-logs [--max-bytes N]
+                               Archive and truncate launchd logs over the limit.
+                               Default limit: 104857600 bytes.
 USAGE
 }
 
@@ -261,12 +266,72 @@ smoke() {
   return "$wait_status"
 }
 
+log_size_bytes() {
+  local file="$1"
+  wc -c <"$file" | tr -d '[:space:]'
+}
+
+rotate_one_log() {
+  local file="$1"
+  local max_bytes="$2"
+
+  if [[ ! -f "$file" ]]; then
+    printf 'Log missing, skipped: %s\n' "$file"
+    return 0
+  fi
+
+  local bytes
+  bytes="$(log_size_bytes "$file")"
+  if (( bytes <= max_bytes )); then
+    printf 'Log under limit, skipped: %s bytes=%s max=%s\n' "$file" "$bytes" "$max_bytes"
+    return 0
+  fi
+
+  local archive_dir archive_file stamp
+  archive_dir="$LOGS_ROOT/archive"
+  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  archive_file="$archive_dir/$(basename "$file").$stamp.gz"
+  mkdir -p "$archive_dir"
+
+  gzip -c "$file" >"$archive_file"
+  : >"$file"
+  printf 'Rotated log: %s bytes=%s archive=%s\n' "$file" "$bytes" "$archive_file"
+}
+
+rotate_logs() {
+  ensure_runtime
+
+  local max_bytes=104857600
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --max-bytes)
+        [[ $# -ge 2 ]] || fail "--max-bytes requires a value"
+        max_bytes="$2"
+        shift 2
+        ;;
+      --max-bytes=*)
+        max_bytes="${1#--max-bytes=}"
+        shift
+        ;;
+      *)
+        fail "unknown rotate-logs argument: $1"
+        ;;
+    esac
+  done
+
+  [[ "$max_bytes" =~ ^[0-9]+$ ]] || fail "--max-bytes must be a non-negative integer"
+
+  rotate_one_log "$LOGS_ROOT/launchd.out.log" "$max_bytes"
+  rotate_one_log "$LOGS_ROOT/launchd.err.log" "$max_bytes"
+}
+
 case "${1:-}" in
   start) start ;;
   run) run ;;
   status) status ;;
   stop) stop ;;
   smoke) smoke ;;
+  rotate-logs) shift; rotate_logs "$@" ;;
   -h|--help|help) usage ;;
   *) usage; exit 64 ;;
 esac

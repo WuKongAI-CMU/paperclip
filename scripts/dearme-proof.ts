@@ -28,6 +28,7 @@ export interface DearMeProofArgs {
   help: boolean;
   json: boolean;
   check: boolean;
+  status: boolean;
   printEnvTemplate: boolean;
   runSafe: boolean;
   lane: DearMeProofLane;
@@ -46,6 +47,32 @@ export type DearMeProofLaneReadiness =
 
 export interface DearMeProofReadiness {
   lanes: DearMeProofLaneReadiness[];
+}
+
+export interface DearMeProofStatusBlocker {
+  lane: Exclude<DearMeProofLane, "all">;
+  target: string;
+  missingCount: number;
+  liveConfirmationRequired?: boolean;
+}
+
+export interface DearMeProofStatusSection {
+  key: "local_safe_proof" | "voice_semantic_proof" | "live_provider_proof";
+  label: string;
+  ready: boolean;
+  description: string;
+  targets: string[];
+  blockedTargets: DearMeProofStatusBlocker[];
+}
+
+export interface DearMeProofStatus {
+  lane: DearMeProofLane;
+  sections: DearMeProofStatusSection[];
+  commands: {
+    printEnvTemplate: string;
+    runSafe: string;
+    check: string;
+  };
 }
 
 export type DearMeProofSafeLaneResult =
@@ -100,6 +127,7 @@ export function parseDearMeProofArgs(argv: readonly string[]): DearMeProofArgs {
     help: false,
     json: false,
     check: false,
+    status: false,
     printEnvTemplate: false,
     runSafe: false,
     lane: "all",
@@ -115,6 +143,8 @@ export function parseDearMeProofArgs(argv: readonly string[]): DearMeProofArgs {
       args.json = true;
     } else if (arg === "--check") {
       args.check = true;
+    } else if (arg === "--status") {
+      args.status = true;
     } else if (arg === "--print-env-template") {
       args.printEnvTemplate = true;
     } else if (arg === "--run-safe" || arg === "--safe") {
@@ -185,6 +215,10 @@ function laneFlag(lane: DearMeProofLane) {
   return lane === "all" ? "" : ` --lane ${lane}`;
 }
 
+function proofCommand(action: "--check" | "--run-safe", lane: DearMeProofLane) {
+  return `pnpm --silent dearme:proof -- --env-file ${PROOF_ENV_FILE} ${action}${laneFlag(lane)}`;
+}
+
 function replaceChildEnvFile(command: string) {
   return command
     .replaceAll(".dearme-provider-smoke.env", PROOF_ENV_FILE)
@@ -228,6 +262,134 @@ export function dearMeProofOperatorCommands(
   }
 
   return commands;
+}
+
+function providerLane(readiness: DearMeProofReadiness) {
+  return readiness.lanes.find((lane) => lane.lane === "provider");
+}
+
+function voiceLane(readiness: DearMeProofReadiness) {
+  return readiness.lanes.find((lane) => lane.lane === "voice");
+}
+
+function blockedProviderTargets(
+  readiness: readonly DearMeProviderSmokeReadiness[],
+  targets: readonly DearMeProviderSmokeReadiness["target"][],
+): DearMeProofStatusBlocker[] {
+  return readiness
+    .filter((item) => targets.includes(item.target) && !item.ready)
+    .map((item) => ({
+      lane: "provider" as const,
+      target: item.target,
+      missingCount: item.missing.length,
+      liveConfirmationRequired: item.liveConfirmationRequired,
+    }));
+}
+
+function blockedVoiceTargets(
+  readiness: readonly DearMeVoiceSmokeReadiness[],
+  targets: readonly DearMeVoiceSmokeReadiness["target"][],
+): DearMeProofStatusBlocker[] {
+  return readiness
+    .filter((item) => targets.includes(item.target) && !item.ready)
+    .map((item) => ({
+      lane: "voice" as const,
+      target: item.target,
+      missingCount: item.missing.length,
+    }));
+}
+
+export function summarizeDearMeProofStatus(
+  readiness: DearMeProofReadiness,
+  lane: DearMeProofLane = "all",
+): DearMeProofStatus {
+  const provider = providerLane(readiness);
+  const voice = voiceLane(readiness);
+  const sections: DearMeProofStatusSection[] = [];
+
+  const localTargets: string[] = [];
+  const localBlocked: DearMeProofStatusBlocker[] = [];
+  if (provider) {
+    localTargets.push("deploy_site_preview");
+    localBlocked.push(...blockedProviderTargets(provider.readiness, ["deploy_site_preview"]));
+  }
+  if (voice) {
+    localTargets.push("deterministic_gate");
+    localBlocked.push(...blockedVoiceTargets(voice.readiness, ["deterministic_gate"]));
+  }
+  if (localTargets.length > 0) {
+    sections.push({
+      key: "local_safe_proof",
+      label: "Local no-send proof",
+      ready: localBlocked.length === 0,
+      description: "Runs without sends, production deploy, spend, or live model calls.",
+      targets: localTargets,
+      blockedTargets: localBlocked,
+    });
+  }
+
+  if (voice) {
+    const targets = ["profile_token_semantic"] as const;
+    const blockedTargets = blockedVoiceTargets(voice.readiness, targets);
+    sections.push({
+      key: "voice_semantic_proof",
+      label: "Voice semantic proof",
+      ready: blockedTargets.length === 0,
+      description: "Uses the local profile-token scorer seam until a live embedding/model scorer is plugged in.",
+      targets: [...targets],
+      blockedTargets,
+    });
+  }
+
+  if (provider) {
+    const targets = [
+      "deploy_site_production",
+      "linkedin_dm",
+      "telegram_message",
+      "imessage_message",
+      "meta_campaign",
+    ] as const;
+    const blockedTargets = blockedProviderTargets(provider.readiness, targets);
+    sections.push({
+      key: "live_provider_proof",
+      label: "Live provider proof",
+      ready: blockedTargets.length === 0,
+      description: "Requires the real production host and external channel credentials before live proof.",
+      targets: [...targets],
+      blockedTargets,
+    });
+  }
+
+  return {
+    lane,
+    sections,
+    commands: {
+      printEnvTemplate: `pnpm --silent dearme:proof -- --print-env-template${laneFlag(lane)} > ${PROOF_ENV_FILE}`,
+      runSafe: proofCommand("--run-safe", lane),
+      check: proofCommand("--check", lane),
+    },
+  };
+}
+
+function formatBlockedTargets(blockedTargets: readonly DearMeProofStatusBlocker[]) {
+  if (blockedTargets.length === 0) return "";
+  return ` Blocked targets: ${blockedTargets.map((item) => item.target).join(", ")}.`;
+}
+
+export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
+  const lines = ["DearMe product proof status"];
+  for (const section of status.sections) {
+    lines.push(
+      `- ${section.label}: ${section.ready ? "ready" : "blocked"}. ${section.description}${formatBlockedTargets(section.blockedTargets)}`,
+    );
+  }
+
+  lines.push("");
+  lines.push("Commands:");
+  lines.push(`- ${status.commands.printEnvTemplate}`);
+  lines.push(`- ${status.commands.runSafe}`);
+  lines.push(`- ${status.commands.check}`);
+  return lines;
 }
 
 function proofTemplateSection(title: string, template: string) {
@@ -401,7 +563,7 @@ function formatDearMeProofSafeResult(result: DearMeProofSafeResult): string[] {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm dearme:proof -- [--check] [--run-safe] [--lane <lane>] [--json] [--env-file <path>]
+  console.log(`Usage: pnpm dearme:proof -- [--status] [--check] [--run-safe] [--lane <lane>] [--json] [--env-file <path>]
 
 Lanes:
   provider    Provider/dispatch readiness and safe preview proof.
@@ -410,12 +572,14 @@ Lanes:
 
 Setup:
   pnpm --silent dearme:proof -- --print-env-template > ${PROOF_ENV_FILE}
+  pnpm --silent dearme:proof -- --env-file ${PROOF_ENV_FILE} --status
   pnpm --silent dearme:proof -- --env-file ${PROOF_ENV_FILE} --check
   pnpm --silent dearme:proof -- --env-file ${PROOF_ENV_FILE} --run-safe
 
-Default with no action is --check. The safe run does not send, deploy to
-production, spend, or call a live model; live provider actions stay behind
-dearme:provider-smoke --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.`);
+Default with no action is --check. Use --status for a product/coordinator
+summary. The safe run does not send, deploy to production, spend, or call a
+live model; live provider actions stay behind dearme:provider-smoke --live and
+DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.`);
 }
 
 async function main() {
@@ -449,6 +613,18 @@ async function main() {
     }
 
     const readiness = inspectDearMeProofReadiness(env, parsed.lane);
+    if (parsed.status) {
+      const status = summarizeDearMeProofStatus(readiness, parsed.lane);
+      if (parsed.json) {
+        console.log(JSON.stringify({ status }, null, 2));
+      } else {
+        for (const line of formatDearMeProofStatus(status)) {
+          console.log(line);
+        }
+      }
+      return;
+    }
+
     if (parsed.json) {
       console.log(JSON.stringify({ readiness }, null, 2));
     } else {

@@ -53,12 +53,17 @@ Runtime commands:
 /Users/peter/dearme/.symphony/bin/dearme-symphony start
 /Users/peter/dearme/.symphony/bin/dearme-symphony status
 /Users/peter/dearme/.symphony/bin/dearme-symphony stop
+/Users/peter/dearme/.symphony/bin/dearme-symphony rotate-logs
 ```
 
 `smoke` uses `WORKFLOW.local-smoke.md` to verify local boot without Linear.
 `start` reads `LINEAR_API_KEY` from the environment first, then from the macOS
 Keychain service `dearme-linear-api-key`. The real dashboard/API defaults to
 `http://127.0.0.1:4100/`.
+
+`rotate-logs` archives and truncates oversized launchd stdout/stderr logs
+without restarting the daemon. Use `--max-bytes N` to override the default
+100 MB threshold.
 
 Only assign real worker tickets to Peter in Linear. The default onboarding
 Linear issues remain unassigned and are filtered out by `assignee: me`.
