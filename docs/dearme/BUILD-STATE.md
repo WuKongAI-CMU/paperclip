@@ -2,6 +2,33 @@
 
 Date: 2026-05-11
 
+## DEA-52 DM-172B Live `post_x` Dispatch Path - 2026-05-11
+
+Product/architecture slice:
+
+- Added a narrow server-side X publish dispatcher at
+  `server/src/services/dearme-x-post-dispatch.ts`.
+- Approved `post_x` launch handoffs now default to this direct dispatcher after
+  the existing wrapper has completed voice-gate, approval, and active
+  `channel_connections` lookup. Other outbound tools continue using the
+  existing gateway dispatch map.
+- The dispatcher resolves the opaque per-user X credential through the server
+  secret-provider registry, validates provider, access token, expiry, and
+  `tweet.write` scope, validates tweet text/media payloads, then calls X API
+  v2 `POST /2/tweets`.
+- X `401`/`403` responses map back to the wrapper's reauth path without
+  exposing access tokens. Successful responses map to the existing delivered
+  receipt shape with `externalId` and a stable `https://x.com/i/web/status/*`
+  URL.
+- This closes the approved-X terminal publish seam in mocked tests. It still
+  has not performed a live external post because no real X credential was used
+  in this verification pass.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-x-post-dispatch.test.ts server/src/services/dearme-approved-launch-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts server/src/services/dearme-x-oauth-connection.test.ts server/src/__tests__/dearme-channel-connections-routes.test.ts server/src/services/dearme-channel-connections.test.ts --maxWorkers=1`
+  passed: 6 files, 38 tests.
+
 ## DEA-51 DM-173B X OAuth Start + Exchange Path - 2026-05-11
 
 Product/architecture slice:
@@ -24,9 +51,9 @@ Product/architecture slice:
 - Return URLs are constrained to the configured DearMe callback origin so the
   browser path can return to Workbench without becoming an open redirect.
 - The existing `POST /v1/channels/:companyId/x/callback` remains the test/API
-  seam around the same persistence path. Live X posting is still separate
-  dispatch work; this slice does not add a generic connector dashboard or a
-  shared account path.
+  seam around the same persistence path. DM-172B now consumes this active row
+  through the dedicated `post_x` dispatcher; this slice does not add a generic
+  connector dashboard or a shared account path.
 - OAuth state is currently in-memory for the private-beta route shape; a
   multi-instance deployment should move state into a durable session/secret
   substrate before opening this broadly.

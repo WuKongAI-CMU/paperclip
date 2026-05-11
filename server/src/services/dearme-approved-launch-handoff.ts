@@ -18,6 +18,7 @@ import {
   createDearMeOpenClawGatewayDispatchMap,
   type DearMeOpenClawGatewayDispatchConfig,
 } from "./dearme-openclaw-gateway-dispatch.js";
+import { createDearMeXPostDispatch } from "./dearme-x-post-dispatch.js";
 import { dearMeApprovalResolverService } from "./dearme-approval-resolver.js";
 import { dearMeChannelConnectionsService } from "./dearme-channel-connections.js";
 import {
@@ -174,6 +175,7 @@ export function defaultDearMeApprovedLaunchHandoffService(
   const defaultGatewayDispatch = createDearMeOpenClawGatewayDispatchMap(
     dearMeOpenClawGatewayDispatchConfig,
   );
+  const defaultXPostDispatch = createDearMeXPostDispatch();
   const wrapper = dearMeOutboundToolWrapper({
     db,
     voiceGate: dearMeVoiceGateService(),
@@ -183,6 +185,7 @@ export function defaultDearMeApprovedLaunchHandoffService(
     sseBus,
     channelDispatch: {
       ...defaultGatewayDispatch,
+      post_x: defaultXPostDispatch,
       ...channelDispatch,
     },
   });

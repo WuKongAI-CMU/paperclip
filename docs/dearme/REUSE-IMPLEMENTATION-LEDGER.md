@@ -2980,25 +2980,23 @@ DM-S06 shipped the typed contracts. DM-S07 wires them into the running cloud as 
 | `server/src/routes/dearme.ts` | DM-179 | `GET /api/dearme/companies/:companyId/events` enforces company access, emits a `sync` workbench snapshot, then streams scoped `dearme-sse-bus` events as SSE frames. |
 | `server/src/services/dearme-channel-connections.ts` | DM-S07 / DM-173A / DM-175 | Drizzle service over `channel_connections`. `getActive(companyId, userId, channel)`, `markUsed(id)`, `markNeedsReauth(id, error)`, `upsertActive(input)`. Encrypted blob is opaque here; per-channel dispatch code decrypts on dispatch. |
 | `server/src/services/dearme-x-oauth-connection.ts` | DEA-51 / DM-173B | Config-gated X OAuth start + PKCE callback exchange service. Generates authorize URLs, keeps code verifier server-side, exchanges callback codes for tokens, loads the X profile, encrypts credentials, and returns the active `x` connection payload for the shared route/persistence seam. Accepts both the `DEARME_X_OAUTH_*` env names and the shorter `DEARME_X_*` aliases used by worker tickets, while constraining browser return URLs to the configured DearMe callback origin. |
+| `server/src/services/dearme-x-post-dispatch.ts` | DEA-52 / DM-172B | Default approved `post_x` dispatcher. Resolves the opaque X credential through the server secret-provider registry, validates provider/access token/expiry/`tweet.write`, validates the tweet payload, calls X API v2 `POST /2/tweets`, maps delivered ids to `https://x.com/i/web/status/*`, and returns provider auth failures as wrapper reauth errors without exposing access tokens. |
 | `server/src/services/dearme-voice-gate.ts` | DM-S07 / DM-170 | `dearMeVoiceGateService({ scorer? })`. Default scorer is the deterministic stub: 5 negative phrase rules (`ai_disclaimer`, `hype_word`, `stale_template`, `press_release_voice`, `punctuation_storm`), per-artifact length floor/ceiling, `concrete_evidence` reward. The DM-170 route now exposes this scorer; the real fingerprint model lands by replacing `scorer`. |
 | `server/src/routes/dearme-voice-gate.ts` | DM-170 | Root `POST /v1/voice/score` route over the shared proxy contract. Requires `Authorization: Bearer dm_sk_*`, validates `VoiceGateScoreRequest`, and returns `VoiceGateScoreResponse` from the existing cloud-side voice gate service. |
 | `server/src/services/dearme-work-loop.ts` | DM-S07 / DM-179 / DM-180 | `transition({ companyId, issueId, from, to, role, reason, openclawSessionId?, agentId? })` — validates via `canTransitionWorkLoop`, mirrors the new 8-state into `issues.status`, writes `activity_log`, emits `work_loop_transition` SSE. Plus `legalNext(from)`. |
 | `server/src/services/dearme-approval-resolver.ts` | DM-S07 / DM-180 | Wraps the pure `resolveApproval` with two Drizzle reads (past approved count for the (channel, gate) pair, today's `cost_events` total) + writes the decision into `approvals`/`issue_approvals` with user/agent attribution + emits `approval_pending` or `approval_resolved`. DM-180 exposes this through the company-scoped DearMe route after normalizing issue identifiers. Stores gate in `approvals.type = "dearme.gate.<gate>"`. |
 | `server/src/services/dearme-outbound-tool-wrapper.ts` | DM-S07 / DM-172 / DM-174 / DM-176 / DM-177 / DM-178 | **The lynchpin.** `callOutbound(input)` runs: voice-gate (if required) → approval-resolver → channel_connections lookup → injected per-tool `ChannelDispatch` → audit (`cost_events` insert if paid + `channel_action_fired` SSE + work-loop `deliver → audit` transition). Returns one of `{delivered, pending, needs_oauth, rejected, errored}` matching `OutboundToolResult`. Per-channel impls (DM-172/174/176/177/178) plug in as `ChannelDispatch` entries, never touching the wrapper. |
-| `server/src/services/dearme-outbound-tool-wrapper.test.ts` | DM-S07 | 9 tests covering happy path, rejected gate (work-loop `gate → review`), pending (no dispatch), missing OAuth, auth-error → `markNeedsReauth`, missing voice-gate input, voice-gate-skipped tools (`deploy_site`), `cost_events` write on `paid=true`, missing dispatcher. |
+| `server/src/services/dearme-outbound-tool-wrapper.test.ts` | DM-S07 | 12 tests covering happy path, rejected gate (work-loop `gate → review`), pending (no dispatch), missing OAuth, auth-error → `markNeedsReauth`, missing voice-gate input, voice-gate-skipped tools (`deploy_site`), `cost_events` write on `paid=true`, missing dispatcher, and approved launch delivery edges. |
+| `server/src/services/dearme-x-post-dispatch.test.ts` | DEA-52 / DM-172B | Tests prove local encrypted credential resolution, successful X request construction, delivered id/url mapping, provider auth failure → reauth without token exposure, expired/underscoped credentials fail before posting, invalid or malformed tweet payloads fail before credential resolution, and network failures stay inside the dispatch result. |
 | `server/src/services/dearme-voice-gate.test.ts` | DM-S07 | 6 tests pinning the stub scorer's deterministic rules. |
 | `server/src/services/dearme-sse-bus.test.ts` | DM-S07 | 5 tests on cross-tenant isolation, listener fault containment, missing-companyId guard, unsubscribe. |
 
-After this slice, every per-channel impl ticket is a 30–60 line file plus a `ChannelDispatch` registration:
+After this slice, `post_x` is the first real per-channel implementation and
+the remaining channel tickets keep the same small-file shape:
 
 ```ts
-// DM-172 (post_x impl) — illustrative shape
 const channelDispatch = {
-  post_x: async ({ encryptedCredential, payload }) => {
-    const { token } = await decryptOAuth(encryptedCredential);
-    const tweet = await xClient.postTweet(token, payload as PostXInput);
-    return { kind: "delivered", externalId: tweet.id, externalUrl: tweet.url, paid: false };
-  },
+  post_x: createDearMeXPostDispatch(),
   // ...send_email, deploy_site, etc
 };
 ```
@@ -3036,9 +3034,9 @@ This commit unblocks all the next-up tickets that wire each substrate to the oth
 |---|---|
 | DM-170 | Cloud `/v1/voice/score` endpoint — Express route is shipped over the deterministic scorer; trained fingerprint model and persisted key issuer remain |
 | DM-171 | OpenClaw plugin install + onboarding bridge |
-| DM-172 | `post_x` impl using the typed envelope |
+| DM-172 | `post_x` impl using the typed envelope. Server dispatcher shipped; live external smoke remains credential-dependent. |
 | DM-173A | Per-user X OAuth callback persistence proof writing into `channel_connections`. |
-| DM-173B | Approved X next-step fallback now returns a DearMe-owned `oauthStartUrl`; `GET /v1/channels/:companyId/x/start` starts the PKCE flow and stays 503 when OAuth config is absent, and the browser callback exchanges the X code, loads the profile, encrypts credentials, and writes an active `x` row when config is present. Live X posting remains dispatch work. |
+| DM-173B | Approved X next-step fallback now returns a DearMe-owned `oauthStartUrl`; `GET /v1/channels/:companyId/x/start` starts the PKCE flow and stays 503 when OAuth config is absent, and the browser callback exchanges the X code, loads the profile, encrypts credentials, and writes an active `x` row when config is present. DM-172B consumes that active row for approved X posting. |
 | DM-174 | `send_email` via Resend/SES (avoids Gmail CASA cost) |
 | DM-176/177/178 | LinkedIn DM / deploy_site / create_meta_campaign impls |
 | DM-179 | DearMe live workbench SSE route — shipped as `GET /api/dearme/companies/:companyId/events`; future work can add upstream OpenClaw passthrough events behind the same stream |

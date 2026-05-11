@@ -2,7 +2,7 @@
 
 > **Canonical, runtime-affecting.** This document supersedes any older "DearMe is one stack" framing. DearMe is the integration of three substrates — OpenClaw at the edge, Naive/Paperclip in the cloud, Polsia choreography across both. Below is the contract between all three.
 >
-> Last updated: 2026-05-11 (DM-S06 + DM-179/180/181/182 + DEA-51 X OAuth connection proof).
+> Last updated: 2026-05-11 (DM-S06 + DM-179/180/181/182 + DEA-51 X OAuth connection proof + DM-172B X dispatch).
 
 ---
 
@@ -309,9 +309,9 @@ The integration only works if these glue artifacts ship:
 |---|---|---|
 | DM-170 | Cloud `/v1/voice/score` endpoint | **Route shipped.** The Express contract route now reuses the DM-S07 stub scorer; next impl swaps in the trained fingerprint model and persisted key issuer. |
 | DM-171 | OpenClaw plugin install flow + onboarding bridge | The bridge is already surfaced in the existing first-run path; keep the install proof and customer-facing first-run language aligned. |
-| DM-172 | `post_x` outbound tool — `ChannelDispatch` impl | First proof the work loop closes end-to-end. Wrapper already runs gate/approval/audit; this ticket proves the approved X dispatch contract and active-connection readiness, not live X API publishing yet. |
+| DM-172 | `post_x` outbound tool — `ChannelDispatch` impl | **Server dispatcher shipped.** Wrapper runs gate/approval/OAuth/audit; `dearme-x-post-dispatch.ts` decrypts the stored X credential, validates expiry/scope/payload, posts to X API v2, and maps auth failures back to reauth. Live external posting still needs a real credential smoke. |
 | DM-173A | Per-user X OAuth callback persistence proof → writes `channel_connections` | Route + Drizzle upsert shipped. |
-| DM-173B | X OAuth start URL + PKCE callback exchange | Wrapper now returns a DearMe-owned `oauthStartUrl`; `GET /v1/channels/:companyId/x/start` builds the X authorize URL when configured and stays fail-closed when config is absent. The browser callback exchanges the code, loads the profile, encrypts credentials, and writes an active `x` row with same-origin return handling. Live X posting remains dispatch work. |
+| DM-173B | X OAuth start URL + PKCE callback exchange | Wrapper now returns a DearMe-owned `oauthStartUrl`; `GET /v1/channels/:companyId/x/start` builds the X authorize URL when configured and stays fail-closed when config is absent. The browser callback exchanges the code, loads the profile, encrypts credentials, and writes an active `x` row with same-origin return handling. DM-172B consumes that row for approved X posting. |
 | DM-174 | `send_email` `ChannelDispatch` (Resend/SES) | Email outreach without Gmail CASA cost. |
 | DM-175 | `channel_connections` Drizzle schema | **Shipped DM-S06.** ✅ |
 | DM-176 | `send_linkedin_dm` `ChannelDispatch` | LinkedIn outreach. |
@@ -336,27 +336,22 @@ slot and never re-implement the gate / approval / audit pipeline.
 | SSE bus | `dearme-sse-bus.ts` | Process-local typed `EventEmitter`; cross-tenant scoped; backs the DearMe live workbench SSE route. |
 | SSE route | `server/src/routes/dearme.ts` | `GET /api/dearme/companies/:companyId/events`; enforces company access, emits an initial `sync` workbench snapshot, then forwards typed runtime events by company. |
 | Channel connections | `dearme-channel-connections.ts` | Drizzle queries over `channel_connections`. `getActive` / `markUsed` / `markNeedsReauth` / `upsertActive`. |
-| X connection routes | `server/src/routes/dearme-channel-connections.ts` + `server/src/services/dearme-x-oauth-connection.ts` | `GET /v1/channels/:companyId/x/start` redirects to X with PKCE; `GET /v1/channels/:companyId/x/callback` consumes server-side state, exchanges the X code, loads the profile, encrypts credentials, and persists an active per-user `x` row. `POST /v1/channels/:companyId/x/callback` remains the test/API seam around the same persistence path. Live X posting remains dispatch work. |
+| X connection routes | `server/src/routes/dearme-channel-connections.ts` + `server/src/services/dearme-x-oauth-connection.ts` | `GET /v1/channels/:companyId/x/start` redirects to X with PKCE; `GET /v1/channels/:companyId/x/callback` consumes server-side state, exchanges the X code, loads the profile, encrypts credentials, and persists an active per-user `x` row. `POST /v1/channels/:companyId/x/callback` remains the test/API seam around the same persistence path. |
+| X post dispatch | `server/src/services/dearme-x-post-dispatch.ts` | Default `post_x` dispatcher for approved launch handoffs. It consumes the existing opaque credential, validates `tweet.write`, posts to X API v2, maps delivered tweet ids to stable public URLs, and maps provider auth failures to reauth. |
 | Voice gate | `dearme-voice-gate.ts` + `routes/dearme-voice-gate.ts` | `scoreVoice(req)` plus root `POST /v1/voice/score`. Default = deterministic stub (5 phrase rules, length floor/ceiling, evidence reward). Next DM-170 impl swaps in the trained model. |
 | Work loop | `dearme-work-loop.ts` | `transition(...)` validates via `canTransitionWorkLoop`, mirrors state into `issues.status`, writes `activity_log`, emits `work_loop_transition` SSE. |
 | Approval resolver | `dearme-approval-resolver.ts` + `server/src/routes/dearme.ts` | Wraps `resolveApproval` with past-approved + daily-spend lookups; writes `approvals` + `issue_approvals` with actor attribution; emits approval SSE; exposed by the DM-180 company-scoped resolve route. |
 | **Outbound tool wrapper** | `dearme-outbound-tool-wrapper.ts` | The lynchpin. `callOutbound()` runs voice-gate → approval → OAuth → injected `ChannelDispatch` → audit (cost_event + SSE + work-loop transition). |
 
-Adding a new outbound channel after DM-S07 is a `ChannelDispatch` registration:
+Adding or replacing an outbound channel after DM-S07 is a `ChannelDispatch`
+registration. `post_x` now uses this exact slot:
 
 ```ts
-const channelDispatch = {
-  post_x: async ({ encryptedCredential, payload }) => {
-    const { token } = await decryptOAuth(encryptedCredential);
-    const tweet = await xClient.postTweet(token, payload as PostXInput);
-    return {
-      kind: "delivered",
-      externalId: tweet.id,
-      externalUrl: tweet.url,
-      paid: false,
-    };
-  },
-};
+channelDispatch: {
+  ...defaultGatewayDispatch,
+  post_x: createDearMeXPostDispatch(),
+  ...overrides,
+}
 ```
 
 The wrapper is the only place that owns ordering. Per-channel impls
