@@ -354,6 +354,7 @@ export function summarizeSymphonyHandoffs(handoffs) {
   const summary = {
     total: 0,
     byMode: {},
+    latestByMode: {},
     latestByIssue,
   };
 
@@ -378,6 +379,10 @@ export function summarizeSymphonyHandoffs(handoffs) {
         updatedAt: handoff.updatedAt,
       };
     }
+  }
+
+  for (const handoff of Object.values(latestByIssue)) {
+    summary.latestByMode[handoff.mode] = (summary.latestByMode[handoff.mode] ?? 0) + 1;
   }
 
   return summary;
@@ -723,6 +728,15 @@ function printHandoffSummary(summary) {
       `dirty_patch_handoff: ${summary.byMode.dirty_patch_handoff ?? 0}`,
       `no_file_changes: ${summary.byMode.no_file_changes ?? 0}`,
       `unreadable_summary: ${summary.byMode.unreadable_summary ?? 0}`,
+    ].join(" | "),
+  );
+
+  console.log(
+    [
+      `Latest handoffs by issue: ${Object.keys(summary.latestByIssue).length}`,
+      `committed_patch: ${summary.latestByMode.committed_patch ?? 0}`,
+      `dirty_patch_handoff: ${summary.latestByMode.dirty_patch_handoff ?? 0}`,
+      `no_file_changes: ${summary.latestByMode.no_file_changes ?? 0}`,
     ].join(" | "),
   );
 

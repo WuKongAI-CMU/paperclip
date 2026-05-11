@@ -28,7 +28,8 @@ When DearMe docs conflict, use this order:
 5. `POLSIA-NAIVE-MECHANISMS-DEEP-DIVE.md` (mechanism-by-mechanism donor reuse notes; use as the engineering reference after applying this provenance layer)
 6. `POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md` (reuse backlog that maps each donor mechanism to a DearMe path, ticket, and verification expectation)
 7. `POLSIA-NAIVE-COMPARISON.md` (architecture-layer comparison of donors)
-8. `POLSIA-NAIVE-REUSE-PLAN.md` (implementation-layer reuse plan, complemented by master plan above)
+8. `POLSIA-NAIVE-REUSE-PLAN.md` (historical implementation posture; use the
+   master plan, `INDEX.md`, and current runtime code for active tickets)
 9. `POLSIA-MARKETING-PACKAGING-GUIDE.md`
 10. Historical comparison, V3/V4 architecture, and backlog docs
 

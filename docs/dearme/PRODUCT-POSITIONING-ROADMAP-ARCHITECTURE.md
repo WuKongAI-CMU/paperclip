@@ -6,8 +6,13 @@
 Related packaging source:
 [`POLSIA-MARKETING-PACKAGING-GUIDE.md`](POLSIA-MARKETING-PACKAGING-GUIDE.md).
 
-Current integrated architecture:
-[`INTEGRATED-ARCHITECTURE.md`](INTEGRATED-ARCHITECTURE.md).
+Current architecture sources:
+[`INDEX.md`](INDEX.md),
+[`TRI-SUBSTRATE-ARCHITECTURE.md`](TRI-SUBSTRATE-ARCHITECTURE.md),
+[`OPENCLAW-INTEGRATION-ARCHITECTURE.md`](OPENCLAW-INTEGRATION-ARCHITECTURE.md),
+and [`PRODUCT-ARCHITECTURE.md`](PRODUCT-ARCHITECTURE.md). The older
+`INTEGRATED-ARCHITECTURE.md` file is reference/history, not the current
+implementation entrypoint.
 
 ## 1. Product Positioning
 

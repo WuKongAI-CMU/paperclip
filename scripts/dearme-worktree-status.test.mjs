@@ -537,10 +537,11 @@ test("collectSymphonyHandoffs summarizes latest handoff by issue", () => {
 
   try {
     writeFileSync(olderPath, JSON.stringify({
-      mode: "no_file_changes",
+      mode: "dirty_patch_handoff",
       issue: "DEA-60",
       head: "1111111111111111111111111111111111111111",
       changedFiles: [],
+      patchPath: "/tmp/DEA-60-dirty.patch",
     }));
     writeFileSync(newerPath, JSON.stringify({
       mode: "committed_patch",
@@ -579,8 +580,10 @@ test("collectSymphonyHandoffs summarizes latest handoff by issue", () => {
     const summary = summarizeSymphonyHandoffs(handoffs);
     assert.equal(summary.total, 4);
     assert.equal(summary.byMode.committed_patch, 1);
-    assert.equal(summary.byMode.dirty_patch_handoff, 1);
+    assert.equal(summary.byMode.dirty_patch_handoff, 2);
     assert.equal(summary.byMode.unreadable_summary, 1);
+    assert.equal(summary.latestByMode.committed_patch, 1);
+    assert.equal(summary.latestByMode.dirty_patch_handoff, 1);
     assert.equal(summary.latestByIssue["DEA-60"].mode, "committed_patch");
     assert.deepEqual(summary.latestByIssue["DEA-60"].changedFiles, [
       "scripts/dearme-provider-smoke.ts",

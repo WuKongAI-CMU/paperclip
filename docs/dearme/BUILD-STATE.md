@@ -2,6 +2,28 @@
 
 Date: 2026-05-11
 
+## Coordinator Handoff Signal Cleanup - 2026-05-11
+
+Product/architecture slice:
+
+- Updated the DearMe worktree/Symphony status summary to separate all historical
+  handoff artifacts from the latest handoff per issue. This keeps older
+  intermediate `dirty_patch_handoff` records from reading like active unmerged
+  work when a later committed handoff already superseded them.
+- Tightened canonical doc authority in the provenance and positioning docs:
+  `POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`, `INDEX.md`,
+  `TRI-SUBSTRATE-ARCHITECTURE.md`, `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, and
+  `PRODUCT-ARCHITECTURE.md` are the current implementation sources; older
+  `POLSIA-NAIVE-REUSE-PLAN.md` and `INTEGRATED-ARCHITECTURE.md` remain
+  reference/history.
+
+Verification:
+
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
+  reports `not_in_current: 0`. Historical handoffs still include 8
+  `dirty_patch_handoff` artifacts, but latest-by-issue dirty handoffs are now
+  reported separately.
+
 ## Symphony Prompt Entrypoint Alignment - 2026-05-11
 
 Product/architecture slice:

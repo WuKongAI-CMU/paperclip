@@ -15,6 +15,15 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- Coordinator status now separates all historical Symphony handoff artifacts
+  from the latest handoff per issue. Treat historical `dirty_patch_handoff`
+  records as audit trail when the same issue's latest handoff is a committed
+  patch; the latest-by-issue dirty count is the active concern signal.
+- Provenance and positioning docs now match the current entrypoint hierarchy:
+  `POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`, `INDEX.md`,
+  `TRI-SUBSTRATE-ARCHITECTURE.md`, `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, and
+  `PRODUCT-ARCHITECTURE.md` are current; `POLSIA-NAIVE-REUSE-PLAN.md` and
+  `INTEGRATED-ARCHITECTURE.md` are history/reference when they conflict.
 - `.symphony/WORKFLOW.md` now gives workers the same canonical entrypoint as
   `AGENTS.md`: `README.md`, `INDEX.md`, tri-substrate architecture, OpenClaw
   integration, product architecture, the code-reuse master plan, and targeted
