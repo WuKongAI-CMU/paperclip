@@ -177,6 +177,8 @@ const PROVIDER_SMOKE_BASE_COMMAND =
   `pnpm --silent dearme:provider-smoke -- --env-file ${PROVIDER_SMOKE_ENV_FILE}`;
 const LOCAL_TELEGRAM_SMOKE_BODY =
   "DearMe live proof smoke: private proof packet is reachable and OpenClaw Telegram delivery is being verified.";
+const DEFAULT_IMESSAGE_SMOKE_BODY =
+  "DearMe live proof smoke: private proof packet is ready and OpenClaw iMessage delivery is being verified.";
 
 function providerSmokeRunCommand(target: ProviderSmokeRunnableTarget): string {
   const command = `${PROVIDER_SMOKE_BASE_COMMAND} --target ${target}`;
@@ -485,10 +487,15 @@ function telegramSmokeDefaultsFromLocalOpenClaw(env: Env): Env {
 }
 
 function providerSmokeEnvWithLocalOpenClawDefaults(env: Env): Env {
-  return {
+  const resolvedEnv = {
     ...openClawGatewayDefaultsFromLocalConfig(env),
     ...telegramSmokeDefaultsFromLocalOpenClaw(env),
     ...env,
+  };
+  return {
+    ...resolvedEnv,
+    DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY:
+      nonEmpty(resolvedEnv.DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY) ?? DEFAULT_IMESSAGE_SMOKE_BODY,
   };
 }
 

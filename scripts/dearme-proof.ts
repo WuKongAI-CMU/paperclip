@@ -799,7 +799,7 @@ function liveProviderProofDescription(
     item.target === "deploy_site_production"
   );
   if (productionHostReady) {
-    return "Production host proof is ready; external channel credentials and smoke payloads are still required before live provider proof is complete.";
+    return "Production host proof is ready; external channel recipient and credential proof is still required before live provider proof is complete.";
   }
   return "Requires the real production host and external channel credentials before live proof.";
 }
@@ -929,7 +929,7 @@ function openClawMessageContractDescription(
   const captured = contract.capturedTools.length > 0
     ? ` Captured tools: ${contract.capturedTools.join(", ")}.`
     : "";
-  return `${contract.summary} Live provider proof still requires the provider readiness check, smoke recipients/bodies, and explicit live-send confirmation.${captured}`;
+  return `${contract.summary} Live provider proof still requires the provider readiness check, explicit recipient proof, and live-send confirmation.${captured}`;
 }
 
 function openClawMessageContractSection(

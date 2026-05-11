@@ -2,6 +2,33 @@
 
 Date: 2026-05-11
 
+## Default iMessage Smoke Body Narrows OpenClaw Gap - 2026-05-11
+
+Product/architecture slice:
+
+- Added a safe default iMessage/SMS smoke body inside `dearme:provider-smoke`
+  so the OpenClaw message lane no longer reports a second manual body setup
+  blocker when all it actually needs is an explicit iMessage recipient and the
+  existing live-send guard.
+- Kept the product boundary unchanged: DearMe still does not infer an iMessage
+  recipient from local OpenClaw state, and no readiness/status path sends a
+  message. Real delivery still requires `--live` plus
+  `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`.
+- This moves the Polsia comparison forward in the smallest useful way:
+  Telegram can use the existing host-local OpenClaw allow-list, iMessage now
+  has a customer-safe smoke payload by default, and the remaining live-channel
+  work is provider/recipient proof rather than more setup UI.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages --json`
+- `pnpm --silent dearme:goal-audit -- --json`
+- `pnpm --silent dearme:status`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Proof-First Profile Controls Land - 2026-05-11
 
 Product/architecture slice:
@@ -44,9 +71,9 @@ Product/architecture slice:
   recipient, and body by hand" to "confirm a live Telegram self-smoke." The
   readiness path remains non-sending; real delivery still requires `--live`
   plus `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`.
-- iMessage remains intentionally manual because there is no equivalent
-  host-local safe allow-list in the current OpenClaw config. LinkedIn and Meta
-  remain behind their own live provider credentials.
+- iMessage remains intentionally recipient-manual because there is no
+  equivalent host-local safe allow-list in the current OpenClaw config.
+  LinkedIn and Meta remain behind their own live provider credentials.
 
 Verification:
 
@@ -70,14 +97,14 @@ Product/architecture slice:
   verifies the exported `host-smoke.json` manifest and page text.
 - This closes the Polsia phone-reachable host gap for the current proof packet.
   It does not close live channel/provider proof: LinkedIn, Telegram, iMessage,
-  and Meta still require real provider configuration and smoke payloads.
+  and Meta still require real provider/recipient proof.
 - Added opt-in local OpenClaw config reuse to `dearme:provider-smoke`: when
   `.dearme-proof.env` sets `DEARME_USE_LOCAL_OPENCLAW_CONFIG=1`, the smoke
   runner derives the gateway URL/token from the existing host-local
   `~/.openclaw/openclaw.json` without copying or printing the token. This
-  removes duplicate gateway secret setup from DearMe; the remaining
-  OpenClaw-message blocker is smoke recipients/bodies plus the explicit live
-  send guard.
+  removes duplicate gateway secret setup from DearMe; with current local
+  defaults, the remaining OpenClaw-message blocker is explicit iMessage
+  recipient proof plus the explicit live-send guard.
 
 Verification:
 
@@ -127,7 +154,7 @@ Product/architecture slice:
 - Wired the rehearsal into Symphony bootstrap after the loopback host proof and
   before worktree triage. Workers now inherit the product comparison result:
   Naive/OpenClaw reuse is structurally ready for Telegram/iMessage, while live
-  gateway auth plus smoke recipients/bodies remain the external blocker.
+  gateway auth plus smoke recipient proof remain the external blocker.
 - Wired the rehearsal into `dearme:goal-audit` before the live
   `openclaw_messages` proof item. The rehearsal proves the shared contract
   only; it does not mark `openclaw_message_reuse` complete.
@@ -217,7 +244,8 @@ Product/architecture slice:
 - This makes the Polsia/Naive comparison operational without exposing raw
   provider config names: production host proof now says it needs production
   host opt-in and a public HTTPS DearMe host, while shared message proof says
-  it needs the gateway endpoint/auth plus Telegram/iMessage smoke payloads.
+  it needs gateway endpoint/auth plus explicit channel recipient/provider
+  proof.
 - Added `missingCapabilities` to `liveProviderFocus` so Symphony and Linear
   workers can route DEA-60 and later live-smoke tickets by capability instead
   of parsing env templates or rediscovering provider-smoke internals.
@@ -1233,10 +1261,10 @@ Product/architecture slice:
 
 - Human `pnpm dearme:provider-smoke -- --check --target openclaw` output now
   prints shared OpenClaw gateway blockers once, then leaves Telegram and
-  iMessage rows to show only their per-channel recipient/body gaps.
+  iMessage rows to show only their per-channel proof gaps.
 - Readiness JSON and provider execution behavior stay unchanged. This is an
   operator-surface cleanup so the next real action remains obvious: add the
-  shared gateway URL/auth once, then fill the two message smoke payloads.
+  shared gateway URL/auth once, then fill the explicit channel proof values.
 
 Verification:
 

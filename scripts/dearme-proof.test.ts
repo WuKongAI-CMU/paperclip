@@ -256,7 +256,6 @@ test("DearMe proof status separates local proof from live provider setup", () =>
       "telegram_recipient",
       "telegram_message_body",
       "imessage_recipient",
-      "imessage_message_body",
     ],
   );
   assert.match(status.liveProviderFocus[0]?.reason ?? "", /Polsia-level first wow/);
@@ -278,7 +277,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /Production host smoke: blocked on deploy_site_production/);
   assert.match(formatted, /Needs: enable production host smoke; public HTTPS DearMe host; exported private proof artifact; proof-page text or host-smoke manifest/);
   assert.match(formatted, /OpenClaw message smoke: blocked on telegram_message, imessage_message/);
-  assert.match(formatted, /Needs: shared message gateway endpoint; shared message gateway auth; Telegram smoke recipient; Telegram smoke body; iMessage smoke recipient; iMessage smoke body/);
+  assert.match(formatted, /Needs: shared message gateway endpoint; shared message gateway auth; Telegram smoke recipient; Telegram smoke body; iMessage smoke recipient/);
   assert.match(formatted, /Next live provider proof setup:/);
   assert.match(formatted, /--target openclaw_messages --live/);
   assert.match(formatted, /pnpm --silent dearme:proof -- --run-safe/);
@@ -362,7 +361,7 @@ test("DearMe proof status carries current integration absorption evidence", () =
   assert.match(formatted, /Product verdict: Naive\/Paperclip\/OpenClaw substrate proof is strong, integration absorption is clean/);
   assert.match(formatted, /Integration absorption proof: ready/);
   assert.match(formatted, /OpenClaw message contract proof: ready/);
-  assert.match(formatted, /Live provider proof still requires the provider readiness check, smoke recipients\/bodies, and explicit live-send confirmation/);
+  assert.match(formatted, /Live provider proof still requires the provider readiness check, explicit recipient proof, and live-send confirmation/);
   assert.match(formatted, /Captured tools: send_telegram_message, send_imessage/);
   assert.match(formatted, /pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs/);
   assert.match(formatted, /pnpm --silent dearme:openclaw-message-rehearsal -- --json/);

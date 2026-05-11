@@ -36,22 +36,23 @@ production host smoke is ready, shared OpenClaw message smoke is next, LinkedIn
 DM follows, and Meta campaign stays last.
 That status now also names the remaining blocker class in safe
 product/coordination language instead of leaking provider env names: the shared
-message gap is smoke recipients and bodies when local OpenClaw config reuse is
-enabled.
+message gap is now explicit iMessage recipient proof when local OpenClaw config
+reuse and Telegram self-smoke defaults are enabled.
 The current machine-level host check is explicit too: Vercel and Netlify CLIs
 exist but neither is authenticated; the configured GitHub Pages public HTTPS
 host is the equivalent host path for this sample proof packet.
 The shared OpenClaw message contract is now locally rehearsed: Telegram and
 iMessage both flow through the same injected gateway contract without network
 access or credentials. That raises the OpenClaw reuse bar, but it still does
-not replace the live recipient/body smoke. The local OpenClaw gateway itself is
+not replace the live recipient/provider smoke. The local OpenClaw gateway itself is
 already reusable through the ignored `.dearme-proof.env` opt-in, which derives
 URL/auth from `~/.openclaw/openclaw.json` without duplicating or printing the
 token.
 Telegram can now also reuse the host-local OpenClaw allow-list as an explicit
 self-smoke default. That removes another manual setup step without making
-readiness send anything: live Telegram delivery still requires `--live` plus
-`DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`, and iMessage/LinkedIn/Meta remain
+readiness send anything. iMessage now has a safe default smoke body too, so the
+remaining shared-message proof is explicit recipient/provider intent plus
+`--live` and `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`; LinkedIn/Meta remain
 separate live-provider gaps.
 
 ## Evidence Checked
@@ -110,7 +111,7 @@ Current DearMe branch:
     committed
   - OpenClaw message contract proof is now part of the unified product status:
     Telegram and iMessage share the local injected gateway contract, while the
-    live recipient/body proof remains blocked separately
+    live recipient/provider proof remains blocked separately
   - local no-send proof is ready
   - voice semantic proof is ready on the coordinator Mac through the local
     profile-token scorer and customer-like custom corpus
@@ -121,8 +122,8 @@ Current DearMe branch:
     host proof ready, OpenClaw shared-message proof next, and spend-bearing
     Meta smoke last
   - live-provider blockers now carry safe capability labels, so Symphony and
-    Linear can distinguish shared message gateway, smoke recipients, and
-    provider credentials without parsing raw env names
+    Linear can distinguish shared message gateway, iMessage recipient proof,
+    and provider credentials without parsing raw env names
   - live provider proof is still the remaining external proof gap
 - `pnpm --silent dearme:goal-audit`
   - active objective is not complete yet
@@ -158,8 +159,8 @@ Current DearMe branch:
   - with the local Telegram self-smoke opt-in, Telegram derives its smoke
     recipient from the existing OpenClaw allow-list and supplies a safe DearMe
     smoke body without printing either value
-  - the remaining live message blockers are iMessage recipient/body payloads
-    plus the explicit live-send confirmation guard
+  - iMessage supplies a safe default smoke body and still requires an explicit
+    recipient plus the live-send confirmation guard
 - local env scan
   - only `LINEAR_API_KEY` is present for the relevant DearMe/OpenClaw/provider
     prefix set
@@ -217,7 +218,8 @@ host; what still keeps DearMe behind Polsia is provider-backed execution and a
 recurring proof loop the user can inspect without coordinator stitching.
 The next proof is now narrower: Telegram can be self-smoked from the existing
 OpenClaw allow-list once the live-send guard is deliberately enabled, while
-iMessage/LinkedIn/Meta still need their own provider payloads or credentials.
+iMessage still needs an explicit recipient and LinkedIn/Meta still need their
+own provider credentials.
 
 DearMe is closer to Naive/Paperclip on substrate than it is to Polsia on
 first-wow. The control-plane reuse is strong. The first-five-minute private
@@ -467,5 +469,5 @@ provider evidence on top of the phone-reachable five-draft private proof packet
 that now exists. The provider-smoke production lane requires that concrete
 artifact plus its exported host-smoke manifest or an explicit expected-text
 override before it will run; the remaining work is OpenClaw/channel/provider
-proof with real recipients/bodies and live-send confirmation, not another
-local proof command, host setup path, or branch replay pass.
+proof with real recipient/credential evidence and live-send confirmation, not
+another local proof command, host setup path, or branch replay pass.
