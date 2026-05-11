@@ -45,6 +45,7 @@ describe("dearmeApprovals", () => {
 
   it("sanitizes internal approval errors only for DearMe decisions", () => {
     const internalError = new Error("Provider token rejected in /approvals/approval-1");
+    const privateAccessError = new Error("API key credential queued worker failed for run id in raw control plane");
 
     expect(
       approvalActionErrorMessage(
@@ -70,5 +71,20 @@ describe("dearmeApprovals", () => {
         "Failed to send the DearMe decision back.",
       ),
     ).toBe("Failed to send the DearMe decision back.");
+    expect(
+      approvalActionErrorMessage(
+        privateAccessError,
+        "Failed to approve",
+        "dearme_output_next_move",
+        "Failed to approve the DearMe decision.",
+      ),
+    ).toBe("Failed to approve the DearMe decision.");
+    expect(
+      approvalActionErrorMessage(
+        privateAccessError,
+        "Failed to approve",
+        "request_board_approval",
+      ),
+    ).toBe("API key credential queued worker failed for run id in raw control plane");
   });
 });

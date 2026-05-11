@@ -8,12 +8,12 @@ import {
 } from "../services/dearme-workbench.js";
 
 const HIDDEN_SUBSTRATE_PATTERN =
-  /\b(?:Symphony|Paperclip|OpenClaw|OK Partner|adapter|provider|workspace|runtime|setup_payload|workbench|workstream|model)\b/i;
+  /\b(?:Symphony|Paperclip|OpenClaw|OK Partner|adapter|provider|workspace|runtime|setup_payload|workbench|workstream|model|api key|credential|token|queue|worker|run id|runId|raw control plane)\b/i;
 
 describe("DearMe workbench projection helpers", () => {
   it("keeps projected workbench text customer-safe", () => {
     const projected = dearMeWorkbenchProjectionText(
-      "Symphony routed OpenClaw runtime output through a Paperclip provider workbench from setup_payload.",
+      "Symphony routed OpenClaw runtime output through a Paperclip provider workbench from setup_payload. API key credential token queue worker run id raw control plane.",
       "The team recorded a private update.",
     );
 

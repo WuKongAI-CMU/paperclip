@@ -2,6 +2,27 @@
 
 Date: 2026-05-11
 
+## DM-171B Customer-Safe Failure Language Tightening - 2026-05-11
+
+Product/architecture slice:
+
+- Extended the shared DearMe customer text sanitizer to cover access and
+  coordination terms that can leak from failure paths: API key, credential,
+  token, queue, worker, run id, and raw control plane.
+- Reused the existing projection and approval-error fallback paths instead of
+  adding another product copy layer. Workbench projections, delivery receipts,
+  and DearMe approval actions now share the same backstage-language boundary.
+- Added focused regressions so customer-visible DearMe surfaces do not expose
+  the extra credential/coordinator vocabulary while generic non-DearMe approval
+  errors remain untouched.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-workbench-projection.test.ts server/src/__tests__/dearme-approval-receipts.test.ts --maxWorkers=1`
+  passed: 2 files, 19 tests.
+- `pnpm exec vitest run ui/src/lib/dearmeApprovals.test.ts --maxWorkers=1`
+  passed: 1 file, 4 tests.
+
 ## DM-171A OpenClaw Plugin Dispatch Contract Cleanup - 2026-05-11
 
 Product/architecture slice:

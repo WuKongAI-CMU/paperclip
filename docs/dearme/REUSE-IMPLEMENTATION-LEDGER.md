@@ -15,6 +15,14 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- DM-171B tightens the customer-safe language boundary on the existing DearMe
+  projection and approval-error paths. API key, credential, token, queue,
+  worker, run id, and raw control plane vocabulary now collapses into
+  customer-safe language before Workbench projections, delivery receipts, or
+  DearMe approval errors can expose it. Future failure-handling work should
+  reuse `dearMeCustomerSafeText` and the DearMe approval fallback instead of
+  creating a second sanitizer or letting substrate words reach the product
+  surface.
 - DM-171A plugin dispatch-contract cleanup aligns `@paperclipai/dearme-openclaw`
   with the current shipped architecture: the plugin owns generated skills,
   bootstrap files, manifest hints, and outbound tool contracts; channel senders

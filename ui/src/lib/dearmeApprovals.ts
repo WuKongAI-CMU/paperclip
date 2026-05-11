@@ -29,7 +29,7 @@ export function approvalRejectedHref(type: string | null | undefined, approvalId
 }
 
 const INTERNAL_APPROVAL_ERROR_PATTERN =
-  /\b(paperclip|openclaw|symphony|codex|provider|adapter|runtime|model|token|setup[_ -]?payload|workspace|workbench)\b|\/approvals?\//i;
+  /\b(paperclip|openclaw|symphony|codex|provider|adapter|runtime|model|api[_ -]?key|credential|token|setup[_ -]?payload|workspace|workbench|queue(?:d|s)?|worker|run[_ -]?id|raw control plane)\b|\/approvals?\//i;
 
 function fallbackErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message.trim() ? error.message : fallback;

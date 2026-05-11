@@ -564,32 +564,40 @@ describe("recordDearMeNextMoveDeliveryReceipt", () => {
         outcome: {
           kind: "pending",
           approvalId: "approval-1",
-          reason: "openclaw_gateway queue pending inside provider runtime",
+          reason: "openclaw_gateway queue worker run id pending inside provider runtime",
         },
         expectedStatus: "status: pending",
         expectedNext: "waiting for the channel to finish",
-        hiddenTerms: ["openclaw_gateway", "provider", "runtime"],
+        hiddenTerms: ["openclaw_gateway", "provider", "runtime", "queue", "worker", "run id"],
       },
       {
         name: "rejected",
         outcome: {
           kind: "rejected",
-          reason: "no-dispatcher-registered inside adapter route",
+          reason: "no-dispatcher-registered inside adapter route with API key token",
           gate: "internal_adapter_gate",
         },
         expectedStatus: "status: needs a new decision",
         expectedNext: "choose a new direction",
-        hiddenTerms: ["no-dispatcher-registered", "adapter", "internal_adapter_gate"],
+        hiddenTerms: ["no-dispatcher-registered", "adapter", "internal_adapter_gate", "api key", "token"],
       },
       {
         name: "errored",
         outcome: {
           kind: "errored",
-          error: "PAPERCLIP_API_URL missing for OpenClaw provider runtime",
+          error: "PAPERCLIP_API_URL missing credential for OpenClaw provider runtime raw control plane",
         },
         expectedStatus: "status: failed safely",
         expectedNext: "review the safe failure",
-        hiddenTerms: ["errored", "paperclip_api_url", "openclaw", "provider", "runtime"],
+        hiddenTerms: [
+          "errored",
+          "paperclip_api_url",
+          "openclaw",
+          "provider",
+          "runtime",
+          "credential",
+          "raw control plane",
+        ],
       },
     ] as const;
 
