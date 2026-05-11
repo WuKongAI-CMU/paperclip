@@ -144,10 +144,11 @@ These four rules make the rest of the docs internally consistent. If any older d
 The stale local worktree queue is closed by exact-head reviewed absorptions.
 Future collaboration should start from a Linear `DEA` issue and a Symphony
 workspace on the current coordinator head, then land only one bounded
-customer-facing slice at a time. DM-172, the Resend half of DM-174, and the
-preview receipt half of DM-177 are now closed on the canonical
-`ChannelDispatch` path, so the next product-dispatch gap is DM-176 LinkedIn or
-the remaining DM-177 public host/custom-domain deploy path, not another
+customer-facing slice at a time. DM-172, the Resend half of DM-174, the
+partner-dispatch half of DM-176, and the preview receipt half of DM-177 are
+now on the canonical `ChannelDispatch` path. The next product-dispatch gap is
+the live LinkedIn partner credential/OAuth smoke, the remaining DM-177 public
+host/custom-domain deploy path, or DM-178 ads dispatch, not another
 connector/settings surface. Reuse still means adapting Polsia choreography, Lindy
 action-card/source patterns, and Naive/Paperclip substrate behind the DearMe
 product shell; do not add another first-run contract, packet schema, runtime
@@ -160,7 +161,7 @@ dashboard, queue system, or customer-visible substrate surface.
 | 0 | done | Foundation, registry, contracts, OpenClaw plugin, tri-substrate integration **+ runtime** | DM-S01, DM-141 schema, registry, ai-proxy contract, **DM-S05**, **DM-S06** (contracts), **DM-S07** (runtime: 6 server services + lynchpin wrapper) |
 | 1 | days 1–7 | First-run aha moment live through OpenClaw + Chief routes first conversation | DM-138, DM-139, **DM-170-impl** voice-score model + Express route, **DM-171A** plugin install proof complete, **DM-171B** onboarding bridge already surfaced in the existing first-run path, **DM-179** SSE Express route over `dearme-sse-bus` |
 | 2 | days 8–14 | Voice + content loop publishing via DearMe-owned tools | DM-140, DM-142, DM-146, **DM-172** `post_x` `ChannelDispatch`, **DM-173A/DM-173B** X OAuth start + PKCE callback exchange around `channel_connections`, **DM-180** approval resolver Express route |
-| 3 | days 15–21 | Outbound + opportunity + audience care running | DM-141 runtime, DM-149, DM-150, **DM-174** `send_email` `ChannelDispatch` (Resend shipped; SES future dynamic-channel route), **DM-176** `send_linkedin_dm` `ChannelDispatch` |
+| 3 | days 15–21 | Outbound + opportunity + audience care running | DM-141 runtime, DM-149, DM-150, **DM-174** `send_email` `ChannelDispatch` (Resend shipped; SES future dynamic-channel route), **DM-176A** `send_linkedin_dm` partner `ChannelDispatch` (live partner smoke still needed) |
 | 4 | days 22–35 | Site live + ads option + first paid beta | DM-147, DM-148, DM-153, DM-154, **DM-177B** preview `deploy_site` `ChannelDispatch` shipped; remaining **DM-177** public host/custom-domain deploy path, **DM-178** `create_meta_campaign` `ChannelDispatch` |
 
 Total to first paid-beta surface: **~4–5 weeks** vs. the original 8–12 with paraphrased re-derivation. OpenClaw integration removes ~27 eng-weeks of substrate work and ~$15K of Gmail CASA cost (see `OPENCLAW-INTEGRATION-ARCHITECTURE.md` §5).

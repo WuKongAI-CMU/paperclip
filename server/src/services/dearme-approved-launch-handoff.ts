@@ -19,6 +19,10 @@ import {
   type DearMeOpenClawGatewayDispatchConfig,
 } from "./dearme-openclaw-gateway-dispatch.js";
 import { createDearMeDeploySiteDispatch } from "./dearme-deploy-site-dispatch.js";
+import {
+  createDearMeLinkedInDmDispatch,
+  type DearMeLinkedInDmDispatchConfig,
+} from "./dearme-linkedin-dm-dispatch.js";
 import { createDearMeSendEmailDispatch } from "./dearme-send-email-dispatch.js";
 import { createDearMeXPostDispatch } from "./dearme-x-post-dispatch.js";
 import { dearMeApprovalResolverService } from "./dearme-approval-resolver.js";
@@ -172,12 +176,16 @@ export function defaultDearMeApprovedLaunchHandoffService(
   db: Db,
   channelDispatch: Partial<Record<DearMeOutboundToolName, ChannelDispatch>> = {},
   dearMeOpenClawGatewayDispatchConfig: DearMeOpenClawGatewayDispatchConfig | null = null,
+  dearMeLinkedInDmDispatchConfig: DearMeLinkedInDmDispatchConfig | null = null,
 ): ApprovedLaunchHandoffService {
   const sseBus = getDearMeSseBus();
   const defaultGatewayDispatch = createDearMeOpenClawGatewayDispatchMap(
     dearMeOpenClawGatewayDispatchConfig,
   );
   const defaultDeploySiteDispatch = createDearMeDeploySiteDispatch();
+  const defaultLinkedInDmDispatch = dearMeLinkedInDmDispatchConfig?.messagesUrl
+    ? createDearMeLinkedInDmDispatch(dearMeLinkedInDmDispatchConfig)
+    : null;
   const defaultSendEmailDispatch = createDearMeSendEmailDispatch();
   const defaultXPostDispatch = createDearMeXPostDispatch();
   const wrapper = dearMeOutboundToolWrapper({
@@ -190,6 +198,7 @@ export function defaultDearMeApprovedLaunchHandoffService(
     channelDispatch: {
       ...defaultGatewayDispatch,
       deploy_site: defaultDeploySiteDispatch,
+      ...(defaultLinkedInDmDispatch ? { send_linkedin_dm: defaultLinkedInDmDispatch } : {}),
       post_x: defaultXPostDispatch,
       send_email: defaultSendEmailDispatch,
       ...channelDispatch,

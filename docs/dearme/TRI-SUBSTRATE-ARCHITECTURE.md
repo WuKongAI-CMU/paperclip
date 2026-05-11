@@ -2,7 +2,7 @@
 
 > **Canonical, runtime-affecting.** This document supersedes any older "DearMe is one stack" framing. DearMe is the integration of three substrates — OpenClaw at the edge, Naive/Paperclip in the cloud, Polsia choreography across both. Below is the contract between all three.
 >
-> Last updated: 2026-05-11 (DM-S06 + DM-179/180/181/182 + DEA-51 X OAuth connection proof + DM-172B X dispatch + DM-174 Resend dispatch + DM-177B preview deploy dispatch).
+> Last updated: 2026-05-11 (DM-S06 + DM-179/180/181/182 + DEA-51 X OAuth connection proof + DM-172B X dispatch + DM-174 Resend dispatch + DM-176A LinkedIn partner dispatch + DM-177B preview deploy dispatch).
 
 ---
 
@@ -213,7 +213,7 @@ publish/send/deploy/spend or redesign it as a private draft plus receipt.
 | Tool | Gate | Channel | Voice-gate | Substrate role |
 |---|---|---|---|---|
 | `post_x` | publish | x | yes | OpenClaw plugin → DearMe cloud → user's X OAuth (Naive `channel_connections`) |
-| `send_linkedin_dm` | send | linkedin | yes | OpenClaw plugin → DearMe cloud → user's LinkedIn OAuth |
+| `send_linkedin_dm` | send | linkedin | yes | OpenClaw plugin → DearMe cloud → configured LinkedIn partner endpoint with user's active LinkedIn channel connection |
 | `send_email` | send | resend (SES future route) | yes | OpenClaw plugin → DearMe cloud → Resend (NOT Gmail — avoids CASA cost); SES stays fail-closed until the binding can resolve an `ses` channel credential |
 | `deploy_site` | deploy | dearme-cloud | no | OpenClaw plugin → DearMe cloud `/v1/site/*` (DearMe-owned host) |
 | `create_meta_campaign` | spend | meta_ads | no | OpenClaw plugin → DearMe cloud → Meta Ads OAuth |
@@ -314,7 +314,7 @@ The integration only works if these glue artifacts ship:
 | DM-173B | X OAuth start URL + PKCE callback exchange | Wrapper now returns a DearMe-owned `oauthStartUrl`; `GET /v1/channels/:companyId/x/start` builds the X authorize URL when configured and stays fail-closed when config is absent. The browser callback exchanges the code, loads the profile, encrypts credentials, and writes an active `x` row with same-origin return handling. DM-172B consumes that row for approved X posting. |
 | DM-174 | `send_email` `ChannelDispatch` (Resend/SES) | **Resend dispatcher shipped.** Wrapper runs gate/approval/OAuth/audit; `dearme-send-email-dispatch.ts` resolves the stored Resend credential, validates plain-text payload and expiry, calls Resend `POST /emails`, and maps auth failures back to reauth. HTML is fail-closed until sanitizer support lands. SES remains fail-closed until the tool binding can resolve an `ses` channel credential instead of the current static `resend` binding. Live external email still needs a real credential smoke. |
 | DM-175 | `channel_connections` Drizzle schema | **Shipped DM-S06.** ✅ |
-| DM-176 | `send_linkedin_dm` `ChannelDispatch` | LinkedIn outreach. |
+| DM-176A | `send_linkedin_dm` partner `ChannelDispatch` | **Server dispatcher shipped.** Wrapper runs gate/approval/OAuth/audit; `dearme-linkedin-dm-dispatch.ts` resolves the stored partner credential, requires `send_dm` capability, posts to a configured partner messages endpoint, and maps auth failures back to reauth. Live LinkedIn delivery still needs an approved partner endpoint + credential smoke. |
 | DM-177B | Preview `deploy_site` `ChannelDispatch` | **Preview dispatcher shipped.** Approved private-site proof handoffs use `dearme-deploy-site-dispatch.ts` through the same wrapper/audit path, validate safe handles + artifact refs, reject custom domains, and return stable preview receipts at `dearme.app/<handle>?preview=*` without OpenClaw gateway config. Production deploys remain fail-closed until the real host path is enabled. |
 | DM-177 | Public `deploy_site` host + custom-domain path | Brand Site Builder closes the public site loop. |
 | DM-178 | `create_meta_campaign` `ChannelDispatch` | Ads Manager closes loop. |
@@ -340,6 +340,7 @@ slot and never re-implement the gate / approval / audit pipeline.
 | X connection routes | `server/src/routes/dearme-channel-connections.ts` + `server/src/services/dearme-x-oauth-connection.ts` | `GET /v1/channels/:companyId/x/start` redirects to X with PKCE; `GET /v1/channels/:companyId/x/callback` consumes server-side state, exchanges the X code, loads the profile, encrypts credentials, and persists an active per-user `x` row. `POST /v1/channels/:companyId/x/callback` remains the test/API seam around the same persistence path. |
 | Channel credential resolver | `server/src/services/dearme-channel-credential.ts` | Shared secret-provider envelope resolver used by per-channel dispatchers. Keeps `channel_connections.encryptedCredential` opaque to the generic service and resolves material only at the provider-specific dispatch boundary. |
 | X post dispatch | `server/src/services/dearme-x-post-dispatch.ts` | Default `post_x` dispatcher for approved launch handoffs. It consumes the existing opaque credential, validates `tweet.write`, posts to X API v2, maps delivered tweet ids to stable public URLs, and maps provider auth failures to reauth. |
+| LinkedIn DM dispatch | `server/src/services/dearme-linkedin-dm-dispatch.ts` | Optional direct `send_linkedin_dm` dispatcher for approved launch handoffs when a partner messages endpoint is configured. It consumes the existing opaque LinkedIn channel credential, requires a partner/provider credential with `send_dm` capability, sends with the wrapper idempotency key, and maps provider auth failures to reauth. Browser automation and guessed private APIs stay out of this path. |
 | Email dispatch | `server/src/services/dearme-send-email-dispatch.ts` | Default `send_email` dispatcher for approved launch handoffs. It consumes the existing opaque `resend` credential, validates sender/recipient/subject/plain-text body/expiry, posts to Resend `POST /emails` with the wrapper idempotency key, maps delivered email ids to receipts, and maps provider auth failures to reauth. HTML is fail-closed until sanitizer support lands. |
 | Voice gate | `dearme-voice-gate.ts` + `routes/dearme-voice-gate.ts` | `scoreVoice(req)` plus root `POST /v1/voice/score`. Default = deterministic stub (5 phrase rules, length floor/ceiling, evidence reward). Next DM-170 impl swaps in the trained model. |
 | Work loop | `dearme-work-loop.ts` | `transition(...)` validates via `canTransitionWorkLoop`, mirrors state into `issues.status`, writes `activity_log`, emits `work_loop_transition` SSE. |
@@ -347,7 +348,8 @@ slot and never re-implement the gate / approval / audit pipeline.
 | **Outbound tool wrapper** | `dearme-outbound-tool-wrapper.ts` | The lynchpin. `callOutbound()` runs voice-gate → approval → OAuth → injected `ChannelDispatch` → audit (cost_event + SSE + work-loop transition). |
 
 Adding or replacing an outbound channel after DM-S07 is a `ChannelDispatch`
-registration. `post_x` and `send_email` now use this exact slot:
+registration. `post_x`, `send_email`, `send_linkedin_dm`, and `deploy_site`
+now use this exact slot:
 
 ```ts
 channelDispatch: {

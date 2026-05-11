@@ -46,6 +46,22 @@ const emailLaunchHandoff = {
   },
 };
 
+const linkedInDmLaunchHandoff = {
+  toolName: "send_linkedin_dm",
+  channel: "linkedin",
+  gate: "send",
+  riskGate: "send_social_dm",
+  voiceGateRequired: true,
+  voiceGateArtifactKind: "linkedin-dm",
+  voiceGateText: "Peter, this private proof packet is ready when you have a minute.",
+  voiceFingerprintId: "vf_linkedin_1",
+  payload: {
+    recipientUrn: "urn:li:person:lead-1",
+    body: "Peter, this private proof packet is ready when you have a minute.",
+    subject: "Private proof packet",
+  },
+};
+
 function approval(overrides: Record<string, unknown> = {}) {
   return {
     id: "approval-1",
@@ -167,6 +183,40 @@ describe("dearMeApprovedLaunchHandoffService", () => {
       voiceGateText: emailLaunchHandoff.voiceGateText,
       voiceGateArtifactKind: "outbound-email",
       voiceFingerprintId: "vf_email_1",
+      preapprovedApprovalId: "approval-1",
+      config: { minVoiceGateScore: 92, dailyUsdCap: 5 },
+    }));
+  });
+
+  it("maps an approved LinkedIn DM handoff into a send-linkedin-dm outbound call", async () => {
+    const callOutbound = vi.fn(async () => ({
+      kind: "delivered" as const,
+      voiceGateScore: 95,
+      externalId: "urn:li:message:def",
+    }));
+    const svc = dearMeApprovedLaunchHandoffService({ callOutbound });
+
+    const result = await svc.executeApprovedNextMove({
+      approval: approval({
+        payload: {
+          issueId: "issue-1",
+          launchHandoff: linkedInDmLaunchHandoff,
+        },
+      }),
+      actorUserId: "user-1",
+    });
+
+    expect(result.kind).toBe("called");
+    expect(callOutbound).toHaveBeenCalledWith(expect.objectContaining({
+      toolName: "send_linkedin_dm",
+      companyId: "company-1",
+      userId: "user-1",
+      issueId: "issue-1",
+      agentId: "agent-1",
+      payload: linkedInDmLaunchHandoff.payload,
+      voiceGateText: linkedInDmLaunchHandoff.voiceGateText,
+      voiceGateArtifactKind: "linkedin-dm",
+      voiceFingerprintId: "vf_linkedin_1",
       preapprovedApprovalId: "approval-1",
       config: { minVoiceGateScore: 92, dailyUsdCap: 5 },
     }));

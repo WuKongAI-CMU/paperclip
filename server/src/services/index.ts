@@ -23,6 +23,11 @@ export {
   type DearMeDeploySiteDispatchConfig,
 } from "./dearme-deploy-site-dispatch.js";
 export {
+  createDearMeLinkedInDmDispatch,
+  resolveDearMeLinkedInDmCredential,
+  type DearMeLinkedInDmDispatchConfig,
+} from "./dearme-linkedin-dm-dispatch.js";
+export {
   createDearMeSendEmailDispatch,
   resolveDearMeSendEmailCredential,
   type DearMeSendEmailDispatchConfig,

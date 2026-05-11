@@ -2,6 +2,37 @@
 
 Date: 2026-05-11
 
+## DM-176A Partner `send_linkedin_dm` Dispatch Path - 2026-05-11
+
+Product/architecture slice:
+
+- Added a narrow server-side LinkedIn DM dispatcher at
+  `server/src/services/dearme-linkedin-dm-dispatch.ts`.
+- Approved `send_linkedin_dm` launch handoffs can now use a direct dispatcher
+  after the existing wrapper has completed voice-gate, approval, and active
+  `channel_connections` lookup on the `linkedin` channel.
+- The default approved launch handoff service only registers this direct
+  LinkedIn dispatcher when a partner `messagesUrl` is explicitly configured.
+  Without that endpoint, `send_linkedin_dm` continues to use the existing
+  OpenClaw gateway dispatch map rather than being shadowed by an unconfigured
+  direct path.
+- The dispatcher is intentionally partner-contract based instead of browser
+  automation or a guessed LinkedIn private API. It accepts only stored
+  `linkedin_partner` / `hootsuite` credentials that declare the internal
+  `send_dm` capability, validates expiry/token type, bounds recipient/body/
+  subject fields, sends with provider idempotency, and maps `401`/`403` back
+  to the wrapper's reconnect path without exposing tokens.
+- This closes the cloud-side direct-dispatch seam for LinkedIn DM in mocked
+  tests. It still needs a real approved partner endpoint + credential smoke
+  before claiming live LinkedIn delivery for customers.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-linkedin-dm-dispatch.test.ts server/src/services/dearme-approved-launch-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts server/src/services/dearme-x-post-dispatch.test.ts server/src/services/dearme-send-email-dispatch.test.ts server/src/services/dearme-deploy-site-dispatch.test.ts --maxWorkers=1`
+  passed: 6 files, 48 tests.
+- `pnpm --filter @paperclipai/server typecheck`
+  passed.
+
 ## DM-177B Preview `deploy_site` Dispatch Path - 2026-05-11
 
 Product/architecture slice:
@@ -22,6 +53,9 @@ Product/architecture slice:
   explicit dispatcher config. This preserves the current product boundary:
   the first-cycle site proof can be audited now, but the real multi-tenant
   public host/custom-domain path is still a separate DM-177 host slice.
+- Delivered Website preview receipts now name the result as a Website preview,
+  preserve the safe preview URL through the Workbench projection, and label
+  the onboarding link as `Open Website preview` instead of a generic result.
 - The default approved launch handoff service now registers direct dispatchers
   for `post_x`, `send_email`, and `deploy_site`; remaining tools continue to
   use the gateway map until their per-tool dispatchers land.
@@ -30,7 +64,11 @@ Verification:
 
 - `pnpm exec vitest run server/src/services/dearme-deploy-site-dispatch.test.ts server/src/services/dearme-approved-launch-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts server/src/__tests__/dearme-approval-receipts.test.ts server/src/services/dearme-output-handoff.portfolio-launch.test.ts --maxWorkers=1`
   passed.
+- `pnpm exec vitest run server/src/__tests__/dearme-approval-receipts.test.ts server/src/__tests__/dearme-workbench-projection.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 3 files, 92 tests.
 - `pnpm --filter @paperclipai/server typecheck`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck`
   passed.
 
 ## DM-174 Live Resend `send_email` Dispatch Path - 2026-05-11
