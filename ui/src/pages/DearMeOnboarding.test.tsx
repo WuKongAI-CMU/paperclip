@@ -5755,7 +5755,7 @@ describe("DearMeOnboarding", () => {
     expect(container.querySelector('button[aria-label="Review Starter post batch"]')).not.toBeNull();
 
     await act(async () => {
-      buttonByText(packetSurface, "Open Work Ready")?.click();
+      buttonByText(packetSurface, "Review proof pack")?.click();
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(

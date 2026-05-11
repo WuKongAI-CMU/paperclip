@@ -6618,7 +6618,7 @@ function FirstCyclePacketSpotlight({
           size="sm"
           onClick={() => onOpenOutput(primaryOutput, reviewLoopRouteIntent(primaryOutput.reviewLoop))}
         >
-          Open Work Ready
+          Review proof pack
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
