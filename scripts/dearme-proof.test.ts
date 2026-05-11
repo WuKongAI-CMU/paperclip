@@ -91,14 +91,25 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     "imessage_message",
     "meta_campaign",
   ]);
+  assert.deepEqual(status.commands.liveProviderSetup, [
+    "pnpm --silent dearme:proof -- --print-env-template > .dearme-proof.env",
+    "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
+    "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target deploy_site_production",
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target linkedin_dm --live",
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target meta_campaign --live",
+  ]);
   assert.match(formatted, /DearMe product proof status/);
   assert.match(formatted, /Product verdict: private first-wow proof exists/);
   assert.match(formatted, /Local no-send proof: ready/);
   assert.match(formatted, /Voice semantic proof: blocked/);
   assert.match(formatted, /Live provider proof: blocked/);
+  assert.match(formatted, /Next live provider proof setup:/);
+  assert.match(formatted, /--target openclaw_messages --live/);
   assert.match(formatted, /pnpm --silent dearme:proof -- --run-safe/);
   assert.doesNotMatch(formatted, /OPENCLAW_GATEWAY_URL/);
   assert.doesNotMatch(formatted, /DEARME_LINKEDIN_DM_CREDENTIAL_JSON/);
+  assert.doesNotMatch(formatted, /\.dearme-provider-smoke\.env/);
   assert.equal(JSON.stringify(status).includes("OPENCLAW_GATEWAY_URL"), false);
   assert.equal(JSON.stringify(status).includes("DEARME_LINKEDIN_DM_CREDENTIAL_JSON"), false);
   assert.equal(live?.blockedTargets.every((item) => item.missingCount > 0), true);
@@ -118,6 +129,7 @@ test("DearMe proof status can be lane scoped", () => {
   assert.equal(status.commands.printEnvTemplate, "pnpm --silent dearme:proof -- --print-env-template --lane voice > .dearme-proof.env");
   assert.equal(status.commands.runSafe, "pnpm --silent dearme:proof -- --run-safe --lane voice");
   assert.equal(status.commands.check, "pnpm --silent dearme:proof -- --check --lane voice");
+  assert.deepEqual(status.commands.liveProviderSetup, []);
   assert.match(formatDearMeProofStatus(status).join("\n"), /scoped proof status only/);
 });
 

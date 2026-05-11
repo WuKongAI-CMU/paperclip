@@ -2,6 +2,28 @@
 
 Date: 2026-05-11
 
+## Product Status Live-Provider Next Steps - 2026-05-11
+
+Product/architecture slice:
+
+- Updated `pnpm dearme:status` to include the exact next live-provider proof
+  commands when the local no-send and voice proof lanes are ready but external
+  proof is blocked. The compact product status now tells the coordinator what
+  to run next without requiring a separate provider-smoke discovery pass.
+- Reused the existing provider-smoke operator command planner and the single
+  ignored `.dearme-proof.env` bootstrap. Telegram plus iMessage remain grouped
+  under the shared `openclaw_messages` live run command when both OpenClaw
+  message smokes are blocked.
+- Kept this as a backstage coordinator affordance: no new settings surface, no
+  customer-facing provider language, no leaked credential names or values in
+  the status object, and no live send/deploy/spend without the explicit live
+  guard.
+
+Verification:
+
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:status`
+
 ## Symphony Handoff Artifact Deduplication - 2026-05-11
 
 Product/architecture slice:

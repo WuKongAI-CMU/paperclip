@@ -73,6 +73,7 @@ export interface DearMeProofStatus {
     printEnvTemplate: string;
     runSafe: string;
     check: string;
+    liveProviderSetup: string[];
   };
 }
 
@@ -318,6 +319,18 @@ function blockedVoiceTargets(
     }));
 }
 
+function liveProviderSetupCommands(
+  blockedTargets: readonly DearMeProviderSmokeReadiness["target"][],
+  lane: DearMeProofLane,
+): string[] {
+  if (blockedTargets.length === 0) return [];
+  return [
+    `pnpm --silent dearme:proof -- --print-env-template${laneFlag(lane)} > ${PROOF_ENV_FILE}`,
+    `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --check`,
+    ...childRunCommands(dearMeProviderSmokeOperatorCommands(blockedTargets)),
+  ];
+}
+
 export function summarizeDearMeProofStatus(
   readiness: DearMeProofReadiness,
   lane: DearMeProofLane = "all",
@@ -325,6 +338,7 @@ export function summarizeDearMeProofStatus(
   const provider = providerLane(readiness);
   const voice = voiceLane(readiness);
   const sections: DearMeProofStatusSection[] = [];
+  let liveProviderSetup: string[] = [];
 
   const localTargets: string[] = [];
   const localBlocked: DearMeProofStatusBlocker[] = [];
@@ -369,6 +383,10 @@ export function summarizeDearMeProofStatus(
       "meta_campaign",
     ] as const;
     const blockedTargets = blockedProviderTargets(provider.readiness, targets);
+    liveProviderSetup = liveProviderSetupCommands(
+      blockedTargets.map((item) => item.target as DearMeProviderSmokeReadiness["target"]),
+      lane,
+    );
     sections.push({
       key: "live_provider_proof",
       label: "Live provider proof",
@@ -386,6 +404,7 @@ export function summarizeDearMeProofStatus(
       printEnvTemplate: `pnpm --silent dearme:proof -- --print-env-template${laneFlag(lane)} > ${PROOF_ENV_FILE}`,
       runSafe: proofCommand("--run-safe", lane),
       check: proofCommand("--check", lane),
+      liveProviderSetup,
     },
   };
 }
@@ -436,6 +455,13 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
   lines.push(`- ${status.commands.printEnvTemplate}`);
   lines.push(`- ${status.commands.runSafe}`);
   lines.push(`- ${status.commands.check}`);
+  if (status.commands.liveProviderSetup.length > 0) {
+    lines.push("");
+    lines.push("Next live provider proof setup:");
+    for (const command of status.commands.liveProviderSetup) {
+      lines.push(`- ${command}`);
+    }
+  }
   return lines;
 }
 

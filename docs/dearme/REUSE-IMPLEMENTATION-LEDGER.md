@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `pnpm dearme:status` now carries the live-provider proof setup commands
+  directly when live proof is blocked. It reuses the provider-smoke command
+  planner with the single `.dearme-proof.env` file, keeps Telegram plus
+  iMessage grouped as `openclaw_messages`, and still withholds credential
+  details from the compact product verdict. Future workers should improve the
+  same proof/status surface rather than adding another connector setup screen.
 - Symphony terminal handoff now de-duplicates repeated committed artifacts for
   the same `issue + baseHead + head`. If a worker reruns after the coordinator
   has already captured an absorbable committed patch, the command prints
