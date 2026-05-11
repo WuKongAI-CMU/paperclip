@@ -2,6 +2,56 @@
 
 Date: 2026-05-11
 
+## DEA-60 Host Proof Activation Narrowed - 2026-05-11
+
+Product/architecture slice:
+
+- Exported the existing phone-ready private proof packet to
+  `dist/dearme-private-proof` and added the non-secret `peter-studio`
+  artifact/manifest refs to the ignored local `.dearme-proof.env`.
+- Reused the current `dearme:aha-proof` export and `dearme:provider-smoke`
+  manifest gate. No new route, setup surface, deploy path, customer language,
+  or custom-domain automation was added.
+- The production host smoke is now blocked only by the real external host
+  conditions: `DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=1` and a real
+  `DEARME_DEPLOY_SITE_BASE_URL` / `DEARME_SITE_BASE_URL` /
+  `DEARME_PUBLIC_SITE_BASE_URL`. Do not reopen a Symphony worker for DEA-60
+  until those values are available on the coordinator host.
+
+Verification:
+
+- `pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof`
+- `pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target deploy_site_production --json`
+- `pnpm --silent dearme:proof -- --env-file .dearme-proof.env --check --json`
+
+## Host Smoke Manifest Carries Recurring Proof Detail - 2026-05-11
+
+Product/architecture slice:
+
+- Promoted the recurring private-work proof from a count into host-smoke
+  evidence. The exported `host-smoke.json` now carries the continuation title,
+  next private review label, prepared artifacts, owner roles, and approval
+  boundaries for the next cycle.
+- Aligned the static private-site export with the browser preview by rendering
+  the next private review in the phone-ready HTML. This keeps the Polsia-style
+  phone proof on the single private-site artifact path instead of adding
+  another setup surface or demo command.
+- Tightened the production host smoke schema so a manifest without concrete
+  recurring-work detail blocks before dispatch/fetch. DearMe can still be
+  honest that live provider proof is blocked, but the local proof packet now
+  shows that the product keeps working after the first wow.
+
+Verification:
+
+- `pnpm test:dearme-aha-proof`
+- `pnpm test:dearme-provider-smoke`
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:aha-proof -- --export-site /tmp/dearme-recurring-host-smoke`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:proof -- --check`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Unified Proof Setup Exports The Phone-Ready Packet First - 2026-05-11
 
 Product/architecture slice:

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 import { tmpdir } from "node:os";
@@ -52,6 +52,21 @@ async function writeHostSmokePacket(dir: string, options: {
       starterDraftCount: 5,
       opportunityCount: 3,
       continuationCount: 3,
+      continuation: {
+        title: "Keeps working after the first proof",
+        nextReview: "Next private review",
+        preparedArtifacts: [
+          "Next proof-backed draft",
+          "Updated opportunity angle",
+          "Updated private proof card",
+        ],
+        ownerRoles: ["content_producer", "opportunity_scout", "portfolio_builder"],
+        approvalBoundaries: [
+          "The draft can improve privately; posting waits for approval.",
+          "The outreach can be prepared privately; sending waits for approval.",
+          "The page can be staged privately; public changes wait for approval.",
+        ],
+      },
     },
     checksums: {
       htmlSha256: sha256(html),
@@ -430,6 +445,7 @@ test("provider smoke requires proof-page text or manifest before production host
       DEARME_DEPLOY_SITE_BASE_URL: "https://sites.example.test",
       DEARME_DEPLOY_SITE_SMOKE_HANDLE: "peter-studio",
       DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: "dist/dearme-private-proof/peter-studio/index.html",
+      DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF: "dist/dearme-private-proof/peter-studio/missing-host-smoke.json",
       DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT: "peter-studio",
     },
     now,
@@ -437,7 +453,7 @@ test("provider smoke requires proof-page text or manifest before production host
 
   assert.equal(result.status, "blocked");
   assert.deepEqual(result.missing, [
-    "DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=<private proof page text> or readable DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF=dist/dearme-private-proof/peter-studio/host-smoke.json",
+    "DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=<private proof page text> or readable DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF=dist/dearme-private-proof/peter-studio/missing-host-smoke.json",
   ]);
 });
 
@@ -481,6 +497,42 @@ test("provider smoke derives production proof text from the host smoke manifest"
     assert.equal(result.hostStatus, 200);
     assert.equal(result.externalUrl, "https://dearme.example.test/peter-studio");
     assert.equal(capturedUrl, "https://dearme.example.test/peter-studio");
+  } finally {
+    await rm(dir, { force: true, recursive: true });
+  }
+});
+
+test("provider smoke requires recurring work detail in the host smoke manifest", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-provider-host-smoke-continuation-"));
+  try {
+    const packet = await writeHostSmokePacket(dir);
+    const manifest = JSON.parse(await readFile(packet.manifestPath, "utf8")) as {
+      checks: { continuation?: unknown };
+    };
+    delete manifest.checks.continuation;
+    await writeFile(packet.manifestPath, JSON.stringify(manifest, null, 2), "utf8");
+
+    const [result] = await runDearMeProviderSmoke({
+      target: "deploy_site_production",
+      env: {
+        DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
+        DEARME_DEPLOY_SITE_BASE_URL: "https://dearme.example.test",
+        DEARME_DEPLOY_SITE_SMOKE_HANDLE: packet.handle,
+        DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: packet.artifactRef,
+        DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF: packet.manifestPath,
+      },
+      now,
+    });
+
+    assert.equal(result.status, "blocked");
+    assert.equal(result.reason, "invalid-host-smoke-manifest");
+    assert.deepEqual(result.missing, [
+      "host-smoke.json checks.continuation.title must be present",
+      "host-smoke.json checks.continuation.nextReview must be present",
+      "host-smoke.json checks.continuation.preparedArtifacts must be non-empty",
+      "host-smoke.json checks.continuation.ownerRoles must be non-empty",
+      "host-smoke.json checks.continuation.approvalBoundaries must be non-empty",
+    ]);
   } finally {
     await rm(dir, { force: true, recursive: true });
   }

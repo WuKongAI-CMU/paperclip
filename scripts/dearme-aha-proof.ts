@@ -74,6 +74,13 @@ export interface DearMePrivateSiteHostSmokeManifest {
     starterDraftCount: number;
     opportunityCount: number;
     continuationCount: number;
+    continuation: {
+      title: string;
+      nextReview: string;
+      preparedArtifacts: string[];
+      ownerRoles: string[];
+      approvalBoundaries: string[];
+    };
   };
   checksums: {
     htmlSha256: string;
@@ -251,6 +258,7 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
     p { line-height: 1.55; }
     .summary { max-width: 760px; margin: 0; color: #3d4941; font-size: 17px; }
     .route { display: inline-flex; width: fit-content; max-width: 100%; padding: 8px 10px; border: 1px solid #c9c1b3; border-radius: 8px; background: #fffaf0; color: #273128; font-size: 14px; overflow-wrap: anywhere; }
+    .next-review { margin: 10px 0 14px; color: #273128; font-weight: 700; }
     section { padding: 24px 0 0; }
     .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
     .card { border: 1px solid #d8d2c4; border-radius: 8px; background: #fffdf8; padding: 14px; min-width: 0; }
@@ -282,6 +290,7 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
     <section aria-label="Keeps working">
       <h2>${escapeHtml(preview.continuationPlan.title)}</h2>
       <p class="summary">${escapeHtml(preview.continuationPlan.summary)}</p>
+      <p class="next-review">${escapeHtml(preview.continuationPlan.nextReview)}</p>
       <div class="grid">${continuationCards}</div>
     </section>
 
@@ -334,6 +343,13 @@ export function createDearMePrivateSiteHostSmokeManifest(
       starterDraftCount: preview.starterPosts.length,
       opportunityCount: preview.opportunityShortlist.length,
       continuationCount: preview.continuationPlan.items.length,
+      continuation: {
+        title: preview.continuationPlan.title,
+        nextReview: preview.continuationPlan.nextReview,
+        preparedArtifacts: preview.continuationPlan.items.map((item) => item.preparedArtifact),
+        ownerRoles: preview.continuationPlan.items.map((item) => item.ownerRole),
+        approvalBoundaries: preview.continuationPlan.items.map((item) => item.approvalBoundary),
+      },
     },
     checksums: {
       htmlSha256: sha256(html),

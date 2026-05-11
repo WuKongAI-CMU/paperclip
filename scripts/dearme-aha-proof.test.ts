@@ -43,6 +43,7 @@ test("DearMe aha proof proves the first private five-minute loop", () => {
   assert.equal(preview.opportunityShortlist.length, 5);
   assert.equal(preview.sitePreview.status, "private_preview");
   assert.equal(preview.continuationPlan.title, "Keeps working after the first proof");
+  assert.equal(preview.continuationPlan.nextReview, "Next private review");
   assert.equal(preview.continuationPlan.items.length, 3);
   assert.deepEqual(preview.continuationPlan.items.map((item) => item.preparedArtifact), [
     "Next proof-backed draft",
@@ -135,6 +136,13 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
         starterDraftCount: number;
         opportunityCount: number;
         continuationCount: number;
+        continuation: {
+          title: string;
+          nextReview: string;
+          preparedArtifacts: string[];
+          ownerRoles: string[];
+          approvalBoundaries: string[];
+        };
       };
       checksums: { htmlSha256: string; proofSha256: string };
     };
@@ -147,6 +155,7 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
     assert.equal(result.expectedText, "Peter Studio has a private growth team already working");
     assert.equal(result.htmlBytes, Buffer.byteLength(html, "utf8"));
     assert.match(result.htmlSha256, /^[a-f0-9]{64}$/);
+    assert.match(html, /Next private review/);
     assert.match(html, /Updated private proof card/);
     assert.deepEqual(proof, preview);
     assert.deepEqual(manifest.files, { html: "index.html", proof: "proof.json" });
@@ -159,6 +168,21 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
     assert.equal(manifest.checks.starterDraftCount, DEARME_FIRST_CYCLE_STARTER_POST_COUNT);
     assert.equal(manifest.checks.opportunityCount, 5);
     assert.equal(manifest.checks.continuationCount, 3);
+    assert.deepEqual(manifest.checks.continuation, {
+      title: "Keeps working after the first proof",
+      nextReview: "Next private review",
+      preparedArtifacts: [
+        "Next proof-backed draft",
+        "Updated opportunity angle",
+        "Updated private proof card",
+      ],
+      ownerRoles: ["content_producer", "opportunity_scout", "portfolio_builder"],
+      approvalBoundaries: [
+        "The draft can improve privately; posting waits for approval.",
+        "The outreach can be prepared privately; sending waits for approval.",
+        "The page can be staged privately; public changes wait for approval.",
+      ],
+    });
     assert.match(manifest.checksums.htmlSha256, /^[a-f0-9]{64}$/);
     assert.match(manifest.checksums.proofSha256, /^[a-f0-9]{64}$/);
   } finally {

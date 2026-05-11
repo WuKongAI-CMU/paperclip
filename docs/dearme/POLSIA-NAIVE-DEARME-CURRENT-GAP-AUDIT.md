@@ -58,6 +58,9 @@ Current DearMe branch:
     `peter-studio/host-smoke.json`
   - host-smoke manifest carries the expected phone-check text plus checksums for
     the HTML and proof JSON
+  - host-smoke manifest also carries concrete recurring-work detail: the
+    continuation title, next private review, prepared next-cycle artifacts,
+    owner roles, and approval boundaries
   - exported HTML has no customer-hidden substrate, provider, credential, token,
     or workbench language
 - `pnpm --silent dearme:provider-smoke -- --print-env-template --target deploy_site_production`
@@ -143,9 +146,9 @@ The external/live provider lane is not yet strong enough.
 | Substrate/control plane reuse | 82 / 100 | Strong. DearMe is using the Paperclip-style company, issue, approval, route, service, dispatch, handoff, and proof machinery instead of rebuilding it. |
 | DearMe product semantics | 76 / 100 | Good. Brand OS, voice, portfolio, opportunity, reports, Work Ready, launch gates, review memory, and customer-corpus voice proof are now DearMe-owned concepts. |
 | UX simplicity | 67 / 100 | Improving. The browser now shows one-sentence-to-first-five-minute progress and the proof can become a static private site, but onboarding is still heavier than Polsia's one-input activation. |
-| Autonomous runtime proof | 69 / 100 | Real but not externally proven. Local safe proof, private aha proof, browser-visible progress, static private-site export, customer-corpus voice proof, recurring private-work contract, and fail-closed host-smoke readiness are ready; live provider proof remains open. |
-| Polsia-style first-wow | 75 / 100 | Private proof is runnable, watchable, exportable as a phone-ready artifact, deep enough to show five private drafts, and now tied to a real host-smoke packet. The missing main moment is serving it from a real host plus provider-backed execution. |
-| Naive-style durable team runtime | 78 / 100 | Solid substrate fit. Symphony/worktree coordination is clean and the Paperclip-style runtime is reused; the recurring private-work contract is now visible, but live provider smoke is still missing. |
+| Autonomous runtime proof | 70 / 100 | Real but not externally proven. Local safe proof, private aha proof, browser-visible progress, static private-site export, customer-corpus voice proof, recurring private-work contract, and fail-closed host-smoke readiness are ready; the host-smoke packet now proves next-cycle work detail, but live provider proof remains open. |
+| Polsia-style first-wow | 76 / 100 | Private proof is runnable, watchable, exportable as a phone-ready artifact, deep enough to show five private drafts, and now tied to a real host-smoke packet with recurring-work detail. The missing main moment is serving it from a real host plus provider-backed execution. |
+| Naive-style durable team runtime | 79 / 100 | Solid substrate fit. Symphony/worktree coordination is clean and the Paperclip-style runtime is reused; the recurring private-work contract is now visible in the hostable artifact, but live provider smoke is still missing. |
 
 ## What DearMe Has Actually Done
 

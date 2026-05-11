@@ -129,6 +129,13 @@ interface DeploySiteHostSmokeManifest {
     starterDraftCount: number;
     opportunityCount: number;
     continuationCount: number;
+    continuation: {
+      title: string;
+      nextReview: string;
+      preparedArtifacts: string[];
+      ownerRoles: string[];
+      approvalBoundaries: string[];
+    };
   };
   checksums: {
     htmlSha256: string;
@@ -450,6 +457,12 @@ function isSha256(value: unknown): value is string {
   return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
 }
 
+function nonEmptyStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) &&
+    value.length > 0 &&
+    value.every((item) => typeof item === "string" && Boolean(nonEmpty(item)));
+}
+
 function parseDeploySiteHostSmokeManifest(raw: string) {
   let parsed: unknown;
   try {
@@ -465,6 +478,7 @@ function parseDeploySiteHostSmokeManifest(raw: string) {
 
   const files = isObject(parsed.files) ? parsed.files : {};
   const checks = isObject(parsed.checks) ? parsed.checks : {};
+  const continuation = isObject(checks.continuation) ? checks.continuation : {};
   const checksums = isObject(parsed.checksums) ? parsed.checksums : {};
   if (parsed.version !== 1) errors.push("host-smoke.json version must be 1");
   if (!nonEmpty(typeof parsed.handle === "string" ? parsed.handle : undefined)) {
@@ -496,6 +510,21 @@ function parseDeploySiteHostSmokeManifest(raw: string) {
   }
   if (typeof checks.continuationCount !== "number" || checks.continuationCount < 1) {
     errors.push("host-smoke.json checks.continuationCount must be at least 1");
+  }
+  if (!nonEmpty(typeof continuation.title === "string" ? continuation.title : undefined)) {
+    errors.push("host-smoke.json checks.continuation.title must be present");
+  }
+  if (!nonEmpty(typeof continuation.nextReview === "string" ? continuation.nextReview : undefined)) {
+    errors.push("host-smoke.json checks.continuation.nextReview must be present");
+  }
+  if (!nonEmptyStringArray(continuation.preparedArtifacts)) {
+    errors.push("host-smoke.json checks.continuation.preparedArtifacts must be non-empty");
+  }
+  if (!nonEmptyStringArray(continuation.ownerRoles)) {
+    errors.push("host-smoke.json checks.continuation.ownerRoles must be non-empty");
+  }
+  if (!nonEmptyStringArray(continuation.approvalBoundaries)) {
+    errors.push("host-smoke.json checks.continuation.approvalBoundaries must be non-empty");
   }
   if (!isSha256(checksums.htmlSha256)) {
     errors.push("host-smoke.json checksums.htmlSha256 must be a SHA-256 hex digest");

@@ -15,6 +15,25 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- DEA-60 is narrowed to real host activation, not another worker-build slice.
+  The coordinator has exported `dist/dearme-private-proof`, stored the
+  non-secret `peter-studio` artifact/manifest refs in the ignored
+  `.dearme-proof.env`, and verified `deploy_site_production` now lacks only
+  production opt-in plus a real DearMe host base URL. Future Symphony work
+  should wait for those two external values instead of rebuilding provider-smoke
+  setup or reintroducing `.dearme-provider-smoke.env` as the coordinator source
+  of truth.
+- The private-site export's `host-smoke.json` now carries concrete recurring
+  proof detail: continuation title, next private review, prepared artifacts,
+  owner roles, and approval boundaries. `dearme:provider-smoke` validates those
+  fields before a production host smoke can dispatch/fetch, so a hostable packet
+  must prove DearMe keeps working instead of only proving that one static page
+  exists. Future workers should extend this same manifest/proof lane for phone
+  proof; do not add another recurring-work dashboard or setup checklist.
+- The static private-site HTML now renders `Next private review` in the
+  continuation section, matching the browser preview's recurring-work panel.
+  This is the Polsia/Naive integration rule in product form: keep the substrate
+  backstage, but make the phone artifact show autonomous continuity.
 - `pnpm dearme:status` / `pnpm dearme:proof -- --check` now put
   `pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof`
   directly in the blocked live-provider setup path before provider smoke
