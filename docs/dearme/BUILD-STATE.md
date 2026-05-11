@@ -3318,16 +3318,20 @@ Implementation slice:
   `@paperclipai/dearme-ai-proxy`, so the server now answers
   `POST /api/proxy/ai/v1/chat/completions` and
   `POST /api/proxy/ai/v1/messages`.
-- Kept the route boundary small: `dm_sk_*` auth, shared model routing,
-  shared prompt-cache normalization, and `cost_events` insertion into the
-  existing schema shape. No schema migration was needed in this slice.
+- DM-145E extends the same route boundary with
+  `POST /api/proxy/ai/agent/run`, using the same `dm_sk_*` auth,
+  `resolveDearMeProxyModelRouting` tier selection, injected executor posture,
+  and `cost_events` insertion into the existing schema shape.
+- Kept the route boundary small: one bearer-key store, one company/agent
+  resolver, one prompt-cache normalization path, and one cost ledger. No schema
+  migration was needed in this slice.
 - The mounted route now fails closed with `503` unless a provider execution
   function is injected. This prevents the runtime skeleton from returning
-  synthetic output on a real product path.
+  synthetic output on a real product path, including `/agent/run`.
 - Kept the existing root `POST /v1/voice/score` route unchanged.
-- Remaining DM-145 follow-ups are the durable key issuance/revocation
-  workflow, stricter tenant binding for proxy requests, and live provider
-  execution. Those stay in later runtime slices.
+- Remaining DM-145 follow-up is live provider execution wiring behind the
+  injected executor hooks. Durable key issuance/revocation and stricter tenant
+  binding were absorbed in earlier slices.
 
 Verification:
 

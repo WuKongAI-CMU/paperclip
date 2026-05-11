@@ -3063,11 +3063,14 @@ execution, and the `agent/run` runtime.
 
 | File | Used by ticket | What it defines |
 |---|---|---|
-| `server/src/routes/dearme-ai-proxy.ts` | DM-145A | `POST /api/proxy/ai/v1/chat/completions` and `POST /api/proxy/ai/v1/messages` mounted under the shared contract base path, `dm_sk_*` auth at the route boundary, shared routing through `resolveDearMeProxyModelRouting`, prompt-cache normalization through `normalizeDearMeProxyUsage` / `buildDearMeCostLedgerEvent`, and `cost_events` writes into the existing schema shape |
+| `server/src/routes/dearme-ai-proxy.ts` | DM-145A / DM-145E | `POST /api/proxy/ai/v1/chat/completions`, `POST /api/proxy/ai/v1/messages`, and `POST /api/proxy/ai/agent/run` mounted under the shared contract base path, `dm_sk_*` auth at the route boundary, shared routing through `resolveDearMeProxyModelRouting`, prompt-cache normalization through `normalizeDearMeProxyUsage` / `buildDearMeCostLedgerEvent`, and `cost_events` writes into the existing schema shape |
 | `server/src/app.ts` | DM-145A | Mounts the DearMe proxy router at `DM_PROXY_BASE_URL_DEFAULT` so the proxy routes are reachable without changing the voice-gate mount |
 
 The mounted skeleton fails closed with `503` unless provider execution is
 injected, so the product path cannot silently return synthetic proxy output.
+All three proxy surfaces share the same key lookup, company/agent resolution,
+and ledger writer. Do not add a parallel auth store or a second proxy cost
+path.
 
 Latest focused verification (2026-05-10):
 

@@ -12,6 +12,8 @@ import {
   isDearMeApiKey,
   normalizeDearMeProxyUsage,
   resolveDearMeProxyModelRouting,
+  type AgentRunRequest,
+  type AgentRunResponse,
   type AnthropicMessagesRequestExtensions,
   type CostLedgerEvent,
   type OpenAiChatRequestExtensions,
@@ -52,6 +54,15 @@ const anthropicMessagesRequestSchema = z.object({
   tier: z.enum(PROXY_TIER_VALUES).optional(),
 }).passthrough();
 
+const agentRunRequestSchema = z.object({
+  prompt: z.string().trim().min(1).max(50_000),
+  mcpServers: z.array(z.string().trim().min(1).max(128)).max(32).optional(),
+  task: z.string().trim().min(1).max(256).optional(),
+  subscriptionId: z.string().trim().min(1).max(256).optional(),
+  complexity: z.number().optional(),
+  maxTurns: z.number().int().min(1).max(250).optional(),
+}).passthrough();
+
 export interface DearMeProxyContext {
   companyId: string;
   agentId: string;
@@ -60,6 +71,13 @@ export interface DearMeProxyContext {
 export interface DearMeProxyExecutionResult {
   content: string;
   usage: DearMeProxyUsageLike;
+  blendedUsdMicros?: number;
+}
+
+export interface DearMeProxyAgentRunExecutionResult {
+  output: string;
+  toolCalls: AgentRunResponse["toolCalls"];
+  tokensUsed: AgentRunResponse["tokensUsed"];
   blendedUsdMicros?: number;
 }
 
@@ -83,6 +101,13 @@ export interface DearMeProxyRoutesOptions {
       correlationId: string;
     },
   ) => Promise<DearMeProxyExecutionResult>;
+  executeAgentRun?: (
+    input: AgentRunRequest & {
+      maxTurns: number;
+      routing: { tier: DearMeProxyModelRoutingTier; model: string; complexity: number };
+      correlationId: string;
+    },
+  ) => Promise<DearMeProxyAgentRunExecutionResult>;
   persistCostEvent?: (event: typeof costEvents.$inferInsert) => Promise<void>;
 }
 
@@ -167,11 +192,11 @@ function pickTier(input: { tier?: string | null; complexity?: number | null }): 
 }
 
 function resolveTaskBillingCode(
-  request: OpenAiChatRequestExtensions | AnthropicMessagesRequestExtensions,
+  request: { task?: string; subscriptionId?: string },
   protocolBillingCode?: string | null,
 ): string | null {
-  const task = "task" in request ? request.task?.trim() : null;
-  const subscriptionId = "subscriptionId" in request ? request.subscriptionId?.trim() : null;
+  const task = request.task?.trim() ?? null;
+  const subscriptionId = request.subscriptionId?.trim() ?? null;
   return protocolBillingCode?.trim() || task || subscriptionId || null;
 }
 
@@ -272,11 +297,11 @@ function routeCostEvent(input: {
   companyId: string;
   agentId: string;
   billingCode: string | null;
-  protocol: "openai" | "anthropic";
+  protocol: "openai" | "anthropic" | "agent";
   correlationId: string;
   tier: DearMeProxyModelRoutingTier;
   model: string;
-  usage: DearMeProxyExecutionResult["usage"];
+  usage: DearMeProxyUsageLike;
   blendedUsdMicros: number;
   now: Date;
 }) {
@@ -305,6 +330,50 @@ function routeCostEvent(input: {
     costCents: Math.max(0, Math.round(ledgerEvent.blendedUsdMicros / 10_000)),
     occurredAt: input.now,
   } satisfies typeof costEvents.$inferInsert;
+}
+
+function buildAgentRunUsage(tokensUsed: AgentRunResponse["tokensUsed"]): DearMeProxyUsageLike {
+  const normalized = normalizeAgentRunTokensUsed(tokensUsed);
+  return {
+    input_tokens: normalized.input,
+    output_tokens: normalized.output,
+    cache_creation_input_tokens: normalized.cacheCreate,
+    cache_read_input_tokens: normalized.cacheRead,
+  };
+}
+
+function normalizeAgentRunTokensUsed(tokensUsed: AgentRunResponse["tokensUsed"]) {
+  const normalized = normalizeDearMeProxyUsage({
+    input_tokens: tokensUsed.input,
+    output_tokens: tokensUsed.output,
+    cache_creation_input_tokens: tokensUsed.cacheCreate,
+    cache_read_input_tokens: tokensUsed.cacheRead,
+  });
+
+  return {
+    input: normalized.inputTokens,
+    output: normalized.outputTokens,
+    cacheCreate: normalized.cacheCreateTokens,
+    cacheRead: normalized.cacheReadTokens,
+  };
+}
+
+function buildAgentRunResponse(input: {
+  output: string;
+  toolCalls: AgentRunResponse["toolCalls"];
+  tokensUsed: AgentRunResponse["tokensUsed"];
+  routing: { tier: DearMeProxyModelRoutingTier; model: string; complexity: number };
+  correlationId: string;
+}) {
+  const tokensUsed = normalizeAgentRunTokensUsed(input.tokensUsed);
+  return {
+    output: input.output,
+    toolCalls: input.toolCalls,
+    tokensUsed,
+    tier: input.routing.tier,
+    model: input.routing.model,
+    correlationId: input.correlationId,
+  } satisfies AgentRunResponse;
 }
 
 async function handleOpenAiChat(
@@ -415,6 +484,67 @@ async function handleAnthropicMessages(
   );
 }
 
+async function handleAgentRun(
+  req: Request,
+  res: Response,
+  db: Db,
+  opts: DearMeProxyRoutesOptions,
+) {
+  const body = agentRunRequestSchema.parse(req.body) as AgentRunRequest & {
+    prompt: string;
+    mcpServers?: ReadonlyArray<string>;
+    task?: string;
+    subscriptionId?: string;
+    complexity?: number;
+    maxTurns?: number;
+  };
+  const routing = pickTier({
+    tier: req.get(DM_PROXY_HEADERS.modelTier)?.trim() || null,
+    complexity: body.complexity ?? null,
+  });
+  const correlationId =
+    req.get(DM_PROXY_HEADERS.correlationId)?.trim() || opts.correlationId?.() || randomUUID();
+  const now = opts.now?.() ?? new Date();
+  const execute = opts.executeAgentRun;
+  if (!execute) {
+    throw new HttpError(503, "DearMe AI proxy executor is not configured");
+  }
+  const result = await execute({
+    ...body,
+    maxTurns: body.maxTurns ?? 25,
+    routing,
+    correlationId,
+  });
+  const context = await resolveProxyContext(req, opts.resolveProxyContext);
+  const billingCode = resolveTaskBillingCode(body);
+  const usage = buildAgentRunUsage(result.tokensUsed);
+  const costEvent = routeCostEvent({
+    companyId: context.companyId,
+    agentId: context.agentId,
+    billingCode,
+    protocol: "agent",
+    correlationId,
+    tier: routing.tier,
+    model: routing.model,
+    usage,
+    blendedUsdMicros: result.blendedUsdMicros ?? 0,
+    now,
+  });
+
+  await persistProxyCostEvent(db, costEvent, opts.persistCostEvent);
+  res.set(DM_PROXY_HEADERS.correlationId, correlationId);
+  res.set(DM_PROXY_HEADERS.modelTier, routing.tier);
+  res.json(
+    buildAgentRunResponse({
+      output: result.output,
+      toolCalls: result.toolCalls,
+      tokensUsed: result.tokensUsed,
+      routing,
+      correlationId,
+    }),
+  );
+}
+
 export function dearMeAiProxyRoutes(db: Db, opts: DearMeProxyRoutesOptions = {}) {
   const router = Router();
 
@@ -433,6 +563,15 @@ export function dearMeAiProxyRoutes(db: Db, opts: DearMeProxyRoutesOptions = {})
     validate(anthropicMessagesRequestSchema),
     async (req, res) => {
       await handleAnthropicMessages(req, res, db, opts);
+    },
+  );
+
+  router.post(
+    "/agent/run",
+    requireDearMeApiKey(db),
+    validate(agentRunRequestSchema),
+    async (req, res) => {
+      await handleAgentRun(req, res, db, opts);
     },
   );
 

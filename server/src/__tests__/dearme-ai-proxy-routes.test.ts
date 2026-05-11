@@ -49,9 +49,10 @@ function createApp(
 }
 
 const openAiFastModel = DEARME_PROXY_MODEL_ROUTING_TABLE.find((row) => row.tier === "fast")?.model;
+const balancedModel = DEARME_PROXY_MODEL_ROUTING_TABLE.find((row) => row.tier === "balanced")?.model;
 const deepModel = DEARME_PROXY_MODEL_ROUTING_TABLE.find((row) => row.tier === "deep")?.model;
 
-if (!openAiFastModel || !deepModel) {
+if (!openAiFastModel || !balancedModel || !deepModel) {
   throw new Error("Expected DearMe proxy routing tiers to exist");
 }
 
@@ -177,6 +178,115 @@ describe("dearMeAiProxyRoutes", () => {
     );
   });
 
+  it("routes agent runs through the injected executor, normalizes tokens, and attributes cost to the resolved key owner", async () => {
+    const executeAgentRun = vi.fn(async (input: any) => {
+      expect(input).toMatchObject({
+        prompt: "Prepare the proof artifact.",
+        mcpServers: ["memory", "skills"],
+        task: "agent-run-proof",
+        complexity: 2,
+        maxTurns: 25,
+        routing: {
+          tier: "balanced",
+          model: balancedModel,
+          complexity: 2,
+        },
+        correlationId: "corr-agent-1",
+      });
+      return {
+        output: "Agent-run proof",
+        toolCalls: [
+          {
+            name: "search_memory",
+            arguments: { query: "proof" },
+            result: { matches: 1 },
+          },
+        ],
+        tokensUsed: {
+          input: 14.9,
+          output: 6.4,
+          cacheCreate: 2.2,
+          cacheRead: 11.8,
+        },
+        blendedUsdMicros: 234_567,
+      };
+    });
+
+    const { app, insert, values } = createApp(
+      {
+        now: () => new Date("2026-05-10T14:00:00.000Z"),
+        executeAgentRun,
+      },
+      {
+        id: "dm-key-3",
+        agentId: "agent-real",
+        companyId: "company-real",
+      },
+    );
+
+    const res = await request(app)
+      .post(`${DEARME_PROXY_BASE_PATH}/agent/run`)
+      .set("Authorization", "Bearer dm_sk_test_123")
+      .set("X-DearMe-Company-ID", "company-spoofed")
+      .set("X-DearMe-Agent-ID", "agent-spoofed")
+      .set("X-DearMe-Correlation-Id", "corr-agent-1")
+      .set("X-DearMe-Model-Tier", "balanced")
+      .send({
+        prompt: "Prepare the proof artifact.",
+        mcpServers: ["memory", "skills"],
+        task: "agent-run-proof",
+        complexity: 2,
+      })
+      .expect(200);
+
+    expect(executeAgentRun).toHaveBeenCalledTimes(1);
+    expect(res.headers["x-dearme-correlation-id"]).toBe("corr-agent-1");
+    expect(res.headers["x-dearme-model-tier"]).toBe("balanced");
+    expect(res.body).toMatchObject({
+      output: "Agent-run proof",
+      toolCalls: [
+        {
+          name: "search_memory",
+          arguments: { query: "proof" },
+          result: { matches: 1 },
+        },
+      ],
+      tokensUsed: {
+        input: 14,
+        output: 6,
+        cacheCreate: 2,
+        cacheRead: 11,
+      },
+      tier: "balanced",
+      model: balancedModel,
+      correlationId: "corr-agent-1",
+    });
+
+    expect(insert).toHaveBeenCalledWith(costEvents);
+    expect(values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        companyId: "company-real",
+        agentId: "agent-real",
+        billingCode: "agent-run-proof",
+        provider: "dearme_proxy",
+        biller: "dearme_proxy",
+        billingType: "metered_api",
+        model: balancedModel,
+        inputTokens: 14,
+        cachedInputTokens: 11,
+        outputTokens: 6,
+        costCents: 23,
+        occurredAt: expect.any(Date),
+      }),
+    );
+    expect(values).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        companyId: "company-spoofed",
+        agentId: "agent-spoofed",
+      }),
+    );
+  });
+
   it("rejects revoked DearMe keys", async () => {
     const { app, insert } = createApp(undefined, null);
 
@@ -190,6 +300,49 @@ describe("dearMeAiProxyRoutes", () => {
       .expect(401);
 
     expect(res.body).toEqual({ error: "DearMe API key required" });
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed DearMe bearer tokens before agent-run executor or cost writes", async () => {
+    const executeAgentRun = vi.fn();
+    const { app, insert } = createApp({ executeAgentRun }, null);
+
+    const res = await request(app)
+      .post(`${DEARME_PROXY_BASE_PATH}/agent/run`)
+      .set("Authorization", "Bearer dm_sk_test_123 extra")
+      .send({
+        prompt: "Prepare the proof artifact.",
+        mcpServers: ["memory"],
+      })
+      .expect(401);
+
+    expect(res.body).toEqual({ error: "DearMe API key required" });
+    expect(executeAgentRun).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 and writes no cost event when the agent-run executor is not configured", async () => {
+    const { app, insert } = createApp(
+      {
+        now: () => new Date("2026-05-10T15:00:00.000Z"),
+      },
+      {
+        id: "dm-key-4",
+        agentId: "agent-real",
+        companyId: "company-real",
+      },
+    );
+
+    const res = await request(app)
+      .post(`${DEARME_PROXY_BASE_PATH}/agent/run`)
+      .set("Authorization", "Bearer dm_sk_test_123")
+      .send({
+        prompt: "Prepare the proof artifact.",
+        mcpServers: ["memory"],
+      })
+      .expect(503);
+
+    expect(res.body).toEqual({ error: "DearMe AI proxy executor is not configured" });
     expect(insert).not.toHaveBeenCalled();
   });
 
