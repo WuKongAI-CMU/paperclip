@@ -2,6 +2,31 @@
 
 Date: 2026-05-11
 
+## Local Telegram Self-Smoke Defaults Land - 2026-05-11
+
+Product/architecture slice:
+
+- Added an explicit `DEARME_OPENCLAW_USE_LOCAL_TELEGRAM_SMOKE=1` opt-in for
+  `dearme:provider-smoke`. When local OpenClaw config reuse is enabled too, the
+  smoke runner can read the existing host-local Telegram allow-list and supply a
+  safe DearMe smoke body without copying or printing the recipient or gateway
+  token.
+- This narrows the next OpenClaw proof step from "configure Telegram gateway,
+  recipient, and body by hand" to "confirm a live Telegram self-smoke." The
+  readiness path remains non-sending; real delivery still requires `--live`
+  plus `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`.
+- iMessage remains intentionally manual because there is no equivalent
+  host-local safe allow-list in the current OpenClaw config. LinkedIn and Meta
+  remain behind their own live provider credentials.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+- `pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages --json`
+- `pnpm --silent dearme:status`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Production Host Smoke Lands Via GitHub Pages - 2026-05-11
 
 Product/architecture slice:

@@ -48,6 +48,11 @@ not replace the live recipient/body smoke. The local OpenClaw gateway itself is
 already reusable through the ignored `.dearme-proof.env` opt-in, which derives
 URL/auth from `~/.openclaw/openclaw.json` without duplicating or printing the
 token.
+Telegram can now also reuse the host-local OpenClaw allow-list as an explicit
+self-smoke default. That removes another manual setup step without making
+readiness send anything: live Telegram delivery still requires `--live` plus
+`DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`, and iMessage/LinkedIn/Meta remain
+separate live-provider gaps.
 
 ## Evidence Checked
 
@@ -150,14 +155,18 @@ Current DearMe branch:
   - Telegram and iMessage share the OpenClaw gateway proof path
   - with `.dearme-proof.env`, the gateway URL/auth are derived from the
     host-local OpenClaw config without printing the token
-  - the remaining live message blockers are Telegram/iMessage recipient/body
-    payloads plus the explicit live-send confirmation guard
+  - with the local Telegram self-smoke opt-in, Telegram derives its smoke
+    recipient from the existing OpenClaw allow-list and supplies a safe DearMe
+    smoke body without printing either value
+  - the remaining live message blockers are iMessage recipient/body payloads
+    plus the explicit live-send confirmation guard
 - local env scan
   - only `LINEAR_API_KEY` is present for the relevant DearMe/OpenClaw/provider
     prefix set
   - `.dearme-proof.env` exists for local proof/voice calibration, production
-    host smoke, and OpenClaw gateway-config reuse; it still does not contain
-    live provider recipients, channel secrets, or send bodies
+    host smoke, OpenClaw gateway-config reuse, and explicit Telegram
+    self-smoke default reuse; it still does not contain live provider
+    recipients, channel secrets, or send bodies
 - `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
   - the browser onboarding surface now renders the customer-safe first-five-minute
     progress stream and top-focus live private-pass pulse without hidden
@@ -206,6 +215,9 @@ one-sentence start, and a static private-site export over its private proof
 contract. The sample artifact is now served from a public HTTPS GitHub Pages
 host; what still keeps DearMe behind Polsia is provider-backed execution and a
 recurring proof loop the user can inspect without coordinator stitching.
+The next proof is now narrower: Telegram can be self-smoked from the existing
+OpenClaw allow-list once the live-send guard is deliberately enabled, while
+iMessage/LinkedIn/Meta still need their own provider payloads or credentials.
 
 DearMe is closer to Naive/Paperclip on substrate than it is to Polsia on
 first-wow. The control-plane reuse is strong. The first-five-minute private
@@ -222,9 +234,9 @@ is not yet strong enough.
 | Substrate/control plane reuse | 82 / 100 | Strong. DearMe is using the Paperclip-style company, issue, approval, route, service, dispatch, handoff, and proof machinery instead of rebuilding it. |
 | DearMe product semantics | 79 / 100 | Good. Brand OS, voice, portfolio, opportunity, reports, Work Ready, launch gates, review memory, employee handoff primitives, and customer-corpus voice proof are now DearMe-owned concepts. |
 | UX simplicity | 72 / 100 | Improving. The hero now has one primary one-sentence action, the first payoff and 90-second cycle appear before the team/workbench surfaces, and the browser verifies the private starter draft plus first lead on the real preview route; deeper setup still exists below the fold. |
-| Autonomous runtime proof | 74 / 100 | Real and partly externally proven. Local safe proof, private aha proof, browser-visible progress, static private-site export, GitHub Pages production host smoke, customer-corpus voice proof, recurring private-work contract, clean integration absorption, and fail-closed host-smoke readiness are ready; live channel/provider proof remains open. |
-| Polsia-style first-wow | 84 / 100 | Private proof is runnable, watchable, browser-verified on the real preview route, first-screened through one sentence, exportable as a phone-ready artifact, deep enough to show five private drafts, and now reachable on a public HTTPS host for the sample packet. The missing main moment is provider-backed execution and recurring phone-visible proof. |
-| Naive-style durable team runtime | 82 / 100 | Solid substrate fit. Symphony/worktree coordination is clean, latest handoffs are committed, absorption proof appears in `dearme:status`, and employee handoff primitives now bridge DearMe semantics to the existing outbound bindings; live provider smoke is still missing. |
+| Autonomous runtime proof | 76 / 100 | Real and partly externally proven. Local safe proof, private aha proof, browser-visible progress, static private-site export, GitHub Pages production host smoke, customer-corpus voice proof, recurring private-work contract, clean integration absorption, fail-closed host-smoke readiness, and local Telegram self-smoke defaults are ready; live channel/provider proof remains open. |
+| Polsia-style first-wow | 85 / 100 | Private proof is runnable, watchable, browser-verified on the real preview route, first-screened through one sentence, exportable as a phone-ready artifact, deep enough to show five private drafts, and now reachable on a public HTTPS host for the sample packet. Telegram is close to a real self-smoke; the missing main moment is provider-backed execution and recurring phone-visible proof. |
+| Naive-style durable team runtime | 83 / 100 | Solid substrate fit. Symphony/worktree coordination is clean, latest handoffs are committed, absorption proof appears in `dearme:status`, employee handoff primitives bridge DearMe semantics to the existing outbound bindings, and Telegram can reuse local OpenClaw config/allow-list; live provider smoke is still missing. |
 
 ## What DearMe Has Actually Done
 

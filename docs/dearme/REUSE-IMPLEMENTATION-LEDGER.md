@@ -13,6 +13,25 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Local OpenClaw Telegram Boundary - 2026-05-11
+
+- `dearme:provider-smoke` can now opt into a local Telegram self-smoke setup
+  with `DEARME_USE_LOCAL_OPENCLAW_CONFIG=1` and
+  `DEARME_OPENCLAW_USE_LOCAL_TELEGRAM_SMOKE=1`. The smoke runner reuses the
+  existing OpenClaw gateway config plus the host-local Telegram allow-list, and
+  supplies a safe DearMe smoke body without printing the token, recipient, or
+  body in readiness output.
+- Treat this as a narrowed OpenClaw reuse boundary, not a live-send completion.
+  Readiness can now show Telegram structurally ready on the coordinator Mac,
+  but running it still requires `--live` plus
+  `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`. Do not let a worker trigger that
+  send from a setup/status path.
+- The current remaining shared-message blocker is iMessage recipient/body plus
+  explicit live-send confirmation. LinkedIn and Meta are still separate
+  provider credential smokes. Product comparison: DearMe is now closer to
+  Polsia's first live-channel proof, while the reusable Naive/OpenClaw
+  substrate remains backstage.
+
 ## Latest Symphony Worker Boundary - 2026-05-11
 
 - The current production host proof is ready through GitHub Pages:

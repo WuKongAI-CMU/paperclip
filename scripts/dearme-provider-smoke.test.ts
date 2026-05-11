@@ -170,6 +170,53 @@ test("provider smoke can reuse opted-in local OpenClaw gateway config without pr
   }
 });
 
+test("provider smoke can derive local Telegram self-smoke defaults without printing values", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-openclaw-telegram-config-"));
+  const configPath = join(dir, "openclaw.json");
+  const credentialsDir = join(dir, "credentials");
+  const allowFromPath = join(credentialsDir, "telegram-default-allowFrom.json");
+
+  await mkdir(credentialsDir, { recursive: true });
+  await writeFile(
+    configPath,
+    JSON.stringify({
+      gateway: {
+        port: 18789,
+        auth: { mode: "token", token: "local-gateway-token" },
+      },
+    }),
+    "utf8",
+  );
+  await writeFile(
+    allowFromPath,
+    JSON.stringify({ version: 1, allowFrom: ["local-chat-id"] }),
+    "utf8",
+  );
+
+  try {
+    const readiness = inspectDearMeProviderSmokeReadiness({
+      DEARME_USE_LOCAL_OPENCLAW_CONFIG: "1",
+      DEARME_OPENCLAW_USE_LOCAL_TELEGRAM_SMOKE: "1",
+      DEARME_OPENCLAW_CONFIG_FILE: configPath,
+    }, "openclaw_messages");
+    const telegram = readiness.find((item) => item.target === "telegram_message");
+    const imessage = readiness.find((item) => item.target === "imessage_message");
+    const serialized = JSON.stringify(readiness);
+
+    assert.equal(telegram?.ready, true);
+    assert.deepEqual(telegram?.missing, []);
+    assert.deepEqual(imessage?.missing, [
+      "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+      "DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY",
+    ]);
+    assert.equal(serialized.includes("local-gateway-token"), false);
+    assert.equal(serialized.includes("local-chat-id"), false);
+    assert.equal(serialized.includes("DearMe live proof smoke"), false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("provider smoke readiness formatting deduplicates shared OpenClaw blockers", () => {
   const readiness = inspectDearMeProviderSmokeReadiness({}, "openclaw_messages");
   const lines = formatDearMeProviderSmokeReadiness(readiness, "openclaw_messages");
@@ -290,6 +337,9 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   assert.match(template, /DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE=/);
   assert.match(template, /OPENCLAW_GATEWAY_URL=/);
   assert.match(template, /OPENCLAW_GATEWAY_TOKEN=/);
+  assert.match(template, /DEARME_USE_LOCAL_OPENCLAW_CONFIG=0/);
+  assert.match(template, /DEARME_OPENCLAW_USE_LOCAL_TELEGRAM_SMOKE=0/);
+  assert.match(template, /DEARME_OPENCLAW_TELEGRAM_ALLOW_FROM_FILE=/);
   assert.match(template, /DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT=/);
   assert.match(template, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=/);
   assert.match(template, /DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/);
@@ -339,6 +389,7 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   assert.match(telegramTemplate, /--check --target telegram_message/);
   assert.match(telegramTemplate, /--target telegram_message --live/);
   assert.match(telegramTemplate, /OPENCLAW_GATEWAY_URL=/);
+  assert.match(telegramTemplate, /DEARME_OPENCLAW_USE_LOCAL_TELEGRAM_SMOKE=0/);
   assert.match(telegramTemplate, /DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT=/);
   assert.doesNotMatch(telegramTemplate, /DEARME_LINKEDIN_DM_MESSAGES_URL=/);
   assert.doesNotMatch(telegramTemplate, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=/);
@@ -996,6 +1047,75 @@ test("provider smoke sends Telegram live target through injected OpenClaw gatewa
     },
   );
   assert.equal(JSON.stringify(result).includes("gateway-token"), false);
+});
+
+test("provider smoke sends Telegram live target with opted-in local OpenClaw defaults", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-openclaw-telegram-live-"));
+  const configPath = join(dir, "openclaw.json");
+  const credentialsDir = join(dir, "credentials");
+  const defaultBody =
+    "DearMe live proof smoke: private proof packet is reachable and OpenClaw Telegram delivery is being verified.";
+  let capturedContext: AdapterExecutionContext | null = null;
+  const openClawGatewayExecute = async (ctx: AdapterExecutionContext) => {
+    capturedContext = ctx;
+    return {
+      exitCode: 0,
+      signal: null,
+      timedOut: false,
+      sessionId: "telegram-message-local-defaults",
+      provider: "openclaw_gateway",
+      biller: "openclaw_gateway",
+      resultJson: { messageId: "telegram-message-local-defaults" },
+    };
+  };
+
+  await mkdir(credentialsDir, { recursive: true });
+  await writeFile(
+    configPath,
+    JSON.stringify({
+      gateway: {
+        port: 18789,
+        auth: { mode: "token", token: "local-gateway-token" },
+      },
+    }),
+    "utf8",
+  );
+  await writeFile(
+    join(credentialsDir, "telegram-default-allowFrom.json"),
+    JSON.stringify({ version: 1, allowFrom: [{ chatId: "local-chat-id" }] }),
+    "utf8",
+  );
+
+  try {
+    const [result] = await runDearMeProviderSmoke({
+      target: "telegram_message",
+      live: true,
+      env: {
+        DEARME_PROVIDER_SMOKE_CONFIRM_LIVE: "1",
+        DEARME_USE_LOCAL_OPENCLAW_CONFIG: "1",
+        DEARME_OPENCLAW_USE_LOCAL_TELEGRAM_SMOKE: "1",
+        DEARME_OPENCLAW_CONFIG_FILE: configPath,
+      },
+      openClawGatewayExecute,
+      now,
+    });
+
+    assert.equal(result.status, "delivered");
+    assert.equal(result.externalId, "telegram-message-local-defaults");
+    assert.equal(capturedContext?.config.headers?.["x-openclaw-token"], "local-gateway-token");
+    assert.deepEqual(
+      capturedContext?.config.payloadTemplate.paperclip.dearme.originalOutboundPayload,
+      {
+        recipient: "local-chat-id",
+        body: defaultBody,
+      },
+    );
+    assert.equal(JSON.stringify(result).includes("local-gateway-token"), false);
+    assert.equal(JSON.stringify(result).includes("local-chat-id"), false);
+    assert.equal(JSON.stringify(result).includes(defaultBody), false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 test("provider smoke sends iMessage live target through injected OpenClaw gateway", async () => {

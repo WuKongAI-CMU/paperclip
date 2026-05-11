@@ -175,6 +175,8 @@ const PRIVATE_SITE_EXPORT_COMMAND =
   "pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof";
 const PROVIDER_SMOKE_BASE_COMMAND =
   `pnpm --silent dearme:provider-smoke -- --env-file ${PROVIDER_SMOKE_ENV_FILE}`;
+const LOCAL_TELEGRAM_SMOKE_BODY =
+  "DearMe live proof smoke: private proof packet is reachable and OpenClaw Telegram delivery is being verified.";
 
 function providerSmokeRunCommand(target: ProviderSmokeRunnableTarget): string {
   const command = `${PROVIDER_SMOKE_BASE_COMMAND} --target ${target}`;
@@ -289,6 +291,12 @@ OPENCLAW_GATEWAY_URL=
 OPENCLAW_GATEWAY_TOKEN=
 OPENCLAW_WEBHOOK_AUTH=
 PAPERCLIP_API_URL=
+
+# Optional local OpenClaw reuse. These do not send unless --live and
+# DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 are both set.
+DEARME_USE_LOCAL_OPENCLAW_CONFIG=0
+DEARME_OPENCLAW_USE_LOCAL_TELEGRAM_SMOKE=0
+DEARME_OPENCLAW_TELEGRAM_ALLOW_FROM_FILE=
 `);
   }
 
@@ -373,6 +381,15 @@ function localOpenClawConfigPath(env: Env) {
   return home ? join(home, ".openclaw", "openclaw.json") : null;
 }
 
+function localOpenClawConfigDir(env: Env) {
+  const explicitDir =
+    nonEmpty(env.DEARME_OPENCLAW_CONFIG_DIR) ?? nonEmpty(env.OPENCLAW_CONFIG_DIR);
+  if (explicitDir) return explicitDir;
+
+  const configPath = localOpenClawConfigPath(env);
+  return configPath ? dirname(configPath) : null;
+}
+
 function openClawGatewayDefaultsFromLocalConfig(env: Env): Env {
   if (!boolFlag(env.DEARME_USE_LOCAL_OPENCLAW_CONFIG)) return {};
 
@@ -404,9 +421,73 @@ function openClawGatewayDefaultsFromLocalConfig(env: Env): Env {
   }
 }
 
+function localOpenClawTelegramAllowFromPath(env: Env) {
+  const explicitPath = nonEmpty(env.DEARME_OPENCLAW_TELEGRAM_ALLOW_FROM_FILE);
+  if (explicitPath) return explicitPath;
+
+  const configDir = localOpenClawConfigDir(env);
+  return configDir ? join(configDir, "credentials", "telegram-default-allowFrom.json") : null;
+}
+
+function recipientFromScalar(value: unknown) {
+  if (typeof value === "string") return nonEmpty(value);
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return null;
+}
+
+function recipientFromObject(value: Record<string, unknown>) {
+  for (const key of ["recipient", "chatId", "userId", "id", "username"]) {
+    const recipient = recipientFromScalar(value[key]);
+    if (recipient) return recipient;
+  }
+  return null;
+}
+
+function firstTelegramAllowFromRecipient(value: unknown) {
+  const allowFrom = value && typeof value === "object" && !Array.isArray(value)
+    ? (value as { allowFrom?: unknown }).allowFrom
+    : null;
+  if (!Array.isArray(allowFrom)) return null;
+
+  for (const item of allowFrom) {
+    const scalar = recipientFromScalar(item);
+    if (scalar) return scalar;
+    if (item && typeof item === "object" && !Array.isArray(item)) {
+      const objectRecipient = recipientFromObject(item as Record<string, unknown>);
+      if (objectRecipient) return objectRecipient;
+    }
+  }
+  return null;
+}
+
+function telegramSmokeDefaultsFromLocalOpenClaw(env: Env): Env {
+  if (
+    !boolFlag(env.DEARME_USE_LOCAL_OPENCLAW_CONFIG) ||
+    !boolFlag(env.DEARME_OPENCLAW_USE_LOCAL_TELEGRAM_SMOKE)
+  ) {
+    return {};
+  }
+
+  const allowFromPath = localOpenClawTelegramAllowFromPath(env);
+  if (!allowFromPath) return {};
+
+  try {
+    const recipient = firstTelegramAllowFromRecipient(
+      JSON.parse(readFileSync(allowFromPath, "utf8")),
+    );
+    return {
+      ...(recipient ? { DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT: recipient } : {}),
+      DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY: LOCAL_TELEGRAM_SMOKE_BODY,
+    };
+  } catch {
+    return {};
+  }
+}
+
 function providerSmokeEnvWithLocalOpenClawDefaults(env: Env): Env {
   return {
     ...openClawGatewayDefaultsFromLocalConfig(env),
+    ...telegramSmokeDefaultsFromLocalOpenClaw(env),
     ...env,
   };
 }
@@ -928,8 +1009,9 @@ export function inspectDearMeProviderSmokeReadiness(
   env: Env = process.env,
   targetArg: TargetArg = "all",
 ): DearMeProviderSmokeReadiness[] {
+  const resolvedEnv = providerSmokeEnvWithLocalOpenClawDefaults(env);
   return expandProviderSmokeTargets(targetArg).map((target) => {
-    const missing = targetMissingRequirements(target, env);
+    const missing = targetMissingRequirements(target, resolvedEnv);
     return {
       target,
       ready: missing.length === 0,
