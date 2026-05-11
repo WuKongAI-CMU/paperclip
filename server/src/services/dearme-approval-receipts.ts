@@ -84,6 +84,7 @@ const CHANNEL_LABELS: Record<string, string> = {
   email: "Email",
   community: "Community",
   website: "Website",
+  "dearme-cloud": "Website",
 };
 
 function channelLabel(value: string | null) {

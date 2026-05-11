@@ -2,6 +2,23 @@
   "updatedAt": "2026-05-11",
   "reviewedAbsorptions": [
     {
+      "ticket": "DEA-44",
+      "branch": "codex/dearme-dm-136-sample-demo-proof",
+      "head": "fbab909e18623e9788f5832bc473ee519a308fe0",
+      "reviewedAt": "2026-05-11",
+      "reason": "The DEA-44 approved private-site handoff is absorbed through the existing deploy_site dispatch boundary and the customer-safe deploy-site receipt branch, so replaying the worker tip would only duplicate the already-proven launch handoff path instead of adding a new runtime surface.",
+      "evidence": [
+        "server/src/services/dearme-output-handoff.ts",
+        "server/src/services/dearme-output-handoff.portfolio-launch.test.ts",
+        "server/src/services/dearme-approved-launch-handoff.test.ts",
+        "server/src/services/dearme-outbound-tool-wrapper.test.ts",
+        "server/src/__tests__/dearme-output-handoff.test.ts",
+        "server/src/__tests__/dearme-approval-receipts.test.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
       "ticket": "DEA-43",
       "branch": "codex/dearme-dm-136-sample-demo-proof",
       "head": "56189784d8481af52b609e7f28cac5aa4be72454",

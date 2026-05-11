@@ -399,6 +399,50 @@ describe("recordDearMeNextMoveDeliveryReceipt", () => {
     expect(serializedComments).toContain("connect x before dearme can continue this approved next step.");
   });
 
+  it("keeps deploy-site connection failures customer-safe", async () => {
+    const { db, values } = makeDb();
+    const approval = makeApproval({
+      payload: {
+        ...makeApproval().payload,
+        launchHandoff: {
+          channel: "dearme-cloud",
+          publishGate: {
+            connectChannelState: "connect_channel_required",
+          },
+        },
+      },
+    });
+
+    const result = await recordDearMeNextMoveDeliveryReceipt(db, {
+      approval,
+      actorUserId: "user-1",
+      linkedIssueIds: ["issue-1"],
+      outcome: {
+        kind: "needs_oauth",
+        channel: "dearme-cloud",
+        gate: "connect_channel",
+        reason: "missing config",
+        message: "Connect the website before DearMe can continue this approved next step.",
+      },
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      deliveryStatus: "needs_channel_connection",
+      deliveryTitle: "Approved next step needs connection",
+      nextStep: "Connect Website before DearMe can continue this approved next step.",
+    }));
+    const serializedResult = JSON.stringify(result).toLowerCase();
+    const commentRows = values.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+    const serializedComments = commentRows.map((row) => row.body).join("\n").toLowerCase();
+
+    expect(serializedResult).not.toContain("needs_oauth");
+    expect(serializedComments).not.toContain("needs_oauth");
+    expect(serializedComments).not.toContain("connect_channel");
+    expect(serializedComments).not.toContain("missing config");
+    expect(serializedComments).toContain("status: needs connection");
+    expect(serializedComments).toContain("connect website before dearme can continue this approved next step.");
+  });
+
   it("keeps pending, rejected, and failed delivery comments customer-safe", async () => {
     const cases = [
       {
