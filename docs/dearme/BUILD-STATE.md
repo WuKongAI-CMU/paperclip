@@ -2,6 +2,28 @@
 
 Date: 2026-05-11
 
+## Symphony Workers See Live Proof Focus At Bootstrap - 2026-05-11
+
+Product/architecture slice:
+
+- Updated the DearMe Symphony worker bootstrap so every worker now sees the
+  provider-lane `dearme:proof -- --status` output immediately after the safe
+  proof check.
+- This makes the Polsia/Naive comparison operational for worker tickets:
+  production host smoke is first, shared OpenClaw Telegram/iMessage smoke is
+  second, LinkedIn DM is third, and Meta campaign remains last.
+- Reused the existing proof/status command instead of adding another queue,
+  planning document, or worker-side inference step.
+- Kept this as a backstage coordinator/Symphony change; no customer UI,
+  provider dispatch, production deploy, send, spend, or live model call was
+  added.
+
+Verification:
+
+- `node --test scripts/dearme-symphony-workflow-contract.test.mjs`
+- `pnpm --silent dearme:proof -- --status --lane provider`
+- `git diff --check`
+
 ## Live Proof Focus Is Machine-Readable - 2026-05-11
 
 Product/architecture slice:

@@ -134,13 +134,16 @@ Worker bootstrap also runs the unified local proof map:
 
 ```sh
 pnpm --silent dearme:proof -- --check
+pnpm --silent dearme:proof -- --status --lane provider
 ```
 
 Use that output as the first proof triage surface. It composes provider dispatch
 readiness and voice calibration readiness without sending, deploying to
-production, spending, or calling a live model. Drop to
-`pnpm dearme:provider-smoke` only for live provider credential work, or
-`pnpm dearme:voice-smoke` only for scorer-specific calibration work.
+production, spending, or calling a live model. The provider-lane status prints
+the shared live proof focus order for workers: production host smoke first,
+OpenClaw Telegram/iMessage smoke second, LinkedIn DM third, and Meta campaign
+last. Drop to `pnpm dearme:provider-smoke` only for live provider credential
+work, or `pnpm dearme:voice-smoke` only for scorer-specific calibration work.
 
 ## Worker Handoff Artifacts
 
