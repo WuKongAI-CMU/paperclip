@@ -457,7 +457,7 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
     expect(reportDocuments[0]?.body).toContain("paid beta personal brand growth");
     expect(reportDocuments[0]?.body).toContain("## Work Completed");
     expect(reportDocuments[0]?.body).toContain("private first-week work lanes were created");
-    expect(reportDocuments[0]?.body).toContain("Content: 3 private starter posts seeded for review.");
+    expect(reportDocuments[0]?.body).toContain("Content: 5 private starter posts seeded for review.");
     expect(reportDocuments[0]?.body).toContain(
       "Opportunity: five-target shortlist held for send approval, first lead for founders evaluating local AI workflows.",
     );

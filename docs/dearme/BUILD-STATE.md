@@ -2,6 +2,33 @@
 
 Date: 2026-05-11
 
+## First-Wow Packet Now Seeds Five Private Drafts - 2026-05-11
+
+Product/architecture slice:
+
+- Raised the shared first-cycle preview contract from three starter posts to
+  five private starter drafts through one exported
+  `DEARME_FIRST_CYCLE_STARTER_POST_COUNT` constant.
+- Reused the existing first-wow contract, onboarding progress stream,
+  private-site export, and proof/status scripts. No second demo route, no new
+  setup surface, and no customer-visible substrate language was added.
+- Kept the Polsia comparison honest: the no-credential private wow is stronger
+  now, but true Polsia-style phone-reachable proof still waits on real host and
+  provider smokes.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts --maxWorkers=1`
+- `pnpm test:dearme-aha-proof`
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-brand-blueprint-apply.test.ts server/src/__tests__/dearme-brand-blueprints.test.ts --maxWorkers=1`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:aha-proof -- --check`
+- `pnpm --silent dearme:aha-proof -- --export-site /tmp/dearme-private-proof-smoke.*`
+- `pnpm --silent dearme:status`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Provider Host Smoke Reuses Private Proof Artifact - 2026-05-11
 
 Product/architecture slice:

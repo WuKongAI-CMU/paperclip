@@ -49,6 +49,7 @@ export const DEARME_FIRST_CYCLE_CONCERN_GATES = [
 ] as const;
 
 export const DEARME_FIRST_CYCLE_PROOF_WINDOWS = ["0-30s", "60-120s", "3-5min"] as const;
+export const DEARME_FIRST_CYCLE_STARTER_POST_COUNT = 5;
 
 export const DEARME_APPROVAL_GATES = ["publish", "send", "deploy", "spend"] as const;
 export const DEARME_APPROVAL_DECISIONS = ["pending", "approved", "rejected"] as const;
@@ -781,7 +782,7 @@ export const dearMeFirstCyclePreviewResponseSchema = z.object({
   prompt: z.literal("What do you want to become known for?"),
   positioning: mediumTextSchema,
   voiceProfile: dearMeFirstCycleVoiceProfileSchema,
-  starterPosts: z.array(dearMeFirstCycleStarterPostSchema).length(3),
+  starterPosts: z.array(dearMeFirstCycleStarterPostSchema).length(DEARME_FIRST_CYCLE_STARTER_POST_COUNT),
   proofSequence: z.array(dearMeFirstCycleProofSequenceItemSchema).length(3),
   opportunityLead: dearMeFirstCycleOpportunityLeadSchema,
   opportunityShortlist: z.array(dearMeFirstCycleOpportunityShortlistItemSchema).length(5),
@@ -1535,7 +1536,9 @@ function buildMemorySeeds(seed: DearMeBrandBlueprintSeed, displayName: string, p
   ].slice(0, 40);
 }
 
-const firstCyclePostChannelFallbacks = ["linkedin", "x", "newsletter"] as const;
+type DearMeFirstCyclePostChannel = DearMeBrandBlueprintSeed["preferredChannels"][number];
+
+const firstCyclePostChannelFallbacks = ["linkedin", "x", "newsletter", "blog", "community"] as const;
 const firstCycleSocialChannels = new Set<DearMeBrandBlueprintSeed["preferredChannels"][number]>([
   "linkedin",
   "x",
@@ -1587,10 +1590,15 @@ function firstPresent(values: string[], fallback: string, maxLength: number) {
 
 function starterPostChannels(channels: DearMeBrandBlueprintSeed["preferredChannels"]) {
   const preferred = channels.filter((channel) => firstCycleSocialChannels.has(channel));
-  return uniqueStrings([...preferred, ...firstCyclePostChannelFallbacks]).slice(0, 3) as [
-    DearMeBrandBlueprintSeed["preferredChannels"][number],
-    DearMeBrandBlueprintSeed["preferredChannels"][number],
-    DearMeBrandBlueprintSeed["preferredChannels"][number],
+  return uniqueStrings([...preferred, ...firstCyclePostChannelFallbacks]).slice(
+    0,
+    DEARME_FIRST_CYCLE_STARTER_POST_COUNT,
+  ) as [
+    DearMeFirstCyclePostChannel,
+    DearMeFirstCyclePostChannel,
+    DearMeFirstCyclePostChannel,
+    DearMeFirstCyclePostChannel,
+    DearMeFirstCyclePostChannel,
   ];
 }
 
@@ -2097,12 +2105,40 @@ export function createDearMeFirstCyclePreview(
       ownerRole: "content_producer",
       approvalGate: "publish_social",
     },
+    {
+      id: "starter-post-lesson",
+      channel: channels[3],
+      title: "Starter post: lesson learned",
+      hook: `The lesson from ${primaryProof}`,
+      body: [
+        `The lesson to make visible: ${primaryProof} matters because it shows how ${displayName} can help ${primaryAudience}.`,
+        `Tie that proof back to ${primaryGoal} and keep the post narrow enough for a real person to check.`,
+        "This stays private until the lesson, proof, and claim are approved.",
+      ].join(" "),
+      proofUsed: primaryProof,
+      ownerRole: "content_producer",
+      approvalGate: "publish_social",
+    },
+    {
+      id: "starter-post-next-step",
+      channel: channels[4],
+      title: "Starter post: next useful step",
+      hook: `The next useful step for ${primaryAudience}`,
+      body: [
+        `For ${primaryAudience}, the next useful step is to turn ${primaryOffer} into one concrete move tied to ${primaryProof}.`,
+        `The draft should make ${primaryGoal} feel practical before asking for any public commitment.`,
+        "Keep this as a private draft until the publish path is approved.",
+      ].join(" "),
+      proofUsed: primaryProof,
+      ownerRole: "content_producer",
+      approvalGate: "publish_social",
+    },
   ];
   const voiceGate = evaluateDearMeVoiceGate({
     brand: preview.brand,
     artifact: {
       kind: "content_draft",
-      channel: starterPosts[0].channel,
+      channel: "newsletter",
       title: "First starter post batch",
       text: starterPosts.map((post) => `${post.hook}\n${post.body}`).join("\n\n"),
       ...(suppliedProof ? { proofUsed: suppliedProof } : {}),
@@ -2151,7 +2187,7 @@ export function createDearMeFirstCyclePreview(
     },
     growthPlan: {
       title: "First growth plan",
-      summary: "Start with one sharp positioning decision, three private drafts, a five-target opportunity shortlist, and one proof card so the first session already feels alive.",
+      summary: "Start with one sharp positioning decision, five private drafts, a five-target opportunity shortlist, and one proof card so the first session already feels alive.",
       priorities: [
         "Lock the sharpest positioning line",
         "Pick the first proof-backed starter post",
@@ -2159,7 +2195,7 @@ export function createDearMeFirstCyclePreview(
       ],
       nextActions: [
         "Voice Editor sharpens tone against the current samples",
-        "Content Producer turns the three starter posts into launch-ready drafts",
+        "Content Producer turns the five starter drafts into launch-ready drafts",
         "Opportunity Scout prepares the five-target shortlist and first outreach angle",
         "Portfolio Builder assembles the proof card for the public site",
       ],

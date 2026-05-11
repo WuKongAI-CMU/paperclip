@@ -398,7 +398,7 @@ describeEmbeddedPostgres("DearMe brand blueprint service", () => {
       title: "Starter content draft batch",
       status: "ready",
       reviewState: "pending",
-      summary: "Three private starter posts prepared for review.",
+      summary: "Five private starter posts prepared for review.",
       updatedAt: new Date("2026-05-09T10:12:00.000Z"),
     });
 

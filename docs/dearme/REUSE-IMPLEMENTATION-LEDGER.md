@@ -15,6 +15,13 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- The first-cycle preview contract now seeds five private starter drafts through
+  the shared `DEARME_FIRST_CYCLE_STARTER_POST_COUNT` constant. This is the
+  Polsia comparison turned into product behavior: deepen the first-wow packet
+  on the existing shared preview, onboarding stream, private-site export, and
+  proof/status commands instead of creating another dashboard, setup flow, or
+  demo contract. Future workers should reuse this constant across shared,
+  server, UI, and proof tests when changing first-cycle output depth.
 - `dearme:provider-smoke -- --print-env-template --target deploy_site_production`
   now tells the operator to reuse
   `pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof`

@@ -3,6 +3,7 @@ import {
   DEARME_BRAND_BLUEPRINT_OPERATION_ORDER,
   DEARME_DIRECT_HEARTBEAT_CADENCE_HOURS,
   DEARME_FIRST_CYCLE_CONCERN_GATES,
+  DEARME_FIRST_CYCLE_STARTER_POST_COUNT,
   DEARME_SILENCE_DEFAULT_REVIEW_SCORE,
   DEARME_WORKER_HEARTBEAT_CADENCE_HOURS,
   buildDearMeBrandBlueprintExecutionPlan,
@@ -207,7 +208,7 @@ describe("DearMe brand blueprint contract", () => {
     expect(firstCycle.status).toBe("first_cycle_preview");
     expect(firstCycle.prompt).toBe("What do you want to become known for?");
     expect(firstCycle.voiceProfile.title).toBe("Draft Voice Profile");
-    expect(firstCycle.starterPosts).toHaveLength(3);
+    expect(firstCycle.starterPosts).toHaveLength(DEARME_FIRST_CYCLE_STARTER_POST_COUNT);
     expect(firstCycle.proofSequence.map((step) => step.window)).toEqual(["0-30s", "60-120s", "3-5min"]);
     expect(firstCycle.proofSequence.map((step) => step.title)).toEqual([
       "Identity dossier",
@@ -231,11 +232,7 @@ describe("DearMe brand blueprint contract", () => {
         ],
       }).proofSequence[0]?.sourceLabel,
     ).toBe("Prepared from private Brand OS work");
-    expect(firstCycle.starterPosts.map((post) => post.approvalGate)).toEqual([
-      "publish_social",
-      "publish_social",
-      "publish_social",
-    ]);
+    expect(firstCycle.starterPosts.every((post) => post.approvalGate === "publish_social")).toBe(true);
     expect(firstCycle.starterPosts[0]?.body).toContain(
       "The positioning to test this week: Known for turning AI research into practical local products.",
     );
@@ -243,6 +240,8 @@ describe("DearMe brand blueprint contract", () => {
       "The strongest proof to use this week is Shipped an autonomous local product that customers can run.",
     );
     expect(firstCycle.starterPosts[2]?.body).toContain("not a broad pitch");
+    expect(firstCycle.starterPosts[3]?.body).toContain("The lesson to make visible");
+    expect(firstCycle.starterPosts[4]?.body).toContain("the next useful step is to turn");
     expect(firstCycle.starterPosts.map((post) => post.body).join("\n")).not.toContain("A private draft");
     expect(firstCycle.opportunityLead.approvalGate).toBe("send_email");
     expect(firstCycle.opportunityLead.draftMessage).toContain("I am reaching out because");
@@ -471,8 +470,7 @@ describe("DearMe brand blueprint contract", () => {
             ...firstCycle.starterPosts[0]!,
             provider: "codex-local",
           },
-          firstCycle.starterPosts[1],
-          firstCycle.starterPosts[2],
+          ...firstCycle.starterPosts.slice(1),
         ],
       }),
     ).toThrow();

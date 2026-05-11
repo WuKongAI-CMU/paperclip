@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { DEARME_FIRST_CYCLE_STARTER_POST_COUNT } from "../packages/shared/src/validators/dearme.ts";
 import {
   createDearMeAhaProofSample,
   exportDearMePrivateSitePreview,
@@ -38,7 +39,7 @@ test("DearMe aha proof proves the first private five-minute loop", () => {
     "Audience shortlist and first opportunity",
     "Private proof page move",
   ]);
-  assert.equal(preview.starterPosts.length, 3);
+  assert.equal(preview.starterPosts.length, DEARME_FIRST_CYCLE_STARTER_POST_COUNT);
   assert.equal(preview.opportunityShortlist.length, 5);
   assert.equal(preview.sitePreview.status, "private_preview");
   assert.equal(preview.continuationPlan.title, "Keeps working after the first proof");

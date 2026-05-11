@@ -42,7 +42,7 @@ If anything in this folder contradicts `INDEX.md`, `INDEX.md` wins.
 - [`packages/plugins/dearme-openclaw/src/skill-generator.ts`](../../packages/plugins/dearme-openclaw/src/skill-generator.ts) — pure registry-to-SKILL.md projection.
 - [`packages/plugins/dearme-openclaw/src/tools/types.ts`](../../packages/plugins/dearme-openclaw/src/tools/types.ts) — 7 outbound tool interfaces (post_x / send_linkedin_dm / send_telegram_message / send_imessage / send_email / deploy_site / create_meta_campaign) + `(gate, channel, voiceGateRequired)` bindings.
 - [`packages/plugins/dearme-openclaw/generated/skills/`](../../packages/plugins/dearme-openclaw/generated/skills/) — 12 generated SKILL.md files OpenClaw loads. Do not edit by hand.
-- [`packages/shared/src/validators/dearme.ts`](../../packages/shared/src/validators/dearme.ts) — Brand OS and first-cycle preview contracts, including `autonomyPlan` and `DEARME_FIRST_CYCLE_CONCERN_GATES` for the launch-boundary-only first-run UX.
+- [`packages/shared/src/validators/dearme.ts`](../../packages/shared/src/validators/dearme.ts) — Brand OS and first-cycle preview contracts, including `autonomyPlan`, `DEARME_FIRST_CYCLE_STARTER_POST_COUNT`, and `DEARME_FIRST_CYCLE_CONCERN_GATES` for the launch-boundary-only first-run UX.
 - [`packages/dearme-ai-proxy/src/contract.ts`](../../packages/dearme-ai-proxy/src/contract.ts) — wire contract: `dm_sk_` keys, dual-protocol cost-attribution headers, agent-run shape.
 - [`packages/dearme-ai-proxy/src/functions.ts`](../../packages/dearme-ai-proxy/src/functions.ts) — 6 OpenAI native function definitions ported verbatim.
 - [`packages/dearme-ai-proxy/src/voice-gate.ts`](../../packages/dearme-ai-proxy/src/voice-gate.ts) — voice-gate scoring wire (`POST /v1/voice/score`).

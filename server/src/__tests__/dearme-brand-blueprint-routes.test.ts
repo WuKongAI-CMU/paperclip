@@ -1,6 +1,6 @@
 import express from "express";
 import request from "supertest";
-import { describeDearMePaidBetaEntitlement } from "@paperclipai/shared";
+import { DEARME_FIRST_CYCLE_STARTER_POST_COUNT, describeDearMePaidBetaEntitlement } from "@paperclipai/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockDearMeBrandBlueprintService = vi.hoisted(() => ({
@@ -339,6 +339,26 @@ function makeFirstCycleResult() {
         channel: "newsletter",
         title: "Starter post: useful opening",
         hook: "A useful opening.",
+        body: "A private draft.",
+        proofUsed: "The first verified work example",
+        ownerRole: "content_producer",
+        approvalGate: "publish_social",
+      },
+      {
+        id: "starter-post-lesson",
+        channel: "blog",
+        title: "Starter post: lesson learned",
+        hook: "The lesson from the proof.",
+        body: "A private draft.",
+        proofUsed: "The first verified work example",
+        ownerRole: "content_producer",
+        approvalGate: "publish_social",
+      },
+      {
+        id: "starter-post-next-step",
+        channel: "community",
+        title: "Starter post: next useful step",
+        hook: "The next useful step.",
         body: "A private draft.",
         proofUsed: "The first verified work example",
         ownerRole: "content_producer",
@@ -1940,7 +1960,7 @@ describe("DearMe brand blueprint routes", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.prompt).toBe("What do you want to become known for?");
-    expect(res.body.starterPosts).toHaveLength(3);
+    expect(res.body.starterPosts).toHaveLength(DEARME_FIRST_CYCLE_STARTER_POST_COUNT);
     expect(res.body.proofSequence.map((step: { title: string }) => step.title)).toEqual([
       "Identity dossier",
       "Audience map",

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DEARME_BRAND_CADENCES,
   DEARME_BRAND_CHANNELS,
+  DEARME_FIRST_CYCLE_STARTER_POST_COUNT,
   DEARME_MEMORY_SOURCE_INPUT_MODES,
   DEARME_MEMORY_UPDATE_KINDS,
   DEARME_PAID_BETA_MIN_PAYMENT_CENTS,
@@ -1738,7 +1739,7 @@ const TEAM_WORKSTREAM = [
 
 const FIRST_CYCLE_ARTIFACTS = [
   "Draft Voice Profile",
-  "3 starter posts",
+  `${DEARME_FIRST_CYCLE_STARTER_POST_COUNT} starter drafts`,
   "1 opportunity lead",
   "1 portfolio proof card",
   "First growth plan",
@@ -2239,8 +2240,8 @@ function FirstCycleLiveProgress({
     {
       label: FIRST_CYCLE_LIVE_PROGRESS_LABELS[2],
       window: "90s",
-      title: `${preview.starterPosts.length} starter posts`,
-      summary: `${preview.starterPosts[0]?.title ?? "A starter post"} and two more private drafts are staged with proof and voice checks.`,
+      title: `${preview.starterPosts.length} starter drafts`,
+      summary: `${preview.starterPosts.length} proof-backed private drafts are staged with proof and voice checks.`,
       proof: preview.portfolioProofCard.title,
     },
     {

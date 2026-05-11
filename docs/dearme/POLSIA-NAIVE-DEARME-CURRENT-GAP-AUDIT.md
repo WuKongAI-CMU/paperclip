@@ -133,7 +133,7 @@ The external/live provider lane is not yet strong enough.
 | DearMe product semantics | 76 / 100 | Good. Brand OS, voice, portfolio, opportunity, reports, Work Ready, launch gates, review memory, and customer-corpus voice proof are now DearMe-owned concepts. |
 | UX simplicity | 67 / 100 | Improving. The browser now shows one-sentence-to-first-five-minute progress and the proof can become a static private site, but onboarding is still heavier than Polsia's one-input activation. |
 | Autonomous runtime proof | 68 / 100 | Real but not externally proven. Local safe proof, private aha proof, browser-visible progress, static private-site export, customer-corpus voice proof, and recurring private-work contract are ready; live provider proof remains open. |
-| Polsia-style first-wow | 70 / 100 | Private proof is runnable, watchable, and exportable as a phone-ready artifact. The missing main moment is serving it from a real host plus provider-backed execution. |
+| Polsia-style first-wow | 74 / 100 | Private proof is runnable, watchable, exportable as a phone-ready artifact, and now deep enough to show five private drafts. The missing main moment is serving it from a real host plus provider-backed execution. |
 | Naive-style durable team runtime | 78 / 100 | Solid substrate fit. Symphony/worktree coordination is clean and the Paperclip-style runtime is reused; the recurring private-work contract is now visible, but live provider smoke is still missing. |
 
 ## What DearMe Has Actually Done
@@ -268,9 +268,9 @@ declare the product done just because the substrate is strong.
 
 The local proof gate now exists through `pnpm dearme:aha-proof -- --check`, and
 the host-smoke artifact exists through
-`pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof`. The next
-no-credential product step is to deepen the same packet into a five-draft
-private result, then serve that artifact from a real host:
+`pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof`. The
+no-credential packet is now deepened into a five-draft private result; the next
+product proof is serving that same artifact from a real host:
 
 - voice profile
 - audience map
@@ -280,8 +280,8 @@ private result, then serve that artifact from a real host:
 - one clear launch call
 
 No live external sends are required for the five-draft packet. The result can be
-private. The user must feel the team started. After that, the same artifact
-should be hosted at a phone-reachable route before adding another dashboard.
+private. The user must feel the team started. The next gate is a phone-reachable
+route before adding another dashboard.
 
 ### DM-WOW-2 Customer-Safe Live Work Stream
 
@@ -340,9 +340,9 @@ reuse generated skills and role prompts.
 ## Product Answer
 
 DearMe is architecturally ahead of a normal prototype and now has a local
-private first-wow proof gate plus a browser-visible first-five-minute progress
-stream and a static private-site export. It is still behind Polsia as a live
-customer demo.
+private first-wow proof gate, five private starter drafts, a browser-visible
+first-five-minute progress stream, and a static private-site export. It is still
+behind Polsia as a live customer demo.
 
 It is strongest where Naive is strongest: typed work, approvals, route/service
 shape, dispatch boundaries, and durable coordination. It is weakest where
@@ -350,9 +350,8 @@ Polsia is strongest: instant emotional proof that a team is working for the
 customer right now, backed by a live asset the user can inspect from outside the
 app.
 
-The next correct move is not another architecture layer. It is to deepen the
-watchable first-five-minute loop into a five-draft private proof packet, then
-serve that same packet from a phone-reachable host with live provider evidence
-on top of the proof gate that now exists. The provider-smoke production
+The next correct move is not another architecture layer. It is to serve the
+five-draft private proof packet from a phone-reachable host with live provider
+evidence on top of the proof gate that now exists. The provider-smoke production
 template now gives the concrete artifact path for that host step; the remaining
 work is the real host and provider proof, not another local proof command.

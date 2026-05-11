@@ -6,6 +6,7 @@ import {
   dearMeFirstCyclePreviewSchema,
   DEARME_FIRST_CYCLE_CONCERN_GATES,
   DEARME_FIRST_CYCLE_PROOF_WINDOWS,
+  DEARME_FIRST_CYCLE_STARTER_POST_COUNT,
   type DearMeFirstCyclePreview,
   type DearMeFirstCyclePreviewResponse,
 } from "../packages/shared/src/validators/dearme.ts";
@@ -343,7 +344,7 @@ export function inspectDearMeAhaProofPreview(
       "private_outputs",
       "Private output package",
       preview.voiceProfile.status === "ready_for_gate" &&
-        preview.starterPosts.length === 3 &&
+        preview.starterPosts.length === DEARME_FIRST_CYCLE_STARTER_POST_COUNT &&
         preview.opportunityShortlist.length === 5 &&
         preview.sitePreview.status === "private_preview" &&
         preview.growthPlan.nextActions.length >= 3,

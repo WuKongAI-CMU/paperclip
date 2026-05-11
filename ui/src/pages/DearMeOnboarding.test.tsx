@@ -831,7 +831,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         "Cycle check-in completed: Weekly content cycle checked in and kept the private growth cycle moving.",
         "Spend checkpoint recorded: DearMe recorded $2.37 of private team work across 1 checkpoint.",
       ],
-      decisions: ["Review Starter posts: Three posts are ready for voice review."],
+      decisions: ["Review Starter posts: Five posts are ready for voice review."],
       learnings: ["Voice sample added: Short, direct voice note."],
       nextBets: ["Content Producer is moving Content drafts forward."],
       updatedAt: "2026-05-07T14:00:00.000Z",
@@ -870,7 +870,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
           id: "work:issue-2:content_drafts",
           kind: "work_item",
           label: "Starter posts",
-          summary: "Content Producer is shaping three private drafts before review.",
+          summary: "Content Producer is shaping five private drafts before review.",
           role: "content_producer",
           status: "ready_for_review",
           source: "work",
@@ -2119,7 +2119,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("What changed");
     expect(container.textContent).toContain("Visible work your team moved forward.");
     expect(container.textContent).toContain("Needs your call");
-    expect(container.textContent).toContain("Review Starter posts: Three posts are ready for voice review.");
+    expect(container.textContent).toContain("Review Starter posts: Five posts are ready for voice review.");
     expect(container.textContent).toContain("What we learned");
     expect(container.textContent).toContain("Voice sample added: Short, direct voice note.");
     expect(container.textContent).toContain("Next bets");
