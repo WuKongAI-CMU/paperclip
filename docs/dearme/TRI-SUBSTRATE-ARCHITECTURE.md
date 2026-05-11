@@ -207,14 +207,16 @@ publish/send/deploy/spend or redesign it as a private draft plus receipt.
 
 ---
 
-## 7. Outbound tool contract (5 tools)
+## 7. Outbound tool contract (7 tools)
 
-`packages/plugins/dearme-openclaw/src/tools/types.ts` declares the shape of every outbound tool. None of the 5 ship verbatim from any substrate — they are DearMe-original, but each binds cleanly to all three:
+`packages/plugins/dearme-openclaw/src/tools/types.ts` declares the shape of every outbound tool. None of the 7 ship verbatim from any substrate — they are DearMe-original, but each binds cleanly to all three:
 
 | Tool | Gate | Channel | Voice-gate | Substrate role |
 |---|---|---|---|---|
 | `post_x` | publish | x | yes | OpenClaw plugin → DearMe cloud → user's X OAuth (Naive `channel_connections`) |
 | `send_linkedin_dm` | send | linkedin | yes | OpenClaw plugin → DearMe cloud → configured LinkedIn partner endpoint with user's active LinkedIn channel connection |
+| `send_telegram_message` | send | telegram | yes | OpenClaw plugin → DearMe cloud → approved launch handoff → OpenClaw gateway Telegram extension |
+| `send_imessage` | send | imessage | yes | OpenClaw plugin → DearMe cloud → approved launch handoff → OpenClaw gateway iMessage/SMS extension |
 | `send_email` | send | resend / ses | yes | OpenClaw plugin → DearMe cloud → Resend or SES through the same approval/audit wrapper; Gmail stays out of scope to avoid CASA cost |
 | `deploy_site` | deploy | dearme-cloud | no | OpenClaw plugin → DearMe cloud `/v1/site/*` (DearMe-owned host) |
 | `create_meta_campaign` | spend | meta_ads | no | OpenClaw plugin → DearMe cloud → user's active Meta Ads channel connection → Meta Marketing API campaign shell |

@@ -12060,6 +12060,37 @@ Verification:
 - `pnpm --filter @paperclipai/server typecheck` passed.
 - `pnpm --filter @paperclipai/db typecheck` passed.
 
+## DM-CH-02B OpenClaw Message Provider Smoke - 2026-05-11
+
+Thirty-seventh verified DearMe slice:
+
+- Extended `pnpm dearme:provider-smoke` from site/LinkedIn/Meta proof to the
+  two OpenClaw gateway message paths: `telegram_message` and
+  `imessage_message`.
+- Reused `createDearMeOpenClawGatewayDispatchMap` plus the existing
+  `OPENCLAW_GATEWAY_URL` / `OPENCLAW_GATEWAY_TOKEN` /
+  `OPENCLAW_WEBHOOK_AUTH` config resolver instead of adding a parallel send
+  service.
+- Kept Telegram/iMessage live sends behind the same explicit live guard:
+  `--live` plus `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`.
+- Updated the current DearMe architecture docs so the North Star index,
+  tri-substrate contract, product architecture, and OpenClaw integration note
+  all describe the shipped 7-tool outbound surface.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke` passed: 18 node:test tests.
+- `pnpm --filter @paperclipai/dearme-openclaw test` passed: 1 file, 19
+  tests.
+- `pnpm --filter @paperclipai/dearme-ai-proxy test` passed: 1 file, 10
+  tests.
+- `pnpm --silent dearme:provider-smoke -- --check` passed and reports
+  Telegram/iMessage as blocked until OpenClaw gateway URL, gateway token/auth,
+  recipient, body, and explicit live confirmation are configured.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `git diff --check` passed.
+- `pnpm dearme:symphony-preflight -- .` passed.
+
 ## Known Gaps
 
 - The `Process adapter missing command` blocker is fixed for newly applied Brand OS approvals, not retroactively for old smoke data.

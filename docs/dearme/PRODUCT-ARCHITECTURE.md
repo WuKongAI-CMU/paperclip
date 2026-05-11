@@ -477,7 +477,7 @@ DearMe **runs on OpenClaw**. The 12 roles defined in `DEARME_ROLE_REGISTRY` are 
 | 12 prompts, state machines, proxy tools, registry | DearMe (`dearme-agent-prompts`) |
 | AI proxy contract (`dm_sk_*`, dual-protocol attribution, 6 fns) | DearMe (`dearme-ai-proxy`) |
 | OpenClaw plugin shape: SKILL.md generator, bootstrap files | DearMe (`dearme-openclaw`) |
-| Outbound publishing tools (post_x, send_linkedin_dm, send_email, deploy_site, create_meta_campaign) | DearMe (`dearme-openclaw` tools) |
+| Outbound publishing/sending tools (post_x, send_linkedin_dm, send_telegram_message, send_imessage, send_email, deploy_site, create_meta_campaign) | DearMe (`dearme-openclaw` tools) |
 | Voice fingerprint capture + scoring | DearMe cloud |
 | Opportunities database + Hunter.io verification | DearMe cloud |
 | `dearme.app/<handle>` site host | DearMe cloud |

@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, and DM-177B/DM-177C/DM-177E deploy dispatch proof)
+Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, and DM-CH-02B OpenClaw message smoke proof)
 
 ---
 
@@ -60,7 +60,8 @@ These are not "prompts in a doc" — they are typed entries in `DEARME_ROLE_REGI
 │  └─ skills/dearme-<role> × 12  (generated from registry)    │
 │                                                             │
 │ DearMe plugin (id: "dearme")  — outbound tools live here:   │
-│   post_x, send_linkedin_dm, send_email, deploy_site,        │
+│   post_x, send_linkedin_dm, send_telegram_message,          │
+│   send_imessage, send_email, deploy_site,                   │
 │   create_meta_campaign                                      │
 └──────────────────────┬──────────────────────────────────────┘
                        │ HTTPS  dm_sk_*  +  X-DearMe-Task
@@ -88,7 +89,7 @@ These are not "prompts in a doc" — they are typed entries in `DEARME_ROLE_REGI
 ### Layer responsibilities
 
 - **OpenClaw Gateway (user device)** — channel inbound, voice capture, sandbox, cron, session lanes. Loads the DearMe plugin and its 12 skills. _Not built by us; we conform to the contract documented in `openclaw/docs/concepts/`._
-- **`packages/plugins/dearme-openclaw`** — OpenClaw plugin: registry → 12 SKILL.md generator, bootstrap files, outbound channel tool surface (post_x, send_linkedin_dm, send_email, deploy_site, create_meta_campaign). Ships generated skills under `generated/skills/`.
+- **`packages/plugins/dearme-openclaw`** — OpenClaw plugin: registry → 12 SKILL.md generator, bootstrap files, outbound channel tool surface (post_x, send_linkedin_dm, send_telegram_message, send_imessage, send_email, deploy_site, create_meta_campaign). Ships generated skills under `generated/skills/`.
 - **`packages/plugins/dearme-agent-prompts`** — typed seed corpus: 12 prompts + 6 state machines + 2 templates + the **role registry** (`DEARME_ROLE_REGISTRY`) that pins everything together. **No runtime; pure data.** Consumed by `dearme-openclaw` and by cloud worker plugins.
 - **`packages/dearme-ai-proxy`** — wire contract for the LLM proxy: `dm_sk_` keys, dual-protocol cost-attribution headers (`X-DearMe-Task` for OpenAI, `X-Subscription-ID` for Anthropic), 6 OpenAI native function definitions ported verbatim.
 - **`packages/db`** — Drizzle schema. 85 tables inherited from Paperclip + `opportunities` (DM-141), `channel_connections` (DM-175), and `dearme_voice_profiles` (DM-170C); migration `0078_simple_quicksilver.sql` backfills the current schema history.
@@ -226,8 +227,8 @@ These contain useful history but pre-date the runtime-port doctrine. Treat them 
 pnpm install
 pnpm dev                                                      # API + UI
 pnpm --filter @paperclipai/dearme-agent-prompts test          # 25 — registry + state machines (work-loop, approvals, sse, opportunity, etc)
-pnpm --filter @paperclipai/dearme-ai-proxy test               # 6  — wire contract + voice-gate
-pnpm --filter @paperclipai/dearme-openclaw test               # 16 — skill generator + bootstrap + outbound tool contract
+pnpm --filter @paperclipai/dearme-ai-proxy test               # 10 — wire contract + voice-gate
+pnpm --filter @paperclipai/dearme-openclaw test               # 19 — skill generator + bootstrap + outbound tool contract
 pnpm --filter @paperclipai/dearme-openclaw run generate-skills  # regenerate 12 SKILL.md from registry
 pnpm --filter @paperclipai/db typecheck                       # Drizzle schema (incl. channel_connections + opportunities)
 ```

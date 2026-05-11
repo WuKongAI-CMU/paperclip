@@ -20,6 +20,13 @@ import {
 import {
   resolveDearMeMetaCampaignDispatchConfigFromEnv,
 } from "../server/src/services/dearme-meta-campaign-dispatch-config.js";
+import {
+  createDearMeOpenClawGatewayDispatchMap,
+  type DearMeOpenClawGatewayDispatchDeps,
+} from "../server/src/services/dearme-openclaw-gateway-dispatch.js";
+import {
+  resolveDearMeOpenClawGatewayDispatchConfigFromEnv,
+} from "../server/src/services/dearme-openclaw-gateway-dispatch-config.js";
 import type {
   ChannelDispatch,
 } from "../server/src/services/dearme-outbound-tool-wrapper.js";
@@ -47,6 +54,8 @@ export const DEARME_PROVIDER_SMOKE_TARGETS = [
   "deploy_site_preview",
   "deploy_site_production",
   "linkedin_dm",
+  "telegram_message",
+  "imessage_message",
   "meta_campaign",
 ] as const;
 
@@ -88,6 +97,7 @@ export interface DearMeProviderSmokeOptions {
   live?: boolean;
   env?: Env;
   fetch?: FetchLike;
+  openClawGatewayExecute?: NonNullable<DearMeOpenClawGatewayDispatchDeps["execute"]>;
   now?: () => Date;
 }
 
@@ -105,6 +115,8 @@ export interface ParsedDearMeProviderSmokeArgs {
 
 const LIVE_TARGETS = new Set<DearMeProviderSmokeTarget>([
   "linkedin_dm",
+  "telegram_message",
+  "imessage_message",
   "meta_campaign",
 ]);
 
@@ -134,6 +146,16 @@ DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE=/absolute/path/to/linkedin-credential.js
 DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN=
 DEARME_LINKEDIN_DM_SMOKE_SUBJECT=Private proof
 DEARME_LINKEDIN_DM_SMOKE_BODY=Your private DearMe proof packet is ready.
+
+OPENCLAW_GATEWAY_URL=
+OPENCLAW_GATEWAY_TOKEN=
+OPENCLAW_WEBHOOK_AUTH=
+PAPERCLIP_API_URL=
+DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT=
+DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY=Your private DearMe proof packet is ready.
+DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=
+DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY=Dear me, day 1 - the team has your first proof packet ready.
+DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE=imessage
 
 DEARME_META_CAMPAIGN_GRAPH_API_BASE_URL=https://graph.facebook.com/v25.0
 DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/absolute/path/to/meta-credential.json
@@ -186,6 +208,10 @@ function targetDescription(target: DearMeProviderSmokeTarget) {
       return "prove the configured production DearMe site host serves the smoke page";
     case "linkedin_dm":
       return "send one LinkedIn DM through the configured partner endpoint";
+    case "telegram_message":
+      return "send one Telegram message through the configured OpenClaw gateway";
+    case "imessage_message":
+      return "send one iMessage/SMS through the configured OpenClaw gateway";
     case "meta_campaign":
       return "create one paused Meta campaign through the Marketing API";
   }
@@ -193,6 +219,16 @@ function targetDescription(target: DearMeProviderSmokeTarget) {
 
 function credentialRequirement(env: Env, jsonKey: string, fileKey: string) {
   return firstEnv(env, [jsonKey, fileKey]) ? [] : [`${jsonKey} or ${fileKey}`];
+}
+
+function openClawGatewayRequirement(env: Env) {
+  const config = resolveDearMeOpenClawGatewayDispatchConfigFromEnv(env as NodeJS.ProcessEnv);
+  return [
+    ...(config?.url ? [] : ["OPENCLAW_GATEWAY_URL"]),
+    ...(firstEnv(env, ["OPENCLAW_GATEWAY_TOKEN", "OPENCLAW_WEBHOOK_AUTH"])
+      ? []
+      : ["OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH"]),
+  ];
 }
 
 function targetMissingRequirements(target: DearMeProviderSmokeTarget, env: Env) {
@@ -228,6 +264,26 @@ function targetMissingRequirements(target: DearMeProviderSmokeTarget, env: Env) 
           : ["DEARME_LINKEDIN_DM_SMOKE_BODY"]),
       ];
     }
+    case "telegram_message":
+      return [
+        ...openClawGatewayRequirement(env),
+        ...(nonEmpty(env.DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT)
+          ? []
+          : ["DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT"]),
+        ...(nonEmpty(env.DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY)
+          ? []
+          : ["DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY"]),
+      ];
+    case "imessage_message":
+      return [
+        ...openClawGatewayRequirement(env),
+        ...(nonEmpty(env.DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT)
+          ? []
+          : ["DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT"]),
+        ...(nonEmpty(env.DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY)
+          ? []
+          : ["DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY"]),
+      ];
     case "meta_campaign":
       return credentialRequirement(
         env,
@@ -327,6 +383,12 @@ function normalizeTarget(value: string): TargetArg {
     production: "deploy_site_production",
     linkedin: "linkedin_dm",
     linkedin_dm: "linkedin_dm",
+    telegram: "telegram_message",
+    telegram_message: "telegram_message",
+    send_telegram_message: "telegram_message",
+    imessage: "imessage_message",
+    imessage_message: "imessage_message",
+    send_imessage: "imessage_message",
     meta: "meta_campaign",
     meta_ads: "meta_campaign",
     meta_campaign: "meta_campaign",
@@ -628,6 +690,51 @@ async function runLinkedInDmSmoke(options: DearMeProviderSmokeOptions) {
   );
 }
 
+async function runOpenClawGatewayMessageSmoke(
+  target: "telegram_message" | "imessage_message",
+  options: DearMeProviderSmokeOptions,
+) {
+  const env = options.env ?? process.env;
+  const missing = [
+    ...targetMissingRequirements(target, env),
+    ...requireLiveConfirmation(target, options),
+  ];
+  if (missing.length > 0) {
+    return blockedResult(target, "missing-live-provider-smoke-config", missing);
+  }
+
+  const config = resolveDearMeOpenClawGatewayDispatchConfigFromEnv(env as NodeJS.ProcessEnv);
+  assert(config);
+  const dispatchMap = createDearMeOpenClawGatewayDispatchMap(config, {
+    ...(options.openClawGatewayExecute ? { execute: options.openClawGatewayExecute } : {}),
+  });
+  const now = options.now?.() ?? new Date();
+  const isTelegram = target === "telegram_message";
+  const toolName = isTelegram ? "send_telegram_message" : "send_imessage";
+  const dispatch = dispatchMap[toolName];
+  assert(dispatch);
+
+  return fromDispatchResult(
+    target,
+    await dispatch(smokeDispatchInput({
+      target,
+      toolName,
+      channel: isTelegram ? "telegram" : "imessage",
+      payload: isTelegram
+        ? {
+            recipient: nonEmpty(env.DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT),
+            body: nonEmpty(env.DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY),
+          }
+        : {
+            to: nonEmpty(env.DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT),
+            body: nonEmpty(env.DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY),
+            service: nonEmpty(env.DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE) ?? "imessage",
+          },
+      now,
+    })),
+  );
+}
+
 async function runMetaCampaignSmoke(options: DearMeProviderSmokeOptions) {
   const target = "meta_campaign";
   const env = options.env ?? process.env;
@@ -697,6 +804,9 @@ async function runTarget(
       return runDeploySiteSmoke(target, options);
     case "linkedin_dm":
       return runLinkedInDmSmoke(options);
+    case "telegram_message":
+    case "imessage_message":
+      return runOpenClawGatewayMessageSmoke(target, options);
     case "meta_campaign":
       return runMetaCampaignSmoke(options);
   }
@@ -722,6 +832,8 @@ Targets:
   deploy_site_preview       Safe receipt smoke for the private preview path.
   deploy_site_production    Production host smoke; verifies the returned URL serves expected page text.
   linkedin_dm               Live partner endpoint smoke. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
+  telegram_message          Live Telegram smoke through OpenClaw gateway. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
+  imessage_message          Live iMessage/SMS smoke through OpenClaw gateway. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
   meta_campaign             Live Meta Marketing API smoke. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
   all                       Run every target.
 
@@ -731,6 +843,7 @@ Setup:
 
 Default with no target is --check. Secret JSON can be passed directly or by file:
   DEARME_LINKEDIN_DM_CREDENTIAL_JSON(_FILE)
+  OPENCLAW_GATEWAY_URL + OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH
   DEARME_META_CAMPAIGN_CREDENTIAL_JSON(_FILE)`);
 }
 

@@ -3,6 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 import { tmpdir } from "node:os";
+import type { AdapterExecutionContext } from "@paperclipai/adapter-utils";
 import {
   dearMeProviderSmokeEnvTemplate,
   inspectDearMeProviderSmokeReadiness,
@@ -17,6 +18,8 @@ const now = () => new Date("2026-05-11T12:00:00.000Z");
 test("provider smoke readiness reports missing live provider config without secrets", () => {
   const readiness = inspectDearMeProviderSmokeReadiness({});
   const linkedin = readiness.find((item) => item.target === "linkedin_dm");
+  const telegram = readiness.find((item) => item.target === "telegram_message");
+  const imessage = readiness.find((item) => item.target === "imessage_message");
   const meta = readiness.find((item) => item.target === "meta_campaign");
 
   assert.deepEqual(linkedin?.missing, [
@@ -28,12 +31,26 @@ test("provider smoke readiness reports missing live provider config without secr
   assert.deepEqual(meta?.missing, [
     "DEARME_META_CAMPAIGN_CREDENTIAL_JSON or DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE",
   ]);
+  assert.deepEqual(telegram?.missing, [
+    "OPENCLAW_GATEWAY_URL",
+    "OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH",
+    "DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT",
+    "DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY",
+  ]);
+  assert.deepEqual(imessage?.missing, [
+    "OPENCLAW_GATEWAY_URL",
+    "OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH",
+    "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+    "DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY",
+  ]);
   assert.equal(JSON.stringify(readiness).includes("accessToken"), false);
 });
 
 test("provider smoke parses target aliases", () => {
   assert.equal(parseDearMeProviderSmokeArgs(["--target", "linkedin"]).target, "linkedin_dm");
   assert.equal(parseDearMeProviderSmokeArgs(["site-production"]).target, "deploy_site_production");
+  assert.equal(parseDearMeProviderSmokeArgs(["telegram"]).target, "telegram_message");
+  assert.equal(parseDearMeProviderSmokeArgs(["send-imessage"]).target, "imessage_message");
   assert.equal(parseDearMeProviderSmokeArgs(["--live", "--json"]).live, true);
   assert.equal(parseDearMeProviderSmokeArgs(["--", "--check"]).check, true);
   assert.deepEqual(
@@ -95,6 +112,10 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   assert.match(template, /DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN=/);
   assert.match(template, /DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0/);
   assert.match(template, /DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE=/);
+  assert.match(template, /OPENCLAW_GATEWAY_URL=/);
+  assert.match(template, /OPENCLAW_GATEWAY_TOKEN=/);
+  assert.match(template, /DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT=/);
+  assert.match(template, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=/);
   assert.match(template, /DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/);
   assert.equal(template.includes("accessToken"), false);
   assert.equal(template.includes("li-token"), false);
@@ -290,6 +311,112 @@ test("provider smoke refuses live LinkedIn sends without the explicit live guard
 
   assert.equal(result.status, "blocked");
   assert.deepEqual(result.missing, ["--live", "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1"]);
+});
+
+test("provider smoke refuses live OpenClaw message sends without the explicit live guard", async () => {
+  const [result] = await runDearMeProviderSmoke({
+    target: "telegram_message",
+    env: {
+      OPENCLAW_GATEWAY_URL: "wss://gateway.example",
+      OPENCLAW_GATEWAY_TOKEN: "gateway-token",
+      DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT: "@founder",
+      DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY: "Private proof packet is ready.",
+    },
+    now,
+  });
+
+  assert.equal(result.status, "blocked");
+  assert.deepEqual(result.missing, ["--live", "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1"]);
+});
+
+test("provider smoke sends Telegram live target through injected OpenClaw gateway", async () => {
+  let capturedContext: AdapterExecutionContext | null = null;
+  const openClawGatewayExecute = async (ctx: AdapterExecutionContext) => {
+    capturedContext = ctx;
+    return {
+      exitCode: 0,
+      signal: null,
+      timedOut: false,
+      sessionId: "telegram-message-1",
+      sessionDisplayId: "tg://message/telegram-message-1",
+      provider: "openclaw_gateway",
+      biller: "openclaw_gateway",
+      resultJson: { messageId: "telegram-message-1" },
+    };
+  };
+
+  const [result] = await runDearMeProviderSmoke({
+    target: "telegram_message",
+    live: true,
+    env: {
+      DEARME_PROVIDER_SMOKE_CONFIRM_LIVE: "1",
+      OPENCLAW_GATEWAY_URL: "wss://gateway.example",
+      OPENCLAW_GATEWAY_TOKEN: "gateway-token",
+      DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT: "@founder",
+      DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY: "Private proof packet is ready.",
+    },
+    openClawGatewayExecute,
+    now,
+  });
+
+  assert.equal(result.status, "delivered");
+  assert.equal(result.target, "telegram_message");
+  assert.equal(result.externalId, "telegram-message-1");
+  assert.equal(capturedContext?.config.headers?.["x-openclaw-token"], "gateway-token");
+  assert.equal(capturedContext?.config.payloadTemplate.paperclip.dearme.toolName, "send_telegram_message");
+  assert.deepEqual(
+    capturedContext?.config.payloadTemplate.paperclip.dearme.originalOutboundPayload,
+    {
+      recipient: "@founder",
+      body: "Private proof packet is ready.",
+    },
+  );
+  assert.equal(JSON.stringify(result).includes("gateway-token"), false);
+});
+
+test("provider smoke sends iMessage live target through injected OpenClaw gateway", async () => {
+  let capturedContext: AdapterExecutionContext | null = null;
+  const openClawGatewayExecute = async (ctx: AdapterExecutionContext) => {
+    capturedContext = ctx;
+    return {
+      exitCode: 0,
+      signal: null,
+      timedOut: false,
+      sessionId: "imessage-1",
+      provider: "openclaw_gateway",
+      biller: "openclaw_gateway",
+      resultJson: { messageId: "imessage-1" },
+    };
+  };
+
+  const [result] = await runDearMeProviderSmoke({
+    target: "imessage_message",
+    live: true,
+    env: {
+      DEARME_PROVIDER_SMOKE_CONFIRM_LIVE: "yes",
+      OPENCLAW_GATEWAY_URL: "wss://gateway.example",
+      OPENCLAW_WEBHOOK_AUTH: "Bearer gateway-token",
+      DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT: "+15555550123",
+      DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY: "Dear me, day 1 - the team is ready.",
+      DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE: "sms",
+    },
+    openClawGatewayExecute,
+    now,
+  });
+
+  assert.equal(result.status, "delivered");
+  assert.equal(result.target, "imessage_message");
+  assert.equal(capturedContext?.config.headers?.["x-openclaw-token"], "gateway-token");
+  assert.equal(capturedContext?.config.payloadTemplate.paperclip.dearme.toolName, "send_imessage");
+  assert.deepEqual(
+    capturedContext?.config.payloadTemplate.paperclip.dearme.originalOutboundPayload,
+    {
+      to: "+15555550123",
+      body: "Dear me, day 1 - the team is ready.",
+      service: "sms",
+    },
+  );
+  assert.equal(JSON.stringify(result).includes("gateway-token"), false);
 });
 
 test("provider smoke sends LinkedIn live target through injected partner fetch", async () => {
