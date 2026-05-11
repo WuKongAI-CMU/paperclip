@@ -2,6 +2,32 @@
 
 Date: 2026-05-11
 
+## Unified Proof Setup Exports The Phone-Ready Packet First - 2026-05-11
+
+Product/architecture slice:
+
+- Updated the unified proof/status operator path so blocked production host
+  proof now shows the private-site export command before provider smoke checks.
+  The coordinator no longer has to infer that
+  `pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof`
+  is the first step toward the Polsia-style phone-reachable proof.
+- Reused the existing aha proof export, host-smoke manifest, and
+  provider-smoke harness. No new setup dashboard, connector UI, runtime layer,
+  or customer-facing language was added.
+- Kept the product verdict honest: the private proof packet is easier to run
+  and hand to host smoke, but live provider proof remains blocked until a real
+  production host and provider credentials are configured.
+
+Verification:
+
+- `pnpm test:dearme-proof`
+- `pnpm test:dearme-aha-proof`
+- `pnpm test:dearme-provider-smoke`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:proof -- --check`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Provider Host Smoke Reads The Export Manifest - 2026-05-11
 
 Product/architecture slice:

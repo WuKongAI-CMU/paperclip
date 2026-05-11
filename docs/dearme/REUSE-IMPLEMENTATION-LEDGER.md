@@ -15,6 +15,13 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `pnpm dearme:status` / `pnpm dearme:proof -- --check` now put
+  `pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof`
+  directly in the blocked live-provider setup path before provider smoke
+  checks. Future workers should keep the phone-ready private proof packet and
+  production host smoke on this single proof/status path; do not create another
+  site export command, setup screen, or coordinator checklist for the same
+  Polsia gap.
 - `pnpm dearme:aha-proof -- --export-site` now writes a handle-local
   `host-smoke.json` beside `index.html` and `proof.json`, carrying expected
   phone-check text, output counts, launch boundaries, wait-for gates, and

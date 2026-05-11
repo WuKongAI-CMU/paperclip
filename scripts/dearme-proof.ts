@@ -107,6 +107,8 @@ export interface DearMeProofSafeOptions {
 }
 
 const PROOF_ENV_FILE = ".dearme-proof.env";
+const PRIVATE_SITE_EXPORT_COMMAND =
+  "pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof";
 
 function includesLane(selected: DearMeProofLane, lane: Exclude<DearMeProofLane, "all">) {
   return selected === "all" || selected === lane;
@@ -262,14 +264,20 @@ function childRunCommands(commands: readonly string[]) {
     .map(replaceChildEnvFile);
 }
 
+function needsPrivateSiteExport(
+  blockedTargets: readonly DearMeProviderSmokeReadiness["target"][],
+) {
+  return blockedTargets.includes("deploy_site_production");
+}
+
 export function dearMeProofOperatorCommands(
   readiness: DearMeProofReadiness,
   lane: DearMeProofLane = "all",
 ): string[] {
-  const commands = [
-    `pnpm --silent dearme:proof -- --print-env-template${laneFlag(lane)} > ${PROOF_ENV_FILE}`,
-    `pnpm --silent dearme:proof -- --check${laneFlag(lane)}`,
-  ];
+  const printEnvCommand =
+    `pnpm --silent dearme:proof -- --print-env-template${laneFlag(lane)} > ${PROOF_ENV_FILE}`;
+  const precheckCommands: string[] = [];
+  const setupCommands: string[] = [];
 
   for (const laneReadiness of readiness.lanes) {
     const blockedTargets = laneReadiness.readiness
@@ -278,11 +286,14 @@ export function dearMeProofOperatorCommands(
     if (blockedTargets.length === 0) continue;
 
     if (laneReadiness.lane === "provider") {
-      commands.push(
+      if (needsPrivateSiteExport(blockedTargets)) {
+        precheckCommands.push(PRIVATE_SITE_EXPORT_COMMAND);
+      }
+      setupCommands.push(
         ...childRunCommands(dearMeProviderSmokeOperatorCommands(blockedTargets)),
       );
     } else {
-      commands.push(
+      setupCommands.push(
         ...childRunCommands(dearMeVoiceSmokeOperatorCommands(
           blockedTargets as DearMeVoiceSmokeTarget[],
         )),
@@ -290,7 +301,12 @@ export function dearMeProofOperatorCommands(
     }
   }
 
-  return commands;
+  return [
+    printEnvCommand,
+    ...precheckCommands,
+    `pnpm --silent dearme:proof -- --check${laneFlag(lane)}`,
+    ...setupCommands,
+  ];
 }
 
 function providerLane(readiness: DearMeProofReadiness) {
@@ -333,11 +349,17 @@ function liveProviderSetupCommands(
   lane: DearMeProofLane,
 ): string[] {
   if (blockedTargets.length === 0) return [];
-  return [
+  const commands = [
     `pnpm --silent dearme:proof -- --print-env-template${laneFlag(lane)} > ${PROOF_ENV_FILE}`,
+  ];
+  if (needsPrivateSiteExport(blockedTargets)) {
+    commands.push(PRIVATE_SITE_EXPORT_COMMAND);
+  }
+  commands.push(
     `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --check`,
     ...childRunCommands(dearMeProviderSmokeOperatorCommands(blockedTargets)),
-  ];
+  );
+  return commands;
 }
 
 function firstWowAhaSection(report: DearMeAhaProofReport): DearMeProofStatusSection {

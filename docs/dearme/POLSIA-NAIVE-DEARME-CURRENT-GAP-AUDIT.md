@@ -74,6 +74,9 @@ Current DearMe branch:
   - local no-send proof is ready
   - voice semantic proof is ready on the coordinator Mac through the local
     profile-token scorer and customer-like custom corpus
+  - blocked live-provider setup now prints the private-site export command
+    before provider smoke, so the phone-ready artifact is part of the operator
+    path instead of a separate remembered step
   - live provider proof is still the remaining external proof gap
 - `pnpm --silent dearme:proof -- --run-safe --lane voice`
   - deterministic local gate passes

@@ -35,6 +35,7 @@ test("DearMe proof readiness combines provider and voice lanes without secrets",
   assert.match(formatted, /Voice calibration lane/);
   assert.match(formatted, /Next DearMe proof setup:/);
   assert.match(formatted, /pnpm --silent dearme:proof -- --print-env-template > \.dearme-proof\.env/);
+  assert.match(formatted, /pnpm --silent dearme:aha-proof -- --export-site dist\/dearme-private-proof/);
   assert.match(formatted, /pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env/);
   assert.match(formatted, /pnpm --silent dearme:voice-smoke -- --env-file \.dearme-proof\.env/);
   assert.doesNotMatch(formatted, /\.dearme-provider-smoke\.env/);
@@ -106,6 +107,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   ]);
   assert.deepEqual(status.commands.liveProviderSetup, [
     "pnpm --silent dearme:proof -- --print-env-template > .dearme-proof.env",
+    "pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof",
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target deploy_site_production",
     "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target linkedin_dm --live",
@@ -117,6 +119,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /First-wow aha proof: ready/);
   assert.match(formatted, /recurring private work/);
   assert.match(formatted, /pnpm --silent dearme:aha-proof -- --check/);
+  assert.match(formatted, /pnpm --silent dearme:aha-proof -- --export-site dist\/dearme-private-proof/);
   assert.match(formatted, /Local no-send proof: ready/);
   assert.match(formatted, /Voice semantic proof: blocked/);
   assert.match(formatted, /Live provider proof: blocked/);

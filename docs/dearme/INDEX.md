@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, the recurring private-work proof contract, the five-draft private output packet, the phone-ready static private-site export, and production host smoke fail-closed on the exported proof packet plus host-smoke manifest)
+Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, the recurring private-work proof contract, the five-draft private output packet, the phone-ready static private-site export, production host smoke fail-closed on the exported proof packet plus host-smoke manifest, and unified live-provider setup exporting the proof packet first)
 
 ---
 
@@ -186,7 +186,10 @@ coordinator does not have to read raw provider setup every time. It reuses the
 same `dearme:aha-proof` report, so recurring private work is part of the main
 product verdict instead of living in a side proof. `pnpm dearme:aha-proof -- --export-site`
 also writes the same proof as a phone-ready static private site artifact plus a
-host-smoke manifest before real host smoke is available. The underlying
+host-smoke manifest before real host smoke is available. When live provider
+proof is blocked, the same status/setup output now prints that export command
+before the provider smoke check so the phone-ready packet is not a hidden
+coordinator step. The underlying
 `pnpm dearme:proof -- --check` command is still the first detailed local proof
 entrypoint for coordinators and Symphony workers. It composes the existing
 provider and voice smoke lanes, prints one ignored `.dearme-proof.env`
