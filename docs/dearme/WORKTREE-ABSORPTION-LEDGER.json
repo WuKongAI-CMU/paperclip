@@ -2,6 +2,34 @@
   "updatedAt": "2026-05-11",
   "reviewedAbsorptions": [
     {
+      "ticket": "DEA-60",
+      "branch": "codex/dearme-dm-136-sample-demo-proof",
+      "head": "59f24d2212ca20577e587bd4ab255f51d55af543",
+      "reviewedAt": "2026-05-11",
+      "reason": "The active DEA-60 Symphony head only contains an earlier provider-smoke env-template/local-env helper on top of an older coordinator base. The current coordinator head already includes the same operator env-file/template path plus the stronger production/custom-domain smoke behavior: custom-domain readiness gating, custom-domain payload propagation, host status/external URL output, and fetch cause reporting. Replaying 59f24d22 would regress those DEA-60/DM-177E host-proof details while adding no new product surface.",
+      "evidence": [
+        ".gitignore",
+        "scripts/dearme-provider-smoke.ts",
+        "scripts/dearme-provider-smoke.test.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DEA-60",
+      "branch": "codex/dearme-dm-136-sample-demo-proof",
+      "head": "723ccd4f1eeffa45e215767b7b972f6bdacb010d",
+      "reviewedAt": "2026-05-11",
+      "reason": "The follow-on DEA-60 Symphony head rebases the same env-file/template bootstrap onto the older provider-smoke base. Current coordinator code already has that bootstrap and keeps stronger DM-177E production/custom-domain smoke behavior: custom-domain readiness/payload coverage, custom-domain host test, host status/external URL output, and fetch-cause reporting. Replaying 723ccd4f would duplicate the env helper while dropping current proof details, so keep the coordinator implementation as integration truth.",
+      "evidence": [
+        ".gitignore",
+        "scripts/dearme-provider-smoke.ts",
+        "scripts/dearme-provider-smoke.test.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
       "ticket": "DEA-63",
       "branch": "dea63-live-replay",
       "head": "7384cfa455b55798752abee084da4ed10c3d9219",

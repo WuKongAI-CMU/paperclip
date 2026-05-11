@@ -2,6 +2,40 @@
 
 Date: 2026-05-11
 
+## DM-170E Semantic Voice Scorer Seam - 2026-05-11
+
+Product/architecture slice:
+
+- Added a narrow `semanticScorer` injection point inside the existing Voice Gate
+  service, so a trained voice model or embedding scorer can contribute a
+  bounded semantic match/drift signal without replacing the `/v1/voice/score`
+  route, persisted `dm_sk_*` auth, DB-backed profile store, or customer review
+  surface.
+- The default path stays deterministic and backwards-compatible. The semantic
+  signal only exists when injected by the service owner, and it receives the
+  normalized accepted-sample profile plus current draft signal tokens before
+  any new draft is learned.
+- Positive semantic matches can lift borderline drafts; confident semantic
+  drift can block a draft before it teaches the profile. Failed drafts still do
+  not update the voice profile.
+- Customer-facing reason notes stay product-safe: they mention the approved
+  voice profile, not model/provider/runtime/fingerprint machinery.
+- This closes the DM-170 service seam for trained scoring. The remaining
+  production gap is connecting and calibrating a real semantic model/embedding
+  provider plus live scoring smoke, not another route, key store, profile
+  table, or review UI.
+- Reviewed active Symphony heads DEA-60 `59f24d22` and `723ccd4f` while this
+  slice was in progress. They are older provider-smoke env-template/local-env
+  helper cuts already superseded by the current coordinator implementation,
+  which keeps the same helper plus stronger custom-domain and host-fetch
+  evidence. Recorded them in `WORKTREE-ABSORPTION-LEDGER.json` instead of
+  replaying the older cuts.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-voice-gate.test.ts server/src/__tests__/dearme-voice-gate-routes.test.ts --maxWorkers=1`
+  passed: 2 files, 23 tests.
+
 ## Symphony Coordination Hygiene - 2026-05-11
 
 Product/architecture slice:

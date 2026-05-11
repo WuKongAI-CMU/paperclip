@@ -176,6 +176,62 @@ describe("dearMeVoiceGateService scorer", () => {
     expect(r.reasons.some((reason) => reason.rule === "voice_continuity")).toBe(false);
   });
 
+  it("can apply an injected semantic voice scorer without changing the route contract", async () => {
+    const scorerCalls: Array<{
+      profile: DearMeVoiceCorpusProfileSnapshot;
+      signalTokens: ReadonlyArray<string>;
+    }> = [];
+    const freshSvc = dearMeVoiceGateService({
+      async semanticScorer({ profile, signalTokens }) {
+        scorerCalls.push({ profile, signalTokens });
+        return { similarity: 0.86, confidence: 0.91, source: "test" };
+      },
+    });
+
+    const r = await freshSvc.scoreVoice({
+      fingerprintId: "vf_semantic_match",
+      text: "The launch note became a private proof because buyers could inspect the work before the next yes.",
+      kind: "linkedin-post",
+      minScore: 90,
+    });
+
+    expect(r.passed).toBe(true);
+    expect(r.reasons.some((reason) => reason.rule === "semantic_voice_match")).toBe(true);
+    expect(scorerCalls).toHaveLength(1);
+    expect(scorerCalls[0].profile).toEqual({ acceptedSamples: 0, tokenCounts: {} });
+    expect(scorerCalls[0].signalTokens).toContain("launch");
+  });
+
+  it("lets the injected semantic scorer block confident voice drift before learning it", async () => {
+    const writes: DearMeVoiceCorpusProfileSnapshot[] = [];
+    const profileStore: DearMeVoiceProfileStore = {
+      async readProfile() {
+        return null;
+      },
+      async writeProfile(_fingerprintId, profile) {
+        writes.push(profile);
+      },
+    };
+    const freshSvc = dearMeVoiceGateService({
+      profileStore,
+      async semanticScorer() {
+        return { similarity: 0.12, confidence: 0.9, source: "test" };
+      },
+    });
+
+    const r = await freshSvc.scoreVoice({
+      fingerprintId: "vf_semantic_drift",
+      text: "I shipped a concrete proof because the launch call needed one inspectable decision before the next yes.",
+      kind: "linkedin-post",
+      minScore: 98,
+    });
+
+    expect(r.passed).toBe(false);
+    expect(r.score).toBeLessThan(r.floor);
+    expect(r.reasons.some((reason) => reason.rule === "semantic_voice_drift")).toBe(true);
+    expect(writes).toEqual([]);
+  });
+
   it("flags disclaimers", async () => {
     const r = await svc.scoreVoice({
       fingerprintId: "vf_test",

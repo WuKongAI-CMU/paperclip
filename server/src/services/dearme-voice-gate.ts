@@ -3,14 +3,14 @@
  *
  * Implements the wire defined in
  * `@paperclipai/dearme-ai-proxy/voice-gate.ts`. Backs `POST /v1/voice/score`
- * (DM-170 — full route is the next ticket; this file is the scorer).
+ * (DM-170).
  *
  * Scoring policy:
- *   - The durable cloud scorer will eventually use the user's full public
- *     corpus. Until then, this file ships a deterministic scorer that can
- *     already enforce the product contract: concrete, first-person, private
- *     work should pass the default floor on the first try, while generic
- *     output and hidden process language get blocked before review.
+ *   - The durable cloud scorer can accept a trained semantic signal when it
+ *     is configured. Until then, this file ships a deterministic scorer that
+ *     can already enforce the product contract: concrete, first-person,
+ *     private work should pass the default floor on the first try, while
+ *     generic output and hidden process language get blocked before review.
  *   - An accepted-sample profile gives follow-up drafts a small continuity
  *     boost for the same voice id. The default store is in-memory, but the
  *     service accepts a serializable store so the route is not tied to one
@@ -44,6 +44,21 @@ export type DearMeVoiceCorpusProfileSnapshot = {
   acceptedSamples: number;
   tokenCounts: Record<string, number>;
 };
+
+export type DearMeVoiceSemanticScore = {
+  /** Normalized 0..1 match against the trained voice profile. */
+  similarity: number;
+  /** Optional 0..1 confidence from the semantic scorer. Defaults to 1. */
+  confidence?: number;
+  /** Internal provenance for logs/tests. This is never returned to customers. */
+  source?: string;
+};
+
+export type DearMeVoiceSemanticScorer = (input: {
+  request: DearMeVoiceGateScoreInput;
+  profile: DearMeVoiceCorpusProfileSnapshot;
+  signalTokens: ReadonlyArray<string>;
+}) => Promise<DearMeVoiceSemanticScore | null>;
 
 export interface DearMeVoiceProfileStore {
   readProfile(
@@ -158,14 +173,18 @@ export interface DearMeVoiceGateService {
 
 /**
  * Construct the service. The default scorer is the deterministic stub;
- * tests and DM-170 swap in a real model by passing `{ scorer }`.
+ * tests and DM-170 can either replace it with `{ scorer }` or add a trained
+ * semantic signal through `{ semanticScorer }`.
  */
 export function dearMeVoiceGateService(options?: {
   scorer?: (req: DearMeVoiceGateScoreInput) => Promise<VoiceGateScoreResponse>;
   profileStore?: DearMeVoiceProfileStore;
+  semanticScorer?: DearMeVoiceSemanticScorer;
 }): DearMeVoiceGateService {
   const profileStore = options?.profileStore ?? createInMemoryDearMeVoiceProfileStore();
-  const scorer = options?.scorer ?? ((req: VoiceGateScoreRequest) => scoreWithCorpus(req, profileStore));
+  const scorer =
+    options?.scorer ??
+    ((req: DearMeVoiceGateScoreInput) => scoreWithCorpus(req, profileStore, options?.semanticScorer));
   return {
     async scoreVoice(req) {
       return scorer(req);
@@ -189,10 +208,14 @@ export function createInMemoryDearMeVoiceProfileStore(): DearMeVoiceProfileStore
 async function scoreWithCorpus(
   req: DearMeVoiceGateScoreInput,
   profileStore: DearMeVoiceProfileStore,
+  semanticScorer?: DearMeVoiceSemanticScorer,
 ): Promise<VoiceGateScoreResponse> {
   const floor = req.minScore ?? VOICE_GATE_DEFAULT_FLOOR;
   const tuning = ARTIFACT_KIND_TUNING[req.kind];
-  const profile = profileFromSnapshot(await profileStore.readProfile(req.fingerprintId, req));
+  const profileSnapshot = normalizeDearMeVoiceProfileSnapshot(
+    (await profileStore.readProfile(req.fingerprintId, req)) ?? { acceptedSamples: 0, tokenCounts: {} },
+  );
+  const profile = profileFromSnapshot(profileSnapshot);
   const signalTokens = extractSignalTokens(req.text);
 
   const reasons: VoiceGateScoreReason[] = [];
@@ -283,6 +306,20 @@ async function scoreWithCorpus(
     });
   }
 
+  if (semanticScorer) {
+    const semanticReason = semanticVoiceReason(
+      await semanticScorer({
+        request: req,
+        profile: profileSnapshot,
+        signalTokens,
+      }),
+    );
+    if (semanticReason) {
+      score += semanticReason.delta;
+      reasons.push(semanticReason);
+    }
+  }
+
   score = Math.max(0, Math.min(100, score));
   const passed = score >= floor;
   if (passed) {
@@ -359,6 +396,49 @@ function profileSimilarity(tokens: ReadonlyArray<string>, profile: VoiceCorpusPr
     if (profile.tokenCounts.has(token)) hits += 1;
   }
   return hits / tokens.length;
+}
+
+function semanticVoiceReason(result: DearMeVoiceSemanticScore | null): VoiceGateScoreReason | null {
+  if (!result) return null;
+  const similarity = clampUnit(result.similarity);
+  if (similarity === null) return null;
+  const confidence = result.confidence === undefined ? 1 : clampUnit(result.confidence);
+  if (confidence === null || confidence < 0.5) return null;
+
+  if (similarity >= 0.82) {
+    return {
+      rule: "semantic_voice_match",
+      delta: +7,
+      note: "The draft matches the approved voice profile.",
+    };
+  }
+  if (similarity >= 0.68) {
+    return {
+      rule: "semantic_voice_match",
+      delta: +4,
+      note: "The draft mostly matches the approved voice profile.",
+    };
+  }
+  if (similarity <= 0.22 && confidence >= 0.7) {
+    return {
+      rule: "semantic_voice_drift",
+      delta: -10,
+      note: "The draft departs from the approved voice profile; revise before public use.",
+    };
+  }
+  if (similarity <= 0.35 && confidence >= 0.7) {
+    return {
+      rule: "semantic_voice_drift",
+      delta: -6,
+      note: "The draft is weaker against the approved voice profile.",
+    };
+  }
+  return null;
+}
+
+function clampUnit(value: number): number | null {
+  if (!Number.isFinite(value)) return null;
+  return Math.max(0, Math.min(1, value));
 }
 
 function rememberAcceptedSample(profile: VoiceCorpusProfile, tokens: ReadonlyArray<string>) {
