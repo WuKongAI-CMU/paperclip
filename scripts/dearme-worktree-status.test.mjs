@@ -249,7 +249,12 @@ test("parseArgs tolerates the pnpm argument separator", () => {
     "/tmp/dearme-handoffs",
   ]);
   assert.equal(handoffOptions.includeHandoffs, true);
+  assert.equal(handoffOptions.summaryOnly, true);
   assert.equal(handoffOptions.handoffRoot, "/tmp/dearme-handoffs");
+
+  const handoffAliasOptions = parseArgs(["--handoffs"]);
+  assert.equal(handoffAliasOptions.includeHandoffs, true);
+  assert.equal(handoffAliasOptions.summaryOnly, true);
 
   const handoffEqualsOptions = parseArgs(["--handoff-root=/tmp/dearme-handoffs-equals"]);
   assert.equal(handoffEqualsOptions.handoffRoot, "/tmp/dearme-handoffs-equals");

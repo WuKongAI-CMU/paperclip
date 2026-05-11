@@ -2,6 +2,26 @@
 
 Date: 2026-05-11
 
+## DEA-60 Handoff Alias Absorbed - 2026-05-11
+
+Product/architecture slice:
+
+- Compared the active DEA-60 Symphony handoff against current head. The worker
+  branch was based on an older provider-smoke state, while current head already
+  carries the newer unified proof and provider lanes.
+- Did not replay the stale provider-smoke changes. Absorbed the still-useful
+  coordinator behavior instead: `--handoffs` now works as the compact handoff
+  summary entrypoint while preserving the existing handoff-summary inclusion.
+- This keeps Symphony worker absorption focused on issue-scoped product slices
+  and avoids overwriting newer proof architecture with an older branch.
+
+Verification:
+
+- `node --test scripts/dearme-worktree-status.test.mjs`
+- `pnpm --silent dearme:worktrees -- --handoffs --skip-dirty --ticket DEA-60`
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs --ticket DEA-60`
+- `git diff --check -- scripts/dearme-worktree-status.mjs scripts/dearme-worktree-status.test.mjs docs/dearme/BUILD-STATE.md`
+
 ## Polsia / Naive / DearMe Current Gap Audit - 2026-05-11
 
 Product/architecture slice:

@@ -586,6 +586,7 @@ export function parseArgs(argv) {
 
     if (arg === "--handoffs") {
       options.includeHandoffs = true;
+      options.summaryOnly = true;
       continue;
     }
 
