@@ -77,9 +77,26 @@ export interface DearMeProofStatusSection {
   blockedTargets: DearMeProofStatusBlocker[];
 }
 
+export type DearMeProofLiveProviderFocusKey =
+  | "production_host"
+  | "openclaw_messages"
+  | "linkedin_dm"
+  | "meta_campaign";
+
+export interface DearMeProofLiveProviderFocus {
+  key: DearMeProofLiveProviderFocusKey;
+  label: string;
+  ready: boolean;
+  targets: DearMeProviderSmokeReadiness["target"][];
+  blockedTargets: DearMeProofStatusBlocker[];
+  reason: string;
+  operatorCommand: string;
+}
+
 export interface DearMeProofStatus {
   lane: DearMeProofLane;
   sections: DearMeProofStatusSection[];
+  liveProviderFocus: DearMeProofLiveProviderFocus[];
   commands: {
     ahaProof: string;
     integrationAudit: string;
@@ -156,6 +173,50 @@ const INTEGRATION_AUDIT_SCRIPT_ARGS = [
   "--handoffs",
 ] as const;
 const INTEGRATION_AUDIT_TIMEOUT_MS = 60_000;
+const LIVE_PROVIDER_FOCUS_PLAN = [
+  {
+    key: "production_host",
+    label: "Production host smoke",
+    targets: ["deploy_site_production"],
+    reason:
+      "Polsia-level first wow starts with a phone-reachable private proof page before live sends.",
+    operatorCommand:
+      `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --target deploy_site_production`,
+  },
+  {
+    key: "openclaw_messages",
+    label: "OpenClaw message smoke",
+    targets: ["telegram_message", "imessage_message"],
+    reason:
+      "Naive-style substrate reuse is strongest when one OpenClaw gateway proves Telegram and iMessage together.",
+    operatorCommand:
+      `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --target openclaw_messages --live`,
+  },
+  {
+    key: "linkedin_dm",
+    label: "LinkedIn DM smoke",
+    targets: ["linkedin_dm"],
+    reason:
+      "Use targeted outreach only after the private page can be opened from a phone.",
+    operatorCommand:
+      `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --target linkedin_dm --live`,
+  },
+  {
+    key: "meta_campaign",
+    label: "Meta campaign smoke",
+    targets: ["meta_campaign"],
+    reason:
+      "Spend-bearing proof stays last; it should validate distribution after host and message lanes are proven.",
+    operatorCommand:
+      `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --target meta_campaign --live`,
+  },
+] as const satisfies readonly {
+  key: DearMeProofLiveProviderFocusKey;
+  label: string;
+  targets: readonly DearMeProviderSmokeReadiness["target"][];
+  reason: string;
+  operatorCommand: string;
+}[];
 
 function includesLane(selected: DearMeProofLane, lane: Exclude<DearMeProofLane, "all">) {
   return selected === "all" || selected === lane;
@@ -494,6 +555,23 @@ function liveProviderSetupCommands(
   return uniqueCommands(commands);
 }
 
+function liveProviderFocusPlan(
+  provider: DearMeProofLaneReadiness & { lane: "provider" },
+): DearMeProofLiveProviderFocus[] {
+  return LIVE_PROVIDER_FOCUS_PLAN.map((item) => {
+    const blockedTargets = blockedProviderTargets(provider.readiness, item.targets);
+    return {
+      key: item.key,
+      label: item.label,
+      ready: blockedTargets.length === 0,
+      targets: [...item.targets],
+      blockedTargets,
+      reason: item.reason,
+      operatorCommand: item.operatorCommand,
+    };
+  });
+}
+
 function firstWowAhaSection(report: DearMeAhaProofReport): DearMeProofStatusSection {
   return {
     key: "first_wow_aha_proof",
@@ -598,6 +676,7 @@ export function summarizeDearMeProofStatus(
   const voice = voiceLane(readiness);
   const sections: DearMeProofStatusSection[] = [];
   let liveProviderSetup: string[] = [];
+  let liveProviderFocus: DearMeProofLiveProviderFocus[] = [];
 
   if (lane === "all") {
     sections.push(firstWowAhaSection(runDearMeAhaProof().report));
@@ -653,6 +732,7 @@ export function summarizeDearMeProofStatus(
       blockedTargets.map((item) => item.target as DearMeProviderSmokeReadiness["target"]),
       lane,
     );
+    liveProviderFocus = liveProviderFocusPlan(provider);
     sections.push({
       key: "live_provider_proof",
       label: "Live provider proof",
@@ -666,6 +746,7 @@ export function summarizeDearMeProofStatus(
   return {
     lane,
     sections,
+    liveProviderFocus,
     commands: {
       ahaProof: "pnpm --silent dearme:aha-proof -- --check",
       integrationAudit: INTEGRATION_AUDIT_COMMAND,
@@ -724,6 +805,17 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
     lines.push(
       `- ${section.label}: ${section.ready ? "ready" : "blocked"}. ${section.description}${formatBlockedTargets(section.blockedTargets)}`,
     );
+  }
+
+  if (status.liveProviderFocus.length > 0) {
+    lines.push("");
+    lines.push("Next live proof focus:");
+    for (const focus of status.liveProviderFocus) {
+      const state = focus.ready
+        ? "ready"
+        : `blocked on ${focus.blockedTargets.map((item) => item.target).join(", ")}`;
+      lines.push(`- ${focus.label}: ${state}. ${focus.reason} Run: ${focus.operatorCommand}`);
+    }
   }
 
   lines.push("");

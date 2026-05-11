@@ -2,6 +2,32 @@
 
 Date: 2026-05-11
 
+## Live Proof Focus Is Machine-Readable - 2026-05-11
+
+Product/architecture slice:
+
+- Added a live-provider focus plan to the unified `dearme:status` result so
+  Symphony workers and Linear handoffs all see the same execution order instead
+  of re-litigating the Polsia/Naive comparison.
+- Put `deploy_site_production` first because the remaining Polsia gap is a
+  phone-reachable private proof page, not another local preview or setup
+  surface.
+- Put the shared `openclaw_messages` smoke second because Naive/Paperclip-style
+  reuse is strongest when Telegram and iMessage prove one OpenClaw gateway
+  substrate instead of becoming two product lanes.
+- Kept LinkedIn DM after host proof and Meta campaign last because those are
+  live outreach/spend surfaces that should validate distribution only after the
+  private page is reachable.
+- The focus plan carries target order, blocker targets, reasons, and exact
+  operator commands without serializing raw provider credential names.
+
+Verification:
+
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:status`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## First Screen Moves From Brand OS Setup To Private Proof - 2026-05-11
 
 Product/architecture slice:

@@ -31,6 +31,9 @@ planning/permission problem; it is live customer proof:
 
 In product terms: DearMe has reached the Naive/Paperclip substrate bar for a
 real team system, but it is still short of Polsia's live first-wow bar.
+The unified product status now encodes that judgment as an execution order:
+production host smoke first, shared OpenClaw message smoke second, LinkedIn DM
+third, and Meta campaign last.
 
 ## Evidence Checked
 
@@ -92,6 +95,9 @@ Current DearMe branch:
   - blocked live-provider setup now prints the private-site export command
     before provider smoke, so the phone-ready artifact is part of the operator
     path instead of a separate remembered step
+  - live-provider focus is now machine-readable, with Polsia phone-reachable
+    host proof before OpenClaw shared-message proof, and spend-bearing Meta
+    smoke last
   - live provider proof is still the remaining external proof gap
 - `pnpm --silent dearme:proof -- --run-safe --lane voice`
   - deterministic local gate passes
