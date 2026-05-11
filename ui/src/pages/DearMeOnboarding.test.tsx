@@ -1615,6 +1615,16 @@ function buttonByText(container: HTMLElement, text: string) {
   ) as HTMLButtonElement | undefined;
 }
 
+async function openFullProfileControls(container: HTMLElement) {
+  const button = buttonByText(container, "Open full profile controls");
+  if (!button) throw new Error("Expected full profile controls disclosure to exist.");
+
+  await act(async () => {
+    button.click();
+  });
+  await flushReact();
+}
+
 function buttonByLabel(container: HTMLElement, label: string) {
   return [...container.querySelectorAll("button")].find((button) =>
     button.getAttribute("aria-label") === label,
@@ -1925,6 +1935,16 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Open next decision");
     expect(buttonByText(container, "Start with one sentence")?.getAttribute("data-variant")).toBe("default");
     expect(buttonByText(container, "View private proof")?.getAttribute("data-variant")).toBe("outline");
+    expect(buttonByText(container, "Open full profile controls")?.getAttribute("data-variant")).toBe("outline");
+    expect(buttonByText(container, "Open full profile controls")?.getAttribute("aria-expanded")).toBe("false");
+    expect(container.querySelector('[data-dearme-profile-controls="collapsed"]')).not.toBeNull();
+    expect(container.querySelector("#dearme-display-name")).toBeNull();
+    expect(buttonByText(container, "Preview profile")).toBeUndefined();
+    expect(buttonByText(container, "Start private team")).toBeUndefined();
+    expect(container.textContent).toContain("The first proof pack can run from the sentence above.");
+    await openFullProfileControls(container);
+    expect(buttonByText(container, "Hide full profile controls")?.getAttribute("aria-expanded")).toBe("true");
+    expect(container.querySelector('[data-dearme-profile-controls="open"]')).not.toBeNull();
     expect(buttonByText(container, "Preview profile")?.getAttribute("data-variant")).toBe("outline");
     expect(buttonByText(container, "Start private team")?.getAttribute("data-variant")).toBe("secondary");
     expect(container.textContent).toContain("Full profile controls");
@@ -3001,6 +3021,8 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Update the public page");
     expect(container.textContent).not.toContain("Approval-gated by default");
     expect(container.textContent).not.toContain("Sample team package");
+    expect(container.querySelector("#dearme-positioning")).toBeNull();
+    await openFullProfileControls(container);
     expect((container.querySelector("#dearme-positioning") as HTMLTextAreaElement | null)?.value).toBe(
       "Known for turning research into practical AI products",
     );
@@ -3138,6 +3160,8 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Private cycles wait for paid beta access");
     expect(container.textContent).toContain("Decision needed: Record paid beta access");
 
+    await openFullProfileControls(container);
+
     await act(async () => {
       setTextareaValue(
         container.querySelector("#dearme-goals") as HTMLTextAreaElement,
@@ -3182,6 +3206,8 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
+    await openFullProfileControls(container);
+
     await act(async () => {
       buttonByText(container, "Preview profile")?.click();
     });
@@ -3215,6 +3241,8 @@ describe("DearMeOnboarding", () => {
       );
     });
     await flushReact();
+
+    await openFullProfileControls(container);
 
     await act(async () => {
       buttonByText(container, "Preview profile")?.click();

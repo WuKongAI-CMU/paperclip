@@ -7025,6 +7025,7 @@ export function DearMeOnboarding() {
   const [previewSignature, setPreviewSignature] = useState<string | null>(null);
   const [firstCycleIntent, setFirstCycleIntent] = useState("");
   const [firstCyclePreview, setFirstCyclePreview] = useState<DearMeFirstCyclePreviewResponse | null>(null);
+  const [fullProfileControlsOpen, setFullProfileControlsOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingApprovalReview, setPendingApprovalReview] = useState<{
     approvalId: string;
@@ -7484,156 +7485,194 @@ export function DearMeOnboarding() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <DearMePanel className="space-y-5" aria-label="Full profile controls">
-          <div>
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Sparkles className="h-4 w-4" />
-              Tell the team what to grow
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Start with one sentence. What do you want to become known for?
-            </p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="flex flex-col gap-4 rounded-md border border-border bg-muted/20 p-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <FieldLabel htmlFor="dearme-display-name" label="Name" />
-              <Input
-                id="dearme-display-name"
-                value={form.displayName}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => updateField("displayName", event.target.value)}
-              />
-            </div>
-            <div>
-              <FieldLabel htmlFor="dearme-budget" label="Monthly budget" />
-              <div className="flex items-center rounded-md border border-input px-3">
-                <span className="text-sm text-muted-foreground">$</span>
-                <Input
-                  id="dearme-budget"
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={form.budgetMonthlyDollars}
-                  className="border-0 shadow-none focus-visible:ring-0"
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    updateField("budgetMonthlyDollars", event.target.value)
-                  }
-                />
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Sparkles className="h-4 w-4" />
+                Tell the team what to grow
               </div>
-            </div>
-          </div>
-
-          <TextAreaField
-            id="dearme-positioning"
-            label="Positioning"
-            value={form.positioning}
-            rows={3}
-            onChange={(value) => updateField("positioning", value)}
-          />
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <TextAreaField
-              id="dearme-goals"
-              label="Goals"
-              hint={FIELD_HELP.goals}
-              value={form.goals}
-              onChange={(value) => updateField("goals", value)}
-            />
-            <TextAreaField
-              id="dearme-audiences"
-              label="Audience"
-              hint={FIELD_HELP.audiences}
-              value={form.audiences}
-              onChange={(value) => updateField("audiences", value)}
-            />
-            <TextAreaField
-              id="dearme-proof"
-              label="Proof"
-              hint={FIELD_HELP.proofPoints}
-              value={form.proofPoints}
-              onChange={(value) => updateField("proofPoints", value)}
-            />
-            <TextAreaField
-              id="dearme-offers"
-              label="Offers"
-              hint={FIELD_HELP.offers}
-              value={form.offers}
-              onChange={(value) => updateField("offers", value)}
-            />
-          </div>
-
-          <TextAreaField
-            id="dearme-voice"
-            label="Voice samples"
-            hint={FIELD_HELP.voiceSamples}
-            value={form.voiceSamples}
-            rows={4}
-            onChange={(value) => updateField("voiceSamples", value)}
-          />
-
-          <TextAreaField
-            id="dearme-constraints"
-            label="Launch boundaries"
-            hint={FIELD_HELP.constraints}
-            value={form.constraints}
-            onChange={(value) => updateField("constraints", value)}
-          />
-
-          <ChannelPicker
-            selected={form.preferredChannels}
-            onChange={(selected) => updateField("preferredChannels", selected)}
-          />
-
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-            <CadenceControl value={form.cadence} onChange={(value) => updateField("cadence", value)} />
-            <div className="flex min-h-10 items-center justify-between gap-4 rounded-md border border-border px-3 py-2">
-              <div>
-                <p className="text-sm font-medium">Auto-draft</p>
-                <p className="text-xs text-muted-foreground">Drafts start privately</p>
-              </div>
-              <ToggleSwitch
-                checked={form.autoDraftEnabled}
-                onCheckedChange={(checked) => updateField("autoDraftEnabled", checked)}
-              />
-            </div>
-          </div>
-
-          <TextAreaField
-            id="dearme-approval-note"
-            label="Team note"
-            value={form.approvalNote}
-            rows={3}
-            onChange={(value) => updateField("approvalNote", value)}
-          />
-
-          <div className="flex flex-col gap-3 rounded-md border border-border bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-medium">Full profile controls</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Use these after the first proof pack when the team needs a richer operating profile.
+              <p className="mt-1 text-sm text-muted-foreground">
+                Start with one sentence. What do you want to become known for?
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Full profile controls stay out of the first run until you want to tune budget,
+                channels, voice samples, and launch boundaries.
               </p>
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handlePreview}
-                disabled={previewMutation.isPending || applyRequestMutation.isPending}
-              >
-                {previewMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Preview profile
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleApplyRequest}
-                disabled={requestDisabled}
-              >
-                {applyRequestMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                Start private team
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="shrink-0"
+              aria-expanded={fullProfileControlsOpen}
+              aria-controls="dearme-full-profile-controls"
+              onClick={() => setFullProfileControlsOpen((open) => !open)}
+            >
+              <Sparkles className="h-4 w-4" />
+              {fullProfileControlsOpen ? "Hide full profile controls" : "Open full profile controls"}
+            </Button>
           </div>
+
+          {fullProfileControlsOpen ? (
+            <div id="dearme-full-profile-controls" className="space-y-5" data-dearme-profile-controls="open">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <FieldLabel htmlFor="dearme-display-name" label="Name" />
+                  <Input
+                    id="dearme-display-name"
+                    value={form.displayName}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => updateField("displayName", event.target.value)}
+                  />
+                </div>
+                <div>
+                  <FieldLabel htmlFor="dearme-budget" label="Monthly budget" />
+                  <div className="flex items-center rounded-md border border-input px-3">
+                    <span className="text-sm text-muted-foreground">$</span>
+                    <Input
+                      id="dearme-budget"
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={form.budgetMonthlyDollars}
+                      className="border-0 shadow-none focus-visible:ring-0"
+                      onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                        updateField("budgetMonthlyDollars", event.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <TextAreaField
+                id="dearme-positioning"
+                label="Positioning"
+                value={form.positioning}
+                rows={3}
+                onChange={(value) => updateField("positioning", value)}
+              />
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <TextAreaField
+                  id="dearme-goals"
+                  label="Goals"
+                  hint={FIELD_HELP.goals}
+                  value={form.goals}
+                  onChange={(value) => updateField("goals", value)}
+                />
+                <TextAreaField
+                  id="dearme-audiences"
+                  label="Audience"
+                  hint={FIELD_HELP.audiences}
+                  value={form.audiences}
+                  onChange={(value) => updateField("audiences", value)}
+                />
+                <TextAreaField
+                  id="dearme-proof"
+                  label="Proof"
+                  hint={FIELD_HELP.proofPoints}
+                  value={form.proofPoints}
+                  onChange={(value) => updateField("proofPoints", value)}
+                />
+                <TextAreaField
+                  id="dearme-offers"
+                  label="Offers"
+                  hint={FIELD_HELP.offers}
+                  value={form.offers}
+                  onChange={(value) => updateField("offers", value)}
+                />
+              </div>
+
+              <TextAreaField
+                id="dearme-voice"
+                label="Voice samples"
+                hint={FIELD_HELP.voiceSamples}
+                value={form.voiceSamples}
+                rows={4}
+                onChange={(value) => updateField("voiceSamples", value)}
+              />
+
+              <TextAreaField
+                id="dearme-constraints"
+                label="Launch boundaries"
+                hint={FIELD_HELP.constraints}
+                value={form.constraints}
+                onChange={(value) => updateField("constraints", value)}
+              />
+
+              <ChannelPicker
+                selected={form.preferredChannels}
+                onChange={(selected) => updateField("preferredChannels", selected)}
+              />
+
+              <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+                <CadenceControl value={form.cadence} onChange={(value) => updateField("cadence", value)} />
+                <div className="flex min-h-10 items-center justify-between gap-4 rounded-md border border-border px-3 py-2">
+                  <div>
+                    <p className="text-sm font-medium">Auto-draft</p>
+                    <p className="text-xs text-muted-foreground">Drafts start privately</p>
+                  </div>
+                  <ToggleSwitch
+                    checked={form.autoDraftEnabled}
+                    onCheckedChange={(checked) => updateField("autoDraftEnabled", checked)}
+                  />
+                </div>
+              </div>
+
+              <TextAreaField
+                id="dearme-approval-note"
+                label="Team note"
+                value={form.approvalNote}
+                rows={3}
+                onChange={(value) => updateField("approvalNote", value)}
+              />
+
+              <div className="flex flex-col gap-3 rounded-md border border-border bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium">Full profile controls</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Use these after the first proof pack when the team needs a richer operating profile.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handlePreview}
+                    disabled={previewMutation.isPending || applyRequestMutation.isPending}
+                  >
+                    {previewMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    Preview profile
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleApplyRequest}
+                    disabled={requestDisabled}
+                  >
+                    {applyRequestMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    Start private team
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              id="dearme-full-profile-controls"
+              className="rounded-md border border-border px-4 py-3"
+              data-dearme-profile-controls="collapsed"
+            >
+              <p className="text-sm font-medium">Full profile controls are parked until you need them.</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                The first proof pack can run from the sentence above. Open this only when you want
+                to tune the private team profile before starting a richer cycle.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Badge variant="outline">Private defaults</Badge>
+                <Badge variant="outline">Budget visible</Badge>
+                <Badge variant="outline">Launch call required</Badge>
+              </div>
+            </div>
+          )}
         </DearMePanel>
 
         <PreviewPanel

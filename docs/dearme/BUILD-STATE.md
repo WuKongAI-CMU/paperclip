@@ -2,6 +2,35 @@
 
 Date: 2026-05-11
 
+## Proof-First Profile Controls Land - 2026-05-11
+
+Product/architecture slice:
+
+- Tightened the `/dearme` first-use loop so the default path stays
+  one-sentence-to-private-proof instead of setup-first. Full profile controls
+  now sit behind an explicit disclosure while the proof path, proof packet,
+  paid beta access, launch approval, and workbench motion stay visible.
+- Preserved the existing profile preview and private-team approval contract:
+  the original form ids, preview mutation, start mutation, approval note,
+  cadence controls, channel picker, trial fallback, and error states remain
+  available once the user opens the controls.
+- This is the current product comparison translated into UI: DearMe borrows
+  Polsia's immediate visible-work rhythm, keeps Naive/Paperclip profile and
+  approval machinery backstage, and avoids adding live provider, model, spend,
+  send, or deployment behavior in the first-use surface.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
+- `git diff --check`
+- Browser smoke attempted against the local UI, but full rendered validation
+  was blocked before the page loaded because the local API backend could not
+  start embedded PostgreSQL: `could not create shared memory segment: No space
+  left on device`.
+
 ## Local Telegram Self-Smoke Defaults Land - 2026-05-11
 
 Product/architecture slice:

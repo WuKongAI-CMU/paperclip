@@ -13,6 +13,21 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Proof-First Product Boundary - 2026-05-11
+
+- The `/dearme` first-use surface now keeps the Polsia-style proof path ahead
+  of setup: users see one-sentence intent, private proof, paid beta access,
+  launch approval, and workbench motion before they ever need the full profile
+  editor.
+- The full profile editor is still present, but it is explicitly user-opened.
+  Keep this boundary: Naive/Paperclip profile fields, cadence controls, channel
+  selection, preview, approval, and private-team start remain reusable
+  machinery, not the default first impression.
+- Future workers should not reintroduce a setup-first onboarding step unless
+  they also move an equivalent proof artifact above it. The current gap is not
+  another profile form or dashboard; it is live provider proof for the existing
+  proof packet and channel surfaces.
+
 ## Latest Local OpenClaw Telegram Boundary - 2026-05-11
 
 - `dearme:provider-smoke` can now opt into a local Telegram self-smoke setup
