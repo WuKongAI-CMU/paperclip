@@ -14,6 +14,10 @@ import {
   type CallOutboundOutcome,
   type ChannelDispatch,
 } from "./dearme-outbound-tool-wrapper.js";
+import {
+  createDearMeOpenClawGatewayDispatchMap,
+  type DearMeOpenClawGatewayDispatchConfig,
+} from "./dearme-openclaw-gateway-dispatch.js";
 import { dearMeApprovalResolverService } from "./dearme-approval-resolver.js";
 import { dearMeChannelConnectionsService } from "./dearme-channel-connections.js";
 import {
@@ -164,8 +168,12 @@ export function dearMeApprovedLaunchHandoffService(deps: {
 export function defaultDearMeApprovedLaunchHandoffService(
   db: Db,
   channelDispatch: Partial<Record<DearMeOutboundToolName, ChannelDispatch>> = {},
+  dearMeOpenClawGatewayDispatchConfig: DearMeOpenClawGatewayDispatchConfig | null = null,
 ): ApprovedLaunchHandoffService {
   const sseBus = getDearMeSseBus();
+  const defaultGatewayDispatch = createDearMeOpenClawGatewayDispatchMap(
+    dearMeOpenClawGatewayDispatchConfig,
+  );
   const wrapper = dearMeOutboundToolWrapper({
     db,
     voiceGate: dearMeVoiceGateService(),
@@ -173,7 +181,10 @@ export function defaultDearMeApprovedLaunchHandoffService(
     channelConnections: dearMeChannelConnectionsService(db),
     workLoop: dearMeWorkLoopService(db, sseBus),
     sseBus,
-    channelDispatch,
+    channelDispatch: {
+      ...defaultGatewayDispatch,
+      ...channelDispatch,
+    },
   });
   return dearMeApprovedLaunchHandoffService({
     callOutbound: wrapper.callOutbound,

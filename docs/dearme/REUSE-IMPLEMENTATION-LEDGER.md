@@ -22,6 +22,14 @@ It answers three questions before another worker starts building:
   runs end in patch/no-code/blocker evidence rather than open-ended donor
   research. This keeps implementation workers absorbable while the persistent
   Goal thread owns architecture and product direction.
+- DM-CH-02 adds the narrow approved-next-move gateway dispatch boundary by
+  deriving a `ChannelDispatch` trace context from `CallOutboundInput`, while
+  reusing `channel_connections` and the `openclaw_gateway` adapter execute path.
+  The bridge fails closed when gateway config is absent instead of inventing a
+  second credential store or a customer dispatch surface. The runtime config
+  bridge is the existing `OPENCLAW_GATEWAY_URL` / `OPENCLAW_GATEWAY_TOKEN` env
+  pair used by the smoke tooling; keep any later config source on that same
+  shape rather than adding a second secret store or UI.
 - DEA-36 turns the first proof pack into one launch-ready next step by reusing
   the existing output handoff, `dearme_output_next_move` approval payload,
   private receipt activity, Workbench projection, and onboarding proof-pack

@@ -58,6 +58,7 @@ import { createPluginEventBus } from "./services/plugin-event-bus.js";
 import { setPluginEventBus } from "./services/activity-log.js";
 import { createPluginDevWatcher } from "./services/plugin-dev-watcher.js";
 import { createPluginHostServiceCleanup } from "./services/plugin-host-service-cleanup.js";
+import { resolveDearMeOpenClawGatewayDispatchConfigFromEnv } from "./services/dearme-openclaw-gateway-dispatch-config.js";
 import { pluginRegistryService } from "./services/plugin-registry.js";
 import { createHostClientHandlers } from "@paperclipai/plugin-sdk";
 import type { BetterAuthSessionResult } from "./auth/better-auth.js";
@@ -207,7 +208,12 @@ export async function createApp(
   api.use(environmentRoutes(db, { pluginWorkerManager: workerManager }));
   api.use(executionWorkspaceRoutes(db));
   api.use(goalRoutes(db));
-  api.use(approvalRoutes(db, { pluginWorkerManager: workerManager }));
+  api.use(
+    approvalRoutes(db, {
+      pluginWorkerManager: workerManager,
+      dearMeOpenClawGatewayDispatchConfig: resolveDearMeOpenClawGatewayDispatchConfigFromEnv(),
+    }),
+  );
   api.use(secretRoutes(db));
   api.use(costRoutes(db, { pluginWorkerManager: workerManager }));
   api.use(activityRoutes(db));

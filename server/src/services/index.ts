@@ -12,6 +12,11 @@ export {
   defaultDearMeApprovedLaunchHandoffService,
   type ApprovedLaunchHandoffService,
 } from "./dearme-approved-launch-handoff.js";
+export {
+  createDearMeOpenClawGatewayDispatchMap,
+  type DearMeOpenClawGatewayDispatchConfig,
+  type DearMeOpenClawGatewayDispatchError,
+} from "./dearme-openclaw-gateway-dispatch.js";
 export { dearmeMemoryContextService } from "./dearme-memory-context.js";
 export { dearmeOutputHandoffService } from "./dearme-output-handoff.js";
 export { dearmePaidBetaAccessService, summarizeDearMePaidBetaAccess } from "./dearme-paid-beta-access.js";

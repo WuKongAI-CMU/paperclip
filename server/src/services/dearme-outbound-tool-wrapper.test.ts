@@ -170,6 +170,18 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
       toolName: "post_x",
       encryptedCredential: "enc:secret",
       payload: baseInput.payload,
+      dispatchContext: {
+        companyId: "co_test",
+        userId: "u_test",
+        issueId: "is_test",
+        channel: "x",
+        openclawRunId: "oc_run_1",
+        openclawSessionId: undefined,
+        agentId: "ag_test",
+        approvalId: undefined,
+        idempotencyKey: "oc_run_1",
+        originalPayload: baseInput.payload,
+      },
     });
     expect(workLoopCalls).toHaveLength(1);
     const transition = workLoopCalls[0] as { from: string; to: string };
@@ -209,6 +221,18 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
       toolName: "post_x",
       encryptedCredential: "enc:secret",
       payload: baseInput.payload,
+      dispatchContext: {
+        companyId: "co_test",
+        userId: "u_test",
+        issueId: "is_test",
+        channel: "x",
+        openclawRunId: "oc_run_1",
+        openclawSessionId: undefined,
+        agentId: "ag_test",
+        approvalId: "approval-final-1",
+        idempotencyKey: "oc_run_1",
+        originalPayload: baseInput.payload,
+      },
     });
   });
 

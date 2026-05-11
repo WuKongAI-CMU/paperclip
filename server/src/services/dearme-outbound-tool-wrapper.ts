@@ -51,6 +51,7 @@ export type ChannelDispatch = (input: {
   toolName: DearMeOutboundToolName;
   encryptedCredential: string;
   payload: unknown;
+  dispatchContext: DearMeOutboundDispatchContext;
 }) => Promise<
   | {
       kind: "delivered";
@@ -62,6 +63,19 @@ export type ChannelDispatch = (input: {
   | { kind: "auth-error"; reason: string }
   | { kind: "errored"; error: string }
 >;
+
+export interface DearMeOutboundDispatchContext {
+  companyId: string;
+  userId: string;
+  issueId: string;
+  channel: string;
+  openclawRunId: string;
+  openclawSessionId?: string;
+  agentId?: string;
+  approvalId?: string;
+  idempotencyKey: string;
+  originalPayload: unknown;
+}
 
 export interface DearMeOutboundToolDeps {
   db: Db;
@@ -247,6 +261,18 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
         toolName: input.toolName,
         encryptedCredential: connection?.encryptedCredential ?? "",
         payload: input.payload,
+        dispatchContext: {
+          companyId: input.companyId,
+          userId: input.userId,
+          issueId: input.issueId,
+          channel: binding.channel,
+          openclawRunId: input.openclawRunId,
+          openclawSessionId: input.openclawSessionId,
+          agentId: input.agentId,
+          approvalId: input.preapprovedApprovalId,
+          idempotencyKey: input.openclawRunId,
+          originalPayload: input.payload,
+        },
       });
 
       if (dispatchResult.kind === "auth-error") {
