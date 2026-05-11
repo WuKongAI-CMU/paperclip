@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- The onboarding route now makes the Polsia-style one-sentence first cycle the
+  first product path after the hero: the hero has one primary
+  `Start with one sentence` action, the first payoff and 90-second cycle appear
+  before the team/workbench surfaces, and Brand OS remains secondary
+  configuration. Future workers should deepen this path, not add another setup
+  tour or dashboard-first entry.
 - The DearMe private handoff browser smoke now locks the same first-wow packet
   at e2e level. The existing paid-beta first-cycle flow opens the private
   preview route and asserts prepared starter draft content plus the first

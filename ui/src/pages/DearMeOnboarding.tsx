@@ -2100,9 +2100,11 @@ function deliveryResultLinkLabel(handoff: DearMeWorkbenchProgressItem) {
 function PrivateExecutionHandoffPanel({
   handoff,
   onOpenIssue,
+  ariaLabelPrefix,
 }: {
   handoff: DearMeWorkbenchProgressItem;
   onOpenIssue: (issueReference: string, outputId?: string | null) => void;
+  ariaLabelPrefix?: string;
 }) {
   const issueReference = handoff.issueIdentifier ?? handoff.issueId ?? null;
   const artifact = handoff.outputKind ? OUTPUT_KIND_LABELS[handoff.outputKind] : "Prepared move";
@@ -2128,6 +2130,7 @@ function PrivateExecutionHandoffPanel({
     : isPaused
       ? "Launch-ready next step paused"
       : "Launch-ready next step ready";
+  const surfaceLabel = ariaLabelPrefix ? `${ariaLabelPrefix} ${ariaLabel}` : ariaLabel;
   const nextStep = handoff.nextStep
     ? customerProofPackSummary(handoff.nextStep)
     : isDeliveryReceipt
@@ -2157,7 +2160,7 @@ function PrivateExecutionHandoffPanel({
       : "secondary";
 
   return (
-    <DearMeFocusSurface aria-label={ariaLabel} className="space-y-4">
+    <DearMeFocusSurface aria-label={surfaceLabel} className="space-y-4">
       <DearMeWorkbenchSectionHeader
         icon={ShieldCheck}
         eyebrow={isDeliveryReceipt ? "Delivery receipt" : "Launch-ready next step"}
@@ -2502,6 +2505,7 @@ function FirstCycleProofPackage({
                 key={receipt.id}
                 handoff={receipt}
                 onOpenIssue={() => onOpenPreview(preview.sitePreview.handle)}
+                ariaLabelPrefix="Sample"
               />
             ))}
           </div>
@@ -7380,6 +7384,15 @@ export function DearMeOnboarding() {
           <>
             <Button
               type="button"
+              onClick={handleFocusFirstCycle}
+              disabled={firstCycleMutation.isPending || previewMutation.isPending || applyRequestMutation.isPending}
+            >
+              <Sparkles className="h-4 w-4" />
+              Start with one sentence
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
               variant="outline"
               onClick={handlePreview}
               disabled={previewMutation.isPending || applyRequestMutation.isPending}
@@ -7389,6 +7402,7 @@ export function DearMeOnboarding() {
             </Button>
             <Button
               type="button"
+              variant="secondary"
               onClick={handleApplyRequest}
               disabled={requestDisabled}
             >
@@ -7411,6 +7425,25 @@ export function DearMeOnboarding() {
           {paidBetaEntitlement.nextActionDescription}
         </div>
       ) : null}
+
+      <FirstCyclePayoffStrip
+        canStartPrivateWork={canStartPrivateWork}
+        onFocusFirstCycle={handleFocusFirstCycle}
+      />
+
+      <FirstCyclePanel
+        intent={firstCycleIntent}
+        preview={firstCyclePreview}
+        isPending={firstCycleMutation.isPending}
+        canStartPrivateWork={canStartPrivateWork}
+        onOpenPreview={handleOpenFirstCyclePreview}
+        onIntentChange={(value) => {
+          setActionError(null);
+          setFirstCycleIntent(value);
+          setFirstCyclePreview(null);
+        }}
+        onPreview={handleFirstCyclePreview}
+      />
 
       <TeamWorkbenchPanel
         companyId={selectedCompanyId}
@@ -7436,11 +7469,6 @@ export function DearMeOnboarding() {
         }}
       />
 
-      <FirstCyclePayoffStrip
-        canStartPrivateWork={canStartPrivateWork}
-        onFocusFirstCycle={handleFocusFirstCycle}
-      />
-
       <PrivateWorkPanel
         companyId={selectedCompanyId}
         outputKindFilter={selectedView === "opportunities" ? "opportunity_drafts" : null}
@@ -7452,20 +7480,6 @@ export function DearMeOnboarding() {
           isPending: outputReviewMutation.isPending,
         }}
         onReviewOutput={handleReviewOutput}
-      />
-
-      <FirstCyclePanel
-        intent={firstCycleIntent}
-        preview={firstCyclePreview}
-        isPending={firstCycleMutation.isPending}
-        canStartPrivateWork={canStartPrivateWork}
-        onOpenPreview={handleOpenFirstCyclePreview}
-        onIntentChange={(value) => {
-          setActionError(null);
-          setFirstCycleIntent(value);
-          setFirstCyclePreview(null);
-        }}
-        onPreview={handleFirstCyclePreview}
       />
 
       <PaidBetaAccessPanel

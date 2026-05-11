@@ -2,6 +2,24 @@
 
 Date: 2026-05-11
 
+## One-Sentence First Cycle Becomes The Primary Path - 2026-05-11
+
+Product/architecture slice:
+
+- Moved the First payoff strip and 90-second first cycle panel immediately
+  after the hero so the Polsia-style one-sentence start is now the dominant
+  path before dense team/workbench surfaces.
+- Added a hero-level `Start with one sentence` action that focuses the
+  first-cycle textarea, while keeping Brand OS preview/start as secondary
+  configuration actions instead of the primary first-screen choice.
+- Sample delivery-receipt replay now uses sample-prefixed aria labels so it
+  does not collide with real Workbench delivery receipts after the first-cycle
+  proof moved above the workbench.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+
 ## Browser E2E Locks The Private First-Wow Packet - 2026-05-11
 
 Product/architecture slice:

@@ -1923,13 +1923,16 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Next decision");
     expect(container.textContent).toContain("Team focus");
     expect(container.textContent).toContain("Open next decision");
+    expect(buttonByText(container, "Start with one sentence")?.getAttribute("data-variant")).toBe("default");
+    expect(buttonByText(container, "Preview Brand OS")?.getAttribute("data-variant")).toBe("outline");
+    expect(buttonByText(container, "Start Brand OS")?.getAttribute("data-variant")).toBe("secondary");
     const topFocus = surfaceByLabel(container, "Today's brand team focus");
     expect(topFocus.textContent).toContain("While you were away");
     expect(topFocus.textContent).toContain("Next decision");
     expect(topFocus.textContent).toContain("Open next decision");
     expect(topFocus.textContent).toContain("Start with one sentence");
     expect(topFocus.textContent).not.toContain("Live team pulse");
-    expectSurfacesInOrder(container, ["Today's brand team focus", "First payoff"]);
+    expectSurfacesInOrder(container, ["First payoff", "90-second first cycle", "Today's brand team focus"]);
     const firstPayoff = surfaceByLabel(container, "First payoff");
     expect(firstPayoff.getAttribute("data-dearme-surface")).toBe("focus-surface");
     expect(firstPayoff.querySelectorAll('[data-dearme-surface="workbench-card"]').length).toBe(3);
@@ -2047,15 +2050,10 @@ describe("DearMeOnboarding", () => {
       "Live proof feed",
     ]);
     expectSurfacesInOrder(container, [
-      "DearMe team board",
-      "Private work ready",
-      "90-second first cycle",
-    ]);
-    expectSurfacesInOrder(container, [
-      "DearMe team board",
       "First payoff",
-      "Private work ready",
       "90-second first cycle",
+      "DearMe team board",
+      "Private work ready",
     ]);
     await act(async () => {
       buttonByText(firstPayoff, "Start with one sentence")?.click();
