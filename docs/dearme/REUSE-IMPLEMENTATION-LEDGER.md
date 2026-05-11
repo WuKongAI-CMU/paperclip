@@ -18,7 +18,9 @@ It answers three questions before another worker starts building:
 - Worktree coordination now derives dirty handoff file counts from the handoff
   `status` list when a dirty Symphony summary has no explicit `changedFiles`.
   This keeps active dirty lanes visible without making them look like empty
-  patch noise in the coordinator report.
+  patch noise in the coordinator report. Latest handoff rows now include a
+  compact `changes=` list as well, so the coordinator can compare overlap
+  without touching an active worker workspace.
 - OpenClaw group readiness now collapses shared gateway setup blockers into one
   line for human output while keeping per-target JSON stable. That keeps the
   Telegram+iMessage proof path focused on one gateway connection plus two

@@ -353,14 +353,35 @@ function changedFilesFromStatus(status) {
   return [
     ...new Set(
       status
-        .map((line) => {
-          const file = line.slice(3).trim();
-          const renameTarget = file.split(" -> ").pop()?.trim();
-          return renameTarget || file;
-        })
+        .map(changedFileFromStatusLine)
         .filter(Boolean),
     ),
   ];
+}
+
+function changedFileFromStatusLine(line) {
+  const match = line.match(/^[ MADRCU?!]{1,2}\s+(.+)$/);
+  const file = (match?.[1] ?? line).trim();
+  const renameTarget = file.split(" -> ").pop()?.trim();
+  return renameTarget || file;
+}
+
+function formatChangedFiles(changedFiles = []) {
+  if (changedFiles.length === 0) return "";
+  const visible = changedFiles.slice(0, 3).join(",");
+  const remaining = changedFiles.length > 3 ? `,+${changedFiles.length - 3} more` : "";
+  return ` changes=${visible}${remaining}`;
+}
+
+export function formatSymphonyHandoffSummaryLine(issue, handoff) {
+  const changedFiles = Array.isArray(handoff.changedFiles) ? handoff.changedFiles : [];
+  return [
+    `- ${issue}: ${handoff.mode}`,
+    `head=${shortSha(handoff.head) ?? "-"}`,
+    `files=${changedFiles.length}${formatChangedFiles(changedFiles)}`,
+    `updated=${handoff.updatedAt}`,
+    `patch=${handoff.patchPath ?? "-"}`,
+  ].join(" ");
 }
 
 export function filterSymphonyHandoffs(handoffs, options) {
@@ -791,9 +812,7 @@ function printHandoffSummary(summary) {
 
   console.log("Latest Symphony handoffs:");
   for (const [issue, handoff] of latest) {
-    console.log(
-      `- ${issue}: ${handoff.mode} head=${shortSha(handoff.head) ?? "-"} files=${handoff.changedFiles?.length ?? 0} updated=${handoff.updatedAt} patch=${handoff.patchPath ?? "-"}`,
-    );
+    console.log(formatSymphonyHandoffSummaryLine(issue, handoff));
   }
 }
 

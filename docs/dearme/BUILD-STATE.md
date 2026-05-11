@@ -13,6 +13,9 @@ Product/architecture slice:
   `files=0` display for a dirty patch handoff that actually has status entries.
   The coordinator still treats latest dirty handoffs as active lane signals and
   does not replay or close them automatically.
+- Latest handoff lines now also include compact `changes=` file names, so the
+  coordinator can spot whether an active lane overlaps the current slice
+  without opening the worker workspace or manually scanning handoff JSON.
 
 Verification:
 

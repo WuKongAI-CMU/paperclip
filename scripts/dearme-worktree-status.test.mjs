@@ -13,6 +13,7 @@ import {
   enrichWorktreeRecord,
   filterSymphonyHandoffs,
   filterWorktreeRecords,
+  formatSymphonyHandoffSummaryLine,
   listSymphonyWorkspacePaths,
   loadReviewedAbsorptions,
   markReviewedAbsorption,
@@ -558,6 +559,7 @@ test("collectSymphonyHandoffs summarizes latest handoff by issue", () => {
       issue: "DEA-61",
       head: "3333333333333333333333333333333333333333",
       status: [
+        "M scripts/dearme-provider-smoke.test.ts",
         " M scripts/dearme-provider-smoke.ts",
         "?? docs/dearme/live-smoke-notes.md",
       ],
@@ -593,9 +595,20 @@ test("collectSymphonyHandoffs summarizes latest handoff by issue", () => {
     assert.equal(summary.historicalByMode.unreadable_summary ?? 0, 0);
     assert.equal(summary.latestByIssue["DEA-60"].mode, "committed_patch");
     assert.deepEqual(summary.latestByIssue["DEA-61"].changedFiles, [
+      "scripts/dearme-provider-smoke.test.ts",
       "scripts/dearme-provider-smoke.ts",
       "docs/dearme/live-smoke-notes.md",
     ]);
+    assert.equal(
+      formatSymphonyHandoffSummaryLine("DEA-61", summary.latestByIssue["DEA-61"]),
+      [
+        "- DEA-61: dirty_patch_handoff",
+        "head=333333333333",
+        "files=3 changes=scripts/dearme-provider-smoke.test.ts,scripts/dearme-provider-smoke.ts,docs/dearme/live-smoke-notes.md",
+        "updated=2026-05-11T03:00:00.000Z",
+        "patch=/tmp/DEA-61.patch",
+      ].join(" "),
+    );
     assert.deepEqual(summary.latestByIssue["DEA-60"].changedFiles, [
       "scripts/dearme-provider-smoke.ts",
     ]);
