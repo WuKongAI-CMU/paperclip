@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, and the recurring private-work proof contract)
+Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, the recurring private-work proof contract, and the phone-ready static private-site export)
 
 ---
 
@@ -126,6 +126,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-138C** — first-run proof hydration: `previewFirstCycle(...)` now reuses prepared DearMe output handoff records to hydrate the existing `proofSequence` with real documents and work products, while progress comments alone cannot count as proof.
 - **DM-138D route proof smoke** — first-cycle start route coverage now proves prepared `proofSequence` content is returned to the customer contract and copied into the private issue, activity log, and live `task_created` payload; onboarding coverage proves the same package renders without exposing substrate terms.
 - **DM-WOW-1A local aha proof gate** — `pnpm dearme:aha-proof -- --check` now proves the local private first-five-minute loop from the existing shared first-cycle preview contract. It checks one-sentence start, 0-30s / 60-120s / 3-5min proof order, private outputs, recurring private work, minimum runnable team, launch boundaries, and customer-safe language without sends, public deploys, spend, or live model calls.
+- **DM-WOW-1B phone-ready static private-site proof** — `pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof` now renders the same first-cycle proof contract as a mobile-ready private site artifact plus `proof.json`. This gives the next host smoke a concrete artifact without creating a second demo path or pretending production hosting is already live.
 - **DM-WOW-2A customer-watchable first-five-minute stream** — the onboarding browser surface now reuses the same first-cycle preview/proof-sequence contract to show studying voice, finding likely audiences, drafting first moves, preparing private proof, and readying the launch call. The top focus card also projects the latest private-pass pulse from the DearMe event stream while hiding Symphony/OpenClaw/provider/model/setup/workbench language.
 - **DM-WOW-3A recurring private-work proof** — the first-cycle preview response now carries a continuation plan with the next proof-backed draft, opportunity refresh, and private proof-page improvement. Onboarding and the private site preview render the same plan, and the aha proof gate now blocks if the first proof pack ends as a static demo.
 - **DM-138E / DEA-8 live proof handoff** — the live paid-beta smoke proved the same first-cycle path returns identity, audience, private-site, content, opportunity, and report proof through output handoff and workbench projection without hidden donor/runtime terms.
@@ -172,12 +173,18 @@ loop plus the next private pass without sends, public deploys, spend, or live
 model calls. Use it before claiming Polsia-style first-five-minute readiness;
 the browser now shows that same loop as a customer-watchable first-five-minute
 progress stream and recurring private-work plan. The remaining product gap is
-making the proof phone-reachable through a real host and backed by live
-provider execution.
+serving the exported private-site proof from a real host and backing the loop
+with live provider execution. Use
+`pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof` to produce
+the host-smoke artifact; do not create a second demo packet or route.
 The internal `pnpm dearme:status` command is the compact product/coordinator
-answer for "can DearMe prove itself now?": local no-send proof, voice semantic
-proof, and live provider proof are separated so the coordinator does not have
-to read raw provider setup every time. The underlying
+answer for "can DearMe prove itself now?": first-wow aha proof, local no-send
+proof, voice semantic proof, and live provider proof are separated so the
+coordinator does not have to read raw provider setup every time. It reuses the
+same `dearme:aha-proof` report, so recurring private work is part of the main
+product verdict instead of living in a side proof. `pnpm dearme:aha-proof -- --export-site`
+also writes the same proof as a phone-ready static private site artifact before
+real host smoke is available. The underlying
 `pnpm dearme:proof -- --check` command is still the first detailed local proof
 entrypoint for coordinators and Symphony workers. It composes the existing
 provider and voice smoke lanes, prints one ignored `.dearme-proof.env`

@@ -80,10 +80,23 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   const local = status.sections.find((section) => section.key === "local_safe_proof");
   const semantic = status.sections.find((section) => section.key === "voice_semantic_proof");
   const live = status.sections.find((section) => section.key === "live_provider_proof");
+  const aha = status.sections.find((section) => section.key === "first_wow_aha_proof");
 
+  assert.equal(aha?.ready, true);
+  assert.deepEqual(aha?.targets, [
+    "one_sentence_start",
+    "five_minute_sequence",
+    "private_outputs",
+    "recurring_private_work",
+    "phone_ready_private_site",
+    "minimum_team",
+    "approval_boundaries",
+    "customer_language",
+  ]);
   assert.equal(local?.ready, true);
   assert.equal(semantic?.ready, false);
   assert.equal(live?.ready, false);
+  assert.equal(status.commands.ahaProof, "pnpm --silent dearme:aha-proof -- --check");
   assert.deepEqual(live?.blockedTargets.map((item) => item.target), [
     "deploy_site_production",
     "linkedin_dm",
@@ -101,6 +114,9 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   ]);
   assert.match(formatted, /DearMe product proof status/);
   assert.match(formatted, /Product verdict: private first-wow proof exists/);
+  assert.match(formatted, /First-wow aha proof: ready/);
+  assert.match(formatted, /recurring private work/);
+  assert.match(formatted, /pnpm --silent dearme:aha-proof -- --check/);
   assert.match(formatted, /Local no-send proof: ready/);
   assert.match(formatted, /Voice semantic proof: blocked/);
   assert.match(formatted, /Live provider proof: blocked/);
@@ -126,6 +142,7 @@ test("DearMe proof status can be lane scoped", () => {
     "voice_semantic_proof",
   ]);
   assert.equal(status.sections.every((section) => section.ready), true);
+  assert.equal(status.commands.ahaProof, "pnpm --silent dearme:aha-proof -- --check");
   assert.equal(status.commands.printEnvTemplate, "pnpm --silent dearme:proof -- --print-env-template --lane voice > .dearme-proof.env");
   assert.equal(status.commands.runSafe, "pnpm --silent dearme:proof -- --run-safe --lane voice");
   assert.equal(status.commands.check, "pnpm --silent dearme:proof -- --check --lane voice");

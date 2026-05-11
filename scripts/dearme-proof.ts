@@ -20,6 +20,10 @@ import {
   type DearMeVoiceSmokeResult,
   type DearMeVoiceSmokeTarget,
 } from "./dearme-voice-smoke.ts";
+import {
+  runDearMeAhaProof,
+  type DearMeAhaProofReport,
+} from "./dearme-aha-proof.ts";
 
 type Env = Record<string, string | undefined>;
 
@@ -58,7 +62,11 @@ export interface DearMeProofStatusBlocker {
 }
 
 export interface DearMeProofStatusSection {
-  key: "local_safe_proof" | "voice_semantic_proof" | "live_provider_proof";
+  key:
+    | "first_wow_aha_proof"
+    | "local_safe_proof"
+    | "voice_semantic_proof"
+    | "live_provider_proof";
   label: string;
   ready: boolean;
   description: string;
@@ -70,6 +78,7 @@ export interface DearMeProofStatus {
   lane: DearMeProofLane;
   sections: DearMeProofStatusSection[];
   commands: {
+    ahaProof: string;
     printEnvTemplate: string;
     runSafe: string;
     check: string;
@@ -331,6 +340,17 @@ function liveProviderSetupCommands(
   ];
 }
 
+function firstWowAhaSection(report: DearMeAhaProofReport): DearMeProofStatusSection {
+  return {
+    key: "first_wow_aha_proof",
+    label: "First-wow aha proof",
+    ready: report.status === "ready",
+    description: `${report.summary} Includes one-sentence start, five-minute sequence, private outputs, recurring private work, phone-ready private site artifact, minimum team, launch boundaries, and customer-safe language.`,
+    targets: report.checks.map((item) => item.key),
+    blockedTargets: [],
+  };
+}
+
 export function summarizeDearMeProofStatus(
   readiness: DearMeProofReadiness,
   lane: DearMeProofLane = "all",
@@ -339,6 +359,10 @@ export function summarizeDearMeProofStatus(
   const voice = voiceLane(readiness);
   const sections: DearMeProofStatusSection[] = [];
   let liveProviderSetup: string[] = [];
+
+  if (lane === "all") {
+    sections.push(firstWowAhaSection(runDearMeAhaProof().report));
+  }
 
   const localTargets: string[] = [];
   const localBlocked: DearMeProofStatusBlocker[] = [];
@@ -401,6 +425,7 @@ export function summarizeDearMeProofStatus(
     lane,
     sections,
     commands: {
+      ahaProof: "pnpm --silent dearme:aha-proof -- --check",
       printEnvTemplate: `pnpm --silent dearme:proof -- --print-env-template${laneFlag(lane)} > ${PROOF_ENV_FILE}`,
       runSafe: proofCommand("--run-safe", lane),
       check: proofCommand("--check", lane),
@@ -422,15 +447,19 @@ function statusSection(
 }
 
 function formatProductVerdict(status: DearMeProofStatus) {
+  const aha = statusSection(status, "first_wow_aha_proof");
   const local = statusSection(status, "local_safe_proof");
   const voice = statusSection(status, "voice_semantic_proof");
   const live = statusSection(status, "live_provider_proof");
 
-  if (local?.ready && voice?.ready && live?.ready) {
-    return "Product verdict: local first-wow, voice fit, and live provider proof are ready.";
+  if (aha?.ready && local?.ready && voice?.ready && live?.ready) {
+    return "Product verdict: first-wow, local safe proof, voice fit, and live provider proof are ready.";
   }
-  if (local?.ready && voice?.ready && live && !live.ready) {
-    return "Product verdict: Naive/Paperclip substrate proof is strong and the private DearMe first-wow is locally ready; Polsia-style live, phone-reachable wow is still blocked on live provider proof.";
+  if ((aha?.ready ?? true) && local?.ready && voice?.ready && live && !live.ready) {
+    return "Product verdict: Naive/Paperclip substrate proof is strong and the private DearMe first-wow now includes recurring work; Polsia-style live, phone-reachable wow is still blocked on live provider proof.";
+  }
+  if (aha && !aha.ready) {
+    return "Product verdict: the product is not ready for a first-wow claim until the local aha proof passes.";
   }
   if (local?.ready && voice && !voice.ready) {
     return "Product verdict: private first-wow proof exists, but voice fit and live provider proof still need work before a launch-ready demo claim.";
@@ -452,6 +481,9 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
 
   lines.push("");
   lines.push("Commands:");
+  if (status.lane === "all") {
+    lines.push(`- ${status.commands.ahaProof}`);
+  }
   lines.push(`- ${status.commands.printEnvTemplate}`);
   lines.push(`- ${status.commands.runSafe}`);
   lines.push(`- ${status.commands.check}`);

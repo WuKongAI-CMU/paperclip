@@ -2,6 +2,31 @@
 
 Date: 2026-05-11
 
+## Unified Status Includes Aha Continuation And Private Site Export - 2026-05-11
+
+Product/architecture slice:
+
+- Reused the existing `dearme:aha-proof` report inside
+  `pnpm dearme:proof -- --status` / `pnpm dearme:status` so the compact product
+  verdict now includes the first-wow proof and recurring private-work contract.
+- Extended the same aha proof to render a phone-ready static private site
+  artifact with `--export-site`. This gives the product a host-smoke-ready
+  page artifact before any production deploy is configured.
+- Kept the implementation inside the single proof/status surface instead of
+  adding another dashboard or setup rail. The status now says the private
+  first-wow includes continuing work plus a private site artifact, while the
+  only remaining Polsia-style live gap is still provider/host proof.
+- Preserved lane-scoped behavior: `--lane voice` and `--lane provider` remain
+  focused on their operator lanes, while the all-lane product status owns the
+  cross-product first-wow verdict.
+
+Verification:
+
+- `pnpm test:dearme-aha-proof`
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:proof -- --status`
+- `pnpm --silent dearme:aha-proof -- --export-site /tmp/dearme-private-proof-smoke.*`
+
 ## First Proof Continuation Plan - 2026-05-11
 
 Product/architecture slice:

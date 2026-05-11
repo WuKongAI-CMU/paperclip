@@ -35,21 +35,29 @@ Current DearMe branch:
 - `git status --short --branch`
   - branch: `codex/dearme-dm-136-sample-demo-proof`
   - branch carries the first-five-minute aha proof gate, the DEA-60 handoff
-    alias absorption, and the customer-corpus voice proof hardening
+    alias absorption, the customer-corpus voice proof hardening, and the
+    recurring private-work status integration
 - `.symphony/bin/dearme-symphony status`
   - Symphony is running on `http://127.0.0.1:4100/`
-  - one active DEA-60 worker lane is in progress
+  - no active or retrying worker lanes are currently running
 - `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
   - 122 DearMe worktrees tracked
   - 118 reviewed as already absorbed
   - 0 dirty or not-in-current replay candidates
-  - 402 Symphony handoff records; latest handoffs by issue are all committed
+  - 417 Symphony handoff records; latest handoffs by issue are all committed
     patches
   - latest DEA-60 handoff is a committed patch at head `88f8483a9f84`
 - `pnpm --silent dearme:aha-proof -- --check`
   - local private first-five-minute aha proof is ready
+  - recurring private work is ready in the first proof pack
+  - phone-ready static private site artifact is ready for host smoke
   - no sends, public deploys, spend, or live model calls are performed
+- `pnpm --silent dearme:aha-proof -- --export-site /tmp/dearme-private-proof-smoke.*`
+  - writes `peter-studio/index.html` and `peter-studio/proof.json`
+  - exported HTML has no customer-hidden substrate, provider, credential, token,
+    or workbench language
 - `pnpm --silent dearme:proof -- --status --json`
+  - first-wow aha proof is now part of the unified product status
   - local no-send proof is ready
   - voice semantic proof is ready on the coordinator Mac through the local
     profile-token scorer and customer-like custom corpus

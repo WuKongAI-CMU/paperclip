@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import {
   createDearMeAhaProofSample,
+  exportDearMePrivateSitePreview,
   formatDearMeAhaProofReport,
   inspectDearMeAhaProofPreview,
   parseDearMeAhaProofArgs,
+  renderDearMePrivateSitePreviewHtml,
   runDearMeAhaProof,
 } from "./dearme-aha-proof.ts";
 
@@ -17,6 +22,7 @@ test("DearMe aha proof proves the first private five-minute loop", () => {
     "five_minute_sequence",
     "private_outputs",
     "recurring_private_work",
+    "phone_ready_private_site",
     "minimum_team",
     "approval_boundaries",
     "customer_language",
@@ -84,9 +90,47 @@ test("DearMe aha proof output is operator-readable without leaking secrets", () 
   assert.match(formatted, /Status: ready/);
   assert.match(formatted, /Five-minute private wow sequence: ready/);
   assert.match(formatted, /Recurring private work: ready/);
+  assert.match(formatted, /Phone-ready private site artifact: ready/);
   assert.match(formatted, /pnpm --silent dearme:aha-proof -- --check/);
+  assert.match(formatted, /pnpm --silent dearme:aha-proof -- --export-site dist\/dearme-private-proof/);
   assert.doesNotMatch(formatted, /OPENCLAW_GATEWAY_TOKEN/);
   assert.doesNotMatch(formatted, /DEARME_LINKEDIN_DM_CREDENTIAL_JSON/);
+});
+
+test("DearMe aha proof renders a static private site artifact without hidden terms", () => {
+  const { report, preview } = runDearMeAhaProof();
+  const html = renderDearMePrivateSitePreviewHtml(preview);
+  const siteCheck = report.checks.find((item) => item.key === "phone_ready_private_site");
+
+  assert.equal(siteCheck?.ready, true);
+  assert.match(html, /<meta name="viewport" content="width=device-width, initial-scale=1" \/>/);
+  assert.match(html, /DearMe private proof/);
+  assert.match(html, /dearme\.app\/peter-studio/);
+  assert.match(html, /From one sentence to private proof/);
+  assert.match(html, /Keeps working after the first proof/);
+  assert.match(html, /Nothing is sent, published, deployed, or spent until approved/);
+  assert.doesNotMatch(html, /OpenClaw|Paperclip|Symphony|provider|credential|token|workbench/i);
+});
+
+test("DearMe aha proof exports private site HTML and proof JSON", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-aha-proof-site-"));
+  const { preview } = runDearMeAhaProof();
+
+  try {
+    const result = await exportDearMePrivateSitePreview(preview, dir);
+    const html = await readFile(result.htmlPath, "utf8");
+    const proof = JSON.parse(await readFile(result.jsonPath, "utf8")) as unknown;
+
+    assert.equal(result.handle, "peter-studio");
+    assert.equal(result.route, "dearme.app/peter-studio");
+    assert.equal(result.htmlPath, join(dir, "peter-studio", "index.html"));
+    assert.equal(result.jsonPath, join(dir, "peter-studio", "proof.json"));
+    assert.equal(result.htmlBytes, Buffer.byteLength(html, "utf8"));
+    assert.match(html, /Updated private proof card/);
+    assert.deepEqual(proof, preview);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 test("DearMe aha proof parses CLI flags", () => {
@@ -95,6 +139,9 @@ test("DearMe aha proof parses CLI flags", () => {
   assert.equal(parseDearMeAhaProofArgs(["--status"]).check, true);
   assert.equal(parseDearMeAhaProofArgs(["--json"]).json, true);
   assert.equal(parseDearMeAhaProofArgs(["--print-sample"]).printSample, true);
+  assert.equal(parseDearMeAhaProofArgs(["--export-site", "dist/proof"]).exportSiteDir, "dist/proof");
+  assert.equal(parseDearMeAhaProofArgs(["--export-site=dist/proof"]).exportSiteDir, "dist/proof");
   assert.equal(parseDearMeAhaProofArgs(["--help"]).help, true);
   assert.throws(() => parseDearMeAhaProofArgs(["--bad"]), /unknown argument/);
+  assert.throws(() => parseDearMeAhaProofArgs(["--export-site"]), /requires a directory/);
 });

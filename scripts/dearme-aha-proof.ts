@@ -1,4 +1,6 @@
 import { fileURLToPath } from "node:url";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import {
   createDearMeFirstCyclePreview,
   dearMeFirstCyclePreviewSchema,
@@ -16,6 +18,7 @@ export interface DearMeAhaProofArgs {
   json: boolean;
   check: boolean;
   printSample: boolean;
+  exportSiteDir: string | null;
 }
 
 export interface DearMeAhaProofCheck {
@@ -24,6 +27,7 @@ export interface DearMeAhaProofCheck {
     | "five_minute_sequence"
     | "private_outputs"
     | "recurring_private_work"
+    | "phone_ready_private_site"
     | "minimum_team"
     | "approval_boundaries"
     | "customer_language";
@@ -47,10 +51,12 @@ export interface DearMeAhaProofReport {
     check: string;
     json: string;
     printSample: string;
+    exportSite: string;
   };
 }
 
 const DEFAULT_COMPANY_ID = "dearme-aha-proof";
+const DEFAULT_SITE_EXPORT_DIR = "dist/dearme-private-proof";
 
 function sameValues(actual: readonly string[], expected: readonly string[]) {
   return actual.length === expected.length && actual.every((value, index) => value === expected[index]);
@@ -72,10 +78,12 @@ export function parseDearMeAhaProofArgs(argv: readonly string[]): DearMeAhaProof
     json: false,
     check: false,
     printSample: false,
+    exportSiteDir: null,
   };
 
   const normalizedArgv = argv[0] === "--" ? argv.slice(1) : argv;
-  for (const arg of normalizedArgv) {
+  for (let index = 0; index < normalizedArgv.length; index += 1) {
+    const arg = normalizedArgv[index];
     if (arg === "--help" || arg === "-h") {
       args.help = true;
     } else if (arg === "--json") {
@@ -84,6 +92,15 @@ export function parseDearMeAhaProofArgs(argv: readonly string[]): DearMeAhaProof
       args.check = true;
     } else if (arg === "--print-sample") {
       args.printSample = true;
+    } else if (arg === "--export-site") {
+      const next = normalizedArgv[index + 1];
+      if (!next) throw new Error("--export-site requires a directory");
+      args.exportSiteDir = next;
+      index += 1;
+    } else if (arg.startsWith("--export-site=")) {
+      const value = arg.slice("--export-site=".length);
+      if (!value) throw new Error("--export-site requires a directory");
+      args.exportSiteDir = value;
     } else {
       throw new Error(`unknown argument: ${arg}`);
     }
@@ -117,6 +134,165 @@ export function createDearMeAhaProofSample(): DearMeFirstCyclePreview {
   });
 }
 
+function escapeHtml(value: string | number | null | undefined): string {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function renderLines(items: readonly string[]) {
+  return items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+}
+
+function renderCard(title: string, body: string, details: readonly string[]) {
+  return `<article class="card">
+    <h3>${escapeHtml(title)}</h3>
+    <p>${escapeHtml(body)}</p>
+    ${details.length > 0 ? `<ul>${renderLines(details)}</ul>` : ""}
+  </article>`;
+}
+
+export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePreviewResponse): string {
+  const displayName = preview.sitePreview.handle
+    .split("-")
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ") || "DearMe";
+  const proofCards = preview.proofSequence.map((step) =>
+    renderCard(step.title, step.summary, [
+      `${step.window}: ${step.preparedArtifact}`,
+      step.sourceLabel ? `From: ${step.sourceLabel}` : "",
+      `Waits: ${step.approvalBoundary}`,
+    ].filter(Boolean)),
+  ).join("\n");
+  const continuationCards = preview.continuationPlan.items.map((item) =>
+    renderCard(item.title, item.summary, [
+      `Prepared: ${item.preparedArtifact}`,
+      `Waits: ${item.approvalBoundary}`,
+    ]),
+  ).join("\n");
+  const starterPostCards = preview.starterPosts.map((post) =>
+    renderCard(post.title, post.text, [
+      `Voice check: ${post.voiceScore}`,
+      `Proof: ${post.proofUsed}`,
+      `Waits: ${post.approvalBoundary}`,
+    ]),
+  ).join("\n");
+  const opportunityCards = preview.opportunityShortlist.slice(0, 3).map((lead) =>
+    renderCard(lead.label, lead.whyRelevant, [
+      `Angle: ${lead.outreachAngle}`,
+      `Waits: ${lead.approvalBoundary}`,
+    ]),
+  ).join("\n");
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(displayName)} - DearMe private proof</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f7f5f0;
+      color: #17201b;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { width: min(1080px, calc(100vw - 32px)); margin: 0 auto; padding: 28px 0 44px; }
+    .hero { display: grid; gap: 16px; padding: 28px 0 22px; border-bottom: 1px solid #d8d2c4; }
+    .eyebrow { margin: 0; color: #59655c; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    h1 { margin: 0; max-width: 760px; font-size: clamp(30px, 6vw, 56px); line-height: 1.02; letter-spacing: 0; }
+    h2 { margin: 0 0 12px; font-size: 22px; letter-spacing: 0; }
+    h3 { margin: 0; font-size: 16px; letter-spacing: 0; }
+    p { line-height: 1.55; }
+    .summary { max-width: 760px; margin: 0; color: #3d4941; font-size: 17px; }
+    .route { display: inline-flex; width: fit-content; max-width: 100%; padding: 8px 10px; border: 1px solid #c9c1b3; border-radius: 8px; background: #fffaf0; color: #273128; font-size: 14px; overflow-wrap: anywhere; }
+    section { padding: 24px 0 0; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .card { border: 1px solid #d8d2c4; border-radius: 8px; background: #fffdf8; padding: 14px; min-width: 0; }
+    .card p { margin: 8px 0 0; color: #465148; font-size: 14px; }
+    ul { margin: 12px 0 0; padding-left: 18px; color: #59655c; font-size: 13px; line-height: 1.5; }
+    .boundary { background: #e9f3ef; border-color: #b8d2c5; }
+    .footer { margin-top: 24px; color: #667067; font-size: 12px; }
+    @media (max-width: 780px) {
+      main { width: min(100vw - 24px, 680px); padding-top: 18px; }
+      .grid { grid-template-columns: 1fr; }
+      .hero { padding-top: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="hero">
+      <p class="eyebrow">DearMe private proof</p>
+      <h1>${escapeHtml(displayName)} has a private growth team already working.</h1>
+      <p class="summary">${escapeHtml(preview.growthPlan.summary)}</p>
+      <span class="route">${escapeHtml(preview.sitePreview.route)}</span>
+    </header>
+
+    <section aria-label="First proof trail">
+      <h2>From one sentence to private proof</h2>
+      <div class="grid">${proofCards}</div>
+    </section>
+
+    <section aria-label="Keeps working">
+      <h2>${escapeHtml(preview.continuationPlan.title)}</h2>
+      <p class="summary">${escapeHtml(preview.continuationPlan.summary)}</p>
+      <div class="grid">${continuationCards}</div>
+    </section>
+
+    <section aria-label="Prepared drafts">
+      <h2>Prepared drafts</h2>
+      <div class="grid">${starterPostCards}</div>
+    </section>
+
+    <section aria-label="Opportunity shortlist">
+      <h2>Opportunity shortlist</h2>
+      <div class="grid">${opportunityCards}</div>
+    </section>
+
+    <section aria-label="Launch boundary">
+      <article class="card boundary">
+        <h2>${escapeHtml(preview.approvalBoundary.label)}</h2>
+        <p>${escapeHtml(preview.approvalBoundary.summary)}</p>
+        <ul>${renderLines(preview.approvalBoundary.blockedActions)}</ul>
+      </article>
+    </section>
+
+    <p class="footer">Private preview artifact. Nothing is sent, published, deployed, or spent until approved.</p>
+  </main>
+</body>
+</html>`;
+}
+
+export async function exportDearMePrivateSitePreview(
+  preview: DearMeFirstCyclePreviewResponse,
+  outputDir = DEFAULT_SITE_EXPORT_DIR,
+) {
+  const exportDir = join(outputDir, preview.sitePreview.handle);
+  const htmlPath = join(exportDir, "index.html");
+  const jsonPath = join(exportDir, "proof.json");
+  const html = renderDearMePrivateSitePreviewHtml(preview);
+
+  await mkdir(exportDir, { recursive: true });
+  await writeFile(htmlPath, html, "utf8");
+  await writeFile(jsonPath, JSON.stringify(preview, null, 2), "utf8");
+
+  return {
+    directory: exportDir,
+    htmlPath,
+    jsonPath,
+    handle: preview.sitePreview.handle,
+    route: preview.sitePreview.route,
+    htmlBytes: Buffer.byteLength(html, "utf8"),
+  };
+}
+
 export function inspectDearMeAhaProofPreview(
   preview: DearMeFirstCyclePreviewResponse,
 ): DearMeAhaProofReport {
@@ -132,6 +308,8 @@ export function inspectDearMeAhaProofPreview(
   ]);
   const serializedPreview = JSON.stringify(preview);
   const hiddenMatch = DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(serializedPreview);
+  const staticHtml = renderDearMePrivateSitePreviewHtml(preview);
+  const staticHtmlHiddenMatch = DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(staticHtml);
   const outputCount =
     1 +
     preview.starterPosts.length +
@@ -192,6 +370,21 @@ export function inspectDearMeAhaProofPreview(
       ],
     ),
     check(
+      "phone_ready_private_site",
+      "Phone-ready private site artifact",
+      staticHtml.includes('<meta name="viewport" content="width=device-width, initial-scale=1" />') &&
+        staticHtml.includes(preview.sitePreview.route) &&
+        staticHtml.includes(preview.continuationPlan.title) &&
+        staticHtml.includes(preview.approvalBoundary.label) &&
+        staticHtmlHiddenMatch === null,
+      "The same proof contract can render as a static private site artifact before a real host deploy smoke.",
+      [
+        `route=${preview.sitePreview.route}`,
+        `exportCommand=pnpm --silent dearme:aha-proof -- --export-site ${DEFAULT_SITE_EXPORT_DIR}`,
+        `htmlBytes=${Buffer.byteLength(staticHtml, "utf8")}`,
+      ],
+    ),
+    check(
       "minimum_team",
       "Minimum runnable team",
       ["chief_of_staff", "content_producer", "opportunity_scout"].every((role) => ownerRoles.has(role)),
@@ -240,6 +433,7 @@ export function inspectDearMeAhaProofPreview(
       check: "pnpm --silent dearme:aha-proof -- --check",
       json: "pnpm --silent dearme:aha-proof -- --json",
       printSample: "pnpm --silent dearme:aha-proof -- --print-sample",
+      exportSite: `pnpm --silent dearme:aha-proof -- --export-site ${DEFAULT_SITE_EXPORT_DIR}`,
     },
   };
 }
@@ -275,15 +469,18 @@ export function formatDearMeAhaProofReport(report: DearMeAhaProofReport): string
   lines.push(`- ${report.commands.check}`);
   lines.push(`- ${report.commands.json}`);
   lines.push(`- ${report.commands.printSample}`);
+  lines.push(`- ${report.commands.exportSite}`);
   return lines;
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm dearme:aha-proof -- [--check] [--json] [--print-sample]
+  console.log(`Usage: pnpm dearme:aha-proof -- [--check] [--json] [--print-sample] [--export-site <dir>]
 
 Proves the local, private first-five-minute DearMe wow loop from the existing
 first-cycle preview contract. This proof does not send, publish, deploy to
-production, spend, or call a live model. Default action is --check.`);
+production, spend, or call a live model. Default action is --check. The
+--export-site option writes a static private proof artifact for host smoke
+preparation without making it public.`);
 }
 
 async function main() {
@@ -295,13 +492,27 @@ async function main() {
     }
 
     const { report, preview } = runDearMeAhaProof();
+    const exportResult = parsed.exportSiteDir
+      ? await exportDearMePrivateSitePreview(preview, parsed.exportSiteDir)
+      : null;
     if (parsed.json) {
-      console.log(JSON.stringify(parsed.printSample ? { report, preview } : { report }, null, 2));
+      console.log(JSON.stringify(
+        parsed.printSample ? { report, preview, exportResult } : { report, exportResult },
+        null,
+        2,
+      ));
     } else if (parsed.printSample) {
       console.log(JSON.stringify(preview, null, 2));
     } else {
       for (const line of formatDearMeAhaProofReport(report)) {
         console.log(line);
+      }
+      if (exportResult) {
+        console.log("");
+        console.log("Static private site export:");
+        console.log(`- html: ${exportResult.htmlPath}`);
+        console.log(`- proof: ${exportResult.jsonPath}`);
+        console.log(`- route: ${exportResult.route}`);
       }
     }
 

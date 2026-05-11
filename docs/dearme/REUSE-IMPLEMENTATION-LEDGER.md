@@ -15,6 +15,14 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `pnpm dearme:status` / `pnpm dearme:proof -- --status` now reuse the
+  `dearme:aha-proof` report as the first status section. The compact product
+  verdict no longer lags the product surface: it explicitly says the local
+  first-wow includes recurring private work and a phone-ready static private
+  site artifact, then points to the live provider/host proof as the remaining
+  Polsia gap. Future workers should keep first-wow proof, voice proof, and
+  provider proof on this single status surface instead of creating a parallel
+  readiness command.
 - The first-cycle preview contract now includes `continuationPlan`, and the
   onboarding plus private site preview surfaces render it as the next private
   pass. This reuses the existing shared preview contract, Naive/Paperclip
