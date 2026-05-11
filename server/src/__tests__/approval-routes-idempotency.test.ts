@@ -1,6 +1,7 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { dearMeApprovedLaunchHandoffService } from "../services/dearme-approved-launch-handoff.js";
 
 const mockApprovalService = vi.hoisted(() => ({
   list: vi.fn(),
@@ -196,12 +197,12 @@ describe("approval routes idempotent retries", () => {
   });
 
   it("executes an approved DearMe launch handoff only when a next-move approval is newly applied", async () => {
-    const launchService = {
-      executeApprovedNextMove: vi.fn(async () => ({
-        kind: "called" as const,
-        outcome: { kind: "delivered" as const, voiceGateScore: 96, externalId: "tweet-1" },
-      })),
-    };
+    const callOutbound = vi.fn(async () => ({
+      kind: "delivered" as const,
+      voiceGateScore: 96,
+      externalId: "tweet-1",
+    }));
+    const launchService = dearMeApprovedLaunchHandoffService({ callOutbound });
     const approval = {
       id: "approval-8",
       companyId: "company-1",
@@ -213,6 +214,9 @@ describe("approval routes idempotent retries", () => {
         launchHandoff: {
           toolName: "post_x",
           payload: { text: "Ready to publish." },
+          voiceGateText: "Ready to publish.",
+          voiceGateArtifactKind: "x-tweet",
+          voiceFingerprintId: "vf_1",
         },
       },
       requestedByAgentId: "agent-1",
@@ -230,10 +234,20 @@ describe("approval routes idempotent retries", () => {
       .send({});
 
     expect(res.status).toBe(200);
-    expect(launchService.executeApprovedNextMove).toHaveBeenCalledWith({
-      approval,
-      actorUserId: "user-1",
-    });
+    expect(callOutbound).toHaveBeenCalledWith(expect.objectContaining({
+      toolName: "post_x",
+      companyId: "company-1",
+      userId: "user-1",
+      issueId: "issue-1",
+      agentId: "agent-1",
+      payload: { text: "Ready to publish." },
+      voiceGateText: "Ready to publish.",
+      voiceGateArtifactKind: "x-tweet",
+      voiceFingerprintId: "vf_1",
+      preapprovedApprovalId: "approval-8",
+      estimatedUsd: 0,
+      config: { minVoiceGateScore: 92, dailyUsdCap: 5 },
+    }));
     expect(mockRecordDearMeNextMoveDeliveryReceipt).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
