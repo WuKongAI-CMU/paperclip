@@ -82,8 +82,11 @@ Maximum reuse posture:
   abstraction.
 
 The implementation-level reuse contract is
-[`POLSIA-NAIVE-REUSE-PLAN.md`](POLSIA-NAIVE-REUSE-PLAN.md). That document is the
-source of truth for what to copy directly, what to adapt, and what to defer.
+[`POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`](POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md).
+That document is the ticket-level source of truth for what to copy directly,
+what to adapt, and what to defer. The older
+[`POLSIA-NAIVE-REUSE-PLAN.md`](POLSIA-NAIVE-REUSE-PLAN.md) remains strategic
+posture and historical context.
 
 Supabase is not the platform auth/database answer. Platform identity and
 workspace data should stay in the Paperclip/Postgres/Better Auth stack.

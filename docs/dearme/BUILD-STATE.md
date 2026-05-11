@@ -2,6 +2,31 @@
 
 Date: 2026-05-11
 
+## Coordination Entrypoint Cleanup - 2026-05-11
+
+Product/architecture slice:
+
+- Aligned `AGENTS.md` with the current DearMe doc authority chain: workers now
+  enter through `README.md`, `INDEX.md`, Symphony workflow, tri-substrate
+  architecture, OpenClaw integration, product architecture, the code-reuse
+  master plan, reuse ledger, provenance, and targeted build-state reads.
+- Removed superseded docs from the default must-read path. Historical docs such
+  as `INTEGRATED-ARCHITECTURE.md`, `WORKTREE-INTEGRATION-PLAN.md`, and
+  `POLSIA-NAIVE-REUSE-PLAN.md` remain reference material only; current
+  `INDEX.md`, `TRI-SUBSTRATE-ARCHITECTURE.md`, and runtime code win on
+  conflict.
+- Updated `PRODUCT-ARCHITECTURE.md` so the implementation-level reuse contract
+  points at `POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`; the older reuse plan is
+  strategic posture, not the ticket source of truth.
+
+Verification:
+
+- `git diff --check -- AGENTS.md docs/dearme/PRODUCT-ARCHITECTURE.md docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs --ticket DEA-60`
+  passed with `reviewed_absorbed: 1`, `not_in_current: 0`, and the latest
+  DEA-60 handoff still an already-absorbed committed patch.
+
 ## DM-171E Voice & Memory Customer Text Reuse - 2026-05-11
 
 Product/architecture slice:

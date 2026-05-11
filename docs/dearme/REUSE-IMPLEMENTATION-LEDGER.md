@@ -15,6 +15,16 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- The coordinator entrypoint now starts DearMe product workers from the current
+  canonical doc chain instead of the older dirty-tree integration docs:
+  `README.md`, `INDEX.md`, `.symphony/WORKFLOW.md`,
+  `TRI-SUBSTRATE-ARCHITECTURE.md`, `OPENCLAW-INTEGRATION-ARCHITECTURE.md`,
+  `PRODUCT-ARCHITECTURE.md`, the code-reuse master plan, this ledger,
+  provenance, and targeted build-state reads. `INTEGRATED-ARCHITECTURE.md`,
+  `WORKTREE-INTEGRATION-PLAN.md`, and `POLSIA-NAIVE-REUSE-PLAN.md` remain
+  useful history/reference, but workers should not follow them as default
+  implementation guidance when they conflict with `INDEX.md`,
+  `TRI-SUBSTRATE-ARCHITECTURE.md`, or runtime code.
 - DM-171E removes the Voice & Memory brief's local customer-safe replacement
   table and sends assignment/routine memory text through the shared DearMe
   sanitizer. This keeps memory context, output handoff, Workbench projection,

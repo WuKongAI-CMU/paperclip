@@ -24,14 +24,26 @@ runs through Symphony and `.symphony/WORKFLOW.md`.
 For DearMe product or rebrand work, read in this order:
 
 1. `docs/dearme/README.md`
-2. `.symphony/WORKFLOW.md`
-3. `docs/dearme/INTEGRATED-ARCHITECTURE.md`
-4. `docs/dearme/WORKTREE-INTEGRATION-PLAN.md`
-5. `docs/dearme/PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`
-6. `docs/dearme/POLSIA-NAIVE-REUSE-PLAN.md`
-7. `docs/dearme/LINDY-ASSISTANT-REUSE-PLAN.md`
-8. `docs/dearme/REBRAND-AND-PROVENANCE.md`
-9. `docs/dearme/BUILD-STATE.md`
+2. `docs/dearme/INDEX.md`
+3. `.symphony/WORKFLOW.md`
+4. `docs/dearme/TRI-SUBSTRATE-ARCHITECTURE.md`
+5. `docs/dearme/OPENCLAW-INTEGRATION-ARCHITECTURE.md`
+6. `docs/dearme/PRODUCT-ARCHITECTURE.md`
+7. `docs/dearme/POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`
+8. `docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+9. `docs/dearme/REBRAND-AND-PROVENANCE.md`
+10. `docs/dearme/BUILD-STATE.md`
+
+`docs/dearme/BUILD-STATE.md` and
+`docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md` are append-only coordination logs:
+read the newest section plus issue-relevant matches, not the whole file by
+default. Older architecture/reuse docs such as
+`docs/dearme/INTEGRATED-ARCHITECTURE.md`,
+`docs/dearme/WORKTREE-INTEGRATION-PLAN.md`, and
+`docs/dearme/POLSIA-NAIVE-REUSE-PLAN.md` are historical references only. If
+they conflict with `docs/dearme/INDEX.md`,
+`docs/dearme/TRI-SUBSTRATE-ARCHITECTURE.md`, or the code, the current canonical
+surface wins.
 
 For Paperclip-kernel work, read in this order:
 
