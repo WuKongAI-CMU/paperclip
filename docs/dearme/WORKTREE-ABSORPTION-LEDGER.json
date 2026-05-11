@@ -2,6 +2,23 @@
   "updatedAt": "2026-05-11",
   "reviewedAbsorptions": [
     {
+      "ticket": "DEA-47",
+      "branch": "codex/dearme-dm-136-sample-demo-proof",
+      "head": "0199c23d68a3c007bfcaaef0a7dee6b4bb4d25b9",
+      "reviewedAt": "2026-05-11",
+      "reason": "The DEA-47 Symphony worker proof is absorbed into the coordinator head through route-level approved post_x handoff coverage, the customer-safe no-active-X-connection receipt path, the build-state proof note, and the canonical DearMe index pointer; replaying the worker tip would only duplicate the same receipt proof on an older base.",
+      "evidence": [
+        "server/src/__tests__/approval-routes-idempotency.test.ts",
+        "server/src/services/dearme-approved-launch-handoff.test.ts",
+        "server/src/services/dearme-outbound-tool-wrapper.test.ts",
+        "server/src/__tests__/dearme-approval-receipts.test.ts",
+        "server/src/__tests__/dearme-workbench-projection.test.ts",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/INDEX.md"
+      ]
+    },
+    {
       "ticket": "DEA-44",
       "branch": "codex/dearme-dm-136-sample-demo-proof",
       "head": "fbab909e18623e9788f5832bc473ee519a308fe0",
