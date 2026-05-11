@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `WORKTREE-INTEGRATION-PLAN.md` now carries the missing superseded/historical
+  banner promised by `INDEX.md`, so future Symphony workers should not treat
+  the 2026-05-07 dirty-tree plan as the current queue or architecture contract.
+  `AUTOMATION-RELIABILITY-COST-POLICY.md` has been moved out of the superseded
+  list and into governance because it remains the current DearMe automation,
+  approval, retry, and stoppability boundary.
 - Worktree coordination now derives dirty handoff file counts from the handoff
   `status` list when a dirty Symphony summary has no explicit `changedFiles`.
   This keeps active dirty lanes visible without making them look like empty

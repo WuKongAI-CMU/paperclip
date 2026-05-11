@@ -2,6 +2,24 @@
 
 Date: 2026-05-11
 
+## Doc Authority Cleanup - 2026-05-11
+
+Product/architecture slice:
+
+- Added the missing superseded/historical banner to
+  `WORKTREE-INTEGRATION-PLAN.md`, which is now explicitly an archived
+  dirty-tree plan and not a current Symphony queue, architecture contract, or
+  implementation target list.
+- Moved `AUTOMATION-RELIABILITY-COST-POLICY.md` out of the superseded list in
+  `INDEX.md` and into governance, because it is still the current DearMe
+  automation, approval, retry, and stoppability boundary.
+
+Verification:
+
+- Checked the `INDEX.md` superseded list against top-of-file markers for every
+  listed file.
+- `git diff --check -- docs/dearme/INDEX.md docs/dearme/WORKTREE-INTEGRATION-PLAN.md docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+
 ## DEA-60 Provider-Smoke Env Template Absorption - 2026-05-11
 
 Product/architecture slice:

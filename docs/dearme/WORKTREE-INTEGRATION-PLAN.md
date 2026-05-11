@@ -1,5 +1,11 @@
 # DearMe Worktree Integration Plan
 
+> **Superseded / historical.** This 2026-05-07 dirty-tree plan is archived.
+> Current DearMe execution starts from `INDEX.md`, `.symphony/WORKFLOW.md`,
+> `TRI-SUBSTRATE-ARCHITECTURE.md`, `POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`,
+> `REUSE-IMPLEMENTATION-LEDGER.md`, and `BUILD-STATE.md`. Do not use this file
+> as the current queue, architecture contract, or implementation target list.
+
 Date: 2026-05-07
 
 Purpose: stabilize the current mixed DearMe/Paperclip worktree and define the
