@@ -24,6 +24,8 @@ Verification:
 - `pnpm --silent dearme:aha-proof -- --check`
 - `pnpm --silent dearme:aha-proof -- --json`
 - `pnpm --silent dearme:aha-proof -- --print-sample | rg -n "queue|queued|OpenClaw|Paperclip|provider|adapter|model|runtime|worker|workbench|issue"` (no matches)
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts`
+- `pnpm typecheck`
 
 ## DEA-60 Handoff Alias Absorbed - 2026-05-11
 
