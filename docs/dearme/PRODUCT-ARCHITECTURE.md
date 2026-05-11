@@ -505,7 +505,7 @@ The integration ships these glue artifacts (DM-S06):
 - **4 approval gates** — `publish` / `send` / `deploy` / `spend`, with a pure-function resolver (`state-machines/approval-gates.ts`). Spend has a hard cap, never auto-approves; publish and send require voice-gate pass.
 - **15-event SSE stream** — covers Polsia /live + Naive activity_log + OpenClaw stream lifecycle in one schema (`state-machines/sse-events.ts`). Every event carries `scope.{companyId, issueId, executionId, agentId, openclawSessionId, workLoopState}`.
 - **Per-role substrate map** — `DEARME_ROLE_REGISTRY.substrate: { openclaw, naive, polsia }` on every entry, validated at boot. Helper `getSubstrateDistribution()` for audit.
-- **5 outbound tool TS interfaces** — `post_x` / `send_linkedin_dm` / `send_email` / `deploy_site` / `create_meta_campaign` with `(gate, channel, voiceGateRequired)` bindings (`packages/plugins/dearme-openclaw/src/tools/types.ts`).
+- **7 outbound tool TS interfaces** — `post_x` / `send_linkedin_dm` / `send_telegram_message` / `send_imessage` / `send_email` / `deploy_site` / `create_meta_campaign` with `(gate, channel, voiceGateRequired)` bindings (`packages/plugins/dearme-openclaw/src/tools/types.ts`).
 - **`channel_connections` Drizzle schema** — per-user OAuth tokens for outbound channels (`packages/db/src/schema/channel_connections.ts`), plus the DM-173A X callback proof route that writes active `x` rows. DM-175.
 - **Voice-gate wire contract** — `POST /v1/voice/score` request/response shape, 8 artifact kinds, default floor 92 (`packages/dearme-ai-proxy/src/voice-gate.ts`).
 

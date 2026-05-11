@@ -1,22 +1,23 @@
 # OpenClaw Integration for Aha-Shots
 
-> Status: planning, 2026-05-09
+> Status: implementation-updated, 2026-05-11
 > Scope: P0 channel delivery (Day-1 letter + 5:00 ship outreach)
 > Position: companion to `POLSIA-NAIVE-PM-ANALYSIS.md` and `POLSIA-NAIVE-MECHANISMS-DEEP-DIVE.md`
 > Owners: DearMe product + OpenClaw maintainer (same human)
 
 ## TL;DR
 
-DearMe currently produces outputs (drafts, brand reviews, weekly reports) and routes
-them through approval. **It does not actually ship them anywhere.** Channel send is
-the unbuilt last mile.
+DearMe now has the approved-send spine in code: an approved next move becomes a
+`launchHandoff`, `dearme-approved-launch-handoff` turns it into `CallOutboundInput`,
+`dearme-outbound-tool-wrapper` runs voice gate + approval + dispatch + audit, and
+`dearme-openclaw-gateway-dispatch` can hand it to OpenClaw.
 
 OpenClaw already has 50+ channel extensions and a stable gateway protocol. DearMe
 already has an `openclaw-gateway` adapter wired in via Paperclip. **No fork needed.**
 We use OpenClaw as a remote runtime that DearMe calls when the user clicks Ship.
 
-This doc is the minimum P0 wiring: **two channels (iMessage + Telegram)** for the
-two highest-impact aha moments, nothing more.
+This doc is the minimum P0 wiring: keep **two OpenClaw-backed message channels
+(iMessage + Telegram)** for the two highest-impact aha moments, nothing more.
 
 ## What is already true (no work needed)
 
@@ -25,21 +26,31 @@ two highest-impact aha moments, nothing more.
 - Adapter accepts `ws://` or `wss://` URL — local OpenClaw daemon or LAN/cloud both work.
 - Adapter handles session keying (`fixed | issue | run`), idempotency, structured event logs.
 - DearMe `dearme-output-handoff.ts` already produces approval-gated artifacts of kind
-  `content_drafts`, `brand_os_review`, etc. The output is ready; only the send is missing.
+  `content_drafts`, `brand_os_review`, etc.
+- `dearme-approved-launch-handoff.ts` consumes approved `dearme_output_next_move`
+  payloads and calls the shared outbound wrapper.
+- `dearme-outbound-tool-wrapper.ts` owns the canonical runtime order:
+  voice-gate → approval → channel resolution → dispatch → audit/SSE.
+- `dearme-openclaw-gateway-dispatch.ts` builds one OpenClaw gateway dispatcher
+  per outbound tool binding.
+- `packages/plugins/dearme-openclaw/src/tools/types.ts` now registers
+  `send_telegram_message` and `send_imessage` as voice-gated `send` tools.
 
-## What is missing (the work)
+## What remains (the work)
 
-A **delivery channel binding** layer:
+A **first-run recipient binding** layer:
 
 ```text
-DearMe approved output  →  channel binding  →  openclaw-gateway adapter  →  OpenClaw daemon  →  iMessage / Telegram
+DearMe approved output  →  launch handoff  →  outbound wrapper  →  openclaw-gateway adapter  →  OpenClaw daemon  →  iMessage / Telegram
 ```
 
 Specifically:
-1. A `channel_bindings` table that maps `(user_id, output_kind) → openclaw_channel_id + recipient`.
-2. A small service `dearme-channel-send.ts` that runs on `output.approved` event.
-3. Two reference channel configs: `imessage` (Day-1 letter) and `telegram` (outreach).
-4. UI: one onboarding step "Where should DearMe reach you?" with iMessage/Telegram pick.
+1. Generate `launchHandoff` payloads for Day-1 self-letter and Telegram outreach using
+   `send_imessage` / `send_telegram_message`.
+2. Store the user's chosen self-letter recipient and Telegram recipient alias in the
+   existing onboarding/profile configuration path.
+3. Standardize DearMe-hosted OpenClaw gateway config for Telegram-first beta demos.
+4. Surface delivery success/failure in the existing Work Ready / Cycle view.
 
 ## Aha-shot mapping
 
@@ -72,29 +83,22 @@ Everything else (Identity, Voice, Audience, Brand site, Opportunity discovery)
 1. DearMe agent finishes draft → writes to issueWorkProducts
 2. dearme-output-handoff produces a DearMeOutputItem
 3. User approves (or Day-1 self-letter auto-approves)
-4. dearme-channel-send.ts looks up channel_binding for (user, output.kind)
-5. Calls @paperclipai/adapter-openclaw-gateway execute() with:
+4. Approved launch handoff builds `CallOutboundInput`
+5. `dearme-outbound-tool-wrapper` runs voice gate + approval and dispatches
+6. `dearme-openclaw-gateway-dispatch` calls @paperclipai/adapter-openclaw-gateway execute() with:
      payloadTemplate: { channel: "imessage", to: "<phone>", text: "<rendered letter>" }
-6. OpenClaw daemon's imessage extension delivers
-7. Adapter logs event back; DearMe marks output.deliveredAt
+7. OpenClaw daemon's imessage extension delivers
+8. Adapter logs event back; DearMe emits `channel_action_fired` and records audit state
 ```
 
-### Database (single migration)
+### Database
 
-```ts
-// packages/db/schema/channel_bindings.ts
-export const channelBindings = pgTable("channel_bindings", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  companyId: uuid("company_id").notNull().references(() => companies.id),
-  outputKind: text("output_kind").notNull(),
-  openclawChannel: text("openclaw_channel").notNull(),
-  recipient: jsonb("recipient").notNull(),
-  enabled: boolean("enabled").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-```
-
-That is the only schema change required.
+No new P0 table is required for the current branch. `channel_connections` already
+exists and now includes `telegram` / `imessage` as allowed channel ids, but the
+shared outbound wrapper intentionally does **not** require OAuth rows for these
+OpenClaw gateway channels until a concrete per-user credential flow ships. This
+keeps the Day-1 aha path on the existing gateway config instead of adding a
+parallel credential store.
 
 ## Boundaries — what we will not do
 
@@ -121,10 +125,10 @@ That is the only schema change required.
 ## P0 ticket plan
 
 ```text
-DM-CH-01  schema: channel_bindings table + migration
-DM-CH-02  service: dearme-channel-send.ts (calls openclaw-gateway adapter)
-DM-CH-03  hook: dearme-output-handoff emits output.approved event consumed by send
-DM-CH-04  config: one onboarding step asking iMessage number OR Telegram username
+DM-CH-01  absorbed: reuse channel_connections + plugin defaults, no new table yet
+DM-CH-02  shipped: approved-next-move -> outbound wrapper -> OpenClaw gateway dispatch
+DM-CH-03  shipped: approved next-move handoff consumes launchHandoff payloads
+DM-CH-04  config: one onboarding/profile step asking iMessage number OR Telegram username
 DM-CH-05  daemon: standardize "DearMe-hosted OpenClaw" cloud fallback for Telegram-only
 DM-CH-06  observability: deliveredAt + failure log surfaced in Cycle view
 DM-CH-07  ship: Day-1 self-letter auto-delivered (no approval) for new signups
@@ -155,11 +159,11 @@ has failed and we revisit before adding any other channel.
 
 - `POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md` already assumes Paperclip adapters are
   inherited. This doc just specifies which two channels we activate first.
-- `BUILD-STATE.md` should add a `Channel Send` section once DM-CH-01 ships.
+- `BUILD-STATE.md` should track the channel-send spine as soon as each code slice ships.
 - `INTEGRATED-ARCHITECTURE.md` does not need an update; the openclaw_gateway adapter
   is already covered.
 
-## Open questions (decide before DM-CH-01)
+## Open questions (decide before first live send smoke)
 
 1. iMessage delivery to **user's own number** (self-letter) — does Apple's loop policy
    allow that? If not, fall back to Telegram for self-letter too.

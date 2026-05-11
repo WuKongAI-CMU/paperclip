@@ -159,6 +159,8 @@ function buildChannelOAuthStartUrl(input: CallOutboundInput, channel: string) {
 function customerChannelLabel(channel: string) {
   if (channel === "x") return "X";
   if (channel === "linkedin") return "LinkedIn";
+  if (channel === "telegram") return "Telegram";
+  if (channel === "imessage") return "iMessage";
   if (channel === "resend" || channel === "ses") return "email";
   if (channel === "meta_ads") return "ads";
   return "this channel";
@@ -191,6 +193,8 @@ function resolveOutboundChannel(
 }
 
 function isOauthChannel(channel: string): channel is ChannelConnectionChannel {
+  // OpenClaw gateway channels such as Telegram/iMessage are dispatched through
+  // the configured gateway first. They should not surface dead OAuth links.
   return channel === "x" ||
     channel === "linkedin" ||
     channel === "resend" ||

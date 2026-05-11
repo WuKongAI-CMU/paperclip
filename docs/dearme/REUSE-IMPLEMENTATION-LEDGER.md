@@ -159,6 +159,12 @@ It answers three questions before another worker starts building:
   bridge is the existing `OPENCLAW_GATEWAY_URL` / `OPENCLAW_GATEWAY_TOKEN` env
   pair used by the smoke tooling; keep any later config source on that same
   shape rather than adding a second secret store or UI.
+- DM-CH-02A extends that same gateway boundary to the two P0 aha-message
+  channels (`send_telegram_message`, `send_imessage`) by adding typed outbound
+  tool bindings instead of a parallel `dearme-channel-send.ts` service. These
+  tools stay voice-gated and approval-gated, dispatch through the OpenClaw
+  gateway fallback, and intentionally skip `channel_connections` OAuth lookup
+  until a concrete per-user Telegram/iMessage credential flow exists.
 - DEA-36 turns the first proof pack into one launch-ready next step by reusing
   the existing output handoff, `dearme_output_next_move` approval payload,
   private receipt activity, Workbench projection, and onboarding proof-pack
@@ -3175,8 +3181,8 @@ DearMe is the integration of three substrates: **OpenClaw** (edge runtime — ch
 | `packages/plugins/dearme-agent-prompts/src/state-machines/sse-events.ts` | DM-S06 / DM-179 | Upgraded from 7 v1 events → 15 events covering all three substrates: v1 baseline + `work_loop_transition` + 4 approval/voice events + `channel_action_fired` + `cost_recorded` + 2 OpenClaw passthroughs. Every event carries cross-substrate scope (`companyId/issueId/executionId/agentId/openclawSessionId/workLoopState`). |
 | `packages/plugins/dearme-agent-prompts/src/registry.ts` | DM-S06 | `DEARME_ROLE_REGISTRY` extended: each entry now declares `substrate: { openclaw, naive, polsia }`. New helper `getSubstrateDistribution()`. `validateRegistry()` checks all three substrate enums. |
 | `packages/dearme-ai-proxy/src/voice-gate.ts` | DM-S06 / DM-170 | Voice-gate wire: `POST /v1/voice/score`, `VoiceGateScoreRequest`/`VoiceGateScoreResponse` types, 8 `VOICE_GATE_ARTIFACT_KINDS`, default floor 92, `buildVoiceGateUrl()` helper. |
-| `packages/db/src/schema/channel_connections.ts` | DM-S06 / DM-175 | Per-user OAuth schema. 7 channels (`x` / `linkedin` / `resend` / `ses` / `meta_ads` / `buffer` / `stripe`), 5 statuses (`pending` / `active` / `needs_reauth` / `revoked` / `suspended`), encrypted credential blob, scopes, expiresAt, lastUsedAt, lastError. Unique on `(companyId, userId, channel, externalAccountId)`. |
-| `packages/plugins/dearme-openclaw/src/tools/types.ts` | DM-S06 / DM-172 / DM-174 / DM-176 / DM-177 / DM-178 | 5 outbound tool TypeScript interfaces: `post_x` / `send_linkedin_dm` / `send_email` / `deploy_site` / `create_meta_campaign`. Each has typed input + delivered output + envelope (`OutboundToolEnvelope`) + 5-outcome result (`delivered` / `pending` / `needs_oauth` / `rejected` / `errored`). `DEARME_OUTBOUND_TOOL_BINDINGS` maps each to `(gate, channel, voiceGateRequired)`. |
+| `packages/db/src/schema/channel_connections.ts` | DM-S06 / DM-175 / DM-CH-02A | Per-user OAuth/channel credential schema. 9 channels (`x` / `linkedin` / `resend` / `ses` / `telegram` / `imessage` / `meta_ads` / `buffer` / `stripe`), 5 statuses (`pending` / `active` / `needs_reauth` / `revoked` / `suspended`), encrypted credential blob, scopes, expiresAt, lastUsedAt, lastError. Unique on `(companyId, userId, channel, externalAccountId)`. |
+| `packages/plugins/dearme-openclaw/src/tools/types.ts` | DM-S06 / DM-172 / DM-174 / DM-176 / DM-177 / DM-178 / DM-CH-02A | 7 outbound tool TypeScript interfaces: `post_x` / `send_linkedin_dm` / `send_telegram_message` / `send_imessage` / `send_email` / `deploy_site` / `create_meta_campaign`. Each has typed input + delivered output + envelope (`OutboundToolEnvelope`) + 5-outcome result (`delivered` / `pending` / `needs_oauth` / `rejected` / `errored`). `DEARME_OUTBOUND_TOOL_BINDINGS` maps each to `(gate, channel, voiceGateRequired)`. |
 | `docs/dearme/TRI-SUBSTRATE-ARCHITECTURE.md` | DM-S06 | New canonical doc. Layer-ownership matrix, work-loop, SSE bucket, approval gates, outbound tool contract, per-role substrate map, doctrine. **Add to canonical reading list.** |
 
 This commit unblocks all the next-up tickets that wire each substrate to the others:

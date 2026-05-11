@@ -475,6 +475,63 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
       .toMatchObject({ toolName: "send_email", channel: "ses", externalId: "ses_message_1" });
   });
 
+  it("routes OpenClaw gateway message channels without OAuth lookup", async () => {
+    const getActive = vi.fn();
+    const dispatch = vi.fn(async () => ({
+      kind: "delivered" as const,
+      externalId: "telegram_message_1",
+      externalUrl: "tg://message/telegram_message_1",
+      paid: false,
+    }));
+    const { deps, resolveCalls, emitted } = makeDeps({
+      channelConnections: {
+        getActive,
+        markUsed: async () => undefined,
+        markNeedsReauth: async () => undefined,
+        upsertActive: async () => {
+          throw new Error("not used");
+        },
+      },
+      channelDispatch: { send_telegram_message: dispatch as ChannelDispatch },
+    });
+    const wrapper = dearMeOutboundToolWrapper(deps);
+    const payload = {
+      recipient: "@founder",
+      body: "The private proof packet is ready when you have a minute.",
+    };
+    const result = await wrapper.callOutbound({
+      ...baseInput,
+      toolName: "send_telegram_message",
+      payload,
+      voiceGateText: payload.body,
+      voiceGateArtifactKind: "direct-message",
+    });
+
+    expect(result.kind).toBe("delivered");
+    expect(resolveCalls[0]).toMatchObject({
+      toolName: "send_telegram_message",
+      channel: "telegram",
+      gate: "send",
+      voiceGateScore: 92,
+    });
+    expect(getActive).not.toHaveBeenCalled();
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      toolName: "send_telegram_message",
+      encryptedCredential: "",
+      payload,
+      dispatchContext: expect.objectContaining({
+        channel: "telegram",
+        idempotencyKey: expect.stringMatching(/^send_telegram_message:ap_test_1:[a-f0-9]{24}$/),
+      }),
+    }));
+    expect(emitted.find((event) => event.type === "channel_action_fired")?.payload)
+      .toMatchObject({
+        toolName: "send_telegram_message",
+        channel: "telegram",
+        externalId: "telegram_message_1",
+      });
+  });
+
   it("rejects unsupported email providers before gate or channel lookup", async () => {
     const getActive = vi.fn();
     const { deps, resolveCalls, scoreCalls } = makeDeps({

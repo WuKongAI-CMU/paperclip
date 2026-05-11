@@ -1,6 +1,6 @@
 /**
  * Outbound tool TypeScript interfaces — the wire shape OpenClaw plugin tools
- * use to call into DearMe cloud + the user's own per-channel OAuth.
+ * use to call into DearMe cloud + the user's own per-channel connection.
  *
  * These are NOT channel senders. They are the contract every cloud route,
  * dispatcher, and plugin tool wrapper must conform to. The current cloud
@@ -16,9 +16,10 @@
  *      (`approval-gates.ts::resolveApproval`) decides pending / approved /
  *      rejected. A `pending` decision pauses the tool until the user
  *      responds via OpenClaw chat (or the workbench).
- *   3. Per-user OAuth.  The cloud looks up `channel_connections` by
- *      (companyId, userId, channel). If status != "active", the tool
- *      returns a `needs_oauth` result with the OAuth start URL.
+ *   3. Per-user channel resolution.  OAuth-backed channels use
+ *      `channel_connections` by (companyId, userId, channel). OpenClaw
+ *      gateway channels can route through the configured gateway dispatch
+ *      without duplicating per-channel senders in this package.
  *   4. Audit.  On success, the cloud writes `cost_events` +
  *      `issue_work_products` and emits the `channel_action_fired` SSE.
  */
@@ -26,7 +27,7 @@
 import type { ApprovalDecision } from "@paperclipai/dearme-agent-prompts";
 
 /**
- * Common envelope all outbound tools share. Tools return one of three
+ * Common envelope all outbound tools share. Tools return one of five
  * outcomes: `delivered`, `pending` (awaiting user), `needs_oauth`,
  * `rejected`, or `errored`.
  */
@@ -95,6 +96,49 @@ export interface SendLinkedInDmDelivered {
 }
 
 export type SendLinkedInDmResult = OutboundToolResult<SendLinkedInDmDelivered>;
+
+/* ───────── send_telegram_message — Telegram via OpenClaw gateway ───────── */
+
+export interface SendTelegramMessageInput extends OutboundToolEnvelope {
+  /** Telegram username, chat id, or configured recipient alias. Voice-gated. */
+  recipient: string;
+  /** Voice-gated. */
+  body: string;
+  /** Optional parser hint for the downstream OpenClaw Telegram extension. */
+  parseMode?: "plain" | "markdown";
+  /** Optional thread id for follow-ups in the same Telegram conversation. */
+  threadId?: string;
+}
+
+export interface SendTelegramMessageDelivered {
+  messageId: string;
+  chatId?: string;
+  sentAt: string;
+}
+
+export type SendTelegramMessageResult =
+  OutboundToolResult<SendTelegramMessageDelivered>;
+
+/* ───────── send_imessage — iMessage/SMS via OpenClaw gateway ───────── */
+
+export interface SendImessageInput extends OutboundToolEnvelope {
+  /** Phone number, Apple ID email, or configured self-letter alias. Voice-gated. */
+  to: string;
+  /** Voice-gated. */
+  body: string;
+  /** Defaults to iMessage; SMS is only a downstream fallback hint. */
+  service?: "imessage" | "sms";
+  /** Optional conversation id for follow-ups. */
+  threadId?: string;
+}
+
+export interface SendImessageDelivered {
+  messageId: string;
+  conversationId?: string;
+  sentAt: string;
+}
+
+export type SendImessageResult = OutboundToolResult<SendImessageDelivered>;
 
 /* ───────── send_email — Resend (default) or SES (alt) ───────── */
 
@@ -181,6 +225,8 @@ export type CreateMetaCampaignResult =
 export const DEARME_OUTBOUND_TOOLS = [
   "post_x",
   "send_linkedin_dm",
+  "send_telegram_message",
+  "send_imessage",
   "send_email",
   "deploy_site",
   "create_meta_campaign",
@@ -207,6 +253,16 @@ export const DEARME_OUTBOUND_TOOL_BINDINGS: Readonly<
   send_linkedin_dm: {
     gate: "send",
     channel: "linkedin",
+    voiceGateRequired: true,
+  },
+  send_telegram_message: {
+    gate: "send",
+    channel: "telegram",
+    voiceGateRequired: true,
+  },
+  send_imessage: {
+    gate: "send",
+    channel: "imessage",
     voiceGateRequired: true,
   },
   send_email: { gate: "send", channel: "resend", voiceGateRequired: true },

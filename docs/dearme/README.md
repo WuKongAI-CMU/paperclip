@@ -39,13 +39,13 @@ If anything in this folder contradicts `INDEX.md`, `INDEX.md` wins.
 - [`packages/plugins/dearme-agent-prompts/src/state-machines/`](../../packages/plugins/dearme-agent-prompts/src/state-machines/) — 8 state machines: opportunity, meta-ads, budget-tier, dearme-cycle, mood-face-library, model-routing, sse-events, **work-loop**, **approval-gates**.
 - [`packages/plugins/dearme-openclaw/openclaw.plugin.json`](../../packages/plugins/dearme-openclaw/openclaw.plugin.json) — OpenClaw plugin manifest (config schema, skill folder, UI hints).
 - [`packages/plugins/dearme-openclaw/src/skill-generator.ts`](../../packages/plugins/dearme-openclaw/src/skill-generator.ts) — pure registry-to-SKILL.md projection.
-- [`packages/plugins/dearme-openclaw/src/tools/types.ts`](../../packages/plugins/dearme-openclaw/src/tools/types.ts) — 5 outbound tool interfaces (post_x / send_linkedin_dm / send_email / deploy_site / create_meta_campaign) + `(gate, channel, voiceGateRequired)` bindings.
+- [`packages/plugins/dearme-openclaw/src/tools/types.ts`](../../packages/plugins/dearme-openclaw/src/tools/types.ts) — 7 outbound tool interfaces (post_x / send_linkedin_dm / send_telegram_message / send_imessage / send_email / deploy_site / create_meta_campaign) + `(gate, channel, voiceGateRequired)` bindings.
 - [`packages/plugins/dearme-openclaw/generated/skills/`](../../packages/plugins/dearme-openclaw/generated/skills/) — 12 generated SKILL.md files OpenClaw loads. Do not edit by hand.
 - [`packages/shared/src/validators/dearme.ts`](../../packages/shared/src/validators/dearme.ts) — Brand OS and first-cycle preview contracts, including `autonomyPlan` and `DEARME_FIRST_CYCLE_CONCERN_GATES` for the launch-boundary-only first-run UX.
 - [`packages/dearme-ai-proxy/src/contract.ts`](../../packages/dearme-ai-proxy/src/contract.ts) — wire contract: `dm_sk_` keys, dual-protocol cost-attribution headers, agent-run shape.
 - [`packages/dearme-ai-proxy/src/functions.ts`](../../packages/dearme-ai-proxy/src/functions.ts) — 6 OpenAI native function definitions ported verbatim.
 - [`packages/dearme-ai-proxy/src/voice-gate.ts`](../../packages/dearme-ai-proxy/src/voice-gate.ts) — voice-gate scoring wire (`POST /v1/voice/score`).
-- [`packages/db/src/schema/channel_connections.ts`](../../packages/db/src/schema/channel_connections.ts) — per-user OAuth/API credentials, now with the DM-173A/DM-173B config-gated X start + PKCE callback exchange routes around active `x` rows and active `resend` rows for approved email dispatch (DM-175). Approved `post_x` publishing and approved `send_email` delivery stay behind voice-gate/approval and dispatch through server-side provider paths.
+- [`packages/db/src/schema/channel_connections.ts`](../../packages/db/src/schema/channel_connections.ts) — per-user OAuth/API credentials and channel bindings, now with the DM-173A/DM-173B config-gated X start + PKCE callback exchange routes around active `x` rows, active `resend` rows for approved email dispatch, and Telegram/iMessage gateway channel ids for OpenClaw-backed message sends (DM-175). Approved `post_x`, `send_email`, `send_telegram_message`, and `send_imessage` delivery stay behind voice-gate/approval and dispatch through the shared outbound wrapper path.
 - [`server/src/services/dearme-send-email-dispatch.ts`](../../server/src/services/dearme-send-email-dispatch.ts) — DM-174 Resend `send_email` dispatcher. It plugs into the same outbound wrapper as X, resolves the stored per-user credential through the server secret-provider registry, validates plain-text payload/expiry, calls Resend `POST /emails`, and maps provider auth failures back to reauth without customer-facing provider language.
 - [`packages/db/src/schema/opportunities.ts`](../../packages/db/src/schema/opportunities.ts) — opportunities lifecycle (DM-141).
 
@@ -63,8 +63,8 @@ Banner-marked at the top of each file: `BACKLOG.md`, `BACKLOG-PART-2.md`, `COMPA
 pnpm install
 pnpm dev                                                              # API + UI
 pnpm --filter @paperclipai/dearme-agent-prompts test                  # 25 tests (registry, state machines, work-loop, approvals)
-pnpm --filter @paperclipai/dearme-ai-proxy test                       # 6 tests (wire contract, voice-gate)
-pnpm --filter @paperclipai/dearme-openclaw test                       # 16 tests (skills, bootstrap, outbound tools)
+pnpm --filter @paperclipai/dearme-ai-proxy test                       # 10 tests (wire contract, voice-gate)
+pnpm --filter @paperclipai/dearme-openclaw test                       # 19 tests (skills, bootstrap, outbound tools)
 pnpm --filter @paperclipai/dearme-openclaw run generate-skills        # 12 SKILL.md from registry
 pnpm --filter @paperclipai/db typecheck                               # Drizzle (channel_connections, opportunities)
 ```

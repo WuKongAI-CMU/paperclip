@@ -12033,6 +12033,33 @@ Not run:
 - Full `pnpm test:run`, `pnpm -r typecheck`, and `pnpm build`; this was a
   narrow customer-facing UI slice that reuses the existing private-work route.
 
+## DM-CH-02A OpenClaw Aha Message Tool Registry - 2026-05-11
+
+Thirty-sixth verified DearMe slice:
+
+- Updated the OpenClaw outbound tool registry from 5 tools to 7 by adding
+  `send_telegram_message` and `send_imessage` as voice-gated `send` tools.
+- Reused the existing approved-next-move handoff, outbound wrapper, and
+  `openclaw_gateway` dispatch map instead of adding a parallel
+  `dearme-channel-send.ts` service.
+- Added `direct-message` as the shared voice-gate artifact kind for
+  Telegram/iMessage/other short-message sends.
+- Extended `channel_connections` channel ids with `telegram` and `imessage`,
+  while keeping the wrapper from requiring OAuth rows for these OpenClaw gateway
+  channels until a concrete per-user credential flow exists.
+- Updated the stale OpenClaw aha-shot architecture doc to reflect the shipped
+  launch handoff -> wrapper -> OpenClaw gateway path.
+
+Verification:
+
+- `pnpm --filter @paperclipai/dearme-openclaw test` passed: 1 file, 19 tests.
+- `pnpm --filter @paperclipai/dearme-ai-proxy test` passed: 1 file, 10 tests.
+- `pnpm exec vitest run server/src/services/dearme-outbound-tool-wrapper.test.ts server/src/services/dearme-openclaw-gateway-dispatch.test.ts server/src/services/dearme-approved-launch-handoff.test.ts --maxWorkers=1` passed: 3 files, 30 tests.
+- `pnpm --filter @paperclipai/dearme-openclaw typecheck` passed.
+- `pnpm --filter @paperclipai/dearme-ai-proxy typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/db typecheck` passed.
+
 ## Known Gaps
 
 - The `Process adapter missing command` blocker is fixed for newly applied Brand OS approvals, not retroactively for old smoke data.

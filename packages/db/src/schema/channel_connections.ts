@@ -1,9 +1,10 @@
 /**
  * DearMe channel_connections table — DM-175 schema slice.
  *
- * Stores per-user OAuth tokens for outbound channels (X, LinkedIn, Resend
- * for email, Meta Ads, Buffer/Hootsuite when used). DearMe never publishes
- * from a shared account; everything is the user's own OAuth.
+ * Stores per-user OAuth tokens or channel credentials for outbound channels
+ * (X, LinkedIn, Resend for email, Meta Ads, Telegram/iMessage gateway
+ * bindings, Buffer/Hootsuite when used). DearMe never publishes from a shared
+ * social account; governed sends use the user's connected channel.
  *
  * Substrate role:
  *   - Naive table-of-record. Drizzle-managed. The encrypted token blobs
@@ -42,6 +43,8 @@ export const CHANNEL_CONNECTION_CHANNELS = [
   "linkedin", // LinkedIn — write_post + send_dm
   "resend", // Email outbound via Resend (avoids Gmail CASA cost)
   "ses", // Email outbound via Amazon SES (alt to Resend)
+  "telegram", // Telegram via OpenClaw gateway
+  "imessage", // iMessage/SMS via OpenClaw gateway
   "meta_ads", // Meta Ads Manager — campaign + ad lifecycle
   "buffer", // Cross-poster (when needed for IG/threads/etc)
   "stripe", // Stripe Connect for revenue attribution (future)

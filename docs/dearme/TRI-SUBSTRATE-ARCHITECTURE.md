@@ -48,7 +48,7 @@ For every capability the product needs, exactly one substrate owns it. No overla
 | Opportunities database + Hunter.io verification | DearMe cloud | `packages/db/src/schema/opportunities.ts` (table) + cloud `/v1/opportunities/*` |
 | `dearme.app/<handle>` site host | DearMe cloud | server `/v1/site/*` |
 | Stripe billing + per-user $ caps | DearMe cloud | server `/v1/billing/*` |
-| 5 outbound publishing tools (post_x / send_linkedin_dm / send_email / deploy_site / create_meta_campaign) | DearMe (in OpenClaw plugin) | `packages/plugins/dearme-openclaw/src/tools/types.ts` |
+| 7 outbound publishing/sending tools (post_x / send_linkedin_dm / send_telegram_message / send_imessage / send_email / deploy_site / create_meta_campaign) | DearMe (in OpenClaw plugin) | `packages/plugins/dearme-openclaw/src/tools/types.ts` |
 | Tri-substrate event stream (15 SSE event types) | DearMe (cloud edge) | `packages/plugins/dearme-agent-prompts/src/state-machines/sse-events.ts` |
 | `DEARME_ROLE_REGISTRY` — single typed source of truth | DearMe | `packages/plugins/dearme-agent-prompts/src/registry.ts` |
 
@@ -298,7 +298,7 @@ The artifact kinds (`x-tweet`, `linkedin-post`, `outbound-email`, etc.) let the 
 | Cost ledger | Build cost-event pipeline | Inherited (`cost_events`) | 2 eng-weeks |
 | Plugin SDK (server-side) | Build from scratch | Inherited (Paperclip plugin SDK) | 4+ eng-weeks |
 
-**Net: ~75+ eng-weeks and $15K of audit cost avoided** by treating all three as substrates and only building the DearMe-original layer (voice fingerprint, opportunities cloud, personal site host, the 5 outbound tools, the unified SSE).
+**Net: ~75+ eng-weeks and $15K of audit cost avoided** by treating all three as substrates and only building the DearMe-original layer (voice fingerprint, opportunities cloud, personal site host, the outbound tool registry, the unified SSE).
 
 ---
 

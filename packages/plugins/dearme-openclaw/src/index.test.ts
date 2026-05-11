@@ -179,10 +179,12 @@ describe("dearme-openclaw customer-facing manifest copy", () => {
 });
 
 describe("dearme-openclaw outbound tool contract", () => {
-  it("registers exactly the 5 outbound tools the manifest declares", () => {
+  it("registers the outbound tools the manifest declares", () => {
     expect(DEARME_OUTBOUND_TOOLS).toEqual([
       "post_x",
       "send_linkedin_dm",
+      "send_telegram_message",
+      "send_imessage",
       "send_email",
       "deploy_site",
       "create_meta_campaign",
@@ -201,6 +203,8 @@ describe("dearme-openclaw outbound tool contract", () => {
   it("publish/send tools require voice gate; deploy/spend tools don't", () => {
     expect(DEARME_OUTBOUND_TOOL_BINDINGS.post_x.voiceGateRequired).toBe(true);
     expect(DEARME_OUTBOUND_TOOL_BINDINGS.send_linkedin_dm.voiceGateRequired).toBe(true);
+    expect(DEARME_OUTBOUND_TOOL_BINDINGS.send_telegram_message.voiceGateRequired).toBe(true);
+    expect(DEARME_OUTBOUND_TOOL_BINDINGS.send_imessage.voiceGateRequired).toBe(true);
     expect(DEARME_OUTBOUND_TOOL_BINDINGS.send_email.voiceGateRequired).toBe(true);
     expect(DEARME_OUTBOUND_TOOL_BINDINGS.deploy_site.voiceGateRequired).toBe(false);
     expect(DEARME_OUTBOUND_TOOL_BINDINGS.create_meta_campaign.voiceGateRequired).toBe(false);
@@ -209,6 +213,8 @@ describe("dearme-openclaw outbound tool contract", () => {
   it("each tool's gate matches its semantic intent", () => {
     expect(DEARME_OUTBOUND_TOOL_BINDINGS.post_x.gate).toBe("publish");
     expect(DEARME_OUTBOUND_TOOL_BINDINGS.send_linkedin_dm.gate).toBe("send");
+    expect(DEARME_OUTBOUND_TOOL_BINDINGS.send_telegram_message.gate).toBe("send");
+    expect(DEARME_OUTBOUND_TOOL_BINDINGS.send_imessage.gate).toBe("send");
     expect(DEARME_OUTBOUND_TOOL_BINDINGS.send_email.gate).toBe("send");
     expect(DEARME_OUTBOUND_TOOL_BINDINGS.deploy_site.gate).toBe("deploy");
     expect(DEARME_OUTBOUND_TOOL_BINDINGS.create_meta_campaign.gate).toBe("spend");

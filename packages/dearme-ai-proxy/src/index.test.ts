@@ -98,6 +98,7 @@ describe("dearme-ai-proxy contract", () => {
       "x-thread",
       "linkedin-post",
       "linkedin-dm",
+      "direct-message",
       "newsletter-issue",
       "site-bio",
       "site-page",

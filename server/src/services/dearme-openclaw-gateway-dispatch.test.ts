@@ -121,4 +121,72 @@ describe("dearme openclaw gateway dispatch", () => {
       paidUsd: undefined,
     });
   });
+
+  it("registers Telegram and iMessage as OpenClaw gateway dispatch tools", async () => {
+    const execute = vi.fn(async (ctx) => {
+      expect(ctx.agent).toMatchObject({
+        name: "DearMe telegram gateway dispatch",
+        adapterType: "openclaw_gateway",
+      });
+      expect(ctx.config).toMatchObject({
+        payloadTemplate: {
+          paperclip: {
+            dearme: {
+              toolName: "send_telegram_message",
+              channel: "telegram",
+              originalOutboundPayload: {
+                recipient: "@founder",
+                body: "The private proof packet is ready.",
+              },
+            },
+          },
+        },
+      });
+      return {
+        exitCode: 0,
+        signal: null,
+        timedOut: false,
+        sessionId: "telegram-message-1",
+        provider: "openclaw_gateway",
+        biller: "openclaw_gateway",
+        resultJson: { messageId: "telegram-message-1" },
+      };
+    });
+
+    const dispatchMap = createDearMeOpenClawGatewayDispatchMap(
+      {
+        url: "wss://gateway.example",
+        headers: { authorization: "Bearer gateway-token" },
+      },
+      { execute },
+    );
+    expect(dispatchMap.send_telegram_message).toBeDefined();
+    expect(dispatchMap.send_imessage).toBeDefined();
+
+    const result = await dispatchMap.send_telegram_message?.({
+      toolName: "send_telegram_message",
+      encryptedCredential: "",
+      payload: {
+        recipient: "@founder",
+        body: "The private proof packet is ready.",
+      },
+      dispatchContext: {
+        ...dispatchContext,
+        channel: "telegram",
+        originalPayload: {
+          recipient: "@founder",
+          body: "The private proof packet is ready.",
+        },
+      },
+    });
+
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      kind: "delivered",
+      externalId: "telegram-message-1",
+      externalUrl: undefined,
+      paid: false,
+      paidUsd: undefined,
+    });
+  });
 });

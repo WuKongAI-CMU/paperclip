@@ -130,6 +130,7 @@ const ARTIFACT_KIND_TUNING: Readonly<
   "x-thread": { lengthMin: 50, lengthMax: 5000, idealMin: 180, idealMax: 1600 },
   "linkedin-post": { lengthMin: 80, lengthMax: 3000, idealMin: 120, idealMax: 1200 },
   "linkedin-dm": { lengthMin: 30, lengthMax: 1000, idealMin: 60, idealMax: 400 },
+  "direct-message": { lengthMin: 12, lengthMax: 1200, idealMin: 40, idealMax: 420 },
   "newsletter-issue": { lengthMin: 200, lengthMax: 12000, idealMin: 600, idealMax: 3500 },
   "site-bio": { lengthMin: 30, lengthMax: 600, idealMin: 80, idealMax: 260 },
   "site-page": { lengthMin: 80, lengthMax: 5000, idealMin: 300, idealMax: 1800 },

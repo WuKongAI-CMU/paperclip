@@ -62,6 +62,36 @@ const linkedInDmLaunchHandoff = {
   },
 };
 
+const telegramLaunchHandoff = {
+  toolName: "send_telegram_message",
+  channel: "telegram",
+  gate: "send",
+  riskGate: "send_social_dm",
+  voiceGateRequired: true,
+  voiceGateArtifactKind: "direct-message",
+  voiceGateText: "Peter, the private proof packet is ready when you have a minute.",
+  voiceFingerprintId: "vf_message_1",
+  payload: {
+    recipient: "@founder",
+    body: "Peter, the private proof packet is ready when you have a minute.",
+  },
+};
+
+const imessageLaunchHandoff = {
+  toolName: "send_imessage",
+  channel: "imessage",
+  gate: "send",
+  riskGate: "send_social_dm",
+  voiceGateRequired: true,
+  voiceGateArtifactKind: "direct-message",
+  voiceGateText: "Dear me, day 1 - the team has your first proof packet ready.",
+  voiceFingerprintId: "vf_message_1",
+  payload: {
+    to: "+15555550123",
+    body: "Dear me, day 1 - the team has your first proof packet ready.",
+  },
+};
+
 const metaCampaignLaunchHandoff = {
   toolName: "create_meta_campaign",
   channel: "meta_ads",
@@ -237,6 +267,74 @@ describe("dearMeApprovedLaunchHandoffService", () => {
       voiceGateText: linkedInDmLaunchHandoff.voiceGateText,
       voiceGateArtifactKind: "linkedin-dm",
       voiceFingerprintId: "vf_linkedin_1",
+      preapprovedApprovalId: "approval-1",
+      config: { minVoiceGateScore: 92, dailyUsdCap: 5 },
+    }));
+  });
+
+  it("maps an approved Telegram handoff into an OpenClaw message outbound call", async () => {
+    const callOutbound = vi.fn(async () => ({
+      kind: "delivered" as const,
+      voiceGateScore: 95,
+      externalId: "telegram-message-1",
+    }));
+    const svc = dearMeApprovedLaunchHandoffService({ callOutbound });
+
+    const result = await svc.executeApprovedNextMove({
+      approval: approval({
+        payload: {
+          issueId: "issue-1",
+          launchHandoff: telegramLaunchHandoff,
+        },
+      }),
+      actorUserId: "user-1",
+    });
+
+    expect(result.kind).toBe("called");
+    expect(callOutbound).toHaveBeenCalledWith(expect.objectContaining({
+      toolName: "send_telegram_message",
+      companyId: "company-1",
+      userId: "user-1",
+      issueId: "issue-1",
+      agentId: "agent-1",
+      payload: telegramLaunchHandoff.payload,
+      voiceGateText: telegramLaunchHandoff.voiceGateText,
+      voiceGateArtifactKind: "direct-message",
+      voiceFingerprintId: "vf_message_1",
+      preapprovedApprovalId: "approval-1",
+      config: { minVoiceGateScore: 92, dailyUsdCap: 5 },
+    }));
+  });
+
+  it("maps an approved iMessage self-letter handoff into an OpenClaw message outbound call", async () => {
+    const callOutbound = vi.fn(async () => ({
+      kind: "delivered" as const,
+      voiceGateScore: 95,
+      externalId: "imessage-1",
+    }));
+    const svc = dearMeApprovedLaunchHandoffService({ callOutbound });
+
+    const result = await svc.executeApprovedNextMove({
+      approval: approval({
+        payload: {
+          issueId: "issue-1",
+          launchHandoff: imessageLaunchHandoff,
+        },
+      }),
+      actorUserId: "user-1",
+    });
+
+    expect(result.kind).toBe("called");
+    expect(callOutbound).toHaveBeenCalledWith(expect.objectContaining({
+      toolName: "send_imessage",
+      companyId: "company-1",
+      userId: "user-1",
+      issueId: "issue-1",
+      agentId: "agent-1",
+      payload: imessageLaunchHandoff.payload,
+      voiceGateText: imessageLaunchHandoff.voiceGateText,
+      voiceGateArtifactKind: "direct-message",
+      voiceFingerprintId: "vf_message_1",
       preapprovedApprovalId: "approval-1",
       config: { minVoiceGateScore: 92, dailyUsdCap: 5 },
     }));
