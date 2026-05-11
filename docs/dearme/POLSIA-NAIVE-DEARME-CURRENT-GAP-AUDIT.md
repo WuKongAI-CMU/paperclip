@@ -13,13 +13,14 @@ DearMe architecture docs, and the local Polsia / Naive research artifacts.
 
 DearMe is now **internal-demo ready** for the private first-five-minute loop:
 the local no-send proof is ready, the browser can show the same customer-safe
-progress stream, and the voice-fit lane can pass against a customer-like local
-corpus.
+progress stream, the aha proof can export a phone-ready static private-site
+artifact, and the voice-fit lane can pass against a customer-like local corpus.
 
 DearMe is **not paid-beta launch ready** yet. The missing part is no longer a
 planning/permission problem; it is live customer proof:
 
-- a phone-reachable `dearme.app/<handle>` production host smoke
+- a hosted phone-reachable `dearme.app/<handle>` production smoke using the
+  exported private-site artifact
 - at least one real external channel/provider smoke
 - a phone-reachable recurring proof that shows DearMe keeps improving the next
   private draft, opportunity, and proof page without the coordinator manually
@@ -110,15 +111,15 @@ But DearMe is not yet at Polsia's full customer-visible product maturity.
 Polsia's advantage is the first five minutes: near-zero friction, immediate
 dashboard, visible thinking stream, mood/progress updates, first report, starter
 tasks, and a live asset. DearMe now has the browser-visible first-five-minute
-progress stream over its private proof contract, but it still needs
-phone-reachable/live proof and provider-backed execution before it matches
-Polsia's demo strength.
+progress stream and a static private-site export over its private proof
+contract, but it still needs that artifact served from a real phone-reachable
+host plus provider-backed execution before it matches Polsia's demo strength.
 
 DearMe is closer to Naive/Paperclip on substrate than it is to Polsia on
 first-wow. The control-plane reuse is strong. The first-five-minute private
-contract is runnable and visible in the browser, and the local voice proof now
-requires customer-like corpus evidence. The external/live provider lane is not
-yet strong enough.
+contract is runnable, visible in the browser, and exportable as a host-smoke
+artifact, and the local voice proof now requires customer-like corpus evidence.
+The external/live provider lane is not yet strong enough.
 
 ## Current Maturity
 
@@ -126,9 +127,9 @@ yet strong enough.
 | --- | ---: | --- |
 | Substrate/control plane reuse | 82 / 100 | Strong. DearMe is using the Paperclip-style company, issue, approval, route, service, dispatch, handoff, and proof machinery instead of rebuilding it. |
 | DearMe product semantics | 76 / 100 | Good. Brand OS, voice, portfolio, opportunity, reports, Work Ready, launch gates, review memory, and customer-corpus voice proof are now DearMe-owned concepts. |
-| UX simplicity | 66 / 100 | Improving. The browser now shows one-sentence-to-first-five-minute progress, but onboarding is still heavier than Polsia's one-input activation. |
-| Autonomous runtime proof | 66 / 100 | Real but not externally proven. Local safe proof, private aha proof, browser-visible progress, customer-corpus voice proof, and recurring private-work contract are ready; live provider proof remains open. |
-| Polsia-style first-wow | 68 / 100 | Private proof is runnable and watchable, and voice-fit evidence is stronger. The missing main moment is phone-reachable/live proof plus provider-backed execution. |
+| UX simplicity | 67 / 100 | Improving. The browser now shows one-sentence-to-first-five-minute progress and the proof can become a static private site, but onboarding is still heavier than Polsia's one-input activation. |
+| Autonomous runtime proof | 68 / 100 | Real but not externally proven. Local safe proof, private aha proof, browser-visible progress, static private-site export, customer-corpus voice proof, and recurring private-work contract are ready; live provider proof remains open. |
+| Polsia-style first-wow | 70 / 100 | Private proof is runnable, watchable, and exportable as a phone-ready artifact. The missing main moment is serving it from a real host plus provider-backed execution. |
 | Naive-style durable team runtime | 78 / 100 | Solid substrate fit. Symphony/worktree coordination is clean and the Paperclip-style runtime is reused; the recurring private-work contract is now visible, but live provider smoke is still missing. |
 
 ## What DearMe Has Actually Done
@@ -151,6 +152,8 @@ DearMe has already built the product/kernel split correctly:
   `pnpm dearme:voice-smoke` now give the coordinator a private-first-wow,
   no-send / voice / live-provider readiness map. The voice lane can require a
   customer-like local corpus and now reports profile sample/token evidence.
+  `pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof` gives the
+  host lane a concrete artifact without claiming production hosting is live.
 - Coordination: Symphony is the active worker lane, and current worktree status
   is visible through `pnpm dearme:worktrees`.
 
@@ -177,10 +180,10 @@ DearMe has copied the doctrine, but not the full watchable moment.
 | --- | --- | --- |
 | Zero-friction signup and one-input start | DearMe has structured onboarding and Brand OS inputs, but not Polsia-level one-textarea activation. | Simplify. One sentence should start private work. |
 | Work starts immediately | DearMe has first-cycle start routes, proof sequence contracts, and a browser-visible first-five-minute progress stream. | Better. Next proof is real live/provider progress, not another dashboard. |
-| 90-second wow | `pnpm dearme:aha-proof -- --check` proves the local private sequence, and the browser now shows the customer-safe progress sequence. | Partly proven. The remaining gap is phone-reachable/live proof. |
+| 90-second wow | `pnpm dearme:aha-proof -- --check` proves the local private sequence, the browser shows the customer-safe progress sequence, and `--export-site` renders the same packet as a static private site. | Partly proven. The remaining gap is serving the artifact from a real phone-reachable host and backing it with live provider proof. |
 | 5-minute complete dashboard | DearMe has many dashboard surfaces. | The pieces exist; the activation sequence does not feel as compressed. |
 | Mood/thinking/tool stream | DearMe has SSE/event contracts, workbench events, and a top-focus customer-safe private-pass pulse. | Projection exists. It still needs a richer live asset and recurring loop. |
-| Public/live proof | DearMe intentionally gates public deploy/send/spend. | Correct for reputation safety; the substitute must be private proof that feels live. |
+| Public/live proof | DearMe intentionally gates public deploy/send/spend and now has a static private-site export for the host lane. | Correct for reputation safety; the substitute must be private proof that is phone-reachable and feels live. |
 
 Polsia should still be the model for user feeling. DearMe should not copy
 Polsia's company-factory frame or direct external action posture.
@@ -222,10 +225,12 @@ dashboard.
 The remaining gaps are not permission gaps. They are proof and product-shaping
 gaps.
 
-The operator can run tools, merge slices, and configure lanes. That does not
-make the product automatically feel autonomous to a new user. A customer will
-judge DearMe by whether it produces a personal-brand result in minutes, not by
-whether the repo has a correct proof command or a strong control plane.
+The operator can run tools, merge slices, configure lanes, and add Codex agents.
+That removes coordination hesitation; it does not fabricate a production host,
+provider credentials, real recipients, or a product moment that a user can feel.
+A customer will judge DearMe by whether it produces a personal-brand result in
+minutes, not by whether the repo has a correct proof command or a strong control
+plane.
 
 So the correct posture is:
 
@@ -257,9 +262,11 @@ declare the product done just because the substrate is strong.
 
 ### DM-WOW-1 First Five-Minute Private Wow Loop
 
-The local proof gate now exists through `pnpm dearme:aha-proof -- --check`. The
-next product step is to make the same path customer-watchable: one sentence
-should reach a useful private result within five minutes:
+The local proof gate now exists through `pnpm dearme:aha-proof -- --check`, and
+the host-smoke artifact exists through
+`pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof`. The next
+no-credential product step is to deepen the same packet into a five-draft
+private result, then serve that artifact from a real host:
 
 - voice profile
 - audience map
@@ -268,8 +275,9 @@ should reach a useful private result within five minutes:
 - private site/proof card
 - one clear launch call
 
-No live external sends are required. The result can be private. The user must
-feel the team started.
+No live external sends are required for the five-draft packet. The result can be
+private. The user must feel the team started. After that, the same artifact
+should be hosted at a phone-reachable route before adding another dashboard.
 
 ### DM-WOW-2 Customer-Safe Live Work Stream
 
@@ -285,9 +293,9 @@ leaking runtime machinery:
 - "Preparing your private proof"
 - "Ready for your launch call"
 
-This is the Polsia live-stream lesson translated into DearMe language.
-The remaining work is deeper live/provider evidence and phone-reachable proof,
-not a new settings dashboard.
+This is the Polsia live-stream lesson translated into DearMe language. The
+remaining work is deeper live/provider evidence and real-host phone-reachable
+proof, not a new settings dashboard.
 
 ### DM-WOW-3 Minimum Runnable Team
 
@@ -329,7 +337,8 @@ reuse generated skills and role prompts.
 
 DearMe is architecturally ahead of a normal prototype and now has a local
 private first-wow proof gate plus a browser-visible first-five-minute progress
-stream. It is still behind Polsia as a live customer demo.
+stream and a static private-site export. It is still behind Polsia as a live
+customer demo.
 
 It is strongest where Naive is strongest: typed work, approvals, route/service
 shape, dispatch boundaries, and durable coordination. It is weakest where
@@ -338,5 +347,6 @@ customer right now, backed by a live asset the user can inspect from outside the
 app.
 
 The next correct move is not another architecture layer. It is to deepen the
-watchable first-five-minute loop into phone-reachable/live proof and recurring
-customer-visible team work on top of the proof gate that now exists.
+watchable first-five-minute loop into a five-draft private proof packet, then
+serve that same packet from a phone-reachable host with live provider evidence
+on top of the proof gate that now exists.
