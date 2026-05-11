@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dearMeOutputItemSchema, type DearMeOutputItem } from "@paperclipai/shared";
+import { DEARME_NEXT_MOVE_DELIVERY_ACTIVITY } from "../services/dearme-approval-receipts.js";
 import {
   dearmeWorkbenchProgressFromActivity,
   dearMeWorkbenchProjectionOutput,
@@ -162,5 +163,69 @@ describe("DearMe workbench projection helpers", () => {
     }));
     expect(JSON.stringify(projected)).not.toMatch(HIDDEN_SUBSTRATE_PATTERN);
     expect(JSON.stringify(projected)).not.toMatch(/execution handoff|launch queue/i);
+  });
+
+  it("projects delivered next-move receipts through the delivery progress item", () => {
+    const projected = dearmeWorkbenchProgressFromActivity({
+      id: "activity-delivery",
+      action: DEARME_NEXT_MOVE_DELIVERY_ACTIVITY,
+      entityId: "approval-1",
+      details: {
+        approvalId: "approval-1",
+        issueId: "issue-1",
+        issueIdentifier: "PET-8",
+        outputId: "issue-1:content_drafts",
+        outputKind: "content_drafts",
+        riskGate: "publish_social",
+        deliveryStatus: "delivered",
+        deliveryExternalId: "tweet-1",
+        deliveryExternalUrl: "https://x.com/tester/status/tweet-1",
+        deliveryTitle: "Approved next step delivered",
+        deliverySummary: "Delivery: delivered. External action: completed. Next: Review the delivered X result or continue with the next approved step.",
+        nextStep: "Review the delivered X result or continue with the next approved step.",
+      },
+      createdAt: new Date("2026-05-08T12:10:00.000Z"),
+    });
+
+    expect(projected).toEqual(expect.objectContaining({
+      kind: "next_move_delivery_recorded",
+      title: "Approved next step delivered",
+      summary: expect.stringContaining("Review the delivered X result or continue with the next approved step."),
+      deliveryStatus: "delivered",
+      deliveryExternalId: "tweet-1",
+      deliveryExternalUrl: "https://x.com/tester/status/tweet-1",
+      nextStep: "Review the delivered X result or continue with the next approved step.",
+    }));
+    expect(JSON.stringify(projected)).not.toMatch(HIDDEN_SUBSTRATE_PATTERN);
+    expect(JSON.stringify(projected)).not.toMatch(/launch queue|needs_oauth/i);
+  });
+
+  it("projects connection-needed receipts without leaking the raw outcome code", () => {
+    const projected = dearmeWorkbenchProgressFromActivity({
+      id: "activity-delivery-connection",
+      action: DEARME_NEXT_MOVE_DELIVERY_ACTIVITY,
+      entityId: "approval-1",
+      details: {
+        approvalId: "approval-1",
+        issueId: "issue-1",
+        issueIdentifier: "PET-8",
+        outputId: "issue-1:content_drafts",
+        outputKind: "content_drafts",
+        riskGate: "publish_social",
+        deliveryStatus: "needs_channel_connection",
+        deliveryTitle: "Approved next step needs connection",
+        deliverySummary: "Delivery: needs connection. External action: not completed. Next: Connect X before DearMe can continue this approved next step.",
+        nextStep: "Connect X before DearMe can continue this approved next step.",
+      },
+      createdAt: new Date("2026-05-08T12:12:00.000Z"),
+    });
+
+    expect(projected).toEqual(expect.objectContaining({
+      kind: "next_move_delivery_recorded",
+      title: "Approved next step needs connection",
+      deliveryStatus: "needs_channel_connection",
+      nextStep: "Connect X before DearMe can continue this approved next step.",
+    }));
+    expect(JSON.stringify(projected)).not.toMatch(/needs_oauth|connect_channel_required/i);
   });
 });

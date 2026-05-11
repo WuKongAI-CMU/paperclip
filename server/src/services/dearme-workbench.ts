@@ -42,6 +42,7 @@ import {
 import {
   DEARME_NEXT_MOVE_APPROVAL_TYPE,
   DEARME_NEXT_MOVE_APPROVED_ACTIVITY,
+  DEARME_NEXT_MOVE_DELIVERY_ACTIVITY,
   DEARME_PRIVATE_EXECUTION_HANDOFF_ACTIVITY,
 } from "./dearme-approval-receipts.js";
 
@@ -68,6 +69,12 @@ type DearMeCyclePacketEvidence = {
   reportSummary: string;
   nextAction: string;
 };
+type DearMeNextMoveDeliveryStatus =
+  | "delivered"
+  | "needs_channel_connection"
+  | "pending"
+  | "rejected"
+  | "errored";
 
 export const SHARED_LAUNCH_READY_NEXT_STEP =
   "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.";
@@ -693,6 +700,9 @@ function actionForProgress(item: DearMeWorkbenchProgressItem): DearMeWorkEventAc
   if (item.kind === "brand_os_requested" || item.kind === "brand_os_applied") return "plan";
   if (item.kind === "next_move_approved") return "approve";
   if (item.kind === "execution_handoff_prepared") return "handoff";
+  if (item.kind === "next_move_delivery_recorded") {
+    return item.deliveryStatus === "delivered" ? "handoff" : "report";
+  }
   if (item.kind === "paid_beta") return "prepare";
   return "report";
 }
@@ -766,9 +776,20 @@ function streamKindForProgress(item: DearMeWorkbenchProgressItem): DearMeStreamK
   return "progress_recorded";
 }
 
+function deliveryStatusFromPayload(value: unknown): DearMeNextMoveDeliveryStatus | null {
+  return value === "delivered" ||
+    value === "needs_channel_connection" ||
+    value === "pending" ||
+    value === "rejected" ||
+    value === "errored"
+    ? value
+    : null;
+}
+
 function cycleStageForProgress(item: DearMeWorkbenchProgressItem): DearMeCycleStage {
   if (item.kind === "next_move_approved") return "review";
   if (item.kind === "execution_handoff_prepared") return "work";
+  if (item.kind === "next_move_delivery_recorded") return "work";
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "learn";
   if (item.kind === "brand_os_requested" || item.kind === "brand_os_applied") return "plan";
   if (item.kind === "paid_beta") return "plan";
@@ -779,6 +800,7 @@ function cycleStageForProgress(item: DearMeWorkbenchProgressItem): DearMeCycleSt
 function sourceLabelForProgress(item: DearMeWorkbenchProgressItem) {
   if (item.kind === "next_move_approved") return "Launch receipt";
   if (item.kind === "execution_handoff_prepared") return "Launch brief";
+  if (item.kind === "next_move_delivery_recorded") return "Delivery receipt";
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "Voice & Memory";
   if (item.kind === "brand_os_requested" || item.kind === "brand_os_applied") return "Brand OS";
   if (item.kind === "paid_beta") return "Paid beta access";
@@ -790,6 +812,13 @@ function sourceLabelForProgress(item: DearMeWorkbenchProgressItem) {
 function costImpactForProgress(item: DearMeWorkbenchProgressItem) {
   if (item.kind === "next_move_approved") return "No external action has run";
   if (item.kind === "execution_handoff_prepared") return "No external action has run";
+  if (item.kind === "next_move_delivery_recorded") {
+    if (item.deliveryStatus === "delivered") return "Approved next step delivered";
+    if (item.deliveryStatus === "needs_channel_connection") return "Channel connection needed";
+    if (item.deliveryStatus === "pending") return "External action still pending";
+    if (item.deliveryStatus === "rejected") return "Delivery needs a new decision";
+    return "Delivery failed safely";
+  }
   if (item.kind === "paid_beta") return "Paid-beta credit recorded";
   if (item.kind === "brand_os_applied") return "Work stays inside paid-beta guardrails";
   if (item.kind === "spend_checkpoint") return "Private spend recorded";
@@ -807,6 +836,7 @@ function artifactForProgress(item: DearMeWorkbenchProgressItem) {
   if (item.outputKind) return OUTPUT_KIND_ARTIFACT_LABELS[item.outputKind];
   if (item.kind === "next_move_approved") return "Approved next move";
   if (item.kind === "execution_handoff_prepared") return "Launch-ready brief";
+  if (item.kind === "next_move_delivery_recorded") return "Delivery receipt";
   if (item.kind === "brand_os_applied") return "Growth team";
   if (item.kind === "cycle_check_in") return "Cycle check-in";
   if (item.kind === "spend_checkpoint") return "Spend checkpoint";
@@ -825,6 +855,36 @@ function nextActionForProgress(item: DearMeWorkbenchProgressItem) {
       );
     }
     return item.nextStep ?? "DearMe prepared the launch-ready brief; nothing external runs until the governed next move is ready.";
+  }
+  if (item.kind === "next_move_delivery_recorded") {
+    if (item.deliveryStatus === "delivered") {
+      return (
+        item.nextStep ??
+        "DearMe recorded the delivery receipt; review the result or continue with the next approved step."
+      );
+    }
+    if (item.deliveryStatus === "needs_channel_connection") {
+      return (
+        item.nextStep ??
+        "Connect the channel before DearMe can continue this approved next step."
+      );
+    }
+    if (item.deliveryStatus === "pending") {
+      return (
+        item.nextStep ??
+        "DearMe is waiting for the channel to finish this approved next step."
+      );
+    }
+    if (item.deliveryStatus === "rejected") {
+      return (
+        item.nextStep ??
+        "Review the approved next step and choose a new direction before retrying."
+      );
+    }
+    return (
+      item.nextStep ??
+      "Review the safe failure and retry after the connection is fixed."
+    );
   }
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") {
     return "No approval needed; DearMe will use this source in the next private cycle.";
@@ -1909,6 +1969,34 @@ export function dearmeWorkbenchProgressFromActivity(input: {
           ? details.executionReadiness
           : null,
       nextStep: dearMeWorkbenchProjectionOptionalText(optionalPayloadString(details.handoffNextStep)),
+      createdAt: toIso(input.createdAt),
+    };
+  }
+
+  if (input.action === DEARME_NEXT_MOVE_DELIVERY_ACTIVITY) {
+    const deliveryStatus = deliveryStatusFromPayload(details.deliveryStatus);
+
+    return {
+      id: input.id,
+      kind: "next_move_delivery_recorded",
+      title: dearMeWorkbenchProjectionTitle(
+        optionalPayloadString(details.deliveryTitle),
+        "Approved next step delivered",
+      ),
+      summary: dearMeWorkbenchProjectionText(
+        optionalPayloadString(details.deliverySummary),
+        "DearMe recorded the delivery receipt for the approved next step.",
+      ),
+      outputKind: outputKindFromPayload(details.outputKind),
+      outputId: optionalPayloadString(details.outputId),
+      riskGate: riskGateFromPayload(details.riskGate),
+      approvalId: optionalPayloadString(details.approvalId) ?? input.entityId,
+      issueId: optionalPayloadString(details.issueId),
+      issueIdentifier: optionalPayloadString(details.issueIdentifier),
+      deliveryStatus,
+      deliveryExternalId: optionalPayloadString(details.deliveryExternalId),
+      deliveryExternalUrl: optionalPayloadString(details.deliveryExternalUrl),
+      nextStep: dearMeWorkbenchProjectionOptionalText(optionalPayloadString(details.nextStep)),
       createdAt: toIso(input.createdAt),
     };
   }

@@ -160,9 +160,17 @@ export const DEARME_WORKBENCH_PROGRESS_KINDS = [
   "brand_os_applied",
   "next_move_approved",
   "execution_handoff_prepared",
+  "next_move_delivery_recorded",
   "team_progress",
   "cycle_check_in",
   "spend_checkpoint",
+] as const;
+export const DEARME_NEXT_MOVE_DELIVERY_STATUSES = [
+  "delivered",
+  "needs_channel_connection",
+  "pending",
+  "rejected",
+  "errored",
 ] as const;
 export const DEARME_WORKBENCH_EXECUTION_READINESS = [
   "private_handoff_ready",
@@ -1075,6 +1083,9 @@ export const dearMeWorkbenchProgressItemSchema = z.object({
   issueId: z.string().min(1).nullable().optional(),
   issueIdentifier: z.string().nullable().optional(),
   executionReadiness: z.enum(DEARME_WORKBENCH_EXECUTION_READINESS).nullable().optional(),
+  deliveryStatus: z.enum(DEARME_NEXT_MOVE_DELIVERY_STATUSES).nullable().optional(),
+  deliveryExternalId: z.string().min(1).nullable().optional(),
+  deliveryExternalUrl: z.string().url().nullable().optional(),
   nextStep: mediumTextSchema.nullable().optional(),
   createdAt: z.string().datetime(),
 }).strict();

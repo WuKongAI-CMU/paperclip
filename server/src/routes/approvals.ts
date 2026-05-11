@@ -18,6 +18,7 @@ import {
 } from "../services/index.js";
 import {
   DEARME_NEXT_MOVE_APPROVAL_TYPE,
+  recordDearMeNextMoveDeliveryReceipt,
   recordDearMeNextMoveApprovalReceipt,
 } from "../services/dearme-approval-receipts.js";
 import {
@@ -192,10 +193,18 @@ export function approvalRoutes(
           linkedIssueIds,
         });
         if (!handoffDetails?.paused) {
-          await launchHandoffService.executeApprovedNextMove({
+          const launchOutcome = await launchHandoffService.executeApprovedNextMove({
             approval,
             actorUserId: decidedByUserId,
           });
+          if (launchOutcome.kind === "called") {
+            await recordDearMeNextMoveDeliveryReceipt(db, {
+              approval,
+              actorUserId: decidedByUserId,
+              linkedIssueIds,
+              outcome: launchOutcome.outcome,
+            });
+          }
         }
         if (approval.requestedByAgentId && !handoffDetails?.paused) {
           try {

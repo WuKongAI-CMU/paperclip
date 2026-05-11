@@ -29,6 +29,7 @@ const mockSecretService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 const mockRecordDearMeNextMoveApprovalReceipt = vi.hoisted(() => vi.fn());
+const mockRecordDearMeNextMoveDeliveryReceipt = vi.hoisted(() => vi.fn());
 
 function registerModuleMocks() {
   vi.doMock("../services/index.js", () => ({
@@ -42,6 +43,7 @@ function registerModuleMocks() {
     DEARME_NEXT_MOVE_APPROVAL_TYPE: "dearme_output_next_move",
     hasDearMePauseIntent: vi.fn(() => false),
     recordDearMeNextMoveApprovalReceipt: mockRecordDearMeNextMoveApprovalReceipt,
+    recordDearMeNextMoveDeliveryReceipt: mockRecordDearMeNextMoveDeliveryReceipt,
   }));
 }
 
@@ -118,10 +120,12 @@ describe("approval routes idempotent retries", () => {
     mockSecretService.normalizeHireApprovalPayloadForPersistence.mockReset();
     mockLogActivity.mockReset();
     mockRecordDearMeNextMoveApprovalReceipt.mockReset();
+    mockRecordDearMeNextMoveDeliveryReceipt.mockReset();
     mockHeartbeatService.wakeup.mockResolvedValue({ id: "wake-1" });
     mockIssueApprovalService.listIssuesForApproval.mockResolvedValue([{ id: "issue-1" }]);
     mockLogActivity.mockResolvedValue(undefined);
     mockRecordDearMeNextMoveApprovalReceipt.mockResolvedValue({ paused: false });
+    mockRecordDearMeNextMoveDeliveryReceipt.mockResolvedValue({ deliveryStatus: "delivered" });
   });
 
   it("does not emit duplicate approval side effects when approve is already resolved", async () => {
@@ -230,6 +234,18 @@ describe("approval routes idempotent retries", () => {
       approval,
       actorUserId: "user-1",
     });
+    expect(mockRecordDearMeNextMoveDeliveryReceipt).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        approval,
+        actorUserId: "user-1",
+        linkedIssueIds: ["issue-1"],
+        outcome: expect.objectContaining({
+          kind: "delivered",
+          externalId: "tweet-1",
+        }),
+      }),
+    );
   });
 
   it("skips downstream launch and requester wakeup when a DearMe next move is paused", async () => {

@@ -5720,4 +5720,63 @@ describe("DearMeOnboarding", () => {
       root.unmount();
     });
   });
+
+  it("surfaces a delivered next-move receipt with a safe external reference", async () => {
+    const response = workbenchResponse();
+    response.recentProgress = [
+      {
+        id: "activity-delivery",
+        kind: "next_move_delivery_recorded",
+        title: "Approved next step delivered",
+        summary: "DearMe delivered the approved X step and recorded the receipt.",
+        outputKind: "content_drafts",
+        outputId: "issue-2:content_drafts",
+        riskGate: "publish_social",
+        approvalId: "approval-publish",
+        issueId: "issue-2",
+        issueIdentifier: "PET-8",
+        deliveryStatus: "delivered",
+        deliveryExternalId: "tweet-1",
+        deliveryExternalUrl: "https://x.com/tester/status/tweet-1",
+        nextStep: "Review the delivered X result or continue with the next approved step.",
+        createdAt: "2026-05-07T14:06:00.000Z",
+      },
+      ...response.recentProgress,
+    ];
+    mockDearmeApi.getWorkbench.mockResolvedValue(response);
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const handoffPanel = surfaceByLabel(container, "Delivery receipt delivered");
+    expect(handoffPanel.textContent).toContain("Approved next step delivered");
+    expect(handoffPanel.textContent).toContain("Delivered");
+    expect(handoffPanel.textContent).toContain("Reference tweet-1");
+    expect(handoffPanel.textContent).toContain("Open result");
+    expect(handoffPanel.textContent).toContain("Review the delivered X result or continue with the next approved step.");
+    expectNoHiddenProductTerms(handoffPanel.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.orchestrationName,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+      HIDDEN_PRODUCT_TERMS.modelName,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+      HIDDEN_PRODUCT_TERMS.workbenchName,
+      HIDDEN_PRODUCT_TERMS.workspaceName,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
 });

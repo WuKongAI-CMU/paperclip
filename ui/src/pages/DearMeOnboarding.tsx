@@ -2035,28 +2035,79 @@ function PrivateExecutionHandoffPanel({
   const issueReference = handoff.issueIdentifier ?? handoff.issueId ?? null;
   const artifact = handoff.outputKind ? OUTPUT_KIND_LABELS[handoff.outputKind] : "Prepared move";
   const summary = customerProofPackSummary(handoff.summary);
+  const isDeliveryReceipt = handoff.kind === "next_move_delivery_recorded";
   const isPaused = handoff.executionReadiness === "private_handoff_paused";
-  const statusLabel = isPaused ? "Paused" : "Ready";
-  const ariaLabel = isPaused ? "Launch-ready next step paused" : "Launch-ready next step ready";
+  const deliveryStatus = isDeliveryReceipt ? handoff.deliveryStatus : null;
+  const statusLabel = isDeliveryReceipt
+    ? deliveryStatus === "delivered"
+      ? "Delivered"
+      : deliveryStatus === "needs_channel_connection"
+        ? "Needs connection"
+        : deliveryStatus === "pending"
+          ? "Pending"
+          : deliveryStatus === "rejected"
+            ? "Needs new decision"
+            : "Failed safely"
+    : isPaused
+      ? "Paused"
+      : "Ready";
+  const ariaLabel = isDeliveryReceipt
+    ? `Delivery receipt ${statusLabel.toLowerCase()}`
+    : isPaused
+      ? "Launch-ready next step paused"
+      : "Launch-ready next step ready";
   const nextStep = handoff.nextStep
     ? customerProofPackSummary(handoff.nextStep)
-    : "DearMe prepared the launch-ready brief. Nothing public or external runs until the next governed move is ready.";
+    : isDeliveryReceipt
+      ? "DearMe recorded the delivery receipt for the approved next step."
+      : "DearMe prepared the launch-ready brief. Nothing public or external runs until the next governed move is ready.";
+  const externalUrl = isDeliveryReceipt && handoff.deliveryStatus === "delivered" ? handoff.deliveryExternalUrl ?? null : null;
+  const externalId = isDeliveryReceipt && handoff.deliveryStatus === "delivered" ? handoff.deliveryExternalId ?? null : null;
+  const trailingVariant = isDeliveryReceipt
+    ? deliveryStatus === "delivered"
+      ? "default"
+      : deliveryStatus === "rejected" || deliveryStatus === "errored"
+        ? "destructive"
+        : "secondary"
+    : isPaused
+      ? "destructive"
+      : "secondary";
 
   return (
     <DearMeFocusSurface aria-label={ariaLabel} className="space-y-4">
       <DearMeWorkbenchSectionHeader
         icon={ShieldCheck}
-        eyebrow="Launch-ready next step"
+        eyebrow={isDeliveryReceipt ? "Delivery receipt" : "Launch-ready next step"}
         title={customerProofPackSummary(handoff.title)}
         description={summary}
         trailing={
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={isPaused ? "destructive" : "secondary"}>{statusLabel}</Badge>
-            <Badge variant="secondary">External action not run</Badge>
+            <Badge variant={trailingVariant}>{statusLabel}</Badge>
+            <Badge variant="secondary">
+              {isDeliveryReceipt && deliveryStatus === "delivered" ? "External action completed" : "External action not run"}
+            </Badge>
             <Badge variant="outline">{artifact}</Badge>
           </div>
         }
       />
+      {isDeliveryReceipt && deliveryStatus === "delivered" && (externalId || externalUrl) ? (
+        <div className="rounded-md border border-primary/20 bg-background/80 p-3">
+          <p className="text-xs font-medium uppercase text-muted-foreground">Result</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {externalId ? <Badge variant="outline">Reference {externalId}</Badge> : null}
+            {externalUrl ? (
+              <a
+                href={externalUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Open result
+              </a>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div className="rounded-md border border-primary/20 bg-background/80 p-3">
           <p className="text-xs font-medium uppercase text-muted-foreground">Next</p>
@@ -5944,9 +5995,10 @@ function TeamWorkbenchPanel({
   const sourceReviews = workbench.memory.sourceReviewQueue.slice(0, 3);
   const liveStream = workbench.workStream.slice(0, 6);
   const privateExecutionHandoff = workbench.recentProgress.find((item) =>
-    item.kind === "execution_handoff_prepared" &&
-    (item.executionReadiness === "private_handoff_ready" ||
-      item.executionReadiness === "private_handoff_paused"),
+    item.kind === "next_move_delivery_recorded" ||
+    (item.kind === "execution_handoff_prepared" &&
+      (item.executionReadiness === "private_handoff_ready" ||
+        item.executionReadiness === "private_handoff_paused")),
   ) ?? null;
   const visibleRunLedger = memoryArchiveMutation.data
     ? workbench.runLedger.filter((entry) => entry.id !== `ledger:memory:${memoryArchiveMutation.data.memoryId}`)

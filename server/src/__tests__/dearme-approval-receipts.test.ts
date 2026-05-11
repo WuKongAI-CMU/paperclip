@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DEARME_NEXT_MOVE_APPROVAL_TYPE,
   DEARME_NEXT_MOVE_APPROVED_ACTIVITY,
+  DEARME_NEXT_MOVE_DELIVERY_ACTIVITY,
   DEARME_PRIVATE_EXECUTION_HANDOFF_ACTIVITY,
   recordDearMeNextMoveApprovalReceipt,
+  recordDearMeNextMoveDeliveryReceipt,
 } from "../services/dearme-approval-receipts.js";
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
@@ -290,5 +292,167 @@ describe("recordDearMeNextMoveApprovalReceipt", () => {
     expect(result).toBeNull();
     expect(mockLogActivity).not.toHaveBeenCalled();
     expect(insert).not.toHaveBeenCalled();
+  });
+});
+
+describe("recordDearMeNextMoveDeliveryReceipt", () => {
+  beforeEach(() => {
+    mockLogActivity.mockReset();
+    mockLogActivity.mockResolvedValue(undefined);
+  });
+
+  it("records a delivered launch receipt with a stable external reference", async () => {
+    const { db, insert, values } = makeDb();
+    const approval = makeApproval({
+      payload: {
+        ...makeApproval().payload,
+        launchHandoff: {
+          channel: "x",
+          publishGate: {
+            connectChannelState: "connect_channel_required",
+          },
+        },
+      },
+    });
+
+    const result = await recordDearMeNextMoveDeliveryReceipt(db, {
+      approval,
+      actorUserId: "user-1",
+      linkedIssueIds: ["issue-1"],
+      outcome: {
+        kind: "delivered",
+        voiceGateScore: 96,
+        externalId: "tweet-1",
+        externalUrl: "https://x.com/tester/status/tweet-1",
+      },
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      deliveryStatus: "delivered",
+      deliveryExternalId: "tweet-1",
+      deliveryExternalUrl: "https://x.com/tester/status/tweet-1",
+      deliveryTitle: "Approved next step delivered",
+      nextStep: "Review the delivered X result or continue with the next approved step.",
+    }));
+    expect(mockLogActivity).toHaveBeenCalledTimes(1);
+    expect(mockLogActivity).toHaveBeenCalledWith(db, expect.objectContaining({
+      action: DEARME_NEXT_MOVE_DELIVERY_ACTIVITY,
+      details: expect.objectContaining({
+        deliveryStatus: "delivered",
+        deliveryExternalId: "tweet-1",
+        deliveryExternalUrl: "https://x.com/tester/status/tweet-1",
+      }),
+    }));
+
+    expect(insert).toHaveBeenCalledTimes(1);
+    const commentRows = values.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+    expect(commentRows).toHaveLength(1);
+    expect(commentRows[0]).toEqual(expect.objectContaining({
+      body: expect.stringContaining("DearMe delivery receipt: approved next step delivered."),
+    }));
+  });
+
+  it("records a safe needs-connection delivery receipt without leaking internal codes", async () => {
+    const { db, values } = makeDb();
+    const approval = makeApproval({
+      payload: {
+        ...makeApproval().payload,
+        launchHandoff: {
+          channel: "x",
+          publishGate: {
+            connectChannelState: "connect_channel_required",
+          },
+        },
+      },
+    });
+
+    const result = await recordDearMeNextMoveDeliveryReceipt(db, {
+      approval,
+      actorUserId: "user-1",
+      linkedIssueIds: ["issue-1"],
+      outcome: {
+        kind: "needs_oauth",
+        channel: "x",
+        gate: "connect_channel",
+        reason: "missing credential",
+        message: "Connect X before DearMe can continue this approved next step.",
+      },
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      deliveryStatus: "needs_channel_connection",
+      deliveryExternalId: null,
+      deliveryExternalUrl: null,
+      deliveryTitle: "Approved next step needs connection",
+      nextStep: "Connect X before DearMe can continue this approved next step.",
+    }));
+    const serializedResult = JSON.stringify(result).toLowerCase();
+    const commentRows = values.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+    const serializedComments = commentRows.map((row) => row.body).join("\n").toLowerCase();
+
+    expect(serializedResult).not.toContain("needs_oauth");
+    expect(serializedComments).not.toContain("needs_oauth");
+    expect(serializedComments).not.toContain("needs_channel_connection");
+    expect(serializedComments).not.toContain("connect_channel");
+    expect(serializedComments).not.toContain("missing credential");
+    expect(serializedComments).toContain("status: needs connection");
+    expect(serializedComments).toContain("connect x before dearme can continue this approved next step.");
+  });
+
+  it("keeps pending, rejected, and failed delivery comments customer-safe", async () => {
+    const cases = [
+      {
+        name: "pending",
+        outcome: {
+          kind: "pending",
+          approvalId: "approval-1",
+          reason: "openclaw_gateway queue pending inside provider runtime",
+        },
+        expectedStatus: "status: pending",
+        expectedNext: "waiting for the channel to finish",
+        hiddenTerms: ["openclaw_gateway", "provider", "runtime"],
+      },
+      {
+        name: "rejected",
+        outcome: {
+          kind: "rejected",
+          reason: "no-dispatcher-registered inside adapter route",
+          gate: "internal_adapter_gate",
+        },
+        expectedStatus: "status: needs a new decision",
+        expectedNext: "choose a new direction",
+        hiddenTerms: ["no-dispatcher-registered", "adapter", "internal_adapter_gate"],
+      },
+      {
+        name: "errored",
+        outcome: {
+          kind: "errored",
+          error: "PAPERCLIP_API_URL missing for OpenClaw provider runtime",
+        },
+        expectedStatus: "status: failed safely",
+        expectedNext: "review the safe failure",
+        hiddenTerms: ["errored", "paperclip_api_url", "openclaw", "provider", "runtime"],
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      const { db, values } = makeDb();
+      const approval = makeApproval({ id: `approval-${testCase.name}` });
+
+      await recordDearMeNextMoveDeliveryReceipt(db, {
+        approval,
+        actorUserId: "user-1",
+        linkedIssueIds: ["issue-1"],
+        outcome: testCase.outcome,
+      });
+
+      const commentRows = values.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+      const serializedComments = commentRows.map((row) => row.body).join("\n").toLowerCase();
+      expect(serializedComments).toContain(testCase.expectedStatus);
+      expect(serializedComments).toContain(testCase.expectedNext);
+      for (const hiddenTerm of testCase.hiddenTerms) {
+        expect(serializedComments).not.toContain(hiddenTerm);
+      }
+    }
   });
 });
