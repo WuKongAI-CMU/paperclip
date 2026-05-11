@@ -14,6 +14,7 @@ describe("resolveDearMeDeploySiteDispatchConfigFromEnv", () => {
     expect(config).toEqual({
       siteBaseUrl: "https://sites.dearme.example/",
       allowProduction: false,
+      allowCustomDomains: false,
     });
   });
 
@@ -26,6 +27,7 @@ describe("resolveDearMeDeploySiteDispatchConfigFromEnv", () => {
     expect(config).toEqual({
       siteBaseUrl: "https://dearme.example.test",
       allowProduction: true,
+      allowCustomDomains: false,
     });
   });
 
@@ -36,6 +38,18 @@ describe("resolveDearMeDeploySiteDispatchConfigFromEnv", () => {
 
     expect(config).toEqual({
       allowProduction: true,
+      allowCustomDomains: false,
+    });
+  });
+
+  it("can enable custom-domain receipts without changing the default host", () => {
+    const config = resolveDearMeDeploySiteDispatchConfigFromEnv({
+      DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS: "true",
+    } as NodeJS.ProcessEnv);
+
+    expect(config).toEqual({
+      allowProduction: false,
+      allowCustomDomains: true,
     });
   });
 
@@ -46,6 +60,7 @@ describe("resolveDearMeDeploySiteDispatchConfigFromEnv", () => {
     } as NodeJS.ProcessEnv)).toEqual({
       siteBaseUrl: "https://sites.dearme.example",
       allowProduction: false,
+      allowCustomDomains: false,
     });
 
     expect(resolveDearMeDeploySiteDispatchConfigFromEnv({
@@ -54,6 +69,7 @@ describe("resolveDearMeDeploySiteDispatchConfigFromEnv", () => {
     } as NodeJS.ProcessEnv)).toEqual({
       siteBaseUrl: "https://sites.dearme.example",
       allowProduction: false,
+      allowCustomDomains: false,
     });
   });
 });

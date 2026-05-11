@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-11 (post DM-170C durable voice profile store, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, and DM-177B/DM-177C deploy dispatch proof)
+Last updated: 2026-05-11 (post DM-170C durable voice profile store, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, and DM-177B/DM-177C/DM-177E deploy dispatch proof)
 
 ---
 
@@ -132,7 +132,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DEA-47 approved X delivery receipts + DEA-51 DM-173B live connect path + DM-172B X dispatch** — the current branch browser/API and UI proof shows the approved `post_x` handoff path records either a delivered receipt or the existing customer-safe connection-needed receipt; the fallback now carries a DearMe-owned `oauthStartUrl` to `GET /v1/channels/:companyId/x/start`, which builds a PKCE X authorize URL when configured and stays 503 when config is missing. The browser callback consumes server-side state, exchanges the X code for tokens, loads the X profile, and persists an active `x` connection row with an opaque credential. Approved X publishing now has a server-side dispatcher that decrypts the stored credential, validates expiry/scope/payload, posts to X API v2, and maps auth failures back to reauth. Live external posting still needs a real credential smoke.
 - **DM-174 live Resend/SES `send_email` dispatch** — approved `send_email` launch handoffs now run through the same voice-gate -> approval -> `channel_connections` -> per-tool dispatch -> audit wrapper as X. The dispatcher resolves the stored per-user provider credential through the secret-provider registry, validates sender/recipient/subject/plain-text body/expiry, calls Resend `POST /emails` or SES v2 `SendEmail` with provider idempotency/signing where applicable, maps auth failures back to reauth, and records delivered receipts from the provider email id. Customer prompts say "email"; provider names stay internal. HTML remains fail-closed until a sanitizer path is added. Live external email still needs a real Resend or SES credential smoke.
 - **DM-176A/DM-176B `send_linkedin_dm` partner dispatch** — approved LinkedIn DM handoffs now have a DearMe-owned partner dispatcher and app-level env bridge for `DEARME_LINKEDIN_DM_MESSAGES_URL` / partner endpoint aliases. The dispatcher stays unregistered when no endpoint is configured, so gateway fallback is not shadowed by an empty direct path. Live customer use still needs a real approved partner endpoint + credential smoke.
-- **DM-177B/DM-177C `deploy_site` dispatch** — approved private-site proof handoffs now run through a DearMe-owned `deploy_site` dispatcher instead of needing OpenClaw gateway config. The dispatcher validates safe handles and bounded artifact refs, rejects custom domains in this slice, returns stable preview receipts at `dearme.app/<handle>?preview=*`, and keeps production deploy fail-closed unless the DearMe-owned host is explicitly enabled by env.
+- **DM-177B/DM-177C/DEA-60 `deploy_site` dispatch** — approved private-site proof handoffs now run through a DearMe-owned `deploy_site` dispatcher instead of needing OpenClaw gateway config. The dispatcher validates safe handles and bounded artifact refs, can emit custom-domain receipts only behind `DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS`, returns stable preview receipts at `dearme.app/<handle>?preview=*`, and keeps production deploy fail-closed unless the DearMe-owned host is explicitly enabled by env.
 - **DM-178/DM-178B `create_meta_campaign` dispatch** — approved paid-ad handoffs now run through a DearMe-owned Meta Ads dispatcher on the same approval/OAuth/audit wrapper path. The dispatcher validates the simplified campaign payload, enforces test/ramp/scale daily budget tiers, respects the 7-day learning window, creates a paused Meta campaign receipt, and maps provider auth failures to reconnect without exposing tokens. App startup can override the Graph API base URL from operator env for live smoke/tooling; live customer use still needs a real Meta OAuth/Marketing API smoke.
 - **DEA-62 / DEA-63 / DM-170 Voice profile store** — the cloud Voice Gate scorer keeps accepted-sample continuity behind an injectable, serializable, bounded profile store and now persists that profile in `dearme_voice_profiles` on the default app/handoff paths. The trained scorer can replace the deterministic scorer without changing the `/v1/voice/score` contract or customer review surface.
 - **DM-183BV Symphony cooperation spine** — the current branch now treats Symphony as the coordinator/worker cooperation center while keeping it backstage. Workbench stream items have a typed work-event contract (`action`, `customerSummary`, `artifactTarget`, `decisionNeed`, `traceRefs`) for customer-safe decision cards, and the remaining DM-084, DM-086, DM-095, DM-097, DM-098, and DM-101 stale worktree heads are recorded as reviewed absorptions.
@@ -149,19 +149,21 @@ Future collaboration should start from a Linear `DEA` issue and a Symphony
 workspace on the current coordinator head, then land only one bounded
 customer-facing slice at a time. DM-172, Resend + SES DM-174,
 partner-dispatch + endpoint-config half of DM-176, the preview + configured
-production host gate half of DM-177, and the Meta dispatcher + Graph-base-url
+production/custom-domain gate half of DM-177, and the Meta dispatcher + Graph-base-url
 config half of DM-178 are now on the canonical `ChannelDispatch` path. The
 next product-dispatch gap is live credential/provider smoke: SES or Resend
 email, LinkedIn partner endpoint + credential, Meta OAuth/Marketing API, or
-the remaining DM-177 live host/custom-domain deploy smoke. It is not another
+the remaining DM-177 live DNS/host deploy smoke. It is not another
 connector/settings surface.
 The internal `pnpm dearme:provider-smoke -- --check` command now owns that
 operator proof checklist, including the production site URL content smoke once
 host env is enabled. It now supports a local ignored
 `.dearme-provider-smoke.env` file through `--env-file` plus a clean
-`--print-env-template` bootstrap, so real credentials should enter the proof
-lane there instead of through a new UI, connector store, or command-history
-paste. Do not replace it with another settings page or dispatch path.
+`--print-env-template` bootstrap, and production host failures now report the
+exact URL plus fetch/HTTP status evidence. Real credentials and custom-domain
+host smoke should enter the proof lane there instead of through a new UI,
+connector store, or command-history paste. Do not replace it with another
+settings page or dispatch path.
 For DM-170, the route and deterministic scorer now also have the durable
 profile-store boundary and DB backing store; the remaining voice gap is the
 trained scorer and persisted key issuer, not another `/v1/voice/score` route,

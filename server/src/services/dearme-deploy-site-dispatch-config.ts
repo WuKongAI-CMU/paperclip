@@ -23,11 +23,16 @@ export function resolveDearMeDeploySiteDispatchConfigFromEnv(
     booleanFlag(env.DEARME_DEPLOY_SITE_ALLOW_PRODUCTION) ??
     booleanFlag(env.DEARME_SITE_ALLOW_PRODUCTION) ??
     false;
+  const allowCustomDomains =
+    booleanFlag(env.DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS) ??
+    booleanFlag(env.DEARME_SITE_ALLOW_CUSTOM_DOMAINS) ??
+    false;
 
-  if (!siteBaseUrl && !allowProduction) return null;
+  if (!siteBaseUrl && !allowProduction && !allowCustomDomains) return null;
 
   return {
     ...(siteBaseUrl ? { siteBaseUrl } : {}),
     allowProduction,
+    allowCustomDomains,
   };
 }

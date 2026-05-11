@@ -91,6 +91,8 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   const template = dearMeProviderSmokeEnvTemplate();
 
   assert.match(template, /DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=0/);
+  assert.match(template, /DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=0/);
+  assert.match(template, /DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN=/);
   assert.match(template, /DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0/);
   assert.match(template, /DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE=/);
   assert.match(template, /DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/);
@@ -132,6 +134,20 @@ test("provider smoke keeps production deploy receipts blocked until host gate is
   assert.deepEqual(result.missing, ["DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=1"]);
 });
 
+test("provider smoke blocks custom-domain receipts until that path is enabled", async () => {
+  const [result] = await runDearMeProviderSmoke({
+    target: "deploy_site_production",
+    env: {
+      DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
+      DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN: "peter.example.test",
+    },
+    now,
+  });
+
+  assert.equal(result.status, "blocked");
+  assert.deepEqual(result.missing, ["DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=1"]);
+});
+
 test("provider smoke verifies the production site host before claiming delivery", async () => {
   let capturedUrl = "";
   let capturedInit: { headers?: Record<string, string>; method?: string } = {};
@@ -171,6 +187,39 @@ test("provider smoke verifies the production site host before claiming delivery"
   assert.equal(result.externalUrl, "https://dearme.example.test/peter-studio");
 });
 
+test("provider smoke verifies a configured custom-domain host", async () => {
+  let capturedUrl = "";
+  const fetch = async (url: string) => {
+    capturedUrl = url;
+    return {
+      ok: true,
+      status: 200,
+      async text() {
+        return "<html><body>DearMe private site smoke for custom domain</body></html>";
+      },
+      async json() {
+        return {};
+      },
+    };
+  };
+
+  const [result] = await runDearMeProviderSmoke({
+    target: "deploy_site_production",
+    env: {
+      DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
+      DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS: "1",
+      DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN: "Peter.Example.test",
+      DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT: "custom domain",
+    },
+    fetch,
+    now,
+  });
+
+  assert.equal(result.status, "delivered");
+  assert.equal(capturedUrl, "https://peter.example.test");
+  assert.equal(result.externalUrl, "https://peter.example.test");
+});
+
 test("provider smoke refuses production delivery when host content lacks the expected proof text", async () => {
   const fetch = async () => ({
     ok: true,
@@ -196,6 +245,31 @@ test("provider smoke refuses production delivery when host content lacks the exp
 
   assert.equal(result.status, "errored");
   assert.equal(result.reason, "deploy-site-host-content-mismatch");
+  assert.equal(result.hostStatus, 200);
+  assert.equal(result.externalUrl, "https://dearme.example.test/peter-studio");
+});
+
+test("provider smoke includes the production URL when host fetch fails", async () => {
+  const fetch = async () => {
+    const error = new Error("fetch failed") as Error & { cause?: { code: string } };
+    error.cause = { code: "UND_ERR_CONNECT_TIMEOUT" };
+    throw error;
+  };
+
+  const [result] = await runDearMeProviderSmoke({
+    target: "deploy_site_production",
+    env: {
+      DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
+      DEARME_DEPLOY_SITE_BASE_URL: "https://dearme.example.test",
+      DEARME_DEPLOY_SITE_SMOKE_HANDLE: "peter-studio",
+    },
+    fetch,
+    now,
+  });
+
+  assert.equal(result.status, "errored");
+  assert.equal(result.reason, "deploy-site-host-fetch-failed:fetch failed:UND_ERR_CONNECT_TIMEOUT");
+  assert.equal(result.externalUrl, "https://dearme.example.test/peter-studio");
 });
 
 test("provider smoke refuses live LinkedIn sends without the explicit live guard", async () => {

@@ -79,6 +79,8 @@ export type DearMeProviderSmokeResult =
       target: DearMeProviderSmokeTarget;
       status: "errored";
       reason: string;
+      externalUrl?: string;
+      hostStatus?: number;
     };
 
 export interface DearMeProviderSmokeOptions {
@@ -121,8 +123,10 @@ export function dearMeProviderSmokeEnvTemplate(): string {
 
 DEARME_DEPLOY_SITE_BASE_URL=https://dearme.example.test
 DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=0
+DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=0
 DEARME_DEPLOY_SITE_SMOKE_HANDLE=dearme-smoke
 DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=smoke:provider-dispatch
+DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN=
 DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=dearme-smoke
 
 DEARME_LINKEDIN_DM_MESSAGES_URL=
@@ -194,10 +198,18 @@ function credentialRequirement(env: Env, jsonKey: string, fileKey: string) {
 function targetMissingRequirements(target: DearMeProviderSmokeTarget, env: Env) {
   switch (target) {
     case "deploy_site_preview":
-      return [];
+      return nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN)
+        && !resolveDearMeDeploySiteDispatchConfigFromEnv(env as NodeJS.ProcessEnv)?.allowCustomDomains
+        ? ["DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=1"]
+        : [];
     case "deploy_site_production": {
       const config = resolveDearMeDeploySiteDispatchConfigFromEnv(env as NodeJS.ProcessEnv);
-      return config?.allowProduction ? [] : ["DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=1"];
+      return [
+        ...(config?.allowProduction ? [] : ["DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=1"]),
+        ...(nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN) && !config?.allowCustomDomains
+          ? ["DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=1"]
+          : []),
+      ];
     }
     case "linkedin_dm": {
       const config = resolveDearMeLinkedInDmDispatchConfigFromEnv(env as NodeJS.ProcessEnv);
@@ -428,6 +440,20 @@ function currentFetch(options: DearMeProviderSmokeOptions): FetchLike | null {
   return options.fetch ?? ((globalThis as { fetch?: FetchLike }).fetch ?? null);
 }
 
+function fetchFailureMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const cause = error && typeof error === "object"
+    ? (error as { cause?: unknown }).cause
+    : null;
+  const causeCode = cause && typeof cause === "object"
+    ? (cause as { code?: unknown }).code
+    : null;
+  if (typeof causeCode === "string" && causeCode.trim()) {
+    return `${message}:${causeCode.trim()}`;
+  }
+  return message;
+}
+
 async function verifyDeploySiteProductionHost(params: {
   result: DeliveredProviderSmokeResult;
   env: Env;
@@ -451,21 +477,43 @@ async function verifyDeploySiteProductionHost(params: {
       headers: { accept: "text/html,application/json;q=0.9,*/*;q=0.1" },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return { target: result.target, status: "errored", reason: `deploy-site-host-fetch-failed:${message}` };
+    return {
+      target: result.target,
+      status: "errored",
+      reason: `deploy-site-host-fetch-failed:${fetchFailureMessage(error)}`,
+      externalUrl: result.externalUrl,
+    };
   }
 
   if (!response.ok) {
-    return { target: result.target, status: "errored", reason: `deploy-site-host-unreachable:${response.status}` };
+    return {
+      target: result.target,
+      status: "errored",
+      reason: `deploy-site-host-unreachable:${response.status}`,
+      externalUrl: result.externalUrl,
+      hostStatus: response.status,
+    };
   }
 
   const body = response.text ? await response.text() : "";
   const expected = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT) ?? expectedText;
   if (!body.trim()) {
-    return { target: result.target, status: "errored", reason: "deploy-site-host-empty-response" };
+    return {
+      target: result.target,
+      status: "errored",
+      reason: "deploy-site-host-empty-response",
+      externalUrl: result.externalUrl,
+      hostStatus: response.status,
+    };
   }
   if (expected && !body.toLowerCase().includes(expected.toLowerCase())) {
-    return { target: result.target, status: "errored", reason: "deploy-site-host-content-mismatch" };
+    return {
+      target: result.target,
+      status: "errored",
+      reason: "deploy-site-host-content-mismatch",
+      externalUrl: result.externalUrl,
+      hostStatus: response.status,
+    };
   }
 
   return { ...result, hostStatus: response.status };
@@ -507,7 +555,7 @@ async function runDeploySiteSmoke(
   const payload = {
     handle: nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_HANDLE) ?? "dearme-smoke",
     artifactRef: nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF) ?? "smoke:provider-dispatch",
-    customDomain: null,
+    customDomain: nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN),
     target: target === "deploy_site_production" ? "production" : "preview",
   };
 
@@ -708,7 +756,8 @@ function printResults(results: readonly DearMeProviderSmokeResult[]) {
     } else if (result.status === "blocked") {
       console.log(`- ${result.target}: blocked ${result.reason}; missing ${result.missing.join(", ")}`);
     } else {
-      console.log(`- ${result.target}: errored ${result.reason}`);
+      const host = typeof result.hostStatus === "number" ? ` host=${result.hostStatus}` : "";
+      console.log(`- ${result.target}: errored ${result.reason}${host}${result.externalUrl ? ` ${result.externalUrl}` : ""}`);
     }
   }
 }

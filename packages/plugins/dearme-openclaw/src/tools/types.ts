@@ -122,7 +122,7 @@ export interface SendEmailDelivered {
 
 export type SendEmailResult = OutboundToolResult<SendEmailDelivered>;
 
-/* ───────── deploy_site — push dearme.app/<handle> ───────── */
+/* ───────── deploy_site — push dearme.app/<handle> or a configured custom domain ───────── */
 
 export interface DeploySiteInput extends OutboundToolEnvelope {
   handle: string;

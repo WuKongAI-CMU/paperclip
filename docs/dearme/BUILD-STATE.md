@@ -2,6 +2,68 @@
 
 Date: 2026-05-11
 
+## DEA-60 / DM-177E Custom-Domain Deploy Receipt Gate - 2026-05-11
+
+Product/architecture slice:
+
+- Extended the existing `deploy_site` dispatcher instead of adding a second
+  site runtime. The default path still emits private DearMe handle previews;
+  custom-domain receipts require `DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=1`.
+- Custom domains are normalized to HTTPS hostnames, reject paths, ports, auth,
+  whitespace, and invalid DNS labels, and use the existing approval/wrapper/
+  audit path before any receipt is emitted.
+- `pnpm dearme:provider-smoke` now accepts
+  `DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN`, includes it in the local env
+  template, and verifies the returned custom-domain URL content when the
+  domain gate is enabled.
+- Remaining customer claim: live DNS/host proof. The code path is wired, but
+  production/custom-domain delivery should still be claimed only after the
+  smoke URL serves the expected page text.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+  passed: 15 node:test checks.
+- `pnpm exec vitest run server/src/services/dearme-deploy-site-dispatch-config.test.ts server/src/services/dearme-deploy-site-dispatch.test.ts server/src/services/dearme-approved-launch-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts server/src/__tests__/dearme-approval-receipts.test.ts --maxWorkers=1`
+  passed: 5 files, 49 tests.
+- `pnpm --filter @paperclipai/dearme-openclaw typecheck`
+  passed.
+- `pnpm --filter @paperclipai/server typecheck`
+  passed.
+
+## DEA-60 / DM-177D Production Host Smoke Evidence - 2026-05-11
+
+Product/architecture slice:
+
+- Tightened `pnpm dearme:provider-smoke` so production host smoke failures now
+  report the exact URL being verified, the HTTP status when present, and the
+  underlying fetch cause code when Node exposes one.
+- A read-only probe with `DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=1` now shows the
+  next product blocker clearly: the dispatch path emits
+  `https://dearme.app/dearme-smoke`, but the public host fetch fails with
+  `UND_ERR_CONNECT_TIMEOUT`.
+- This keeps DEA-60 pointed at the real aha blocker: make the DearMe-owned
+  public host serve the smoke handle or configure the smoke env to the host
+  that does, then rerun the same production target. No new connector store,
+  settings surface, or dispatch path was introduced.
+- The same slice also keeps custom-domain receipts fail-closed by default and
+  unlocks them only with `DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=1`, giving
+  the live host proof a narrow operator path without opening DNS automation or
+  customer settings.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+  passed: 15 node:test checks.
+- `pnpm --filter @paperclipai/server typecheck`
+  passed.
+- `pnpm exec vitest run server/src/services/dearme-deploy-site-dispatch-config.test.ts server/src/services/dearme-deploy-site-dispatch.test.ts server/src/services/dearme-approved-launch-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts server/src/__tests__/dearme-approval-receipts.test.ts --maxWorkers=1`
+  passed: 5 files, 49 tests.
+- `DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=1 pnpm --silent dearme:provider-smoke -- --target deploy_site_production --json`
+  returned `errored` with reason
+  `deploy-site-host-fetch-failed:fetch failed:UND_ERR_CONNECT_TIMEOUT` and
+  external URL `https://dearme.app/dearme-smoke`.
+
 ## DEA-63 / DM-170C Durable Voice Profile Store + Migration Backfill - 2026-05-11
 
 Product/architecture slice:
@@ -168,9 +230,9 @@ Product/architecture slice:
   approved production `deploy_site` handoffs can emit stable production URL
   receipts on the DearMe-owned host through the same approval/wrapper/audit
   pipeline.
-- Custom domains remain rejected. This slice only opens the operator gate for
-  the DearMe-owned multi-tenant host; DNS automation and live host smoke stay
-  separate DM-177 work.
+- Custom-domain receipts remain rejected by default and now require the
+  operator-only `DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS` flag. DNS automation
+  and live host smoke stay separate DM-177 work.
 
 Verification:
 

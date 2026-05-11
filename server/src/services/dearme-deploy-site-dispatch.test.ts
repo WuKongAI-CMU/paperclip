@@ -99,7 +99,7 @@ describe("createDearMeDeploySiteDispatch", () => {
       dispatchContext,
     })).resolves.toEqual({
       kind: "errored",
-      error: "deploy-site-custom-domain-unsupported",
+      error: "deploy-site-custom-domain-unconfigured",
     });
   });
 
@@ -144,6 +144,53 @@ describe("createDearMeDeploySiteDispatch", () => {
       ),
       paid: false,
       paidUsd: undefined,
+    });
+  });
+
+  it("can emit custom-domain receipts only after the domain path is enabled", async () => {
+    const dispatch = createDearMeDeploySiteDispatch({
+      allowProduction: true,
+      allowCustomDomains: true,
+    });
+
+    await expect(dispatch({
+      toolName: "deploy_site",
+      encryptedCredential: "",
+      payload: {
+        handle: "peter-studio",
+        artifactRef: "document:portfolio-update:r2",
+        customDomain: "Peter.Example.com",
+        target: "production",
+      },
+      dispatchContext,
+    })).resolves.toEqual({
+      kind: "delivered",
+      externalId: expect.stringMatching(/^dearme_production_[a-f0-9]{16}$/),
+      externalUrl: "https://peter.example.com",
+      paid: false,
+      paidUsd: undefined,
+    });
+  });
+
+  it("rejects malformed custom domains before emitting a receipt", async () => {
+    const dispatch = createDearMeDeploySiteDispatch({
+      allowProduction: true,
+      allowCustomDomains: true,
+    });
+
+    await expect(dispatch({
+      toolName: "deploy_site",
+      encryptedCredential: "",
+      payload: {
+        handle: "peter-studio",
+        artifactRef: "document:portfolio-update:r2",
+        customDomain: "https://peter.example.com/path",
+        target: "production",
+      },
+      dispatchContext,
+    })).resolves.toEqual({
+      kind: "errored",
+      error: "deploy-site-custom-domain-invalid",
     });
   });
 

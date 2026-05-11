@@ -23,6 +23,7 @@ const ARTIFACT_REF_LIMIT = 512;
 export interface DearMeDeploySiteDispatchConfig {
   siteBaseUrl?: string;
   allowProduction?: boolean;
+  allowCustomDomains?: boolean;
 }
 
 interface DeploySitePayload {
@@ -59,7 +60,44 @@ function parseCustomDomain(
   }
   const customDomain = stringField(record, "customDomain");
   if (!customDomain) return { ok: false, error: "deploy-site-custom-domain-invalid" };
-  return { ok: true, value: customDomain };
+  return normalizeCustomDomain(customDomain);
+}
+
+const DOMAIN_LABEL_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+
+function normalizeCustomDomain(value: string): { ok: true; value: string } | { ok: false; error: string } {
+  if (/\s/.test(value)) return { ok: false, error: "deploy-site-custom-domain-invalid" };
+
+  let parsed: URL;
+  try {
+    parsed = new URL(value.includes("://") ? value : `https://${value}`);
+  } catch {
+    return { ok: false, error: "deploy-site-custom-domain-invalid" };
+  }
+
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.username ||
+    parsed.password ||
+    parsed.port ||
+    parsed.pathname !== "/" ||
+    parsed.search ||
+    parsed.hash
+  ) {
+    return { ok: false, error: "deploy-site-custom-domain-invalid" };
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  const labels = hostname.split(".");
+  if (
+    hostname.length > 253 ||
+    labels.length < 2 ||
+    labels.some((label) => !DOMAIN_LABEL_PATTERN.test(label))
+  ) {
+    return { ok: false, error: "deploy-site-custom-domain-invalid" };
+  }
+
+  return { ok: true, value: hostname };
 }
 
 function parseDeploySitePayload(
@@ -87,16 +125,12 @@ function parseDeploySitePayload(
 
   const customDomain = parseCustomDomain(record);
   if (!customDomain.ok) return customDomain;
-  if (customDomain.value) {
-    return { ok: false, error: "deploy-site-custom-domain-unsupported" };
-  }
-
   return {
     ok: true,
     value: {
       handle,
       artifactRef,
-      customDomain: null,
+      customDomain: customDomain.value,
       target,
     },
   };
@@ -118,9 +152,10 @@ function deploymentId(input: {
   artifactRef: string;
   target: "preview" | "production";
   idempotencyKey: string;
+  customDomain: string | null;
 }) {
   const hash = createHash("sha256")
-    .update(`${input.target}:${input.handle}:${input.artifactRef}:${input.idempotencyKey}`)
+    .update(`${input.target}:${input.handle}:${input.artifactRef}:${input.customDomain ?? ""}:${input.idempotencyKey}`)
     .digest("hex")
     .slice(0, 16);
   return `dearme_${input.target}_${hash}`;
@@ -131,12 +166,15 @@ function siteUrl(input: {
   handle: string;
   target: "preview" | "production";
   deploymentId: string;
+  customDomain: string | null;
 }) {
-  const url = new URL(`${input.baseUrl}/${encodeURIComponent(input.handle)}`);
+  const url = input.customDomain
+    ? new URL(`https://${input.customDomain}/`)
+    : new URL(`${input.baseUrl}/${encodeURIComponent(input.handle)}`);
   if (input.target === "preview") {
     url.searchParams.set("preview", input.deploymentId);
   }
-  return url.toString();
+  return input.target === "production" ? url.toString().replace(/\/$/, "") : url.toString();
 }
 
 export function createDearMeDeploySiteDispatch(
@@ -144,6 +182,7 @@ export function createDearMeDeploySiteDispatch(
 ): ChannelDispatch {
   const baseUrl = normalizeSiteBaseUrl(config.siteBaseUrl ?? DEFAULT_SITE_BASE_URL);
   const allowProduction = config.allowProduction ?? false;
+  const allowCustomDomains = config.allowCustomDomains ?? false;
 
   return async (input) => {
     if (input.toolName !== "deploy_site") {
@@ -152,6 +191,9 @@ export function createDearMeDeploySiteDispatch(
 
     const payload = parseDeploySitePayload(input.payload);
     if (!payload.ok) return error(payload.error);
+    if (payload.value.customDomain && !allowCustomDomains) {
+      return error("deploy-site-custom-domain-unconfigured");
+    }
     if (payload.value.target === "production" && !allowProduction) {
       return error("deploy-site-production-host-unconfigured");
     }
@@ -161,6 +203,7 @@ export function createDearMeDeploySiteDispatch(
       artifactRef: payload.value.artifactRef,
       target: payload.value.target,
       idempotencyKey: input.dispatchContext.idempotencyKey,
+      customDomain: payload.value.customDomain,
     });
 
     return {
@@ -171,6 +214,7 @@ export function createDearMeDeploySiteDispatch(
         handle: payload.value.handle,
         target: payload.value.target,
         deploymentId: id,
+        customDomain: payload.value.customDomain,
       }),
       paid: false,
       paidUsd: undefined,
