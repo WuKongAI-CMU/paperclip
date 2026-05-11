@@ -18,9 +18,11 @@ It answers three questions before another worker starts building:
 - `pnpm dearme:aha-proof -- --export-site` now writes a handle-local
   `host-smoke.json` beside `index.html` and `proof.json`, carrying expected
   phone-check text, output counts, launch boundaries, wait-for gates, and
-  checksums. Future production-host work should consume that manifest through the
-  existing provider-smoke lane rather than creating another site-smoke command,
-  setup dashboard, or customer-visible runtime surface.
+  checksums. The production `dearme:provider-smoke` lane now consumes that
+  manifest, validates the local HTML/proof checksums before dispatch/fetch, and
+  blocks stale proof packets locally. Future production-host work should keep
+  improving that lane rather than creating another site-smoke command, setup
+  dashboard, or customer-visible runtime surface.
 - The first-cycle preview contract now seeds five private starter drafts through
   the shared `DEARME_FIRST_CYCLE_STARTER_POST_COUNT` constant. This is the
   Polsia comparison turned into product behavior: deepen the first-wow packet

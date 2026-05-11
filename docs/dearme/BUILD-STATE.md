@@ -2,6 +2,38 @@
 
 Date: 2026-05-11
 
+## Provider Host Smoke Reads The Export Manifest - 2026-05-11
+
+Product/architecture slice:
+
+- Removed one operator setup concern from the production host proof: the
+  `deploy_site_production` provider smoke can now derive proof-page expected
+  text from the exported `host-smoke.json` manifest instead of requiring the
+  coordinator to copy text into `DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT`.
+- Added `DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF` as an explicit override while
+  also supporting the default sibling manifest next to
+  `dist/dearme-private-proof/<handle>/index.html`.
+- Before dispatching or fetching the returned production URL, the smoke now
+  validates the manifest schema, handle, artifact path, and HTML/proof JSON
+  checksums. A stale or hand-edited proof packet blocks locally instead of
+  becoming a false Polsia-style phone proof.
+- Kept the readiness boundary fail-closed. A `smoke:*` artifact still cannot
+  pass as production proof, and a missing/unreadable manifest still blocks until
+  a real proof-page text override or readable manifest is present.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+- `pnpm test:dearme-aha-proof`
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:aha-proof -- --check`
+- `tmpdir=$(mktemp -d /tmp/dearme-provider-manifest-smoke.XXXXXX) && pnpm --silent dearme:aha-proof -- --export-site "$tmpdir"`
+- `DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=1 DEARME_DEPLOY_SITE_BASE_URL=https://dearme.example.test DEARME_DEPLOY_SITE_SMOKE_HANDLE=peter-studio DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF="$tmpdir/peter-studio/index.html" pnpm --silent dearme:provider-smoke -- --check --target deploy_site_production`
+- `pnpm --silent dearme:provider-smoke -- --check`
+- `pnpm --silent dearme:status`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Private Proof Export Carries Host Smoke Manifest - 2026-05-11
 
 Product/architecture slice:

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 import { tmpdir } from "node:os";
@@ -14,8 +15,63 @@ import {
   parseDearMeProviderSmokeEnvFile,
   runDearMeProviderSmoke,
 } from "./dearme-provider-smoke.ts";
+import {
+  exportDearMePrivateSitePreview,
+  runDearMeAhaProof,
+} from "./dearme-aha-proof.ts";
 
 const now = () => new Date("2026-05-11T12:00:00.000Z");
+
+function sha256(value: string) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+async function writeHostSmokePacket(dir: string, options: {
+  expectedText?: string;
+  handle?: string;
+} = {}) {
+  const handle = options.handle ?? "peter-studio";
+  const expectedText = options.expectedText ?? "Peter Studio has a private growth team already working";
+  const handleDir = join(dir, handle);
+  const html = `<html><body>${expectedText}</body></html>`;
+  const proofJson = JSON.stringify({ handle, status: "ready" }, null, 2);
+  const manifest = {
+    version: 1,
+    handle,
+    route: `https://dearme.app/${handle}`,
+    files: {
+      html: "index.html",
+      proof: "proof.json",
+    },
+    expectedText,
+    checks: {
+      viewport: true,
+      customerSafeLanguage: true,
+      approvalBoundary: "Launch stays private until approved",
+      waitsFor: ["publish", "send", "deploy", "spend"],
+      starterDraftCount: 5,
+      opportunityCount: 3,
+      continuationCount: 3,
+    },
+    checksums: {
+      htmlSha256: sha256(html),
+      proofSha256: sha256(proofJson),
+    },
+  };
+
+  await mkdir(handleDir, { recursive: true });
+  await writeFile(join(handleDir, "index.html"), html, "utf8");
+  await writeFile(join(handleDir, "proof.json"), proofJson, "utf8");
+  await writeFile(join(handleDir, "host-smoke.json"), JSON.stringify(manifest, null, 2), "utf8");
+
+  return {
+    artifactRef: join(handleDir, "index.html"),
+    handle,
+    htmlPath: join(handleDir, "index.html"),
+    manifestPath: join(handleDir, "host-smoke.json"),
+    expectedText,
+  };
+}
 
 test("provider smoke readiness reports missing live provider config without secrets", () => {
   const readiness = inspectDearMeProviderSmokeReadiness({});
@@ -170,8 +226,9 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   );
   assert.match(
     template,
-    /DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=Peter Studio has a private growth team already working/,
+    /DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF=dist\/dearme-private-proof\/peter-studio\/host-smoke\.json/,
   );
+  assert.match(template, /DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=\n/);
   assert.match(template, /DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN=/);
   assert.match(template, /DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0/);
   assert.match(template, /DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE=/);
@@ -197,15 +254,16 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   );
   assert.match(
     productionTemplate,
-    /DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=Peter Studio has a private growth team already working/,
+    /DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF=dist\/dearme-private-proof\/peter-studio\/host-smoke\.json/,
   );
+  assert.match(productionTemplate, /DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=\n/);
   assert.match(
     productionTemplate,
     /Host the dist\/dearme-private-proof\/peter-studio directory at the production URL/,
   );
   assert.match(
     productionTemplate,
-    /Use dist\/dearme-private-proof\/peter-studio\/host-smoke\.json for the expected text\/checksums/,
+    /reads dist\/dearme-private-proof\/peter-studio\/host-smoke\.json for expected text\/checksums/,
   );
 
   assert.match(telegramTemplate, /--check --target telegram_message/);
@@ -364,7 +422,7 @@ test("provider smoke requires a real first-wow artifact before production host p
   ]);
 });
 
-test("provider smoke requires proof-page text before production host proof", async () => {
+test("provider smoke requires proof-page text or manifest before production host proof", async () => {
   const [result] = await runDearMeProviderSmoke({
     target: "deploy_site_production",
     env: {
@@ -378,7 +436,117 @@ test("provider smoke requires proof-page text before production host proof", asy
   });
 
   assert.equal(result.status, "blocked");
-  assert.deepEqual(result.missing, ["DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=<private proof page text>"]);
+  assert.deepEqual(result.missing, [
+    "DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=<private proof page text> or readable DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF=dist/dearme-private-proof/peter-studio/host-smoke.json",
+  ]);
+});
+
+test("provider smoke derives production proof text from the host smoke manifest", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-provider-host-smoke-"));
+  try {
+    const { preview } = runDearMeAhaProof();
+    const exportResult = await exportDearMePrivateSitePreview(preview, dir);
+    let capturedUrl = "";
+    const fetch = async (url: string) => {
+      capturedUrl = url;
+      return {
+        ok: true,
+        status: 200,
+        async text() {
+          return `<html><body>${exportResult.expectedText}</body></html>`;
+        },
+        async json() {
+          return {};
+        },
+      };
+    };
+
+    const env = {
+      DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
+      DEARME_DEPLOY_SITE_BASE_URL: "https://dearme.example.test",
+      DEARME_DEPLOY_SITE_SMOKE_HANDLE: "peter-studio",
+      DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: exportResult.htmlPath,
+    };
+    const readiness = inspectDearMeProviderSmokeReadiness(env, "deploy_site_production");
+    const [result] = await runDearMeProviderSmoke({
+      target: "deploy_site_production",
+      env,
+      fetch,
+      now,
+    });
+
+    assert.equal(readiness[0]?.ready, true);
+    assert.deepEqual(readiness[0]?.missing, []);
+    assert.equal(result.status, "delivered");
+    assert.equal(result.hostStatus, 200);
+    assert.equal(result.externalUrl, "https://dearme.example.test/peter-studio");
+    assert.equal(capturedUrl, "https://dearme.example.test/peter-studio");
+  } finally {
+    await rm(dir, { force: true, recursive: true });
+  }
+});
+
+test("provider smoke blocks an explicit invalid host smoke manifest before production dispatch", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-provider-host-smoke-invalid-"));
+  const handleDir = join(dir, "peter-studio");
+  const manifestPath = join(handleDir, "host-smoke.json");
+  let fetched = false;
+
+  try {
+    await mkdir(handleDir, { recursive: true });
+    await writeFile(join(handleDir, "index.html"), "<html></html>", "utf8");
+    await writeFile(manifestPath, "not-json", "utf8");
+
+    const [result] = await runDearMeProviderSmoke({
+      target: "deploy_site_production",
+      env: {
+        DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
+        DEARME_DEPLOY_SITE_BASE_URL: "https://dearme.example.test",
+        DEARME_DEPLOY_SITE_SMOKE_HANDLE: "peter-studio",
+        DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: join(handleDir, "index.html"),
+        DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF: manifestPath,
+        DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT: "Peter Studio has a private growth team already working",
+      },
+      async fetch() {
+        fetched = true;
+        throw new Error("should not fetch");
+      },
+      now,
+    });
+
+    assert.equal(result.status, "blocked");
+    assert.equal(result.reason, "invalid-host-smoke-manifest");
+    assert.deepEqual(result.missing, ["host-smoke.json must be valid JSON"]);
+    assert.equal(fetched, false);
+  } finally {
+    await rm(dir, { force: true, recursive: true });
+  }
+});
+
+test("provider smoke blocks a host smoke manifest checksum mismatch", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-provider-host-smoke-checksum-"));
+  try {
+    const packet = await writeHostSmokePacket(dir);
+    await writeFile(packet.htmlPath, "<html><body>changed after export</body></html>", "utf8");
+
+    const [result] = await runDearMeProviderSmoke({
+      target: "deploy_site_production",
+      env: {
+        DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
+        DEARME_DEPLOY_SITE_BASE_URL: "https://dearme.example.test",
+        DEARME_DEPLOY_SITE_SMOKE_HANDLE: packet.handle,
+        DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: packet.artifactRef,
+        DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF: packet.manifestPath,
+      },
+      now,
+    });
+
+    assert.equal(result.status, "blocked");
+    assert.equal(result.reason, "invalid-host-smoke-manifest");
+    assert.deepEqual(result.missing, ["host-smoke html checksum mismatch"]);
+  } finally {
+    await rm(dir, { force: true, recursive: true });
+  }
 });
 
 test("provider smoke blocks custom-domain receipts until that path is enabled", async () => {

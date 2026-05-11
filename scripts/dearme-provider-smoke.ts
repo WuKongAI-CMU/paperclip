@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   createDearMeDeploySiteDispatch,
@@ -110,6 +112,35 @@ export interface DearMeProviderSmokeOptions {
 
 type DeliveredProviderSmokeResult = Extract<DearMeProviderSmokeResult, { status: "delivered" }>;
 
+interface DeploySiteHostSmokeManifest {
+  version: 1;
+  handle: string;
+  route: string;
+  files: {
+    html: "index.html";
+    proof: "proof.json";
+  };
+  expectedText: string;
+  checks: {
+    viewport: boolean;
+    customerSafeLanguage: boolean;
+    approvalBoundary: string;
+    waitsFor: string[];
+    starterDraftCount: number;
+    opportunityCount: number;
+    continuationCount: number;
+  };
+  checksums: {
+    htmlSha256: string;
+    proofSha256: string;
+  };
+}
+
+interface DeploySiteHostSmokeProof {
+  expectedText: string;
+  manifestRef?: string;
+}
+
 export interface ParsedDearMeProviderSmokeArgs {
   help: boolean;
   json: boolean;
@@ -176,8 +207,11 @@ export function dearMeProviderSmokeEnvTemplate(targetArg: TargetArg = "all"): st
   const siteSmokeArtifactRef = includesProductionHostSmoke
     ? "dist/dearme-private-proof/peter-studio/index.html"
     : "smoke:provider-dispatch";
+  const siteSmokeManifestRef = includesProductionHostSmoke
+    ? "dist/dearme-private-proof/peter-studio/host-smoke.json"
+    : "";
   const siteSmokeExpectedText = includesProductionHostSmoke
-    ? "Peter Studio has a private growth team already working"
+    ? ""
     : "peter-studio";
   const sections = [`# DearMe provider smoke local env.
 # Keep this file local. The repository ignores .dearme-provider-smoke.env.
@@ -198,10 +232,10 @@ ${selectedRunCommands.map((command) => `# ${command}`).join("\n")}
 # Production host smoke artifact:
 # pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof
 # Host the dist/dearme-private-proof/peter-studio directory at the production URL.
-# Use dist/dearme-private-proof/peter-studio/host-smoke.json for the expected text/checksums,
-# then set:
+# The smoke reads dist/dearme-private-proof/peter-studio/host-smoke.json for expected text/checksums.
+# DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT is only needed as a manual override.
 # DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=dist/dearme-private-proof/peter-studio/index.html
-# DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=Peter Studio has a private growth team already working
+# DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF=dist/dearme-private-proof/peter-studio/host-smoke.json
 `
       : "";
     sections.push(`
@@ -210,6 +244,7 @@ DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=0
 DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=0
 DEARME_DEPLOY_SITE_SMOKE_HANDLE=peter-studio
 DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=${siteSmokeArtifactRef}
+DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF=${siteSmokeManifestRef}
 DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN=
 DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=${siteSmokeExpectedText}
 ${productionHostSmokeArtifactHelp}`);
@@ -369,15 +404,212 @@ function deploySiteBaseUrlRequirement(env: Env) {
 
 function deploySiteProductionArtifactRequirement(env: Env) {
   const artifactRef = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF);
-  if (artifactRef && !artifactRef.startsWith("smoke:")) return [];
+  if (
+    artifactRef
+    && !artifactRef.startsWith("smoke:")
+    && !/^[a-z][a-z0-9+.-]*:/i.test(artifactRef)
+    && artifactRef.endsWith("/index.html")
+  ) {
+    return [];
+  }
   return ["DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=dist/dearme-private-proof/<handle>/index.html"];
 }
 
+function deploySiteHostSmokeManifestRef(env: Env) {
+  const explicitManifestRef = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF);
+  if (explicitManifestRef) return explicitManifestRef;
+
+  const artifactRef = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF);
+  if (!artifactRef || artifactRef.startsWith("smoke:")) return null;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(artifactRef)) return null;
+  return artifactRef.endsWith("/index.html")
+    ? `${artifactRef.slice(0, -"/index.html".length)}/host-smoke.json`
+    : null;
+}
+
+function readDeploySiteHostSmokeExpectedText(env: Env) {
+  const manifestRef = deploySiteHostSmokeManifestRef(env);
+  if (!manifestRef) return null;
+  try {
+    const parsed = JSON.parse(readFileSync(resolve(manifestRef), "utf8")) as { expectedText?: unknown };
+    return typeof parsed.expectedText === "string" ? nonEmpty(parsed.expectedText) : null;
+  } catch {
+    return null;
+  }
+}
+
+function sha256(value: string) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isSha256(value: unknown): value is string {
+  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+}
+
+function parseDeploySiteHostSmokeManifest(raw: string) {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { manifest: null, errors: ["host-smoke.json must be valid JSON"] };
+  }
+
+  const errors: string[] = [];
+  if (!isObject(parsed)) {
+    return { manifest: null, errors: ["host-smoke.json must be a JSON object"] };
+  }
+
+  const files = isObject(parsed.files) ? parsed.files : {};
+  const checks = isObject(parsed.checks) ? parsed.checks : {};
+  const checksums = isObject(parsed.checksums) ? parsed.checksums : {};
+  if (parsed.version !== 1) errors.push("host-smoke.json version must be 1");
+  if (!nonEmpty(typeof parsed.handle === "string" ? parsed.handle : undefined)) {
+    errors.push("host-smoke.json handle must be present");
+  }
+  if (!nonEmpty(typeof parsed.route === "string" ? parsed.route : undefined)) {
+    errors.push("host-smoke.json route must be present");
+  }
+  if (files.html !== "index.html") errors.push("host-smoke.json files.html must be index.html");
+  if (files.proof !== "proof.json") errors.push("host-smoke.json files.proof must be proof.json");
+  if (!nonEmpty(typeof parsed.expectedText === "string" ? parsed.expectedText : undefined)) {
+    errors.push("host-smoke.json expectedText must be present");
+  }
+  if (checks.viewport !== true) errors.push("host-smoke.json checks.viewport must be true");
+  if (checks.customerSafeLanguage !== true) {
+    errors.push("host-smoke.json checks.customerSafeLanguage must be true");
+  }
+  if (!nonEmpty(typeof checks.approvalBoundary === "string" ? checks.approvalBoundary : undefined)) {
+    errors.push("host-smoke.json checks.approvalBoundary must be present");
+  }
+  if (!Array.isArray(checks.waitsFor) || checks.waitsFor.length === 0) {
+    errors.push("host-smoke.json checks.waitsFor must be non-empty");
+  }
+  if (typeof checks.starterDraftCount !== "number" || checks.starterDraftCount < 5) {
+    errors.push("host-smoke.json checks.starterDraftCount must be at least 5");
+  }
+  if (typeof checks.opportunityCount !== "number" || checks.opportunityCount < 1) {
+    errors.push("host-smoke.json checks.opportunityCount must be at least 1");
+  }
+  if (typeof checks.continuationCount !== "number" || checks.continuationCount < 1) {
+    errors.push("host-smoke.json checks.continuationCount must be at least 1");
+  }
+  if (!isSha256(checksums.htmlSha256)) {
+    errors.push("host-smoke.json checksums.htmlSha256 must be a SHA-256 hex digest");
+  }
+  if (!isSha256(checksums.proofSha256)) {
+    errors.push("host-smoke.json checksums.proofSha256 must be a SHA-256 hex digest");
+  }
+
+  return {
+    manifest: errors.length === 0 ? parsed as unknown as DeploySiteHostSmokeManifest : null,
+    errors,
+  };
+}
+
+async function resolveDeploySiteHostSmokeProof(env: Env): Promise<{
+  proof: DeploySiteHostSmokeProof | null;
+  errors: string[];
+}> {
+  const handle = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_HANDLE) ?? "dearme-smoke";
+  const directExpectedText = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT);
+  const directProofText = directExpectedText
+    && directExpectedText.toLowerCase() !== handle.toLowerCase()
+    ? directExpectedText
+    : null;
+  const manifestRef = deploySiteHostSmokeManifestRef(env);
+  const explicitManifestRef = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF);
+  const shouldReadManifest = Boolean(manifestRef && (explicitManifestRef || !directProofText));
+
+  if (!manifestRef || !shouldReadManifest) {
+    return directProofText
+      ? { proof: { expectedText: directProofText }, errors: [] }
+      : { proof: null, errors: ["DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=<private proof page text>"] };
+  }
+
+  const resolvedManifestRef = resolve(manifestRef);
+  let rawManifest: string;
+  try {
+    rawManifest = await readFile(resolvedManifestRef, "utf8");
+  } catch {
+    return {
+      proof: null,
+      errors: [`DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF is not readable: ${manifestRef}`],
+    };
+  }
+
+  const parsed = parseDeploySiteHostSmokeManifest(rawManifest);
+  if (!parsed.manifest) return { proof: null, errors: parsed.errors };
+  const manifest = parsed.manifest;
+  const manifestDir = dirname(resolvedManifestRef);
+  const errors: string[] = [];
+
+  if (manifest.handle !== handle) {
+    errors.push(`host-smoke.json handle ${manifest.handle} does not match ${handle}`);
+  }
+
+  const artifactRef = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF);
+  const resolvedArtifactRef = artifactRef ? resolve(artifactRef) : null;
+  const htmlPath = join(manifestDir, manifest.files.html);
+  const proofPath = join(manifestDir, manifest.files.proof);
+  if (resolvedArtifactRef && resolvedArtifactRef !== htmlPath) {
+    errors.push("DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF must point at host-smoke files.html");
+  }
+
+  let html: string | null = null;
+  let proofJson: string | null = null;
+  try {
+    html = await readFile(htmlPath, "utf8");
+  } catch {
+    errors.push(`host-smoke html file is not readable: ${manifest.files.html}`);
+  }
+  try {
+    proofJson = await readFile(proofPath, "utf8");
+  } catch {
+    errors.push(`host-smoke proof file is not readable: ${manifest.files.proof}`);
+  }
+  if (html !== null && sha256(html) !== manifest.checksums.htmlSha256) {
+    errors.push("host-smoke html checksum mismatch");
+  }
+  if (proofJson !== null && sha256(proofJson) !== manifest.checksums.proofSha256) {
+    errors.push("host-smoke proof checksum mismatch");
+  }
+
+  const expectedText = directProofText ?? nonEmpty(manifest.expectedText);
+  if (!expectedText || expectedText.toLowerCase() === handle.toLowerCase()) {
+    errors.push("host-smoke expectedText must be richer than the handle");
+  }
+
+  return {
+    proof: errors.length === 0 ? { expectedText, manifestRef } : null,
+    errors,
+  };
+}
+
+function deploySiteExpectedProofText(env: Env) {
+  const handle = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_HANDLE) ?? "dearme-smoke";
+  const direct = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT);
+  if (direct && direct.toLowerCase() !== handle.toLowerCase()) return direct;
+
+  const manifestText = readDeploySiteHostSmokeExpectedText(env);
+  if (manifestText && manifestText.toLowerCase() !== handle.toLowerCase()) return manifestText;
+
+  return direct ?? manifestText;
+}
+
 function deploySiteExpectedTextRequirement(env: Env) {
-  const expectedText = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT);
+  const expectedText = deploySiteExpectedProofText(env);
   const handle = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_HANDLE) ?? "dearme-smoke";
   if (expectedText && expectedText.toLowerCase() !== handle.toLowerCase()) return [];
-  return ["DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=<private proof page text>"];
+  const manifestRef =
+    deploySiteHostSmokeManifestRef(env) ??
+    "dist/dearme-private-proof/<handle>/host-smoke.json";
+  return [
+    `DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=<private proof page text> or readable DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF=${manifestRef}`,
+  ];
 }
 
 function targetMissingRequirements(target: DearMeProviderSmokeTarget, env: Env) {
@@ -729,11 +961,10 @@ function fetchFailureMessage(error: unknown) {
 
 async function verifyDeploySiteProductionHost(params: {
   result: DeliveredProviderSmokeResult;
-  env: Env;
   expectedText: string;
   options: DearMeProviderSmokeOptions;
 }): Promise<DearMeProviderSmokeResult> {
-  const { result, env, expectedText, options } = params;
+  const { result, expectedText, options } = params;
   if (!result.externalUrl) {
     return { target: result.target, status: "errored", reason: "deploy-site-production-url-missing" };
   }
@@ -769,7 +1000,7 @@ async function verifyDeploySiteProductionHost(params: {
   }
 
   const body = response.text ? await response.text() : "";
-  const expected = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT) ?? expectedText;
+  const expected = expectedText;
   if (!body.trim()) {
     return {
       target: result.target,
@@ -821,6 +1052,13 @@ async function runDeploySiteSmoke(
     return blockedResult(target, "missing-provider-smoke-config", missing);
   }
 
+  const hostSmokeProof = target === "deploy_site_production"
+    ? await resolveDeploySiteHostSmokeProof(env)
+    : { proof: null, errors: [] };
+  if (hostSmokeProof.errors.length > 0) {
+    return blockedResult(target, "invalid-host-smoke-manifest", hostSmokeProof.errors);
+  }
+
   const dispatch = createDearMeDeploySiteDispatch(
     resolveDearMeDeploySiteDispatchConfigFromEnv(env as NodeJS.ProcessEnv) ?? {},
   );
@@ -849,8 +1087,7 @@ async function runDeploySiteSmoke(
 
   return verifyDeploySiteProductionHost({
     result: dispatchResult,
-    env,
-    expectedText: payload.handle,
+    expectedText: hostSmokeProof.proof?.expectedText ?? payload.handle,
     options,
   });
 }

@@ -63,6 +63,8 @@ Current DearMe branch:
 - `pnpm --silent dearme:provider-smoke -- --print-env-template --target deploy_site_production`
   - now points the production host smoke at the same exported private-site
     artifact path
+  - reads the exported `host-smoke.json` manifest for expected proof text and
+    validates the HTML/proof JSON checksums before dispatch/fetch
   - keeps production disabled by default until a real host serves that artifact
   - the production smoke readiness gate now blocks `smoke:*` placeholders and
     handle-only text checks, so it cannot confuse a dispatch receipt with
@@ -276,6 +278,9 @@ declare the product done just because the substrate is strong.
 The local proof gate now exists through `pnpm dearme:aha-proof -- --check`, and
 the host-smoke artifact plus manifest exist through
 `pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof`. The
+provider smoke can read that manifest directly, so the remaining setup concern
+is hosting/credentials rather than copying expected proof text by hand; stale or
+hand-edited proof packets now fail before the host smoke can claim delivery. The
 no-credential packet is now deepened into a five-draft private result; the next
 product proof is serving that same artifact from a real host:
 
@@ -360,6 +365,6 @@ app.
 The next correct move is not another architecture layer. It is to serve the
 five-draft private proof packet from a phone-reachable host with live provider
 evidence on top of the proof gate that now exists. The provider-smoke production
-lane now requires that concrete artifact plus proof-page text before it will run;
-the remaining work is the real host and provider proof, not another local proof
-command.
+lane now requires that concrete artifact plus its exported host-smoke manifest
+or an explicit expected-text override before it will run; the remaining work is
+the real host and provider proof, not another local proof command.
