@@ -144,6 +144,10 @@ It answers three questions before another worker starts building:
   the existing smoke gate from that local file or host env, while production
   deploy remains disabled by default and LinkedIn/Meta live smokes still need
   both `--live` and `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`.
+- DEA-60's latest Symphony handoff was reviewed against the current head. Its
+  env-file/bootstrap path was already covered, and the remaining sample-proof
+  alignment has been absorbed by making the generated production host template
+  use `peter-studio` for both the smoke handle and expected page text.
 - DEA-60 adds an internal provider smoke harness on top of the existing
   `ChannelDispatch` implementations instead of adding another connector or
   settings surface. `pnpm dearme:provider-smoke -- --check` now tells the

@@ -156,7 +156,9 @@ test("provider smoke env template is local-only and keeps live actions disabled"
 
   assert.match(template, /DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=0/);
   assert.match(template, /DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=0/);
+  assert.match(template, /DEARME_DEPLOY_SITE_SMOKE_HANDLE=peter-studio/);
   assert.match(template, /DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN=/);
+  assert.match(template, /DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=peter-studio/);
   assert.match(template, /DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0/);
   assert.match(template, /DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE=/);
   assert.match(template, /OPENCLAW_GATEWAY_URL=/);

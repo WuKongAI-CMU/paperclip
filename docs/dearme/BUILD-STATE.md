@@ -2,6 +2,27 @@
 
 Date: 2026-05-11
 
+## DEA-60 Provider-Smoke Env Template Absorption - 2026-05-11
+
+Product/architecture slice:
+
+- Reviewed the latest Symphony DEA-60 committed patch and absorbed the remaining
+  product-proof alignment into the current provider-smoke harness without
+  replaying the older-base patch wholesale.
+- The generated local `.dearme-provider-smoke.env` template now uses
+  `peter-studio` for both `DEARME_DEPLOY_SITE_SMOKE_HANDLE` and
+  `DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT`, so the sample production host proof
+  checks the same visible page handle it tells the operator to verify.
+- The rest of the DEA-60 capabilities were already covered by the current head:
+  local env-file loading, scoped env templates, live-send guards, OpenClaw
+  message grouping, custom-domain fail-closed handling, and production host
+  content verification.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+- `pnpm --silent dearme:provider-smoke -- --print-env-template --target deploy_site_production`
+
 ## Symphony Dirty-Handoff File Count Cleanup - 2026-05-11
 
 Product/architecture slice:
