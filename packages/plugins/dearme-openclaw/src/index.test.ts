@@ -172,6 +172,8 @@ describe("dearme-openclaw customer-facing manifest copy", () => {
     expect(uiCopy).not.toMatch(/API key|dm_sk_|credential|OpenClaw|proxy|runtime|provider|model/i);
     expect(manifestJson).not.toMatch(/dm_sk_/i);
     expect(readme).toContain("private team access");
+    expect(readme).toContain("One dispatch path");
+    expect(readme).not.toMatch(/does not implement outbound tools yet|Those land per ticket/i);
     expect(readme).not.toMatch(/dm_sk_\\\*|API key|backstage credential/i);
   });
 });

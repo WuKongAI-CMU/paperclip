@@ -2,6 +2,31 @@
 
 Date: 2026-05-11
 
+## DM-171A OpenClaw Plugin Dispatch Contract Cleanup - 2026-05-11
+
+Product/architecture slice:
+
+- Updated `@paperclipai/dearme-openclaw` package docs and package metadata so
+  the plugin layer no longer claims outbound tools are unimplemented or
+  future-ticket work. The package now describes the current split correctly:
+  generated skills/bootstrap plus outbound tool contracts in the plugin,
+  live channel senders in the shared cloud dispatch path.
+- Tightened the outbound tool type comment around the same boundary. The
+  plugin exports the canonical binding table; it should not grow a second
+  plugin-side sender that duplicates voice gate, approval, channel credential,
+  dispatch, audit, and receipt logic.
+- Added a regression assertion to the plugin test suite so the README cannot
+  drift back to the stale "does not implement outbound tools yet" wording.
+
+Verification:
+
+- `pnpm --filter @paperclipai/dearme-openclaw test`
+  passed: 1 file, 19 tests.
+- `pnpm --filter @paperclipai/dearme-openclaw typecheck`
+  passed.
+- `git diff --check -- packages/plugins/dearme-openclaw/README.md packages/plugins/dearme-openclaw/src/tools/types.ts packages/plugins/dearme-openclaw/package.json packages/plugins/dearme-openclaw/src/index.test.ts`
+  passed.
+
 ## DM-170F Profile-Token Semantic Scorer Wiring - 2026-05-11
 
 Product/architecture slice:

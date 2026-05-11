@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- DM-171A plugin dispatch-contract cleanup aligns `@paperclipai/dearme-openclaw`
+  with the current shipped architecture: the plugin owns generated skills,
+  bootstrap files, manifest hints, and outbound tool contracts; channel senders
+  stay in the shared cloud dispatch wrapper. Future OpenClaw/plugin work should
+  not add a second sender or another approval/OAuth/audit path inside the
+  plugin package.
 - DM-170F wires the `semanticScorer` seam into the default app, Voice Gate
   route, output handoff, brand-blueprint/workbench, and approved launch handoff
   paths. `DEARME_VOICE_SEMANTIC_SCORER=profile-token` now enables a local
@@ -3181,7 +3187,7 @@ Total tests after this slice: **47 green**, up from 31 pre-DM-S06.
 | `src/skill-generator.ts` | DM-S05 | Pure function: `DEARME_ROLE_REGISTRY → SkillFile[]`. Emits 12 SKILL.md with YAML frontmatter (name, description, openclaw metadata, proxy tools, state machines, complexity, tier) and a body that embeds the verbatim production prompt and routing hints. |
 | `src/bootstrap.ts` | DM-S05 / DM-138 / DM-183H | Templates for `AGENTS.md` (operating instructions encoding the 4 doctrine rules), `SOUL.md` (persona — never sycophantic, never AI-disclaimy), `IDENTITY.md` (team name, conversational lead), `USER.md` (stub forces onboarding ritual). Injected into OpenClaw workspace on first-run; current bootstrap language points workers at team routing instead of proxy/runtime phrasing. |
 | `src/cli/generate-skills.ts` | DM-S05 | CLI: writes `generated/skills/dearme-<role>/SKILL.md` × 12 + `generated/bootstrap/{AGENTS,SOUL,IDENTITY,USER}.md`. Run after registry edits. |
-| `src/index.test.ts` | DM-S05 | 12 tests: 1 skill per registry entry, unique folders, well-formed YAML, **verbatim prompt embed** (asserts production strings like `"Rate limit:** 2/day"`, `280`, `"verify with Hunter.io"`, `"Under 200 words total"`), routing/tier/source-of-truth sections present, bootstrap files anchor the 4 doctrines. |
+| `src/index.test.ts` | DM-S05 / DM-171A | 19 tests: 1 skill per registry entry, unique folders, well-formed YAML, **verbatim prompt embed** (asserts production strings like `"Rate limit:** 2/day"`, `280`, `"verify with Hunter.io"`, `"Under 200 words total"`), routing/tier/source-of-truth sections present, bootstrap files anchor the 4 doctrines, manifest copy stays team-oriented, outbound approval-gate bindings stay canonical, and package README does not regress to stale future-tool wording. |
 | `generated/skills/dearme-<role>/SKILL.md` × 12 | DM-S05 | Generator output, committed to git so registry edits show as a reviewable diff. What OpenClaw actually loads. |
 | `generated/bootstrap/{AGENTS,SOUL,IDENTITY,USER}.md` | DM-S05 / DM-171 | Generator output. Plugin install copies these into `~/.openclaw/workspace/`. |
 

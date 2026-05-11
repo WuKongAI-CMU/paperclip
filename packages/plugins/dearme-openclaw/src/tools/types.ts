@@ -2,9 +2,10 @@
  * Outbound tool TypeScript interfaces — the wire shape OpenClaw plugin tools
  * use to call into DearMe cloud + the user's own per-channel OAuth.
  *
- * These are NOT implementations. They are the contract every cloud route
- * (`server/`) and every plugin tool wrapper (`packages/plugins/dearme-openclaw/`)
- * must conform to. Implementations land per ticket (DM-172/DM-174/DM-176/etc).
+ * These are NOT channel senders. They are the contract every cloud route,
+ * dispatcher, and plugin tool wrapper must conform to. The current cloud
+ * dispatch path consumes this binding table instead of duplicating per-channel
+ * approval, OAuth, and audit logic in the plugin package.
  *
  * Doctrine:
  *   1. Voice gate first.   For `publish` and `send` tools, the cloud first

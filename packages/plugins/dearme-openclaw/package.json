@@ -1,7 +1,7 @@
 {
   "name": "@paperclipai/dearme-openclaw",
   "version": "0.1.0",
-  "description": "DearMe runs on OpenClaw. This package wires the typed DEARME_ROLE_REGISTRY into an OpenClaw plugin: 12 personal-brand growth-team skills, bootstrap files (AGENTS.md/SOUL.md/IDENTITY.md), and outbound channel tools that OpenClaw doesn't ship (X/LinkedIn/Email/Meta).",
+  "description": "DearMe runs on OpenClaw. This package wires the typed DEARME_ROLE_REGISTRY into an OpenClaw plugin: 12 personal-brand growth-team skills, bootstrap files (AGENTS.md/SOUL.md/IDENTITY.md/USER.md), and outbound tool contracts consumed by the shared cloud dispatch path.",
   "type": "module",
   "private": true,
   "exports": {
