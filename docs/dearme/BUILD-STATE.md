@@ -2,6 +2,35 @@
 
 Date: 2026-05-11
 
+## DEA-47 Approved X Delivery Receipts Absorbed - 2026-05-11
+
+Product/architecture slice:
+
+- The approved X next-move path now has route-level proof through the existing
+  approval route, the approved-launch handoff service, the outbound wrapper,
+  the customer-safe receipt projection, and the Work Ready delivery receipt UI.
+- A successful approved `post_x` handoff records a delivered receipt, while a
+  missing X connection records the existing customer-safe connection-needed
+  receipt and next step: `Connect X before DearMe can continue this approved
+  next step.`
+- This closes the proof loop without adding a second runtime, direct X API
+  publishing, a new approval queue, or customer-visible substrate language.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/approval-routes-idempotency.test.ts --maxWorkers=1`
+  passed.
+- `pnpm exec vitest run server/src/services/dearme-approved-launch-handoff.test.ts
+  server/src/services/dearme-openclaw-gateway-dispatch.test.ts
+  server/src/services/dearme-outbound-tool-wrapper.test.ts
+  server/src/__tests__/dearme-approval-receipts.test.ts
+  server/src/__tests__/dearme-workbench-projection.test.ts
+  server/src/__tests__/approval-routes-idempotency.test.ts --maxWorkers=1`
+  passed: 6 files, 46 tests.
+- `pnpm --filter @paperclipai/ui exec vitest run src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "delivery receipt"`
+  passed.
+- `git diff --check` passed.
+
 ## DEA-43 DM-145F-B Fetch Transport Proof Absorbed - 2026-05-11
 
 Product/architecture slice:
