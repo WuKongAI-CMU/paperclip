@@ -2711,8 +2711,8 @@ function batchPreparedOutputId(batch: DearMeWorkbenchBatchDecision): string | nu
 }
 
 const FOCUSED_DECISION_SURFACE_CLASSNAME = "scroll-mt-4 pb-24 sm:pb-5";
-const FOCUSED_DECISION_ACTION_GROUP_CLASSNAME = "mt-4 grid gap-2 sm:flex sm:flex-wrap";
-const FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME = "w-full justify-start sm:w-auto";
+const FOCUSED_DECISION_ACTION_GROUP_CLASSNAME = "mt-4 grid grid-cols-1 gap-2";
+const FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME = "h-auto min-h-9 w-full min-w-0 justify-start whitespace-normal text-left leading-snug";
 
 function FocusedPreparedWorkReviewControls({
   outputId,

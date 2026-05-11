@@ -1673,7 +1673,9 @@ function expectMobileSafeFocusedDecision(surface: HTMLElement, actionGroupName: 
   expect(actionButtons.length).toBeGreaterThan(1);
   actionButtons.forEach((button) => {
     expect(button.className).toContain("w-full");
-    expect(button.className).toContain("sm:w-auto");
+    expect(button.className).toContain("min-w-0");
+    expect(button.className).toContain("whitespace-normal");
+    expect(button.className).toContain("h-auto");
   });
 }
 
