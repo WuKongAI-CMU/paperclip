@@ -67,6 +67,7 @@ const DEARME_PROVIDER_SMOKE_TARGET_GROUPS = {
 
 type DearMeProviderSmokeTargetGroup = keyof typeof DEARME_PROVIDER_SMOKE_TARGET_GROUPS;
 type TargetArg = DearMeProviderSmokeTarget | DearMeProviderSmokeTargetGroup | "all";
+type ProviderSmokeRunnableTarget = Exclude<TargetArg, "all">;
 
 export interface DearMeProviderSmokeReadiness {
   target: DearMeProviderSmokeTarget;
@@ -130,11 +131,36 @@ const PROVIDER_SMOKE_ENV_FILE = ".dearme-provider-smoke.env";
 const PROVIDER_SMOKE_BASE_COMMAND =
   `pnpm --silent dearme:provider-smoke -- --env-file ${PROVIDER_SMOKE_ENV_FILE}`;
 
-function providerSmokeRunCommand(target: DearMeProviderSmokeTarget): string {
+function providerSmokeRunCommand(target: ProviderSmokeRunnableTarget): string {
   const command = `${PROVIDER_SMOKE_BASE_COMMAND} --target ${target}`;
-  return LIVE_TARGETS.has(target)
+  return expandProviderSmokeTargets(target).some((expandedTarget) =>
+    LIVE_TARGETS.has(expandedTarget),
+  )
     ? `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 ${command} --live`
     : command;
+}
+
+function providerSmokeRunTargetsForCommands(
+  blockedTargets: readonly DearMeProviderSmokeTarget[],
+  targetArg: TargetArg,
+): ProviderSmokeRunnableTarget[] {
+  const blockedTargetSet = new Set(blockedTargets);
+  const shouldGroupOpenClawMessages =
+    (targetArg === "all" || targetArg === "openclaw_messages")
+    && blockedTargetSet.has("telegram_message")
+    && blockedTargetSet.has("imessage_message");
+
+  const runTargets: ProviderSmokeRunnableTarget[] = [];
+  for (const target of blockedTargets) {
+    if (shouldGroupOpenClawMessages && target === "telegram_message") {
+      runTargets.push("openclaw_messages");
+    } else if (shouldGroupOpenClawMessages && target === "imessage_message") {
+      continue;
+    } else {
+      runTargets.push(target);
+    }
+  }
+  return runTargets;
 }
 
 function includesTemplateTarget(targetArg: TargetArg, ...targets: DearMeProviderSmokeTarget[]) {
@@ -145,7 +171,7 @@ export function dearMeProviderSmokeEnvTemplate(targetArg: TargetArg = "all"): st
   const targetFlag = targetArg === "all" ? "" : ` --target ${targetArg}`;
   const selectedRunCommands = targetArg === "all"
     ? [`${PROVIDER_SMOKE_BASE_COMMAND} --target deploy_site_preview`]
-    : expandProviderSmokeTargets(targetArg).map(providerSmokeRunCommand);
+    : [providerSmokeRunCommand(targetArg)];
   const sections = [`# DearMe provider smoke local env.
 # Keep this file local. The repository ignores .dearme-provider-smoke.env.
 #
@@ -238,7 +264,7 @@ export function dearMeProviderSmokeOperatorCommands(
     `pnpm --silent dearme:provider-smoke -- --print-env-template${targetFlag} > ${PROVIDER_SMOKE_ENV_FILE}`,
     `${PROVIDER_SMOKE_BASE_COMMAND} --check${targetFlag}`,
   ];
-  for (const target of blockedTargets) {
+  for (const target of providerSmokeRunTargetsForCommands(blockedTargets, targetArg)) {
     commands.push(providerSmokeRunCommand(target));
   }
   return commands;

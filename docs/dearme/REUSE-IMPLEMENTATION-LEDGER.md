@@ -15,6 +15,11 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- Provider-smoke operator next steps now group Telegram plus iMessage under the
+  shared `openclaw_messages` run command whenever both OpenClaw message smokes
+  are blocked. This keeps the remaining live proof work aligned to one gateway
+  setup and one explicit live guard, without changing per-target readiness JSON
+  or execution semantics.
 - `WORKTREE-INTEGRATION-PLAN.md` now carries the missing superseded/historical
   banner promised by `INDEX.md`, so future Symphony workers should not treat
   the 2026-05-07 dirty-tree plan as the current queue or architecture contract.

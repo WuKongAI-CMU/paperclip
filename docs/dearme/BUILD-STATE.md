@@ -2,6 +2,27 @@
 
 Date: 2026-05-11
 
+## OpenClaw Provider-Smoke Command Grouping - 2026-05-11
+
+Product/architecture slice:
+
+- Provider-smoke next-step commands now collapse blocked Telegram plus
+  iMessage OpenClaw smokes into one guarded `openclaw_messages` run command
+  when both channels are blocked.
+- Scoped OpenClaw env templates now show one group live command instead of two
+  repeated channel live commands, while still printing both recipient/body
+  variables and the shared OpenClaw gateway config.
+- Readiness JSON, per-target execution, and live confirmation gates are
+  unchanged. This only cleans the operator surface so the shared gateway proof
+  is one action instead of two duplicate setup concerns.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+- `pnpm --silent dearme:provider-smoke -- --check`
+- `pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages`
+- `pnpm typecheck`
+
 ## Doc Authority Cleanup - 2026-05-11
 
 Product/architecture slice:
