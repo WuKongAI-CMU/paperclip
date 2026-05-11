@@ -2,6 +2,31 @@
 
 Date: 2026-05-11
 
+## Prompt-To-Artifact Goal Audit Lands - 2026-05-11
+
+Product/architecture slice:
+
+- `pnpm dearme:goal-audit` now prints and emits a first-class
+  `promptToArtifactChecklist` that maps the active coordinator prompt to
+  concrete proof artifacts: substrate reuse, worktree integration, Symphony
+  coordination, architecture-first status spine, Polsia-style aha, autonomous
+  product behavior, and live provider truth.
+- This makes the product comparison executable instead of conversational.
+  DearMe can be strong on Naive/Paperclip/OpenClaw reuse and still fail the
+  active goal until real live OpenClaw/channel/provider proof exists.
+- Future Symphony workers should use this checklist before claiming the broad
+  product objective is complete. Green local rehearsals, loopback host proof,
+  or a ready prompt registry are not enough if any mapped prompt requirement is
+  still blocked.
+
+Verification:
+
+- `pnpm test:dearme-goal-audit`
+- `pnpm --silent dearme:goal-audit -- --json`
+- `pnpm --silent dearme:goal-audit`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## iMessage Operator Setup Surface Cleanup - 2026-05-11
 
 Product/architecture slice:

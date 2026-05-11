@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, the recurring private-work proof contract, the five-draft private output packet, the phone-ready static private-site export, production host smoke fail-closed on the exported proof packet plus host-smoke manifest, unified live-provider setup exporting the proof packet first, host-smoke recurring-work detail, host-provider authorization audit, GitHub Pages production host smoke, local OpenClaw config reuse, and OpenClaw message contract rehearsal)
+Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, the recurring private-work proof contract, the five-draft private output packet, the phone-ready static private-site export, production host smoke fail-closed on the exported proof packet plus host-smoke manifest, unified live-provider setup exporting the proof packet first, host-smoke recurring-work detail, host-provider authorization audit, GitHub Pages production host smoke, local OpenClaw config reuse, OpenClaw message contract rehearsal, and prompt-to-artifact goal audit)
 
 ---
 
@@ -226,6 +226,12 @@ provider login/token or an equivalent public HTTPS DearMe host, runs
 gateway contract locally, and still blocks completion until live provider proof
 is real. The production host leg is satisfied for the current sample packet by
 GitHub Pages; custom-domain hosting remains a later host/provider concern.
+Its JSON and text output also includes `promptToArtifactChecklist`, which maps
+the original product/architecture prompt to concrete artifacts: reuse, worktree
+absorption, Symphony coordination, architecture spine, first wow, autonomy, and
+live provider truth. Use that checklist before marking the broad product goal
+complete; local proxy proof or donor-substrate reuse alone does not satisfy the
+Polsia-style live proof requirement.
 Use it before marking the active coordinator goal complete; do not treat
 loopback host proof as a substitute for a phone-reachable public HTTPS
 `deploy_site_production` smoke, or the OpenClaw message rehearsal as a

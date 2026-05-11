@@ -311,10 +311,26 @@ test("DearMe goal audit blocks completion on live production host proof", () => 
     ["deploy_site_production"],
   );
   assert.match(formatted, /DearMe active goal completion audit/);
+  assert.match(formatted, /Prompt-to-artifact checklist:/);
+  assert.match(formatted, /Maximize reuse of Polsia, Naive\/Paperclip, and OpenClaw instead of rebuilding substrate: blocked/);
+  assert.match(formatted, /Do not mark completion from proxy proof; require real live OpenClaw\/channel\/provider evidence: blocked/);
+  assert.match(formatted, /Missing: OpenClaw shared Telegram\/iMessage message proof, Live provider proof set/);
   assert.match(formatted, /\[x\] Naive\/Paperclip reuse and worktree absorption: met/);
   assert.match(formatted, /\[ \] Polsia-level phone-reachable private proof page: blocked/);
   assert.match(formatted, /Missing capabilities: enable production host smoke; public HTTPS DearMe host; exported private proof artifact; proof-page text or host-smoke manifest/);
   assert.match(formatted, /Run: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --target deploy_site_production/);
+  assert.equal(
+    auditWithHostProvider.promptToArtifactChecklist.find((item) => item.key === "reuse_existing_substrates")?.status,
+    "blocked",
+  );
+  assert.equal(
+    auditWithHostProvider.promptToArtifactChecklist.find((item) => item.key === "live_provider_truth")?.status,
+    "blocked",
+  );
+  assert.deepEqual(
+    auditWithHostProvider.promptToArtifactChecklist.find((item) => item.key === "live_provider_truth")?.missing,
+    ["OpenClaw shared Telegram/iMessage message proof", "Live provider proof set"],
+  );
   assert.equal(
     audit.items.find((item) => item.key === "production_host_provider_auth")?.status,
     "unverified",
@@ -382,7 +398,13 @@ test("DearMe goal audit passes only when every required proof item is ready", ()
     audit.items.every((item) => item.status === "met"),
     true,
   );
+  assert.equal(
+    audit.promptToArtifactChecklist.every((item) => item.status === "met"),
+    true,
+  );
   assert.equal(audit.nextAction.label, "Mark the active goal complete");
+  assert.match(formatted, /Prompt-to-artifact checklist:/);
+  assert.match(formatted, /Make the product autonomous and useful without exposing too many setup concerns: met/);
   assert.match(formatted, /pnpm --silent dearme:goal-audit -- --check/);
 });
 

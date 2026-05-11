@@ -55,9 +55,28 @@ export interface DearMeGoalAuditNextAction {
   command?: string;
 }
 
+export type DearMeGoalAuditPromptChecklistItemKey =
+  | "reuse_existing_substrates"
+  | "integrate_worktrees"
+  | "symphony_coordination"
+  | "architecture_first"
+  | "polsia_style_aha"
+  | "autonomous_good_product"
+  | "live_provider_truth";
+
+export interface DearMeGoalAuditPromptChecklistItem {
+  key: DearMeGoalAuditPromptChecklistItemKey;
+  promptRequirement: string;
+  artifactItems: DearMeGoalAuditItemKey[];
+  status: DearMeGoalAuditItemStatus;
+  evidence: string;
+  missing: string[];
+}
+
 export interface DearMeGoalAudit {
   complete: boolean;
   verdict: string;
+  promptToArtifactChecklist: DearMeGoalAuditPromptChecklistItem[];
   items: DearMeGoalAuditItem[];
   nextAction: DearMeGoalAuditNextAction;
 }
@@ -91,6 +110,64 @@ const REQUIRED_STATUS_SECTIONS: DearMeProofStatusSection["key"][] = [
   "local_safe_proof",
   "voice_semantic_proof",
   "live_provider_proof",
+];
+const PROMPT_TO_ARTIFACT_REQUIREMENTS: readonly {
+  key: DearMeGoalAuditPromptChecklistItemKey;
+  promptRequirement: string;
+  artifactItems: readonly DearMeGoalAuditItemKey[];
+}[] = [
+  {
+    key: "reuse_existing_substrates",
+    promptRequirement: "Maximize reuse of Polsia, Naive/Paperclip, and OpenClaw instead of rebuilding substrate",
+    artifactItems: [
+      "donor_reuse_absorption",
+      "openclaw_message_contract_rehearsal",
+      "openclaw_message_reuse",
+    ],
+  },
+  {
+    key: "integrate_worktrees",
+    promptRequirement: "Integrate and update all relevant worktrees; do not leave active replay candidates behind",
+    artifactItems: [
+      "donor_reuse_absorption",
+      "symphony_coordination",
+    ],
+  },
+  {
+    key: "symphony_coordination",
+    promptRequirement: "Use Symphony as the collaboration center so concurrent agents converge on the same head",
+    artifactItems: ["symphony_coordination"],
+  },
+  {
+    key: "architecture_first",
+    promptRequirement: "Work as product architect first: keep a durable status spine before more implementation",
+    artifactItems: ["architecture_status_spine"],
+  },
+  {
+    key: "polsia_style_aha",
+    promptRequirement: "Deliver a simple Polsia-style first wow that is phone-reachable and feels real",
+    artifactItems: [
+      "private_first_wow",
+      "production_host_live_wow",
+    ],
+  },
+  {
+    key: "autonomous_good_product",
+    promptRequirement: "Make the product autonomous and useful without exposing too many setup concerns",
+    artifactItems: [
+      "private_first_wow",
+      "voice_autonomy",
+      "live_provider_set",
+    ],
+  },
+  {
+    key: "live_provider_truth",
+    promptRequirement: "Do not mark completion from proxy proof; require real live OpenClaw/channel/provider evidence",
+    artifactItems: [
+      "openclaw_message_reuse",
+      "live_provider_set",
+    ],
+  },
 ];
 
 function section(
@@ -381,6 +458,38 @@ function symphonyCoordinationItem(status: DearMeProofStatus): DearMeGoalAuditIte
   };
 }
 
+function promptToArtifactChecklist(
+  items: readonly DearMeGoalAuditItem[],
+): DearMeGoalAuditPromptChecklistItem[] {
+  const byKey = new Map(items.map((item) => [item.key, item]));
+  return PROMPT_TO_ARTIFACT_REQUIREMENTS.map((requirement) => {
+    const artifactItems = requirement.artifactItems
+      .map((key) => byKey.get(key))
+      .filter((item): item is DearMeGoalAuditItem => Boolean(item));
+    const missing = artifactItems
+      .filter((item) => item.status !== "met")
+      .map((item) => item.label);
+    const status: DearMeGoalAuditItemStatus = artifactItems.length === 0
+      ? "unverified"
+      : artifactItems.some((item) => item.status === "blocked")
+        ? "blocked"
+        : artifactItems.some((item) => item.status === "unverified")
+          ? "unverified"
+          : "met";
+
+    return {
+      key: requirement.key,
+      promptRequirement: requirement.promptRequirement,
+      artifactItems: [...requirement.artifactItems],
+      status,
+      evidence: artifactItems.length > 0
+        ? artifactItems.map((item) => `${item.label}: ${item.status}`).join("; ")
+        : "No audit artifact currently maps to this prompt requirement.",
+      missing,
+    };
+  });
+}
+
 export function summarizeDearMeGoalAudit(
   status: DearMeProofStatus,
   hostRehearsal?: DearMeGoalAuditHostRehearsalEvidence,
@@ -431,12 +540,14 @@ export function summarizeDearMeGoalAudit(
   const incompleteItem = items.find((item) =>
     item.requiredForGoal && item.status !== "met"
   );
+  const promptChecklist = promptToArtifactChecklist(items);
   const complete = !incompleteItem;
   return {
     complete,
     verdict: complete
       ? "Goal audit: complete. DearMe has proven architecture, reuse, private aha, Symphony absorption, OpenClaw message proof, and live provider proof."
       : `Goal audit: not complete. ${incompleteItem?.label ?? "A required item"} is still ${incompleteItem?.status ?? "unverified"}.`,
+    promptToArtifactChecklist: promptChecklist,
     items,
     nextAction: incompleteItem
       ? {
@@ -507,8 +618,21 @@ export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {
     "DearMe active goal completion audit",
     audit.verdict,
     "",
-    "Checklist:",
+    "Prompt-to-artifact checklist:",
   ];
+
+  for (const item of audit.promptToArtifactChecklist) {
+    const marker = item.status === "met" ? "[x]" : "[ ]";
+    const missing = item.missing.length > 0
+      ? ` Missing: ${item.missing.join(", ")}.`
+      : "";
+    lines.push(`- ${marker} ${item.promptRequirement}: ${item.status}. ${item.evidence}.${missing}`);
+  }
+
+  lines.push("");
+  lines.push(
+    "Checklist:",
+  );
 
   for (const item of audit.items) {
     const marker = item.status === "met" ? "[x]" : "[ ]";
