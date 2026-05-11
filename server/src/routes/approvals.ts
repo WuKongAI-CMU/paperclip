@@ -26,6 +26,7 @@ import {
   type ApprovedLaunchHandoffService,
 } from "../services/dearme-approved-launch-handoff.js";
 import type { DearMeOpenClawGatewayDispatchConfig } from "../services/dearme-openclaw-gateway-dispatch.js";
+import type { DearMeDeploySiteDispatchConfig } from "../services/dearme-deploy-site-dispatch.js";
 import type { ChannelDispatch } from "../services/dearme-outbound-tool-wrapper.js";
 import type { DearMeOutboundToolName } from "@paperclipai/dearme-openclaw";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
@@ -46,6 +47,7 @@ export function approvalRoutes(
     dearMeLaunchHandoffService?: ApprovedLaunchHandoffService;
     dearMeOutboundChannelDispatch?: Partial<Record<DearMeOutboundToolName, ChannelDispatch>>;
     dearMeOpenClawGatewayDispatchConfig?: DearMeOpenClawGatewayDispatchConfig | null;
+    dearMeDeploySiteDispatchConfig?: DearMeDeploySiteDispatchConfig | null;
   } = {},
 ) {
   const router = Router();
@@ -61,6 +63,9 @@ export function approvalRoutes(
       db,
       options.dearMeOutboundChannelDispatch,
       options.dearMeOpenClawGatewayDispatchConfig,
+      null,
+      null,
+      options.dearMeDeploySiteDispatchConfig,
     );
   const strictSecretsMode = process.env.PAPERCLIP_SECRETS_STRICT_MODE === "true";
 

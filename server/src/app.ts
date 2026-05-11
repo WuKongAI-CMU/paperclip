@@ -60,6 +60,7 @@ import { setPluginEventBus } from "./services/activity-log.js";
 import { createPluginDevWatcher } from "./services/plugin-dev-watcher.js";
 import { createPluginHostServiceCleanup } from "./services/plugin-host-service-cleanup.js";
 import { createDearMeAiProxyRouteOptions } from "./services/dearme-ai-proxy-executors.js";
+import { resolveDearMeDeploySiteDispatchConfigFromEnv } from "./services/dearme-deploy-site-dispatch-config.js";
 import { resolveDearMeOpenClawGatewayDispatchConfigFromEnv } from "./services/dearme-openclaw-gateway-dispatch-config.js";
 import { createDearMeXOAuthConnectionServiceFromEnv } from "./services/dearme-x-oauth-connection.js";
 import { pluginRegistryService } from "./services/plugin-registry.js";
@@ -229,6 +230,7 @@ export async function createApp(
     approvalRoutes(db, {
       pluginWorkerManager: workerManager,
       dearMeOpenClawGatewayDispatchConfig: resolveDearMeOpenClawGatewayDispatchConfigFromEnv(),
+      dearMeDeploySiteDispatchConfig: resolveDearMeDeploySiteDispatchConfigFromEnv(),
     }),
   );
   api.use(secretRoutes(db));

@@ -2,6 +2,33 @@
 
 Date: 2026-05-11
 
+## DM-177C Configured `deploy_site` Production Host Gate - 2026-05-11
+
+Product/architecture slice:
+
+- Added `server/src/services/dearme-deploy-site-dispatch-config.ts` so the
+  default approved launch handoff path can read DearMe site host config from
+  env instead of relying on a test-only constructor seam.
+- The app now passes `DEARME_DEPLOY_SITE_BASE_URL` / `DEARME_SITE_BASE_URL` /
+  `DEARME_PUBLIC_SITE_BASE_URL` and `DEARME_DEPLOY_SITE_ALLOW_PRODUCTION` /
+  `DEARME_SITE_ALLOW_PRODUCTION` into the default `deploy_site`
+  `ChannelDispatch`.
+- With no env config, the existing preview path and production fail-closed
+  behavior stay unchanged. With `DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=true`,
+  approved production `deploy_site` handoffs can emit stable production URL
+  receipts on the DearMe-owned host through the same approval/wrapper/audit
+  pipeline.
+- Custom domains remain rejected. This slice only opens the operator gate for
+  the DearMe-owned multi-tenant host; DNS automation and live host smoke stay
+  separate DM-177 work.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-deploy-site-dispatch-config.test.ts server/src/services/dearme-deploy-site-dispatch.test.ts server/src/services/dearme-approved-launch-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts server/src/__tests__/dearme-approval-receipts.test.ts --maxWorkers=1`
+  passed: 5 files, 44 tests.
+- `pnpm --filter @paperclipai/server typecheck`
+  passed.
+
 ## DM-178 `create_meta_campaign` Dispatch Path - 2026-05-11
 
 Product/architecture slice:

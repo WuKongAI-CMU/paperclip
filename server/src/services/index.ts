@@ -23,6 +23,9 @@ export {
   type DearMeDeploySiteDispatchConfig,
 } from "./dearme-deploy-site-dispatch.js";
 export {
+  resolveDearMeDeploySiteDispatchConfigFromEnv,
+} from "./dearme-deploy-site-dispatch-config.js";
+export {
   createDearMeLinkedInDmDispatch,
   resolveDearMeLinkedInDmCredential,
   type DearMeLinkedInDmDispatchConfig,

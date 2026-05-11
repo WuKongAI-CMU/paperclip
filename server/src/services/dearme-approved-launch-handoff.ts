@@ -18,7 +18,10 @@ import {
   createDearMeOpenClawGatewayDispatchMap,
   type DearMeOpenClawGatewayDispatchConfig,
 } from "./dearme-openclaw-gateway-dispatch.js";
-import { createDearMeDeploySiteDispatch } from "./dearme-deploy-site-dispatch.js";
+import {
+  createDearMeDeploySiteDispatch,
+  type DearMeDeploySiteDispatchConfig,
+} from "./dearme-deploy-site-dispatch.js";
 import {
   createDearMeLinkedInDmDispatch,
   type DearMeLinkedInDmDispatchConfig,
@@ -182,12 +185,15 @@ export function defaultDearMeApprovedLaunchHandoffService(
   dearMeOpenClawGatewayDispatchConfig: DearMeOpenClawGatewayDispatchConfig | null = null,
   dearMeLinkedInDmDispatchConfig: DearMeLinkedInDmDispatchConfig | null = null,
   dearMeMetaCampaignDispatchConfig: DearMeMetaCampaignDispatchConfig | null = null,
+  dearMeDeploySiteDispatchConfig: DearMeDeploySiteDispatchConfig | null = null,
 ): ApprovedLaunchHandoffService {
   const sseBus = getDearMeSseBus();
   const defaultGatewayDispatch = createDearMeOpenClawGatewayDispatchMap(
     dearMeOpenClawGatewayDispatchConfig,
   );
-  const defaultDeploySiteDispatch = createDearMeDeploySiteDispatch();
+  const defaultDeploySiteDispatch = createDearMeDeploySiteDispatch(
+    dearMeDeploySiteDispatchConfig ?? {},
+  );
   const defaultLinkedInDmDispatch = dearMeLinkedInDmDispatchConfig?.messagesUrl
     ? createDearMeLinkedInDmDispatch(dearMeLinkedInDmDispatchConfig)
     : null;

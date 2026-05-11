@@ -315,14 +315,15 @@ The integration only works if these glue artifacts ship:
 | DM-174 | `send_email` `ChannelDispatch` (Resend/SES) | **Resend dispatcher shipped.** Wrapper runs gate/approval/OAuth/audit; `dearme-send-email-dispatch.ts` resolves the stored Resend credential, validates plain-text payload and expiry, calls Resend `POST /emails`, and maps auth failures back to reauth. HTML is fail-closed until sanitizer support lands. SES remains fail-closed until the tool binding can resolve an `ses` channel credential instead of the current static `resend` binding. Live external email still needs a real credential smoke. |
 | DM-175 | `channel_connections` Drizzle schema | **Shipped DM-S06.** ✅ |
 | DM-176A | `send_linkedin_dm` partner `ChannelDispatch` | **Server dispatcher shipped.** Wrapper runs gate/approval/OAuth/audit; `dearme-linkedin-dm-dispatch.ts` resolves the stored partner credential, requires `send_dm` capability, posts to a configured partner messages endpoint, and maps auth failures back to reauth. Live LinkedIn delivery still needs an approved partner endpoint + credential smoke. |
-| DM-177B | Preview `deploy_site` `ChannelDispatch` | **Preview dispatcher shipped.** Approved private-site proof handoffs use `dearme-deploy-site-dispatch.ts` through the same wrapper/audit path, validate safe handles + artifact refs, reject custom domains, and return stable preview receipts at `dearme.app/<handle>?preview=*` without OpenClaw gateway config. Production deploys remain fail-closed until the real host path is enabled. |
-| DM-177 | Public `deploy_site` host + custom-domain path | Brand Site Builder closes the public site loop. |
+| DM-177B | Preview `deploy_site` `ChannelDispatch` | **Preview dispatcher shipped.** Approved private-site proof handoffs use `dearme-deploy-site-dispatch.ts` through the same wrapper/audit path, validate safe handles + artifact refs, reject custom domains, and return stable preview receipts at `dearme.app/<handle>?preview=*` without OpenClaw gateway config. |
+| DM-177C | Configured production site host gate | **Production host config gate shipped.** App startup now resolves DearMe site host env into the default approved launch handoff path, so production URL receipts stay fail-closed by default and can be enabled explicitly for the DearMe-owned host without opening custom-domain automation. |
+| DM-177 | Public `deploy_site` live smoke + custom-domain path | Brand Site Builder closes the public site loop. |
 | DM-178 | `create_meta_campaign` `ChannelDispatch` | **Server dispatcher shipped.** Wrapper runs spend approval/OAuth/audit; `dearme-meta-campaign-dispatch.ts` resolves the stored Meta ads credential, requires `ads_management`, enforces test/ramp/scale budget tiers and the 7-day learning window, creates a paused Meta campaign receipt, and maps auth failures back to reauth. Live paid-ad delivery still needs a real Meta OAuth/Marketing API smoke. |
 | DM-179 | Tri-substrate SSE Express route reading from `dearme-sse-bus` | **Shipped.** `GET /api/dearme/companies/:companyId/events` emits a workbench sync snapshot and scoped runtime events. ✅ |
 | DM-182 | OpenClaw passthrough workbench refresh | **Shipped.** Customer workbench invalidates on `openclaw_lifecycle` / `openclaw_stream` through the same EventSource route. ✅ |
 | DM-180 | Approval resolver Express route over `dearme-approval-resolver` service | **Shipped.** `POST /api/dearme/companies/:companyId/approvals/resolve` resolves through the shared service, normalizes issue refs, and persists actor attribution. ✅ |
 
-The shipped subset now includes DM-175 channel_connections schema, DM-S06 contracts, **DM-S07 server services**, **DM-179 SSE route**, **DM-182 passthrough refresh**, **DM-180 approval route**, **DM-172 X dispatch**, **DM-173A/DM-173B X OAuth persistence**, the Resend half of **DM-174 email dispatch**, **DM-176A LinkedIn partner dispatch**, **DM-177B preview deploy dispatch**, and **DM-178 Meta campaign dispatch**. The remaining gaps are the live-provider smokes, SES channel split, production public-site host/custom-domain path, and the DM-170 trained voice scorer swap.
+The shipped subset now includes DM-175 channel_connections schema, DM-S06 contracts, **DM-S07 server services**, **DM-179 SSE route**, **DM-182 passthrough refresh**, **DM-180 approval route**, **DM-172 X dispatch**, **DM-173A/DM-173B X OAuth persistence**, the Resend half of **DM-174 email dispatch**, **DM-176A LinkedIn partner dispatch**, **DM-177B preview deploy dispatch**, **DM-177C configured production host gate**, and **DM-178 Meta campaign dispatch**. The remaining gaps are the live-provider smokes, SES channel split, live public-site/custom-domain smoke, and the DM-170 trained voice scorer swap.
 
 ---
 
@@ -342,6 +343,7 @@ slot and never re-implement the gate / approval / audit pipeline.
 | X post dispatch | `server/src/services/dearme-x-post-dispatch.ts` | Default `post_x` dispatcher for approved launch handoffs. It consumes the existing opaque credential, validates `tweet.write`, posts to X API v2, maps delivered tweet ids to stable public URLs, and maps provider auth failures to reauth. |
 | LinkedIn DM dispatch | `server/src/services/dearme-linkedin-dm-dispatch.ts` | Optional direct `send_linkedin_dm` dispatcher for approved launch handoffs when a partner messages endpoint is configured. It consumes the existing opaque LinkedIn channel credential, requires a partner/provider credential with `send_dm` capability, sends with the wrapper idempotency key, and maps provider auth failures to reauth. Browser automation and guessed private APIs stay out of this path. |
 | Email dispatch | `server/src/services/dearme-send-email-dispatch.ts` | Default `send_email` dispatcher for approved launch handoffs. It consumes the existing opaque `resend` credential, validates sender/recipient/subject/plain-text body/expiry, posts to Resend `POST /emails` with the wrapper idempotency key, maps delivered email ids to receipts, and maps provider auth failures to reauth. HTML is fail-closed until sanitizer support lands. |
+| Deploy site dispatch | `server/src/services/dearme-deploy-site-dispatch.ts` + `server/src/services/dearme-deploy-site-dispatch-config.ts` | Default `deploy_site` dispatcher for approved launch handoffs. It validates safe handles and artifact refs, emits stable preview receipts, rejects custom domains, and keeps production receipts fail-closed unless DearMe host env explicitly opts in. |
 | Meta campaign dispatch | `server/src/services/dearme-meta-campaign-dispatch.ts` | Default `create_meta_campaign` dispatcher for approved paid-ad handoffs. It consumes the existing opaque `meta_ads` credential, requires `ads_management`, bounds campaign name/objective/creative/audience refs, enforces the product's test/ramp/scale daily budget tiers and 7-day learning window, creates a paused campaign receipt through Meta Marketing API, and maps provider auth failures to reauth. |
 | Voice gate | `dearme-voice-gate.ts` + `routes/dearme-voice-gate.ts` | `scoreVoice(req)` plus root `POST /v1/voice/score`. Default = deterministic stub (5 phrase rules, length floor/ceiling, evidence reward). Next DM-170 impl swaps in the trained model. |
 | Work loop | `dearme-work-loop.ts` | `transition(...)` validates via `canTransitionWorkLoop`, mirrors state into `issues.status`, writes `activity_log`, emits `work_loop_transition` SSE. |
@@ -349,14 +351,16 @@ slot and never re-implement the gate / approval / audit pipeline.
 | **Outbound tool wrapper** | `dearme-outbound-tool-wrapper.ts` | The lynchpin. `callOutbound()` runs voice-gate → approval → OAuth → injected `ChannelDispatch` → audit (cost_event + SSE + work-loop transition). |
 
 Adding or replacing an outbound channel after DM-S07 is a `ChannelDispatch`
-registration. `post_x`, `send_email`, `send_linkedin_dm`, and `deploy_site`
-now use this exact slot:
+registration. `post_x`, `send_email`, `send_linkedin_dm`, `deploy_site`, and
+`create_meta_campaign` now use this exact slot:
 
 ```ts
 channelDispatch: {
   ...defaultGatewayDispatch,
   post_x: createDearMeXPostDispatch(),
   send_email: createDearMeSendEmailDispatch(),
+  deploy_site: createDearMeDeploySiteDispatch(siteConfig),
+  create_meta_campaign: createDearMeMetaCampaignDispatch(),
   ...overrides,
 }
 ```
