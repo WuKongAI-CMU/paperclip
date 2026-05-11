@@ -36,6 +36,7 @@ import {
 import { notFound } from "../errors.js";
 import { DEARME_NEXT_MOVE_APPROVAL_TYPE } from "./dearme-approval-receipts.js";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "./dearme-brand-blueprint-apply.js";
+import { dearMeCustomerSafeText } from "./dearme-customer-text.js";
 import {
   buildDearMeVoiceMemoryEvidenceSummary,
   DEARME_MEMORY_ACTIONS,
@@ -125,8 +126,6 @@ const CYCLE_OUTPUT_WORK_PRODUCT_PROVIDER = "dearme-cycle-output";
 const DEARME_OUTPUT_REVIEW_LOOP_MAX_ATTEMPTS = 3;
 const DEARME_SILENCE_DEFAULT_REVIEW_NOTE =
   "No response came in, so DearMe kept this private work moving with a default review score of 7/10. You can still revise the direction later.";
-const DEARME_FEEDBACK_TRACE_HIDDEN_TERMS =
-  /\b(dearme decision|issue comment|work product|provider|adapter|setup[-_ ]?payload|paperclip|openclaw|symphony|runtime|agent|model-provider|model provider|codex)\b/i;
 const outputKindSet = new Set<string>(DEARME_OUTPUT_KINDS);
 
 const NEXT_MOVE_APPROVAL_COPY: Partial<Record<DearMeOutputKind, {
@@ -415,9 +414,8 @@ function isReviewFeedbackDecision(decision: DearMeParsedReviewDecision): decisio
 }
 
 function customerSafeFeedbackText(value: string | null | undefined, maxLength = 260) {
-  const preview = plainPreview(value, maxLength);
-  if (!preview || DEARME_FEEDBACK_TRACE_HIDDEN_TERMS.test(preview)) return null;
-  return preview;
+  const safe = dearMeCustomerSafeText(value, "", maxLength);
+  return safe || null;
 }
 
 function hasFreshWorkAfterFeedback(input: {

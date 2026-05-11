@@ -27,6 +27,7 @@ import {
   type VoiceGateScoreRequest,
   type VoiceGateScoreResponse,
 } from "@paperclipai/dearme-ai-proxy";
+import { DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN } from "./dearme-customer-text.js";
 
 type VoiceCorpusProfile = {
   acceptedSamples: number;
@@ -111,7 +112,7 @@ const NEGATIVE_PHRASES: ReadonlyArray<{ phrase: RegExp; weight: number; rule: st
     note: "Repeated punctuation makes the draft feel less grounded.",
   },
   {
-    phrase: /\b(?:paperclip|openclaw|symphony|adapter|provider|runtime|model|token|setup payload|codex|workbench|queue|admin|fingerprint)\b/i,
+    phrase: DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN,
     weight: 16,
     rule: "hidden_process_language",
     note: "Translate behind-the-scenes wording into plain customer language.",

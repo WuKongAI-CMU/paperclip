@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- DM-171C unifies DearMe hidden-language detection around the shared
+  customer-text boundary. Voice Gate now scores against the same hidden
+  vocabulary that Workbench/receipt projection sanitizes, and output handoff
+  feedback/regeneration text now translates substrate words instead of dropping
+  the whole user note. Future customer-visible surfaces should import the
+  shared pattern or sanitizer before introducing any local hidden-term regex.
 - DM-171B tightens the customer-safe language boundary on the existing DearMe
   projection and approval-error paths. API key, credential, token, queue,
   worker, run id, and raw control plane vocabulary now collapses into

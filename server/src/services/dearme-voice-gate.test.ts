@@ -22,11 +22,16 @@ const hiddenCustomerTerms = [
   "provider",
   "runtime",
   "model",
+  "api key",
+  "credential",
   "token",
   "setup payload",
   "codex",
   "workbench",
   "queue",
+  "worker",
+  "run id",
+  "raw control plane",
   "admin",
   "fingerprint",
 ] as const;
@@ -246,7 +251,7 @@ describe("dearMeVoiceGateService scorer", () => {
   it("flags hidden process language without echoing it in customer-facing notes", async () => {
     const r = await svc.scoreVoice({
       fingerprintId: "vf_test",
-      text: "As an AI, the OpenClaw model runtime queue used a provider adapter token in the Paperclip workbench.",
+      text: "As an AI, the OpenClaw model runtime queue used a provider adapter token in the Paperclip workbench with an API key credential worker run id raw control plane.",
       kind: "linkedin-post",
       minScore: 70,
     });
@@ -256,6 +261,17 @@ describe("dearMeVoiceGateService scorer", () => {
     for (const term of hiddenCustomerTerms) {
       expect(reasonText).not.toContain(term);
     }
+  });
+
+  it("flags backstage access language even when donor names are absent", async () => {
+    const r = await svc.scoreVoice({
+      fingerprintId: "vf_access_language",
+      text: "The API key credential worker run id raw control plane should be visible in the launch note.",
+      kind: "linkedin-post",
+      minScore: 70,
+    });
+
+    expect(r.reasons.some((reason) => reason.rule === "hidden_process_language")).toBe(true);
   });
 
   it("flags hype words on tweets", async () => {

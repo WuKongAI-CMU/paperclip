@@ -24,6 +24,7 @@ import {
 } from "./helpers/embedded-postgres.js";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "../services/dearme-brand-blueprint-apply.js";
 import {
+  buildDearMeOutputRegenerationBrief,
   dearmeOutputHandoffService,
   parseDearMeOutputReviewDecisionComment,
 } from "../services/dearme-output-handoff.js";
@@ -54,6 +55,32 @@ describe("DearMe output review decision parsing", () => {
       defaultedBySilence: true,
       notePreview: expect.stringContaining("default review score of 7/10"),
     });
+  });
+
+  it("keeps regeneration briefs useful while translating hidden process language", () => {
+    const brief = buildDearMeOutputRegenerationBrief({
+      artifactTitle: "Content drafts",
+      decision: {
+        action: "request_changes",
+        createdAt: new Date("2026-05-08T09:10:00.000Z"),
+        notePreview:
+          "Remove the OpenClaw gateway API key, credential, worker queue, run id, and raw control plane language.",
+        defaultApprovalScore: null,
+        defaultedBySilence: false,
+      },
+      previousDraft: {
+        title: "Paperclip provider draft",
+        summary: "Codex runtime model provider note with a fingerprint.",
+        bodyPreview: "DearMe decision issue comment exposed setup_payload and work product details.",
+      },
+    });
+
+    expect(brief).toContain("team access");
+    expect(brief).toContain("connection details");
+    expect(brief).toContain("private operations");
+    expect(brief).not.toMatch(
+      /\b(openclaw|gateway|api key|credential|worker|queue|run id|raw control plane|paperclip|provider|codex|runtime|model|fingerprint|setup_payload|work product)\b/i,
+    );
   });
 });
 

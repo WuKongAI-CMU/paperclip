@@ -2,6 +2,31 @@
 
 Date: 2026-05-11
 
+## DM-171C Unified Hidden-Language Boundary - 2026-05-11
+
+Product/architecture slice:
+
+- Promoted DearMe's customer-hidden vocabulary into one shared pattern next to
+  the customer-safe text sanitizer.
+- Rewired Voice Gate hidden-process scoring to use the shared pattern, so
+  access/coordinator language such as API key, credential, worker, run id,
+  raw control plane, admin, and fingerprint is caught without keeping a
+  separate scorer-only regex.
+- Rewired output handoff feedback/regeneration text through
+  `dearMeCustomerSafeText` instead of dropping useful notes whenever they
+  contained substrate words. Customer-visible feedback stays clean while the
+  regeneration brief still carries the user's intent.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-voice-gate.test.ts --maxWorkers=1`
+  passed: 1 file, 16 tests.
+- `pnpm exec vitest run server/src/__tests__/dearme-output-handoff.test.ts --maxWorkers=1`
+  passed: 1 file, 2 tests; 12 embedded-Postgres tests were skipped because the
+  local Postgres init script exited with code 1.
+- `pnpm exec vitest run server/src/__tests__/dearme-workbench-projection.test.ts --maxWorkers=1`
+  passed: 1 file, 7 tests.
+
 ## DM-171B Customer-Safe Failure Language Tightening - 2026-05-11
 
 Product/architecture slice:
