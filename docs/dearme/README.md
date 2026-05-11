@@ -45,7 +45,7 @@ If anything in this folder contradicts `INDEX.md`, `INDEX.md` wins.
 - [`packages/dearme-ai-proxy/src/contract.ts`](../../packages/dearme-ai-proxy/src/contract.ts) — wire contract: `dm_sk_` keys, dual-protocol cost-attribution headers, agent-run shape.
 - [`packages/dearme-ai-proxy/src/functions.ts`](../../packages/dearme-ai-proxy/src/functions.ts) — 6 OpenAI native function definitions ported verbatim.
 - [`packages/dearme-ai-proxy/src/voice-gate.ts`](../../packages/dearme-ai-proxy/src/voice-gate.ts) — voice-gate scoring wire (`POST /v1/voice/score`).
-- [`packages/db/src/schema/channel_connections.ts`](../../packages/db/src/schema/channel_connections.ts) — per-user OAuth tokens (DM-175).
+- [`packages/db/src/schema/channel_connections.ts`](../../packages/db/src/schema/channel_connections.ts) — per-user OAuth tokens, now with the DM-173A X callback proof route writing active `x` rows (DM-175).
 - [`packages/db/src/schema/opportunities.ts`](../../packages/db/src/schema/opportunities.ts) — opportunities lifecycle (DM-141).
 
 ## Reference / research (read on demand)
