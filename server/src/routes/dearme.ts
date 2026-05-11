@@ -43,7 +43,10 @@ import {
   getDearMeSseBus,
   type DearMeSseEvent,
 } from "../services/dearme-sse-bus.js";
-import type { DearMeVoiceProfileStore } from "../services/dearme-voice-gate.js";
+import type {
+  DearMeVoiceProfileStore,
+  DearMeVoiceSemanticScorer,
+} from "../services/dearme-voice-gate.js";
 import { forbidden, HttpError, notFound } from "../errors.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { heartbeatService } from "../services/heartbeat.js";
@@ -253,21 +256,27 @@ function dearMeOutputActivityAction(action: DearMeOutputReviewAction) {
 
 export function dearmeRoutes(
   db: Db,
-  options: { voiceProfileStore?: DearMeVoiceProfileStore } = {},
+  options: {
+    voiceProfileStore?: DearMeVoiceProfileStore;
+    voiceSemanticScorer?: DearMeVoiceSemanticScorer | null;
+  } = {},
 ) {
   const router = Router();
   const agents = agentService(db);
   const brandBlueprints = dearmeBrandBlueprintService(db, {
     voiceProfileStore: options.voiceProfileStore,
+    voiceSemanticScorer: options.voiceSemanticScorer,
   });
   const memoryContext = dearmeMemoryContextService(db);
   const issues = issueService(db);
   const outputHandoff = dearmeOutputHandoffService(db, {
     voiceProfileStore: options.voiceProfileStore,
+    voiceSemanticScorer: options.voiceSemanticScorer,
   });
   const paidBetaAccess = dearmePaidBetaAccessService(db);
   const workbench = dearmeWorkbenchService(db, {
     voiceProfileStore: options.voiceProfileStore,
+    voiceSemanticScorer: options.voiceSemanticScorer,
   });
   const heartbeat = heartbeatService(db);
   const sseBus = getDearMeSseBus();

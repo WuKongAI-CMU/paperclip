@@ -35,7 +35,10 @@ import {
 } from "@paperclipai/shared";
 import { DEARME_BRAND_BLUEPRINT_ORIGIN_KIND } from "./dearme-brand-blueprint-apply.js";
 import { dearmeOutputHandoffService } from "./dearme-output-handoff.js";
-import type { DearMeVoiceProfileStore } from "./dearme-voice-gate.js";
+import type {
+  DearMeVoiceProfileStore,
+  DearMeVoiceSemanticScorer,
+} from "./dearme-voice-gate.js";
 import {
   compactDearMeCustomerText,
   dearMeCustomerSafeText,
@@ -2157,10 +2160,14 @@ function buildSummary(input: {
 
 export function dearmeWorkbenchService(
   db: Db,
-  options: { voiceProfileStore?: DearMeVoiceProfileStore } = {},
+  options: {
+    voiceProfileStore?: DearMeVoiceProfileStore;
+    voiceSemanticScorer?: DearMeVoiceSemanticScorer | null;
+  } = {},
 ) {
   const outputHandoff = dearmeOutputHandoffService(db, {
     voiceProfileStore: options.voiceProfileStore,
+    voiceSemanticScorer: options.voiceSemanticScorer,
   });
 
   return {

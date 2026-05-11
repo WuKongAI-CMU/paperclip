@@ -42,6 +42,7 @@ import { getDearMeSseBus } from "./dearme-sse-bus.js";
 import {
   dearMeVoiceGateService,
   type DearMeVoiceProfileStore,
+  type DearMeVoiceSemanticScorer,
 } from "./dearme-voice-gate.js";
 import { createDbDearMeVoiceProfileStore } from "./dearme-voice-profile-store.js";
 import { dearMeWorkLoopService } from "./dearme-work-loop.js";
@@ -190,7 +191,10 @@ export function defaultDearMeApprovedLaunchHandoffService(
   dearMeLinkedInDmDispatchConfig: DearMeLinkedInDmDispatchConfig | null = null,
   dearMeMetaCampaignDispatchConfig: DearMeMetaCampaignDispatchConfig | null = null,
   dearMeDeploySiteDispatchConfig: DearMeDeploySiteDispatchConfig | null = null,
-  options: { voiceProfileStore?: DearMeVoiceProfileStore } = {},
+  options: {
+    voiceProfileStore?: DearMeVoiceProfileStore;
+    voiceSemanticScorer?: DearMeVoiceSemanticScorer | null;
+  } = {},
 ): ApprovedLaunchHandoffService {
   const sseBus = getDearMeSseBus();
   const defaultGatewayDispatch = createDearMeOpenClawGatewayDispatchMap(
@@ -209,6 +213,7 @@ export function defaultDearMeApprovedLaunchHandoffService(
   const defaultXPostDispatch = createDearMeXPostDispatch();
   const voiceGate = dearMeVoiceGateService({
     profileStore: options.voiceProfileStore ?? createDbDearMeVoiceProfileStore(db),
+    semanticScorer: options.voiceSemanticScorer ?? undefined,
   });
   const wrapper = dearMeOutboundToolWrapper({
     db,

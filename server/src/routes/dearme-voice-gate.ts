@@ -12,6 +12,7 @@ import {
   dearMeVoiceGateService,
   type DearMeVoiceGateService,
   type DearMeVoiceProfileStore,
+  type DearMeVoiceSemanticScorer,
 } from "../services/dearme-voice-gate.js";
 
 const voiceGateScoreRequestSchema = z.object({
@@ -24,10 +25,12 @@ const voiceGateScoreRequestSchema = z.object({
 export function dearMeVoiceGateRoutes(db: Db, options: {
   voiceGate?: DearMeVoiceGateService;
   profileStore?: DearMeVoiceProfileStore;
+  semanticScorer?: DearMeVoiceSemanticScorer | null;
 } = {}) {
   const router = Router();
   const voiceGate = options.voiceGate ?? dearMeVoiceGateService({
     profileStore: options.profileStore,
+    semanticScorer: options.semanticScorer ?? undefined,
   });
 
   router.post(

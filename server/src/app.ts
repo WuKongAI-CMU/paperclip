@@ -66,6 +66,7 @@ import { resolveDearMeMetaCampaignDispatchConfigFromEnv } from "./services/dearm
 import { resolveDearMeOpenClawGatewayDispatchConfigFromEnv } from "./services/dearme-openclaw-gateway-dispatch-config.js";
 import { createDearMeXOAuthConnectionServiceFromEnv } from "./services/dearme-x-oauth-connection.js";
 import { createDbDearMeVoiceProfileStore } from "./services/dearme-voice-profile-store.js";
+import { resolveDearMeVoiceSemanticScorerFromEnv } from "./services/dearme-voice-semantic-scorer.js";
 import { pluginRegistryService } from "./services/plugin-registry.js";
 import { createHostClientHandlers } from "@paperclipai/plugin-sdk";
 import type { BetterAuthSessionResult } from "./auth/better-auth.js";
@@ -183,9 +184,13 @@ export async function createApp(
   }
   const dearMeXOAuthConnection = createDearMeXOAuthConnectionServiceFromEnv();
   const dearMeVoiceProfileStore = createDbDearMeVoiceProfileStore(db);
+  const dearMeVoiceSemanticScorer = resolveDearMeVoiceSemanticScorerFromEnv();
   app.use(llmRoutes(db));
   app.use(DEARME_PROXY_BASE_PATH, dearMeAiProxyRoutes(db, createDearMeAiProxyRouteOptions()));
-  app.use(dearMeVoiceGateRoutes(db, { profileStore: dearMeVoiceProfileStore }));
+  app.use(dearMeVoiceGateRoutes(db, {
+    profileStore: dearMeVoiceProfileStore,
+    semanticScorer: dearMeVoiceSemanticScorer,
+  }));
   app.use(
     "/v1/channels",
     boardMutationGuard(),
@@ -215,7 +220,10 @@ export async function createApp(
       companyDeletionEnabled: opts.companyDeletionEnabled,
     }),
   );
-  api.use("/dearme", dearmeRoutes(db, { voiceProfileStore: dearMeVoiceProfileStore }));
+  api.use("/dearme", dearmeRoutes(db, {
+    voiceProfileStore: dearMeVoiceProfileStore,
+    voiceSemanticScorer: dearMeVoiceSemanticScorer,
+  }));
   api.use("/companies", companyRoutes(db, opts.storageService));
   api.use(companySkillRoutes(db));
   api.use(agentRoutes(db, { pluginWorkerManager: workerManager }));
@@ -238,6 +246,7 @@ export async function createApp(
       dearMeMetaCampaignDispatchConfig: resolveDearMeMetaCampaignDispatchConfigFromEnv(),
       dearMeDeploySiteDispatchConfig: resolveDearMeDeploySiteDispatchConfigFromEnv(),
       voiceProfileStore: dearMeVoiceProfileStore,
+      voiceSemanticScorer: dearMeVoiceSemanticScorer,
     }),
   );
   api.use(secretRoutes(db));

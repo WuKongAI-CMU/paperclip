@@ -2,6 +2,34 @@
 
 Date: 2026-05-11
 
+## DM-170F Profile-Token Semantic Scorer Wiring - 2026-05-11
+
+Product/architecture slice:
+
+- Added an opt-in `profile-token` semantic scorer that uses the existing
+  accepted-sample voice profile as a calibrated local signal for the DM-170
+  `semanticScorer` seam. It requires enough accepted samples and profile
+  tokens before scoring, so the default first-run Voice Gate behavior remains
+  unchanged.
+- Wired the same env-resolved scorer through the root `/v1/voice/score` route,
+  DearMe routes, output handoff, workbench, brand-blueprint, and approved
+  launch handoff paths. Voice scoring now has one shared configured scorer
+  boundary instead of per-entrypoint ad hoc construction.
+- Kept the scorer behind `DEARME_VOICE_SEMANTIC_SCORER=profile-token` with no
+  new dependency and no customer-facing setting. `DEARME_VOICE_SEMANTIC_MIN_ACCEPTED_SAMPLES`
+  and `DEARME_VOICE_SEMANTIC_MIN_PROFILE_TOKENS` tune the local calibration
+  gate for host proof runs.
+- This closes the non-provider DM-170 scorer wiring/calibration gap. The
+  remaining production gap is live model/embedding calibration and live scoring
+  smoke behind the same scorer seam.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-voice-semantic-scorer.test.ts server/src/services/dearme-voice-gate.test.ts server/src/__tests__/dearme-voice-gate-routes.test.ts --maxWorkers=1`
+  passed: 3 files, 28 tests.
+- `pnpm --filter @paperclipai/server typecheck`
+  passed.
+
 ## DM-170E Semantic Voice Scorer Seam - 2026-05-11
 
 Product/architecture slice:
@@ -71,8 +99,8 @@ Product/architecture slice:
   `/v1/voice/score` payload and response stay the same, with no new settings
   surface or connector concern.
 - This closes the DM-170 key-issuance/revocation gap against the existing
-  `dm_sk_*` issuer. The remaining DM-170 production-hardening gap is the
-  trained semantic voice scorer.
+  `dm_sk_*` issuer. DM-170E/DM-170F above closed the scorer seam and
+  profile-token wiring follow-up; live model/embedding calibration remains.
 
 Verification:
 
@@ -169,8 +197,9 @@ Product/architecture slice:
   `dearme_voice_profiles` and also backfills earlier schema-only
   `channel_connections` and `opportunities` tables so migration history now
   matches the server features already depending on them.
-- This is still the deterministic bounded profile store. The trained semantic
-  voice scorer remains a separate DM-170 follow-up.
+- This is still the deterministic bounded profile store. DM-170E/DM-170F above
+  closed the scorer seam and profile-token wiring follow-up; live
+  model/embedding calibration remains.
 
 Verification:
 

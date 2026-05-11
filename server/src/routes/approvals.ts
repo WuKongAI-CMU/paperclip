@@ -33,7 +33,10 @@ import type { ChannelDispatch } from "../services/dearme-outbound-tool-wrapper.j
 import type { DearMeOutboundToolName } from "@paperclipai/dearme-openclaw";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { redactEventPayload } from "../redaction.js";
-import type { DearMeVoiceProfileStore } from "../services/dearme-voice-gate.js";
+import type {
+  DearMeVoiceProfileStore,
+  DearMeVoiceSemanticScorer,
+} from "../services/dearme-voice-gate.js";
 import type { PluginWorkerManager } from "../services/plugin-worker-manager.js";
 
 function redactApprovalPayload<T extends { payload: Record<string, unknown> }>(approval: T): T {
@@ -49,6 +52,7 @@ export function approvalRoutes(
     pluginWorkerManager?: PluginWorkerManager;
     dearMeLaunchHandoffService?: ApprovedLaunchHandoffService;
     voiceProfileStore?: DearMeVoiceProfileStore;
+    voiceSemanticScorer?: DearMeVoiceSemanticScorer | null;
     dearMeOutboundChannelDispatch?: Partial<Record<DearMeOutboundToolName, ChannelDispatch>>;
     dearMeOpenClawGatewayDispatchConfig?: DearMeOpenClawGatewayDispatchConfig | null;
     dearMeDeploySiteDispatchConfig?: DearMeDeploySiteDispatchConfig | null;
@@ -72,7 +76,10 @@ export function approvalRoutes(
       options.dearMeLinkedInDmDispatchConfig,
       options.dearMeMetaCampaignDispatchConfig,
       options.dearMeDeploySiteDispatchConfig,
-      { voiceProfileStore: options.voiceProfileStore },
+      {
+        voiceProfileStore: options.voiceProfileStore,
+        voiceSemanticScorer: options.voiceSemanticScorer,
+      },
     );
   const strictSecretsMode = process.env.PAPERCLIP_SECRETS_STRICT_MODE === "true";
 

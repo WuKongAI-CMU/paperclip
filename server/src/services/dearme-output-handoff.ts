@@ -45,6 +45,7 @@ import { deriveDearMeOutputStatus } from "./dearme-output-status.js";
 import {
   dearMeVoiceGateService,
   type DearMeVoiceProfileStore,
+  type DearMeVoiceSemanticScorer,
 } from "./dearme-voice-gate.js";
 import { createDbDearMeVoiceProfileStore } from "./dearme-voice-profile-store.js";
 import { documentService } from "./documents.js";
@@ -1569,11 +1570,15 @@ function pendingNextMoveMatchesOutput(input: { payload: unknown; outputId: strin
 
 export function dearmeOutputHandoffService(
   db: Db,
-  options: { voiceProfileStore?: DearMeVoiceProfileStore } = {},
+  options: {
+    voiceProfileStore?: DearMeVoiceProfileStore;
+    voiceSemanticScorer?: DearMeVoiceSemanticScorer | null;
+  } = {},
 ) {
   const documentsSvc = documentService(db);
   const voiceGate = dearMeVoiceGateService({
     profileStore: options.voiceProfileStore ?? createDbDearMeVoiceProfileStore(db),
+    semanticScorer: options.voiceSemanticScorer ?? undefined,
   });
 
   async function ensureNextMoveApproval(input: {
