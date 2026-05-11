@@ -201,7 +201,7 @@ Aligning the existing roadmap with OpenClaw integration:
 |---|---|---|---|
 | 0 (done) | — | Registry, AI proxy contract, OpenClaw plugin scaffold + 12 generated skills | DM-S01, DM-141 schema, registry, ai-proxy contract, **DM-S05 (this work)** |
 | 1 | days 1–7 | DM-138 aha moment runs through OpenClaw plugin path. Chief of Staff routes the first conversation. | DM-138, DM-139, **DM-170** (DearMe cloud `/voice/score`), **DM-171** (OpenClaw plugin install flow) |
-| 2 | days 8–14 | Content Producer publishes via DearMe-owned `post_x` tool, gated by voice score. | DM-140, DM-142, DM-146, **DM-172** (post_x tool), **DM-173** (X OAuth per user) |
+| 2 | days 8–14 | Content Producer publishes via DearMe-owned `post_x` tool, gated by voice score. | DM-140, DM-142, DM-146, **DM-172** (post_x tool), **DM-173A** (X OAuth callback persistence proof) |
 | 3 | days 15–21 | Opportunity Hunter outreach loop running. Audience Care responding inbound on whichever channel the user chose. | DM-141 runtime, DM-149, DM-150, **DM-174** (Resend/SES bridge), **DM-175** (channel_connections table) |
 | 4 | days 22–35 | Site live, Ads optional, paid beta. | DM-147, DM-148, DM-153, DM-154 |
 

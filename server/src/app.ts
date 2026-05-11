@@ -11,6 +11,7 @@ import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
 import { healthRoutes } from "./routes/health.js";
 import { dearmeRoutes } from "./routes/dearme.js";
+import { dearmeChannelConnectionRoutes } from "./routes/dearme-channel-connections.js";
 import { dearMeAiProxyRoutes, DEARME_PROXY_BASE_PATH } from "./routes/dearme-ai-proxy.js";
 import { companyRoutes } from "./routes/companies.js";
 import { companySkillRoutes } from "./routes/company-skills.js";
@@ -178,6 +179,7 @@ export async function createApp(
   app.use(llmRoutes(db));
   app.use(DEARME_PROXY_BASE_PATH, dearMeAiProxyRoutes(db, createDearMeAiProxyRouteOptions()));
   app.use(dearMeVoiceGateRoutes());
+  app.use("/v1/channels", dearmeChannelConnectionRoutes(db));
 
   const hostServicesDisposers = new Map<string, () => void>();
   const workerManager = opts.pluginWorkerManager ?? createPluginWorkerManager();

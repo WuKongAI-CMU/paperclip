@@ -1,5 +1,6 @@
 export { healthRoutes } from "./health.js";
 export { dearmeRoutes } from "./dearme.js";
+export { dearmeChannelConnectionRoutes } from "./dearme-channel-connections.js";
 export { dearMeAiProxyRoutes, DEARME_PROXY_BASE_PATH } from "./dearme-ai-proxy.js";
 export { dearMeVoiceGateRoutes } from "./dearme-voice-gate.js";
 export { companyRoutes } from "./companies.js";

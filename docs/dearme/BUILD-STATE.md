@@ -2,6 +2,29 @@
 
 Date: 2026-05-11
 
+## DEA-50 DM-173A X Callback Persistence Proof - 2026-05-10
+
+Product/architecture slice:
+
+- Added the narrow DearMe X connection callback contract at
+  `POST /v1/channels/:companyId/x/callback`.
+- The callback path validates the DearMe/X connection body, runs an injected
+  exchange seam, and upserts an active per-user `x` row in
+  `channel_connections` with opaque credential storage, scopes, expiry,
+  external account id, display name, and refreshed timestamp.
+- The route is proof-only. Live X token exchange remains config-gated behind
+  the injected exchange seam; this ticket does not add a shared account path,
+  a generic connector dashboard, or a direct publish implementation.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-channel-connections-routes.test.ts server/src/services/dearme-channel-connections.test.ts --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/server typecheck`
+  passed.
+- `git diff --check`
+  passed.
+
 ## DEA-49 DM-171B Onboarding Bridge Absorbed - 2026-05-11
 
 Product/architecture slice:

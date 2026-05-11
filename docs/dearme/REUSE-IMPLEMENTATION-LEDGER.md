@@ -2971,7 +2971,7 @@ DM-S06 shipped the typed contracts. DM-S07 wires them into the running cloud as 
 |---|---|---|
 | `server/src/services/dearme-sse-bus.ts` | DM-S07 / DM-179 | Process-local typed `EventEmitter` keyed on `companyId`. Cross-tenant isolation enforced on every emit. Listener throws are swallowed and logged. Singleton + test-only setter. Backs the DearMe live workbench HTTP stream. |
 | `server/src/routes/dearme.ts` | DM-179 | `GET /api/dearme/companies/:companyId/events` enforces company access, emits a `sync` workbench snapshot, then streams scoped `dearme-sse-bus` events as SSE frames. |
-| `server/src/services/dearme-channel-connections.ts` | DM-S07 / DM-173 / DM-175 | Drizzle service over `channel_connections`. `getActive(companyId, userId, channel)`, `markUsed(id)`, `markNeedsReauth(id, error)`, `upsertActive(input)`. Encrypted blob is opaque here; per-channel adapters decrypt on dispatch. |
+| `server/src/services/dearme-channel-connections.ts` | DM-S07 / DM-173A / DM-175 | Drizzle service over `channel_connections`. `getActive(companyId, userId, channel)`, `markUsed(id)`, `markNeedsReauth(id, error)`, `upsertActive(input)`. Encrypted blob is opaque here; per-channel adapters decrypt on dispatch. |
 | `server/src/services/dearme-voice-gate.ts` | DM-S07 / DM-170 | `dearMeVoiceGateService({ scorer? })`. Default scorer is the deterministic stub: 5 negative phrase rules (`ai_disclaimer`, `hype_word`, `stale_template`, `press_release_voice`, `punctuation_storm`), per-artifact length floor/ceiling, `concrete_evidence` reward. The DM-170 route now exposes this scorer; the real fingerprint model lands by replacing `scorer`. |
 | `server/src/routes/dearme-voice-gate.ts` | DM-170 | Root `POST /v1/voice/score` route over the shared proxy contract. Requires `Authorization: Bearer dm_sk_*`, validates `VoiceGateScoreRequest`, and returns `VoiceGateScoreResponse` from the existing cloud-side voice gate service. |
 | `server/src/services/dearme-work-loop.ts` | DM-S07 / DM-179 / DM-180 | `transition({ companyId, issueId, from, to, role, reason, openclawSessionId?, agentId? })` — validates via `canTransitionWorkLoop`, mirrors the new 8-state into `issues.status`, writes `activity_log`, emits `work_loop_transition` SSE. Plus `legalNext(from)`. |
@@ -3029,7 +3029,7 @@ This commit unblocks all the next-up tickets that wire each substrate to the oth
 | DM-170 | Cloud `/v1/voice/score` endpoint — Express route is shipped over the deterministic scorer; trained fingerprint model and persisted key issuer remain |
 | DM-171 | OpenClaw plugin install + onboarding bridge |
 | DM-172 | `post_x` impl using the typed envelope |
-| DM-173 | Per-user X OAuth callback writing into `channel_connections` |
+| DM-173A | Per-user X OAuth callback persistence proof writing into `channel_connections`; live X exchange stays config-gated until the injected exchange seam is wired to real credentials. |
 | DM-174 | `send_email` via Resend/SES (avoids Gmail CASA cost) |
 | DM-176/177/178 | LinkedIn DM / deploy_site / create_meta_campaign impls |
 | DM-179 | DearMe live workbench SSE route — shipped as `GET /api/dearme/companies/:companyId/events`; future work can add upstream OpenClaw passthrough events behind the same stream |
@@ -3082,7 +3082,7 @@ Next-up tickets unlocked by this scaffold:
 | DM-170 | DearMe cloud `/v1/voice/score` endpoint (route shipped; trained fingerprint scoring next) | server |
 | DM-171 | OpenClaw plugin install flow + onboarding bridge (paste device pairing code at `dearme.app/onboard`) | server + dearme-openclaw |
 | DM-172 | `post_x` outbound tool (X publish), voice-gate-blocked below threshold | dearme-openclaw |
-| DM-173 | Per-user X OAuth flow (just-in-time, on first publish) | server (`channel_connections`) |
+| DM-173A | Per-user X OAuth callback persistence proof (just-in-time, on first publish) | server (`channel_connections`) |
 | DM-174 | `send_email` outbound tool via Resend/SES (avoid Gmail CASA cost) | dearme-openclaw |
 | DM-175 | `channel_connections` Drizzle table + encrypted token storage | packages/db |
 

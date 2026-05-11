@@ -310,7 +310,7 @@ The integration only works if these glue artifacts ship:
 | DM-170 | Cloud `/v1/voice/score` endpoint | **Route shipped.** The Express contract route now reuses the DM-S07 stub scorer; next impl swaps in the trained fingerprint model and persisted key issuer. |
 | DM-171 | OpenClaw plugin install flow + onboarding bridge | The bridge is already surfaced in the existing first-run path; keep the install proof and customer-facing first-run language aligned. |
 | DM-172 | `post_x` outbound tool — `ChannelDispatch` impl | First proof the work loop closes end-to-end. Wrapper already runs gate/approval/audit; this ticket proves the approved X dispatch contract and active-connection readiness, not live X API publishing yet. |
-| DM-173 | Per-user X OAuth flow → writes `channel_connections` | DM-172's prerequisite. Schema and Drizzle service shipped. |
+| DM-173A | Per-user X OAuth callback persistence proof → writes `channel_connections` | Route + Drizzle upsert shipped. Live X token exchange stays config-gated behind the injected exchange seam. |
 | DM-174 | `send_email` `ChannelDispatch` (Resend/SES) | Email outreach without Gmail CASA cost. |
 | DM-175 | `channel_connections` Drizzle schema | **Shipped DM-S06.** ✅ |
 | DM-176 | `send_linkedin_dm` `ChannelDispatch` | LinkedIn outreach. |
@@ -335,6 +335,7 @@ slot and never re-implement the gate / approval / audit pipeline.
 | SSE bus | `dearme-sse-bus.ts` | Process-local typed `EventEmitter`; cross-tenant scoped; backs the DearMe live workbench SSE route. |
 | SSE route | `server/src/routes/dearme.ts` | `GET /api/dearme/companies/:companyId/events`; enforces company access, emits an initial `sync` workbench snapshot, then forwards typed runtime events by company. |
 | Channel connections | `dearme-channel-connections.ts` | Drizzle queries over `channel_connections`. `getActive` / `markUsed` / `markNeedsReauth` / `upsertActive`. |
+| X callback route | `server/src/routes/dearme-channel-connections.ts` | `POST /v1/channels/:companyId/x/callback`; validates the callback payload, runs the injected exchange seam, and persists an active per-user `x` row. Proof-only: live X exchange remains config-gated. |
 | Voice gate | `dearme-voice-gate.ts` + `routes/dearme-voice-gate.ts` | `scoreVoice(req)` plus root `POST /v1/voice/score`. Default = deterministic stub (5 phrase rules, length floor/ceiling, evidence reward). Next DM-170 impl swaps in the trained model. |
 | Work loop | `dearme-work-loop.ts` | `transition(...)` validates via `canTransitionWorkLoop`, mirrors state into `issues.status`, writes `activity_log`, emits `work_loop_transition` SSE. |
 | Approval resolver | `dearme-approval-resolver.ts` + `server/src/routes/dearme.ts` | Wraps `resolveApproval` with past-approved + daily-spend lookups; writes `approvals` + `issue_approvals` with actor attribution; emits approval SSE; exposed by the DM-180 company-scoped resolve route. |
