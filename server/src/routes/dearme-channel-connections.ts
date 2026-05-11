@@ -12,6 +12,26 @@ const xConnectionCallbackRequestSchema = z.object({
   redirectUri: z.string().trim().url().max(2048).optional(),
 }).strict();
 
+const xConnectionStartQuerySchema = z.object({
+  issueId: z.string().trim().min(1).max(128).optional(),
+  approvalId: z.string().trim().min(1).max(128).optional(),
+  runId: z.string().trim().min(1).max(128).optional(),
+  returnTo: z.string().trim().url().max(2048).optional(),
+}).strict();
+
+export interface DearMeXConnectionStartInput {
+  companyId: string;
+  userId: string;
+  issueId?: string;
+  approvalId?: string;
+  openclawRunId?: string;
+  returnTo?: string;
+}
+
+export interface DearMeXConnectionStartResult {
+  oauthStartUrl: string;
+}
+
 export interface DearMeXConnectionCallbackExchangeInput {
   companyId: string;
   userId: string;
@@ -38,11 +58,18 @@ export interface DearMeXConnectionCallbackRoutesOptions {
   exchangeXConnection?: (
     input: DearMeXConnectionCallbackExchangeInput,
   ) => Promise<DearMeXConnectionCallbackExchangeResult>;
+  startXConnection?: (
+    input: DearMeXConnectionStartInput,
+  ) => Promise<DearMeXConnectionStartResult>;
 }
 
 function trimmedOrNull(value: string | null | undefined) {
   const trimmed = value?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : null;
+}
+
+function stringQueryValue(value: unknown) {
+  return typeof value === "string" ? value : undefined;
 }
 
 export function dearmeChannelConnectionRoutes(
@@ -52,6 +79,43 @@ export function dearmeChannelConnectionRoutes(
   const router = Router();
   const channelConnections = opts.channelConnections ?? dearMeChannelConnectionsService(db);
   const now = opts.now ?? (() => new Date());
+
+  router.get("/:companyId/x/start", async (req, res) => {
+    const companyId = String(req.params.companyId ?? "").trim();
+    if (!companyId) {
+      throw new HttpError(400, "Validation error");
+    }
+
+    assertCompanyAccess(req, companyId);
+    assertBoard(req);
+
+    const start = opts.startXConnection;
+    if (!start) {
+      throw new HttpError(503, "X connection start is not configured.");
+    }
+
+    const query = xConnectionStartQuerySchema.parse({
+      issueId: stringQueryValue(req.query.issueId),
+      approvalId: stringQueryValue(req.query.approvalId),
+      runId: stringQueryValue(req.query.runId),
+      returnTo: stringQueryValue(req.query.returnTo),
+    });
+    const actor = getActorInfo(req);
+    const started = await start({
+      companyId,
+      userId: actor.actorId,
+      issueId: query.issueId,
+      approvalId: query.approvalId,
+      openclawRunId: query.runId,
+      returnTo: query.returnTo,
+    });
+    const oauthStartUrl = trimmedOrNull(started.oauthStartUrl);
+    if (!oauthStartUrl) {
+      throw new HttpError(502, "X connection start returned incomplete data.");
+    }
+
+    res.redirect(302, oauthStartUrl);
+  });
 
   router.post(
     "/:companyId/x/callback",

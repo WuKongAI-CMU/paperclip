@@ -2,6 +2,29 @@
 
 Date: 2026-05-11
 
+## DM-173B X Connect Start URL Contract - 2026-05-11
+
+Product/architecture slice:
+
+- The approved X next-step fallback now returns a DearMe-owned
+  `oauthStartUrl` instead of only a connection-needed message, aligning the
+  server outcome with the OpenClaw outbound tool contract.
+- Added the narrow `GET /v1/channels/:companyId/x/start` entrypoint. It
+  redirects to the configured X OAuth URL when an injected start seam is
+  present and stays explicitly config-gated with 503 until live OAuth is wired.
+- Existing X callback persistence remains the write side of the same flow.
+  This slice does not add live X API posting, a generic connector dashboard,
+  or a shared account path.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-outbound-tool-wrapper.test.ts server/src/__tests__/dearme-channel-connections-routes.test.ts --maxWorkers=1`
+  passed: 2 files, 17 tests.
+- `pnpm --filter @paperclipai/server typecheck`
+  passed.
+- `git diff --check`
+  passed.
+
 ## DEA-50 DM-173A X Callback Persistence Proof - 2026-05-10
 
 Product/architecture slice:

@@ -7,6 +7,8 @@ import {
   dearmeChannelConnectionRoutes,
   type DearMeXConnectionCallbackExchangeInput,
   type DearMeXConnectionCallbackExchangeResult,
+  type DearMeXConnectionStartInput,
+  type DearMeXConnectionStartResult,
 } from "../routes/dearme-channel-connections.js";
 
 function createApp(
@@ -15,6 +17,9 @@ function createApp(
     exchangeXConnection?: (
       input: DearMeXConnectionCallbackExchangeInput,
     ) => Promise<DearMeXConnectionCallbackExchangeResult>;
+    startXConnection?: (
+      input: DearMeXConnectionStartInput,
+    ) => Promise<DearMeXConnectionStartResult>;
     upsertActive?: (input: Record<string, unknown>) => Promise<Record<string, unknown>>;
     now?: () => Date;
   } = {},
@@ -62,6 +67,7 @@ function createApp(
     dearmeChannelConnectionRoutes({} as Db, {
       now: opts.now,
       exchangeXConnection,
+      startXConnection: opts.startXConnection,
       channelConnections: {
         upsertActive,
       },
@@ -72,6 +78,60 @@ function createApp(
 }
 
 describe("dearmeChannelConnectionRoutes", () => {
+  it("redirects the X connection start route to the configured OAuth URL", async () => {
+    const startXConnection = vi.fn(async () => ({
+      oauthStartUrl: "https://x.com/i/oauth2/authorize?state=state-abc",
+    }));
+    const { app } = createApp({ startXConnection });
+
+    const res = await request(app)
+      .get("/v1/channels/company-1/x/start")
+      .query({
+        issueId: "issue-1",
+        approvalId: "approval-1",
+        runId: "run-1",
+        returnTo: "https://app.dearme.test/workbench",
+      })
+      .expect(302);
+
+    expect(startXConnection).toHaveBeenCalledWith({
+      companyId: "company-1",
+      userId: "user-1",
+      issueId: "issue-1",
+      approvalId: "approval-1",
+      openclawRunId: "run-1",
+      returnTo: "https://app.dearme.test/workbench",
+    });
+    expect(res.headers.location).toBe("https://x.com/i/oauth2/authorize?state=state-abc");
+  });
+
+  it("keeps the X connection start route config-gated until OAuth is wired", async () => {
+    const { app } = createApp({ startXConnection: undefined });
+
+    const res = await request(app)
+      .get("/v1/channels/company-1/x/start")
+      .query({ issueId: "issue-1" })
+      .expect(503);
+
+    expect(res.body).toMatchObject({
+      error: "X connection start is not configured.",
+    });
+  });
+
+  it("rejects invalid X connection start query input", async () => {
+    const startXConnection = vi.fn(async () => ({
+      oauthStartUrl: "https://x.com/i/oauth2/authorize?state=state-abc",
+    }));
+    const { app } = createApp({ startXConnection });
+
+    await request(app)
+      .get("/v1/channels/company-1/x/start")
+      .query({ returnTo: "not-a-url" })
+      .expect(400);
+
+    expect(startXConnection).not.toHaveBeenCalled();
+  });
+
   it("stores an active X connection after the callback exchange succeeds", async () => {
     const now = new Date("2026-05-10T12:34:56.000Z");
     const { app, exchangeXConnection, upsertActive } = createApp({

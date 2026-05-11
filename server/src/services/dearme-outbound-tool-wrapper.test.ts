@@ -306,8 +306,34 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
     expect(result.channel).toBe("x");
     expect(result.reason).toBe("no-active-channel-connection");
     expect(result.gate).toBe("connect_channel");
+    expect(result.oauthStartUrl).toBe(
+      "/v1/channels/co_test/x/start?issueId=is_test&runId=oc_run_1",
+    );
     expect(result.message).toBe("Connect X before DearMe can continue this approved next step.");
     expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it("carries the approval id into the channel connect start URL for preapproved retries", async () => {
+    const { deps } = makeDeps({
+      channelConnections: {
+        getActive: async () => null,
+        markUsed: async () => undefined,
+        markNeedsReauth: async () => undefined,
+        upsertActive: async () => {
+          throw new Error("not used");
+        },
+      },
+    });
+    const wrapper = dearMeOutboundToolWrapper(deps);
+    const result = await wrapper.callOutbound({
+      ...baseInput,
+      preapprovedApprovalId: "ap_final_1",
+    });
+    expect(result.kind).toBe("needs_oauth");
+    if (result.kind !== "needs_oauth") return;
+    expect(result.oauthStartUrl).toBe(
+      "/v1/channels/co_test/x/start?issueId=is_test&runId=oc_run_1&approvalId=ap_final_1",
+    );
   });
 
   it("flips connection to needs_reauth when channel reports auth-error", async () => {
@@ -350,6 +376,11 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
     const wrapper = dearMeOutboundToolWrapper(deps);
     const result = await wrapper.callOutbound(baseInput);
     expect(result.kind).toBe("needs_oauth");
+    if (result.kind !== "needs_oauth") return;
+    expect(result.oauthStartUrl).toBe(
+      "/v1/channels/co_test/x/start?issueId=is_test&runId=oc_run_1",
+    );
+    expect(result.message).toBe("Connect X before DearMe can continue this approved next step.");
     expect(markCalls).toBe(1);
   });
 

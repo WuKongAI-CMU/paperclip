@@ -24,6 +24,7 @@ type NextMoveDeliveryOutcome =
   | {
       kind: "needs_oauth";
       channel: string;
+      oauthStartUrl?: string;
       reason: string;
       gate?: "connect_channel";
       message?: string;

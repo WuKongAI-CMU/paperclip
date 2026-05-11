@@ -3030,6 +3030,7 @@ This commit unblocks all the next-up tickets that wire each substrate to the oth
 | DM-171 | OpenClaw plugin install + onboarding bridge |
 | DM-172 | `post_x` impl using the typed envelope |
 | DM-173A | Per-user X OAuth callback persistence proof writing into `channel_connections`; live X exchange stays config-gated until the injected exchange seam is wired to real credentials. |
+| DM-173B | Approved X next-step fallback now returns a DearMe-owned `oauthStartUrl`; `GET /v1/channels/:companyId/x/start` redirects through the injected start seam and remains 503-gated until live X OAuth is configured. |
 | DM-174 | `send_email` via Resend/SES (avoids Gmail CASA cost) |
 | DM-176/177/178 | LinkedIn DM / deploy_site / create_meta_campaign impls |
 | DM-179 | DearMe live workbench SSE route — shipped as `GET /api/dearme/companies/:companyId/events`; future work can add upstream OpenClaw passthrough events behind the same stream |

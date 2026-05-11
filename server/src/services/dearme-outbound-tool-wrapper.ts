@@ -136,12 +136,24 @@ export type CallOutboundOutcome =
   | {
       kind: "needs_oauth";
       channel: string;
+      oauthStartUrl: string;
       reason: string;
       gate?: "connect_channel";
       message?: string;
     }
   | { kind: "rejected"; reason: string; gate: string }
   | { kind: "errored"; error: string };
+
+function buildChannelOAuthStartUrl(input: CallOutboundInput, channel: string) {
+  const params = new URLSearchParams({
+    issueId: input.issueId,
+    runId: input.openclawRunId,
+  });
+  if (input.preapprovedApprovalId) {
+    params.set("approvalId", input.preapprovedApprovalId);
+  }
+  return `/v1/channels/${encodeURIComponent(input.companyId)}/${encodeURIComponent(channel)}/start?${params.toString()}`;
+}
 
 export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
   return {
@@ -239,9 +251,11 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
         });
         if (!connection) {
           const channelLabel = binding.channel === "x" ? "X" : binding.channel;
+          const oauthStartUrl = buildChannelOAuthStartUrl(input, binding.channel);
           return {
             kind: "needs_oauth",
             channel: binding.channel,
+            oauthStartUrl,
             reason: "no-active-channel-connection",
             gate: "connect_channel",
             message: `Connect ${channelLabel} before DearMe can continue this approved next step.`,
@@ -282,7 +296,14 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
             error: dispatchResult.reason,
           });
         }
-        return { kind: "needs_oauth", channel: binding.channel, reason: dispatchResult.reason };
+        return {
+          kind: "needs_oauth",
+          channel: binding.channel,
+          oauthStartUrl: buildChannelOAuthStartUrl(input, binding.channel),
+          reason: dispatchResult.reason,
+          gate: "connect_channel",
+          message: `Connect ${binding.channel === "x" ? "X" : binding.channel} before DearMe can continue this approved next step.`,
+        };
       }
       if (dispatchResult.kind === "errored") {
         logger.error(
