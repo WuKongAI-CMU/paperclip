@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- DM-171D promotes DearMe customer-safe text into `@paperclipai/shared` so
+  server services, Voice Gate, output handoff, Workbench projections, UI live
+  pulses, and DearMe approval errors all share one hidden-language boundary.
+  The old server service path remains a compatibility re-export, but new
+  product surfaces should import the shared sanitizer/pattern directly instead
+  of adding local hidden-term regexes.
 - DM-171C unifies DearMe hidden-language detection around the shared
   customer-text boundary. Voice Gate now scores against the same hidden
   vocabulary that Workbench/receipt projection sanitizes, and output handoff

@@ -234,6 +234,12 @@ export {
   validateConfiguredBindMode,
 } from "./network-bind.js";
 
+export {
+  DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN,
+  compactDearMeCustomerText,
+  dearMeCustomerSafeText,
+} from "./dearme-customer-text.js";
+
 export type {
   Company,
   Environment,

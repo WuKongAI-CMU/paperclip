@@ -2,6 +2,33 @@
 
 Date: 2026-05-11
 
+## DM-171D Shared Customer Text Contract - 2026-05-11
+
+Product/architecture slice:
+
+- Moved the DearMe customer-safe text sanitizer and hidden-language pattern
+  into `@paperclipai/shared`, while keeping the old server service path as a
+  compatibility re-export.
+- Reused that same shared boundary in the DearMe UI live-pulse text and
+  DearMe approval-error fallback, removing local frontend regex copies that
+  could drift from the server-side Workbench, receipt, output-handoff, and
+  Voice Gate behavior.
+- Extended the shared hidden vocabulary for the product surface terms the UI
+  was already guarding locally: OMX, Claude, Gemini, execution route, decision
+  route, model-provider, and workspace source language. No new settings,
+  runtime surface, or customer-visible implementation language was added.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/dearme-customer-text.test.ts ui/src/lib/dearmeApprovals.test.ts --maxWorkers=1`
+  passed: 2 files, 8 tests.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 1 file, 74 tests.
+- `pnpm exec vitest run server/src/services/dearme-voice-gate.test.ts server/src/__tests__/dearme-workbench-projection.test.ts server/src/__tests__/dearme-approval-receipts.test.ts --maxWorkers=1`
+  passed: 3 files, 35 tests.
+- `pnpm --filter @paperclipai/shared typecheck`, `pnpm --filter @paperclipai/server typecheck`,
+  and `pnpm --filter @paperclipai/ui typecheck` passed.
+
 ## DM-171C Unified Hidden-Language Boundary - 2026-05-11
 
 Product/architecture slice:

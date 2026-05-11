@@ -6,7 +6,9 @@ import {
   DEARME_MEMORY_SOURCE_INPUT_MODES,
   DEARME_MEMORY_UPDATE_KINDS,
   DEARME_PAID_BETA_MIN_PAYMENT_CENTS,
+  DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN,
   createDearMeFirstCyclePreview,
+  dearMeCustomerSafeText,
   dearMeWorkbenchResponseSchema,
   type DearMeActionGraph,
   type DearMeActionGraphNode,
@@ -353,30 +355,12 @@ function recordString(value: Record<string, unknown> | null, key: string): strin
 }
 
 function livePulseText(text: string): string {
-  const safeText = customerProofPackSummary(text)
-    .replace(/\bOpenClaw\b/gi, "DearMe")
-    .replace(/\bSymphony\b/gi, "DearMe")
-    .replace(/\bPaperclip\b/gi, "DearMe")
-    .replace(/\badapter\b/gi, "connection")
-    .replace(/\badapters\b/gi, "connections")
-    .replace(/\bprovider\b/gi, "service")
-    .replace(/\bproviders\b/gi, "services")
-    .replace(/\bworkspace\b/gi, "private area")
-    .replace(/\bworkspaces\b/gi, "private areas")
-    .replace(/\bruntime\b/gi, "private pass")
-    .replace(/\bruntimes\b/gi, "private passes")
-    .replace(/\bmodel\b/gi, "private check")
-    .replace(/\bmodels\b/gi, "private checks")
-    .replace(/\bsetup[-_\s]+payload\b/gi, "setup note")
-    .replace(/\bDearMe\s+DearMe\b/gi, "DearMe");
-  return safeText.replace(
-    /\bDearMe connections? services? private (?:area|pass) private checks? setup note\b/gi,
-    "A private pass",
+  return dearMeCustomerSafeText(
+    customerProofPackSummary(text),
+    "DearMe is preparing the next update.",
+    260,
   );
 }
-
-const DEARME_INTERNAL_ERROR_TERMS =
-  /\b(workbench|workstream|work stream|paperclip|openclaw|omx|symphony|claude|gemini|codex|setup[-_ ]?payload|adapter|provider|workspace|runtime|agent|issue route|approval route|execution route|decision route|model-provider|model provider|model|api[-_ ]?key|token)\b/i;
 
 const DEARME_PROFILE_REQUIRED_MESSAGE = "Choose a DearMe profile first.";
 
@@ -384,7 +368,7 @@ function dearMeCustomerErrorMessage(error: unknown, fallback: string) {
   if (!(error instanceof Error)) return fallback;
   const message = error.message.trim();
   if (!message) return fallback;
-  if (DEARME_INTERNAL_ERROR_TERMS.test(message)) return fallback;
+  if (DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.test(message)) return fallback;
   return message;
 }
 
