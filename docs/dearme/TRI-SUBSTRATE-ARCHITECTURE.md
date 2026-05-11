@@ -309,7 +309,7 @@ The integration only works if these glue artifacts ship:
 |---|---|---|
 | DM-170 | Cloud `/v1/voice/score` endpoint | **Route shipped.** The Express contract route now reuses the DM-S07 stub scorer; next impl swaps in the trained fingerprint model and persisted key issuer. |
 | DM-171 | OpenClaw plugin install flow + onboarding bridge | Without this, no user gets to first run. |
-| DM-172 | `post_x` outbound tool — `ChannelDispatch` impl | First proof the work loop closes end-to-end. Wrapper already runs gate/approval/audit; this ticket is just the X API call. |
+| DM-172 | `post_x` outbound tool — `ChannelDispatch` impl | First proof the work loop closes end-to-end. Wrapper already runs gate/approval/audit; this ticket proves the approved X dispatch contract and active-connection readiness, not live X API publishing yet. |
 | DM-173 | Per-user X OAuth flow → writes `channel_connections` | DM-172's prerequisite. Schema and Drizzle service shipped. |
 | DM-174 | `send_email` `ChannelDispatch` (Resend/SES) | Email outreach without Gmail CASA cost. |
 | DM-175 | `channel_connections` Drizzle schema | **Shipped DM-S06.** ✅ |
