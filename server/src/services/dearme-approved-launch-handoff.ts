@@ -5,7 +5,7 @@ import {
   type VoiceGateArtifactKind,
 } from "@paperclipai/dearme-ai-proxy";
 import {
-  DEARME_OUTBOUND_TOOL_BINDINGS,
+  dearMeEmployeeHandoffPrimitiveForTool,
   type DearMeOutboundToolName,
 } from "@paperclipai/dearme-openclaw";
 import {
@@ -54,7 +54,6 @@ const DEFAULT_APPROVAL_CONFIG = {
   dailyUsdCap: 5,
 };
 
-const OUTBOUND_TOOLS = new Set(Object.keys(DEARME_OUTBOUND_TOOL_BINDINGS));
 const VOICE_GATE_KINDS = new Set<string>(VOICE_GATE_ARTIFACT_KINDS);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -74,10 +73,6 @@ function numberField(record: Record<string, unknown>, key: string) {
 function recordField(record: Record<string, unknown>, key: string) {
   const value = record[key];
   return isRecord(value) ? value : null;
-}
-
-function isOutboundToolName(value: string | null): value is DearMeOutboundToolName {
-  return Boolean(value && OUTBOUND_TOOLS.has(value));
 }
 
 function voiceGateArtifactKind(value: string | null): VoiceGateArtifactKind | null {
@@ -117,7 +112,8 @@ export function callOutboundInputFromApprovedNextMove(input: {
   if (!approvalPayload || !launchHandoff) return null;
 
   const toolName = stringField(launchHandoff, "toolName");
-  if (!isOutboundToolName(toolName)) return null;
+  const handoffPrimitive = dearMeEmployeeHandoffPrimitiveForTool(toolName);
+  if (!handoffPrimitive) return null;
 
   const issueId = stringField(approvalPayload, "issueId") ?? stringField(launchHandoff, "issueId");
   const userId =
@@ -128,8 +124,7 @@ export function callOutboundInputFromApprovedNextMove(input: {
   const payload = recordField(launchHandoff, "payload");
   if (!issueId || !userId || !payload) return null;
 
-  const binding = DEARME_OUTBOUND_TOOL_BINDINGS[toolName];
-  const voiceGateRequired = launchHandoff.voiceGateRequired === true || binding.voiceGateRequired;
+  const voiceGateRequired = launchHandoff.voiceGateRequired === true || handoffPrimitive.voiceGateRequired;
   const voiceGateText = voiceGateRequired ? stringField(launchHandoff, "voiceGateText") : null;
   const artifactKind = voiceGateRequired
     ? voiceGateArtifactKind(stringField(launchHandoff, "voiceGateArtifactKind"))
@@ -142,7 +137,7 @@ export function callOutboundInputFromApprovedNextMove(input: {
   }
 
   return {
-    toolName,
+    toolName: handoffPrimitive.toolName,
     companyId: approval.companyId,
     userId,
     issueId,

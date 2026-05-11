@@ -2,6 +2,28 @@
 
 Date: 2026-05-11
 
+## Employee Handoff Primitive Whitelist Lands - 2026-05-11
+
+Product/architecture slice:
+
+- Added a DearMe employee handoff primitive whitelist over the existing
+  outbound tool bindings. The product contract now knows which employee can
+  hand off each governed external move, the customer-safe action label, the
+  channel label, the approval gate, and whether voice proof is required.
+- Routed approved next-move execution through that primitive boundary, so an
+  unknown `launchHandoff.toolName` cannot become a callable outbound action.
+- Reused the same primitive projection in approval receipts so private handoff
+  activity carries DearMe-native employee/action/channel semantics without
+  exposing OpenClaw/Paperclip/provider/runtime labels.
+
+Verification:
+
+- `pnpm --filter @paperclipai/dearme-openclaw test`
+- `pnpm exec vitest run server/src/services/dearme-approved-launch-handoff.test.ts --maxWorkers=1`
+- `pnpm exec vitest run server/src/__tests__/dearme-approval-receipts.test.ts --maxWorkers=1`
+- `pnpm --filter @paperclipai/dearme-openclaw typecheck`
+- `pnpm --filter @paperclipai/server typecheck`
+
 ## One-Sentence First Cycle Becomes The Primary Path - 2026-05-11
 
 Product/architecture slice:

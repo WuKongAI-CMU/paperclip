@@ -133,6 +133,7 @@ describe("recordDearMeNextMoveApprovalReceipt", () => {
       payload: {
         ...makeApproval().payload,
         launchHandoff: {
+          toolName: "post_x",
           channel: "x",
           publishGate: {
             connectChannelState: "connect_channel_required",
@@ -150,6 +151,11 @@ describe("recordDearMeNextMoveApprovalReceipt", () => {
     expect(result).toEqual(expect.objectContaining({
       launchChannel: "x",
       launchChannelLabel: "X",
+      handoffPrimitiveId: "publish_social_post",
+      handoffEmployeeRole: "content_producer",
+      handoffEmployeeLabel: "Content Producer",
+      handoffActionLabel: "Publish post",
+      handoffExternalActionStatusLabel: "External action not run",
       connectChannelState: "connect_channel_required",
       connectChannelNextStep: "Connect X before DearMe can continue this approved next step.",
       handoffTitle: "Launch-ready X brief prepared",
@@ -160,6 +166,9 @@ describe("recordDearMeNextMoveApprovalReceipt", () => {
       details: expect.objectContaining({
         launchChannel: "x",
         launchChannelLabel: "X",
+        handoffPrimitiveId: "publish_social_post",
+        handoffEmployeeLabel: "Content Producer",
+        handoffActionLabel: "Publish post",
         connectChannelState: "connect_channel_required",
         connectChannelNextStep: "Connect X before DearMe can continue this approved next step.",
       }),
@@ -172,6 +181,45 @@ describe("recordDearMeNextMoveApprovalReceipt", () => {
     for (const hiddenTerm of ["launchHandoff", "connect_channel_required", "paperclip", "openclaw", "symphony"]) {
       expect(serializedComments).not.toContain(hiddenTerm);
     }
+  });
+
+  it("does not project unknown launch handoff tools as employee handoffs", async () => {
+    const { db } = makeDb();
+    const approval = makeApproval({
+      payload: {
+        ...makeApproval().payload,
+        launchHandoff: {
+          toolName: "unknown_tool",
+          channel: "x",
+          publishGate: {
+            connectChannelState: "connect_channel_required",
+          },
+        },
+      },
+    });
+
+    const result = await recordDearMeNextMoveApprovalReceipt(db, {
+      approval,
+      actorUserId: "user-1",
+      linkedIssueIds: ["issue-1"],
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      handoffPrimitiveId: null,
+      handoffEmployeeRole: null,
+      handoffEmployeeLabel: null,
+      handoffActionLabel: null,
+      launchChannel: null,
+      launchChannelLabel: null,
+      handoffTitle: "Launch-ready posting brief prepared",
+    }));
+    expect(mockLogActivity).toHaveBeenNthCalledWith(2, db, expect.objectContaining({
+      details: expect.objectContaining({
+        handoffPrimitiveId: null,
+        launchChannel: null,
+        launchChannelLabel: null,
+      }),
+    }));
   });
 
   it("records a pause intent without dispatching a launch-ready handoff", async () => {

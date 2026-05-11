@@ -140,15 +140,19 @@ Donor references checked:
 DearMe is no longer an empty product shell. It has a real product spine:
 onboarding, Brand OS, first-cycle preview, workbench, output handoff, review
 memory, channel dispatch wrappers, proof commands, and Symphony coordination.
+The first screen now puts the one-sentence first cycle ahead of setup-heavy
+Brand OS configuration, and governed external moves now pass through a
+DearMe-native employee handoff primitive whitelist before they can execute or
+render as launch-ready work.
 
 But DearMe is not yet at Polsia's full customer-visible product maturity.
 Polsia's advantage is the first five minutes: near-zero friction, immediate
 dashboard, visible thinking stream, mood/progress updates, first report, starter
 tasks, and a live asset. DearMe now has the browser-visible first-five-minute
-progress stream, a browser-verified private first-wow packet, and a static
-private-site export over its private proof contract, but it still needs that
-artifact served from a real phone-reachable host plus provider-backed execution
-before it matches Polsia's demo strength.
+progress stream, a browser-verified private first-wow packet, a first-screen
+one-sentence start, and a static private-site export over its private proof
+contract, but it still needs that artifact served from a real phone-reachable
+host plus provider-backed execution before it matches Polsia's demo strength.
 
 DearMe is closer to Naive/Paperclip on substrate than it is to Polsia on
 first-wow. The control-plane reuse is strong. The first-five-minute private
@@ -163,11 +167,11 @@ is not yet strong enough.
 | Area | Current score | Judgment |
 | --- | ---: | --- |
 | Substrate/control plane reuse | 82 / 100 | Strong. DearMe is using the Paperclip-style company, issue, approval, route, service, dispatch, handoff, and proof machinery instead of rebuilding it. |
-| DearMe product semantics | 76 / 100 | Good. Brand OS, voice, portfolio, opportunity, reports, Work Ready, launch gates, review memory, and customer-corpus voice proof are now DearMe-owned concepts. |
-| UX simplicity | 69 / 100 | Improving. The browser now shows one-sentence-to-first-five-minute progress and verifies the private starter draft plus first lead on the real preview route, but onboarding is still heavier than Polsia's one-input activation. |
+| DearMe product semantics | 79 / 100 | Good. Brand OS, voice, portfolio, opportunity, reports, Work Ready, launch gates, review memory, employee handoff primitives, and customer-corpus voice proof are now DearMe-owned concepts. |
+| UX simplicity | 72 / 100 | Improving. The hero now has one primary one-sentence action, the first payoff and 90-second cycle appear before the team/workbench surfaces, and the browser verifies the private starter draft plus first lead on the real preview route; deeper setup still exists below the fold. |
 | Autonomous runtime proof | 71 / 100 | Real but not externally proven. Local safe proof, private aha proof, browser-visible progress, static private-site export, customer-corpus voice proof, recurring private-work contract, clean integration absorption, and fail-closed host-smoke readiness are ready; the host-smoke packet now proves next-cycle work detail, but live provider proof remains open. |
-| Polsia-style first-wow | 78 / 100 | Private proof is runnable, watchable, browser-verified on the real preview route, exportable as a phone-ready artifact, deep enough to show five private drafts, and tied to a real host-smoke packet with recurring-work detail. The missing main moment is serving it from a real host plus provider-backed execution. |
-| Naive-style durable team runtime | 80 / 100 | Solid substrate fit. Symphony/worktree coordination is clean, latest handoffs are committed, and that absorption proof now appears in `dearme:status`; the recurring private-work contract is visible in the hostable artifact, but live provider smoke is still missing. |
+| Polsia-style first-wow | 80 / 100 | Private proof is runnable, watchable, browser-verified on the real preview route, first-screened through one sentence, exportable as a phone-ready artifact, deep enough to show five private drafts, and tied to a real host-smoke packet with recurring-work detail. The missing main moment is serving it from a real host plus provider-backed execution. |
+| Naive-style durable team runtime | 82 / 100 | Solid substrate fit. Symphony/worktree coordination is clean, latest handoffs are committed, absorption proof appears in `dearme:status`, and employee handoff primitives now bridge DearMe semantics to the existing outbound bindings; live provider smoke is still missing. |
 
 ## What DearMe Has Actually Done
 
@@ -217,7 +221,7 @@ DearMe has copied the doctrine, but not the full watchable moment.
 
 | Polsia capability | DearMe current state | Product verdict |
 | --- | --- | --- |
-| Zero-friction signup and one-input start | DearMe has structured onboarding and Brand OS inputs, but not Polsia-level one-textarea activation. | Simplify. One sentence should start private work. |
+| Zero-friction signup and one-input start | DearMe now makes `Start with one sentence` the only primary hero CTA and moves the first payoff plus 90-second cycle before the heavier Brand OS/team surfaces. | Much closer. Continue compressing setup below the first private result. |
 | Work starts immediately | DearMe has first-cycle start routes, proof sequence contracts, and a browser-visible first-five-minute progress stream. | Better. Next proof is real live/provider progress, not another dashboard. |
 | 90-second wow | `pnpm dearme:aha-proof -- --check` proves the local private sequence, the browser shows the customer-safe progress sequence, the private preview e2e proves a starter draft plus opportunity lead, and `--export-site` renders the same packet as a static private site. | Partly proven. The remaining gap is serving the artifact from a real phone-reachable host and backing it with live provider proof. |
 | 5-minute complete dashboard | DearMe has many dashboard surfaces. | The pieces exist; the activation sequence does not feel as compressed. |
@@ -249,10 +253,10 @@ customer-visible work.
 | Naive capability | DearMe current state | Product verdict |
 | --- | --- | --- |
 | Company/workspace substrate | Present through the inherited control plane. | Reuse is strong. |
-| CEO/worker team topology | Product roles exist, generated skills exist, but the registry still contains planned states. | Do not claim a full 12-role team yet. |
+| CEO/worker team topology | Product roles exist, generated skills exist, and governed external moves now carry DearMe employee handoff primitives; the registry still contains planned states. | Do not claim a full 12-role team yet; claim the proven handoff-capable employees. |
 | Issue/run/activity backbone | Present and heavily reused. | Keep it backstage. |
 | Heartbeat/recurring work | The first-cycle proof now carries a visible next private pass: draft, opportunity, and proof-page improvements. | Local product proof exists; phone-reachable/live recurrence is still the next gate. |
-| Provider/runtime isolation | DearMe has wrappers and proof lanes. | Live smoke is the next gate, not new settings UI. |
+| Provider/runtime isolation | DearMe has wrappers, proof lanes, and a DearMe primitive whitelist over outbound bindings. | Live smoke is the next gate, not new settings UI or another dispatch layer. |
 | Cost/budget truth | Substrate exists. | Customer credits should stay boring and visible later. |
 
 Naive should remain the model for backstage truth. DearMe should not expose a

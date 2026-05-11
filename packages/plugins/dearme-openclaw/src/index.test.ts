@@ -6,8 +6,10 @@ import { DEARME_ROLE_REGISTRY } from "@paperclipai/dearme-agent-prompts";
 
 import {
   DEARME_BOOTSTRAP_FILES,
+  DEARME_EMPLOYEE_HANDOFF_PRIMITIVES,
   DEARME_OUTBOUND_TOOLS,
   DEARME_OUTBOUND_TOOL_BINDINGS,
+  dearMeEmployeeHandoffPrimitiveForTool,
   generateAllSkills,
   generateSkillForRole,
   getBootstrapFile,
@@ -218,5 +220,27 @@ describe("dearme-openclaw outbound tool contract", () => {
     expect(DEARME_OUTBOUND_TOOL_BINDINGS.send_email.gate).toBe("send");
     expect(DEARME_OUTBOUND_TOOL_BINDINGS.deploy_site.gate).toBe("deploy");
     expect(DEARME_OUTBOUND_TOOL_BINDINGS.create_meta_campaign.gate).toBe("spend");
+  });
+
+  it("projects every outbound tool into one DearMe employee handoff primitive", () => {
+    expect(DEARME_EMPLOYEE_HANDOFF_PRIMITIVES.map((primitive) => primitive.toolName)).toEqual(
+      DEARME_OUTBOUND_TOOLS,
+    );
+
+    for (const primitive of DEARME_EMPLOYEE_HANDOFF_PRIMITIVES) {
+      const binding = DEARME_OUTBOUND_TOOL_BINDINGS[primitive.toolName];
+      expect(primitive.gate).toBe(binding.gate);
+      expect(primitive.channel).toBe(binding.channel);
+      expect(primitive.voiceGateRequired).toBe(binding.voiceGateRequired);
+      expect(primitive.actionLabel).not.toMatch(/openclaw|paperclip|provider|runtime|tool|adapter/i);
+      expect(primitive.employeeLabel).not.toMatch(/openclaw|paperclip|provider|runtime|tool|adapter/i);
+      expect(primitive.externalActionStatusLabel).toBe("External action not run");
+    }
+  });
+
+  it("rejects unknown tools at the employee handoff primitive boundary", () => {
+    expect(dearMeEmployeeHandoffPrimitiveForTool("post_x")?.id).toBe("publish_social_post");
+    expect(dearMeEmployeeHandoffPrimitiveForTool("unknown_tool")).toBeNull();
+    expect(dearMeEmployeeHandoffPrimitiveForTool(null)).toBeNull();
   });
 });

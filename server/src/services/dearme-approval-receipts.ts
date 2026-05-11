@@ -1,5 +1,6 @@
 import type { Db } from "@paperclipai/db";
 import { approvals, issueComments } from "@paperclipai/db";
+import { dearMeEmployeeHandoffPrimitiveForTool } from "@paperclipai/dearme-openclaw";
 import { logActivity } from "./activity-log.js";
 import { dearMeCustomerSafeText } from "./dearme-customer-text.js";
 
@@ -100,11 +101,22 @@ function launchHandoffFromPayload(payload: Record<string, unknown>) {
 
   const publishGate = recordField(launchHandoff, "publishGate");
   const connectChannelState = publishGate ? stringField(publishGate, "connectChannelState") : null;
-  const channel = stringField(launchHandoff, "channel");
-  const label = channelLabel(channel);
+  const toolName = stringField(launchHandoff, "toolName");
+  const primitive = toolName ? dearMeEmployeeHandoffPrimitiveForTool(toolName) : null;
+  if (toolName && !primitive) return null;
+  const channel = primitive?.channel ?? stringField(launchHandoff, "channel");
+  const label = primitive?.channelLabel ?? channelLabel(channel);
+  const primitiveDetails = {
+    handoffPrimitiveId: primitive?.id ?? null,
+    handoffEmployeeRole: primitive?.employeeRole ?? null,
+    handoffEmployeeLabel: primitive?.employeeLabel ?? null,
+    handoffActionLabel: primitive?.actionLabel ?? null,
+    handoffExternalActionStatusLabel: primitive?.externalActionStatusLabel ?? null,
+  };
 
   if (connectChannelState !== "connect_channel_required" || !label) {
     return {
+      ...primitiveDetails,
       channel,
       channelLabel: label,
       connectChannelState: connectChannelState ?? null,
@@ -113,6 +125,7 @@ function launchHandoffFromPayload(payload: Record<string, unknown>) {
   }
 
   return {
+    ...primitiveDetails,
     channel,
     channelLabel: label,
     connectChannelState: "connect_channel_required" as const,
@@ -219,6 +232,11 @@ function buildReceiptDetails(approval: ApprovalRecord) {
     nextActionOnApproval,
     launchChannel: launchHandoff?.channel ?? null,
     launchChannelLabel: launchHandoff?.channelLabel ?? null,
+    handoffPrimitiveId: launchHandoff?.handoffPrimitiveId ?? null,
+    handoffEmployeeRole: launchHandoff?.handoffEmployeeRole ?? null,
+    handoffEmployeeLabel: launchHandoff?.handoffEmployeeLabel ?? null,
+    handoffActionLabel: launchHandoff?.handoffActionLabel ?? null,
+    handoffExternalActionStatusLabel: launchHandoff?.handoffExternalActionStatusLabel ?? null,
     connectChannelState: launchHandoff?.connectChannelState ?? null,
     connectChannelNextStep: launchHandoff?.connectChannelNextStep ?? null,
     paused,

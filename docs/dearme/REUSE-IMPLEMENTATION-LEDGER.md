@@ -15,6 +15,13 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- DearMe now has a native employee handoff primitive whitelist over the
+  existing outbound tool bindings. Execution and approval receipts both resolve
+  through that primitive projection, so governed moves keep a DearMe employee,
+  action label, channel label, approval gate, and voice-proof requirement
+  without exposing tool/runtime/provider language. Future workers should extend
+  this whitelist when adding external moves; do not add UI-only labels or a
+  second dispatch wrapper.
 - The onboarding route now makes the Polsia-style one-sentence first cycle the
   first product path after the hero: the hero has one primary
   `Start with one sentence` action, the first payoff and 90-second cycle appear

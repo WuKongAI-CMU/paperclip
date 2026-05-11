@@ -168,6 +168,18 @@ describe("dearMeApprovedLaunchHandoffService", () => {
       approval: approval({ status: "pending" }),
       actorUserId: "user-1",
     })).toBeNull();
+    expect(callOutboundInputFromApprovedNextMove({
+      approval: approval({
+        payload: {
+          issueId: "issue-1",
+          launchHandoff: {
+            ...launchHandoff,
+            toolName: "unknown_tool",
+          },
+        },
+      }),
+      actorUserId: "user-1",
+    })).toBeNull();
   });
 
   it("maps an approved portfolio update into a deploy-site outbound call", async () => {
