@@ -111,6 +111,7 @@ test("provider smoke env files override base env and merge in order", async () =
 
 test("provider smoke env template is local-only and keeps live actions disabled", () => {
   const template = dearMeProviderSmokeEnvTemplate();
+  const telegramTemplate = dearMeProviderSmokeEnvTemplate("telegram_message");
 
   assert.match(template, /DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=0/);
   assert.match(template, /DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=0/);
@@ -125,6 +126,15 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   assert.equal(template.includes("accessToken"), false);
   assert.equal(template.includes("li-token"), false);
   assert.equal(template.includes("meta-token"), false);
+
+  assert.match(telegramTemplate, /--check --target telegram_message/);
+  assert.match(telegramTemplate, /--target telegram_message --live/);
+  assert.match(telegramTemplate, /OPENCLAW_GATEWAY_URL=/);
+  assert.match(telegramTemplate, /DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT=/);
+  assert.doesNotMatch(telegramTemplate, /DEARME_LINKEDIN_DM_MESSAGES_URL=/);
+  assert.doesNotMatch(telegramTemplate, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=/);
+  assert.doesNotMatch(telegramTemplate, /DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/);
+  assert.doesNotMatch(telegramTemplate, /DEARME_DEPLOY_SITE_BASE_URL=/);
 });
 
 test("provider smoke operator commands give local-only setup and live guards", () => {
@@ -141,6 +151,12 @@ test("provider smoke operator commands give local-only setup and live guards", (
   ]);
   assert.equal(commands.join("\n").includes("accessToken"), false);
   assert.equal(commands.join("\n").includes("OPENCLAW_GATEWAY_TOKEN="), false);
+
+  assert.deepEqual(dearMeProviderSmokeOperatorCommands(["telegram_message"]), [
+    "pnpm --silent dearme:provider-smoke -- --print-env-template --target telegram_message > .dearme-provider-smoke.env",
+    "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check --target telegram_message",
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target telegram_message --live",
+  ]);
 });
 
 test("provider smoke delivers a safe deploy_site preview receipt", async () => {

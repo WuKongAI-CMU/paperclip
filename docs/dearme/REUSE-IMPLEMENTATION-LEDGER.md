@@ -19,7 +19,8 @@ It answers three questions before another worker starts building:
   commands for blocked targets while keeping JSON output stable. The remaining
   gap is real provider/host credentials, not another config-discovery pass.
   Targeted checks also respect `--target`, so operators can work one channel at
-  a time.
+  a time. Targeted env templates now do the same, keeping Telegram/OpenClaw,
+  iMessage/OpenClaw, LinkedIn, Meta, and deploy-site proof setup narrow.
 - `.symphony/WORKFLOW.md` no longer makes the 2026-05-08 operating-loop plan a
   default worker read. Use that plan only for Symphony lifecycle/coordinator
   workflow changes; ordinary product workers should start from their assigned

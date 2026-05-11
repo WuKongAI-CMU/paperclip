@@ -120,56 +120,6 @@ const LIVE_TARGETS = new Set<DearMeProviderSmokeTarget>([
   "meta_campaign",
 ]);
 
-export function dearMeProviderSmokeEnvTemplate(): string {
-  return `# DearMe provider smoke local env.
-# Keep this file local. The repository ignores .dearme-provider-smoke.env.
-#
-# Check readiness:
-# pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check
-#
-# Run a safe preview receipt smoke:
-# pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target deploy_site_preview
-#
-# Run live provider smokes only after setting DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1
-# and passing --live on the command line.
-
-DEARME_DEPLOY_SITE_BASE_URL=https://dearme.example.test
-DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=0
-DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=0
-DEARME_DEPLOY_SITE_SMOKE_HANDLE=dearme-smoke
-DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=smoke:provider-dispatch
-DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN=
-DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=dearme-smoke
-
-DEARME_LINKEDIN_DM_MESSAGES_URL=
-DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE=/absolute/path/to/linkedin-credential.json
-DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN=
-DEARME_LINKEDIN_DM_SMOKE_SUBJECT=Private proof
-DEARME_LINKEDIN_DM_SMOKE_BODY=Your private DearMe proof packet is ready.
-
-OPENCLAW_GATEWAY_URL=
-OPENCLAW_GATEWAY_TOKEN=
-OPENCLAW_WEBHOOK_AUTH=
-PAPERCLIP_API_URL=
-DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT=
-DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY=Your private DearMe proof packet is ready.
-DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=
-DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY=Dear me, day 1 - the team has your first proof packet ready.
-DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE=imessage
-
-DEARME_META_CAMPAIGN_GRAPH_API_BASE_URL=https://graph.facebook.com/v25.0
-DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/absolute/path/to/meta-credential.json
-DEARME_META_CAMPAIGN_SMOKE_NAME=DearMe provider smoke
-DEARME_META_CAMPAIGN_SMOKE_OBJECTIVE=OUTCOME_LEADS
-DEARME_META_CAMPAIGN_SMOKE_DAILY_BUDGET_USD=1
-DEARME_META_CAMPAIGN_SMOKE_CREATIVE_REFS=smoke:creative
-DEARME_META_CAMPAIGN_SMOKE_AUDIENCE_REF=smoke:audience
-DEARME_META_CAMPAIGN_SMOKE_BUDGET_TIER=test
-DEARME_META_CAMPAIGN_SMOKE_LEARNING_WINDOW_HOURS=168
-
-DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0`;
-}
-
 const PROVIDER_SMOKE_ENV_FILE = ".dearme-provider-smoke.env";
 const PROVIDER_SMOKE_BASE_COMMAND =
   `pnpm --silent dearme:provider-smoke -- --env-file ${PROVIDER_SMOKE_ENV_FILE}`;
@@ -181,12 +131,98 @@ function providerSmokeRunCommand(target: DearMeProviderSmokeTarget): string {
     : command;
 }
 
+function includesTemplateTarget(targetArg: TargetArg, ...targets: DearMeProviderSmokeTarget[]) {
+  return targetArg === "all" || targets.includes(targetArg);
+}
+
+export function dearMeProviderSmokeEnvTemplate(targetArg: TargetArg = "all"): string {
+  const targetFlag = targetArg === "all" ? "" : ` --target ${targetArg}`;
+  const sections = [`# DearMe provider smoke local env.
+# Keep this file local. The repository ignores .dearme-provider-smoke.env.
+#
+# Check readiness:
+# ${PROVIDER_SMOKE_BASE_COMMAND} --check${targetFlag}
+#
+# Run the selected smoke:
+# ${targetArg === "all" ? `${PROVIDER_SMOKE_BASE_COMMAND} --target deploy_site_preview` : providerSmokeRunCommand(targetArg)}
+#
+# Run live provider smokes only after setting DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1
+# and passing --live on the command line.
+`];
+
+  if (includesTemplateTarget(targetArg, "deploy_site_preview", "deploy_site_production")) {
+    sections.push(`
+DEARME_DEPLOY_SITE_BASE_URL=https://dearme.example.test
+DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=0
+DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=0
+DEARME_DEPLOY_SITE_SMOKE_HANDLE=dearme-smoke
+DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=smoke:provider-dispatch
+DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN=
+DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=dearme-smoke
+`);
+  }
+
+  if (includesTemplateTarget(targetArg, "linkedin_dm")) {
+    sections.push(`
+DEARME_LINKEDIN_DM_MESSAGES_URL=
+DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE=/absolute/path/to/linkedin-credential.json
+DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN=
+DEARME_LINKEDIN_DM_SMOKE_SUBJECT=Private proof
+DEARME_LINKEDIN_DM_SMOKE_BODY=Your private DearMe proof packet is ready.
+`);
+  }
+
+  if (includesTemplateTarget(targetArg, "telegram_message", "imessage_message")) {
+    sections.push(`
+OPENCLAW_GATEWAY_URL=
+OPENCLAW_GATEWAY_TOKEN=
+OPENCLAW_WEBHOOK_AUTH=
+PAPERCLIP_API_URL=
+`);
+  }
+
+  if (includesTemplateTarget(targetArg, "telegram_message")) {
+    sections.push(`
+DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT=
+DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY=Your private DearMe proof packet is ready.
+`);
+  }
+
+  if (includesTemplateTarget(targetArg, "imessage_message")) {
+    sections.push(`
+DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=
+DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY=Dear me, day 1 - the team has your first proof packet ready.
+DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE=imessage
+`);
+  }
+
+  if (includesTemplateTarget(targetArg, "meta_campaign")) {
+    sections.push(`
+DEARME_META_CAMPAIGN_GRAPH_API_BASE_URL=https://graph.facebook.com/v25.0
+DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/absolute/path/to/meta-credential.json
+DEARME_META_CAMPAIGN_SMOKE_NAME=DearMe provider smoke
+DEARME_META_CAMPAIGN_SMOKE_OBJECTIVE=OUTCOME_LEADS
+DEARME_META_CAMPAIGN_SMOKE_DAILY_BUDGET_USD=1
+DEARME_META_CAMPAIGN_SMOKE_CREATIVE_REFS=smoke:creative
+DEARME_META_CAMPAIGN_SMOKE_AUDIENCE_REF=smoke:audience
+DEARME_META_CAMPAIGN_SMOKE_BUDGET_TIER=test
+DEARME_META_CAMPAIGN_SMOKE_LEARNING_WINDOW_HOURS=168
+`);
+  }
+
+  sections.push(`
+DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0`);
+  return sections.join("").trimEnd();
+}
+
 export function dearMeProviderSmokeOperatorCommands(
   blockedTargets: readonly DearMeProviderSmokeTarget[] = [],
 ): string[] {
+  const scopedTarget = blockedTargets.length === 1 ? blockedTargets[0] : null;
+  const targetFlag = scopedTarget ? ` --target ${scopedTarget}` : "";
   const commands = [
-    `pnpm --silent dearme:provider-smoke -- --print-env-template > ${PROVIDER_SMOKE_ENV_FILE}`,
-    `${PROVIDER_SMOKE_BASE_COMMAND} --check`,
+    `pnpm --silent dearme:provider-smoke -- --print-env-template${targetFlag} > ${PROVIDER_SMOKE_ENV_FILE}`,
+    `${PROVIDER_SMOKE_BASE_COMMAND} --check${targetFlag}`,
   ];
   for (const target of blockedTargets) {
     commands.push(providerSmokeRunCommand(target));
@@ -867,6 +903,7 @@ Targets:
 
 Setup:
   pnpm --silent dearme:provider-smoke -- --print-env-template > .dearme-provider-smoke.env
+  pnpm --silent dearme:provider-smoke -- --print-env-template --target telegram > .dearme-provider-smoke.env
   pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check
 
 Default with no target is --check. Secret JSON can be passed directly or by file:
@@ -923,7 +960,7 @@ async function main() {
     }
 
     if (parsed.printEnvTemplate) {
-      console.log(dearMeProviderSmokeEnvTemplate());
+      console.log(dearMeProviderSmokeEnvTemplate(parsed.target ?? "all"));
       return;
     }
 

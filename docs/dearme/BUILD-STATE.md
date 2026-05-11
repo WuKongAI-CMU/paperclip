@@ -12,6 +12,9 @@ Product/architecture slice:
   blocked target smoke command with the required live guard where needed.
 - Targeted readiness checks such as `--check --target telegram` now narrow both
   the readiness output and the printed next command to the requested provider.
+- Targeted template generation such as `--print-env-template --target telegram`
+  now prints only the shared live guard plus the OpenClaw/Telegram variables
+  needed for that proof.
 - Kept JSON readiness stable and secret-free so automation can continue reading
   the original readiness shape while human operators get direct next steps.
 - This keeps the remaining product proof gap bounded to real live provider
@@ -24,6 +27,8 @@ Verification:
   commands for production site, LinkedIn, Telegram, iMessage, and Meta smokes.
 - `pnpm --silent dearme:provider-smoke -- --check --target telegram` narrows the
   readiness and next command to the Telegram OpenClaw gateway smoke.
+- `pnpm --silent dearme:provider-smoke -- --print-env-template --target telegram`
+  prints the Telegram-only local env template.
 - `pnpm --silent dearme:provider-smoke -- --check --json` still emits the
   readiness payload without operator commands or secret values.
 
