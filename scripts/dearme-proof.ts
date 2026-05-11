@@ -1,3 +1,4 @@
+import { access } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import {
   dearMeProviderSmokeEnvTemplate,
@@ -178,8 +179,26 @@ export function parseDearMeProofArgs(argv: readonly string[]): DearMeProofArgs {
 export async function loadDearMeProofEnv(
   envFiles: readonly string[] = [],
   baseEnv: Env = process.env,
+  defaultEnvFile = PROOF_ENV_FILE,
 ): Promise<Env> {
-  return loadDearMeProviderSmokeEnv(envFiles, baseEnv);
+  return loadDearMeProviderSmokeEnv(
+    await resolveDearMeProofEnvFiles(envFiles, defaultEnvFile),
+    baseEnv,
+  );
+}
+
+export async function resolveDearMeProofEnvFiles(
+  envFiles: readonly string[] = [],
+  defaultEnvFile = PROOF_ENV_FILE,
+): Promise<string[]> {
+  if (envFiles.length > 0) return [...envFiles];
+
+  try {
+    await access(defaultEnvFile);
+    return [defaultEnvFile];
+  } catch {
+    return [];
+  }
 }
 
 export function inspectDearMeProofReadiness(
@@ -216,7 +235,7 @@ function laneFlag(lane: DearMeProofLane) {
 }
 
 function proofCommand(action: "--check" | "--run-safe", lane: DearMeProofLane) {
-  return `pnpm --silent dearme:proof -- --env-file ${PROOF_ENV_FILE} ${action}${laneFlag(lane)}`;
+  return `pnpm --silent dearme:proof -- ${action}${laneFlag(lane)}`;
 }
 
 function replaceChildEnvFile(command: string) {
@@ -239,7 +258,7 @@ export function dearMeProofOperatorCommands(
 ): string[] {
   const commands = [
     `pnpm --silent dearme:proof -- --print-env-template${laneFlag(lane)} > ${PROOF_ENV_FILE}`,
-    `pnpm --silent dearme:proof -- --env-file ${PROOF_ENV_FILE} --check${laneFlag(lane)}`,
+    `pnpm --silent dearme:proof -- --check${laneFlag(lane)}`,
   ];
 
   for (const laneReadiness of readiness.lanes) {
@@ -404,12 +423,13 @@ function proofTemplateSection(title: string, template: string) {
 export function dearMeProofEnvTemplate(lane: DearMeProofLane = "all"): string {
   const sections = [`# DearMe proof local env.
 # Keep this file local. The repository ignores ${PROOF_ENV_FILE}.
+# pnpm dearme:status and pnpm dearme:proof auto-load this file when it exists.
 #
 # Check readiness:
-# pnpm --silent dearme:proof -- --env-file ${PROOF_ENV_FILE} --check${laneFlag(lane)}
+# pnpm --silent dearme:proof -- --check${laneFlag(lane)}
 #
 # Run local safe proof:
-# pnpm --silent dearme:proof -- --env-file ${PROOF_ENV_FILE} --run-safe${laneFlag(lane)}
+# pnpm --silent dearme:proof -- --run-safe${laneFlag(lane)}
 #
 # Live provider sends/deploys/spend still require the provider smoke live guard.
 `];
@@ -572,14 +592,15 @@ Lanes:
 
 Setup:
   pnpm --silent dearme:proof -- --print-env-template > ${PROOF_ENV_FILE}
-  pnpm --silent dearme:proof -- --env-file ${PROOF_ENV_FILE} --status
-  pnpm --silent dearme:proof -- --env-file ${PROOF_ENV_FILE} --check
-  pnpm --silent dearme:proof -- --env-file ${PROOF_ENV_FILE} --run-safe
+  pnpm --silent dearme:proof -- --status
+  pnpm --silent dearme:proof -- --check
+  pnpm --silent dearme:proof -- --run-safe
 
 Default with no action is --check. Use --status for a product/coordinator
-summary. The safe run does not send, deploy to production, spend, or call a
-live model; live provider actions stay behind dearme:provider-smoke --live and
-DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.`);
+summary. When ${PROOF_ENV_FILE} exists, it is loaded automatically unless
+--env-file is passed explicitly. The safe run does not send, deploy to
+production, spend, or call a live model; live provider actions stay behind
+dearme:provider-smoke --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.`);
 }
 
 async function main() {

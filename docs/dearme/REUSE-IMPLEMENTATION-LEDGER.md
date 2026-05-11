@@ -15,6 +15,11 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `pnpm dearme:status` and `pnpm dearme:proof` now auto-load the ignored
+  `.dearme-proof.env` file when it exists, while explicit `--env-file` values
+  still take priority for temporary credential files. This lets the coordinator
+  keep the local profile-token voice scorer and safe proof defaults in one
+  local file instead of remembering extra flags on every status/check/safe-run.
 - `pnpm dearme:status` is now the compact coordinator/product status surface
   over the unified proof map. It tells whether the local no-send proof is ready,
   whether the local voice semantic scorer proof is configured, and whether live

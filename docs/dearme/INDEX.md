@@ -165,7 +165,10 @@ to read raw provider setup every time. The underlying
 entrypoint for coordinators and Symphony workers. It composes the existing
 provider and voice smoke lanes, prints one ignored `.dearme-proof.env`
 bootstrap, and offers `pnpm dearme:proof -- --run-safe` for the no-send,
-no-production-deploy, no-spend, no-live-model proof path. Drop to
+no-production-deploy, no-spend, no-live-model proof path.
+`pnpm dearme:status` and `pnpm dearme:proof` automatically read
+`.dearme-proof.env` when it exists, while explicit `--env-file` values still
+win for temporary credential files. Drop to
 `pnpm dearme:provider-smoke -- --check` for live provider credential work or
 `pnpm dearme:voice-smoke -- --check` for scorer-specific calibration work; do
 not add another setup dashboard or dispatch path. Symphony worker bootstrap

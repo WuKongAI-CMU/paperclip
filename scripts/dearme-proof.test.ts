@@ -11,6 +11,7 @@ import {
   inspectDearMeProofReadiness,
   loadDearMeProofEnv,
   parseDearMeProofArgs,
+  resolveDearMeProofEnvFiles,
   runDearMeProofSafe,
   summarizeDearMeProofStatus,
 } from "./dearme-proof.ts";
@@ -56,7 +57,7 @@ test("DearMe proof readiness can scope to one lane", () => {
   );
   assert.deepEqual(commands.slice(0, 2), [
     "pnpm --silent dearme:proof -- --print-env-template --lane voice > .dearme-proof.env",
-    "pnpm --silent dearme:proof -- --env-file .dearme-proof.env --check --lane voice",
+    "pnpm --silent dearme:proof -- --check --lane voice",
   ]);
   assert.equal(commands.some((command) => command.includes("dearme:provider-smoke")), false);
 });
@@ -94,7 +95,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /Local no-send proof: ready/);
   assert.match(formatted, /Voice semantic proof: blocked/);
   assert.match(formatted, /Live provider proof: blocked/);
-  assert.match(formatted, /pnpm --silent dearme:proof -- --env-file \.dearme-proof\.env --run-safe/);
+  assert.match(formatted, /pnpm --silent dearme:proof -- --run-safe/);
   assert.doesNotMatch(formatted, /OPENCLAW_GATEWAY_URL/);
   assert.doesNotMatch(formatted, /DEARME_LINKEDIN_DM_CREDENTIAL_JSON/);
   assert.equal(JSON.stringify(status).includes("OPENCLAW_GATEWAY_URL"), false);
@@ -114,8 +115,8 @@ test("DearMe proof status can be lane scoped", () => {
   ]);
   assert.equal(status.sections.every((section) => section.ready), true);
   assert.equal(status.commands.printEnvTemplate, "pnpm --silent dearme:proof -- --print-env-template --lane voice > .dearme-proof.env");
-  assert.equal(status.commands.runSafe, "pnpm --silent dearme:proof -- --env-file .dearme-proof.env --run-safe --lane voice");
-  assert.equal(status.commands.check, "pnpm --silent dearme:proof -- --env-file .dearme-proof.env --check --lane voice");
+  assert.equal(status.commands.runSafe, "pnpm --silent dearme:proof -- --run-safe --lane voice");
+  assert.equal(status.commands.check, "pnpm --silent dearme:proof -- --check --lane voice");
 });
 
 test("DearMe proof env template is a single local file bootstrap", () => {
@@ -152,6 +153,32 @@ test("DearMe proof env files merge into both proof lanes", async () => {
     assert.equal(env.DEARME_DEPLOY_SITE_BASE_URL, "https://sites.example.test");
     const voice = inspectDearMeProofReadiness(env, "voice").lanes[0];
     assert.equal(voice?.readiness.find((item) => item.target === "profile_token_semantic")?.ready, true);
+  } finally {
+    await rm(dir, { force: true, recursive: true });
+  }
+});
+
+test("DearMe proof auto-loads the local proof env when present", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-proof-default-env-"));
+  const envFile = join(dir, ".dearme-proof.env");
+  const explicitEnvFile = join(dir, "explicit.env");
+
+  try {
+    await writeFile(envFile, "DEARME_VOICE_SEMANTIC_SCORER=profile-token\n", "utf8");
+    await writeFile(explicitEnvFile, "DEARME_VOICE_SEMANTIC_SCORER=off\n", "utf8");
+
+    assert.deepEqual(await resolveDearMeProofEnvFiles([], envFile), [envFile]);
+    assert.deepEqual(
+      await resolveDearMeProofEnvFiles([explicitEnvFile], envFile),
+      [explicitEnvFile],
+    );
+
+    const env = await loadDearMeProofEnv([], {}, envFile);
+    const voice = inspectDearMeProofReadiness(env, "voice").lanes[0];
+    assert.equal(
+      voice?.readiness.find((item) => item.target === "profile_token_semantic")?.ready,
+      true,
+    );
   } finally {
     await rm(dir, { force: true, recursive: true });
   }

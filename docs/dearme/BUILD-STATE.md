@@ -2,6 +2,27 @@
 
 Date: 2026-05-11
 
+## DearMe Proof Local Env Autoload - 2026-05-11
+
+Product/architecture slice:
+
+- `pnpm dearme:status` and `pnpm dearme:proof` now auto-load the ignored
+  `.dearme-proof.env` file when it exists, while explicit `--env-file` values
+  still take priority for temporary credential files.
+- The generated `.dearme-proof.env` template now shows the shorter
+  status/check/safe-run commands because the proof entrypoint owns local env
+  discovery. This keeps local voice semantic proof and safe preview proof on
+  one operator file without adding another setup dashboard or dispatch path.
+
+Verification:
+
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:proof -- --print-env-template`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:proof -- --check`
+- `pnpm --silent dearme:proof -- --run-safe`
+- `pnpm typecheck`
+
 ## Symphony Launchd Log Rotation - 2026-05-11
 
 Product/architecture slice:
