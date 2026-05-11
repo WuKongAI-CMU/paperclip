@@ -2,6 +2,23 @@
 
 Date: 2026-05-11
 
+## Symphony Dirty-Handoff File Count Cleanup - 2026-05-11
+
+Product/architecture slice:
+
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs` now derives
+  dirty handoff file counts from the handoff `status` list when a dirty summary
+  does not include `changedFiles`.
+- This keeps active dirty Symphony lanes visible while avoiding the misleading
+  `files=0` display for a dirty patch handoff that actually has status entries.
+  The coordinator still treats latest dirty handoffs as active lane signals and
+  does not replay or close them automatically.
+
+Verification:
+
+- `pnpm test:dearme-worktrees`
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
+
 ## OpenClaw Readiness Noise Cleanup - 2026-05-11
 
 Product/architecture slice:

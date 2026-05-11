@@ -557,6 +557,10 @@ test("collectSymphonyHandoffs summarizes latest handoff by issue", () => {
       mode: "dirty_patch_handoff",
       issue: "DEA-61",
       head: "3333333333333333333333333333333333333333",
+      status: [
+        " M scripts/dearme-provider-smoke.ts",
+        "?? docs/dearme/live-smoke-notes.md",
+      ],
       patchPath: "/tmp/DEA-61.patch",
     }));
     writeFileSync(malformedPath, "{\"mode\":", "utf8");
@@ -588,6 +592,10 @@ test("collectSymphonyHandoffs summarizes latest handoff by issue", () => {
     assert.equal(summary.historicalByMode.committed_patch ?? 0, 0);
     assert.equal(summary.historicalByMode.unreadable_summary ?? 0, 0);
     assert.equal(summary.latestByIssue["DEA-60"].mode, "committed_patch");
+    assert.deepEqual(summary.latestByIssue["DEA-61"].changedFiles, [
+      "scripts/dearme-provider-smoke.ts",
+      "docs/dearme/live-smoke-notes.md",
+    ]);
     assert.deepEqual(summary.latestByIssue["DEA-60"].changedFiles, [
       "scripts/dearme-provider-smoke.ts",
     ]);

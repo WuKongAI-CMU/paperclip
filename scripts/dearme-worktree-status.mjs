@@ -314,6 +314,10 @@ export function collectSymphonyHandoffs({
 
       try {
         const parsed = JSON.parse(readFileSync(summaryPath, "utf8"));
+        const status = Array.isArray(parsed.status) ? parsed.status : [];
+        const changedFiles = Array.isArray(parsed.changedFiles) && parsed.changedFiles.length > 0
+          ? parsed.changedFiles
+          : changedFilesFromStatus(status);
         return {
           ...base,
           mode: parsed.mode ?? "unknown",
@@ -322,7 +326,8 @@ export function collectSymphonyHandoffs({
           baseHead: parsed.baseHead ?? null,
           head: parsed.head ?? null,
           commits: Array.isArray(parsed.commits) ? parsed.commits : [],
-          changedFiles: Array.isArray(parsed.changedFiles) ? parsed.changedFiles : [],
+          changedFiles,
+          status,
           patchPath: parsed.patchPath ?? null,
           bundlePath: parsed.bundlePath ?? null,
         };
@@ -342,6 +347,20 @@ export function collectSymphonyHandoffs({
       }
     })
     .sort((a, b) => b.updatedAtMs - a.updatedAtMs || a.summaryPath.localeCompare(b.summaryPath));
+}
+
+function changedFilesFromStatus(status) {
+  return [
+    ...new Set(
+      status
+        .map((line) => {
+          const file = line.slice(3).trim();
+          const renameTarget = file.split(" -> ").pop()?.trim();
+          return renameTarget || file;
+        })
+        .filter(Boolean),
+    ),
+  ];
 }
 
 export function filterSymphonyHandoffs(handoffs, options) {
