@@ -62,7 +62,7 @@ codex:
     - git status --short --branch
     - pnpm dearme:symphony-preflight -- .
     - |
-      if pnpm dearme:worktrees -- --summary-only --skip-dirty; then
+      if pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs; then
         true
       else
         status=$?
@@ -147,9 +147,10 @@ Operating rules:
 2. Use existing DearMe, Polsia, Naive, Lindy, Littlebird, Cofounder, and
    OpenClaw patterns where they fit. Record donor paths used, adapted, or
    rejected.
-3. Treat the bootstrap worktree summary as the only default worktree pass. Do
-   not search old worktrees unless the issue and summary identify a directly
-   relevant residual branch.
+3. Treat the bootstrap worktree and handoff summary as the only default
+   worktree pass. Do not search old worktrees or `_handoffs` manually unless
+   the issue and summary identify a directly relevant residual branch or
+   absorbable handoff.
 4. First-turn execution guard: after the bootstrap and required docs, inspect
    only the issue-named product paths and run the narrow shell smoke or focused
    test before any broad synthesis. End turn 1 with one of three outcomes:

@@ -88,6 +88,16 @@ Symphony writable root. This keeps the coordinator able to absorb a worker patch
 even if Symphony cleans `/private/tmp/dearme-symphony-workspaces/DEA-123` before
 the coordinator inspects it.
 
+Before absorbing or closing a lane, use the coordinator summary instead of
+manual `_handoffs` scans:
+
+```sh
+pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs --ticket DEA-123
+```
+
+This shows both the worktree verdict and the latest durable handoff artifact
+for the issue, including patch path, mode, head, and touched-file count.
+
 This keeps the main DearMe checkout as the integration truth and prevents stale
 workspaces from being cleaned before the coordinator can absorb or reject the
 actual change.
