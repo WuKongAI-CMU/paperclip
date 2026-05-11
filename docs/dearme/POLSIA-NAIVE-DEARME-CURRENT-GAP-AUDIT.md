@@ -15,23 +15,28 @@ Current DearMe branch:
 
 - `git status --short --branch`
   - branch: `codex/dearme-dm-136-sample-demo-proof`
-  - branch carries the first-five-minute aha proof gate and the DEA-60 handoff
-    alias absorption
+  - branch carries the first-five-minute aha proof gate, the DEA-60 handoff
+    alias absorption, and the customer-corpus voice proof hardening
 - `.symphony/bin/dearme-symphony status`
   - Symphony is running on `http://127.0.0.1:4100/`
-  - one active worker lane is in progress
+  - one active DEA-60 worker lane is in progress
 - `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs --ticket DEA-60`
   - 2 DearMe worktrees
-  - 1 reviewed as absorbed
-  - 1 active not-in-current Symphony lane
+  - 2 reviewed as absorbed
+  - 0 dirty or not-in-current replay candidates
   - latest DEA-60 handoff is a committed patch at head `88f8483a9f84`
 - `pnpm --silent dearme:aha-proof -- --check`
   - local private first-five-minute aha proof is ready
   - no sends, public deploys, spend, or live model calls are performed
 - `pnpm --silent dearme:proof -- --status --json`
   - local no-send proof is ready
-  - voice semantic proof remains the scorer-specific local lane
+  - voice semantic proof is ready on the coordinator Mac through the local
+    profile-token scorer and customer-like custom corpus
   - live provider proof is still the remaining external proof gap
+- `pnpm --silent dearme:proof -- --run-safe --lane voice`
+  - deterministic local gate passes
+  - profile-token semantic proof passes with custom corpus evidence, including
+    profile sample/token counts and drift blocking
 - `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
   - the browser onboarding surface now renders the customer-safe first-five-minute
     progress stream and top-focus live private-pass pulse without hidden
@@ -73,19 +78,20 @@ Polsia's demo strength.
 
 DearMe is closer to Naive/Paperclip on substrate than it is to Polsia on
 first-wow. The control-plane reuse is strong. The first-five-minute private
-contract is runnable and now visible in the browser, but the external/live proof
-lane is not yet strong enough.
+contract is runnable and visible in the browser, and the local voice proof now
+requires customer-like corpus evidence. The external/live provider lane is not
+yet strong enough.
 
 ## Current Maturity
 
 | Area | Current score | Judgment |
 | --- | ---: | --- |
 | Substrate/control plane reuse | 80 / 100 | Strong. DearMe is using the Paperclip-style company, issue, approval, route, service, dispatch, and proof machinery instead of rebuilding it. |
-| DearMe product semantics | 70 / 100 | Good. Brand OS, voice, portfolio, opportunity, reports, Work Ready, and launch gates are now DearMe-owned concepts. |
+| DearMe product semantics | 72 / 100 | Good. Brand OS, voice, portfolio, opportunity, reports, Work Ready, launch gates, and customer-corpus voice proof are now DearMe-owned concepts. |
 | UX simplicity | 60 / 100 | Improving. The browser now shows one-sentence-to-first-five-minute progress, but onboarding is still heavier than Polsia's one-input activation. |
-| Autonomous runtime proof | 48 / 100 | Early. Local safe proof, private aha proof, and visible browser progress are ready; live provider proof and real recurring customer-visible work are not fully proven. |
-| Polsia-style first-wow | 60 / 100 | Local private proof exists and is now watchable in the browser. The missing main moment is phone-reachable/live proof plus provider-backed execution. |
-| Naive-style durable team runtime | 70 / 100 | Solid substrate fit. The missing proof is not the control plane; it is the product-specific recurring team run and live provider smoke. |
+| Autonomous runtime proof | 55 / 100 | Early but no longer theoretical. Local safe proof, private aha proof, visible browser progress, and customer-corpus voice proof are ready; live provider proof and real recurring customer-visible work are not fully proven. |
+| Polsia-style first-wow | 62 / 100 | Local private proof exists, is watchable in the browser, and has local voice-fit evidence. The missing main moment is phone-reachable/live proof plus provider-backed execution. |
+| Naive-style durable team runtime | 72 / 100 | Solid substrate fit. The missing proof is not the control plane; it is the product-specific recurring team run and live provider smoke. |
 
 ## What DearMe Has Actually Done
 
@@ -105,7 +111,8 @@ DearMe has already built the product/kernel split correctly:
 - Operator proof: `pnpm dearme:aha-proof`, `pnpm dearme:proof`,
   `pnpm dearme:status`, `pnpm dearme:provider-smoke`, and
   `pnpm dearme:voice-smoke` now give the coordinator a private-first-wow,
-  no-send / voice / live-provider readiness map.
+  no-send / voice / live-provider readiness map. The voice lane can require a
+  customer-like local corpus and now reports profile sample/token evidence.
 - Coordination: Symphony is the active worker lane, and current worktree status
   is visible through `pnpm dearme:worktrees`.
 
@@ -258,7 +265,8 @@ as prepared outputs or internal lanes until they are genuinely runnable.
 
 ### DM-WOW-4 Live Proof Lane, Not Settings UI
 
-Live provider credentials should enter the operator proof lane:
+Voice proof now has a local customer-corpus check. Live provider credentials
+should enter the operator proof lane:
 
 - `pnpm dearme:status`
 - `pnpm dearme:proof -- --check`

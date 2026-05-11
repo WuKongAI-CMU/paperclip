@@ -2,6 +2,37 @@
 
 Date: 2026-05-11
 
+## Customer-Corpus Voice Proof Ready Locally - 2026-05-11
+
+Product/architecture slice:
+
+- Kept the Voice Gate proof backstage and extended the existing
+  `pnpm dearme:voice-smoke` / `pnpm dearme:proof` lane instead of adding a new
+  scorer route, setup screen, provider dashboard, or customer-facing concern.
+- The voice semantic lane can now require a customer-like local corpus with
+  `DEARME_VOICE_SMOKE_REQUIRE_CUSTOM_CORPUS=1`, custom seed texts, match text,
+  and drift text. Readiness blocks until the corpus is present, and successful
+  runs print profile sample/token evidence plus `corpus=custom`.
+- The coordinator Mac has the ignored `.dearme-proof.env` configured for the
+  local profile-token scorer plus the custom corpus. `pnpm dearme:status` now
+  reports local no-send proof and voice semantic proof ready; live provider
+  proof is the remaining hard blocker.
+- Latest DEA-60 handoff evidence remains reviewed/absorbed in current head.
+  There are no current dirty/not-in-current worktree replay candidates; the
+  live Symphony daemon still has one DEA-60 worker lane in progress.
+
+Verification:
+
+- `pnpm test:dearme-voice-smoke`
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:proof -- --check --lane voice`
+- `pnpm --silent dearme:proof -- --run-safe --lane voice`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:proof -- --check --lane provider`
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs --ticket DEA-60`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Browser First-Wow Preview Trail - 2026-05-11
 
 Product/architecture slice:

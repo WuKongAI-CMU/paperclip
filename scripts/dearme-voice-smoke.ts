@@ -42,6 +42,9 @@ export type DearMeVoiceSmokePassedResult = {
   matchScore?: number;
   driftScore?: number;
   driftBlocked?: boolean;
+  profileAcceptedSamples?: number;
+  profileTokenCount?: number;
+  customCorpus?: boolean;
 };
 
 export type DearMeVoiceSmokeBlockedResult = {
@@ -74,6 +77,9 @@ const VOICE_SMOKE_ENV_FILE = ".dearme-voice-smoke.env";
 const VOICE_SMOKE_BASE_COMMAND =
   `pnpm --silent dearme:voice-smoke -- --env-file ${VOICE_SMOKE_ENV_FILE}`;
 const PROFILE_TOKEN_MODE_REQUIREMENT = "DEARME_VOICE_SEMANTIC_SCORER=profile-token";
+const PROFILE_SEEDS_REQUIREMENT = "DEARME_VOICE_SMOKE_PROFILE_SEEDS";
+const MATCH_TEXT_REQUIREMENT = "DEARME_VOICE_SMOKE_MATCH_TEXT";
+const DRIFT_TEXT_REQUIREMENT = "DEARME_VOICE_SMOKE_DRIFT_TEXT";
 const VOICE_SMOKE_DEFAULT_FLOOR = 92;
 
 const DETERMINISTIC_SMOKE_TEXT =
@@ -106,9 +112,14 @@ function targetMissingRequirements(target: DearMeVoiceSmokeTarget, env: Env) {
     case "deterministic_gate":
       return [];
     case "profile_token_semantic":
-      return resolveDearMeVoiceSemanticScorerFromEnv(env as NodeJS.ProcessEnv)
-        ? []
-        : [PROFILE_TOKEN_MODE_REQUIREMENT];
+      return [
+        ...(
+          resolveDearMeVoiceSemanticScorerFromEnv(env as NodeJS.ProcessEnv)
+            ? []
+            : [PROFILE_TOKEN_MODE_REQUIREMENT]
+        ),
+        ...customCorpusMissingRequirements(env),
+      ];
   }
 }
 
@@ -190,7 +201,66 @@ ${selectedRunCommands.map((command) => `# ${command}`).join("\n")}
 
 DEARME_VOICE_SEMANTIC_SCORER=profile-token
 DEARME_VOICE_SEMANTIC_MIN_ACCEPTED_SAMPLES=2
-DEARME_VOICE_SEMANTIC_MIN_PROFILE_TOKENS=8`;
+DEARME_VOICE_SEMANTIC_MIN_PROFILE_TOKENS=8
+
+# Optional: require a customer-like local corpus instead of the built-in smoke text.
+# Separate profile seed texts with |||, or quote the value with \\n between entries.
+# DEARME_VOICE_SMOKE_REQUIRE_CUSTOM_CORPUS=1
+# DEARME_VOICE_SMOKE_PROFILE_SEEDS=\"I turn rough notes into buyer proof before launch.|||I prefer inspectable proof over broad claims.|||I keep the next call focused on one concrete yes.\"
+# DEARME_VOICE_SMOKE_MATCH_TEXT=\"I turn rough notes into buyer proof before launch because inspectable proof makes one concrete yes easier to trust.\"
+# DEARME_VOICE_SMOKE_DRIFT_TEXT=\"Amazing platform synergy unlocks automated workflows for everyone at scale.\"`;
+}
+
+function envFlagEnabled(value: string | undefined) {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
+}
+
+function parsePositiveEnvInt(value: string | undefined, fallback: number) {
+  if (!value?.trim()) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function parseCorpusTexts(raw: string | undefined): string[] {
+  if (!raw?.trim()) return [];
+  return raw
+    .replaceAll("\\n", "\n")
+    .split(/\n+|\|\|\|/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function readVoiceSmokeCorpus(env: Env) {
+  const customSeeds = parseCorpusTexts(env.DEARME_VOICE_SMOKE_PROFILE_SEEDS);
+  const customMatchText = env.DEARME_VOICE_SMOKE_MATCH_TEXT?.trim();
+  const customDriftText = env.DEARME_VOICE_SMOKE_DRIFT_TEXT?.trim();
+
+  return {
+    seedTexts: customSeeds.length > 0 ? customSeeds : [...PROFILE_SEED_TEXTS],
+    matchText: customMatchText || PROFILE_MATCH_TEXT,
+    driftText: customDriftText || PROFILE_DRIFT_TEXT,
+    customCorpus: customSeeds.length > 0 || Boolean(customMatchText) || Boolean(customDriftText),
+  };
+}
+
+function customCorpusMissingRequirements(env: Env): string[] {
+  if (!envFlagEnabled(env.DEARME_VOICE_SMOKE_REQUIRE_CUSTOM_CORPUS)) return [];
+
+  const missing: string[] = [];
+  const minimumSeedCount = parsePositiveEnvInt(env.DEARME_VOICE_SEMANTIC_MIN_ACCEPTED_SAMPLES, 2);
+  const seedCount = parseCorpusTexts(env.DEARME_VOICE_SMOKE_PROFILE_SEEDS).length;
+  if (seedCount < minimumSeedCount) {
+    missing.push(`${PROFILE_SEEDS_REQUIREMENT} with at least ${minimumSeedCount} entries`);
+  }
+  if (!env.DEARME_VOICE_SMOKE_MATCH_TEXT?.trim()) {
+    missing.push(MATCH_TEXT_REQUIREMENT);
+  }
+  if (!env.DEARME_VOICE_SMOKE_DRIFT_TEXT?.trim()) {
+    missing.push(DRIFT_TEXT_REQUIREMENT);
+  }
+
+  return missing;
 }
 
 function parseEnvValue(rawValue: string, lineNumber: number): string {
@@ -364,6 +434,16 @@ async function runDeterministicGateSmoke(): Promise<DearMeVoiceSmokeResult> {
 }
 
 async function runProfileTokenSemanticSmoke(env: Env): Promise<DearMeVoiceSmokeResult> {
+  const missing = targetMissingRequirements("profile_token_semantic", env);
+  if (missing.length > 0) {
+    return {
+      target: "profile_token_semantic",
+      status: "blocked",
+      reason: "missing-voice-semantic-scorer-config",
+      missing,
+    };
+  }
+
   const semanticScorer = resolveDearMeVoiceSemanticScorerFromEnv(env as NodeJS.ProcessEnv);
   if (!semanticScorer) {
     return {
@@ -374,11 +454,13 @@ async function runProfileTokenSemanticSmoke(env: Env): Promise<DearMeVoiceSmokeR
     };
   }
 
+  const corpus = readVoiceSmokeCorpus(env);
   const profileStore = createInMemoryDearMeVoiceProfileStore();
   const service = dearMeVoiceGateService({ profileStore, semanticScorer });
-  for (const text of PROFILE_SEED_TEXTS) {
+  const fingerprintId = "vf_voice_smoke_profile";
+  for (const text of corpus.seedTexts) {
     const seed = await service.scoreVoice({
-      fingerprintId: "vf_voice_smoke_profile",
+      fingerprintId,
       text,
       kind: "linkedin-post",
       minScore: 70,
@@ -389,8 +471,8 @@ async function runProfileTokenSemanticSmoke(env: Env): Promise<DearMeVoiceSmokeR
   }
 
   const match = await service.scoreVoice({
-    fingerprintId: "vf_voice_smoke_profile",
-    text: PROFILE_MATCH_TEXT,
+    fingerprintId,
+    text: corpus.matchText,
     kind: "linkedin-post",
     minScore: 90,
   });
@@ -404,8 +486,8 @@ async function runProfileTokenSemanticSmoke(env: Env): Promise<DearMeVoiceSmokeR
   }
 
   const drift = await service.scoreVoice({
-    fingerprintId: "vf_voice_smoke_profile",
-    text: PROFILE_DRIFT_TEXT,
+    fingerprintId,
+    text: corpus.driftText,
     kind: "linkedin-post",
     minScore: VOICE_SMOKE_DEFAULT_FLOOR,
   });
@@ -418,11 +500,15 @@ async function runProfileTokenSemanticSmoke(env: Env): Promise<DearMeVoiceSmokeR
     );
   }
 
+  const profile = await profileStore.readProfile(fingerprintId);
   return {
     ...passedResult("profile_token_semantic", match),
     matchScore: match.score,
     driftScore: drift.score,
     driftBlocked,
+    profileAcceptedSamples: profile?.acceptedSamples ?? 0,
+    profileTokenCount: Object.keys(profile?.tokenCounts ?? {}).length,
+    customCorpus: corpus.customCorpus,
   };
 }
 
@@ -490,8 +576,12 @@ function printResults(results: readonly DearMeVoiceSmokeResult[]) {
     if (result.status === "passed") {
       const match = typeof result.matchScore === "number" ? ` match=${result.matchScore}` : "";
       const drift = typeof result.driftScore === "number" ? ` drift=${result.driftScore}` : "";
+      const profile = typeof result.profileAcceptedSamples === "number" && typeof result.profileTokenCount === "number"
+        ? ` profileSamples=${result.profileAcceptedSamples} profileTokens=${result.profileTokenCount}`
+        : "";
+      const corpus = result.customCorpus ? " corpus=custom" : "";
       console.log(
-        `- ${result.target}: passed score=${result.score} floor=${result.floor}${match}${drift} reasons=${result.reasons.join(",")}`,
+        `- ${result.target}: passed score=${result.score} floor=${result.floor}${match}${drift}${profile}${corpus} reasons=${result.reasons.join(",")}`,
       );
     } else if (result.status === "blocked") {
       console.log(`- ${result.target}: blocked ${result.reason}; missing ${result.missing.join(", ")}`);

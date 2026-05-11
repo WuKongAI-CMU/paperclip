@@ -565,8 +565,12 @@ function formatDearMeProofSafeResult(result: DearMeProofSafeResult): string[] {
         if (item.status === "passed") {
           const match = typeof item.matchScore === "number" ? ` match=${item.matchScore}` : "";
           const drift = typeof item.driftScore === "number" ? ` drift=${item.driftScore}` : "";
+          const profile = typeof item.profileAcceptedSamples === "number" && typeof item.profileTokenCount === "number"
+            ? ` profileSamples=${item.profileAcceptedSamples} profileTokens=${item.profileTokenCount}`
+            : "";
+          const corpus = item.customCorpus ? " corpus=custom" : "";
           lines.push(
-            `- ${item.target}: passed score=${item.score} floor=${item.floor}${match}${drift} reasons=${item.reasons.join(",")}`,
+            `- ${item.target}: passed score=${item.score} floor=${item.floor}${match}${drift}${profile}${corpus} reasons=${item.reasons.join(",")}`,
           );
         } else if (item.status === "blocked") {
           lines.push(`- ${item.target}: blocked ${item.reason}; missing ${item.missing.join(", ")}`);

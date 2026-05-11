@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, and the browser-visible first-five-minute progress stream)
+Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, and the browser-visible first-five-minute progress stream)
 
 ---
 
@@ -209,10 +209,15 @@ not another
 `/v1/voice/score` route, voice-memory service, key store, or review surface.
 The internal `pnpm dearme:voice-smoke -- --check` command now owns the local
 voice proof lane: deterministic gate readiness plus opt-in
-`DEARME_VOICE_SEMANTIC_SCORER=profile-token` match/drift proof through a local
-ignored `.dearme-voice-smoke.env`. It is not a live model smoke and should be
-replaced or wrapped by the real embedding scorer behind the same seam when that
-provider is ready.
+`DEARME_VOICE_SEMANTIC_SCORER=profile-token` match/drift proof. It can require
+a customer-like local corpus with
+`DEARME_VOICE_SMOKE_REQUIRE_CUSTOM_CORPUS=1`, custom seed texts, match text,
+and drift text; successful runs print profile sample/token evidence plus
+`corpus=custom`. The coordinator Mac keeps that non-secret scorer setup in the
+ignored `.dearme-proof.env`, so `pnpm dearme:status` now reports local
+no-send proof and voice semantic proof ready while live provider proof remains
+blocked. This is not a live model smoke and should be replaced or wrapped by
+the real embedding scorer behind the same seam when that provider is ready.
 Reuse still means adapting Polsia choreography, Lindy action-card/source
 patterns, and Naive/Paperclip substrate behind the DearMe product shell; do
 not add another first-run contract, packet schema, runtime dashboard, queue

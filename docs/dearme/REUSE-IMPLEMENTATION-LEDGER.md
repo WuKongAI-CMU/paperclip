@@ -15,6 +15,13 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- Voice semantic proof is now locally ready on the coordinator Mac with the
+  ignored `.dearme-proof.env` file requiring a customer-like custom corpus.
+  The implementation stays on the existing voice-smoke/proof harness and now
+  prints profile sample/token evidence plus `corpus=custom`; future workers
+  should improve or replace the scorer behind this seam, not add another voice
+  setup surface. The current hard proof gap is live provider execution, not
+  local voice calibration.
 - `pnpm dearme:aha-proof -- --check` is now the local first-wow gate. It
   reuses the shared first-cycle preview contract and customer-language scrubber
   to prove one-sentence start, 0-30s / 60-120s / 3-5min private proof order,
