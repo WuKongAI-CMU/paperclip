@@ -173,7 +173,6 @@ test("provider smoke env template is local-only and keeps live actions disabled"
     /DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=Peter Studio has a private growth team already working/,
   );
   assert.match(template, /DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN=/);
-  assert.match(template, /DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=peter-studio/);
   assert.match(template, /DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0/);
   assert.match(template, /DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE=/);
   assert.match(template, /OPENCLAW_GATEWAY_URL=/);
@@ -187,13 +186,26 @@ test("provider smoke env template is local-only and keeps live actions disabled"
 
   assert.match(previewTemplate, /--check --target deploy_site_preview/);
   assert.match(previewTemplate, /DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=smoke:provider-dispatch/);
+  assert.match(previewTemplate, /DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=peter-studio/);
   assert.doesNotMatch(previewTemplate, /dearme:aha-proof -- --export-site/);
 
   assert.match(productionTemplate, /--check --target deploy_site_production/);
   assert.match(productionTemplate, /dearme:aha-proof -- --export-site dist\/dearme-private-proof/);
   assert.match(
     productionTemplate,
-    /Host dist\/dearme-private-proof\/peter-studio\/index\.html at the production URL/,
+    /DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=dist\/dearme-private-proof\/peter-studio\/index\.html/,
+  );
+  assert.match(
+    productionTemplate,
+    /DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=Peter Studio has a private growth team already working/,
+  );
+  assert.match(
+    productionTemplate,
+    /Host the dist\/dearme-private-proof\/peter-studio directory at the production URL/,
+  );
+  assert.match(
+    productionTemplate,
+    /Use dist\/dearme-private-proof\/peter-studio\/host-smoke\.json for the expected text\/checksums/,
   );
 
   assert.match(telegramTemplate, /--check --target telegram_message/);
@@ -323,6 +335,8 @@ test("provider smoke keeps production deploy receipts blocked until host gate is
     target: "deploy_site_production",
     env: {
       DEARME_DEPLOY_SITE_BASE_URL: "https://sites.example.test",
+      DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: "dist/dearme-private-proof/peter-studio/index.html",
+      DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT: "Peter Studio has a private growth team already working",
     },
     now,
   });
@@ -331,12 +345,50 @@ test("provider smoke keeps production deploy receipts blocked until host gate is
   assert.deepEqual(result.missing, ["DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=1"]);
 });
 
+test("provider smoke requires a real first-wow artifact before production host proof", async () => {
+  const [result] = await runDearMeProviderSmoke({
+    target: "deploy_site_production",
+    env: {
+      DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
+      DEARME_DEPLOY_SITE_BASE_URL: "https://sites.example.test",
+      DEARME_DEPLOY_SITE_SMOKE_HANDLE: "peter-studio",
+      DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: "smoke:provider-dispatch",
+      DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT: "Peter Studio has a private growth team already working",
+    },
+    now,
+  });
+
+  assert.equal(result.status, "blocked");
+  assert.deepEqual(result.missing, [
+    "DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=dist/dearme-private-proof/<handle>/index.html",
+  ]);
+});
+
+test("provider smoke requires proof-page text before production host proof", async () => {
+  const [result] = await runDearMeProviderSmoke({
+    target: "deploy_site_production",
+    env: {
+      DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
+      DEARME_DEPLOY_SITE_BASE_URL: "https://sites.example.test",
+      DEARME_DEPLOY_SITE_SMOKE_HANDLE: "peter-studio",
+      DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: "dist/dearme-private-proof/peter-studio/index.html",
+      DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT: "peter-studio",
+    },
+    now,
+  });
+
+  assert.equal(result.status, "blocked");
+  assert.deepEqual(result.missing, ["DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=<private proof page text>"]);
+});
+
 test("provider smoke blocks custom-domain receipts until that path is enabled", async () => {
   const [result] = await runDearMeProviderSmoke({
     target: "deploy_site_production",
     env: {
       DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
       DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN: "peter.example.test",
+      DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: "dist/dearme-private-proof/peter-studio/index.html",
+      DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT: "Peter Studio has a private growth team already working",
     },
     now,
   });
@@ -355,7 +407,7 @@ test("provider smoke verifies the production site host before claiming delivery"
       ok: true,
       status: 200,
       async text() {
-        return "<html><body>DearMe private site smoke for peter-studio</body></html>";
+        return "<html><body>Peter Studio has a private growth team already working</body></html>";
       },
       async json() {
         return {};
@@ -369,7 +421,8 @@ test("provider smoke verifies the production site host before claiming delivery"
       DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
       DEARME_DEPLOY_SITE_BASE_URL: "https://dearme.example.test",
       DEARME_DEPLOY_SITE_SMOKE_HANDLE: "peter-studio",
-      DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: "smoke:proof",
+      DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: "dist/dearme-private-proof/peter-studio/index.html",
+      DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT: "Peter Studio has a private growth team already working",
     },
     fetch,
     now,
@@ -406,6 +459,7 @@ test("provider smoke verifies a configured custom-domain host", async () => {
       DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
       DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS: "1",
       DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN: "Peter.Example.test",
+      DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: "dist/dearme-private-proof/peter-studio/index.html",
       DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT: "custom domain",
     },
     fetch,
@@ -435,6 +489,8 @@ test("provider smoke refuses production delivery when host content lacks the exp
       DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
       DEARME_DEPLOY_SITE_BASE_URL: "https://dearme.example.test",
       DEARME_DEPLOY_SITE_SMOKE_HANDLE: "peter-studio",
+      DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: "dist/dearme-private-proof/peter-studio/index.html",
+      DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT: "Peter Studio has a private growth team already working",
     },
     fetch,
     now,
@@ -459,6 +515,8 @@ test("provider smoke includes the production URL when host fetch fails", async (
       DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
       DEARME_DEPLOY_SITE_BASE_URL: "https://dearme.example.test",
       DEARME_DEPLOY_SITE_SMOKE_HANDLE: "peter-studio",
+      DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: "dist/dearme-private-proof/peter-studio/index.html",
+      DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT: "Peter Studio has a private growth team already working",
     },
     fetch,
     now,

@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
@@ -53,6 +54,30 @@ export interface DearMeAhaProofReport {
     json: string;
     printSample: string;
     exportSite: string;
+  };
+}
+
+export interface DearMePrivateSiteHostSmokeManifest {
+  version: 1;
+  handle: string;
+  route: string;
+  files: {
+    html: "index.html";
+    proof: "proof.json";
+  };
+  expectedText: string;
+  checks: {
+    viewport: boolean;
+    customerSafeLanguage: boolean;
+    approvalBoundary: string;
+    waitsFor: string[];
+    starterDraftCount: number;
+    opportunityCount: number;
+    continuationCount: number;
+  };
+  checksums: {
+    htmlSha256: string;
+    proofSha256: string;
   };
 }
 
@@ -156,12 +181,25 @@ function renderCard(title: string, body: string, details: readonly string[]) {
   </article>`;
 }
 
-export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePreviewResponse): string {
-  const displayName = preview.sitePreview.handle
+function privateSiteDisplayName(preview: DearMeFirstCyclePreviewResponse): string {
+  return preview.sitePreview.handle
     .split("-")
     .filter(Boolean)
     .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
     .join(" ") || "DearMe";
+}
+
+function privateSiteHeroText(preview: DearMeFirstCyclePreviewResponse): string {
+  return `${privateSiteDisplayName(preview)} has a private growth team already working`;
+}
+
+function sha256(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePreviewResponse): string {
+  const displayName = privateSiteDisplayName(preview);
+  const heroText = privateSiteHeroText(preview);
   const proofCards = preview.proofSequence.map((step) =>
     renderCard(step.title, step.summary, [
       `${step.window}: ${step.preparedArtifact}`,
@@ -231,7 +269,7 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
   <main>
     <header class="hero">
       <p class="eyebrow">DearMe private proof</p>
-      <h1>${escapeHtml(displayName)} has a private growth team already working.</h1>
+      <h1>${escapeHtml(heroText)}.</h1>
       <p class="summary">${escapeHtml(preview.growthPlan.summary)}</p>
       <span class="route">${escapeHtml(preview.sitePreview.route)}</span>
     </header>
@@ -271,6 +309,39 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
 </html>`;
 }
 
+export function createDearMePrivateSiteHostSmokeManifest(
+  preview: DearMeFirstCyclePreviewResponse,
+  html: string,
+  proofJson: string,
+): DearMePrivateSiteHostSmokeManifest {
+  const customerSafeLanguage =
+    DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(JSON.stringify(preview)) === null &&
+    DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(html) === null;
+  return {
+    version: 1,
+    handle: preview.sitePreview.handle,
+    route: preview.sitePreview.route,
+    files: {
+      html: "index.html",
+      proof: "proof.json",
+    },
+    expectedText: privateSiteHeroText(preview),
+    checks: {
+      viewport: html.includes('<meta name="viewport" content="width=device-width, initial-scale=1" />'),
+      customerSafeLanguage,
+      approvalBoundary: preview.approvalBoundary.label,
+      waitsFor: [...preview.autonomyPlan.waitsFor],
+      starterDraftCount: preview.starterPosts.length,
+      opportunityCount: preview.opportunityShortlist.length,
+      continuationCount: preview.continuationPlan.items.length,
+    },
+    checksums: {
+      htmlSha256: sha256(html),
+      proofSha256: sha256(proofJson),
+    },
+  };
+}
+
 export async function exportDearMePrivateSitePreview(
   preview: DearMeFirstCyclePreviewResponse,
   outputDir = DEFAULT_SITE_EXPORT_DIR,
@@ -278,18 +349,25 @@ export async function exportDearMePrivateSitePreview(
   const exportDir = join(outputDir, preview.sitePreview.handle);
   const htmlPath = join(exportDir, "index.html");
   const jsonPath = join(exportDir, "proof.json");
+  const hostSmokePath = join(exportDir, "host-smoke.json");
   const html = renderDearMePrivateSitePreviewHtml(preview);
+  const proofJson = JSON.stringify(preview, null, 2);
+  const hostSmokeManifest = createDearMePrivateSiteHostSmokeManifest(preview, html, proofJson);
 
   await mkdir(exportDir, { recursive: true });
   await writeFile(htmlPath, html, "utf8");
-  await writeFile(jsonPath, JSON.stringify(preview, null, 2), "utf8");
+  await writeFile(jsonPath, proofJson, "utf8");
+  await writeFile(hostSmokePath, JSON.stringify(hostSmokeManifest, null, 2), "utf8");
 
   return {
     directory: exportDir,
     htmlPath,
     jsonPath,
+    hostSmokePath,
     handle: preview.sitePreview.handle,
     route: preview.sitePreview.route,
+    expectedText: hostSmokeManifest.expectedText,
+    htmlSha256: hostSmokeManifest.checksums.htmlSha256,
     htmlBytes: Buffer.byteLength(html, "utf8"),
   };
 }
@@ -310,6 +388,8 @@ export function inspectDearMeAhaProofPreview(
   const serializedPreview = JSON.stringify(preview);
   const hiddenMatch = DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(serializedPreview);
   const staticHtml = renderDearMePrivateSitePreviewHtml(preview);
+  const proofJson = JSON.stringify(preview, null, 2);
+  const hostSmokeManifest = createDearMePrivateSiteHostSmokeManifest(preview, staticHtml, proofJson);
   const staticHtmlHiddenMatch = DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(staticHtml);
   const outputCount =
     1 +
@@ -382,6 +462,8 @@ export function inspectDearMeAhaProofPreview(
       [
         `route=${preview.sitePreview.route}`,
         `exportCommand=pnpm --silent dearme:aha-proof -- --export-site ${DEFAULT_SITE_EXPORT_DIR}`,
+        "hostSmoke=host-smoke.json",
+        `expectedText=${hostSmokeManifest.expectedText}`,
         `htmlBytes=${Buffer.byteLength(staticHtml, "utf8")}`,
       ],
     ),
@@ -513,7 +595,9 @@ async function main() {
         console.log("Static private site export:");
         console.log(`- html: ${exportResult.htmlPath}`);
         console.log(`- proof: ${exportResult.jsonPath}`);
+        console.log(`- host smoke: ${exportResult.hostSmokePath}`);
         console.log(`- route: ${exportResult.route}`);
+        console.log(`- expected text: ${exportResult.expectedText}`);
       }
     }
 

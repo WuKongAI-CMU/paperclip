@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, the recurring private-work proof contract, the five-draft private output packet, and the phone-ready static private-site export)
+Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, the recurring private-work proof contract, the five-draft private output packet, the phone-ready static private-site export, and production host smoke fail-closed on the exported proof packet)
 
 ---
 
@@ -126,7 +126,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-138C** — first-run proof hydration: `previewFirstCycle(...)` now reuses prepared DearMe output handoff records to hydrate the existing `proofSequence` with real documents and work products, while progress comments alone cannot count as proof.
 - **DM-138D route proof smoke** — first-cycle start route coverage now proves prepared `proofSequence` content is returned to the customer contract and copied into the private issue, activity log, and live `task_created` payload; onboarding coverage proves the same package renders without exposing substrate terms.
 - **DM-WOW-1A local aha proof gate** — `pnpm dearme:aha-proof -- --check` now proves the local private first-five-minute loop from the existing shared first-cycle preview contract. It checks one-sentence start, 0-30s / 60-120s / 3-5min proof order, five private starter drafts, recurring private work, minimum runnable team, launch boundaries, and customer-safe language without sends, public deploys, spend, or live model calls.
-- **DM-WOW-1B phone-ready static private-site proof** — `pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof` now renders the same first-cycle proof contract as a mobile-ready private site artifact plus `proof.json`. This gives the next host smoke a concrete artifact without creating a second demo path or pretending production hosting is already live.
+- **DM-WOW-1B phone-ready static private-site proof** — `pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof` now renders the same first-cycle proof contract as a mobile-ready private site artifact plus `proof.json` and `host-smoke.json`. This gives the next host smoke a concrete artifact and expected-text/checksum manifest without creating a second demo path or pretending production hosting is already live.
 - **DM-WOW-2A customer-watchable first-five-minute stream** — the onboarding browser surface now reuses the same first-cycle preview/proof-sequence contract to show studying voice, finding likely audiences, drafting first moves, preparing private proof, and readying the launch call. The top focus card also projects the latest private-pass pulse from the DearMe event stream while hiding Symphony/OpenClaw/provider/model/setup/workbench language.
 - **DM-WOW-3A recurring private-work proof** — the first-cycle preview response now carries a continuation plan with the next proof-backed draft, opportunity refresh, and private proof-page improvement. Onboarding and the private site preview render the same plan, and the aha proof gate now blocks if the first proof pack ends as a static demo.
 - **DM-138E / DEA-8 live proof handoff** — the live paid-beta smoke proved the same first-cycle path returns identity, audience, private-site, content, opportunity, and report proof through output handoff and workbench projection without hidden donor/runtime terms.
@@ -137,7 +137,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DEA-47 approved X delivery receipts + DEA-51 DM-173B live connect path + DM-172B X dispatch** — the current branch browser/API and UI proof shows the approved `post_x` handoff path records either a delivered receipt or the existing customer-safe connection-needed receipt; the fallback now carries a DearMe-owned `oauthStartUrl` to `GET /v1/channels/:companyId/x/start`, which builds a PKCE X authorize URL when configured and stays 503 when config is missing. The browser callback consumes server-side state, exchanges the X code for tokens, loads the X profile, and persists an active `x` connection row with an opaque credential. Approved X publishing now has a server-side dispatcher that decrypts the stored credential, validates expiry/scope/payload, posts to X API v2, and maps auth failures back to reauth. Live external posting still needs a real credential smoke.
 - **DM-174 live Resend/SES `send_email` dispatch** — approved `send_email` launch handoffs now run through the same voice-gate -> approval -> `channel_connections` -> per-tool dispatch -> audit wrapper as X. The dispatcher resolves the stored per-user provider credential through the secret-provider registry, validates sender/recipient/subject/plain-text body/expiry, calls Resend `POST /emails` or SES v2 `SendEmail` with provider idempotency/signing where applicable, maps auth failures back to reauth, and records delivered receipts from the provider email id. Customer prompts say "email"; provider names stay internal. HTML remains fail-closed until a sanitizer path is added. Live external email still needs a real Resend or SES credential smoke.
 - **DM-176A/DM-176B `send_linkedin_dm` partner dispatch** — approved LinkedIn DM handoffs now have a DearMe-owned partner dispatcher and app-level env bridge for `DEARME_LINKEDIN_DM_MESSAGES_URL` / partner endpoint aliases. The dispatcher stays unregistered when no endpoint is configured, so gateway fallback is not shadowed by an empty direct path. Live customer use still needs a real approved partner endpoint + credential smoke.
-- **DM-177B/DM-177C/DEA-60 `deploy_site` dispatch** — approved private-site proof handoffs now run through a DearMe-owned `deploy_site` dispatcher instead of needing OpenClaw gateway config. The dispatcher validates safe handles and bounded artifact refs, can emit custom-domain receipts only behind `DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS`, returns stable preview receipts at `dearme.app/<handle>?preview=*`, and keeps production deploy fail-closed unless the DearMe-owned host is explicitly enabled by env.
+- **DM-177B/DM-177C/DEA-60 `deploy_site` dispatch** — approved private-site proof handoffs now run through a DearMe-owned `deploy_site` dispatcher instead of needing OpenClaw gateway config. The dispatcher validates safe handles and bounded artifact refs, can emit custom-domain receipts only behind `DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS`, returns stable preview receipts at `dearme.app/<handle>?preview=*`, and keeps production deploy fail-closed unless the DearMe-owned host is explicitly enabled by env. The production smoke lane now also requires the exported `dist/dearme-private-proof/<handle>/index.html` packet plus proof-page text, so a generic dispatch receipt cannot be mistaken for phone-reachable Polsia-style proof.
 - **DM-178/DM-178B `create_meta_campaign` dispatch** — approved paid-ad handoffs now run through a DearMe-owned Meta Ads dispatcher on the same approval/OAuth/audit wrapper path. The dispatcher validates the simplified campaign payload, enforces test/ramp/scale daily budget tiers, respects the 7-day learning window, creates a paused Meta campaign receipt, and maps provider auth failures to reconnect without exposing tokens. App startup can override the Graph API base URL from operator env for live smoke/tooling; live customer use still needs a real Meta OAuth/Marketing API smoke.
 - **DEA-62 / DEA-63 / DM-170 Voice profile store + scorer seam** — the cloud Voice Gate scorer keeps accepted-sample continuity behind an injectable, serializable, bounded profile store and now persists that profile in `dearme_voice_profiles` on the default app/handoff paths. `DEARME_VOICE_SEMANTIC_SCORER=profile-token` wires an opt-in local scorer through the same service as a bounded match/drift signal without changing the `/v1/voice/score` contract or customer review surface; live model/embedding scoring should replace or wrap that seam.
 - **DM-183BV Symphony cooperation spine** — the current branch now treats Symphony as the coordinator/worker cooperation center while keeping it backstage. Workbench stream items have a typed work-event contract (`action`, `customerSummary`, `artifactTarget`, `decisionNeed`, `traceRefs`) for customer-safe decision cards, the remaining DM-084, DM-086, DM-095, DM-097, DM-098, and DM-101 stale worktree heads are recorded as reviewed absorptions, and `pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs` gives the coordinator one view of worktree status plus latest durable Symphony handoff artifacts.
@@ -177,15 +177,16 @@ private-work plan. The remaining product gap is serving the exported
 private-site proof from a real host and backing the loop with live provider
 execution. Use
 `pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof` to produce
-the host-smoke artifact; do not create a second demo packet or route.
+the host-smoke artifact and handle-local `host-smoke.json`; do not create a
+second demo packet or route.
 The internal `pnpm dearme:status` command is the compact product/coordinator
 answer for "can DearMe prove itself now?": first-wow aha proof, local no-send
 proof, voice semantic proof, and live provider proof are separated so the
 coordinator does not have to read raw provider setup every time. It reuses the
 same `dearme:aha-proof` report, so recurring private work is part of the main
 product verdict instead of living in a side proof. `pnpm dearme:aha-proof -- --export-site`
-also writes the same proof as a phone-ready static private site artifact before
-real host smoke is available. The underlying
+also writes the same proof as a phone-ready static private site artifact plus a
+host-smoke manifest before real host smoke is available. The underlying
 `pnpm dearme:proof -- --check` command is still the first detailed local proof
 entrypoint for coordinators and Symphony workers. It composes the existing
 provider and voice smoke lanes, prints one ignored `.dearme-proof.env`
@@ -203,7 +204,10 @@ rebuilding provider or voice setup discovery.
 The internal `pnpm dearme:provider-smoke -- --check` command now owns that
 operator proof checklist, including the OpenClaw gateway URL/token/auth plus
 recipient/body requirements for Telegram/iMessage, and the production site URL
-content smoke once host env is enabled. It now supports a local ignored
+content smoke once host env is enabled. The production host lane requires the
+exported private proof artifact and proof-page text before it will run, and the
+template now points at `host-smoke.json` for the expected text and checksums. The
+next live step is real hosting rather than another local dispatch receipt. It now supports a local ignored
 `.dearme-provider-smoke.env` file through `--env-file` plus a clean
 `--print-env-template` bootstrap, and production host failures now report the
 exact URL plus fetch/HTTP status evidence. It also supports targeted templates

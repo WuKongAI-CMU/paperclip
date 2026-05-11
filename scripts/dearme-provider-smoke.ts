@@ -172,6 +172,13 @@ export function dearMeProviderSmokeEnvTemplate(targetArg: TargetArg = "all"): st
   const selectedRunCommands = targetArg === "all"
     ? [`${PROVIDER_SMOKE_BASE_COMMAND} --target deploy_site_preview`]
     : [providerSmokeRunCommand(targetArg)];
+  const includesProductionHostSmoke = includesTemplateTarget(targetArg, "deploy_site_production");
+  const siteSmokeArtifactRef = includesProductionHostSmoke
+    ? "dist/dearme-private-proof/peter-studio/index.html"
+    : "smoke:provider-dispatch";
+  const siteSmokeExpectedText = includesProductionHostSmoke
+    ? "Peter Studio has a private growth team already working"
+    : "peter-studio";
   const sections = [`# DearMe provider smoke local env.
 # Keep this file local. The repository ignores .dearme-provider-smoke.env.
 #
@@ -186,14 +193,12 @@ ${selectedRunCommands.map((command) => `# ${command}`).join("\n")}
 `];
 
   if (includesTemplateTarget(targetArg, "deploy_site_preview", "deploy_site_production")) {
-    const productionHostSmokeArtifactHelp = includesTemplateTarget(
-      targetArg,
-      "deploy_site_production",
-    )
+    const productionHostSmokeArtifactHelp = includesProductionHostSmoke
       ? `#
 # Production host smoke artifact:
 # pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof
-# Host dist/dearme-private-proof/peter-studio/index.html at the production URL,
+# Host the dist/dearme-private-proof/peter-studio directory at the production URL.
+# Use dist/dearme-private-proof/peter-studio/host-smoke.json for the expected text/checksums,
 # then set:
 # DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=dist/dearme-private-proof/peter-studio/index.html
 # DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=Peter Studio has a private growth team already working
@@ -204,9 +209,9 @@ DEARME_DEPLOY_SITE_BASE_URL=https://dearme.example.test
 DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=0
 DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=0
 DEARME_DEPLOY_SITE_SMOKE_HANDLE=peter-studio
-DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=smoke:provider-dispatch
+DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=${siteSmokeArtifactRef}
 DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN=
-DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=peter-studio
+DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=${siteSmokeExpectedText}
 ${productionHostSmokeArtifactHelp}`);
   }
 
@@ -351,6 +356,30 @@ function openClawGatewayRequirement(env: Env) {
   ];
 }
 
+function deploySiteBaseUrlRequirement(env: Env) {
+  if (nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN)) return [];
+  return firstEnv(env, [
+    "DEARME_DEPLOY_SITE_BASE_URL",
+    "DEARME_SITE_BASE_URL",
+    "DEARME_PUBLIC_SITE_BASE_URL",
+  ])
+    ? []
+    : ["DEARME_DEPLOY_SITE_BASE_URL or DEARME_SITE_BASE_URL or DEARME_PUBLIC_SITE_BASE_URL"];
+}
+
+function deploySiteProductionArtifactRequirement(env: Env) {
+  const artifactRef = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF);
+  if (artifactRef && !artifactRef.startsWith("smoke:")) return [];
+  return ["DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=dist/dearme-private-proof/<handle>/index.html"];
+}
+
+function deploySiteExpectedTextRequirement(env: Env) {
+  const expectedText = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT);
+  const handle = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_HANDLE) ?? "dearme-smoke";
+  if (expectedText && expectedText.toLowerCase() !== handle.toLowerCase()) return [];
+  return ["DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=<private proof page text>"];
+}
+
 function targetMissingRequirements(target: DearMeProviderSmokeTarget, env: Env) {
   switch (target) {
     case "deploy_site_preview":
@@ -365,6 +394,9 @@ function targetMissingRequirements(target: DearMeProviderSmokeTarget, env: Env) 
         ...(nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN) && !config?.allowCustomDomains
           ? ["DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=1"]
           : []),
+        ...deploySiteBaseUrlRequirement(env),
+        ...deploySiteProductionArtifactRequirement(env),
+        ...deploySiteExpectedTextRequirement(env),
       ];
     }
     case "linkedin_dm": {

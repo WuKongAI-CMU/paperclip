@@ -2,6 +2,67 @@
 
 Date: 2026-05-11
 
+## Private Proof Export Carries Host Smoke Manifest - 2026-05-11
+
+Product/architecture slice:
+
+- Extended the existing `pnpm dearme:aha-proof -- --export-site` path so every
+  private-site proof export now writes `index.html`, `proof.json`, and
+  `host-smoke.json` in the same handle directory.
+- The host smoke manifest carries the phone-check expected text, output counts,
+  approval boundary, wait-for gates, and SHA-256 checksums for the exported HTML
+  and proof JSON. This keeps the production host lane concrete without adding a
+  second site-smoke command or customer-facing setup surface.
+- Kept the product verdict honest: DearMe now has a better phone-hostable proof
+  packet, but paid-beta readiness still waits on a real production host smoke
+  and at least one live external provider smoke.
+
+Verification:
+
+- `pnpm test:dearme-aha-proof`
+- `pnpm test:dearme-provider-smoke`
+- `pnpm --silent dearme:aha-proof -- --check`
+- `pnpm --silent dearme:aha-proof -- --export-site /tmp/dearme-private-proof-smoke-current`
+- Inspected
+  `/tmp/dearme-private-proof-smoke-current/peter-studio/host-smoke.json`
+  and confirmed the expected proof text, wait-for gates, output counts, and
+  checksums are present.
+- `pnpm --silent dearme:provider-smoke -- --print-env-template --target deploy_site_production`
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:status`
+- `pnpm typecheck`
+- `git diff --check`
+
+## Production Host Smoke Fails Closed On The Real Proof Packet - 2026-05-11
+
+Product/architecture slice:
+
+- Tightened `pnpm dearme:provider-smoke -- --target deploy_site_production`
+  so the Polsia-style live host proof can no longer run against the default
+  `smoke:*` dispatch placeholder or a handle-only text check.
+- Production host readiness now requires an explicit phone-reachable base URL or
+  approved custom domain, the exported
+  `dist/dearme-private-proof/<handle>/index.html` private proof artifact, and
+  proof-page text from that artifact before it will fetch the returned URL.
+- Reused the existing `dearme:aha-proof -- --export-site` packet and
+  provider-smoke harness. No new demo route, connector surface, or customer
+  runtime language was added; the remaining blocker is still real hosting and
+  provider credentials.
+
+Verification:
+
+- `pnpm test:dearme-aha-proof`
+- `pnpm test:dearme-provider-smoke`
+- `pnpm --silent dearme:provider-smoke -- --check --target deploy_site_production`
+- `pnpm --silent dearme:provider-smoke -- --print-env-template --target deploy_site_production`
+- `DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=1 pnpm --silent dearme:provider-smoke -- --target deploy_site_production --json`
+  blocked as expected until a real base URL, exported proof artifact, and proof
+  text are configured.
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:status`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## First-Wow Packet Now Seeds Five Private Drafts - 2026-05-11
 
 Product/architecture slice:

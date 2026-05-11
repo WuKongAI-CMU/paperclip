@@ -54,13 +54,19 @@ Current DearMe branch:
   - phone-ready static private site artifact is ready for host smoke
   - no sends, public deploys, spend, or live model calls are performed
 - `pnpm --silent dearme:aha-proof -- --export-site /tmp/dearme-private-proof-smoke.*`
-  - writes `peter-studio/index.html` and `peter-studio/proof.json`
+  - writes `peter-studio/index.html`, `peter-studio/proof.json`, and
+    `peter-studio/host-smoke.json`
+  - host-smoke manifest carries the expected phone-check text plus checksums for
+    the HTML and proof JSON
   - exported HTML has no customer-hidden substrate, provider, credential, token,
     or workbench language
 - `pnpm --silent dearme:provider-smoke -- --print-env-template --target deploy_site_production`
   - now points the production host smoke at the same exported private-site
     artifact path
   - keeps production disabled by default until a real host serves that artifact
+  - the production smoke readiness gate now blocks `smoke:*` placeholders and
+    handle-only text checks, so it cannot confuse a dispatch receipt with
+    phone-reachable proof
 - `pnpm --silent dearme:proof -- --status --json`
   - first-wow aha proof is now part of the unified product status
   - local no-send proof is ready
@@ -132,8 +138,8 @@ The external/live provider lane is not yet strong enough.
 | Substrate/control plane reuse | 82 / 100 | Strong. DearMe is using the Paperclip-style company, issue, approval, route, service, dispatch, handoff, and proof machinery instead of rebuilding it. |
 | DearMe product semantics | 76 / 100 | Good. Brand OS, voice, portfolio, opportunity, reports, Work Ready, launch gates, review memory, and customer-corpus voice proof are now DearMe-owned concepts. |
 | UX simplicity | 67 / 100 | Improving. The browser now shows one-sentence-to-first-five-minute progress and the proof can become a static private site, but onboarding is still heavier than Polsia's one-input activation. |
-| Autonomous runtime proof | 68 / 100 | Real but not externally proven. Local safe proof, private aha proof, browser-visible progress, static private-site export, customer-corpus voice proof, and recurring private-work contract are ready; live provider proof remains open. |
-| Polsia-style first-wow | 74 / 100 | Private proof is runnable, watchable, exportable as a phone-ready artifact, and now deep enough to show five private drafts. The missing main moment is serving it from a real host plus provider-backed execution. |
+| Autonomous runtime proof | 69 / 100 | Real but not externally proven. Local safe proof, private aha proof, browser-visible progress, static private-site export, customer-corpus voice proof, recurring private-work contract, and fail-closed host-smoke readiness are ready; live provider proof remains open. |
+| Polsia-style first-wow | 75 / 100 | Private proof is runnable, watchable, exportable as a phone-ready artifact, deep enough to show five private drafts, and now tied to a real host-smoke packet. The missing main moment is serving it from a real host plus provider-backed execution. |
 | Naive-style durable team runtime | 78 / 100 | Solid substrate fit. Symphony/worktree coordination is clean and the Paperclip-style runtime is reused; the recurring private-work contract is now visible, but live provider smoke is still missing. |
 
 ## What DearMe Has Actually Done
@@ -157,7 +163,8 @@ DearMe has already built the product/kernel split correctly:
   no-send / voice / live-provider readiness map. The voice lane can require a
   customer-like local corpus and now reports profile sample/token evidence.
   `pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof` gives the
-  host lane a concrete artifact without claiming production hosting is live.
+  host lane a concrete artifact and host-smoke manifest without claiming
+  production hosting is live.
 - Coordination: Symphony is the active worker lane, and current worktree status
   is visible through `pnpm dearme:worktrees`.
 
@@ -267,7 +274,7 @@ declare the product done just because the substrate is strong.
 ### DM-WOW-1 First Five-Minute Private Wow Loop
 
 The local proof gate now exists through `pnpm dearme:aha-proof -- --check`, and
-the host-smoke artifact exists through
+the host-smoke artifact plus manifest exist through
 `pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof`. The
 no-credential packet is now deepened into a five-draft private result; the next
 product proof is serving that same artifact from a real host:
@@ -353,5 +360,6 @@ app.
 The next correct move is not another architecture layer. It is to serve the
 five-draft private proof packet from a phone-reachable host with live provider
 evidence on top of the proof gate that now exists. The provider-smoke production
-template now gives the concrete artifact path for that host step; the remaining
-work is the real host and provider proof, not another local proof command.
+lane now requires that concrete artifact plus proof-page text before it will run;
+the remaining work is the real host and provider proof, not another local proof
+command.

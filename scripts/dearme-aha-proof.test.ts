@@ -92,6 +92,7 @@ test("DearMe aha proof output is operator-readable without leaking secrets", () 
   assert.match(formatted, /Five-minute private wow sequence: ready/);
   assert.match(formatted, /Recurring private work: ready/);
   assert.match(formatted, /Phone-ready private site artifact: ready/);
+  assert.match(formatted, /hostSmoke=host-smoke\.json/);
   assert.match(formatted, /pnpm --silent dearme:aha-proof -- --check/);
   assert.match(formatted, /pnpm --silent dearme:aha-proof -- --export-site dist\/dearme-private-proof/);
   assert.doesNotMatch(formatted, /OPENCLAW_GATEWAY_TOKEN/);
@@ -110,10 +111,11 @@ test("DearMe aha proof renders a static private site artifact without hidden ter
   assert.match(html, /From one sentence to private proof/);
   assert.match(html, /Keeps working after the first proof/);
   assert.match(html, /Nothing is sent, published, deployed, or spent until approved/);
+  assert.equal((html.match(/aria-label="Launch boundary"/g) ?? []).length, 1);
   assert.doesNotMatch(html, /OpenClaw|Paperclip|Symphony|provider|credential|token|workbench/i);
 });
 
-test("DearMe aha proof exports private site HTML and proof JSON", async () => {
+test("DearMe aha proof exports private site HTML, proof JSON, and host smoke manifest", async () => {
   const dir = await mkdtemp(join(tmpdir(), "dearme-aha-proof-site-"));
   const { preview } = runDearMeAhaProof();
 
@@ -121,14 +123,44 @@ test("DearMe aha proof exports private site HTML and proof JSON", async () => {
     const result = await exportDearMePrivateSitePreview(preview, dir);
     const html = await readFile(result.htmlPath, "utf8");
     const proof = JSON.parse(await readFile(result.jsonPath, "utf8")) as unknown;
+    const manifest = JSON.parse(await readFile(result.hostSmokePath, "utf8")) as {
+      version: number;
+      handle: string;
+      route: string;
+      files: { html: string; proof: string };
+      expectedText: string;
+      checks: {
+        viewport: boolean;
+        customerSafeLanguage: boolean;
+        starterDraftCount: number;
+        opportunityCount: number;
+        continuationCount: number;
+      };
+      checksums: { htmlSha256: string; proofSha256: string };
+    };
 
     assert.equal(result.handle, "peter-studio");
     assert.equal(result.route, "dearme.app/peter-studio");
     assert.equal(result.htmlPath, join(dir, "peter-studio", "index.html"));
     assert.equal(result.jsonPath, join(dir, "peter-studio", "proof.json"));
+    assert.equal(result.hostSmokePath, join(dir, "peter-studio", "host-smoke.json"));
+    assert.equal(result.expectedText, "Peter Studio has a private growth team already working");
     assert.equal(result.htmlBytes, Buffer.byteLength(html, "utf8"));
+    assert.match(result.htmlSha256, /^[a-f0-9]{64}$/);
     assert.match(html, /Updated private proof card/);
     assert.deepEqual(proof, preview);
+    assert.deepEqual(manifest.files, { html: "index.html", proof: "proof.json" });
+    assert.equal(manifest.version, 1);
+    assert.equal(manifest.handle, "peter-studio");
+    assert.equal(manifest.route, "dearme.app/peter-studio");
+    assert.equal(manifest.expectedText, result.expectedText);
+    assert.equal(manifest.checks.viewport, true);
+    assert.equal(manifest.checks.customerSafeLanguage, true);
+    assert.equal(manifest.checks.starterDraftCount, DEARME_FIRST_CYCLE_STARTER_POST_COUNT);
+    assert.equal(manifest.checks.opportunityCount, 5);
+    assert.equal(manifest.checks.continuationCount, 3);
+    assert.match(manifest.checksums.htmlSha256, /^[a-f0-9]{64}$/);
+    assert.match(manifest.checksums.proofSha256, /^[a-f0-9]{64}$/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

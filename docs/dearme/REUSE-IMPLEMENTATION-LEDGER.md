@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `pnpm dearme:aha-proof -- --export-site` now writes a handle-local
+  `host-smoke.json` beside `index.html` and `proof.json`, carrying expected
+  phone-check text, output counts, launch boundaries, wait-for gates, and
+  checksums. Future production-host work should consume that manifest through the
+  existing provider-smoke lane rather than creating another site-smoke command,
+  setup dashboard, or customer-visible runtime surface.
 - The first-cycle preview contract now seeds five private starter drafts through
   the shared `DEARME_FIRST_CYCLE_STARTER_POST_COUNT` constant. This is the
   Polsia comparison turned into product behavior: deepen the first-wow packet
@@ -26,10 +32,12 @@ It answers three questions before another worker starts building:
   now tells the operator to reuse
   `pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof`
   as the concrete private-site artifact before enabling production host proof.
-  Future workers should keep improving this host lane through the existing
-  proof artifact and provider-smoke harness; do not add a separate site-smoke
-  command or customer-facing connector/setup surface just to explain the same
-  blocked live proof.
+  The production readiness gate also blocks `smoke:*` placeholders and
+  handle-only text checks, so workers cannot accidentally report a dispatch
+  receipt as Polsia-style phone proof. Future workers should keep improving this
+  host lane through the existing proof artifact and provider-smoke harness; do
+  not add a separate site-smoke command or customer-facing connector/setup
+  surface just to explain the same blocked live proof.
 - `pnpm dearme:status` / `pnpm dearme:proof -- --status` now reuse the
   `dearme:aha-proof` report as the first status section. The compact product
   verdict no longer lags the product surface: it explicitly says the local
