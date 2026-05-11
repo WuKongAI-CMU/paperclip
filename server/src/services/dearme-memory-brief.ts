@@ -1,4 +1,5 @@
 import {
+  dearMeCustomerSafeText,
   DEARME_MEMORY_UPDATE_KINDS,
   type DearMeOutputKind,
   type DearMeMemoryUpdateKind,
@@ -105,33 +106,6 @@ const OUTPUT_MEMORY_KIND_PRIORITY: Record<DearMeOutputKind, readonly DearMeMemor
   ],
 };
 
-const DEARME_MEMORY_CONTEXT_REPLACEMENTS: Array<[RegExp, string]> = [
-  [/\bPaperclip\b/gi, "DearMe"],
-  [/\bOpenClaw\b/gi, "DearMe"],
-  [/\bSymphony\b/gi, "DearMe"],
-  [/\bOK Partner\b/gi, "DearMe"],
-  [/\bsetup[_ -]?payload\b/gi, "setup details"],
-  [/\bmodel[-_ ]?providers?\b/gi, "services"],
-  [/\bmodel\b/gi, "approach"],
-  [/\bruntimes?\b/gi, "private pass"],
-  [/\bagents?\b/gi, "team members"],
-  [/\badapters?\b/gi, "connectors"],
-  [/\bproviders?\b/gi, "services"],
-  [/\bworkbench\b/gi, "team progress view"],
-  [/\bworkstreams?\b/gi, "team updates"],
-  [/\bwork streams?\b/gi, "team updates"],
-  [/\bissue comments?\b/gi, "review notes"],
-  [/\bissue routes?\b/gi, "review links"],
-  [/\bapproval routes?\b/gi, "review links"],
-  [/\bexecution routes?\b/gi, "private action links"],
-  [/\bdecision routes?\b/gi, "review links"],
-  [/\bwork products?\b/gi, "prepared work"],
-  [/\bdocuments?\b/gi, "drafts"],
-  [/\bworkspaces?\b/gi, "private work areas"],
-  [/\bapi[-_ ]?keys?\b/gi, "private credentials"],
-  [/\btokens?\b/gi, "private credentials"],
-];
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -152,11 +126,8 @@ function compactText(value: string, maxLength = 320) {
 }
 
 function customerSafeMemoryText(value: string, maxLength = 320) {
-  let safe = value;
-  for (const [pattern, replacement] of DEARME_MEMORY_CONTEXT_REPLACEMENTS) {
-    safe = safe.replace(pattern, replacement);
-  }
-  return compactText(safe, maxLength);
+  const memoryText = value.replace(/\bdocuments?\b/gi, "drafts");
+  return dearMeCustomerSafeText(memoryText, "", maxLength);
 }
 
 function memoryKind(details: unknown) {

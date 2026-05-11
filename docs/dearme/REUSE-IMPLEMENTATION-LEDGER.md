@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- DM-171E removes the Voice & Memory brief's local customer-safe replacement
+  table and sends assignment/routine memory text through the shared DearMe
+  sanitizer. This keeps memory context, output handoff, Workbench projection,
+  Voice Gate, UI live pulse, and approval errors on one hidden-language
+  contract; future memory-context changes should add new public-safe terms to
+  the shared sanitizer first.
 - DM-171D promotes DearMe customer-safe text into `@paperclipai/shared` so
   server services, Voice Gate, output handoff, Workbench projections, UI live
   pulses, and DearMe approval errors all share one hidden-language boundary.

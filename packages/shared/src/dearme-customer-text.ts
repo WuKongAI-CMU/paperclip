@@ -71,7 +71,7 @@ const DEARME_CUSTOMER_TEXT_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bmodels?\b/gi, "private checks"],
   [/\badapters?\b/gi, "connectors"],
   [/\bproviders?\b/gi, "services"],
-  [/\bruntimes?\b/gi, "private work area"],
+  [/\bruntimes?\b/gi, "private pass"],
   [/\braw control plane\b/gi, "private operations"],
   [/\brun[_ -]?ids?\b|\brunIds?\b/gi, "work receipts"],
   [/\bqueue(?:d|s)?\b/gi, "work list"],
@@ -114,7 +114,7 @@ export function dearMeCustomerSafeText(
   safe = safe
     .replace(/\bDearMe(?:\s+DearMe)+\b/gi, "DearMe")
     .replace(
-      /\bDearMe\s+(?:connectors?|connections?)\s+services?\s+private\s+(?:work\s+areas?|areas?|passes?)\s+private\s+checks?\s+setup\s+(?:details|notes?)\b/gi,
+      /\bDearMe\s+(?:connectors?|connections?)\s+services?\s+private\s+(?:work\s+areas?|areas?|pass(?:es)?)\s+private\s+(?:checks?|pass(?:es)?)\s+setup\s+(?:details|notes?)\b/gi,
       "A private pass",
     )
     .replace(/\s+/g, " ")

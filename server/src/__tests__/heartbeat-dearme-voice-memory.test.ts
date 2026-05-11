@@ -69,8 +69,8 @@ describe("buildDearMeIssueVoiceMemoryBrief", () => {
 
     expect(db.select).toHaveBeenCalledTimes(1);
     expect(brief).toContain("DearMe Voice & Memory brief:");
-    expect(brief).toContain("DearMe connectors services private work areas private pass setup details");
-    expect(brief).toContain("DearMe services team progress view review links private credentials");
+    expect(brief).toContain("Proof point: A private pass:");
+    expect(brief).toContain("DearMe services team progress private review links private access details");
     expect(brief).not.toContain("Retired note");
     expect(brief).not.toMatch(
       /\b(Paperclip|OpenClaw|Symphony|adapter|provider|setup_payload|model provider|workbench|issue route|execution route|API key|token|workspace|runtime)\b/i,

@@ -2,6 +2,28 @@
 
 Date: 2026-05-11
 
+## DM-171E Voice & Memory Customer Text Reuse - 2026-05-11
+
+Product/architecture slice:
+
+- Removed the Voice & Memory brief's local hidden-language replacement table
+  and routed assignment/routine memory text through the shared DearMe customer
+  sanitizer.
+- Unified the runtime customer phrase on `private pass`, matching the existing
+  DearMe review language while preserving the hidden-language guard for
+  workbench, issue route, execution route, provider, adapter, token, and API
+  key terms.
+- Kept the one Voice & Memory brief shape intact: active private sources,
+  source evidence, review boundary, and output-kind ordering still flow through
+  the same assignment/routine context path.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/dearme-customer-text.test.ts server/src/__tests__/dearme-memory-context.test.ts server/src/__tests__/heartbeat-dearme-voice-memory.test.ts --maxWorkers=1`
+  passed: 3 files, 11 tests; 4 embedded-Postgres tests were skipped because
+  the local Postgres init script exited with code 1.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+
 ## DM-171D Shared Customer Text Contract - 2026-05-11
 
 Product/architecture slice:

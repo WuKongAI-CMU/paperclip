@@ -65,7 +65,7 @@ describe("buildDearMeVoiceMemoryAssignmentBrief", () => {
     expect(brief).toContain("DearMe Voice & Memory brief:");
     expect(brief).toContain("- Use these active private sources before drafting or revising.");
     expect(brief).toContain("Voice sample: Operator note: Short, direct note. Source: Manual note.");
-    expect(brief).toContain("Proof point: Launch proof: Shipped a local AI team progress view");
+    expect(brief).toContain("Proof point: Launch proof: Shipped a local AI team progress");
     expect(brief).toContain("Reference link: https://example.com/proof-note");
     expect(brief).not.toContain("file:///tmp/private-note");
     expect(brief).toContain("Keep the next version private until the user reviews it.");
@@ -83,9 +83,9 @@ describe("buildDearMeVoiceMemoryAssignmentBrief", () => {
       },
     ]);
 
-    expect(brief).toContain("DearMe connectors services private work areas private pass setup details");
-    expect(brief).toContain("DearMe services team progress view review links private credentials");
-    expect(brief).toContain("Source: DearMe private action links private credentials.");
+    expect(brief).toContain("Proof point: A private pass:");
+    expect(brief).toContain("DearMe services team progress private review links private access details");
+    expect(brief).toContain("Source: DearMe private action links team access.");
     expect(brief).not.toMatch(
       /\b(Paperclip|OpenClaw|Symphony|adapter|provider|setup_payload|model provider|workbench|issue route|execution route|API key|token|workspace|runtime)\b/i,
     );
@@ -387,7 +387,7 @@ describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
       "Voice sample: Operator note: Short, direct note. Source: Manual note.",
     );
     expect(description).toContain(
-      "Proof point: Launch proof: Shipped a local AI team progress view that turns private logs into reviewable outputs.",
+      "Proof point: Launch proof: Shipped a local AI team progress that turns private logs into reviewable outputs.",
     );
     expect(description).toContain("Operating boundary:");
     expect(description.indexOf("Latest saved Voice & Memory updates:")).toBeLessThan(
@@ -507,10 +507,10 @@ describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
     const description = updatedDearMeRoutine.description ?? "";
 
     expect(description).toContain(
-      "Proof point: DearMe connectors services private work areas private pass setup details:",
+      "Proof point: A private pass:",
     );
-    expect(description).toContain("DearMe services team progress view review links private credentials");
-    expect(description).toContain("Source: DearMe private action links private credentials.");
+    expect(description).toContain("DearMe services team progress private review links private access details");
+    expect(description).toContain("Source: DearMe private action links team access.");
     expect(description).not.toMatch(
       /\b(Paperclip|OpenClaw|Symphony|adapter|provider|setup_payload|model provider|workbench|issue route|execution route|API key|token|workspace|runtime)\b/i,
     );
