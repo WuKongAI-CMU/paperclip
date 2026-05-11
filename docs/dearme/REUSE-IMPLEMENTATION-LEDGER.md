@@ -15,6 +15,10 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- OpenClaw group readiness now collapses shared gateway setup blockers into one
+  line for human output while keeping per-target JSON stable. That keeps the
+  Telegram+iMessage proof path focused on one gateway connection plus two
+  payloads, instead of repeating the same concern on every channel row.
 - Provider smoke readiness now prints the exact local setup/recheck/live-smoke
   commands for blocked targets while keeping JSON output stable. The remaining
   gap is real provider/host credentials, not another config-discovery pass.

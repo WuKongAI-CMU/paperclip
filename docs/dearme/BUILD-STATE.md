@@ -2,6 +2,24 @@
 
 Date: 2026-05-11
 
+## OpenClaw Readiness Noise Cleanup - 2026-05-11
+
+Product/architecture slice:
+
+- Human `pnpm dearme:provider-smoke -- --check --target openclaw` output now
+  prints shared OpenClaw gateway blockers once, then leaves Telegram and
+  iMessage rows to show only their per-channel recipient/body gaps.
+- Readiness JSON and provider execution behavior stay unchanged. This is an
+  operator-surface cleanup so the next real action remains obvious: add the
+  shared gateway URL/auth once, then fill the two message smoke payloads.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+- `pnpm --silent dearme:provider-smoke -- --check --target openclaw`
+- `pnpm --silent dearme:provider-smoke -- --check --target openclaw --json`
+- `pnpm typecheck`
+
 ## OpenClaw Message Provider-Smoke Group - 2026-05-11
 
 Product/architecture slice:

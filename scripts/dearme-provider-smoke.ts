@@ -390,6 +390,56 @@ export function inspectDearMeProviderSmokeReadiness(
   });
 }
 
+function sharedBlockedRequirements(
+  readiness: readonly DearMeProviderSmokeReadiness[],
+  targetArg: TargetArg,
+) {
+  if (targetArg === "all") return [];
+  const blocked = readiness.filter((item) => !item.ready);
+  if (blocked.length < 2) return [];
+  const [first, ...rest] = blocked;
+  return first.missing.filter((requirement) =>
+    rest.every((item) => item.missing.includes(requirement)),
+  );
+}
+
+export function formatDearMeProviderSmokeReadiness(
+  readiness: readonly DearMeProviderSmokeReadiness[],
+  targetArg: TargetArg = "all",
+): string[] {
+  const lines = ["DearMe provider smoke readiness"];
+  const sharedMissing = sharedBlockedRequirements(readiness, targetArg);
+  const sharedMissingSet = new Set(sharedMissing);
+
+  if (sharedMissing.length > 0) {
+    lines.push(`Shared missing config: ${sharedMissing.join(", ")}`);
+  }
+
+  for (const item of readiness) {
+    const itemMissing = item.missing.filter((requirement) =>
+      !sharedMissingSet.has(requirement),
+    );
+    const blocked = itemMissing.length > 0 ? itemMissing.join(", ") : "shared config above";
+    const state = item.ready ? "ready" : `blocked: ${blocked}`;
+    const live = item.liveConfirmationRequired
+      ? " Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 to run."
+      : "";
+    lines.push(`- ${item.target}: ${state}. ${item.description}.${live}`);
+  }
+
+  const blockedTargets = readiness
+    .filter((item) => !item.ready)
+    .map((item) => item.target);
+  if (blockedTargets.length === 0) return lines;
+
+  lines.push("");
+  lines.push("Next provider-smoke setup:");
+  for (const command of dearMeProviderSmokeOperatorCommands(blockedTargets, targetArg)) {
+    lines.push(`- ${command}`);
+  }
+  return lines;
+}
+
 function parseEnvValue(rawValue: string, lineNumber: number): string {
   const raw = rawValue.trim();
   if (!raw) return "";
@@ -938,24 +988,8 @@ Default with no target is --check. Secret JSON can be passed directly or by file
 }
 
 function printReadiness(readiness: readonly DearMeProviderSmokeReadiness[], targetArg: TargetArg = "all") {
-  console.log("DearMe provider smoke readiness");
-  for (const item of readiness) {
-    const state = item.ready ? "ready" : `blocked: ${item.missing.join(", ")}`;
-    const live = item.liveConfirmationRequired
-      ? " Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 to run."
-      : "";
-    console.log(`- ${item.target}: ${state}. ${item.description}.${live}`);
-  }
-
-  const blockedTargets = readiness
-    .filter((item) => !item.ready)
-    .map((item) => item.target);
-  if (blockedTargets.length === 0) return;
-
-  console.log("");
-  console.log("Next provider-smoke setup:");
-  for (const command of dearMeProviderSmokeOperatorCommands(blockedTargets, targetArg)) {
-    console.log(`- ${command}`);
+  for (const line of formatDearMeProviderSmokeReadiness(readiness, targetArg)) {
+    console.log(line);
   }
 }
 

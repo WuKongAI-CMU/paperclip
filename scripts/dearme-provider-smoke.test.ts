@@ -7,6 +7,7 @@ import type { AdapterExecutionContext } from "@paperclipai/adapter-utils";
 import {
   dearMeProviderSmokeEnvTemplate,
   dearMeProviderSmokeOperatorCommands,
+  formatDearMeProviderSmokeReadiness,
   inspectDearMeProviderSmokeReadiness,
   loadDearMeProviderSmokeEnv,
   parseDearMeProviderSmokeArgs,
@@ -57,6 +58,35 @@ test("provider smoke readiness reports missing live provider config without secr
   ]);
   assert.deepEqual(openClawMessages[0]?.missing, telegram?.missing);
   assert.deepEqual(openClawMessages[1]?.missing, imessage?.missing);
+});
+
+test("provider smoke readiness formatting deduplicates shared OpenClaw blockers", () => {
+  const readiness = inspectDearMeProviderSmokeReadiness({}, "openclaw_messages");
+  const lines = formatDearMeProviderSmokeReadiness(readiness, "openclaw_messages");
+  const allLines = formatDearMeProviderSmokeReadiness(
+    inspectDearMeProviderSmokeReadiness({}),
+    "all",
+  );
+  const telegramLine = lines.find((line) => line.startsWith("- telegram_message:"));
+  const imessageLine = lines.find((line) => line.startsWith("- imessage_message:"));
+
+  assert.equal(
+    lines[1],
+    "Shared missing config: OPENCLAW_GATEWAY_URL, OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH",
+  );
+  assert.doesNotMatch(telegramLine ?? "", /OPENCLAW_GATEWAY_URL/);
+  assert.doesNotMatch(imessageLine ?? "", /OPENCLAW_GATEWAY_TOKEN/);
+  assert.match(telegramLine ?? "", /DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT/);
+  assert.match(telegramLine ?? "", /DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY/);
+  assert.match(imessageLine ?? "", /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
+  assert.match(imessageLine ?? "", /DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY/);
+  assert.match(lines.join("\n"), /--check --target openclaw_messages/);
+  assert.match(lines.join("\n"), /--target telegram_message --live/);
+  assert.match(lines.join("\n"), /--target imessage_message --live/);
+  assert.equal(
+    allLines.some((line) => line.startsWith("Shared missing config:")),
+    false,
+  );
 });
 
 test("provider smoke parses target aliases", () => {
