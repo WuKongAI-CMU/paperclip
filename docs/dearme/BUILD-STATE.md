@@ -2,6 +2,28 @@
 
 Date: 2026-05-11
 
+## Symphony Prompt Entrypoint Alignment - 2026-05-11
+
+Product/architecture slice:
+
+- Aligned the live Symphony worker prompt with the same current DearMe doc
+  chain as `AGENTS.md`, adding `INDEX.md`, tri-substrate architecture, OpenClaw
+  integration, and the code-reuse master plan to the initial coordination
+  surface.
+- Clarified that `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` is
+  lifecycle/process context, not the active ticket queue. Current work comes
+  from the assigned Linear `DEA-*` issue and bootstrap worktree/handoff
+  evidence.
+- Updated the operating-loop plan's stale 2026-05-09 queue to point workers at
+  Linear/Symphony, the current canonical docs, and the existing provider-smoke
+  harness for the next live-proof gap instead of replaying historical DM
+  queue entries.
+
+Verification:
+
+- `git diff --check -- .symphony/WORKFLOW.md doc/plans/2026-05-08-dearme-symphony-operating-loop.md docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+
 ## Coordination Entrypoint Cleanup - 2026-05-11
 
 Product/architecture slice:

@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `.symphony/WORKFLOW.md` now gives workers the same canonical entrypoint as
+  `AGENTS.md`: `README.md`, `INDEX.md`, tri-substrate architecture, OpenClaw
+  integration, product architecture, the code-reuse master plan, and targeted
+  append-only ledger/build-state reads. The 2026-05-08 operating-loop plan is
+  now explicitly process context, not an active queue; current work comes from
+  the assigned Linear `DEA-*` issue plus bootstrap handoff/worktree evidence.
 - The coordinator entrypoint now starts DearMe product workers from the current
   canonical doc chain instead of the older dirty-tree integration docs:
   `README.md`, `INDEX.md`, `.symphony/WORKFLOW.md`,

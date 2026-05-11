@@ -77,7 +77,12 @@ Before assigning product-code tickets to workers:
 4. Keep customer-facing DearMe surfaces free of raw Paperclip, OpenClaw, OK Partner, adapter, provider, model, issue, document, work product, and approval-route terminology unless explicitly intended for internal operator surfaces.
 5. Keep public or externally visible moves approval-gated.
 
-## First Execution Queue
+## Historical First Execution Queue
+
+The queue below records how the 2026-05-08 integration branch was first
+stabilized. Do not start new work from these DM entries unless the coordinator
+explicitly reopens one in Linear. Current execution starts from the assigned
+`DEA-*` issue and `.symphony/WORKFLOW.md`.
 
 ### DM-005A: Integration Baseline And Product Spine
 
@@ -108,7 +113,7 @@ Worker brief:
 
 - `doc/plans/2026-05-08-dearme-dm-001-output-review-regeneration-ticket.md`
 
-Primary source of truth:
+Historical source of truth at the time:
 
 - `docs/dearme/WORKTREE-INTEGRATION-PLAN.md`
 - `docs/dearme/BUILD-STATE.md`
@@ -208,37 +213,53 @@ Stop rules:
 PR notes:
 ```
 
-## Current Coordinator Queue - 2026-05-09
+## Current Coordinator Queue - 2026-05-11
 
 The old first-execution queue above is historical. The current integrated branch
-has already absorbed the DM-102 through DM-125 product spine. Workers must read:
+has already absorbed the DM-102 through DM-125 product spine and many later
+Symphony handoffs. Treat this document as process context for the Goal-thread
+vs. worker split, not as the active ticket queue.
 
-- `docs/dearme/BUILD-STATE.md`
-- `docs/dearme/INTEGRATED-ARCHITECTURE.md`
-- `docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+Current worker entrypoint:
 
-Current bounded worker tickets:
+- Linear team `DEA`, filtered by `.symphony/WORKFLOW.md`.
+- Bootstrap evidence from
+  `pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs`.
+- `AGENTS.md`, `docs/dearme/README.md`, `docs/dearme/INDEX.md`,
+  `docs/dearme/TRI-SUBSTRATE-ARCHITECTURE.md`,
+  `docs/dearme/OPENCLAW-INTEGRATION-ARCHITECTURE.md`,
+  `docs/dearme/PRODUCT-ARCHITECTURE.md`,
+  `docs/dearme/POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`, and targeted reads of
+  `docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md` /
+  `docs/dearme/BUILD-STATE.md`.
 
-1. `DM-130`: Web Shell Polish From Lindy And Littlebird.
-2. Future `DM-129A`: Backend Automation Policy Projection, only if the current
-   client-side policy panel needs server-owned facts that the workbench cannot
-   derive.
+Current bounded work is whatever the assigned `DEA-*` issue states. During the
+first-cycle/private-run proof phase, keep product implementation effectively
+single-lane; use extra capacity for read-only architecture or QA review until
+the active proof worker leaves a durable handoff.
 
 Recently completed:
 
-- `DM-129`: Automation Reliability And Cost Policy.
-- `DM-128`: Focused Decision Review Drawer.
-- `DM-127`: Voice & Memory Source Detail Drawer.
+- The stale local worktree queue is closed by reviewed absorption in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json`.
+- The next live-product gap is credential/provider smoke through the existing
+  `pnpm dearme:provider-smoke` harness, not a new connector/settings surface or
+  a replay of the historical DM queue above.
 
 Do not restart stale DM-001, DM-103, or DM-104 briefs unless the coordinator
 explicitly reopens them. They are now product history, not the active queue.
 
 ## Immediate Next Step
 
-Start with `DM-130` in an isolated worker branch/worktree from the latest
-integrated DearMe branch. Keep this Goal thread as the coordinator; use Symphony
-or Symphony-like workers only for bounded tickets with explicit donor grounding,
-write scope, protected scope, acceptance, and verification.
+Historical note: this section originally pointed at `DM-130`. That work is no
+longer the immediate next step.
+
+Current instruction: keep this Goal thread as the coordinator and use Symphony
+workers only for bounded `DEA-*` issues with explicit donor grounding, write
+scope, protected scope, acceptance, and verification. During active
+first-cycle/private-run proof work, do not start a second product writer against
+the same customer surface; use read-only architecture or QA review until the
+active worker leaves a durable handoff.
 
 ## Live Coordinator Addendum - 2026-05-10
 
