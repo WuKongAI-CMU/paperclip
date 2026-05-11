@@ -86,6 +86,7 @@ const CHANNEL_LABELS: Record<string, string> = {
   community: "Community",
   website: "Website",
   "dearme-cloud": "Website",
+  meta_ads: "Meta Ads",
 };
 
 function channelLabel(value: string | null) {

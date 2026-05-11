@@ -422,6 +422,50 @@ describe("recordDearMeNextMoveDeliveryReceipt", () => {
     }
   });
 
+  it("records delivered Meta Ads receipts without exposing the raw channel id", async () => {
+    const { db, values } = makeDb();
+    const approval = makeApproval({
+      payload: {
+        ...makeApproval().payload,
+        riskGate: "spend_money",
+        launchHandoff: {
+          channel: "meta_ads",
+          publishGate: {
+            connectChannelState: "ready",
+          },
+        },
+      },
+    });
+
+    const result = await recordDearMeNextMoveDeliveryReceipt(db, {
+      approval,
+      actorUserId: "user-1",
+      linkedIssueIds: ["issue-1"],
+      outcome: {
+        kind: "delivered",
+        voiceGateScore: null,
+        externalId: "120000000000000001",
+        externalUrl:
+          "https://business.facebook.com/adsmanager/manage/campaigns?act=123456789&selected_campaign_ids=120000000000000001",
+      },
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      deliveryStatus: "delivered",
+      launchChannel: "meta_ads",
+      launchChannelLabel: "Meta Ads",
+      deliveryTitle: "Approved next step delivered",
+      nextStep: "Review the delivered Meta Ads result or continue with the next approved step.",
+    }));
+
+    const serializedResult = JSON.stringify(result);
+    const commentRows = values.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+    const serializedComments = commentRows.map((row) => row.body).join("\n");
+    expect(serializedResult).toContain("Meta Ads");
+    expect(serializedComments).toContain("Review the delivered Meta Ads result");
+    expect(serializedComments).not.toContain("meta_ads");
+  });
+
   it("records a safe needs-connection delivery receipt without leaking internal codes", async () => {
     const { db, values } = makeDb();
     const approval = makeApproval({
