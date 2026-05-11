@@ -127,3 +127,8 @@ writes a `format-patch` file, a `git bundle`, and a JSON summary. If the worker
 has no file changes, it prints `No file changes`. If the worker is still dirty,
 it writes a blocker patch summary and exits nonzero so the issue stays
 non-terminal until a coordinator can inspect or recover it.
+
+Once a worker has printed one of those absorbable handoff outcomes, the worker
+should stop with that evidence as its final response. Continuing into another
+analysis pass after a handoff risks replaying the same issue, burning context,
+and creating duplicate coordinator work.

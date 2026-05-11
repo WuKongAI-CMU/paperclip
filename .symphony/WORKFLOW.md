@@ -195,7 +195,10 @@ Operating rules:
     and current workspace path in the final response, and keep the issue
     non-terminal. If no files changed, run the handoff command, explicitly say
     "No file changes", and include the command evidence proving why the issue is
-    complete.
+    complete. After the handoff command prints an absorbable commit, no-code
+    evidence, or blocker artifact, treat that as the terminal worker response:
+    do not start another analysis pass, continue donor research, or wait for
+    the coordinator inside the worker thread.
     Do not use Linear tools, GraphQL, API calls, or comments to move this issue
     into `Done`, `Canceled`, or `Duplicate`. Terminal state authority belongs to
     the coordinator after artifact verification; workers leave Linear
