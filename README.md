@@ -1,3 +1,10 @@
+> **Current checkout: DearMe integration branch.** Start product, architecture,
+> reuse, and Symphony coordination work from
+> [`docs/dearme/README.md`](docs/dearme/README.md) and
+> [`.symphony/README.md`](.symphony/README.md). The Paperclip README below is
+> retained as inherited substrate context; it is not the current customer-facing
+> DearMe product direction.
+
 <p align="center">
   <img src="doc/assets/header.png" alt="Paperclip — runs your business" width="720" />
 </p>

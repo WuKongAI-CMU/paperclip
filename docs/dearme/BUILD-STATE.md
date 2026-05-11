@@ -12187,6 +12187,24 @@ Verification:
 - `git diff --check` passed.
 - `pnpm dearme:symphony-preflight -- .` passed.
 
+## Coordinator Entrypoint Cleanup - 2026-05-11
+
+Thirty-eighth verified DearMe slice:
+
+- Kept the inherited root README content intact, but added a top-level
+  DearMe checkout notice so humans and workers start product, architecture,
+  reuse, and Symphony coordination from the canonical DearMe docs instead of
+  treating the Paperclip substrate README as current product direction.
+- Left the active DEA-60 provider proof lane untouched; the current coordinator
+  summary still reports its latest handoff as reviewed/absorbed and not
+  replayable.
+
+Verification:
+
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs --ticket DEA-60`
+  passed and reported the latest DEA-60 handoff as `committed_patch` with the
+  worktree already `reviewed_absorbed`.
+
 ## Known Gaps
 
 - The `Process adapter missing command` blocker is fixed for newly applied Brand OS approvals, not retroactively for old smoke data.
