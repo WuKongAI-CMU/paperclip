@@ -209,7 +209,10 @@ bootstrap, and offers `pnpm dearme:proof -- --run-safe` for the no-send,
 no-production-deploy, no-spend, no-live-model proof path.
 `pnpm dearme:status` and `pnpm dearme:proof` automatically read
 `.dearme-proof.env` when it exists, while explicit `--env-file` values still
-win for temporary credential files. Drop to
+win for temporary credential files. `pnpm dearme:next-proof` may create the
+file or append only missing blank setup keys for the selected target, so
+`env status: augmented` is a successful no-send setup step and not a signal to
+overwrite local proof values. Drop to
 `pnpm dearme:provider-smoke -- --check` for live provider credential work or
 `pnpm dearme:voice-smoke -- --check` for scorer-specific calibration work; do
 not add another setup dashboard or dispatch path. Symphony worker bootstrap
@@ -247,15 +250,18 @@ When the remaining blocker is `openclaw_messages`, `dearme:goal-audit` now
 shows no-send setup first: run
 `pnpm dearme:next-proof -- --target openclaw_messages`, then the targeted
 `--check`, and only then use the guarded live command after the explicit
-recipient/provider facts exist.
+recipient/provider facts exist. If the proof env already exists, the setup
+command appends the missing iMessage key instead of replacing current
+OpenClaw/host proof values.
 The internal `pnpm dearme:provider-smoke -- --check` command now owns that
 operator proof checklist, including the OpenClaw gateway URL/token/auth plus
 Telegram recipient/body and iMessage recipient proof requirements, and the
 production site URL content smoke once host env is enabled. When
 `DEARME_USE_LOCAL_OPENCLAW_CONFIG=1` is present in the ignored
 `.dearme-proof.env`, the OpenClaw gateway URL/token/auth come from the existing
-host-local config rather than another DearMe secret file. The production host
-lane requires the exported private proof artifact before it will run, and it now
+host-local config rather than another DearMe secret file; blank setup-template
+keys are treated as missing, so they do not override that local fallback. The
+production host lane requires the exported private proof artifact before it will run, and it now
 reads the exported `host-smoke.json` manifest for expected text and validates
 the local manifest, HTML, and proof JSON checksums before dispatch/fetch. A manual
 `DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT` override remains a fallback for the host

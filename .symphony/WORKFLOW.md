@@ -146,6 +146,11 @@ no-send evidence first:
 - `pnpm --silent dearme:next-proof -- --target openclaw_messages`
 - `pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages`
 
+`dearme:next-proof` may create `.dearme-proof.env` or append only missing
+blank setup keys for the selected target. Treat `env status: augmented` as a
+successful no-send setup step; do not overwrite local proof values unless
+`--force` is explicitly part of the task.
+
 If `dearme:goal-audit -- --check` exits non-zero only because the live
 provider proof is still blocked, record that as the expected public-readiness
 blocker evidence rather than treating the workflow itself as failed.

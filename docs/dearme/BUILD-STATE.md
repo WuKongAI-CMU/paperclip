@@ -7,9 +7,11 @@ Date: 2026-05-11
 Product/architecture slice:
 
 - Added `pnpm dearme:next-proof` as the coordinator-safe setup entry for the
-  next blocked provider proof. It creates or preserves `.dearme-proof.env`,
-  prints no-send readiness, and returns the guarded live/run command without
-  asking Symphony workers to copy shell redirection snippets.
+  next blocked provider proof. It creates, augments, or preserves
+  `.dearme-proof.env`, prints no-send readiness, and returns the guarded
+  live/run command without asking Symphony workers to copy shell redirection
+  snippets. Augmentation appends only missing blank setup keys for the selected
+  target and leaves existing host-local values untouched.
 - Updated the Symphony worker workflow so the current release posture is
   unambiguous: DearMe is usable for private/internal proof, but public launch
   remains blocked until live channel/provider proof exists.
@@ -17,6 +19,9 @@ Product/architecture slice:
   `dearme:release-gate`, provider-lane proof plus goal-audit checks, and a
   targeted `dearme:next-proof -- --target openclaw_messages` setup plus
   readiness check.
+- Provider smoke now treats blank template values as missing instead of as
+  overrides, so appended `OPENCLAW_*=` setup lines do not disable opted-in
+  local OpenClaw gateway or Telegram self-smoke defaults.
 - The handoff now names the external facts future workers should collect
   before any live smoke: an owned iMessage smoke recipient, LinkedIn endpoint
   and credential facts, and Meta campaign credential/budget facts. This keeps

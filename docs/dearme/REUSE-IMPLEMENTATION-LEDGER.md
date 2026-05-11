@@ -16,9 +16,12 @@ It answers three questions before another worker starts building:
 ## Latest Public-Readiness Handoff Boundary - 2026-05-11
 
 - `pnpm dearme:next-proof` is now the coordinator-facing setup command for the
-  next blocked provider proof. It creates or preserves `.dearme-proof.env`,
-  prints no-send readiness, and emits the guarded live/run command while
-  keeping provider-smoke redirection details out of Symphony handoffs.
+  next blocked provider proof. It creates, augments, or preserves
+  `.dearme-proof.env`, prints no-send readiness, and emits the guarded
+  live/run command while keeping provider-smoke redirection details out of
+  Symphony handoffs. Augmentation appends only missing blank setup keys for the
+  selected target, so workers can surface the next external fact without
+  overwriting local proof values.
 - Symphony workers now inherit an explicit no-send lane for the current release
   posture: `private-proof` can be used for design-partner/internal product
   review, while `public-launch` remains blocked until live OpenClaw/channel
@@ -26,6 +29,9 @@ It answers three questions before another worker starts building:
 - The lane reuses existing scripts instead of adding another dashboard:
   `dearme:release-gate`, provider-lane proof plus goal-audit checks, targeted
   `dearme:next-proof -- --target openclaw_messages`, and a readiness check.
+- Provider smoke preserves opted-in local OpenClaw fallback values when
+  next-proof appends blank setup keys, so the no-send readiness check continues
+  to show Telegram ready and isolates the remaining iMessage recipient fact.
 - The next external facts are explicit and should be handed to Linear/Symphony
   as blockers before any live command: owned iMessage smoke recipient,
   LinkedIn endpoint/credential/recipient/body facts, and Meta campaign

@@ -1,4 +1,4 @@
-import { access, mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -29,6 +29,7 @@ export interface DearMeNextProofArgs {
 }
 
 export type DearMeNextProofEnvStatus =
+  | "augmented"
   | "created"
   | "overwritten"
   | "preserved"
@@ -97,6 +98,35 @@ function providerRunCommand(
 function nextProofEnvTemplate(target: DearMeNextProofTarget, envFile: string) {
   return dearMeProviderSmokeEnvTemplate(target)
     .replaceAll(".dearme-provider-smoke.env", envFile);
+}
+
+function envKeysFromText(text: string) {
+  const keys = new Set<string>();
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)=/);
+    if (match) keys.add(match[1]);
+  }
+  return keys;
+}
+
+function missingTemplateAssignments(existing: string, template: string) {
+  const existingKeys = envKeysFromText(existing);
+  return template
+    .split(/\r?\n/)
+    .filter((line) => {
+      const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)=/);
+      return match ? !existingKeys.has(match[1]) : false;
+    });
+}
+
+function augmentEnvTemplate(
+  existing: string,
+  target: DearMeNextProofTarget,
+  template: string,
+) {
+  const missing = missingTemplateAssignments(existing, template);
+  if (missing.length === 0) return null;
+  return `${existing.trimEnd()}\n\n# Added by dearme:next-proof for ${target}\n${missing.join("\n")}\n`;
 }
 
 export function parseDearMeNextProofArgs(argv: readonly string[]): DearMeNextProofArgs {
@@ -204,15 +234,23 @@ export async function prepareDearMeNextProofSetup(
     options.target ?? await inferNextProofTarget(envFile, cwd, options.baseEnv ?? process.env);
   const existed = await envFileExists(resolvedEnvFile);
   let envStatus: DearMeNextProofEnvStatus;
+  const template = `${nextProofEnvTemplate(target, envFile)}\n`;
 
   if (options.noWrite) {
     envStatus = "skipped";
   } else if (existed && !options.force) {
-    envStatus = "preserved";
+    const existing = await readFile(resolvedEnvFile, "utf8");
+    const augmented = augmentEnvTemplate(existing, target, template);
+    if (augmented) {
+      await writeFile(resolvedEnvFile, augmented);
+      envStatus = "augmented";
+    } else {
+      envStatus = "preserved";
+    }
   } else {
     const parentDir = dirname(resolvedEnvFile);
     await mkdir(parentDir, { recursive: true });
-    await writeFile(resolvedEnvFile, `${nextProofEnvTemplate(target, envFile)}\n`);
+    await writeFile(resolvedEnvFile, template);
     envStatus = existed ? "overwritten" : "created";
   }
 

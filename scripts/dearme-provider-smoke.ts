@@ -486,10 +486,13 @@ function telegramSmokeDefaultsFromLocalOpenClaw(env: Env): Env {
 }
 
 function providerSmokeEnvWithLocalOpenClawDefaults(env: Env): Env {
+  const explicitEnv = Object.fromEntries(
+    Object.entries(env).filter(([, value]) => nonEmpty(value)),
+  );
   const resolvedEnv = {
     ...openClawGatewayDefaultsFromLocalConfig(env),
     ...telegramSmokeDefaultsFromLocalOpenClaw(env),
-    ...env,
+    ...explicitEnv,
   };
   return {
     ...resolvedEnv,

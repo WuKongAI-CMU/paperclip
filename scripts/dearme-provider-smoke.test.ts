@@ -214,6 +214,56 @@ test("provider smoke can derive local Telegram self-smoke defaults without print
   }
 });
 
+test("provider smoke keeps local OpenClaw defaults when setup templates add blank keys", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-openclaw-blank-template-"));
+  const configPath = join(dir, "openclaw.json");
+  const credentialsDir = join(dir, "credentials");
+
+  await mkdir(credentialsDir, { recursive: true });
+  await writeFile(
+    configPath,
+    JSON.stringify({
+      gateway: {
+        port: 18789,
+        auth: { mode: "token", token: "local-gateway-token" },
+      },
+    }),
+    "utf8",
+  );
+  await writeFile(
+    join(credentialsDir, "telegram-default-allowFrom.json"),
+    JSON.stringify({ version: 1, allowFrom: ["local-chat-id"] }),
+    "utf8",
+  );
+
+  try {
+    const readiness = inspectDearMeProviderSmokeReadiness({
+      DEARME_USE_LOCAL_OPENCLAW_CONFIG: "1",
+      DEARME_OPENCLAW_USE_LOCAL_TELEGRAM_SMOKE: "1",
+      DEARME_OPENCLAW_CONFIG_FILE: configPath,
+      OPENCLAW_GATEWAY_URL: "",
+      OPENCLAW_GATEWAY_TOKEN: "",
+      OPENCLAW_WEBHOOK_AUTH: "",
+      DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT: "",
+      DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY: "",
+      DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT: "",
+    }, "openclaw_messages");
+    const telegram = readiness.find((item) => item.target === "telegram_message");
+    const imessage = readiness.find((item) => item.target === "imessage_message");
+    const serialized = JSON.stringify(readiness);
+
+    assert.equal(telegram?.ready, true);
+    assert.deepEqual(telegram?.missing, []);
+    assert.deepEqual(imessage?.missing, [
+      "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+    ]);
+    assert.equal(serialized.includes("local-gateway-token"), false);
+    assert.equal(serialized.includes("local-chat-id"), false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("provider smoke readiness formatting deduplicates shared OpenClaw blockers", () => {
   const readiness = inspectDearMeProviderSmokeReadiness({}, "openclaw_messages");
   const lines = formatDearMeProviderSmokeReadiness(readiness, "openclaw_messages");
