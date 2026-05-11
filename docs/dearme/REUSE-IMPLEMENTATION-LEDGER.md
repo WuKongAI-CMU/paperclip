@@ -15,6 +15,14 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `pnpm dearme:aha-proof -- --check` is now the local first-wow gate. It
+  reuses the shared first-cycle preview contract and customer-language scrubber
+  to prove one-sentence start, 0-30s / 60-120s / 3-5min private proof order,
+  private output package, minimum runnable team, and launch boundaries without
+  sends, public deploys, spend, or live model calls. It also caught and removed
+  a remaining customer-visible `queue` term in the first-cycle autonomy step.
+  Future workers should improve the browser/customer stream on top of this
+  command instead of adding another first-run contract.
 - `pnpm dearme:status` and `pnpm dearme:proof` now auto-load the ignored
   `.dearme-proof.env` file when it exists, while explicit `--env-file` values
   still take priority for temporary credential files. This lets the coordinator
@@ -3412,6 +3420,7 @@ UI, not server-side runtime artifacts the user never sees).
 | Ticket | Slice | Donor mechanism | Path |
 |---|---|---|---|
 | DM-138 | First-run personal proof sequence (DM-138A start bridge, DM-138B proof-sequence contract, DM-138C proof hydration, DM-138D proof-output write, and DM-138E live browser/API smoke shipped locally) | Polsia 5-min onboarding shock | `server/src/routes/dearme.ts`, DearMe worker/plugin layer |
+| DM-WOW-1A | Local first-five-minute aha proof gate over the shared preview contract | Polsia 0-30s / 60-120s / 3-5min first-wow rhythm | `scripts/dearme-aha-proof.ts`, `packages/shared/src/validators/dearme.ts` |
 | DM-139 | Autonomous Reporting plugin (queue-always-non-empty, plain-prose updates, next-step driver) | Polsia CEO 4-step prompt | `packages/plugins/dearme-reporting/` |
 | DM-140 | Voice Gate + Content Producer plugin (voice-match score, attribution link rule, rate cap) | Polsia Twitter agent rules | `packages/plugins/dearme-content-producer/` |
 | DM-183AQ | Private source link traceability on current Voice & Memory contract | DM-016 source-reference intent, adapted without stale `referenceUrl` schema replay | `ui/src/pages/DearMeOnboarding.tsx` |

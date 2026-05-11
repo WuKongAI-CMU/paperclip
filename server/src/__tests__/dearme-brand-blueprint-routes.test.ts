@@ -519,11 +519,11 @@ function makeFirstCycleResult() {
           summary: "Score the starter drafts and keep anything public behind the launch decision.",
         },
         {
-          id: "queue-next-private-pass",
+          id: "prepare-next-private-pass",
           title: "Prepare the next private pass",
           phase: "report",
           ownerRole: "chief_of_staff",
-          summary: "Write the first plan and next actions so the team can continue privately after the preview.",
+          summary: "Write the first plan and next actions so the team can keep moving privately after the preview.",
         },
       ],
       waitsFor: ["publish_social", "send_email", "deploy_public_site", "spend_money"],

@@ -47,6 +47,8 @@
     "dearme:proof": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-proof.ts",
     "dearme:status": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-proof.ts --status",
     "test:dearme-proof": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-proof.test.ts",
+    "dearme:aha-proof": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-aha-proof.ts",
+    "test:dearme-aha-proof": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-aha-proof.test.ts",
     "dearme:voice-smoke": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-voice-smoke.ts",
     "test:dearme-voice-smoke": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-voice-smoke.test.ts",
     "docs:dev": "cd docs && npx mintlify dev",

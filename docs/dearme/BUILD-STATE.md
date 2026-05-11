@@ -2,6 +2,29 @@
 
 Date: 2026-05-11
 
+## Local First-Wow Aha Proof - 2026-05-11
+
+Product/architecture slice:
+
+- Added `pnpm dearme:aha-proof` as the local proof for the private
+  first-five-minute DearMe wow loop. It starts from one positioning answer and
+  checks the existing first-cycle preview for the 0-30s, 60-120s, and 3-5min
+  proof sequence.
+- The proof asserts the minimum runnable team, private output package, launch
+  boundaries, and customer-safe language without sending, publishing, deploying
+  to production, spending, or calling a live model.
+- Kept the implementation on the existing shared first-cycle contract instead
+  of adding another onboarding flow, connector screen, runtime, or product
+  surface. The only contract copy cleanup renames the final private-pass step
+  from queueing to preparation so it reads like useful work, not machinery.
+
+Verification:
+
+- `pnpm test:dearme-aha-proof`
+- `pnpm --silent dearme:aha-proof -- --check`
+- `pnpm --silent dearme:aha-proof -- --json`
+- `pnpm --silent dearme:aha-proof -- --print-sample | rg -n "queue|queued|OpenClaw|Paperclip|provider|adapter|model|runtime|worker|workbench|issue"` (no matches)
+
 ## DEA-60 Handoff Alias Absorbed - 2026-05-11
 
 Product/architecture slice:

@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, and DM-CH-02B OpenClaw message smoke proof)
+Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, and the local first-five-minute aha proof gate)
 
 ---
 
@@ -125,6 +125,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-138B** — first-run proof sequence contract: the same shared preview response now includes `proofSequence`, and both the onboarding proof cards and private first-cycle issue consume the same 0-30s identity dossier, 60-120s audience map, and 3-5min private site proof order.
 - **DM-138C** — first-run proof hydration: `previewFirstCycle(...)` now reuses prepared DearMe output handoff records to hydrate the existing `proofSequence` with real documents and work products, while progress comments alone cannot count as proof.
 - **DM-138D route proof smoke** — first-cycle start route coverage now proves prepared `proofSequence` content is returned to the customer contract and copied into the private issue, activity log, and live `task_created` payload; onboarding coverage proves the same package renders without exposing substrate terms.
+- **DM-WOW-1A local aha proof gate** — `pnpm dearme:aha-proof -- --check` now proves the local private first-five-minute loop from the existing shared first-cycle preview contract. It checks one-sentence start, 0-30s / 60-120s / 3-5min proof order, private outputs, minimum runnable team, launch boundaries, and customer-safe language without sends, public deploys, spend, or live model calls.
 - **DM-138E / DEA-8 live proof handoff** — the live paid-beta smoke proved the same first-cycle path returns identity, audience, private-site, content, opportunity, and report proof through output handoff and workbench projection without hidden donor/runtime terms.
 - **DM-139 / DM-140 / DEA-7 packet-backed work** — private Dear me report and content draft packets now reuse output handoff, work products, Voice Gate, workbench projection, and focused review instead of creating a second report/content runtime.
 - **DM-183AR review-memory surface** — Work Ready and focused review now preserve customer-safe review receipts through `feedbackTrace.receipts`, so repeated review decisions become visible product memory rather than raw queue history.
@@ -162,6 +163,13 @@ iMessage through the configured OpenClaw gateway, SES or Resend email,
 LinkedIn partner endpoint + credential, Meta OAuth/Marketing API, or the
 remaining DM-177 live DNS/host deploy smoke. It is not another
 connector/settings surface.
+The internal `pnpm dearme:aha-proof -- --check` command is the first-wow proof
+gate. It reuses the shared first-cycle preview contract and customer-language
+guard to prove the local private 0-30s / 60-120s / 3-5min DearMe activation
+loop without sends, public deploys, spend, or live model calls. Use it before
+claiming Polsia-style first-five-minute readiness; the remaining product gap is
+making that same loop customer-watchable in the browser and, later,
+phone-reachable through a real host.
 The internal `pnpm dearme:status` command is the compact product/coordinator
 answer for "can DearMe prove itself now?": local no-send proof, voice semantic
 proof, and live provider proof are separated so the coordinator does not have

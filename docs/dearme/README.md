@@ -32,6 +32,7 @@ If anything in this folder contradicts `INDEX.md`, `INDEX.md` wins.
 5. [`POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`](POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md) — ticket-level work breakdown
 6. [`REUSE-IMPLEMENTATION-LEDGER.md`](REUSE-IMPLEMENTATION-LEDGER.md) — what is actually built and verified
 7. [`REBRAND-AND-PROVENANCE.md`](REBRAND-AND-PROVENANCE.md) — what's safe to port, what isn't
+8. [`POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`](POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md) — current product maturity against Polsia and Naive
 
 ## Runtime source of truth (code, not docs)
 
@@ -49,6 +50,7 @@ If anything in this folder contradicts `INDEX.md`, `INDEX.md` wins.
 - [`server/src/services/dearme-approved-launch-handoff.ts`](../../server/src/services/dearme-approved-launch-handoff.ts) — approved next-move to outbound-call boundary. Registers the default `ChannelDispatch` map: OpenClaw gateway message sends, X, email, LinkedIn partner DM, deploy-site, and Meta campaign dispatch.
 - [`server/src/services/dearme-openclaw-gateway-dispatch.ts`](../../server/src/services/dearme-openclaw-gateway-dispatch.ts) + [`server/src/services/dearme-openclaw-gateway-dispatch-config.ts`](../../server/src/services/dearme-openclaw-gateway-dispatch-config.ts) — OpenClaw gateway bridge used by `send_telegram_message` / `send_imessage` and by the provider smoke harness.
 - [`server/src/services/dearme-send-email-dispatch.ts`](../../server/src/services/dearme-send-email-dispatch.ts) — DM-174 Resend `send_email` dispatcher. It plugs into the same outbound wrapper as X, resolves the stored per-user credential through the server secret-provider registry, validates plain-text payload/expiry, calls Resend `POST /emails`, and maps provider auth failures back to reauth without customer-facing provider language.
+- [`scripts/dearme-aha-proof.ts`](../../scripts/dearme-aha-proof.ts) — first-wow proof gate over the shared first-cycle preview contract. It proves one-sentence start, 0-30s / 60-120s / 3-5min private proof order, private output package, minimum team, launch boundaries, and customer-safe language without sends, public deploys, spend, or live model calls.
 - [`scripts/dearme-proof.ts`](../../scripts/dearme-proof.ts) — single local proof entrypoint that composes the provider and voice smoke lanes without adding another product surface.
 - `pnpm dearme:status` — compact coordinator/product status over the same proof map: local no-send proof, voice semantic proof, and live provider proof. It auto-loads `.dearme-proof.env` when that ignored local file exists.
 - [`scripts/dearme-provider-smoke.ts`](../../scripts/dearme-provider-smoke.ts) — internal operator proof harness for live provider readiness and smoke execution, including Telegram/iMessage OpenClaw gateway message targets.
@@ -77,6 +79,7 @@ pnpm --filter @paperclipai/dearme-ai-proxy test                       # 10 tests
 pnpm --filter @paperclipai/dearme-openclaw test                       # 19 tests (skills, bootstrap, outbound tools)
 pnpm --filter @paperclipai/dearme-openclaw run generate-skills        # 12 SKILL.md from registry
 pnpm --filter @paperclipai/db typecheck                               # Drizzle (channel_connections, opportunities)
+pnpm --silent dearme:aha-proof -- --check                             # local private first-five-minute aha proof
 ```
 
 ## Source material

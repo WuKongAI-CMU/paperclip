@@ -15,19 +15,23 @@ Current DearMe branch:
 
 - `git status --short --branch`
   - branch: `codex/dearme-dm-136-sample-demo-proof`
-  - worktree clean before this audit
+  - branch carries the first-five-minute aha proof gate and the DEA-60 handoff
+    alias absorption
 - `.symphony/bin/dearme-symphony status`
   - Symphony is running on `http://127.0.0.1:4100/`
   - one active worker lane is in progress
-- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
-  - 122 DearMe worktrees
-  - 117 reviewed as absorbed
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs --ticket DEA-60`
+  - 2 DearMe worktrees
+  - 1 reviewed as absorbed
   - 1 active not-in-current Symphony lane
-  - 28 latest Symphony handoffs, all committed patches
+  - latest DEA-60 handoff is a committed patch at head `88f8483a9f84`
+- `pnpm --silent dearme:aha-proof -- --check`
+  - local private first-five-minute aha proof is ready
+  - no sends, public deploys, spend, or live model calls are performed
 - `pnpm --silent dearme:proof -- --status --json`
   - local no-send proof is ready
-  - voice semantic proof is not ready
-  - live provider proof is not ready
+  - voice semantic proof remains the scorer-specific local lane
+  - live provider proof is still the remaining external proof gap
 
 DearMe docs and code surfaces checked:
 
@@ -57,12 +61,12 @@ But DearMe is not yet at Polsia's customer-visible product maturity. Polsia's
 advantage is the first five minutes: near-zero friction, immediate dashboard,
 visible thinking stream, mood/progress updates, first report, starter tasks, and
 a live asset. DearMe has many of the underlying pieces, but the experience is
-still more like "well-architected proof lanes" than "the user watches a team
-start working right now."
+still more like "a local private proof can be verified" than "the user watches a
+team start working right now."
 
 DearMe is closer to Naive/Paperclip on substrate than it is to Polsia on
-first-wow. The control-plane reuse is strong. The visible autonomy is not yet
-strong enough.
+first-wow. The control-plane reuse is strong. The first-five-minute private
+contract is now runnable, but the visible autonomy is not yet strong enough.
 
 ## Current Maturity
 
@@ -71,8 +75,8 @@ strong enough.
 | Substrate/control plane reuse | 80 / 100 | Strong. DearMe is using the Paperclip-style company, issue, approval, route, service, dispatch, and proof machinery instead of rebuilding it. |
 | DearMe product semantics | 70 / 100 | Good. Brand OS, voice, portfolio, opportunity, reports, Work Ready, and launch gates are now DearMe-owned concepts. |
 | UX simplicity | 55 / 100 | Mixed. The sidebar and customer shell are shaped, but onboarding is still heavier than Polsia's one-input activation. |
-| Autonomous runtime proof | 40 / 100 | Early. Local safe proof is ready, but live provider proof and real recurring customer-visible work are not fully proven. |
-| Polsia-style first-wow | 35 / 100 | Missing the main moment. DearMe has first-cycle proof contracts, but not a verified 90-second / 5-minute watchable activation loop. |
+| Autonomous runtime proof | 45 / 100 | Early. Local safe proof and the private aha proof are ready, but live provider proof and real recurring customer-visible work are not fully proven. |
+| Polsia-style first-wow | 50 / 100 | Local private proof exists. The missing main moment is a watchable customer activation loop and phone-reachable/live proof asset. |
 | Naive-style durable team runtime | 70 / 100 | Solid substrate fit. The missing proof is not the control plane; it is the product-specific recurring team run and live provider smoke. |
 
 ## What DearMe Has Actually Done
@@ -90,9 +94,10 @@ DearMe has already built the product/kernel split correctly:
   outbound tool wrappers.
 - Channel dispatch shape: X, email, LinkedIn partner dispatch, deploy-site
   preview, and Meta paused-campaign receipt paths have DearMe-owned wrappers.
-- Operator proof: `pnpm dearme:proof`, `pnpm dearme:status`,
-  `pnpm dearme:provider-smoke`, and `pnpm dearme:voice-smoke` now give the
-  coordinator a single no-send / voice / live-provider readiness map.
+- Operator proof: `pnpm dearme:aha-proof`, `pnpm dearme:proof`,
+  `pnpm dearme:status`, `pnpm dearme:provider-smoke`, and
+  `pnpm dearme:voice-smoke` now give the coordinator a private-first-wow,
+  no-send / voice / live-provider readiness map.
 - Coordination: Symphony is the active worker lane, and current worktree status
   is visible through `pnpm dearme:worktrees`.
 
@@ -119,7 +124,7 @@ DearMe has copied the doctrine, but not the full watchable moment.
 | --- | --- | --- |
 | Zero-friction signup and one-input start | DearMe has structured onboarding and Brand OS inputs, but not Polsia-level one-textarea activation. | Simplify. One sentence should start private work. |
 | Work starts immediately | DearMe has first-cycle start routes and proof sequence contracts. | Good base, but needs a visible live stream. |
-| 90-second wow | DearMe can prepare private proof, but current proof command only proves local no-send readiness. | Not proven. This is the P0 product gap. |
+| 90-second wow | `pnpm dearme:aha-proof -- --check` proves the local private sequence. | Partly proven. The browser-visible customer stream is still the P0 product gap. |
 | 5-minute complete dashboard | DearMe has many dashboard surfaces. | The pieces exist; the activation sequence does not feel as compressed. |
 | Mood/thinking/tool stream | DearMe has SSE/event contracts and workbench events. | Needs customer-safe projection into the product shell. |
 | Public/live proof | DearMe intentionally gates public deploy/send/spend. | Correct for reputation safety; the substitute must be private proof that feels live. |
@@ -199,8 +204,9 @@ declare the product done just because the substrate is strong.
 
 ### DM-WOW-1 First Five-Minute Private Wow Loop
 
-Build one customer path that starts from a single sentence and reaches a useful
-private result within five minutes:
+The local proof gate now exists through `pnpm dearme:aha-proof -- --check`. The
+next product step is to make the same path customer-watchable: one sentence
+should reach a useful private result within five minutes:
 
 - voice profile
 - audience map
@@ -262,13 +268,13 @@ reuse generated skills and role prompts.
 
 ## Product Answer
 
-DearMe is architecturally ahead of a normal prototype and behind Polsia as a
-customer demo.
+DearMe is architecturally ahead of a normal prototype and now has a local
+private first-wow proof gate. It is still behind Polsia as a customer demo.
 
 It is strongest where Naive is strongest: typed work, approvals, route/service
 shape, dispatch boundaries, and durable coordination. It is weakest where
 Polsia is strongest: instant emotional proof that a team is working for the
 customer right now.
 
-The next correct move is not another architecture layer. It is a first
-five-minute private wow loop on top of the architecture that already exists.
+The next correct move is not another architecture layer. It is the watchable
+first-five-minute customer loop on top of the proof gate that now exists.
