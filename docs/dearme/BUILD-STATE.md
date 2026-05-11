@@ -2,6 +2,62 @@
 
 Date: 2026-05-11
 
+## Production Host Smoke Lands Via GitHub Pages - 2026-05-11
+
+Product/architecture slice:
+
+- Exported the private first-wow packet to `dist/dearme-private-proof` and
+  pushed the static packet to the public GitHub Pages repo
+  `WuKongAI-CMU/dearme-private-proof`.
+- Configured the local proof env to use
+  `https://wukongai-cmu.github.io/dearme-private-proof` as the public HTTPS
+  DearMe host. The production host smoke now fetches
+  `https://wukongai-cmu.github.io/dearme-private-proof/peter-studio` and
+  verifies the exported `host-smoke.json` manifest and page text.
+- This closes the Polsia phone-reachable host gap for the current proof packet.
+  It does not close live channel/provider proof: LinkedIn, Telegram, iMessage,
+  and Meta still require real provider configuration and smoke payloads.
+- Added opt-in local OpenClaw config reuse to `dearme:provider-smoke`: when
+  `.dearme-proof.env` sets `DEARME_USE_LOCAL_OPENCLAW_CONFIG=1`, the smoke
+  runner derives the gateway URL/token from the existing host-local
+  `~/.openclaw/openclaw.json` without copying or printing the token. This
+  removes duplicate gateway secret setup from DearMe; the remaining
+  OpenClaw-message blocker is smoke recipients/bodies plus the explicit live
+  send guard.
+
+Verification:
+
+- `pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof`
+- `pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target deploy_site_production --json`
+- `pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages --json`
+- `pnpm --silent dearme:host-provider-audit`
+- `curl -fsSL https://wukongai-cmu.github.io/dearme-private-proof/peter-studio/`
+
+## Unified Status Shows OpenClaw Contract Proof - 2026-05-11
+
+Product/architecture slice:
+
+- Updated `pnpm dearme:status` / `pnpm dearme:proof -- --status` so the
+  compact product verdict now carries the local OpenClaw Telegram/iMessage
+  contract proof beside first-wow, integration absorption, local safety, voice,
+  and live provider proof.
+- The status output now says the Naive/Paperclip/OpenClaw substrate proof is
+  strong when the rehearsal passes. With the GitHub Pages host smoke in place,
+  the current remaining Polsia gap is live channel/provider proof, not another
+  local contract proof or phone host proof.
+- Reused the existing `dearme:openclaw-message-rehearsal` and
+  provider-smoke path; no new provider surface, public deploy, live send,
+  spend, or model call was added.
+
+Verification:
+
+- `pnpm test:dearme-proof`
+- `pnpm test:dearme-openclaw-message-rehearsal`
+- `pnpm test:dearme-goal-audit`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:goal-audit -- --json`
+- `pnpm --silent dearme:host-provider-audit`
+
 ## OpenClaw Message Contract Rehearsal Lands - 2026-05-11
 
 Product/architecture slice:

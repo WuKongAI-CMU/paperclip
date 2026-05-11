@@ -133,6 +133,43 @@ test("provider smoke readiness reports missing live provider config without secr
   assert.deepEqual(openClawMessages[1]?.missing, imessage?.missing);
 });
 
+test("provider smoke can reuse opted-in local OpenClaw gateway config without printing token", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-openclaw-config-"));
+  const configPath = join(dir, "openclaw.json");
+  await writeFile(
+    configPath,
+    JSON.stringify({
+      gateway: {
+        port: 18789,
+        auth: { mode: "token", token: "local-gateway-token" },
+      },
+    }),
+    "utf8",
+  );
+
+  try {
+    const readiness = inspectDearMeProviderSmokeReadiness({
+      DEARME_USE_LOCAL_OPENCLAW_CONFIG: "1",
+      DEARME_OPENCLAW_CONFIG_FILE: configPath,
+    }, "openclaw_messages");
+    const telegram = readiness.find((item) => item.target === "telegram_message");
+    const imessage = readiness.find((item) => item.target === "imessage_message");
+    const serialized = JSON.stringify(readiness);
+
+    assert.deepEqual(telegram?.missing, [
+      "DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT",
+      "DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY",
+    ]);
+    assert.deepEqual(imessage?.missing, [
+      "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+      "DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY",
+    ]);
+    assert.equal(serialized.includes("local-gateway-token"), false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("provider smoke readiness formatting deduplicates shared OpenClaw blockers", () => {
   const readiness = inspectDearMeProviderSmokeReadiness({}, "openclaw_messages");
   const lines = formatDearMeProviderSmokeReadiness(readiness, "openclaw_messages");

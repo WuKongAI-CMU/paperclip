@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, the recurring private-work proof contract, the five-draft private output packet, the phone-ready static private-site export, production host smoke fail-closed on the exported proof packet plus host-smoke manifest, unified live-provider setup exporting the proof packet first, host-smoke recurring-work detail, host-provider authorization audit, and OpenClaw message contract rehearsal)
+Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, the recurring private-work proof contract, the five-draft private output packet, the phone-ready static private-site export, production host smoke fail-closed on the exported proof packet plus host-smoke manifest, unified live-provider setup exporting the proof packet first, host-smoke recurring-work detail, host-provider authorization audit, GitHub Pages production host smoke, local OpenClaw config reuse, and OpenClaw message contract rehearsal)
 
 ---
 
@@ -102,6 +102,9 @@ Use `pnpm dearme:openclaw-message-rehearsal -- --json` before starting the
 OpenClaw live-send lane: it proves Telegram and iMessage share the existing
 OpenClaw gateway contract without network access or credentials, while keeping
 the live `openclaw_messages` smoke as the real completion gate.
+For operator smoke on this Mac, `.dearme-proof.env` opts into local OpenClaw
+config reuse so `dearme:provider-smoke` derives gateway URL/auth from
+`~/.openclaw/openclaw.json` without copying or printing the token.
 
 ---
 
@@ -178,8 +181,10 @@ loop, five private starter drafts, and the next private pass without sends,
 public deploys, spend, or live model calls. Use it before claiming
 Polsia-style first-five-minute readiness; the browser now shows that same loop
 as a customer-watchable first-five-minute progress stream and recurring
-private-work plan. The remaining product gap is serving the exported
-private-site proof from a real host and backing the loop with live provider
+private-work plan. The sample private-site proof is now served from the
+GitHub Pages host
+`https://wukongai-cmu.github.io/dearme-private-proof/peter-studio`; the
+remaining product gap is backing that phone-reachable proof with live provider
 execution. Use
 `pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof` to produce
 the host-smoke artifact and handle-local `host-smoke.json`; do not create a
@@ -218,8 +223,9 @@ loopback proof of the exported private-site packet, runs
 `pnpm dearme:host-provider-audit` to check whether this machine has a deploy
 provider login/token or an equivalent public HTTPS DearMe host, runs
 `pnpm dearme:openclaw-message-rehearsal` to prove the shared Telegram/iMessage
-gateway contract locally, and still blocks completion until the production host
-and live provider proof are real.
+gateway contract locally, and still blocks completion until live provider proof
+is real. The production host leg is satisfied for the current sample packet by
+GitHub Pages; custom-domain hosting remains a later host/provider concern.
 Use it before marking the active coordinator goal complete; do not treat
 loopback host proof as a substitute for a phone-reachable public HTTPS
 `deploy_site_production` smoke, or the OpenClaw message rehearsal as a
@@ -227,13 +233,17 @@ substitute for a live `openclaw_messages` smoke.
 The internal `pnpm dearme:provider-smoke -- --check` command now owns that
 operator proof checklist, including the OpenClaw gateway URL/token/auth plus
 recipient/body requirements for Telegram/iMessage, and the production site URL
-content smoke once host env is enabled. The production host lane requires the
-exported private proof artifact before it will run, and it now reads the exported
-`host-smoke.json` manifest for expected text and validates the local manifest,
-HTML, and proof JSON checksums before dispatch/fetch. A manual
+content smoke once host env is enabled. When
+`DEARME_USE_LOCAL_OPENCLAW_CONFIG=1` is present in the ignored
+`.dearme-proof.env`, the OpenClaw gateway URL/token/auth come from the existing
+host-local config rather than another DearMe secret file. The production host
+lane requires the exported private proof artifact before it will run, and it now
+reads the exported `host-smoke.json` manifest for expected text and validates
+the local manifest, HTML, and proof JSON checksums before dispatch/fetch. A manual
 `DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT` override remains a fallback for the host
 page text, not a bypass for a configured manifest. The
-next live step is real hosting rather than another local dispatch receipt. It now supports a local ignored
+next live step is real channel/provider delivery rather than another local
+dispatch receipt. It now supports a local ignored
 `.dearme-provider-smoke.env` file through `--env-file` plus a clean
 `--print-env-template` bootstrap, and production host failures now report the
 exact URL plus fetch/HTTP status evidence. It also supports targeted templates

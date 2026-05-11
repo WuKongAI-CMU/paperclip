@@ -15,29 +15,48 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- The current production host proof is ready through GitHub Pages:
+  `https://wukongai-cmu.github.io/dearme-private-proof/peter-studio` serves the
+  exported private first-wow packet and passes `deploy_site_production` with
+  `.dearme-proof.env`. Treat this as public HTTPS host proof for the current
+  packet, not as proof of LinkedIn, Telegram, iMessage, or Meta delivery.
+- The coordinator `.dearme-proof.env` now opts into local OpenClaw config reuse
+  with `DEARME_USE_LOCAL_OPENCLAW_CONFIG=1`. Provider smoke derives the gateway
+  URL/token from the existing host-local `~/.openclaw/openclaw.json` and never
+  prints the token. Workers should not duplicate that secret into DearMe env
+  files; the live `openclaw_messages` gap is now smoke recipients/bodies plus
+  the explicit live-send guard.
+- `pnpm dearme:status` now carries the OpenClaw Telegram/iMessage contract
+  proof as its own ready/blocked section. Workers should read that section
+  before opening message-provider tickets: the local OpenClaw contract is ready
+  when `dearme:openclaw-message-rehearsal` passes, but the live
+  `openclaw_messages` smoke remains blocked until Telegram/iMessage smoke
+  payloads exist and a live send is explicitly confirmed. This is the current
+  product comparison in executable form: Naive/Paperclip/OpenClaw substrate
+  proof is strong; Polsia-style host proof is now live for the sample packet,
+  while channel/provider proof still needs real credentials and smoke payloads.
 - `pnpm dearme:openclaw-message-rehearsal` is now the no-secret shared
   Telegram/iMessage contract proof before workers attempt the live
   `openclaw_messages` smoke. It reuses the existing provider-smoke OpenClaw
   dispatch path with an injected local gateway executor and captures only safe
   contract metadata. Workers should treat this as Naive/OpenClaw reuse evidence,
   not as a completed live send. `dearme:goal-audit` now checks this rehearsal
-  before the live message proof; the remaining blocker is live gateway auth
-  plus smoke recipients/bodies.
+  before the live message proof; the remaining blocker is smoke
+  recipients/bodies plus explicit live-send confirmation.
 - `pnpm dearme:host-provider-audit` is now the first production-host
   authorization check before workers attempt `deploy_site_production`. The
-  current coordinator machine has Vercel and Netlify CLIs installed but not
-  authenticated, and no Vercel/Netlify/Cloudflare host token env is present.
-  Workers should fix that by logging into a host provider, setting a host token,
-  or providing an equivalent public HTTPS DearMe host; do not add another local
+  current coordinator has an equivalent public HTTPS host configured via
+  GitHub Pages. Vercel and Netlify remain unauthenticated, but they are no
+  longer the immediate blocker for this sample packet. Do not add another local
   host proof lane or report loopback rehearsal as phone-reachable proof.
 - `dearme:status` / `dearme:proof -- --status` now translate provider-smoke
   missing config into safe capability blockers. Workers should read
   `liveProviderFocus[].missingCapabilities` before starting or routing a live
-  proof ticket: DEA-60 is a production host opt-in + public HTTPS DearMe host
-  blocker, not an authorization or planning blocker; shared Telegram/iMessage
-  proof is a message-gateway endpoint/auth plus smoke-recipient/body blocker.
-  Keep raw provider env names inside provider-smoke/operator setup, not in
-  Symphony handoffs or product readiness summaries.
+  proof ticket: if `deploy_site_production` is ready, the remaining shared
+  Telegram/iMessage proof is a smoke-recipient/body blocker when local
+  OpenClaw config reuse is enabled. Keep raw provider env names inside
+  provider-smoke/operator setup, not in Symphony handoffs or product readiness
+  summaries.
 - The first-use shell now treats private proof as the product promise and the
   full profile as secondary controls. The hero exposes `Start with one
   sentence` plus `View private proof`; profile preview/start now lives under

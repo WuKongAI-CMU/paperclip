@@ -9,6 +9,7 @@ import {
   dearMeProofOperatorCommands,
   formatDearMeProofReadiness,
   formatDearMeProofStatus,
+  parseDearMeOpenClawMessageContractStatus,
   inspectDearMeProofReadiness,
   loadDearMeProofEnv,
   parseDearMeIntegrationAuditStatus,
@@ -22,6 +23,56 @@ const now = () => new Date("2026-05-11T12:00:00.000Z");
 
 function sha256(value: string) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function openClawMessageContractReport() {
+  return parseDearMeOpenClawMessageContractStatus({
+    status: "ready",
+    verdict: "OpenClaw message contract rehearsal: ready.",
+    summary:
+      "DearMe can form the shared OpenClaw Telegram and iMessage gateway contract without network access, external recipients, or provider credentials.",
+    results: [
+      {
+        target: "telegram_message",
+        status: "delivered",
+        externalId: "telegram-rehearsal",
+      },
+      {
+        target: "imessage_message",
+        status: "delivered",
+        externalId: "imessage-rehearsal",
+      },
+    ],
+    captured: [
+      {
+        target: "telegram_message",
+        toolName: "send_telegram_message",
+        channel: "telegram",
+        companyId: null,
+        issueId: null,
+        payloadKeys: ["body", "recipient"],
+        paperclipWakeToolName: "send_telegram_message",
+        sessionDisplayId: "openclaw://dearme/rehearsal/send_telegram_message",
+      },
+      {
+        target: "imessage_message",
+        toolName: "send_imessage",
+        channel: "imessage",
+        companyId: null,
+        issueId: null,
+        payloadKeys: ["body", "service", "to"],
+        paperclipWakeToolName: "send_imessage",
+        sessionDisplayId: "openclaw://dearme/rehearsal/send_imessage",
+      },
+    ],
+    liveProofStillRequired: true,
+    missingCapabilities: [],
+    commands: {
+      rehearsal: "pnpm --silent dearme:openclaw-message-rehearsal -- --json",
+      liveProof:
+        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+    },
+  });
 }
 
 async function writeHostSmokePacket(dir: string, options: {
@@ -240,6 +291,33 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.equal(live?.blockedTargets.every((item) => item.capabilities.length > 0), true);
 });
 
+test("DearMe proof status does not call the host blocked after production smoke is configured", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-proof-production-status-"));
+  try {
+    const packet = await writeHostSmokePacket(dir);
+    const status = summarizeDearMeProofStatus(inspectDearMeProofReadiness({
+      DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "1",
+      DEARME_DEPLOY_SITE_BASE_URL: "https://sites.example.test",
+      DEARME_DEPLOY_SITE_SMOKE_HANDLE: packet.handle,
+      DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: packet.artifactRef,
+      DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF: packet.manifestPath,
+    }));
+    const formatted = formatDearMeProofStatus(status).join("\n");
+    const live = status.sections.find((section) => section.key === "live_provider_proof");
+
+    assert.equal(live?.ready, false);
+    assert.equal(
+      live?.blockedTargets.some((item) => item.target === "deploy_site_production"),
+      false,
+    );
+    assert.match(live?.description ?? "", /Production host proof is ready/);
+    assert.match(formatted, /Production host smoke: ready/);
+    assert.doesNotMatch(formatted, /Requires the real production host/);
+  } finally {
+    await rm(dir, { force: true, recursive: true });
+  }
+});
+
 test("DearMe proof status carries current integration absorption evidence", () => {
   const integrationAudit = parseDearMeIntegrationAuditStatus(JSON.stringify({
     summary: {
@@ -262,21 +340,32 @@ test("DearMe proof status carries current integration absorption evidence", () =
     inspectDearMeProofReadiness({ DEARME_VOICE_SEMANTIC_SCORER: "profile-token" }),
     "all",
     integrationAudit,
+    openClawMessageContractReport(),
   );
   const formatted = formatDearMeProofStatus(status).join("\n");
   const integration = status.sections.find((section) =>
     section.key === "integration_absorption_proof"
   );
+  const openClaw = status.sections.find((section) =>
+    section.key === "openclaw_message_contract_proof"
+  );
 
   assert.equal(integration?.ready, true);
   assert.deepEqual(integration?.blockedTargets, []);
+  assert.equal(openClaw?.ready, true);
+  assert.deepEqual(openClaw?.targets, ["telegram_message", "imessage_message"]);
   assert.match(integration?.description ?? "", /122 tracked worktrees/);
   assert.match(integration?.description ?? "", /118 reviewed absorptions/);
   assert.match(integration?.description ?? "", /latest Symphony handoffs 2\/2 committed/);
   assert.equal(status.commands.integrationAudit, "pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs");
-  assert.match(formatted, /Product verdict: Naive\/Paperclip substrate proof is strong, integration absorption is clean/);
+  assert.equal(status.commands.openClawMessageRehearsal, "pnpm --silent dearme:openclaw-message-rehearsal -- --json");
+  assert.match(formatted, /Product verdict: Naive\/Paperclip\/OpenClaw substrate proof is strong, integration absorption is clean/);
   assert.match(formatted, /Integration absorption proof: ready/);
+  assert.match(formatted, /OpenClaw message contract proof: ready/);
+  assert.match(formatted, /Live provider proof still requires the provider readiness check, smoke recipients\/bodies, and explicit live-send confirmation/);
+  assert.match(formatted, /Captured tools: send_telegram_message, send_imessage/);
   assert.match(formatted, /pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs/);
+  assert.match(formatted, /pnpm --silent dearme:openclaw-message-rehearsal -- --json/);
   assert.equal(formatted.includes("integration audit could not run"), false);
 });
 

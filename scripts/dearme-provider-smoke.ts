@@ -361,6 +361,56 @@ function boolFlag(value: string | undefined): boolean {
   return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
 }
 
+function localOpenClawConfigPath(env: Env) {
+  const explicitPath = nonEmpty(env.DEARME_OPENCLAW_CONFIG_FILE);
+  if (explicitPath) return explicitPath;
+
+  const explicitDir =
+    nonEmpty(env.DEARME_OPENCLAW_CONFIG_DIR) ?? nonEmpty(env.OPENCLAW_CONFIG_DIR);
+  if (explicitDir) return join(explicitDir, "openclaw.json");
+
+  const home = nonEmpty(env.HOME) ?? nonEmpty(process.env.HOME);
+  return home ? join(home, ".openclaw", "openclaw.json") : null;
+}
+
+function openClawGatewayDefaultsFromLocalConfig(env: Env): Env {
+  if (!boolFlag(env.DEARME_USE_LOCAL_OPENCLAW_CONFIG)) return {};
+
+  const configPath = localOpenClawConfigPath(env);
+  if (!configPath) return {};
+
+  try {
+    const parsed = JSON.parse(readFileSync(configPath, "utf8")) as {
+      gateway?: {
+        port?: unknown;
+        auth?: { token?: unknown };
+      };
+    };
+    const port = typeof parsed.gateway?.port === "number"
+      ? parsed.gateway.port
+      : Number(parsed.gateway?.port);
+    const token = typeof parsed.gateway?.auth?.token === "string"
+      ? parsed.gateway.auth.token.trim()
+      : "";
+
+    return {
+      ...(Number.isInteger(port) && port > 0
+        ? { OPENCLAW_GATEWAY_URL: `ws://127.0.0.1:${port}` }
+        : {}),
+      ...(token ? { OPENCLAW_GATEWAY_TOKEN: token } : {}),
+    };
+  } catch {
+    return {};
+  }
+}
+
+function providerSmokeEnvWithLocalOpenClawDefaults(env: Env): Env {
+  return {
+    ...openClawGatewayDefaultsFromLocalConfig(env),
+    ...env,
+  };
+}
+
 function firstEnv(env: Env, keys: readonly string[]) {
   for (const key of keys) {
     const value = nonEmpty(env[key]);
@@ -421,10 +471,11 @@ function expandProviderSmokeTargets(targetArg: TargetArg): readonly DearMeProvid
 }
 
 function openClawGatewayRequirement(env: Env) {
-  const config = resolveDearMeOpenClawGatewayDispatchConfigFromEnv(env as NodeJS.ProcessEnv);
+  const resolvedEnv = providerSmokeEnvWithLocalOpenClawDefaults(env);
+  const config = resolveDearMeOpenClawGatewayDispatchConfigFromEnv(resolvedEnv as NodeJS.ProcessEnv);
   return [
     ...(config?.url ? [] : ["OPENCLAW_GATEWAY_URL"]),
-    ...(firstEnv(env, ["OPENCLAW_GATEWAY_TOKEN", "OPENCLAW_WEBHOOK_AUTH"])
+    ...(firstEnv(resolvedEnv, ["OPENCLAW_GATEWAY_TOKEN", "OPENCLAW_WEBHOOK_AUTH"])
       ? []
       : ["OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH"]),
   ];
@@ -1381,7 +1432,7 @@ async function runOpenClawGatewayMessageSmoke(
   target: "telegram_message" | "imessage_message",
   options: DearMeProviderSmokeOptions,
 ) {
-  const env = options.env ?? process.env;
+  const env = providerSmokeEnvWithLocalOpenClawDefaults(options.env ?? process.env);
   const missing = [
     ...targetMissingRequirements(target, env),
     ...requireLiveConfirmation(target, options),

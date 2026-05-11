@@ -22,30 +22,32 @@ coordinator head has no replay candidates or latest dirty Symphony handoffs.
 DearMe is **not paid-beta launch ready** yet. The missing part is no longer a
 planning/permission problem; it is live customer proof:
 
-- a hosted phone-reachable `dearme.app/<handle>` production smoke using the
-  exported private-site artifact
 - at least one real external channel/provider smoke
 - a phone-reachable recurring proof that shows DearMe keeps improving the next
   private draft, opportunity, and proof page without the coordinator manually
   stitching evidence together
 
 In product terms: DearMe has reached the Naive/Paperclip substrate bar for a
-real team system, but it is still short of Polsia's live first-wow bar.
+real team system, and the sample private proof is now phone-reachable through
+GitHub Pages. It is still short of Polsia's full live first-wow bar because no
+real external channel has delivered yet.
 The unified product status now encodes that judgment as an execution order:
-production host smoke first, shared OpenClaw message smoke second, LinkedIn DM
-third, and Meta campaign last.
-That status now also names the blocker class in safe product/coordination
-language instead of leaking provider env names: the immediate production-host
-gap is production host opt-in plus a public HTTPS DearMe host, while the shared
-message gap is gateway endpoint/auth plus smoke recipients and bodies.
-The current machine-level host check is now explicit too: Vercel and Netlify
-CLIs exist, but neither is authenticated and no host token env is present. That
-means the next production-host move is provider login/token or an equivalent
-public HTTPS DearMe host, not another local proof script.
+production host smoke is ready, shared OpenClaw message smoke is next, LinkedIn
+DM follows, and Meta campaign stays last.
+That status now also names the remaining blocker class in safe
+product/coordination language instead of leaking provider env names: the shared
+message gap is smoke recipients and bodies when local OpenClaw config reuse is
+enabled.
+The current machine-level host check is explicit too: Vercel and Netlify CLIs
+exist but neither is authenticated; the configured GitHub Pages public HTTPS
+host is the equivalent host path for this sample proof packet.
 The shared OpenClaw message contract is now locally rehearsed: Telegram and
 iMessage both flow through the same injected gateway contract without network
 access or credentials. That raises the OpenClaw reuse bar, but it still does
-not replace the live gateway/auth/recipient smoke.
+not replace the live recipient/body smoke. The local OpenClaw gateway itself is
+already reusable through the ignored `.dearme-proof.env` opt-in, which derives
+URL/auth from `~/.openclaw/openclaw.json` without duplicating or printing the
+token.
 
 ## Evidence Checked
 
@@ -101,6 +103,9 @@ Current DearMe branch:
     with 122 tracked worktrees, 118 reviewed absorptions, 3 in current head,
     0 replay candidates, 0 dirty lanes, and latest Symphony handoffs 28/28
     committed
+  - OpenClaw message contract proof is now part of the unified product status:
+    Telegram and iMessage share the local injected gateway contract, while the
+    live recipient/body proof remains blocked separately
   - local no-send proof is ready
   - voice semantic proof is ready on the coordinator Mac through the local
     profile-token scorer and customer-like custom corpus
@@ -108,29 +113,29 @@ Current DearMe branch:
     before provider smoke, so the phone-ready artifact is part of the operator
     path instead of a separate remembered step
   - live-provider focus is now machine-readable, with Polsia phone-reachable
-    host proof before OpenClaw shared-message proof, and spend-bearing Meta
-    smoke last
+    host proof ready, OpenClaw shared-message proof next, and spend-bearing
+    Meta smoke last
   - live-provider blockers now carry safe capability labels, so Symphony and
-    Linear can distinguish host opt-in, public HTTPS host, shared message
-    gateway, smoke recipients, and provider credentials without parsing raw env
-    names
+    Linear can distinguish shared message gateway, smoke recipients, and
+    provider credentials without parsing raw env names
   - live provider proof is still the remaining external proof gap
 - `pnpm --silent dearme:goal-audit`
   - active objective is not complete yet
   - architecture/status spine, Naive/Paperclip absorption, Symphony
     coordination, private first-wow, no-secret loopback host rehearsal, DearMe
     voice autonomy, and OpenClaw message contract rehearsal are met
-  - host-provider authorization now blocks before production host smoke when
-    no logged-in deploy provider, host token, or equivalent public HTTPS host is
-    available
-  - remaining gaps are the host-provider/public-host gate, the Polsia-level
-    phone-reachable production host, OpenClaw shared message proof, and the
-    complete live provider set
+  - host-provider authorization is met through the configured public HTTPS
+    GitHub Pages host for this sample proof packet
+  - remaining gaps are OpenClaw shared message proof and the complete live
+    provider set
 - `pnpm --silent dearme:host-provider-audit`
   - Vercel CLI is installed but not authenticated
   - Netlify CLI is installed but not authenticated
-  - no Vercel, Netlify, or Cloudflare host token/account env is present
-  - no public HTTPS DearMe host is configured in the current proof env
+  - the configured public HTTPS DearMe host is ready through GitHub Pages
+- `pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target deploy_site_production --json`
+  - fetches `https://wukongai-cmu.github.io/dearme-private-proof/peter-studio`
+  - verifies the exported private proof page and `host-smoke.json` manifest
+  - returns HTTP 200 for the production host smoke
 - `pnpm --silent dearme:openclaw-message-rehearsal`
   - Telegram and iMessage both deliver through the injected local OpenClaw
     gateway executor
@@ -142,14 +147,17 @@ Current DearMe branch:
   - profile-token semantic proof passes with custom corpus evidence, including
     profile sample/token counts and drift blocking
 - `pnpm --silent dearme:provider-smoke -- --check --target openclaw_messages`
-  - Telegram and iMessage share the OpenClaw gateway proof path, but the real
-    gateway URL/auth plus recipient/body payloads are not configured in the
-    current shell
+  - Telegram and iMessage share the OpenClaw gateway proof path
+  - with `.dearme-proof.env`, the gateway URL/auth are derived from the
+    host-local OpenClaw config without printing the token
+  - the remaining live message blockers are Telegram/iMessage recipient/body
+    payloads plus the explicit live-send confirmation guard
 - local env scan
   - only `LINEAR_API_KEY` is present for the relevant DearMe/OpenClaw/provider
     prefix set
-  - `.dearme-proof.env` exists for local proof/voice calibration; there is no
-    local live provider env file
+  - `.dearme-proof.env` exists for local proof/voice calibration, production
+    host smoke, and OpenClaw gateway-config reuse; it still does not contain
+    live provider recipients, channel secrets, or send bodies
 - `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
   - the browser onboarding surface now renders the customer-safe first-five-minute
     progress stream and top-focus live private-pass pulse without hidden
@@ -195,8 +203,9 @@ dashboard, visible thinking stream, mood/progress updates, first report, starter
 tasks, and a live asset. DearMe now has the browser-visible first-five-minute
 progress stream, a browser-verified private first-wow packet, a first-screen
 one-sentence start, and a static private-site export over its private proof
-contract, but it still needs that artifact served from a real phone-reachable
-host plus provider-backed execution before it matches Polsia's demo strength.
+contract. The sample artifact is now served from a public HTTPS GitHub Pages
+host; what still keeps DearMe behind Polsia is provider-backed execution and a
+recurring proof loop the user can inspect without coordinator stitching.
 
 DearMe is closer to Naive/Paperclip on substrate than it is to Polsia on
 first-wow. The control-plane reuse is strong. The first-five-minute private
@@ -213,8 +222,8 @@ is not yet strong enough.
 | Substrate/control plane reuse | 82 / 100 | Strong. DearMe is using the Paperclip-style company, issue, approval, route, service, dispatch, handoff, and proof machinery instead of rebuilding it. |
 | DearMe product semantics | 79 / 100 | Good. Brand OS, voice, portfolio, opportunity, reports, Work Ready, launch gates, review memory, employee handoff primitives, and customer-corpus voice proof are now DearMe-owned concepts. |
 | UX simplicity | 72 / 100 | Improving. The hero now has one primary one-sentence action, the first payoff and 90-second cycle appear before the team/workbench surfaces, and the browser verifies the private starter draft plus first lead on the real preview route; deeper setup still exists below the fold. |
-| Autonomous runtime proof | 71 / 100 | Real but not externally proven. Local safe proof, private aha proof, browser-visible progress, static private-site export, customer-corpus voice proof, recurring private-work contract, clean integration absorption, and fail-closed host-smoke readiness are ready; the host-smoke packet now proves next-cycle work detail, but live provider proof remains open. |
-| Polsia-style first-wow | 80 / 100 | Private proof is runnable, watchable, browser-verified on the real preview route, first-screened through one sentence, exportable as a phone-ready artifact, deep enough to show five private drafts, and tied to a real host-smoke packet with recurring-work detail. The missing main moment is serving it from a real host plus provider-backed execution. |
+| Autonomous runtime proof | 74 / 100 | Real and partly externally proven. Local safe proof, private aha proof, browser-visible progress, static private-site export, GitHub Pages production host smoke, customer-corpus voice proof, recurring private-work contract, clean integration absorption, and fail-closed host-smoke readiness are ready; live channel/provider proof remains open. |
+| Polsia-style first-wow | 84 / 100 | Private proof is runnable, watchable, browser-verified on the real preview route, first-screened through one sentence, exportable as a phone-ready artifact, deep enough to show five private drafts, and now reachable on a public HTTPS host for the sample packet. The missing main moment is provider-backed execution and recurring phone-visible proof. |
 | Naive-style durable team runtime | 82 / 100 | Solid substrate fit. Symphony/worktree coordination is clean, latest handoffs are committed, absorption proof appears in `dearme:status`, and employee handoff primitives now bridge DearMe semantics to the existing outbound bindings; live provider smoke is still missing. |
 
 ## What DearMe Has Actually Done
@@ -239,7 +248,8 @@ DearMe has already built the product/kernel split correctly:
   customer-like local corpus and now reports profile sample/token evidence.
   `pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof` gives the
   host lane a concrete artifact and host-smoke manifest without claiming
-  production hosting is live.
+  production hosting until `deploy_site_production` fetches a public HTTPS
+  page. The sample proof now passes that smoke through GitHub Pages.
 - Coordination: Symphony is the active worker lane, and current worktree status
   is visible through `pnpm dearme:worktrees`; the same absorption signal is now
   also part of `pnpm dearme:status`.
@@ -267,7 +277,7 @@ DearMe has copied the doctrine, but not the full watchable moment.
 | --- | --- | --- |
 | Zero-friction signup and one-input start | DearMe now makes `Start with one sentence` the only primary hero CTA and moves the first payoff plus 90-second cycle before the heavier Brand OS/team surfaces. | Much closer. Continue compressing setup below the first private result. |
 | Work starts immediately | DearMe has first-cycle start routes, proof sequence contracts, and a browser-visible first-five-minute progress stream. | Better. Next proof is real live/provider progress, not another dashboard. |
-| 90-second wow | `pnpm dearme:aha-proof -- --check` proves the local private sequence, the browser shows the customer-safe progress sequence, the private preview e2e proves a starter draft plus opportunity lead, and `--export-site` renders the same packet as a static private site. | Partly proven. The remaining gap is serving the artifact from a real phone-reachable host and backing it with live provider proof. |
+| 90-second wow | `pnpm dearme:aha-proof -- --check` proves the local private sequence, the browser shows the customer-safe progress sequence, the private preview e2e proves a starter draft plus opportunity lead, and `--export-site` renders the same packet as a static private site. The sample packet now passes production host smoke on GitHub Pages. | Host proof is proven for the sample packet. The remaining gap is backing it with live provider proof. |
 | 5-minute complete dashboard | DearMe has many dashboard surfaces. | The pieces exist; the activation sequence does not feel as compressed. |
 | Mood/thinking/tool stream | DearMe has SSE/event contracts, workbench events, and a top-focus customer-safe private-pass pulse. | Projection exists. It still needs a richer live asset and recurring loop. |
 | Public/live proof | DearMe intentionally gates public deploy/send/spend and now has a static private-site export for the host lane. | Correct for reputation safety; the substitute must be private proof that is phone-reachable and feels live. |
@@ -313,8 +323,8 @@ The remaining gaps are not permission gaps. They are proof and product-shaping
 gaps.
 
 The operator can run tools, merge slices, configure lanes, and add Codex agents.
-That removes coordination hesitation; it does not fabricate a production host,
-provider credentials, real recipients, or a product moment that a user can feel.
+That removes coordination hesitation; it does not fabricate provider
+credentials, real recipients, or a product moment that a user can feel.
 A customer will judge DearMe by whether it produces a personal-brand result in
 minutes, not by whether the repo has a correct proof command or a strong control
 plane.
@@ -353,10 +363,13 @@ The local proof gate now exists through `pnpm dearme:aha-proof -- --check`, and
 the host-smoke artifact plus manifest exist through
 `pnpm dearme:aha-proof -- --export-site dist/dearme-private-proof`. The
 provider smoke can read that manifest directly, so the remaining setup concern
-is hosting/credentials rather than copying expected proof text by hand; stale or
-hand-edited proof packets now fail before the host smoke can claim delivery. The
-no-credential packet is now deepened into a five-draft private result; the next
-product proof is serving that same artifact from a real host:
+is live channel credentials rather than copying expected proof text by hand;
+stale or hand-edited proof packets now fail before the host smoke can claim
+delivery. The coordinator can also reuse the existing local OpenClaw gateway
+config without copying its token into DearMe. The no-credential packet is now
+deepened into a five-draft private result and the sample packet is served from
+GitHub Pages; the next product proof is making the recurring loop and outbound
+channels real:
 
 - voice profile
 - audience map
@@ -366,8 +379,8 @@ product proof is serving that same artifact from a real host:
 - one clear launch call
 
 No live external sends are required for the five-draft packet. The result can be
-private. The user must feel the team started. The next gate is a phone-reachable
-route before adding another dashboard.
+private. The user must feel the team started. The next gate is live
+OpenClaw/channel proof before adding another dashboard.
 
 ### DM-WOW-2 Customer-Safe Live Work Stream
 
@@ -384,7 +397,7 @@ leaking runtime machinery:
 - "Ready for your launch call"
 
 This is the Polsia live-stream lesson translated into DearMe language. The
-remaining work is deeper live/provider evidence and real-host phone-reachable
+remaining work is deeper live/provider evidence and recurring phone-visible
 proof, not a new settings dashboard.
 
 ### DM-WOW-3 Minimum Runnable Team
@@ -428,8 +441,8 @@ reuse generated skills and role prompts.
 DearMe is architecturally ahead of a normal prototype and now has a local
 private first-wow proof gate, five private starter drafts, a browser-visible
 first-five-minute progress stream, a browser-verified private preview packet,
-and a static private-site export. It is still behind Polsia as a live customer
-demo.
+and a static private-site export that passes production host smoke on GitHub
+Pages. It is still behind Polsia as a live customer demo.
 
 It is strongest where Naive is strongest: typed work, approvals, route/service
 shape, dispatch boundaries, and durable coordination. It is weakest where
@@ -437,10 +450,10 @@ Polsia is strongest: instant emotional proof that a team is working for the
 customer right now, backed by a live asset the user can inspect from outside the
 app.
 
-The next correct move is not another architecture layer. It is to serve the
-five-draft private proof packet from a phone-reachable host with live provider
-evidence on top of the proof gate that now exists. The provider-smoke production
-lane now requires that concrete artifact plus its exported host-smoke manifest
-or an explicit expected-text override before it will run; the remaining work is
-the real host and provider proof, not another local proof command or branch
-replay pass.
+The next correct move is not another architecture layer. It is to put live
+provider evidence on top of the phone-reachable five-draft private proof packet
+that now exists. The provider-smoke production lane requires that concrete
+artifact plus its exported host-smoke manifest or an explicit expected-text
+override before it will run; the remaining work is OpenClaw/channel/provider
+proof with real recipients/bodies and live-send confirmation, not another
+local proof command, host setup path, or branch replay pass.

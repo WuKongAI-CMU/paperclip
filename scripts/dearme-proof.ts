@@ -26,6 +26,10 @@ import {
   runDearMeAhaProof,
   type DearMeAhaProofReport,
 } from "./dearme-aha-proof.ts";
+import {
+  runDearMeOpenClawMessageRehearsal,
+  type DearMeOpenClawMessageRehearsalReport,
+} from "./dearme-openclaw-message-rehearsal.ts";
 
 type Env = Record<string, string | undefined>;
 
@@ -70,6 +74,7 @@ const DEARME_PROOF_CAPABILITY_LABELS = {
   linkedin_message_body: "LinkedIn smoke body",
   openclaw_gateway_endpoint: "shared message gateway endpoint",
   openclaw_gateway_auth: "shared message gateway auth",
+  openclaw_message_contract: "local OpenClaw message contract rehearsal",
   telegram_recipient: "Telegram smoke recipient",
   telegram_message_body: "Telegram smoke body",
   imessage_recipient: "iMessage smoke recipient",
@@ -98,6 +103,7 @@ export interface DearMeProofStatusSection {
   key:
     | "first_wow_aha_proof"
     | "integration_absorption_proof"
+    | "openclaw_message_contract_proof"
     | "local_safe_proof"
     | "voice_semantic_proof"
     | "live_provider_proof";
@@ -132,6 +138,7 @@ export interface DearMeProofStatus {
   commands: {
     ahaProof: string;
     integrationAudit: string;
+    openClawMessageRehearsal: string;
     printEnvTemplate: string;
     runSafe: string;
     check: string;
@@ -175,6 +182,19 @@ export interface DearMeIntegrationAuditStatus {
   unavailableReason?: string;
 }
 
+export type DearMeOpenClawMessageContractTarget =
+  | "telegram_message"
+  | "imessage_message";
+
+export interface DearMeOpenClawMessageContractStatus {
+  ready: boolean;
+  command: string;
+  targets: DearMeOpenClawMessageContractTarget[];
+  capturedTools: string[];
+  summary: string;
+  unavailableReason?: string;
+}
+
 interface DearMeWorktreeSummaryJson {
   summary?: {
     total?: number;
@@ -199,6 +219,12 @@ const PRIVATE_SITE_EXPORT_COMMAND =
   "pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof";
 const INTEGRATION_AUDIT_COMMAND =
   "pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs";
+const OPENCLAW_MESSAGE_REHEARSAL_COMMAND =
+  "pnpm --silent dearme:openclaw-message-rehearsal -- --json";
+const OPENCLAW_MESSAGE_CONTRACT_TARGETS = [
+  "telegram_message",
+  "imessage_message",
+] as const satisfies readonly DearMeOpenClawMessageContractTarget[];
 const INTEGRATION_AUDIT_SCRIPT_ARGS = [
   "--summary-json",
   "--skip-dirty",
@@ -534,6 +560,51 @@ export function inspectDearMeIntegrationAuditStatus(): DearMeIntegrationAuditSta
   }
 }
 
+export function parseDearMeOpenClawMessageContractStatus(
+  report: DearMeOpenClawMessageRehearsalReport,
+): DearMeOpenClawMessageContractStatus {
+  const capturedTargets = new Set(
+    report.captured.map((item) => item.target),
+  );
+  const deliveredTargets = new Set(
+    report.results
+      .filter((item) => item.status === "delivered")
+      .map((item) => item.target),
+  );
+  const ready = report.status === "ready"
+    && OPENCLAW_MESSAGE_CONTRACT_TARGETS.every((target) =>
+      capturedTargets.has(target) && deliveredTargets.has(target)
+    );
+
+  return {
+    ready,
+    command: OPENCLAW_MESSAGE_REHEARSAL_COMMAND,
+    targets: [...OPENCLAW_MESSAGE_CONTRACT_TARGETS],
+    capturedTools: report.captured.map((item) => item.toolName),
+    summary: report.summary,
+  };
+}
+
+export async function inspectDearMeOpenClawMessageContractStatus(): Promise<
+  DearMeOpenClawMessageContractStatus
+> {
+  try {
+    return parseDearMeOpenClawMessageContractStatus(
+      await runDearMeOpenClawMessageRehearsal(),
+    );
+  } catch (error) {
+    return {
+      ready: false,
+      command: OPENCLAW_MESSAGE_REHEARSAL_COMMAND,
+      targets: [...OPENCLAW_MESSAGE_CONTRACT_TARGETS],
+      capturedTools: [],
+      summary:
+        "DearMe could not run the shared OpenClaw Telegram and iMessage contract rehearsal locally.",
+      unavailableReason: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 function providerLane(readiness: DearMeProofReadiness) {
   return readiness.lanes.find((lane) => lane.lane === "provider");
 }
@@ -718,6 +789,21 @@ function liveProviderFocusPlan(
   });
 }
 
+function liveProviderProofDescription(
+  blockedTargets: readonly DearMeProofStatusBlocker[],
+) {
+  if (blockedTargets.length === 0) {
+    return "Production host and live external channels are ready.";
+  }
+  const productionHostReady = !blockedTargets.some((item) =>
+    item.target === "deploy_site_production"
+  );
+  if (productionHostReady) {
+    return "Production host proof is ready; external channel credentials and smoke payloads are still required before live provider proof is complete.";
+  }
+  return "Requires the real production host and external channel credentials before live proof.";
+}
+
 function firstWowAhaSection(report: DearMeAhaProofReport): DearMeProofStatusSection {
   return {
     key: "first_wow_aha_proof",
@@ -819,10 +905,51 @@ function integrationAuditSection(
   };
 }
 
+function openClawMessageContractBlockers(
+  contract: DearMeOpenClawMessageContractStatus,
+): DearMeProofStatusBlocker[] {
+  if (contract.ready) return [];
+  return [{
+    lane: "provider",
+    target: contract.unavailableReason
+      ? "openclaw_message_contract_unavailable"
+      : "openclaw_message_contract_rehearsal",
+    missingCount: 1,
+    capabilities: [capabilityBlocker("openclaw_message_contract")],
+  }];
+}
+
+function openClawMessageContractDescription(
+  contract: DearMeOpenClawMessageContractStatus,
+) {
+  if (contract.unavailableReason) {
+    return `OpenClaw contract rehearsal could not run. Run ${contract.command} before attempting the live shared-message smoke.`;
+  }
+
+  const captured = contract.capturedTools.length > 0
+    ? ` Captured tools: ${contract.capturedTools.join(", ")}.`
+    : "";
+  return `${contract.summary} Live provider proof still requires the provider readiness check, smoke recipients/bodies, and explicit live-send confirmation.${captured}`;
+}
+
+function openClawMessageContractSection(
+  contract: DearMeOpenClawMessageContractStatus,
+): DearMeProofStatusSection {
+  return {
+    key: "openclaw_message_contract_proof",
+    label: "OpenClaw message contract proof",
+    ready: contract.ready,
+    description: openClawMessageContractDescription(contract),
+    targets: contract.targets,
+    blockedTargets: openClawMessageContractBlockers(contract),
+  };
+}
+
 export function summarizeDearMeProofStatus(
   readiness: DearMeProofReadiness,
   lane: DearMeProofLane = "all",
   integrationAudit?: DearMeIntegrationAuditStatus,
+  openClawMessageContract?: DearMeOpenClawMessageContractStatus,
 ): DearMeProofStatus {
   const provider = providerLane(readiness);
   const voice = voiceLane(readiness);
@@ -834,6 +961,9 @@ export function summarizeDearMeProofStatus(
     sections.push(firstWowAhaSection(runDearMeAhaProof().report));
     if (integrationAudit) {
       sections.push(integrationAuditSection(integrationAudit));
+    }
+    if (openClawMessageContract) {
+      sections.push(openClawMessageContractSection(openClawMessageContract));
     }
   }
 
@@ -889,7 +1019,7 @@ export function summarizeDearMeProofStatus(
       key: "live_provider_proof",
       label: "Live provider proof",
       ready: blockedTargets.length === 0,
-      description: "Requires the real production host and external channel credentials before live proof.",
+      description: liveProviderProofDescription(blockedTargets),
       targets: [...targets],
       blockedTargets,
     });
@@ -902,6 +1032,7 @@ export function summarizeDearMeProofStatus(
     commands: {
       ahaProof: "pnpm --silent dearme:aha-proof -- --check",
       integrationAudit: INTEGRATION_AUDIT_COMMAND,
+      openClawMessageRehearsal: OPENCLAW_MESSAGE_REHEARSAL_COMMAND,
       printEnvTemplate: `pnpm --silent dearme:proof -- --print-env-template${laneFlag(lane)} > ${PROOF_ENV_FILE}`,
       runSafe: proofCommand("--run-safe", lane),
       check: proofCommand("--check", lane),
@@ -930,9 +1061,17 @@ function statusSection(
   return status.sections.find((section) => section.key === key);
 }
 
+function hasBlockedTarget(
+  section: DearMeProofStatusSection | undefined,
+  target: DearMeProofStatusBlocker["target"],
+) {
+  return section?.blockedTargets.some((item) => item.target === target) ?? false;
+}
+
 function formatProductVerdict(status: DearMeProofStatus) {
   const aha = statusSection(status, "first_wow_aha_proof");
   const integration = statusSection(status, "integration_absorption_proof");
+  const openClawContract = statusSection(status, "openclaw_message_contract_proof");
   const local = statusSection(status, "local_safe_proof");
   const voice = statusSection(status, "voice_semantic_proof");
   const live = statusSection(status, "live_provider_proof");
@@ -943,7 +1082,24 @@ function formatProductVerdict(status: DearMeProofStatus) {
   if ((integration?.ready ?? true) && aha?.ready && local?.ready && voice?.ready && live?.ready) {
     return "Product verdict: first-wow, local safe proof, voice fit, integration absorption, and live provider proof are ready.";
   }
+  if (
+    (integration?.ready ?? true)
+    && (openClawContract?.ready ?? false)
+    && (aha?.ready ?? true)
+    && local?.ready
+    && voice?.ready
+    && live
+    && !live.ready
+  ) {
+    if (!hasBlockedTarget(live, "deploy_site_production")) {
+      return "Product verdict: Naive/Paperclip/OpenClaw substrate proof is strong, integration absorption is clean, and the private DearMe first-wow is phone-reachable; the remaining Polsia gap is live channel/provider proof.";
+    }
+    return "Product verdict: Naive/Paperclip/OpenClaw substrate proof is strong, integration absorption is clean, and the private DearMe first-wow now includes recurring work; Polsia-style live, phone-reachable wow is still blocked on live provider proof.";
+  }
   if ((integration?.ready ?? true) && (aha?.ready ?? true) && local?.ready && voice?.ready && live && !live.ready) {
+    if (!hasBlockedTarget(live, "deploy_site_production")) {
+      return "Product verdict: Naive/Paperclip substrate proof is strong, integration absorption is clean, and the private DearMe first-wow is phone-reachable; the remaining Polsia gap is live channel/provider proof.";
+    }
     return "Product verdict: Naive/Paperclip substrate proof is strong, integration absorption is clean, and the private DearMe first-wow now includes recurring work; Polsia-style live, phone-reachable wow is still blocked on live provider proof.";
   }
   if (aha && !aha.ready) {
@@ -985,6 +1141,7 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
   if (status.lane === "all") {
     lines.push(`- ${status.commands.ahaProof}`);
     lines.push(`- ${status.commands.integrationAudit}`);
+    lines.push(`- ${status.commands.openClawMessageRehearsal}`);
   }
   lines.push(`- ${status.commands.printEnvTemplate}`);
   lines.push(`- ${status.commands.runSafe}`);
@@ -1246,6 +1403,7 @@ async function main() {
         readiness,
         parsed.lane,
         parsed.lane === "all" ? inspectDearMeIntegrationAuditStatus() : undefined,
+        parsed.lane === "all" ? await inspectDearMeOpenClawMessageContractStatus() : undefined,
       );
       if (parsed.json) {
         console.log(JSON.stringify({ status }, null, 2));
