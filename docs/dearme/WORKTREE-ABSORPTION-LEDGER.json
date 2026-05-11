@@ -2,6 +2,23 @@
   "updatedAt": "2026-05-11",
   "reviewedAbsorptions": [
     {
+      "ticket": "DEA-63",
+      "branch": "codex/dearme-dm-136-sample-demo-proof",
+      "head": "d6990ee4ecdea08fdb2fa5dc4bcd05beecb3a814",
+      "reviewedAt": "2026-05-11",
+      "reason": "The DEA-63 Symphony worker proof is absorbed into coordinator commit f070d26a. The worker established the durable Voice Gate DB-store direction, and the coordinator replayed it with scope-aware company/user isolation, generated Drizzle migration history that also reconciles channel_connections and opportunities drift, route/handoff/workbench injection, and stronger focused tests. Replaying the worker migration would downgrade the table to a single fingerprint primary key and lose scoped continuity.",
+      "evidence": [
+        "packages/db/src/migrations/0078_simple_quicksilver.sql",
+        "packages/db/src/schema/dearme_voice_profiles.ts",
+        "server/src/services/dearme-voice-profile-store.ts",
+        "server/src/services/dearme-voice-profile-store.test.ts",
+        "server/src/services/dearme-voice-gate.ts",
+        "server/src/routes/dearme-voice-gate.ts",
+        "server/src/routes/dearme.ts",
+        "server/src/app.ts"
+      ]
+    },
+    {
       "ticket": "DEA-51",
       "branch": "codex/dearme-dm-136-sample-demo-proof",
       "head": "29e9e9831c58e831026d5b3a4f06e6e30a349232",
