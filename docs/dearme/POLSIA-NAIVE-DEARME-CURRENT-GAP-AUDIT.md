@@ -21,8 +21,9 @@ planning/permission problem; it is live customer proof:
 
 - a phone-reachable `dearme.app/<handle>` production host smoke
 - at least one real external channel/provider smoke
-- one recurring customer-visible growth cycle that produces new work without
-  the coordinator manually stitching evidence together
+- a phone-reachable recurring proof that shows DearMe keeps improving the next
+  private draft, opportunity, and proof page without the coordinator manually
+  stitching evidence together
 
 In product terms: DearMe has reached the Naive/Paperclip substrate bar for a
 real team system, but it is still short of Polsia's live first-wow bar.
@@ -118,9 +119,9 @@ yet strong enough.
 | Substrate/control plane reuse | 82 / 100 | Strong. DearMe is using the Paperclip-style company, issue, approval, route, service, dispatch, handoff, and proof machinery instead of rebuilding it. |
 | DearMe product semantics | 76 / 100 | Good. Brand OS, voice, portfolio, opportunity, reports, Work Ready, launch gates, review memory, and customer-corpus voice proof are now DearMe-owned concepts. |
 | UX simplicity | 66 / 100 | Improving. The browser now shows one-sentence-to-first-five-minute progress, but onboarding is still heavier than Polsia's one-input activation. |
-| Autonomous runtime proof | 62 / 100 | Real but not externally proven. Local safe proof, private aha proof, browser-visible progress, and customer-corpus voice proof are ready; live provider proof and recurring customer-visible work remain open. |
+| Autonomous runtime proof | 66 / 100 | Real but not externally proven. Local safe proof, private aha proof, browser-visible progress, customer-corpus voice proof, and recurring private-work contract are ready; live provider proof remains open. |
 | Polsia-style first-wow | 68 / 100 | Private proof is runnable and watchable, and voice-fit evidence is stronger. The missing main moment is phone-reachable/live proof plus provider-backed execution. |
-| Naive-style durable team runtime | 76 / 100 | Solid substrate fit. Symphony/worktree coordination is clean and the Paperclip-style runtime is reused; the remaining proof is product-specific recurring team output and live provider smoke. |
+| Naive-style durable team runtime | 78 / 100 | Solid substrate fit. Symphony/worktree coordination is clean and the Paperclip-style runtime is reused; the recurring private-work contract is now visible, but live provider smoke is still missing. |
 
 ## What DearMe Has Actually Done
 
@@ -200,7 +201,7 @@ customer-visible work.
 | Company/workspace substrate | Present through the inherited control plane. | Reuse is strong. |
 | CEO/worker team topology | Product roles exist, generated skills exist, but the registry still contains planned states. | Do not claim a full 12-role team yet. |
 | Issue/run/activity backbone | Present and heavily reused. | Keep it backstage. |
-| Heartbeat/recurring work | Substrate exists; DearMe recurring product proof is not the main verified artifact yet. | Needs one visible recurring growth cycle. |
+| Heartbeat/recurring work | The first-cycle proof now carries a visible next private pass: draft, opportunity, and proof-page improvements. | Local product proof exists; phone-reachable/live recurrence is still the next gate. |
 | Provider/runtime isolation | DearMe has wrappers and proof lanes. | Live smoke is the next gate, not new settings UI. |
 | Cost/budget truth | Substrate exists. | Customer credits should stay boring and visible later. |
 

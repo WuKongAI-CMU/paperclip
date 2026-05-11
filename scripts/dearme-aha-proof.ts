@@ -23,6 +23,7 @@ export interface DearMeAhaProofCheck {
     | "one_sentence_start"
     | "five_minute_sequence"
     | "private_outputs"
+    | "recurring_private_work"
     | "minimum_team"
     | "approval_boundaries"
     | "customer_language";
@@ -132,7 +133,13 @@ export function inspectDearMeAhaProofPreview(
   const serializedPreview = JSON.stringify(preview);
   const hiddenMatch = DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(serializedPreview);
   const outputCount =
-    1 + preview.starterPosts.length + preview.opportunityShortlist.length + 1 + 1 + 1;
+    1 +
+    preview.starterPosts.length +
+    preview.opportunityShortlist.length +
+    1 +
+    1 +
+    1 +
+    preview.continuationPlan.items.length;
   const checks: DearMeAhaProofCheck[] = [
     check(
       "one_sentence_start",
@@ -168,6 +175,20 @@ export function inspectDearMeAhaProofPreview(
         `starterPosts=${preview.starterPosts.length}`,
         `opportunities=${preview.opportunityShortlist.length}`,
         `siteStatus=${preview.sitePreview.status}`,
+      ],
+    ),
+    check(
+      "recurring_private_work",
+      "Recurring private work",
+      preview.continuationPlan.items.length === 3 &&
+        preview.continuationPlan.items.some((item) => item.ownerRole === "content_producer") &&
+        preview.continuationPlan.items.some((item) => item.ownerRole === "opportunity_scout") &&
+        preview.continuationPlan.items.some((item) => item.ownerRole === "portfolio_builder"),
+      "The first proof pack shows what DearMe keeps improving next instead of ending at a static demo.",
+      [
+        `cadence=${preview.continuationPlan.cadence}`,
+        `nextReview=${preview.continuationPlan.nextReview}`,
+        `nextArtifacts=${preview.continuationPlan.items.map((item) => item.preparedArtifact).join(" | ")}`,
       ],
     ),
     check(

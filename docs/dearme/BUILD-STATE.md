@@ -2,6 +2,33 @@
 
 Date: 2026-05-11
 
+## First Proof Continuation Plan - 2026-05-11
+
+Product/architecture slice:
+
+- Added the first-cycle `continuationPlan` to the shared DearMe preview
+  response contract so the browser surfaces, private site preview, and proof
+  gates all agree that DearMe keeps working after the first private proof pack.
+- The first-run package now shows the next private pass: sharpen one draft,
+  refresh one opportunity, and improve the private proof page before the next
+  review. This strengthens the Polsia-style "team keeps moving" product feel
+  without adding another settings surface, connector step, or backstage runtime
+  term.
+- Extended `pnpm dearme:aha-proof -- --check` with a recurring-private-work
+  check so the local first-wow proof no longer stops at static demo artifacts.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts`
+- `pnpm --filter @paperclipai/shared typecheck`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx`
+- `pnpm exec vitest run ui/src/pages/DearMeSitePreview.test.tsx`
+- `pnpm test:dearme-aha-proof`
+- `pnpm --silent dearme:aha-proof -- --check`
+- `pnpm test:dearme-proof`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Product Status Live-Provider Next Steps - 2026-05-11
 
 Product/architecture slice:
@@ -12723,6 +12750,31 @@ Verification:
 - `pnpm exec vitest run ui/src/pages/DearMeSitePreview.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
   passed: 2 files, 75 tests.
 - `pnpm --filter @paperclipai/ui typecheck` passed.
+
+## DM-WOW-3A Recurring Private-Work Proof Contract - 2026-05-11
+
+Fortieth verified DearMe slice:
+
+- Reused the existing first-cycle preview response instead of adding a new
+  dashboard: the proof pack now carries a continuation plan for the next
+  proof-backed draft, opportunity refresh, and private proof-page improvement.
+- Made the local aha proof stricter. `pnpm dearme:aha-proof -- --check` now
+  blocks if the first proof pack is only a static demo and lacks recurring
+  private work owned by Content Producer, Opportunity Scout, and Portfolio
+  Builder.
+- Surfaced the same continuation contract in onboarding and the private site
+  preview while keeping publish, send, public page changes, and spend behind
+  approval.
+- Updated the Polsia/Naive gap audit: DearMe now has local recurring
+  private-work proof. The remaining Polsia gap is phone-reachable/live proof
+  and provider-backed execution, not another connector or settings surface.
+
+Verification:
+
+- `pnpm test:dearme-aha-proof` passed.
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts --maxWorkers=1 -t "first cycle preview"` passed: 2 tests.
+- `pnpm exec vitest run ui/src/pages/DearMeSitePreview.test.tsx --maxWorkers=1` passed.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "sample team package|starts a 90-second first cycle"` passed: 2 tests.
 
 ## Known Gaps
 

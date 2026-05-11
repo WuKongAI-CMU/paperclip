@@ -112,6 +112,14 @@ describe("DearMeSitePreview", () => {
       expect(container.textContent).toContain(moment.preparedArtifact);
       expect(container.textContent).toContain(moment.approvalBoundary);
     }
+    expect(container.textContent).toContain("Keeps working");
+    expect(container.textContent).toContain("Keeps working after the first proof");
+    expect(container.textContent).toContain("Next private pass");
+    for (const item of preview.continuationPlan.items) {
+      expect(container.textContent).toContain(item.title);
+      expect(container.textContent).toContain(item.preparedArtifact);
+      expect(container.textContent).toContain(item.approvalBoundary);
+    }
     expect(container.textContent).toContain("Private address");
     expect(container.textContent).not.toContain("Private preview path");
     expect(container.textContent).not.toContain("/PET/dearme/site-preview");

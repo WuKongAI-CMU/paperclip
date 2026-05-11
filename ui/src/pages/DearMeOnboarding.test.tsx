@@ -2876,6 +2876,12 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Autopilot until launch");
     expect(container.textContent).toContain("Capture the positioning");
     expect(container.textContent).toContain("Only waits here");
+    expect(container.textContent).toContain("Keeps working after the first proof");
+    expect(container.textContent).toContain("Next private review");
+    expect(container.textContent).toContain("Sharpen the next draft");
+    expect(container.textContent).toContain("Next proof-backed draft");
+    expect(container.textContent).toContain("Updated opportunity angle");
+    expect(container.textContent).toContain("Updated private proof card");
     expect(container.textContent).toContain("Starter post: point of view");
     expect(container.textContent).toContain("Opportunity shortlist");
     expect(container.textContent).toContain("Five private targets");
@@ -2973,6 +2979,11 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Autopilot until launch");
     expect(container.textContent).toContain("Prepare the next private pass");
     expect(container.textContent).toContain("Only waits here");
+    expect(container.textContent).toContain("Keeps working after the first proof");
+    expect(container.textContent).toContain("Next private review");
+    expect(container.textContent).toContain("Sharpen the next draft");
+    expect(container.textContent).toContain("Updated opportunity angle");
+    expect(container.textContent).toContain("Updated private proof card");
     expect(container.textContent).toContain("Starter post: point of view");
     expect(container.textContent).toContain("Starter post: proof of work");
     expect(container.textContent).toContain("Starter post: useful opening");

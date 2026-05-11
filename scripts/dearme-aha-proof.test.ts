@@ -16,6 +16,7 @@ test("DearMe aha proof proves the first private five-minute loop", () => {
     "one_sentence_start",
     "five_minute_sequence",
     "private_outputs",
+    "recurring_private_work",
     "minimum_team",
     "approval_boundaries",
     "customer_language",
@@ -34,6 +35,13 @@ test("DearMe aha proof proves the first private five-minute loop", () => {
   assert.equal(preview.starterPosts.length, 3);
   assert.equal(preview.opportunityShortlist.length, 5);
   assert.equal(preview.sitePreview.status, "private_preview");
+  assert.equal(preview.continuationPlan.title, "Keeps working after the first proof");
+  assert.equal(preview.continuationPlan.items.length, 3);
+  assert.deepEqual(preview.continuationPlan.items.map((item) => item.preparedArtifact), [
+    "Next proof-backed draft",
+    "Updated opportunity angle",
+    "Updated private proof card",
+  ]);
   assert.deepEqual(preview.approvalBoundary.blockedActions, [
     "Post publicly",
     "Send outreach",
@@ -75,6 +83,7 @@ test("DearMe aha proof output is operator-readable without leaking secrets", () 
   assert.match(formatted, /DearMe aha proof/);
   assert.match(formatted, /Status: ready/);
   assert.match(formatted, /Five-minute private wow sequence: ready/);
+  assert.match(formatted, /Recurring private work: ready/);
   assert.match(formatted, /pnpm --silent dearme:aha-proof -- --check/);
   assert.doesNotMatch(formatted, /OPENCLAW_GATEWAY_TOKEN/);
   assert.doesNotMatch(formatted, /DEARME_LINKEDIN_DM_CREDENTIAL_JSON/);

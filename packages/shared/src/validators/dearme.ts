@@ -758,6 +758,23 @@ const dearMeFirstCycleAutonomyPlanSchema = z.object({
   waitsFor: z.array(z.enum(DEARME_FIRST_CYCLE_CONCERN_GATES)).length(4),
 }).strict();
 
+const dearMeFirstCycleContinuationItemSchema = z.object({
+  id: shortTextSchema,
+  title: shortTextSchema,
+  ownerRole: z.enum(DEARME_TEAM_ROLES),
+  preparedArtifact: shortTextSchema,
+  summary: mediumTextSchema,
+  approvalBoundary: mediumTextSchema,
+}).strict();
+
+const dearMeFirstCycleContinuationPlanSchema = z.object({
+  title: shortTextSchema,
+  summary: mediumTextSchema,
+  cadence: z.enum(DEARME_BRAND_CADENCES),
+  nextReview: shortTextSchema,
+  items: z.array(dearMeFirstCycleContinuationItemSchema).length(3),
+}).strict();
+
 export const dearMeFirstCyclePreviewResponseSchema = z.object({
   companyId: z.string().min(1),
   status: z.literal("first_cycle_preview"),
@@ -772,6 +789,7 @@ export const dearMeFirstCyclePreviewResponseSchema = z.object({
   sitePreview: dearMeFirstCycleSitePreviewSchema,
   growthPlan: dearMeFirstCycleGrowthPlanSchema,
   autonomyPlan: dearMeFirstCycleAutonomyPlanSchema,
+  continuationPlan: dearMeFirstCycleContinuationPlanSchema,
   voiceGate: dearMeVoiceGateResultSchema,
   approvalBoundary: z.object({
     label: shortTextSchema,
@@ -2190,6 +2208,39 @@ export function createDearMeFirstCyclePreview(
         },
       ],
       waitsFor: [...DEARME_FIRST_CYCLE_CONCERN_GATES],
+    },
+    continuationPlan: {
+      title: "Keeps working after the first proof",
+      summary:
+        "After the first private pack, DearMe keeps a weekly private cycle alive: sharpen one draft, refresh one opportunity, and improve the proof page before the next review.",
+      cadence: blueprint.cycles[0]?.cadence ?? "weekly",
+      nextReview: "Next private review",
+      items: [
+        {
+          id: "sharpen-next-draft",
+          title: "Sharpen the next draft",
+          ownerRole: "content_producer",
+          preparedArtifact: "Next proof-backed draft",
+          summary: `Turn the strongest starter post into the next private draft for ${primaryAudience}.`,
+          approvalBoundary: "The draft can improve privately; posting waits for approval.",
+        },
+        {
+          id: "refresh-opportunity-lead",
+          title: "Refresh the best opportunity",
+          ownerRole: "opportunity_scout",
+          preparedArtifact: "Updated opportunity angle",
+          summary: `Recheck the strongest lead and tune the outreach angle around ${primaryProof}.`,
+          approvalBoundary: "The outreach can be prepared privately; sending waits for approval.",
+        },
+        {
+          id: "improve-private-proof-page",
+          title: "Improve the private proof page",
+          ownerRole: "portfolio_builder",
+          preparedArtifact: "Updated private proof card",
+          summary: `Improve the private proof card so ${primaryOffer} is tied to one concrete result.`,
+          approvalBoundary: "The page can be staged privately; public changes wait for approval.",
+        },
+      ],
     },
     voiceGate,
     approvalBoundary: {

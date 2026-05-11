@@ -2549,6 +2549,34 @@ function FirstCycleProofPackage({
         </div>
       </DearMeWorkbenchCard>
 
+      <DearMeWorkbenchCard
+        title={preview.continuationPlan.title}
+        description={preview.continuationPlan.summary}
+        badge={<Badge variant="outline">{CADENCE_LABELS[preview.continuationPlan.cadence]}</Badge>}
+      >
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,0.45fr)_minmax(0,1fr)]">
+          <div className="rounded-md border border-border bg-muted/20 p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Next review</p>
+            <p className="mt-2 text-sm font-medium text-foreground">{preview.continuationPlan.nextReview}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              DearMe keeps the next private pass warm before it asks for another launch call.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {preview.continuationPlan.items.map((item) => (
+              <div key={item.id} className="rounded-md border border-border bg-background/60 p-3">
+                <p className="text-sm font-medium text-foreground">{item.title}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{item.summary}</p>
+                <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+                  <p><span className="font-medium text-foreground/80">Prepared:</span> {item.preparedArtifact}</p>
+                  <p><span className="font-medium text-foreground/80">Waits:</span> {item.approvalBoundary}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </DearMeWorkbenchCard>
+
       <section className="grid gap-3 lg:grid-cols-3">
         {preview.starterPosts.map((post) => (
           <DearMeWorkbenchCard

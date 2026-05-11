@@ -127,6 +127,36 @@ export function DearMeSitePreview() {
             </div>
           </DearMeWorkbenchCard>
 
+          <DearMeWorkbenchCard
+            eyebrow="Keeps working"
+            title={preview.continuationPlan.title}
+            description={preview.continuationPlan.summary}
+            badge={<Sparkles className="h-4 w-4 text-muted-foreground" />}
+          >
+            <div className="mb-3 rounded-md border border-border bg-muted/20 px-3 py-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Next private pass</p>
+              <p className="mt-1 text-sm text-foreground/80">{preview.continuationPlan.nextReview}</p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3" aria-label="Next private pass">
+              {preview.continuationPlan.items.map((item) => (
+                <div key={item.id} className="rounded-md border border-border bg-muted/20 p-3">
+                  <p className="text-sm font-medium">{item.title}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{item.summary}</p>
+                  <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+                    <p>
+                      <span className="font-medium text-foreground/80">Prepared:</span>{" "}
+                      {item.preparedArtifact}
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground/80">Waits:</span>{" "}
+                      {item.approvalBoundary}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </DearMeWorkbenchCard>
+
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
             <DearMeWorkbenchCard
               eyebrow="Portfolio proof card"

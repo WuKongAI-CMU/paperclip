@@ -294,6 +294,24 @@ describe("DearMe brand blueprint contract", () => {
       "chief_of_staff",
     ]);
     expect(firstCycle.autonomyPlan.waitsFor).toEqual(DEARME_FIRST_CYCLE_CONCERN_GATES);
+    expect(firstCycle.continuationPlan.title).toBe("Keeps working after the first proof");
+    expect(firstCycle.continuationPlan.cadence).toBe("weekly");
+    expect(firstCycle.continuationPlan.nextReview).toBe("Next private review");
+    expect(firstCycle.continuationPlan.items.map((item) => item.ownerRole)).toEqual([
+      "content_producer",
+      "opportunity_scout",
+      "portfolio_builder",
+    ]);
+    expect(firstCycle.continuationPlan.items.map((item) => item.preparedArtifact)).toEqual([
+      "Next proof-backed draft",
+      "Updated opportunity angle",
+      "Updated private proof card",
+    ]);
+    expect(firstCycle.continuationPlan.items.map((item) => item.approvalBoundary)).toEqual([
+      "The draft can improve privately; posting waits for approval.",
+      "The outreach can be prepared privately; sending waits for approval.",
+      "The page can be staged privately; public changes wait for approval.",
+    ]);
     expect(firstCycle.approvalBoundary.label).toBe("Ready to launch, with you in control");
     expect(firstCycle.approvalBoundary.summary).toContain("one launch decision");
     expect(firstCycle.approvalBoundary.blockedActions).toEqual([
