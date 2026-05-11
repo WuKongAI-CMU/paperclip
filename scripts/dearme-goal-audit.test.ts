@@ -217,7 +217,7 @@ function readyStatus(): DearMeProofStatus {
         blockedTargets: [],
         missingCapabilities: [],
         reason: "Telegram and iMessage share the OpenClaw gateway proof.",
-        operatorCommand: "pnpm --silent dearme:provider-smoke -- --target openclaw_messages --live",
+        operatorCommand: "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
       },
       {
         key: "linkedin_dm",
@@ -247,6 +247,53 @@ function readyStatus(): DearMeProofStatus {
       runSafe: "pnpm --silent dearme:proof -- --run-safe",
       check: "pnpm --silent dearme:proof -- --check",
       liveProviderSetup: [],
+    },
+  };
+}
+
+function blockedOpenClawMessageStatus(): DearMeProofStatus {
+  const imessageRecipientBlocker = {
+    lane: "provider" as const,
+    target: "imessage_message",
+    missingCount: 1,
+    capabilities: [
+      {
+        key: "imessage_recipient" as const,
+        label: "iMessage smoke recipient",
+      },
+    ],
+  };
+  const status = readyStatus();
+  return {
+    ...status,
+    sections: status.sections.map((section) =>
+      section.key === "live_provider_proof"
+        ? {
+          ...section,
+          ready: false,
+          description: "Real production host and external channels are proven except iMessage delivery.",
+          blockedTargets: [imessageRecipientBlocker],
+        }
+        : section
+    ),
+    liveProviderFocus: status.liveProviderFocus.map((focus) =>
+      focus.key === "openclaw_messages"
+        ? {
+          ...focus,
+          ready: false,
+          blockedTargets: [imessageRecipientBlocker],
+          missingCapabilities: imessageRecipientBlocker.capabilities,
+          reason: "Telegram and iMessage share the OpenClaw gateway proof, but iMessage still needs an explicit recipient.",
+        }
+        : focus
+    ),
+    commands: {
+      ...status.commands,
+      liveProviderSetup: [
+        "pnpm --silent dearme:proof -- --print-env-template > .dearme-proof.env",
+        "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
+        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+      ],
     },
   };
 }
@@ -381,6 +428,31 @@ test("DearMe goal audit reports host provider authorization before production ho
   assert.match(formatted, /\[ \] Production host provider authorization: blocked/);
   assert.match(formatted, /Vercel CLI is installed but not authenticated/);
   assert.match(formatted, /Run: vercel login/);
+});
+
+test("DearMe goal audit routes blocked OpenClaw message proof through no-send setup first", () => {
+  const audit = summarizeDearMeGoalAudit(
+    blockedOpenClawMessageStatus(),
+    deliveredHostRehearsalEvidence(),
+    readyHostProviderEvidence(),
+    readyOpenClawMessageRehearsalEvidence(),
+  );
+  const formatted = formatDearMeGoalAudit(audit).join("\n");
+  const openClawProof = audit.items.find((item) => item.key === "openclaw_message_reuse");
+
+  assert.equal(audit.complete, false);
+  assert.equal(audit.nextAction.label, "OpenClaw shared Telegram/iMessage message proof");
+  assert.equal(
+    audit.nextAction.command,
+    "pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages > .dearme-proof.env",
+  );
+  assert.deepEqual(openClawProof?.blockers, ["imessage_message"]);
+  assert.deepEqual(openClawProof?.commands, [
+    "pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages > .dearme-proof.env",
+    "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages",
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+  ]);
+  assert.match(formatted, /Run: pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages > \.dearme-proof\.env/);
 });
 
 test("DearMe goal audit passes only when every required proof item is ready", () => {

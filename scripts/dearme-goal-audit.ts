@@ -104,6 +104,8 @@ export interface DearMeGoalAuditArgs {
 }
 
 const GOAL_AUDIT_CHECK_COMMAND = "pnpm --silent dearme:goal-audit -- --check";
+const PROOF_ENV_FILE = ".dearme-proof.env";
+const OPENCLAW_MESSAGES_TARGET = "openclaw_messages";
 const REQUIRED_STATUS_SECTIONS: DearMeProofStatusSection["key"][] = [
   "first_wow_aha_proof",
   "integration_absorption_proof",
@@ -206,6 +208,37 @@ function capabilityEvidence(blockers: readonly DearMeProofStatusBlocker[]) {
   return labels.length > 0
     ? ` Missing capabilities: ${labels.join("; ")}.`
     : "";
+}
+
+function targetedProviderSetupCommands(
+  target: string,
+  liveCommand?: string,
+): string[] {
+  return [
+    `pnpm --silent dearme:provider-smoke -- --print-env-template --target ${target} > ${PROOF_ENV_FILE}`,
+    `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --check --target ${target}`,
+    ...(liveCommand ? [liveCommand] : []),
+  ];
+}
+
+function liveCommand(command: string): boolean {
+  return command.includes(" --live") ||
+    command.includes("DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1");
+}
+
+function preferredNextCommand(commands: readonly string[]): string | undefined {
+  return commands.find((command) => !liveCommand(command)) ?? commands[0];
+}
+
+function focusCommands(
+  focusItem: DearMeProofLiveProviderFocus | undefined,
+  setupTarget?: string,
+): string[] {
+  if (!focusItem?.operatorCommand) return [];
+  if (!focusItem.ready && setupTarget) {
+    return targetedProviderSetupCommands(setupTarget, focusItem.operatorCommand);
+  }
+  return [focusItem.operatorCommand];
 }
 
 function sectionItem(
@@ -313,6 +346,7 @@ function focusItem(
     key: DearMeGoalAuditItemKey;
     label: string;
     focus?: DearMeProofLiveProviderFocus;
+    commands?: string[];
   },
 ): DearMeGoalAuditItem {
   return {
@@ -326,7 +360,7 @@ function focusItem(
     blockers: options.focus ? blockerNames(options.focus.blockedTargets) : [
       "missing_live_provider_focus",
     ],
-    commands: options.focus?.operatorCommand ? [options.focus.operatorCommand] : [],
+    commands: options.commands ?? focusCommands(options.focus),
   };
 }
 
@@ -528,6 +562,7 @@ export function summarizeDearMeGoalAudit(
       key: "openclaw_message_reuse",
       label: "OpenClaw shared Telegram/iMessage message proof",
       focus: openclawMessages,
+      commands: focusCommands(openclawMessages, OPENCLAW_MESSAGES_TARGET),
     }),
     sectionItem({
       key: "live_provider_set",
@@ -555,7 +590,7 @@ export function summarizeDearMeGoalAudit(
         reason: incompleteItem.blockers.length > 0
           ? `Blocked by ${incompleteItem.blockers.join(", ")}.`
           : "Evidence is missing from the unified proof status.",
-        command: incompleteItem.commands[0],
+        command: preferredNextCommand(incompleteItem.commands),
       }
       : {
         label: "Mark the active goal complete",

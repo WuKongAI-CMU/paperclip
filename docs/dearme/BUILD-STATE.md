@@ -2,6 +2,61 @@
 
 Date: 2026-05-11
 
+## Safe OpenClaw Next Action For Goal Audit - 2026-05-11
+
+Product/architecture slice:
+
+- `pnpm dearme:goal-audit` now routes a blocked shared
+  `openclaw_messages` proof through no-send setup before showing the live
+  operator command: generate the target env template, run the targeted
+  readiness check, then use the guarded live command only after the explicit
+  recipient/provider facts exist.
+- This keeps Symphony aligned with the product boundary. DearMe can be
+  aggressive and autonomous about reuse, status, and proof generation, but a
+  missing iMessage recipient is setup work, not permission to send a live
+  message.
+- The active Polsia/Naive comparison remains unchanged: DearMe has the
+  Naive/Paperclip/OpenClaw substrate and a phone-reachable sample proof packet;
+  the remaining gap is live channel/provider truth, starting with the
+  OpenClaw Telegram/iMessage smoke.
+
+Verification:
+
+- `pnpm test:dearme-goal-audit`
+- `pnpm --silent dearme:goal-audit -- --json`
+- `pnpm --silent dearme:goal-audit`
+- `pnpm typecheck`
+- `git diff --check`
+
+## Release Gate Splits Private Use From Public Launch - 2026-05-11
+
+Product/architecture slice:
+
+- Added `pnpm dearme:release-gate` as the coordinator-facing answer to
+  "can users use this?" versus "can we publish this?". It reuses
+  `dearme:goal-audit` instead of duplicating proof logic.
+- The `private-proof` gate passes when DearMe has the architecture spine,
+  absorbed donor/worktree reuse, Symphony coordination, private first-wow,
+  phone-reachable proof page, voice autonomy, host-provider proof, and local
+  OpenClaw Telegram/iMessage contract rehearsal. This is the design-partner /
+  internal proof bar and does not require live sends, paid spend, or external
+  campaign credentials.
+- The default `public-launch` gate remains blocked until the full active-goal
+  audit is complete, including real live OpenClaw/channel/provider proof. For
+  the current sample packet that means DearMe is usable as private proof, but
+  not formally publishable.
+
+Verification:
+
+- `pnpm test:dearme-release-gate`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:release-gate -- --check --target private-proof`
+- `pnpm --silent dearme:release-gate -- --check --target public-launch`
+  (expected non-zero until live provider proof is complete)
+- `pnpm test:dearme-goal-audit`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Prompt-To-Artifact Goal Audit Lands - 2026-05-11
 
 Product/architecture slice:

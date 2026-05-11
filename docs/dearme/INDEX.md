@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, the recurring private-work proof contract, the five-draft private output packet, the phone-ready static private-site export, production host smoke fail-closed on the exported proof packet plus host-smoke manifest, unified live-provider setup exporting the proof packet first, host-smoke recurring-work detail, host-provider authorization audit, GitHub Pages production host smoke, local OpenClaw config reuse, OpenClaw message contract rehearsal, and prompt-to-artifact goal audit)
+Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, the recurring private-work proof contract, the five-draft private output packet, the phone-ready static private-site export, production host smoke fail-closed on the exported proof packet plus host-smoke manifest, unified live-provider setup exporting the proof packet first, host-smoke recurring-work detail, host-provider authorization audit, GitHub Pages production host smoke, local OpenClaw config reuse, OpenClaw message contract rehearsal, prompt-to-artifact goal audit, and the private-proof/public-launch release gate)
 
 ---
 
@@ -236,6 +236,17 @@ Use it before marking the active coordinator goal complete; do not treat
 loopback host proof as a substitute for a phone-reachable public HTTPS
 `deploy_site_production` smoke, or the OpenClaw message rehearsal as a
 substitute for a live `openclaw_messages` smoke.
+Use `pnpm dearme:release-gate` when the question is release posture rather
+than broad goal completion. The default `public-launch` target fails until the
+full goal audit is complete. `pnpm dearme:release-gate -- --check --target
+private-proof` answers the narrower "can a design partner use the private
+proof?" question and can pass without live sends, public posting, paid spend, or
+external campaign credentials. Keep that split explicit in Symphony updates:
+private/internal proof ready is not a public launch claim.
+When the remaining blocker is `openclaw_messages`, `dearme:goal-audit` now
+shows no-send setup first: print the target provider-smoke env template into
+`.dearme-proof.env`, run the targeted `--check`, and only then use the guarded
+live command after the explicit recipient/provider facts exist.
 The internal `pnpm dearme:provider-smoke -- --check` command now owns that
 operator proof checklist, including the OpenClaw gateway URL/token/auth plus
 Telegram recipient/body and iMessage recipient proof requirements, and the

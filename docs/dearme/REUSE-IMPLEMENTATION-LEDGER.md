@@ -13,6 +13,34 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Safe OpenClaw Goal-Audit Next Action - 2026-05-11
+
+- `dearme:goal-audit` now treats a blocked shared `openclaw_messages` proof as
+  setup work first: generate the target provider-smoke env template into
+  `.dearme-proof.env`, run the targeted no-send readiness check, and only then
+  use the guarded live command after explicit recipient/provider facts exist.
+- This is the current Symphony routing rule. Workers should not paste or run a
+  live Telegram/iMessage command as the first next step when the blocker is a
+  missing iMessage recipient or credential fact.
+- Product comparison: DearMe should stay Polsia-fast in the first-wow surface
+  while keeping Naive/Paperclip/OpenClaw provider machinery backstage. Safety
+  gates belong in the operator proof path, not in customer onboarding copy.
+
+## Latest Release-Posture Gate - 2026-05-11
+
+- `dearme:release-gate` now reuses `dearme:goal-audit` to split the two
+  product questions that were getting conflated in coordinator updates:
+  private/internal proof readiness and formal public launch readiness.
+- The private-proof target is intentionally product-first and credential-free:
+  architecture spine, absorbed donor/worktree reuse, Symphony coordination,
+  phone-reachable first wow, voice autonomy, host/provider readiness, and
+  OpenClaw message contract rehearsal. This is enough for design-partner proof
+  and product review without claiming real sends or paid distribution.
+- The public-launch target remains the default and still fails until live
+  OpenClaw/channel/provider proof is complete. Future agents should use this
+  command before answering "可以发布了吗", instead of inferring release posture
+  from the status text alone.
+
 ## Latest Prompt-To-Artifact Completion Boundary - 2026-05-11
 
 - `dearme:goal-audit` now exposes a `promptToArtifactChecklist` so Symphony and
