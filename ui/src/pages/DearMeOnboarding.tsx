@@ -1844,6 +1844,22 @@ function outputPreview(output: DearMeOutputItem) {
   return candidates.find((candidate) => typeof candidate === "string" && candidate.trim())?.trim() ?? "";
 }
 
+function outputSearchText(output: DearMeOutputItem) {
+  return [
+    output.title,
+    output.summary,
+    output.issueTitle,
+    ...output.documents.flatMap((document) => [document.title, document.bodyPreview]),
+    output.latestUpdate?.bodyPreview,
+    ...output.workProducts.flatMap((workProduct) => [workProduct.title, workProduct.summary]),
+    ...output.details.flatMap((detail) => [detail.label, detail.value]),
+    ...output.sourceEvidence.flatMap((source) => [source.label, source.summary]),
+  ]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join(" ")
+    .toLowerCase();
+}
+
 function replaceDearMeOutputInResponse(
   current: DearMeOutputsResponse | undefined,
   nextOutput: DearMeOutputItem,
@@ -1869,6 +1885,23 @@ function isCyclePacketWorkProduct(workProduct: DearMeOutputItem["workProducts"][
 
 function cyclePacketWorkProducts(output: DearMeOutputItem) {
   return output.workProducts.filter(isCyclePacketWorkProduct);
+}
+
+function isFirstCycleProofPackOutput(output: DearMeOutputItem) {
+  if (output.status !== "ready_for_review") return false;
+  if (output.kind !== "content_drafts" && output.kind !== "weekly_report") return false;
+  const text = outputSearchText(output);
+  return (
+    text.includes("first-cycle") ||
+    text.includes("first cycle") ||
+    text.includes("first 5 minute proof package") ||
+    text.includes("first 5-minute proof package") ||
+    text.includes("starter content")
+  );
+}
+
+function isProofPackOutput(output: DearMeOutputItem) {
+  return cyclePacketWorkProducts(output).length > 0 || isFirstCycleProofPackOutput(output);
 }
 
 function customerProofPackSummary(text: string) {
@@ -6552,7 +6585,7 @@ function FirstCyclePacketSpotlight({
   outputs: DearMeOutputItem[];
   onOpenOutput: (output: DearMeOutputItem, intent?: DearMeReviewEntryIntent | null) => void;
 }) {
-  const packetOutputs = outputs.filter((output) => cyclePacketWorkProducts(output).length > 0);
+  const packetOutputs = outputs.filter(isProofPackOutput);
   if (packetOutputs.length === 0) return null;
 
   const contentOutput = packetOutputs.find((output) => output.kind === "content_drafts");

@@ -5768,6 +5768,78 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("spotlights the first proof pack from first-cycle documents when work products are absent", async () => {
+    const firstCycleOutputs = outputsWithFirstCyclePacket();
+    mockDearmeApi.getOutputs.mockResolvedValue({
+      ...firstCycleOutputs,
+      outputs: firstCycleOutputs.outputs.map((output) => {
+        if (output.kind === "content_drafts") {
+          return {
+            ...output,
+            issueTitle: "DearMe Draft: First-cycle starter content",
+            documents: [
+              {
+                ...output.documents[0]!,
+                title: "Starter posts",
+                bodyPreview: "Private starter content prepared from the first cycle.",
+              },
+            ],
+            workProducts: [],
+          };
+        }
+        if (output.kind === "weekly_report") {
+          return {
+            ...output,
+            issueTitle: "DearMe Draft: First-cycle Dear me report",
+            documents: [
+              {
+                ...output.documents[0]!,
+                title: "Dear me report",
+                bodyPreview: "Report reference: First 5 minute proof package",
+              },
+            ],
+            workProducts: [],
+          };
+        }
+        return { ...output, workProducts: [] };
+      }),
+    });
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const packetSurface = surfaceByLabel(container, "First proof pack");
+    expect(packetSurface.textContent).toContain("First proof pack ready");
+    expect(packetSurface.textContent).toContain("2 ready");
+    expect(packetSurface.textContent).toContain("Work Ready path");
+    expect(packetSurface.textContent).toContain("Private until approved");
+    expect(packetSurface.textContent).toContain("Private starter content prepared from the first cycle.");
+    expect(packetSurface.textContent).toContain("Report reference: First 5 minute proof package");
+    expect(packetSurface.textContent).toContain("Review proof pack");
+
+    await act(async () => {
+      buttonByText(packetSurface, "Review proof pack")?.click();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/dearme?view=decisions&work=PET-8&artifact=issue-2%3Acontent_drafts",
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("surfaces a delivered next-move receipt with a safe external reference", async () => {
     mockDearmeApi.getWorkbench.mockResolvedValue(
       workbenchResponseWithDeliveryReceipt(
