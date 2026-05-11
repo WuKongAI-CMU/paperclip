@@ -206,6 +206,14 @@ not add another setup dashboard or dispatch path. Symphony worker bootstrap
 also runs this command before worktree/handoff triage, so assigned DEA issues
 should treat the proof readiness output as current evidence instead of
 rebuilding provider or voice setup discovery.
+The internal `pnpm dearme:goal-audit -- --check` command is the stronger
+completion gate for the long-running product objective. It reuses the same
+status/worktree evidence, runs `pnpm dearme:host-rehearsal` as a no-secret
+loopback proof of the exported private-site packet, and still blocks completion
+until the production host and live provider proof are real. Use it before
+marking the active coordinator goal complete; do not treat loopback host proof
+as a substitute for a phone-reachable public HTTPS `deploy_site_production`
+smoke.
 The internal `pnpm dearme:provider-smoke -- --check` command now owns that
 operator proof checklist, including the OpenClaw gateway URL/token/auth plus
 recipient/body requirements for Telegram/iMessage, and the production site URL

@@ -34,6 +34,10 @@ real team system, but it is still short of Polsia's live first-wow bar.
 The unified product status now encodes that judgment as an execution order:
 production host smoke first, shared OpenClaw message smoke second, LinkedIn DM
 third, and Meta campaign last.
+That status now also names the blocker class in safe product/coordination
+language instead of leaking provider env names: the immediate production-host
+gap is production host opt-in plus a public HTTPS DearMe host, while the shared
+message gap is gateway endpoint/auth plus smoke recipients and bodies.
 
 ## Evidence Checked
 
@@ -98,7 +102,18 @@ Current DearMe branch:
   - live-provider focus is now machine-readable, with Polsia phone-reachable
     host proof before OpenClaw shared-message proof, and spend-bearing Meta
     smoke last
+  - live-provider blockers now carry safe capability labels, so Symphony and
+    Linear can distinguish host opt-in, public HTTPS host, shared message
+    gateway, smoke recipients, and provider credentials without parsing raw env
+    names
   - live provider proof is still the remaining external proof gap
+- `pnpm --silent dearme:goal-audit`
+  - active objective is not complete yet
+  - architecture/status spine, Naive/Paperclip absorption, Symphony
+    coordination, private first-wow, no-secret loopback host rehearsal, and
+    DearMe voice autonomy are met
+  - remaining gaps are the Polsia-level phone-reachable production host,
+    OpenClaw shared message proof, and the complete live provider set
 - `pnpm --silent dearme:proof -- --run-safe --lane voice`
   - deterministic local gate passes
   - profile-token semantic proof passes with custom corpus evidence, including

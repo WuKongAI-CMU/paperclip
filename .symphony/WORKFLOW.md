@@ -63,6 +63,7 @@ codex:
     - pnpm dearme:symphony-preflight -- .
     - pnpm --silent dearme:proof -- --check
     - pnpm --silent dearme:proof -- --status --lane provider
+    - pnpm --silent dearme:host-rehearsal -- --port 0 --json
     - |
       if pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs; then
         true
@@ -119,7 +120,9 @@ Then read the coordination surface without bulk-loading append-only logs:
 Current work comes from the Linear issue plus bootstrap proof/worktree evidence:
 `pnpm --silent dearme:proof -- --check` for current provider and voice proof
 readiness, `pnpm --silent dearme:proof -- --status --lane provider` for the
-current live-provider focus order, and
+current live-provider focus order,
+`pnpm --silent dearme:host-rehearsal -- --port 0 --json` for the no-secret
+loopback host proof packet, and
 `pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs` for
 coordinator absorption state. It does not come from historical DM queues or old
 worktree-integration plans.
@@ -189,10 +192,13 @@ Operating rules:
    and voice proof gaps before selecting a narrow smoke. It also runs
    `pnpm --silent dearme:proof -- --status --lane provider` so live-provider
    workers inherit the shared focus order: production host first, shared
-   OpenClaw messages second, LinkedIn DM third, and Meta campaign last. Use
-   these outputs as the first proof map, then drop to `dearme:provider-smoke`
-   only for live provider credentials or `dearme:voice-smoke` only for
-   scorer-specific calibration.
+   OpenClaw messages second, LinkedIn DM third, and Meta campaign last. It then
+   runs `pnpm --silent dearme:host-rehearsal -- --port 0 --json` so every
+   worker sees the exported first-wow packet fetched through a real loopback
+   HTTP host before treating live production host proof as the remaining gap.
+   Use these outputs as the first proof map, then drop to
+   `dearme:provider-smoke` only for live provider credentials or
+   `dearme:voice-smoke` only for scorer-specific calibration.
 7. Keep code edits scoped to the issue. Stage explicit paths only; never use
    `git add -A` or broad cleanup commands.
 8. Preserve approval boundaries: public send/deploy/spend/sensitive actions

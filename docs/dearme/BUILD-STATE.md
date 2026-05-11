@@ -2,6 +2,67 @@
 
 Date: 2026-05-11
 
+## Active Goal Audit And Host Rehearsal Gate Land - 2026-05-11
+
+Product/architecture slice:
+
+- Added `pnpm dearme:goal-audit` as the coordinator answer for whether the
+  long-running DearMe objective can be marked complete. It maps the objective
+  into concrete proof items: architecture/status spine, Naive/Paperclip
+  absorption, Symphony coordination, private first-wow, no-secret loopback host
+  rehearsal, voice autonomy, production host live wow, OpenClaw message reuse,
+  and the full live provider set.
+- The audit deliberately fails completion when loopback host rehearsal has not
+  run, and still fails completion after that until `deploy_site_production` and
+  live provider proof are real. This keeps the local Polsia-style packet proof
+  useful without confusing it for public phone-reachable proof.
+- The audit now carries the same safe capability blockers as `dearme:status`,
+  so the next action is visible as production host opt-in plus public HTTPS
+  DearMe host instead of another broad planning or authorization concern.
+- Updated Symphony worker bootstrap to run
+  `pnpm --silent dearme:host-rehearsal -- --port 0 --json` after provider
+  focus status and before worktree triage. Every worker now sees the exported
+  private proof packet fetched through real loopback HTTP before treating the
+  production host as the remaining live blocker.
+- Reused the existing `dearme:aha-proof`, `dearme:host-rehearsal`,
+  `dearme:provider-smoke`, and `dearme:worktrees` proof path. No new provider,
+  settings surface, public deploy, live send, spend, or model call was added.
+
+Verification:
+
+- `pnpm test:dearme-goal-audit`
+- `pnpm test:dearme-symphony-workflow`
+- `pnpm test:dearme-host-rehearsal`
+- `pnpm --silent dearme:goal-audit`
+- `pnpm --silent dearme:status`
+- `pnpm typecheck`
+- `git diff --check`
+
+## Live Provider Blockers Use Capability Labels - 2026-05-11
+
+Product/architecture slice:
+
+- Updated `dearme:status` / `dearme:proof -- --status` so live-provider
+  blockers now carry safe capability labels in addition to target ids and
+  missing counts.
+- This makes the Polsia/Naive comparison operational without exposing raw
+  provider config names: production host proof now says it needs production
+  host opt-in and a public HTTPS DearMe host, while shared message proof says
+  it needs the gateway endpoint/auth plus Telegram/iMessage smoke payloads.
+- Added `missingCapabilities` to `liveProviderFocus` so Symphony and Linear
+  workers can route DEA-60 and later live-smoke tickets by capability instead
+  of parsing env templates or rediscovering provider-smoke internals.
+- Kept this backstage only. No customer UI, production deploy, send, spend,
+  live model call, or new setup surface was added.
+
+Verification:
+
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:proof -- --status --json`
+- `pnpm --silent dearme:status`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Symphony Workers See Live Proof Focus At Bootstrap - 2026-05-11
 
 Product/architecture slice:

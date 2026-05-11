@@ -188,6 +188,26 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     "meta_campaign",
   ]);
   assert.deepEqual(status.liveProviderFocus[0]?.targets, ["deploy_site_production"]);
+  assert.deepEqual(
+    status.liveProviderFocus[0]?.missingCapabilities.map((item) => item.key),
+    [
+      "production_host_opt_in",
+      "public_https_host",
+      "hosted_private_proof_artifact",
+      "proof_page_text_or_manifest",
+    ],
+  );
+  assert.deepEqual(
+    status.liveProviderFocus[1]?.missingCapabilities.map((item) => item.key),
+    [
+      "openclaw_gateway_endpoint",
+      "openclaw_gateway_auth",
+      "telegram_recipient",
+      "telegram_message_body",
+      "imessage_recipient",
+      "imessage_message_body",
+    ],
+  );
   assert.match(status.liveProviderFocus[0]?.reason ?? "", /Polsia-level first wow/);
   assert.match(status.liveProviderFocus[1]?.reason ?? "", /Naive-style substrate reuse/);
   assert.equal(
@@ -205,7 +225,9 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /Live provider proof: blocked/);
   assert.match(formatted, /Next live proof focus:/);
   assert.match(formatted, /Production host smoke: blocked on deploy_site_production/);
+  assert.match(formatted, /Needs: enable production host smoke; public HTTPS DearMe host; exported private proof artifact; proof-page text or host-smoke manifest/);
   assert.match(formatted, /OpenClaw message smoke: blocked on telegram_message, imessage_message/);
+  assert.match(formatted, /Needs: shared message gateway endpoint; shared message gateway auth; Telegram smoke recipient; Telegram smoke body; iMessage smoke recipient; iMessage smoke body/);
   assert.match(formatted, /Next live provider proof setup:/);
   assert.match(formatted, /--target openclaw_messages --live/);
   assert.match(formatted, /pnpm --silent dearme:proof -- --run-safe/);
@@ -215,6 +237,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.equal(JSON.stringify(status).includes("OPENCLAW_GATEWAY_URL"), false);
   assert.equal(JSON.stringify(status).includes("DEARME_LINKEDIN_DM_CREDENTIAL_JSON"), false);
   assert.equal(live?.blockedTargets.every((item) => item.missingCount > 0), true);
+  assert.equal(live?.blockedTargets.every((item) => item.capabilities.length > 0), true);
 });
 
 test("DearMe proof status carries current integration absorption evidence", () => {

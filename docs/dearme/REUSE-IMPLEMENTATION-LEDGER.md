@@ -15,6 +15,14 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `dearme:status` / `dearme:proof -- --status` now translate provider-smoke
+  missing config into safe capability blockers. Workers should read
+  `liveProviderFocus[].missingCapabilities` before starting or routing a live
+  proof ticket: DEA-60 is a production host opt-in + public HTTPS DearMe host
+  blocker, not an authorization or planning blocker; shared Telegram/iMessage
+  proof is a message-gateway endpoint/auth plus smoke-recipient/body blocker.
+  Keep raw provider env names inside provider-smoke/operator setup, not in
+  Symphony handoffs or product readiness summaries.
 - The first-use shell now treats private proof as the product promise and the
   full profile as secondary controls. The hero exposes `Start with one
   sentence` plus `View private proof`; profile preview/start now lives under

@@ -135,6 +135,7 @@ Worker bootstrap also runs the unified local proof map:
 ```sh
 pnpm --silent dearme:proof -- --check
 pnpm --silent dearme:proof -- --status --lane provider
+pnpm --silent dearme:host-rehearsal -- --port 0 --json
 ```
 
 Use that output as the first proof triage surface. It composes provider dispatch
@@ -142,8 +143,12 @@ readiness and voice calibration readiness without sending, deploying to
 production, spending, or calling a live model. The provider-lane status prints
 the shared live proof focus order for workers: production host smoke first,
 OpenClaw Telegram/iMessage smoke second, LinkedIn DM third, and Meta campaign
-last. Drop to `pnpm dearme:provider-smoke` only for live provider credential
-work, or `pnpm dearme:voice-smoke` only for scorer-specific calibration work.
+last. The host rehearsal exports the same private first-wow packet, serves it
+on loopback, and fetches it through the deploy-site host rehearsal smoke, so
+workers have a no-secret proof that the phone packet is real before the
+remaining public HTTPS production host blocker. Drop to
+`pnpm dearme:provider-smoke` only for live provider credential work, or
+`pnpm dearme:voice-smoke` only for scorer-specific calibration work.
 
 ## Worker Handoff Artifacts
 

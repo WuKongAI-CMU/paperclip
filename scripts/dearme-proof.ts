@@ -56,10 +56,41 @@ export interface DearMeProofReadiness {
   lanes: DearMeProofLaneReadiness[];
 }
 
+const DEARME_PROOF_CAPABILITY_LABELS = {
+  production_host_opt_in: "enable production host smoke",
+  production_custom_domain_opt_in: "enable custom-domain host smoke",
+  public_https_host: "public HTTPS DearMe host",
+  hosted_private_proof_artifact: "exported private proof artifact",
+  proof_page_text_or_manifest: "proof-page text or host-smoke manifest",
+  host_smoke_manifest_valid: "valid host-smoke manifest",
+  host_smoke_checksums: "matching host-smoke checksums",
+  linkedin_partner_endpoint: "LinkedIn partner endpoint",
+  linkedin_credential: "LinkedIn partner credential",
+  linkedin_recipient: "LinkedIn smoke recipient",
+  linkedin_message_body: "LinkedIn smoke body",
+  openclaw_gateway_endpoint: "shared message gateway endpoint",
+  openclaw_gateway_auth: "shared message gateway auth",
+  telegram_recipient: "Telegram smoke recipient",
+  telegram_message_body: "Telegram smoke body",
+  imessage_recipient: "iMessage smoke recipient",
+  imessage_message_body: "iMessage smoke body",
+  meta_credential: "Meta campaign credential",
+  live_confirmation: "live confirmation guard",
+  unknown: "provider smoke setup",
+} as const;
+
+export type DearMeProofCapabilityKey = keyof typeof DEARME_PROOF_CAPABILITY_LABELS;
+
+export interface DearMeProofCapabilityBlocker {
+  key: DearMeProofCapabilityKey;
+  label: string;
+}
+
 export interface DearMeProofStatusBlocker {
   lane: Exclude<DearMeProofLane, "all"> | "integration";
   target: string;
   missingCount: number;
+  capabilities: DearMeProofCapabilityBlocker[];
   liveConfirmationRequired?: boolean;
 }
 
@@ -89,6 +120,7 @@ export interface DearMeProofLiveProviderFocus {
   ready: boolean;
   targets: DearMeProviderSmokeReadiness["target"][];
   blockedTargets: DearMeProofStatusBlocker[];
+  missingCapabilities: DearMeProofCapabilityBlocker[];
   reason: string;
   operatorCommand: string;
 }
@@ -510,6 +542,117 @@ function voiceLane(readiness: DearMeProofReadiness) {
   return readiness.lanes.find((lane) => lane.lane === "voice");
 }
 
+function capabilityBlocker(key: DearMeProofCapabilityKey): DearMeProofCapabilityBlocker {
+  return {
+    key,
+    label: DEARME_PROOF_CAPABILITY_LABELS[key],
+  };
+}
+
+function uniqueCapabilityBlockers(
+  blockers: readonly DearMeProofCapabilityBlocker[],
+): DearMeProofCapabilityBlocker[] {
+  const seen = new Set<DearMeProofCapabilityKey>();
+  return blockers.filter((blocker) => {
+    if (seen.has(blocker.key)) return false;
+    seen.add(blocker.key);
+    return true;
+  });
+}
+
+function providerCapabilityForMissing(requirement: string): DearMeProofCapabilityBlocker {
+  if (requirement.includes("DEARME_DEPLOY_SITE_ALLOW_PRODUCTION")) {
+    return capabilityBlocker("production_host_opt_in");
+  }
+  if (requirement.includes("DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS")) {
+    return capabilityBlocker("production_custom_domain_opt_in");
+  }
+  if (requirement.includes("DEARME_DEPLOY_SITE_BASE_URL")) {
+    return capabilityBlocker("public_https_host");
+  }
+  if (requirement.includes("DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF")) {
+    return capabilityBlocker("hosted_private_proof_artifact");
+  }
+  if (
+    requirement.includes("DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT") ||
+    requirement.includes("DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF") ||
+    requirement.includes("expectedText")
+  ) {
+    return capabilityBlocker("proof_page_text_or_manifest");
+  }
+  if (requirement.includes("checksum")) {
+    return capabilityBlocker("host_smoke_checksums");
+  }
+  if (
+    requirement.includes("host-smoke.json") ||
+    requirement.includes("host-smoke") ||
+    requirement.includes("manifest")
+  ) {
+    return capabilityBlocker("host_smoke_manifest_valid");
+  }
+  if (requirement.includes("DEARME_LINKEDIN_DM_MESSAGES_URL")) {
+    return capabilityBlocker("linkedin_partner_endpoint");
+  }
+  if (
+    requirement.includes("DEARME_LINKEDIN_DM_CREDENTIAL_JSON") ||
+    requirement.includes("DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE")
+  ) {
+    return capabilityBlocker("linkedin_credential");
+  }
+  if (requirement.includes("DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN")) {
+    return capabilityBlocker("linkedin_recipient");
+  }
+  if (requirement.includes("DEARME_LINKEDIN_DM_SMOKE_BODY")) {
+    return capabilityBlocker("linkedin_message_body");
+  }
+  if (requirement.includes("OPENCLAW_GATEWAY_URL")) {
+    return capabilityBlocker("openclaw_gateway_endpoint");
+  }
+  if (
+    requirement.includes("OPENCLAW_GATEWAY_TOKEN") ||
+    requirement.includes("OPENCLAW_WEBHOOK_AUTH")
+  ) {
+    return capabilityBlocker("openclaw_gateway_auth");
+  }
+  if (requirement.includes("DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT")) {
+    return capabilityBlocker("telegram_recipient");
+  }
+  if (requirement.includes("DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY")) {
+    return capabilityBlocker("telegram_message_body");
+  }
+  if (requirement.includes("DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT")) {
+    return capabilityBlocker("imessage_recipient");
+  }
+  if (requirement.includes("DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY")) {
+    return capabilityBlocker("imessage_message_body");
+  }
+  if (
+    requirement.includes("DEARME_META_CAMPAIGN_CREDENTIAL_JSON") ||
+    requirement.includes("DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE")
+  ) {
+    return capabilityBlocker("meta_credential");
+  }
+  if (
+    requirement.includes("DEARME_PROVIDER_SMOKE_CONFIRM_LIVE") ||
+    requirement.includes("--live")
+  ) {
+    return capabilityBlocker("live_confirmation");
+  }
+  return capabilityBlocker("unknown");
+}
+
+function providerCapabilityBlockers(
+  missing: readonly string[],
+): DearMeProofCapabilityBlocker[] {
+  return uniqueCapabilityBlockers(missing.map(providerCapabilityForMissing));
+}
+
+function missingCapabilitiesForBlockers(
+  blockers: readonly DearMeProofStatusBlocker[],
+): DearMeProofCapabilityBlocker[] {
+  return uniqueCapabilityBlockers(blockers.flatMap((item) => item.capabilities));
+}
+
 function blockedProviderTargets(
   readiness: readonly DearMeProviderSmokeReadiness[],
   targets: readonly DearMeProviderSmokeReadiness["target"][],
@@ -520,6 +663,7 @@ function blockedProviderTargets(
       lane: "provider" as const,
       target: item.target,
       missingCount: item.missing.length,
+      capabilities: providerCapabilityBlockers(item.missing),
       liveConfirmationRequired: item.liveConfirmationRequired,
     }));
 }
@@ -534,6 +678,7 @@ function blockedVoiceTargets(
       lane: "voice" as const,
       target: item.target,
       missingCount: item.missing.length,
+      capabilities: [],
     }));
 }
 
@@ -566,6 +711,7 @@ function liveProviderFocusPlan(
       ready: blockedTargets.length === 0,
       targets: [...item.targets],
       blockedTargets,
+      missingCapabilities: missingCapabilitiesForBlockers(blockedTargets),
       reason: item.reason,
       operatorCommand: item.operatorCommand,
     };
@@ -610,6 +756,7 @@ function integrationAuditBlockers(
       lane: "integration",
       target: "integration_audit_unavailable",
       missingCount: 1,
+      capabilities: [],
     });
   }
   if ((audit.notInCurrent ?? 0) > 0) {
@@ -617,6 +764,7 @@ function integrationAuditBlockers(
       lane: "integration",
       target: "not_in_current_worktrees",
       missingCount: audit.notInCurrent ?? 0,
+      capabilities: [],
     });
   }
   if ((audit.dirty ?? 0) > 0) {
@@ -624,6 +772,7 @@ function integrationAuditBlockers(
       lane: "integration",
       target: "dirty_worktrees",
       missingCount: audit.dirty ?? 0,
+      capabilities: [],
     });
   }
   if ((audit.latestDirtyHandoffs ?? 0) > 0) {
@@ -631,6 +780,7 @@ function integrationAuditBlockers(
       lane: "integration",
       target: "latest_dirty_handoffs",
       missingCount: audit.latestDirtyHandoffs ?? 0,
+      capabilities: [],
     });
   }
   if ((audit.latestNoFileChangesHandoffs ?? 0) > 0) {
@@ -638,6 +788,7 @@ function integrationAuditBlockers(
       lane: "integration",
       target: "latest_no_file_change_handoffs",
       missingCount: audit.latestNoFileChangesHandoffs ?? 0,
+      capabilities: [],
     });
   }
   if (
@@ -649,6 +800,7 @@ function integrationAuditBlockers(
       lane: "integration",
       target: "latest_uncommitted_handoffs",
       missingCount: audit.latestHandoffs - audit.latestCommittedHandoffs,
+      capabilities: [],
     });
   }
   return blockers;
@@ -758,9 +910,17 @@ export function summarizeDearMeProofStatus(
   };
 }
 
+function formatCapabilityBlockers(capabilities: readonly DearMeProofCapabilityBlocker[]) {
+  if (capabilities.length === 0) return "";
+  return ` Needs: ${capabilities.map((item) => item.label).join("; ")}.`;
+}
+
 function formatBlockedTargets(blockedTargets: readonly DearMeProofStatusBlocker[]) {
   if (blockedTargets.length === 0) return "";
-  return ` Blocked targets: ${blockedTargets.map((item) => item.target).join(", ")}.`;
+  const targets = blockedTargets.map((item) => item.target).join(", ");
+  return ` Blocked targets: ${targets}.${formatCapabilityBlockers(
+    missingCapabilitiesForBlockers(blockedTargets),
+  )}`;
 }
 
 function statusSection(
@@ -814,7 +974,9 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
       const state = focus.ready
         ? "ready"
         : `blocked on ${focus.blockedTargets.map((item) => item.target).join(", ")}`;
-      lines.push(`- ${focus.label}: ${state}. ${focus.reason} Run: ${focus.operatorCommand}`);
+      lines.push(
+        `- ${focus.label}: ${state}.${formatCapabilityBlockers(focus.missingCapabilities)} ${focus.reason} Run: ${focus.operatorCommand}`,
+      );
     }
   }
 
