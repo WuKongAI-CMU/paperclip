@@ -262,6 +262,75 @@ describe("approval routes idempotent retries", () => {
     );
   });
 
+  it("records a customer-safe connection-needed receipt when the approved X handoff cannot dispatch", async () => {
+    const callOutbound = vi.fn(async () => ({
+      kind: "needs_oauth" as const,
+      channel: "x",
+      reason: "no-active-channel-connection",
+      gate: "connect_channel" as const,
+      message: "Connect X before DearMe can continue this approved next step.",
+    }));
+    const launchService = dearMeApprovedLaunchHandoffService({ callOutbound });
+    const approval = {
+      id: "approval-10",
+      companyId: "company-1",
+      type: "dearme_output_next_move",
+      status: "approved",
+      payload: {
+        outputId: "issue-1:content_drafts",
+        issueId: "issue-1",
+        launchHandoff: {
+          toolName: "post_x",
+          payload: { text: "Ready to publish." },
+          voiceGateText: "Ready to publish.",
+          voiceGateArtifactKind: "x-tweet",
+          voiceFingerprintId: "vf_1",
+        },
+      },
+      requestedByAgentId: "agent-1",
+    };
+    mockApprovalService.getById.mockResolvedValue({
+      ...approval,
+      status: "pending",
+    });
+    mockApprovalService.approve.mockResolvedValue({ approval, applied: true });
+
+    const res = await request(await createApp({}, {
+      dearMeLaunchHandoffService: launchService,
+    }))
+      .post("/api/approvals/approval-10/approve")
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(callOutbound).toHaveBeenCalledWith(expect.objectContaining({
+      toolName: "post_x",
+      companyId: "company-1",
+      userId: "user-1",
+      issueId: "issue-1",
+      agentId: "agent-1",
+      payload: { text: "Ready to publish." },
+      voiceGateText: "Ready to publish.",
+      voiceGateArtifactKind: "x-tweet",
+      voiceFingerprintId: "vf_1",
+      preapprovedApprovalId: "approval-10",
+      estimatedUsd: 0,
+      config: { minVoiceGateScore: 92, dailyUsdCap: 5 },
+    }));
+    expect(mockRecordDearMeNextMoveDeliveryReceipt).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        approval,
+        actorUserId: "user-1",
+        linkedIssueIds: ["issue-1"],
+        outcome: expect.objectContaining({
+          kind: "needs_oauth",
+          channel: "x",
+          gate: "connect_channel",
+        }),
+      }),
+    );
+  });
+
   it("skips downstream launch and requester wakeup when a DearMe next move is paused", async () => {
     const launchService = {
       executeApprovedNextMove: vi.fn(),
