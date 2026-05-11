@@ -2,6 +2,37 @@
 
 Date: 2026-05-11
 
+## DM-177B Preview `deploy_site` Dispatch Path - 2026-05-11
+
+Product/architecture slice:
+
+- Added a narrow server-side DearMe cloud deploy dispatcher at
+  `server/src/services/dearme-deploy-site-dispatch.ts`.
+- Approved `deploy_site` launch handoffs now default to this direct dispatcher
+  after the existing wrapper has completed approval resolution. The
+  `dearme-cloud` channel remains outside per-user OAuth lookup, so the preview
+  site proof no longer depends on an OpenClaw gateway URL just to record a
+  DearMe-owned preview deployment receipt.
+- The dispatcher validates the existing private-preview payload shape:
+  lowercase safe handle, non-empty bounded `artifactRef`, `target:
+  "preview" | "production"`, and no custom domain in this slice. Preview
+  calls return a stable idempotent receipt at `dearme.app/<handle>?preview=*`.
+- Production deploys stay fail-closed by default with
+  `deploy-site-production-host-unconfigured`; production receipts require an
+  explicit dispatcher config. This preserves the current product boundary:
+  the first-cycle site proof can be audited now, but the real multi-tenant
+  public host/custom-domain path is still a separate DM-177 host slice.
+- The default approved launch handoff service now registers direct dispatchers
+  for `post_x`, `send_email`, and `deploy_site`; remaining tools continue to
+  use the gateway map until their per-tool dispatchers land.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-deploy-site-dispatch.test.ts server/src/services/dearme-approved-launch-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts server/src/__tests__/dearme-approval-receipts.test.ts server/src/services/dearme-output-handoff.portfolio-launch.test.ts --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/server typecheck`
+  passed.
+
 ## DM-174 Live Resend `send_email` Dispatch Path - 2026-05-11
 
 Product/architecture slice:

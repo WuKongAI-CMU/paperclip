@@ -2,7 +2,7 @@
 
 > **Canonical, runtime-affecting.** This document supersedes any older "DearMe is one stack" framing. DearMe is the integration of three substrates — OpenClaw at the edge, Naive/Paperclip in the cloud, Polsia choreography across both. Below is the contract between all three.
 >
-> Last updated: 2026-05-11 (DM-S06 + DM-179/180/181/182 + DEA-51 X OAuth connection proof + DM-172B X dispatch + DM-174 Resend dispatch).
+> Last updated: 2026-05-11 (DM-S06 + DM-179/180/181/182 + DEA-51 X OAuth connection proof + DM-172B X dispatch + DM-174 Resend dispatch + DM-177B preview deploy dispatch).
 
 ---
 
@@ -315,13 +315,14 @@ The integration only works if these glue artifacts ship:
 | DM-174 | `send_email` `ChannelDispatch` (Resend/SES) | **Resend dispatcher shipped.** Wrapper runs gate/approval/OAuth/audit; `dearme-send-email-dispatch.ts` resolves the stored Resend credential, validates plain-text payload and expiry, calls Resend `POST /emails`, and maps auth failures back to reauth. HTML is fail-closed until sanitizer support lands. SES remains fail-closed until the tool binding can resolve an `ses` channel credential instead of the current static `resend` binding. Live external email still needs a real credential smoke. |
 | DM-175 | `channel_connections` Drizzle schema | **Shipped DM-S06.** ✅ |
 | DM-176 | `send_linkedin_dm` `ChannelDispatch` | LinkedIn outreach. |
-| DM-177 | `deploy_site` `ChannelDispatch` + cloud site host | Brand Site Builder closes loop. |
+| DM-177B | Preview `deploy_site` `ChannelDispatch` | **Preview dispatcher shipped.** Approved private-site proof handoffs use `dearme-deploy-site-dispatch.ts` through the same wrapper/audit path, validate safe handles + artifact refs, reject custom domains, and return stable preview receipts at `dearme.app/<handle>?preview=*` without OpenClaw gateway config. Production deploys remain fail-closed until the real host path is enabled. |
+| DM-177 | Public `deploy_site` host + custom-domain path | Brand Site Builder closes the public site loop. |
 | DM-178 | `create_meta_campaign` `ChannelDispatch` | Ads Manager closes loop. |
 | DM-179 | Tri-substrate SSE Express route reading from `dearme-sse-bus` | **Shipped.** `GET /api/dearme/companies/:companyId/events` emits a workbench sync snapshot and scoped runtime events. ✅ |
 | DM-182 | OpenClaw passthrough workbench refresh | **Shipped.** Customer workbench invalidates on `openclaw_lifecycle` / `openclaw_stream` through the same EventSource route. ✅ |
 | DM-180 | Approval resolver Express route over `dearme-approval-resolver` service | **Shipped.** `POST /api/dearme/companies/:companyId/approvals/resolve` resolves through the shared service, normalizes issue refs, and persists actor attribution. ✅ |
 
-Seven of these (DM-175 channel_connections schema, DM-S06 contracts, **DM-S07 server services**, **DM-179 SSE route**, **DM-182 passthrough refresh**, **DM-180 approval route**, and the Resend half of **DM-174 email dispatch**) are shipped now. The rest fall in sprints 1–3.
+Eight of these (DM-175 channel_connections schema, DM-S06 contracts, **DM-S07 server services**, **DM-179 SSE route**, **DM-182 passthrough refresh**, **DM-180 approval route**, the Resend half of **DM-174 email dispatch**, and **DM-177B preview deploy dispatch**) are shipped now. The rest fall in sprints 1–3.
 
 ---
 
