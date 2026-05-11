@@ -56,6 +56,9 @@ interface DearMeWorkbenchProgressItem {
   title: string;
   summary: string;
   executionReadiness?: string | null;
+  deliveryStatus?: string | null;
+  deliveryExternalId?: string | null;
+  deliveryExternalUrl?: string | null;
   nextStep?: string | null;
   issueId?: string | null;
   issueIdentifier?: string | null;
@@ -126,6 +129,23 @@ async function fetchPendingApprovals(
   const res = await request.get(`${BASE_URL}/api/companies/${companyId}/approvals?status=pending`);
   expect(res.ok()).toBe(true);
   return await res.json();
+}
+
+async function waitForRecentProgress(
+  request: APIRequestContext,
+  companyId: string,
+  predicate: (item: DearMeWorkbenchProgressItem) => boolean,
+  description: string,
+): Promise<DearMeWorkbenchProgressItem> {
+  const deadline = Date.now() + 10_000;
+  let latestWorkbench: DearMeWorkbenchResponse | null = null;
+  while (Date.now() < deadline) {
+    latestWorkbench = await fetchDearMeWorkbench(request, companyId);
+    const match = latestWorkbench.recentProgress.find(predicate);
+    if (match) return match;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`Timed out waiting for ${description}: ${JSON.stringify(latestWorkbench)}`);
 }
 
 test.describe("DearMe private handoff browser smoke", () => {
@@ -270,8 +290,8 @@ test.describe("DearMe private handoff browser smoke", () => {
       );
       expect(handoff).toBeTruthy();
       expect(handoff).toEqual(expect.objectContaining({
-        title: "Private publishing handoff prepared",
-        summary: expect.stringContaining("private execution brief"),
+        title: "Launch-ready posting brief prepared",
+        summary: expect.stringContaining("launch-ready brief"),
         executionReadiness: "private_handoff_ready",
         nextStep: expect.stringContaining("channel-ready posting brief"),
         outputId: preparedOutput!.id,
@@ -282,10 +302,10 @@ test.describe("DearMe private handoff browser smoke", () => {
       await page.goto(
         `/${companyPrefix}/dearme?view=decisions&approval=${encodeURIComponent(nextMoveApproval!.id)}`,
       );
-      const handoffPanel = page.locator('[aria-label="Private handoff ready"]');
+      const handoffPanel = page.locator('[aria-label="Launch-ready next step ready"]');
       await expect(handoffPanel).toBeVisible();
-      await expect(handoffPanel).toContainText("Private handoff");
-      await expect(handoffPanel).toContainText("Private publishing handoff prepared");
+      await expect(handoffPanel).toContainText("Launch-ready next step");
+      await expect(handoffPanel).toContainText("Launch-ready posting brief prepared");
       await expect(handoffPanel).toContainText("External action not run");
       await expect(handoffPanel).toContainText("channel-ready posting brief");
       await expect(handoffPanel).toContainText("Content drafts");
@@ -294,6 +314,180 @@ test.describe("DearMe private handoff browser smoke", () => {
       await handoffPanel.getByRole("button", { name: "Open brief" }).click();
       await expect(page).toHaveURL(/\/dearme\?view=decisions&work=.*&artifact=.*/);
       await expect(page.url()).not.toContain("/issues/");
+    } finally {
+      await page.request.delete(`${BASE_URL}/api/companies/${company.id}`).catch(() => undefined);
+    }
+  });
+
+  test("turns final approval of a Website preview into a delivered receipt", async ({ page }) => {
+    const companyRes = await page.request.post(`${BASE_URL}/api/companies`, {
+      data: { name: `E2E-DearMe-Website-Preview-${Date.now()}` },
+    });
+    expect(companyRes.ok()).toBe(true);
+    const company = (await companyRes.json()) as CompanyResponse;
+    const companyPrefix = company.issuePrefix ?? company.prefix ?? company.urlKey ?? "E2E";
+
+    try {
+      const paidBetaRes = await page.request.post(
+        `${BASE_URL}/api/dearme/companies/${company.id}/paid-beta/access-events`,
+        {
+          data: {
+            amountCents: 25_000,
+            currency: "USD",
+            description: "Founding beta payment",
+          },
+        },
+      );
+      expect(paidBetaRes.ok()).toBe(true);
+
+      const firstCycleRes = await page.request.post(
+        `${BASE_URL}/api/dearme/companies/${company.id}/first-cycle/start`,
+        {
+          data: {
+            brand: {
+              displayName: "Website Preview Founder",
+              positioning: "turning shipped work into public proof with one clear approval gate",
+              goals: ["show a useful site preview before publishing broadly"],
+              audiences: ["founders evaluating autonomous personal brand teams"],
+              proofPoints: ["approved a private Website preview from real work"],
+              offers: ["hands-on product architecture review"],
+              voiceSamples: [
+                "Short, direct, evidence-first notes.",
+                "Show the receipt before asking for trust.",
+              ],
+              preferredChannels: ["portfolio", "linkedin", "newsletter"],
+              constraints: ["No public claims before review"],
+              cadence: "weekly",
+              budgetMonthlyCents: 25_000,
+              autoDraftEnabled: true,
+            },
+          },
+        },
+      );
+      expect(firstCycleRes.ok()).toBe(true);
+      await firstCycleRes.json();
+
+      const outputs = await fetchDearMeOutputs(page.request, company.id);
+      const portfolioOutput = outputs.outputs.find(
+        (output) => output.kind === "portfolio_update" && output.reviewLoop.state !== "approved",
+      );
+      expect(portfolioOutput).toBeTruthy();
+      expect(portfolioOutput?.reviewLoop.state).toBe("needs_user_review");
+
+      const reviewRes = await page.request.post(
+        `${BASE_URL}/api/dearme/companies/${company.id}/outputs/${encodeURIComponent(portfolioOutput!.id)}/reviews`,
+        {
+          data: {
+            action: "approve",
+            decisionNote: "Approved in DearMe. This Website preview represents me.",
+          },
+        },
+      );
+      expect(reviewRes.ok()).toBe(true);
+      const reviewResult = await reviewRes.json();
+      expect(reviewResult).toEqual(expect.objectContaining({
+        status: "recorded",
+        action: "approve",
+        output: expect.objectContaining({
+          id: portfolioOutput!.id,
+          reviewLoop: expect.objectContaining({
+            state: "approved",
+          }),
+        }),
+      }));
+
+      const pendingApprovals = await fetchPendingApprovals(page.request, company.id);
+      const nextMoveApproval = pendingApprovals.find((approval) =>
+        approval.type === "dearme_output_next_move" &&
+        approval.payload.outputId === portfolioOutput!.id
+      );
+      expect(nextMoveApproval).toBeTruthy();
+      expect(nextMoveApproval?.payload).toEqual(expect.objectContaining({
+        riskGate: "deploy_public_site",
+        outputKind: "portfolio_update",
+        outputId: portfolioOutput!.id,
+        launchHandoff: expect.objectContaining({
+          toolName: "deploy_site",
+          channel: "dearme-cloud",
+          gate: "deploy",
+          riskGate: "deploy_public_site",
+          payload: expect.objectContaining({
+            customDomain: null,
+            target: "preview",
+          }),
+        }),
+      }));
+      const launchHandoff = nextMoveApproval!.payload.launchHandoff as Record<string, unknown>;
+      const launchPayload = launchHandoff.payload as Record<string, unknown>;
+      const previewHandle = launchPayload.handle;
+      expect(typeof previewHandle).toBe("string");
+      const previewHandleString = previewHandle as string;
+      expect(previewHandleString).toMatch(/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/);
+
+      const pendingWorkbench = await fetchDearMeWorkbench(page.request, company.id);
+      expect(pendingWorkbench.decisionsNeeded).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            kind: "approve_action",
+            approvalId: nextMoveApproval!.id,
+            outputId: portfolioOutput!.id,
+            riskGate: "deploy_public_site",
+          }),
+        ]),
+      );
+
+      const finalApprovalRes = await page.request.post(
+        `${BASE_URL}/api/approvals/${nextMoveApproval!.id}/approve`,
+        {
+          data: {
+            decisionNote: "Final Website preview delivery approved inside DearMe.",
+          },
+        },
+      );
+      expect(finalApprovalRes.ok()).toBe(true);
+
+      const receipt = await waitForRecentProgress(
+        page.request,
+        company.id,
+        (item) =>
+          item.kind === "next_move_delivery_recorded" &&
+          item.deliveryStatus === "delivered" &&
+          item.outputId === portfolioOutput!.id &&
+          item.approvalId === nextMoveApproval!.id,
+        "delivered Website preview receipt",
+      );
+      expect(receipt).toEqual(expect.objectContaining({
+        title: "Approved Website preview delivered",
+        summary: expect.stringContaining("Delivery: delivered"),
+        deliveryStatus: "delivered",
+        deliveryExternalId: expect.stringMatching(/^dearme_preview_/),
+        deliveryExternalUrl: expect.stringMatching(
+          new RegExp(`^https://dearme\\.app/${previewHandleString}\\?preview=dearme_preview_`),
+        ),
+        nextStep: expect.stringContaining("Open the delivered Website preview"),
+        outputId: portfolioOutput!.id,
+        approvalId: nextMoveApproval!.id,
+      }));
+      expectNoHiddenTerms(JSON.stringify(receipt));
+
+      await page.goto(
+        `/${companyPrefix}/dearme?view=decisions&approval=${encodeURIComponent(nextMoveApproval!.id)}`,
+      );
+      const handoffPanel = page
+        .locator('[aria-label="Delivery receipt delivered"]')
+        .filter({ hasText: "Approved Website preview delivered" });
+      await expect(handoffPanel).toHaveCount(1);
+      await expect(handoffPanel).toBeVisible();
+      await expect(handoffPanel).toContainText("Approved Website preview delivered");
+      await expect(handoffPanel).toContainText("Delivered");
+      await expect(handoffPanel).toContainText("Receipt recorded");
+      await expect(handoffPanel).toContainText(`Reference ${receipt.deliveryExternalId}`);
+      await expect(handoffPanel).toContainText("Open Website preview");
+      await expect(handoffPanel).toContainText("Open the delivered Website preview");
+      await expect(handoffPanel).not.toContainText("External action not run");
+      const previewLink = handoffPanel.getByRole("link", { name: "Open Website preview" });
+      await expect(previewLink).toHaveAttribute("href", receipt.deliveryExternalUrl!);
+      expectNoHiddenTerms((await handoffPanel.textContent()) ?? "");
     } finally {
       await page.request.delete(`${BASE_URL}/api/companies/${company.id}`).catch(() => undefined);
     }
