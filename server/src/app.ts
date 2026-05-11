@@ -58,6 +58,7 @@ import { createPluginEventBus } from "./services/plugin-event-bus.js";
 import { setPluginEventBus } from "./services/activity-log.js";
 import { createPluginDevWatcher } from "./services/plugin-dev-watcher.js";
 import { createPluginHostServiceCleanup } from "./services/plugin-host-service-cleanup.js";
+import { createDearMeAiProxyRouteOptions } from "./services/dearme-ai-proxy-executors.js";
 import { resolveDearMeOpenClawGatewayDispatchConfigFromEnv } from "./services/dearme-openclaw-gateway-dispatch-config.js";
 import { pluginRegistryService } from "./services/plugin-registry.js";
 import { createHostClientHandlers } from "@paperclipai/plugin-sdk";
@@ -175,7 +176,7 @@ export async function createApp(
     app.all("/api/auth/{*authPath}", opts.betterAuthHandler);
   }
   app.use(llmRoutes(db));
-  app.use(DEARME_PROXY_BASE_PATH, dearMeAiProxyRoutes(db));
+  app.use(DEARME_PROXY_BASE_PATH, dearMeAiProxyRoutes(db, createDearMeAiProxyRouteOptions()));
   app.use(dearMeVoiceGateRoutes());
 
   const hostServicesDisposers = new Map<string, () => void>();

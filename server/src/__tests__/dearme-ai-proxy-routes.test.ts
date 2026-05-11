@@ -8,6 +8,7 @@ import {
   dearMeAiProxyRoutes,
 } from "../routes/dearme-ai-proxy.js";
 import { errorHandler } from "../middleware/index.js";
+import { createDearMeAiProxyRouteOptions } from "../services/dearme-ai-proxy-executors.js";
 import {
   DEARME_PROXY_MODEL_ROUTING_TABLE,
   resolveDearMeProxyModelRouting,
@@ -176,6 +177,135 @@ describe("dearMeAiProxyRoutes", () => {
         agentId: "agent-spoofed",
       }),
     );
+  });
+
+  it("routes OpenAI-compatible requests through the configured fixture executor and writes one normalized cost event", async () => {
+    const { app, insert, values } = createApp(
+      {
+        now: () => new Date("2026-05-10T12:10:00.000Z"),
+        ...createDearMeAiProxyRouteOptions({
+          openAiChat: {
+            mode: "fixture",
+            content: "Factory OpenAI proof",
+            usage: {
+              input_tokens: 5,
+              cache_creation_input_tokens: 1,
+              cache_read_input_tokens: 3,
+              output_tokens: 2,
+            },
+            blendedUsdMicros: 44_000,
+          },
+        }),
+      },
+      {
+        id: "dm-key-factory-openai",
+        agentId: "agent-real",
+        companyId: "company-real",
+      },
+    );
+
+    const res = await request(app)
+      .post(`${DEARME_PROXY_BASE_PATH}/v1/chat/completions`)
+      .set("Authorization", "Bearer dm_sk_test_123")
+      .set("X-DearMe-Correlation-Id", "corr-factory-openai-1")
+      .send({
+        model: "gpt-4o-mini",
+        task: "factory-openai-proof",
+        complexity: 2,
+        messages: [{ role: "user", content: "Prepare the proof." }],
+      })
+      .expect(200);
+
+    expect(res.body).toMatchObject({
+      id: "chatcmpl_corr-factory-openai-1",
+      model: openAiFastModel,
+      choices: [
+        {
+          message: {
+            role: "assistant",
+            content: "Factory OpenAI proof",
+          },
+        },
+      ],
+      usage: {
+        prompt_tokens: 9,
+        completion_tokens: 2,
+        total_tokens: 11,
+      },
+    });
+    expect(insert).toHaveBeenCalledTimes(1);
+    expect(values).toHaveBeenCalledTimes(1);
+    expect(values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        companyId: "company-real",
+        agentId: "agent-real",
+        billingCode: "factory-openai-proof",
+        provider: "dearme_proxy",
+        biller: "dearme_proxy",
+        model: openAiFastModel,
+        inputTokens: 5,
+        cachedInputTokens: 3,
+        outputTokens: 2,
+        costCents: 4,
+      }),
+    );
+  });
+
+  it("returns 503 and writes no cost event when the OpenAI-compatible executor is not configured", async () => {
+    const { app, insert } = createApp(
+      {
+        now: () => new Date("2026-05-10T12:20:00.000Z"),
+        ...createDearMeAiProxyRouteOptions(null),
+      },
+      {
+        id: "dm-key-missing-openai",
+        agentId: "agent-real",
+        companyId: "company-real",
+      },
+    );
+
+    const res = await request(app)
+      .post(`${DEARME_PROXY_BASE_PATH}/v1/chat/completions`)
+      .set("Authorization", "Bearer dm_sk_test_123")
+      .send({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: "Prepare the proof." }],
+      })
+      .expect(503);
+
+    expect(res.body).toEqual({ error: "DearMe AI proxy executor is not configured" });
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 and writes no cost event when the configured OpenAI executor fails", async () => {
+    const { app, insert } = createApp(
+      {
+        now: () => new Date("2026-05-10T12:30:00.000Z"),
+        ...createDearMeAiProxyRouteOptions({
+          openAiChat: {
+            mode: "fixture",
+            fail: true,
+          },
+        }),
+      },
+      {
+        id: "dm-key-failure",
+        agentId: "agent-real",
+        companyId: "company-real",
+      },
+    );
+
+    const res = await request(app)
+      .post(`${DEARME_PROXY_BASE_PATH}/v1/chat/completions`)
+      .set("Authorization", "Bearer dm_sk_test_123")
+      .send({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: "Prepare the proof." }],
+      })
+      .expect(500);
+
+    expect(res.body).toEqual({ error: "Internal server error" });
+    expect(insert).not.toHaveBeenCalled();
   });
 
   it("routes agent runs through the injected executor, normalizes tokens, and attributes cost to the resolved key owner", async () => {
@@ -443,6 +573,75 @@ describe("dearMeAiProxyRoutes", () => {
       expect.objectContaining({
         companyId: "company-spoofed",
         agentId: "agent-spoofed",
+      }),
+    );
+  });
+
+  it("routes Anthropic-compatible requests through the configured fixture executor and writes one normalized cost event", async () => {
+    const { app, insert, values } = createApp(
+      {
+        now: () => new Date("2026-05-10T13:10:00.000Z"),
+        ...createDearMeAiProxyRouteOptions({
+          anthropicMessages: {
+            mode: "fixture",
+            content: "Factory Anthropic proof",
+            usage: {
+              input_tokens: 6,
+              cache_read_input_tokens: 4,
+              output_tokens: 3,
+            },
+            blendedUsdMicros: 51_000,
+          },
+        }),
+      },
+      {
+        id: "dm-key-factory-anthropic",
+        agentId: "agent-real",
+        companyId: "company-real",
+      },
+    );
+
+    const res = await request(app)
+      .post(`${DEARME_PROXY_BASE_PATH}/v1/messages`)
+      .set("Authorization", "Bearer dm_sk_test_123")
+      .set("X-DearMe-Correlation-Id", "corr-factory-anthropic-1")
+      .set("X-DearMe-Model-Tier", "deep")
+      .send({
+        model: "claude-3-5-sonnet",
+        subscriptionId: "factory-anthropic-proof",
+        complexity: 1,
+        messages: [{ role: "user", content: "Prepare the proof." }],
+      })
+      .expect(200);
+
+    expect(res.body).toMatchObject({
+      id: "msg_corr-factory-anthropic-1",
+      model: deepModel,
+      content: [
+        {
+          type: "text",
+          text: "Factory Anthropic proof",
+        },
+      ],
+      usage: {
+        input_tokens: 10,
+        output_tokens: 3,
+      },
+    });
+    expect(insert).toHaveBeenCalledTimes(1);
+    expect(values).toHaveBeenCalledTimes(1);
+    expect(values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        companyId: "company-real",
+        agentId: "agent-real",
+        billingCode: "factory-anthropic-proof",
+        provider: "dearme_proxy",
+        biller: "dearme_proxy",
+        model: deepModel,
+        inputTokens: 6,
+        cachedInputTokens: 4,
+        outputTokens: 3,
+        costCents: 5,
       }),
     );
   });
