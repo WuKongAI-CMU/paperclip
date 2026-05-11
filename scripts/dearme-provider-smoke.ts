@@ -312,7 +312,6 @@ DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY=Your private DearMe proof packet is ready.
   if (includesTemplateTarget(targetArg, "imessage_message")) {
     sections.push(`
 DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=
-DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY=Dear me, day 1 - the team has your first proof packet ready.
 DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE=imessage
 `);
   }

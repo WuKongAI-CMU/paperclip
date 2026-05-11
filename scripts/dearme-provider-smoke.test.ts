@@ -339,6 +339,7 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   assert.match(template, /DEARME_OPENCLAW_TELEGRAM_ALLOW_FROM_FILE=/);
   assert.match(template, /DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT=/);
   assert.match(template, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=/);
+  assert.doesNotMatch(template, /DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY=/);
   assert.match(template, /DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/);
   assert.equal(template.includes("accessToken"), false);
   assert.equal(template.includes("li-token"), false);
@@ -401,6 +402,7 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   assert.match(openClawTemplate, /OPENCLAW_GATEWAY_TOKEN=/);
   assert.match(openClawTemplate, /DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT=/);
   assert.match(openClawTemplate, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=/);
+  assert.doesNotMatch(openClawTemplate, /DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY=/);
   assert.doesNotMatch(openClawTemplate, /DEARME_LINKEDIN_DM_MESSAGES_URL=/);
   assert.doesNotMatch(openClawTemplate, /DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/);
   assert.doesNotMatch(openClawTemplate, /DEARME_DEPLOY_SITE_BASE_URL=/);

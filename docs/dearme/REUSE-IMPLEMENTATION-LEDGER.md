@@ -20,6 +20,10 @@ It answers three questions before another worker starts building:
   the OpenClaw message lane while keeping the real safety boundary intact:
   DearMe still needs an explicit iMessage recipient, `--live`, and
   `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1` before any send can happen.
+- The generated provider env template no longer prints
+  `DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY` as setup work. A worker may still
+  override it intentionally, but Symphony/status must not treat iMessage body
+  setup as a readiness blocker.
 - Keep this as backstage substrate reuse. Do not add a customer-facing provider
   setup screen to explain the default body; Symphony/status should treat the
   remaining iMessage work as recipient/provider proof, not product onboarding.

@@ -232,8 +232,8 @@ loopback host proof as a substitute for a phone-reachable public HTTPS
 substitute for a live `openclaw_messages` smoke.
 The internal `pnpm dearme:provider-smoke -- --check` command now owns that
 operator proof checklist, including the OpenClaw gateway URL/token/auth plus
-recipient/body requirements for Telegram/iMessage, and the production site URL
-content smoke once host env is enabled. When
+Telegram recipient/body and iMessage recipient proof requirements, and the
+production site URL content smoke once host env is enabled. When
 `DEARME_USE_LOCAL_OPENCLAW_CONFIG=1` is present in the ignored
 `.dearme-proof.env`, the OpenClaw gateway URL/token/auth come from the existing
 host-local config rather than another DearMe secret file. The production host

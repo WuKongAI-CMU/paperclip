@@ -2,6 +2,33 @@
 
 Date: 2026-05-11
 
+## iMessage Operator Setup Surface Cleanup - 2026-05-11
+
+Product/architecture slice:
+
+- Removed the no-longer-required iMessage smoke body from generated provider
+  env templates. `dearme:provider-smoke` still accepts an override, but the
+  default body now lives in code so the operator/Symphony surface only asks for
+  the actual missing proof: an explicit iMessage recipient plus the existing
+  live-send guard.
+- Removed the stale `imessage_message_body` capability label from
+  `dearme:status` mapping. Future workers should not route an iMessage body
+  setup ticket unless they are intentionally changing the smoke copy; it is not
+  a product-readiness blocker anymore.
+- This keeps the Polsia comparison focused on the real gap. DearMe has reused
+  the local OpenClaw gateway and Telegram allow-list; the shared-message proof
+  is now blocked only on recipient/provider fact, not duplicate body setup.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages`
+- `pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages --json`
+- `pnpm --silent dearme:goal-audit -- --json`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Default iMessage Smoke Body Narrows OpenClaw Gap - 2026-05-11
 
 Product/architecture slice:
@@ -1179,8 +1206,8 @@ Product/architecture slice:
   iMessage OpenClaw smokes into one guarded `openclaw_messages` run command
   when both channels are blocked.
 - Scoped OpenClaw env templates now show one group live command instead of two
-  repeated channel live commands, while still printing both recipient/body
-  variables and the shared OpenClaw gateway config.
+  repeated channel live commands, while still printing the required channel
+  proof values and the shared OpenClaw gateway config.
 - Readiness JSON, per-target execution, and live confirmation gates are
   unchanged. This only cleans the operator surface so the shared gateway proof
   is one action instead of two duplicate setup concerns.
@@ -1281,8 +1308,8 @@ Product/architecture slice:
   `--target openclaw_messages`, and `gateway-messages` as one shared OpenClaw
   gateway proof lane for Telegram plus iMessage/SMS.
 - The OpenClaw message group keeps setup scoped to the common gateway
-  URL/token/auth and the two message recipient/body variables; it does not pull
-  LinkedIn, Meta, or deploy-site setup into the same operator checklist.
+  URL/token/auth plus explicit channel proof values; it does not pull LinkedIn,
+  Meta, or deploy-site setup into the same operator checklist.
 - Group readiness preserves the existing per-target result shape while printing
   one scoped env-template command, one scoped readiness recheck, and the two
   guarded live send commands.

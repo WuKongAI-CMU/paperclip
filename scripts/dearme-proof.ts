@@ -78,7 +78,6 @@ const DEARME_PROOF_CAPABILITY_LABELS = {
   telegram_recipient: "Telegram smoke recipient",
   telegram_message_body: "Telegram smoke body",
   imessage_recipient: "iMessage smoke recipient",
-  imessage_message_body: "iMessage smoke body",
   meta_credential: "Meta campaign credential",
   live_confirmation: "live confirmation guard",
   unknown: "provider smoke setup",
@@ -693,9 +692,6 @@ function providerCapabilityForMissing(requirement: string): DearMeProofCapabilit
   }
   if (requirement.includes("DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT")) {
     return capabilityBlocker("imessage_recipient");
-  }
-  if (requirement.includes("DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY")) {
-    return capabilityBlocker("imessage_message_body");
   }
   if (
     requirement.includes("DEARME_META_CAMPAIGN_CREDENTIAL_JSON") ||
