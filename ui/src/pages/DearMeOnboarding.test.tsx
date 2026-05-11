@@ -307,7 +307,7 @@ function paidBetaStatus(status: "trial" | "active") {
 function reviewLoopFixture(
   state: DearMeOutputReviewLoop["state"] = "fresh",
   nextStep = state === "needs_user_review"
-    ? "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate."
+    ? "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate. Every public move still waits for your launch approval."
     : "Your team is preparing this privately.",
   overrides: Partial<DearMeOutputReviewLoop> = {},
 ): DearMeOutputReviewLoop {
@@ -606,12 +606,12 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         decisionNeed: {
           needed: true,
           label: "Review needed",
-          reason: "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.",
+          reason: "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate. Every public move still waits for your launch approval.",
           riskGate: "publish_social",
         },
         sourceLabel: "Prepared output",
         costImpact: null,
-        nextAction: "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.",
+        nextAction: "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate. Every public move still waits for your launch approval.",
         relatedOutputId: "issue-2:content_drafts",
         issueId: "issue-2",
         issueIdentifier: "PET-8",
@@ -763,7 +763,7 @@ function workbenchResponse(): DearMeWorkbenchResponse {
         evidenceLabel: "Prepared output / Content drafts",
         status: "decision_needed",
         needsApproval: true,
-        nextAction: "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.",
+        nextAction: "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate. Every public move still waits for your launch approval.",
         relatedOutputId: "issue-2:content_drafts",
         issueId: "issue-2",
         issueIdentifier: "PET-8",
@@ -1014,7 +1014,7 @@ function workbenchResponseWithPacketWorkbench(): DearMeWorkbenchResponse {
   const response = workbenchResponseWithPacketReport();
   const packetSummary =
     "DearMe prepared this draft, report, and decision from the same private cycle packet. Review the shared proof pack once before public moves.";
-  const packetNextStep = "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.";
+  const packetNextStep = "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate. Every public move still waits for your launch approval.";
   const packetLoop = reviewLoopFixture("needs_user_review", packetNextStep, {
     reviewHandoff: {
       action: "request_changes",
