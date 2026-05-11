@@ -29,6 +29,12 @@ Verification:
   passed: 6 files, 46 tests.
 - `pnpm --filter @paperclipai/ui exec vitest run src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "delivery receipt"`
   passed.
+- `pnpm --filter @paperclipai/ui exec vitest run src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "shows a private sample team package"`
+  passed.
+- Browser smoke at `http://127.0.0.1:3100/DEAA/dearme` passed on desktop
+  `1440x900` and mobile `390x844`: the page shows the sample approved X
+  delivery receipt, the customer-safe X connection-needed next step, no hidden
+  substrate terms, no console/page errors, and no horizontal overflow.
 - `git diff --check` passed.
 
 ## DEA-43 DM-145F-B Fetch Transport Proof Absorbed - 2026-05-11

@@ -2881,12 +2881,13 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Source proof: Ran 42 customer interviews that changed a pricing launch");
     expect(container.textContent).toContain("Delivery receipts");
     expect(container.textContent).toContain("Approved work comes back with a result");
-    expect(container.textContent).toContain("Approved LinkedIn post delivered");
-    expect(container.textContent).toContain("Reference linkedin-post-42");
+    expect(container.textContent).toContain("Approved X post delivered");
+    expect(container.textContent).toContain("DearMe recorded the delivery receipt for the approved next step.");
+    expect(container.textContent).toContain("Reference x-post-42");
     expect(container.textContent).toContain("Review the delivered post, then let DearMe prepare the next proof-backed opportunity.");
-    expect(container.textContent).toContain("Approved newsletter send needs connection");
+    expect(container.textContent).toContain("Approved X post needs connection");
     expect(container.textContent).toContain("Needs connection");
-    expect(container.textContent).toContain("Connect the newsletter channel before DearMe continues this approved send.");
+    expect(container.textContent).toContain("Connect X before DearMe can continue this approved next step.");
     expect(container.textContent).not.toContain("needs_channel_connection");
     expect(container.textContent).not.toContain("Approval-gated by default");
     expect(mockDearmeApi.previewFirstCycle).not.toHaveBeenCalled();
