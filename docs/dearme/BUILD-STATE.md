@@ -1,6 +1,38 @@
 # DearMe Build State
 
-Date: 2026-05-10
+Date: 2026-05-11
+
+## DEA-42 DM-145F Proxy Executor Boundary Absorbed - 2026-05-11
+
+Product/architecture slice:
+
+- Reviewed Symphony worker handoff `31e9d683` for the DM-145F proxy executor
+  boundary and kept the current coordinator cut as the source of truth. The
+  live branch already carries the stronger fixture executor boundary in
+  `server/src/services/dearme-ai-proxy-executors.ts`, route-option wiring
+  through `createDearMeAiProxyRouteOptions()`, default app mounting, and
+  route/service coverage.
+- Did not replay the worker tip because it would add a duplicate
+  `dearme-ai-proxy-executor.ts` wrapper and require all three handler
+  functions unnecessarily. Future live-provider/runtime work should consume
+  the settled executor boundary, routing, auth, cache, and key helpers instead
+  of reopening another proxy abstraction.
+- Linear `DEA-42` is Done with coordinator evidence, and the worktree
+  absorption ledger now records the worker head as reviewed_absorbed so
+  Symphony does not keep surfacing the same lane as new work.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-ai-proxy-routes.test.ts
+  server/src/services/dearme-ai-proxy-executors.test.ts --maxWorkers=1`
+  passed: 2 files, 15 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/dearme-ai-proxy typecheck` passed.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty` passed after the
+  absorption entry.
+- `pnpm dearme:worktrees -- --json --status=not_in_current --skip-dirty`
+  returned an empty not_in_current set after the absorption entry.
+- `git diff --check` passed.
 
 ## Symphony Worker Watchdog Tightened - 2026-05-10
 

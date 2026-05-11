@@ -1,6 +1,6 @@
 # DearMe Reuse Implementation Ledger
 
-Date: 2026-05-10
+Date: 2026-05-11
 Owner: DearMe coordinator thread
 
 ## Purpose
@@ -56,6 +56,13 @@ It answers three questions before another worker starts building:
   while DM-145 can mint `dm_sk_*` keys later without a parallel generator.
 - Remaining follow-up for the reuse lane: keep later proxy calls on the same
   agent-key storage and revocation path.
+- DEA-42 is coordinator-absorbed as the DM-145F proxy executor boundary. The
+  current head already carries the stronger fixture executor set in
+  `server/src/services/dearme-ai-proxy-executors.ts`, default app wiring via
+  `createDearMeAiProxyRouteOptions()`, and route/service tests, so do not
+  replay the duplicate executor-wrapper worker tip. Future DM-145 runtime work
+  should consume this boundary plus the settled routing, cache economics, auth,
+  and `dm_sk_*` issuance helpers.
 
 DearMe should maximize reuse, but "reuse" means adapting the strongest proven
 primitive into the DearMe product surface. It does not mean importing a whole
@@ -90,6 +97,12 @@ The right reuse split is:
 
 ## Latest Symphony Absorption - 2026-05-10
 
+- DEA-42 is coordinator-absorbed as the DM-145F executor-boundary slice at
+  `31e9d683`. Symphony produced the worker proof, but the coordinator kept the
+  final cut on the existing route-options service, fixture executors, default
+  app mount, and route/service tests. The worker tip is recorded in
+  `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so the remaining Symphony
+  workspace is reviewed_absorbed rather than a fresh implementation lane.
 - DEA-36 is coordinator-absorbed as the DM-147 launch-ready next-step slice.
   Symphony provided the proof-pack summary/output-handoff refinement in worker
   handoffs `47b31e0f`, `63ec69b6`, and useful follow-on `dbe46539` grammar,

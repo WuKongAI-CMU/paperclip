@@ -1,6 +1,21 @@
 {
-  "updatedAt": "2026-05-10",
+  "updatedAt": "2026-05-11",
   "reviewedAbsorptions": [
+    {
+      "ticket": "DEA-42",
+      "branch": "codex/dearme-dm-136-sample-demo-proof",
+      "head": "31e9d68366e772218d5255eae0ee06ff1e92ec90",
+      "reviewedAt": "2026-05-11",
+      "reason": "The DEA-42 Symphony worker handoff is already absorbed and superseded by the current coordinator head through the stronger fixture executor boundary, default app wiring, and route/service tests; replaying the worker tip would add a duplicate dearme-ai-proxy-executor.ts wrapper and require all three handlers unnecessarily.",
+      "evidence": [
+        "server/src/services/dearme-ai-proxy-executors.ts",
+        "server/src/services/dearme-ai-proxy-executors.test.ts",
+        "server/src/__tests__/dearme-ai-proxy-routes.test.ts",
+        "server/src/app.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
     {
       "ticket": "DEA-33",
       "branch": "codex/dearme-dm-136-sample-demo-proof",
