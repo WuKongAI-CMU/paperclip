@@ -15,6 +15,14 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `dearme:provider-smoke -- --print-env-template --target deploy_site_production`
+  now tells the operator to reuse
+  `pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof`
+  as the concrete private-site artifact before enabling production host proof.
+  Future workers should keep improving this host lane through the existing
+  proof artifact and provider-smoke harness; do not add a separate site-smoke
+  command or customer-facing connector/setup surface just to explain the same
+  blocked live proof.
 - `pnpm dearme:status` / `pnpm dearme:proof -- --status` now reuse the
   `dearme:aha-proof` report as the first status section. The compact product
   verdict no longer lags the product surface: it explicitly says the local

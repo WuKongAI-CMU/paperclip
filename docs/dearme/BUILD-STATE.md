@@ -2,6 +2,30 @@
 
 Date: 2026-05-11
 
+## Provider Host Smoke Reuses Private Proof Artifact - 2026-05-11
+
+Product/architecture slice:
+
+- Updated the provider-smoke local env template so the production host lane now
+  points operators at the existing `dearme:aha-proof -- --export-site
+  dist/dearme-private-proof` artifact instead of leaving the live host step as
+  an abstract dispatch receipt.
+- Kept the proof boundary honest: preview smoke still defaults to the safe
+  local receipt path, production remains disabled until explicit opt-in, and
+  the product status still reports live provider/host proof as blocked until a
+  real phone-reachable host serves the exported page.
+- Reused the single proof/status surface and the existing private first-wow
+  artifact. No new setup dashboard, connector UI, runtime layer, or customer
+  language was added.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+- `pnpm --silent dearme:provider-smoke -- --print-env-template --target deploy_site_production`
+- `pnpm --silent dearme:status`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Unified Status Includes Aha Continuation And Private Site Export - 2026-05-11
 
 Product/architecture slice:

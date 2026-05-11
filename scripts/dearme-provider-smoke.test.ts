@@ -155,12 +155,23 @@ test("provider smoke env files override base env and merge in order", async () =
 
 test("provider smoke env template is local-only and keeps live actions disabled", () => {
   const template = dearMeProviderSmokeEnvTemplate();
+  const previewTemplate = dearMeProviderSmokeEnvTemplate("deploy_site_preview");
+  const productionTemplate = dearMeProviderSmokeEnvTemplate("deploy_site_production");
   const telegramTemplate = dearMeProviderSmokeEnvTemplate("telegram_message");
   const openClawTemplate = dearMeProviderSmokeEnvTemplate("openclaw_messages");
 
   assert.match(template, /DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=0/);
   assert.match(template, /DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=0/);
   assert.match(template, /DEARME_DEPLOY_SITE_SMOKE_HANDLE=peter-studio/);
+  assert.match(template, /pnpm --silent dearme:aha-proof -- --export-site dist\/dearme-private-proof/);
+  assert.match(
+    template,
+    /DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=dist\/dearme-private-proof\/peter-studio\/index\.html/,
+  );
+  assert.match(
+    template,
+    /DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=Peter Studio has a private growth team already working/,
+  );
   assert.match(template, /DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN=/);
   assert.match(template, /DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=peter-studio/);
   assert.match(template, /DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0/);
@@ -173,6 +184,17 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   assert.equal(template.includes("accessToken"), false);
   assert.equal(template.includes("li-token"), false);
   assert.equal(template.includes("meta-token"), false);
+
+  assert.match(previewTemplate, /--check --target deploy_site_preview/);
+  assert.match(previewTemplate, /DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=smoke:provider-dispatch/);
+  assert.doesNotMatch(previewTemplate, /dearme:aha-proof -- --export-site/);
+
+  assert.match(productionTemplate, /--check --target deploy_site_production/);
+  assert.match(productionTemplate, /dearme:aha-proof -- --export-site dist\/dearme-private-proof/);
+  assert.match(
+    productionTemplate,
+    /Host dist\/dearme-private-proof\/peter-studio\/index\.html at the production URL/,
+  );
 
   assert.match(telegramTemplate, /--check --target telegram_message/);
   assert.match(telegramTemplate, /--target telegram_message --live/);

@@ -186,6 +186,19 @@ ${selectedRunCommands.map((command) => `# ${command}`).join("\n")}
 `];
 
   if (includesTemplateTarget(targetArg, "deploy_site_preview", "deploy_site_production")) {
+    const productionHostSmokeArtifactHelp = includesTemplateTarget(
+      targetArg,
+      "deploy_site_production",
+    )
+      ? `#
+# Production host smoke artifact:
+# pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof
+# Host dist/dearme-private-proof/peter-studio/index.html at the production URL,
+# then set:
+# DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=dist/dearme-private-proof/peter-studio/index.html
+# DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=Peter Studio has a private growth team already working
+`
+      : "";
     sections.push(`
 DEARME_DEPLOY_SITE_BASE_URL=https://dearme.example.test
 DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=0
@@ -194,7 +207,7 @@ DEARME_DEPLOY_SITE_SMOKE_HANDLE=peter-studio
 DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=smoke:provider-dispatch
 DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN=
 DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=peter-studio
-`);
+${productionHostSmokeArtifactHelp}`);
   }
 
   if (includesTemplateTarget(targetArg, "linkedin_dm")) {

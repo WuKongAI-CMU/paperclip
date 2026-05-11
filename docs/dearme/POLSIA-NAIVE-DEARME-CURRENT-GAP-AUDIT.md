@@ -57,6 +57,10 @@ Current DearMe branch:
   - writes `peter-studio/index.html` and `peter-studio/proof.json`
   - exported HTML has no customer-hidden substrate, provider, credential, token,
     or workbench language
+- `pnpm --silent dearme:provider-smoke -- --print-env-template --target deploy_site_production`
+  - now points the production host smoke at the same exported private-site
+    artifact path
+  - keeps production disabled by default until a real host serves that artifact
 - `pnpm --silent dearme:proof -- --status --json`
   - first-wow aha proof is now part of the unified product status
   - local no-send proof is ready
@@ -349,4 +353,6 @@ app.
 The next correct move is not another architecture layer. It is to deepen the
 watchable first-five-minute loop into a five-draft private proof packet, then
 serve that same packet from a phone-reachable host with live provider evidence
-on top of the proof gate that now exists.
+on top of the proof gate that now exists. The provider-smoke production
+template now gives the concrete artifact path for that host step; the remaining
+work is the real host and provider proof, not another local proof command.
