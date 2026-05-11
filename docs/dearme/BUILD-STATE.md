@@ -2,6 +2,37 @@
 
 Date: 2026-05-11
 
+## DM-178 `create_meta_campaign` Dispatch Path - 2026-05-11
+
+Product/architecture slice:
+
+- Added a server-side Meta Ads dispatcher at
+  `server/src/services/dearme-meta-campaign-dispatch.ts`.
+- Approved `create_meta_campaign` launch handoffs now default to this direct
+  dispatcher after the existing wrapper has completed approval and active
+  `channel_connections` lookup on the `meta_ads` channel.
+- The dispatcher resolves the stored Meta ads credential through the shared
+  secret-provider envelope resolver, requires an `ads_management` grant,
+  normalizes the ad account id, validates expiry/token type, bounds the
+  simplified campaign payload, enforces the existing test/ramp/scale daily
+  budget tiers, and preserves the 7-day learning-window rule from the Polsia
+  Ads Manager substrate.
+- The live request creates a paused Meta Marketing API campaign shell through
+  the configured HTTPS Graph API base URL (defaulting to current `v25.0`),
+  sends the wrapper idempotency key, maps
+  `401`/`403` back to the wrapper reconnect path, and returns an Ads Manager
+  campaign receipt without recording spend as cost until spend actually occurs.
+- This closes the cloud-side dispatch seam for the fifth outbound tool in
+  mocked tests. It still needs a real Meta OAuth/Marketing API credential
+  smoke before claiming live paid-ad delivery for customers.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-meta-campaign-dispatch.test.ts server/src/services/dearme-linkedin-dm-dispatch.test.ts server/src/services/dearme-approved-launch-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts server/src/services/dearme-x-post-dispatch.test.ts server/src/services/dearme-send-email-dispatch.test.ts server/src/services/dearme-deploy-site-dispatch.test.ts --maxWorkers=1`
+  passed: 7 files, 56 tests.
+- `pnpm --filter @paperclipai/server typecheck`
+  passed.
+
 ## DM-176A Partner `send_linkedin_dm` Dispatch Path - 2026-05-11
 
 Product/architecture slice:

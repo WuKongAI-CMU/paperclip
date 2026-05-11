@@ -62,6 +62,26 @@ const linkedInDmLaunchHandoff = {
   },
 };
 
+const metaCampaignLaunchHandoff = {
+  toolName: "create_meta_campaign",
+  channel: "meta_ads",
+  gate: "spend",
+  riskGate: "paid_ads",
+  estimatedUsd: 20,
+  payload: {
+    campaign: {
+      name: "Architecture review lead magnet",
+      objective: "OUTCOME_LEADS",
+      dailyBudgetUsd: 20,
+      creativeRefs: ["asset:video:1"],
+      audienceRef: "audience:founders",
+    },
+    budgetTier: "test",
+    learningWindowHours: 168,
+  },
+  config: { minVoiceGateScore: 92, dailyUsdCap: 25 },
+};
+
 function approval(overrides: Record<string, unknown> = {}) {
   return {
     id: "approval-1",
@@ -219,6 +239,41 @@ describe("dearMeApprovedLaunchHandoffService", () => {
       voiceFingerprintId: "vf_linkedin_1",
       preapprovedApprovalId: "approval-1",
       config: { minVoiceGateScore: 92, dailyUsdCap: 5 },
+    }));
+  });
+
+  it("maps an approved Meta ads handoff into a create-meta-campaign outbound call", async () => {
+    const callOutbound = vi.fn(async () => ({
+      kind: "delivered" as const,
+      voiceGateScore: null,
+      externalId: "120000000000000001",
+    }));
+    const svc = dearMeApprovedLaunchHandoffService({ callOutbound });
+
+    const result = await svc.executeApprovedNextMove({
+      approval: approval({
+        payload: {
+          issueId: "issue-1",
+          launchHandoff: metaCampaignLaunchHandoff,
+        },
+      }),
+      actorUserId: "user-1",
+    });
+
+    expect(result.kind).toBe("called");
+    expect(callOutbound).toHaveBeenCalledWith(expect.objectContaining({
+      toolName: "create_meta_campaign",
+      companyId: "company-1",
+      userId: "user-1",
+      issueId: "issue-1",
+      agentId: "agent-1",
+      payload: metaCampaignLaunchHandoff.payload,
+      voiceGateText: null,
+      voiceGateArtifactKind: null,
+      voiceFingerprintId: null,
+      estimatedUsd: 20,
+      preapprovedApprovalId: "approval-1",
+      config: { minVoiceGateScore: 92, dailyUsdCap: 25 },
     }));
   });
 

@@ -28,6 +28,11 @@ export {
   type DearMeLinkedInDmDispatchConfig,
 } from "./dearme-linkedin-dm-dispatch.js";
 export {
+  createDearMeMetaCampaignDispatch,
+  resolveDearMeMetaCampaignCredential,
+  type DearMeMetaCampaignDispatchConfig,
+} from "./dearme-meta-campaign-dispatch.js";
+export {
   createDearMeSendEmailDispatch,
   resolveDearMeSendEmailCredential,
   type DearMeSendEmailDispatchConfig,
