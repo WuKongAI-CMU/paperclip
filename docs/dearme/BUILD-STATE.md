@@ -23,13 +23,21 @@ Product/architecture slice:
 
 Verification:
 
-- `pnpm exec vitest ui/src/pages/DearMeSitePreview.test.tsx --run --maxWorkers=1`
-  passed: 1 file, 1 test.
-- `pnpm --filter @paperclipai/db typecheck` passed, including migration
-  numbering checks.
+- `pnpm exec vitest run ui/src/pages/DearMeSitePreview.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 75 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --filter @paperclipai/db typecheck` passed.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm typecheck` passed across workspace packages, server, UI, and CLI.
+- `npx playwright test tests/e2e/dearme-private-handoff.spec.ts --config tests/e2e/playwright.config.ts`
+  passed: 2 browser smoke tests, including the clean Postgres migration path.
+- `pnpm --silent dearme:aha-proof -- --check` passed.
+- `pnpm --silent dearme:proof -- --status --json` still reports local
+  no-send proof ready, with voice semantic and live provider proof not ready.
 - `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs --ticket DEA-60`
   passed and reported 2 reviewed/absorbed Symphony worktrees, with the latest
   DEA-60 handoff left as audit trail rather than replayed.
+- `git diff --check` passed.
 
 ## Local First-Wow Aha Proof - 2026-05-11
 
@@ -12607,8 +12615,8 @@ Thirty-ninth verified DearMe slice:
 
 Verification:
 
-- `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
-  passed: 1 file, 74 tests.
+- `pnpm exec vitest run ui/src/pages/DearMeSitePreview.test.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+  passed: 2 files, 75 tests.
 - `pnpm --filter @paperclipai/ui typecheck` passed.
 
 ## Known Gaps
