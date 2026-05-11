@@ -2,28 +2,48 @@
 
 Date: 2026-05-11
 
-## DM-173B X Connect Start URL Contract - 2026-05-11
+## DEA-51 DM-173B X OAuth Start + Exchange Path - 2026-05-11
 
 Product/architecture slice:
 
 - The approved X next-step fallback now returns a DearMe-owned
   `oauthStartUrl` instead of only a connection-needed message, aligning the
   server outcome with the OpenClaw outbound tool contract.
-- Added the narrow `GET /v1/channels/:companyId/x/start` entrypoint. It
-  redirects to the configured X OAuth URL when an injected start seam is
-  present and stays explicitly config-gated with 503 until live OAuth is wired.
-- Existing X callback persistence remains the write side of the same flow.
-  This slice does not add live X API posting, a generic connector dashboard,
-  or a shared account path.
+- Added the live config-gated X OAuth connection service:
+  `GET /v1/channels/:companyId/x/start` builds the X authorize URL with PKCE,
+  keeps the verifier server-side, and redirects the user to X when
+  `DEARME_X_OAUTH_CLIENT_ID` plus `DEARME_X_OAUTH_REDIRECT_URI` are present
+  (the shorter `DEARME_X_CLIENT_ID` / `DEARME_X_REDIRECT_URI` aliases are
+  accepted for worker-ticket compatibility).
+  Missing config keeps the route fail-closed at 503 instead of pretending the
+  channel is connected.
+- Added browser callback completion through
+  `GET /v1/channels/:companyId/x/callback`: it consumes the server-side state,
+  exchanges the code at the X token endpoint, loads the X profile, encrypts the
+  credential blob, and persists an active per-user `x` connection row.
+- Return URLs are constrained to the configured DearMe callback origin so the
+  browser path can return to Workbench without becoming an open redirect.
+- The existing `POST /v1/channels/:companyId/x/callback` remains the test/API
+  seam around the same persistence path. Live X posting is still separate
+  dispatch work; this slice does not add a generic connector dashboard or a
+  shared account path.
+- OAuth state is currently in-memory for the private-beta route shape; a
+  multi-instance deployment should move state into a durable session/secret
+  substrate before opening this broadly.
+- Symphony worker head `29e9e983` is recorded as reviewed_absorbed because the
+  coordinator cut keeps the stronger start + callback + approved retry path
+  while absorbing the worker's useful token/profile exchange direction.
 
 Verification:
 
-- `pnpm exec vitest run server/src/services/dearme-outbound-tool-wrapper.test.ts server/src/__tests__/dearme-channel-connections-routes.test.ts --maxWorkers=1`
-  passed: 2 files, 17 tests.
+- `pnpm exec vitest run server/src/services/dearme-x-oauth-connection.test.ts server/src/__tests__/dearme-channel-connections-routes.test.ts server/src/services/dearme-channel-connections.test.ts --maxWorkers=1`
+  passed: 3 files, 15 tests.
 - `pnpm --filter @paperclipai/server typecheck`
   passed.
 - `git diff --check`
   passed.
+- `pnpm dearme:worktrees -- --json --skip-dirty --status not_in_current`
+  returned an empty set after the DEA-51 absorption entry.
 
 ## DEA-50 DM-173A X Callback Persistence Proof - 2026-05-10
 

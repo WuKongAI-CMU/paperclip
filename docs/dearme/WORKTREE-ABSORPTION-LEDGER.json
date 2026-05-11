@@ -2,6 +2,25 @@
   "updatedAt": "2026-05-11",
   "reviewedAbsorptions": [
     {
+      "ticket": "DEA-51",
+      "branch": "codex/dearme-dm-136-sample-demo-proof",
+      "head": "29e9e9831c58e831026d5b3a4f06e6e30a349232",
+      "reviewedAt": "2026-05-11",
+      "reason": "The DEA-51 Symphony handoff is absorbed by the coordinator cut on the live head. The worker proved the useful X token/profile exchange and docs direction, but its older-base patch lacked the already-settled start URL, PKCE state, browser callback return handling, and approved retry oauthStartUrl path. The coordinator implementation keeps the stronger shared route seam, config-gated start and callback service, same-origin return guard, focused tests, and canonical docs instead of replaying the worker's duplicate service name.",
+      "evidence": [
+        "server/src/services/dearme-x-oauth-connection.ts",
+        "server/src/services/dearme-x-oauth-connection.test.ts",
+        "server/src/routes/dearme-channel-connections.ts",
+        "server/src/__tests__/dearme-channel-connections-routes.test.ts",
+        "server/src/app.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/INDEX.md",
+        "docs/dearme/README.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md",
+        "docs/dearme/TRI-SUBSTRATE-ARCHITECTURE.md"
+      ]
+    },
+    {
       "ticket": "DEA-50",
       "branch": "codex/dearme-dm-136-sample-demo-proof",
       "head": "17854e15e5522f9e28962e8296a546a3a058a36b",

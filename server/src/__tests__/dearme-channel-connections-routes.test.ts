@@ -183,6 +183,53 @@ describe("dearmeChannelConnectionRoutes", () => {
     });
   });
 
+  it("stores an active X connection from the browser callback route and redirects back", async () => {
+    const now = new Date("2026-05-10T12:34:56.000Z");
+    const exchangeXConnection = vi.fn(async () => ({
+      encryptedCredential: "enc:x:credential",
+      externalAccountId: "x-account-1",
+      externalDisplayName: "@peter",
+      scopes: ["tweet.read", "tweet.write"],
+      expiresAt: new Date("2026-05-11T12:00:00.000Z"),
+      returnTo: "https://app.dearme.test/workbench",
+      metadata: {
+        providerAppId: "app-1",
+      },
+    }));
+    const { app, upsertActive } = createApp({
+      now: () => now,
+      exchangeXConnection,
+    });
+
+    const res = await request(app)
+      .get("/v1/channels/company-1/x/callback")
+      .query({
+        code: "code-123",
+        state: "state-abc",
+      })
+      .expect(302);
+
+    expect(exchangeXConnection).toHaveBeenCalledWith({
+      companyId: "company-1",
+      userId: "user-1",
+      code: "code-123",
+      state: "state-abc",
+      redirectUri: undefined,
+    });
+    expect(upsertActive).toHaveBeenCalledWith(
+      expect.objectContaining({
+        companyId: "company-1",
+        userId: "user-1",
+        channel: "x",
+        encryptedCredential: "enc:x:credential",
+        externalAccountId: "x-account-1",
+        externalDisplayName: "@peter",
+        lastRefreshedAt: now,
+      }),
+    );
+    expect(res.headers.location).toBe("https://app.dearme.test/workbench");
+  });
+
   it("rejects invalid callback input without creating a connection", async () => {
     const { app, exchangeXConnection, upsertActive } = createApp();
 

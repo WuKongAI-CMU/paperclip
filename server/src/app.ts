@@ -61,6 +61,7 @@ import { createPluginDevWatcher } from "./services/plugin-dev-watcher.js";
 import { createPluginHostServiceCleanup } from "./services/plugin-host-service-cleanup.js";
 import { createDearMeAiProxyRouteOptions } from "./services/dearme-ai-proxy-executors.js";
 import { resolveDearMeOpenClawGatewayDispatchConfigFromEnv } from "./services/dearme-openclaw-gateway-dispatch-config.js";
+import { createDearMeXOAuthConnectionServiceFromEnv } from "./services/dearme-x-oauth-connection.js";
 import { pluginRegistryService } from "./services/plugin-registry.js";
 import { createHostClientHandlers } from "@paperclipai/plugin-sdk";
 import type { BetterAuthSessionResult } from "./auth/better-auth.js";
@@ -176,10 +177,23 @@ export async function createApp(
   if (opts.betterAuthHandler) {
     app.all("/api/auth/{*authPath}", opts.betterAuthHandler);
   }
+  const dearMeXOAuthConnection = createDearMeXOAuthConnectionServiceFromEnv();
   app.use(llmRoutes(db));
   app.use(DEARME_PROXY_BASE_PATH, dearMeAiProxyRoutes(db, createDearMeAiProxyRouteOptions()));
   app.use(dearMeVoiceGateRoutes());
-  app.use("/v1/channels", boardMutationGuard(), dearmeChannelConnectionRoutes(db));
+  app.use(
+    "/v1/channels",
+    boardMutationGuard(),
+    dearmeChannelConnectionRoutes(
+      db,
+      dearMeXOAuthConnection
+        ? {
+            startXConnection: dearMeXOAuthConnection.startXConnection,
+            exchangeXConnection: dearMeXOAuthConnection.exchangeXConnection,
+          }
+        : {},
+    ),
+  );
 
   const hostServicesDisposers = new Map<string, () => void>();
   const workerManager = opts.pluginWorkerManager ?? createPluginWorkerManager();

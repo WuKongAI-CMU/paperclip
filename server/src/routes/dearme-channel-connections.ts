@@ -46,6 +46,7 @@ export interface DearMeXConnectionCallbackExchangeResult {
   externalDisplayName: string;
   scopes?: readonly string[] | null;
   expiresAt?: Date | null;
+  returnTo?: string | null;
   metadata?: Record<string, unknown> | null;
 }
 
@@ -72,6 +73,17 @@ function stringQueryValue(value: unknown) {
   return typeof value === "string" ? value : undefined;
 }
 
+function safeRedirectUrl(value: string | null | undefined) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function dearmeChannelConnectionRoutes(
   db: Db,
   opts: DearMeXConnectionCallbackRoutesOptions = {},
@@ -79,6 +91,48 @@ export function dearmeChannelConnectionRoutes(
   const router = Router();
   const channelConnections = opts.channelConnections ?? dearMeChannelConnectionsService(db);
   const now = opts.now ?? (() => new Date());
+
+  async function completeXConnection(input: DearMeXConnectionCallbackExchangeInput) {
+    const exchange = opts.exchangeXConnection;
+    if (!exchange) {
+      throw new HttpError(503, "X connection exchange is not configured.");
+    }
+
+    const exchanged = await exchange(input);
+    const encryptedCredential = trimmedOrNull(exchanged.encryptedCredential);
+    const externalAccountId = trimmedOrNull(exchanged.externalAccountId);
+    const externalDisplayName = trimmedOrNull(exchanged.externalDisplayName);
+    if (!encryptedCredential || !externalAccountId || !externalDisplayName) {
+      throw new HttpError(502, "X connection exchange returned incomplete data.");
+    }
+
+    const connection = await channelConnections.upsertActive({
+      companyId: input.companyId,
+      userId: input.userId,
+      channel: "x",
+      externalAccountId,
+      externalDisplayName,
+      encryptedCredential,
+      scopes: exchanged.scopes ?? undefined,
+      expiresAt: exchanged.expiresAt ?? undefined,
+      lastRefreshedAt: now(),
+      metadata: exchanged.metadata ?? undefined,
+    });
+
+    return {
+      returnTo: safeRedirectUrl(exchanged.returnTo),
+      body: {
+        connected: true,
+        channel: "x",
+        companyId: connection.companyId,
+        userId: connection.userId,
+        externalAccountId: connection.externalAccountId,
+        externalDisplayName: connection.externalDisplayName,
+        scopes: connection.scopes ?? [],
+        expiresAt: connection.expiresAt?.toISOString() ?? null,
+      },
+    };
+  }
 
   router.get("/:companyId/x/start", async (req, res) => {
     const companyId = String(req.params.companyId ?? "").trim();
@@ -117,6 +171,36 @@ export function dearmeChannelConnectionRoutes(
     res.redirect(302, oauthStartUrl);
   });
 
+  router.get("/:companyId/x/callback", async (req, res) => {
+    const companyId = String(req.params.companyId ?? "").trim();
+    if (!companyId) {
+      throw new HttpError(400, "Validation error");
+    }
+
+    assertCompanyAccess(req, companyId);
+    assertBoard(req);
+
+    const query = xConnectionCallbackRequestSchema.parse({
+      code: stringQueryValue(req.query.code),
+      state: stringQueryValue(req.query.state),
+      redirectUri: stringQueryValue(req.query.redirectUri),
+    });
+    const actor = getActorInfo(req);
+    const completed = await completeXConnection({
+      companyId,
+      userId: actor.actorId,
+      code: query.code,
+      state: query.state,
+      redirectUri: query.redirectUri,
+    });
+
+    if (completed.returnTo) {
+      res.redirect(302, completed.returnTo);
+      return;
+    }
+    res.type("html").send("<!doctype html><title>X connected</title><p>X connected. You can close this tab.</p>");
+  });
+
   router.post(
     "/:companyId/x/callback",
     validate(xConnectionCallbackRequestSchema),
@@ -130,12 +214,7 @@ export function dearmeChannelConnectionRoutes(
       assertBoard(req);
 
       const actor = getActorInfo(req);
-      const exchange = opts.exchangeXConnection;
-      if (!exchange) {
-        throw new HttpError(503, "X connection exchange is not configured.");
-      }
-
-      const exchanged = await exchange({
+      const completed = await completeXConnection({
         companyId,
         userId: actor.actorId,
         code: req.body.code,
@@ -143,36 +222,7 @@ export function dearmeChannelConnectionRoutes(
         redirectUri: req.body.redirectUri,
       });
 
-      const encryptedCredential = trimmedOrNull(exchanged.encryptedCredential);
-      const externalAccountId = trimmedOrNull(exchanged.externalAccountId);
-      const externalDisplayName = trimmedOrNull(exchanged.externalDisplayName);
-      if (!encryptedCredential || !externalAccountId || !externalDisplayName) {
-        throw new HttpError(502, "X connection exchange returned incomplete data.");
-      }
-
-      const connection = await channelConnections.upsertActive({
-        companyId,
-        userId: actor.actorId,
-        channel: "x",
-        externalAccountId,
-        externalDisplayName,
-        encryptedCredential,
-        scopes: exchanged.scopes ?? undefined,
-        expiresAt: exchanged.expiresAt ?? undefined,
-        lastRefreshedAt: now(),
-        metadata: exchanged.metadata ?? undefined,
-      });
-
-      res.json({
-        connected: true,
-        channel: "x",
-        companyId: connection.companyId,
-        userId: connection.userId,
-        externalAccountId: connection.externalAccountId,
-        externalDisplayName: connection.externalDisplayName,
-        scopes: connection.scopes ?? [],
-        expiresAt: connection.expiresAt?.toISOString() ?? null,
-      });
+      res.json(completed.body);
     },
   );
 
