@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, the recurring private-work proof contract, the five-draft private output packet, the phone-ready static private-site export, production host smoke fail-closed on the exported proof packet plus host-smoke manifest, unified live-provider setup exporting the proof packet first, host-smoke recurring-work detail, and host-provider authorization audit)
+Last updated: 2026-05-11 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, the recurring private-work proof contract, the five-draft private output packet, the phone-ready static private-site export, production host smoke fail-closed on the exported proof packet plus host-smoke manifest, unified live-provider setup exporting the proof packet first, host-smoke recurring-work detail, host-provider authorization audit, and OpenClaw message contract rehearsal)
 
 ---
 
@@ -97,6 +97,11 @@ These are not "prompts in a doc" — they are typed entries in `DEARME_ROLE_REGI
 - **`ui/`** — secondary workbench-style surface for batch approvals, audit, /live feed. Conversation lives on whichever channel the user picked in OpenClaw, not in this UI.
 
 > **The big shift (DM-S05 / DM-S06):** DearMe is the integration of three substrates. **OpenClaw** runs on the user's device (channels, voice, sandbox, cron, skill loader). **Naive/Paperclip** runs in the cloud (85 Drizzle tables, durable execution, approvals, cost ledger). **Polsia** is verbatim choreography (12 prompts, 6 fns, 4 approval gates, 5-stage cycle). DearMe's own IP is the voice fingerprint, the personal site host, the opportunities database, the daily letter, and the wire that ties the three together. See `TRI-SUBSTRATE-ARCHITECTURE.md` for the full integration contract; see `OPENCLAW-INTEGRATION-ARCHITECTURE.md` for the OpenClaw layer specifically.
+
+Use `pnpm dearme:openclaw-message-rehearsal -- --json` before starting the
+OpenClaw live-send lane: it proves Telegram and iMessage share the existing
+OpenClaw gateway contract without network access or credentials, while keeping
+the live `openclaw_messages` smoke as the real completion gate.
 
 ---
 
@@ -211,11 +216,14 @@ completion gate for the long-running product objective. It reuses the same
 status/worktree evidence, runs `pnpm dearme:host-rehearsal` as a no-secret
 loopback proof of the exported private-site packet, runs
 `pnpm dearme:host-provider-audit` to check whether this machine has a deploy
-provider login/token or an equivalent public HTTPS DearMe host, and still
-blocks completion until the production host and live provider proof are real.
+provider login/token or an equivalent public HTTPS DearMe host, runs
+`pnpm dearme:openclaw-message-rehearsal` to prove the shared Telegram/iMessage
+gateway contract locally, and still blocks completion until the production host
+and live provider proof are real.
 Use it before marking the active coordinator goal complete; do not treat
 loopback host proof as a substitute for a phone-reachable public HTTPS
-`deploy_site_production` smoke.
+`deploy_site_production` smoke, or the OpenClaw message rehearsal as a
+substitute for a live `openclaw_messages` smoke.
 The internal `pnpm dearme:provider-smoke -- --check` command now owns that
 operator proof checklist, including the OpenClaw gateway URL/token/auth plus
 recipient/body requirements for Telegram/iMessage, and the production site URL

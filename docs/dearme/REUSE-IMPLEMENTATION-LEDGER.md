@@ -15,6 +15,14 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `pnpm dearme:openclaw-message-rehearsal` is now the no-secret shared
+  Telegram/iMessage contract proof before workers attempt the live
+  `openclaw_messages` smoke. It reuses the existing provider-smoke OpenClaw
+  dispatch path with an injected local gateway executor and captures only safe
+  contract metadata. Workers should treat this as Naive/OpenClaw reuse evidence,
+  not as a completed live send. `dearme:goal-audit` now checks this rehearsal
+  before the live message proof; the remaining blocker is live gateway auth
+  plus smoke recipients/bodies.
 - `pnpm dearme:host-provider-audit` is now the first production-host
   authorization check before workers attempt `deploy_site_production`. The
   current coordinator machine has Vercel and Netlify CLIs installed but not

@@ -64,6 +64,7 @@ codex:
     - pnpm --silent dearme:proof -- --check
     - pnpm --silent dearme:proof -- --status --lane provider
     - pnpm --silent dearme:host-rehearsal -- --port 0 --json
+    - pnpm --silent dearme:openclaw-message-rehearsal -- --json
     - |
       if pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs; then
         true
@@ -122,7 +123,9 @@ Current work comes from the Linear issue plus bootstrap proof/worktree evidence:
 readiness, `pnpm --silent dearme:proof -- --status --lane provider` for the
 current live-provider focus order,
 `pnpm --silent dearme:host-rehearsal -- --port 0 --json` for the no-secret
-loopback host proof packet, and
+loopback host proof packet,
+`pnpm --silent dearme:openclaw-message-rehearsal -- --json` for the no-secret
+shared OpenClaw Telegram/iMessage gateway contract, and
 `pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs` for
 coordinator absorption state. It does not come from historical DM queues or old
 worktree-integration plans.
@@ -196,6 +199,11 @@ Operating rules:
    runs `pnpm --silent dearme:host-rehearsal -- --port 0 --json` so every
    worker sees the exported first-wow packet fetched through a real loopback
    HTTP host before treating live production host proof as the remaining gap.
+   The OpenClaw message rehearsal runs
+   `pnpm --silent dearme:openclaw-message-rehearsal -- --json` so workers see
+   that Telegram and iMessage share one OpenClaw gateway contract before
+   treating the remaining message blocker as live gateway auth plus smoke
+   recipients/bodies.
    Use these outputs as the first proof map, then drop to
    `dearme:provider-smoke` only for live provider credentials or
    `dearme:voice-smoke` only for scorer-specific calibration.

@@ -95,6 +95,58 @@ function blockedHostProviderEvidence() {
   };
 }
 
+function readyOpenClawMessageRehearsalEvidence() {
+  return {
+    report: {
+      status: "ready" as const,
+      verdict: "OpenClaw message contract rehearsal: ready.",
+      summary: "DearMe can form the shared OpenClaw Telegram and iMessage gateway contract without network access, external recipients, or provider credentials.",
+      results: [
+        {
+          target: "telegram_message" as const,
+          status: "delivered" as const,
+          externalId: "send_telegram_message-rehearsal",
+          externalUrl: "openclaw://dearme/rehearsal/send_telegram_message",
+        },
+        {
+          target: "imessage_message" as const,
+          status: "delivered" as const,
+          externalId: "send_imessage-rehearsal",
+          externalUrl: "openclaw://dearme/rehearsal/send_imessage",
+        },
+      ],
+      captured: [
+        {
+          target: "telegram_message" as const,
+          toolName: "send_telegram_message" as const,
+          channel: "telegram" as const,
+          companyId: "dearme",
+          issueId: "DEA-OPENCLAW",
+          payloadKeys: ["body", "recipient"],
+          paperclipWakeToolName: "send_telegram_message",
+          sessionDisplayId: "openclaw://dearme/rehearsal/send_telegram_message",
+        },
+        {
+          target: "imessage_message" as const,
+          toolName: "send_imessage" as const,
+          channel: "imessage" as const,
+          companyId: "dearme",
+          issueId: "DEA-OPENCLAW",
+          payloadKeys: ["body", "service", "to"],
+          paperclipWakeToolName: "send_imessage",
+          sessionDisplayId: "openclaw://dearme/rehearsal/send_imessage",
+        },
+      ],
+      liveProofStillRequired: true as const,
+      missingCapabilities: [],
+      commands: {
+        rehearsal: "pnpm --silent dearme:openclaw-message-rehearsal -- --json",
+        liveProof: "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+      },
+    },
+  };
+}
+
 function readyStatus(): DearMeProofStatus {
   return {
     lane: "all",
@@ -227,6 +279,7 @@ test("DearMe goal audit blocks completion on live production host proof", () => 
     status,
     deliveredHostRehearsalEvidence(),
     readyHostProviderEvidence(),
+    readyOpenClawMessageRehearsalEvidence(),
   );
   const formatted = formatDearMeGoalAudit(auditWithHostProvider).join("\n");
 
@@ -248,6 +301,10 @@ test("DearMe goal audit blocks completion on live production host proof", () => 
   assert.equal(
     auditWithHostProvider.items.find((item) => item.key === "production_host_live_wow")?.status,
     "blocked",
+  );
+  assert.equal(
+    auditWithHostProvider.items.find((item) => item.key === "openclaw_message_contract_rehearsal")?.status,
+    "met",
   );
   assert.deepEqual(
     auditWithHostProvider.items.find((item) => item.key === "production_host_live_wow")?.blockers,
@@ -291,6 +348,7 @@ test("DearMe goal audit reports host provider authorization before production ho
     status,
     deliveredHostRehearsalEvidence(),
     blockedHostProviderEvidence(),
+    readyOpenClawMessageRehearsalEvidence(),
   );
   const formatted = formatDearMeGoalAudit(audit).join("\n");
 
@@ -314,6 +372,7 @@ test("DearMe goal audit passes only when every required proof item is ready", ()
     readyStatus(),
     deliveredHostRehearsalEvidence(),
     readyHostProviderEvidence(),
+    readyOpenClawMessageRehearsalEvidence(),
   );
   const formatted = formatDearMeGoalAudit(audit).join("\n");
 
@@ -335,6 +394,21 @@ test("DearMe goal audit does not silently skip the host rehearsal proof", () => 
   assert.deepEqual(
     audit.items.find((item) => item.key === "loopback_host_rehearsal")?.blockers,
     ["host_rehearsal_not_run"],
+  );
+});
+
+test("DearMe goal audit does not silently skip the OpenClaw message rehearsal", () => {
+  const audit = summarizeDearMeGoalAudit(
+    readyStatus(),
+    deliveredHostRehearsalEvidence(),
+    readyHostProviderEvidence(),
+  );
+
+  assert.equal(audit.complete, false);
+  assert.equal(audit.nextAction.label, "OpenClaw Telegram/iMessage contract rehearsal");
+  assert.deepEqual(
+    audit.items.find((item) => item.key === "openclaw_message_contract_rehearsal")?.blockers,
+    ["openclaw_message_rehearsal_not_run"],
   );
 });
 

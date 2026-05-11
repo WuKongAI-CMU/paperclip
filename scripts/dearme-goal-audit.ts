@@ -8,6 +8,10 @@ import {
   type DearMeHostProviderAudit,
 } from "./dearme-host-provider-audit.ts";
 import {
+  runDearMeOpenClawMessageRehearsal,
+  type DearMeOpenClawMessageRehearsalReport,
+} from "./dearme-openclaw-message-rehearsal.ts";
+import {
   inspectDearMeIntegrationAuditStatus,
   inspectDearMeProofReadiness,
   loadDearMeProofEnv,
@@ -29,6 +33,7 @@ export type DearMeGoalAuditItemKey =
   | "voice_autonomy"
   | "production_host_provider_auth"
   | "production_host_live_wow"
+  | "openclaw_message_contract_rehearsal"
   | "openclaw_message_reuse"
   | "live_provider_set";
 
@@ -64,6 +69,11 @@ export interface DearMeGoalAuditHostRehearsalEvidence {
 
 export interface DearMeGoalAuditHostProviderEvidence {
   audit?: DearMeHostProviderAudit;
+  error?: string;
+}
+
+export interface DearMeGoalAuditOpenClawMessageRehearsalEvidence {
+  report?: DearMeOpenClawMessageRehearsalReport;
   error?: string;
 }
 
@@ -288,6 +298,52 @@ function hostProviderAuthItem(
   };
 }
 
+function openClawMessageRehearsalItem(
+  evidence?: DearMeGoalAuditOpenClawMessageRehearsalEvidence,
+): DearMeGoalAuditItem {
+  const command = "pnpm --silent dearme:openclaw-message-rehearsal -- --json";
+  if (!evidence) {
+    return {
+      key: "openclaw_message_contract_rehearsal",
+      label: "OpenClaw Telegram/iMessage contract rehearsal",
+      status: "unverified",
+      requiredForGoal: true,
+      evidence: "The shared OpenClaw Telegram/iMessage contract rehearsal has not run inside this audit.",
+      blockers: ["openclaw_message_rehearsal_not_run"],
+      commands: [command],
+    };
+  }
+  if (evidence.error) {
+    return {
+      key: "openclaw_message_contract_rehearsal",
+      label: "OpenClaw Telegram/iMessage contract rehearsal",
+      status: "blocked",
+      requiredForGoal: true,
+      evidence: `The OpenClaw message rehearsal failed before it could prove the local gateway contract: ${evidence.error}`,
+      blockers: ["openclaw_message_rehearsal_failed"],
+      commands: [command],
+    };
+  }
+
+  const report = evidence.report;
+  const capturedTools = report?.captured.map((item) => item.toolName).join(", ");
+  return {
+    key: "openclaw_message_contract_rehearsal",
+    label: "OpenClaw Telegram/iMessage contract rehearsal",
+    status: report?.status === "ready" ? "met" : "blocked",
+    requiredForGoal: true,
+    evidence: report
+      ? `${report.summary} Captured tools: ${capturedTools || "none"}. Live proof still required: ${report.liveProofStillRequired}.`
+      : "The OpenClaw message rehearsal report is missing.",
+    blockers: report?.status === "ready"
+      ? []
+      : report?.missingCapabilities ?? ["openclaw_message_rehearsal_missing_report"],
+    commands: report?.commands.rehearsal
+      ? [report.commands.rehearsal]
+      : [command],
+  };
+}
+
 function architectureSpineItem(status: DearMeProofStatus): DearMeGoalAuditItem {
   const missing = REQUIRED_STATUS_SECTIONS.filter((key) => !section(status, key));
   return {
@@ -329,6 +385,7 @@ export function summarizeDearMeGoalAudit(
   status: DearMeProofStatus,
   hostRehearsal?: DearMeGoalAuditHostRehearsalEvidence,
   hostProvider?: DearMeGoalAuditHostProviderEvidence,
+  openClawMessageRehearsal?: DearMeGoalAuditOpenClawMessageRehearsalEvidence,
 ): DearMeGoalAudit {
   const productionHost = focus(status, "production_host");
   const openclawMessages = focus(status, "openclaw_messages");
@@ -357,6 +414,7 @@ export function summarizeDearMeGoalAudit(
       label: "Polsia-level phone-reachable private proof page",
       focus: productionHost,
     }),
+    openClawMessageRehearsalItem(openClawMessageRehearsal),
     focusItem({
       key: "openclaw_message_reuse",
       label: "OpenClaw shared Telegram/iMessage message proof",
@@ -426,7 +484,22 @@ export async function buildDearMeGoalAudit(
       error: error instanceof Error ? error.message : String(error),
     };
   }
-  return summarizeDearMeGoalAudit(status, hostRehearsal, hostProvider);
+  let openClawMessageRehearsal: DearMeGoalAuditOpenClawMessageRehearsalEvidence;
+  try {
+    openClawMessageRehearsal = {
+      report: await runDearMeOpenClawMessageRehearsal(),
+    };
+  } catch (error) {
+    openClawMessageRehearsal = {
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+  return summarizeDearMeGoalAudit(
+    status,
+    hostRehearsal,
+    hostProvider,
+    openClawMessageRehearsal,
+  );
 }
 
 export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {

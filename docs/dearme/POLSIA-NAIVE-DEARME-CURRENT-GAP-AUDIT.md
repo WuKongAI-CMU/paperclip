@@ -42,6 +42,10 @@ The current machine-level host check is now explicit too: Vercel and Netlify
 CLIs exist, but neither is authenticated and no host token env is present. That
 means the next production-host move is provider login/token or an equivalent
 public HTTPS DearMe host, not another local proof script.
+The shared OpenClaw message contract is now locally rehearsed: Telegram and
+iMessage both flow through the same injected gateway contract without network
+access or credentials. That raises the OpenClaw reuse bar, but it still does
+not replace the live gateway/auth/recipient smoke.
 
 ## Evidence Checked
 
@@ -114,8 +118,8 @@ Current DearMe branch:
 - `pnpm --silent dearme:goal-audit`
   - active objective is not complete yet
   - architecture/status spine, Naive/Paperclip absorption, Symphony
-    coordination, private first-wow, no-secret loopback host rehearsal, and
-    DearMe voice autonomy are met
+    coordination, private first-wow, no-secret loopback host rehearsal, DearMe
+    voice autonomy, and OpenClaw message contract rehearsal are met
   - host-provider authorization now blocks before production host smoke when
     no logged-in deploy provider, host token, or equivalent public HTTPS host is
     available
@@ -127,6 +131,12 @@ Current DearMe branch:
   - Netlify CLI is installed but not authenticated
   - no Vercel, Netlify, or Cloudflare host token/account env is present
   - no public HTTPS DearMe host is configured in the current proof env
+- `pnpm --silent dearme:openclaw-message-rehearsal`
+  - Telegram and iMessage both deliver through the injected local OpenClaw
+    gateway executor
+  - captured contract metadata includes tool name, channel, payload keys, and
+    wake tool only; no token or message body is serialized
+  - live `openclaw_messages` proof remains required
 - `pnpm --silent dearme:proof -- --run-safe --lane voice`
   - deterministic local gate passes
   - profile-token semantic proof passes with custom corpus evidence, including

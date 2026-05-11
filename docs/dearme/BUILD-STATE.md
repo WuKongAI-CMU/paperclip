@@ -2,6 +2,36 @@
 
 Date: 2026-05-11
 
+## OpenClaw Message Contract Rehearsal Lands - 2026-05-11
+
+Product/architecture slice:
+
+- Added `pnpm dearme:openclaw-message-rehearsal` as the no-secret proof that
+  DearMe can form the shared OpenClaw Telegram and iMessage gateway contract
+  before live provider credentials are available.
+- The rehearsal reuses the existing `dearme:provider-smoke --target
+  openclaw_messages` path with an injected local gateway executor. It captures
+  only safe contract metadata: target, tool name, channel, payload keys, and
+  Paperclip wake tool. It does not connect to OpenClaw, send messages, print
+  tokens, deploy, spend, or call a model.
+- Wired the rehearsal into Symphony bootstrap after the loopback host proof and
+  before worktree triage. Workers now inherit the product comparison result:
+  Naive/OpenClaw reuse is structurally ready for Telegram/iMessage, while live
+  gateway auth plus smoke recipients/bodies remain the external blocker.
+- Wired the rehearsal into `dearme:goal-audit` before the live
+  `openclaw_messages` proof item. The rehearsal proves the shared contract
+  only; it does not mark `openclaw_message_reuse` complete.
+
+Verification:
+
+- `pnpm test:dearme-openclaw-message-rehearsal`
+- `pnpm test:dearme-goal-audit`
+- `pnpm test:dearme-symphony-workflow`
+- `pnpm --silent dearme:openclaw-message-rehearsal -- --json`
+- `pnpm --silent dearme:goal-audit`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Host Provider Auth Audit Lands - 2026-05-11
 
 Product/architecture slice:
