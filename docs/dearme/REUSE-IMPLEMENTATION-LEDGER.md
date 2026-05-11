@@ -165,6 +165,12 @@ It answers three questions before another worker starts building:
   tools stay voice-gated and approval-gated, dispatch through the OpenClaw
   gateway fallback, and intentionally skip `channel_connections` OAuth lookup
   until a concrete per-user Telegram/iMessage credential flow exists.
+- DM-CH-02B extends the existing provider-smoke harness to those same
+  Telegram/iMessage OpenClaw gateway paths. The operator proof remains
+  `pnpm dearme:provider-smoke` plus local ignored env, `--live`, and
+  `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`; future channel proof should add
+  targets to this harness rather than introducing another send command,
+  settings page, or credential store.
 - DEA-36 turns the first proof pack into one launch-ready next step by reusing
   the existing output handoff, `dearme_output_next_move` approval payload,
   private receipt activity, Workbench projection, and onboarding proof-pack

@@ -152,13 +152,15 @@ customer-facing slice at a time. DM-172, Resend + SES DM-174,
 partner-dispatch + endpoint-config half of DM-176, the preview + configured
 production/custom-domain gate half of DM-177, and the Meta dispatcher + Graph-base-url
 config half of DM-178 are now on the canonical `ChannelDispatch` path. The
-next product-dispatch gap is live credential/provider smoke: SES or Resend
-email, LinkedIn partner endpoint + credential, Meta OAuth/Marketing API, or
-the remaining DM-177 live DNS/host deploy smoke. It is not another
+next product-dispatch gap is live credential/provider smoke: Telegram or
+iMessage through the configured OpenClaw gateway, SES or Resend email,
+LinkedIn partner endpoint + credential, Meta OAuth/Marketing API, or the
+remaining DM-177 live DNS/host deploy smoke. It is not another
 connector/settings surface.
 The internal `pnpm dearme:provider-smoke -- --check` command now owns that
-operator proof checklist, including the production site URL content smoke once
-host env is enabled. It now supports a local ignored
+operator proof checklist, including the OpenClaw gateway URL/token/auth plus
+recipient/body requirements for Telegram/iMessage, and the production site URL
+content smoke once host env is enabled. It now supports a local ignored
 `.dearme-provider-smoke.env` file through `--env-file` plus a clean
 `--print-env-template` bootstrap, and production host failures now report the
 exact URL plus fetch/HTTP status evidence. Real credentials and custom-domain

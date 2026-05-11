@@ -328,7 +328,7 @@ The integration only works if these glue artifacts ship:
 | DM-182 | OpenClaw passthrough workbench refresh | **Shipped.** Customer workbench invalidates on `openclaw_lifecycle` / `openclaw_stream` through the same EventSource route. ✅ |
 | DM-180 | Approval resolver Express route over `dearme-approval-resolver` service | **Shipped.** `POST /api/dearme/companies/:companyId/approvals/resolve` resolves through the shared service, normalizes issue refs, and persists actor attribution. ✅ |
 
-The shipped subset now includes DM-175 channel_connections schema, DM-S06 contracts, **DM-S07 server services**, **DM-179 SSE route**, **DM-182 passthrough refresh**, **DM-180 approval route**, **DM-170 route + durable profile store + persisted key auth + semantic scorer seam + profile-token scorer wiring**, **DM-172 X dispatch**, **DM-173A/DM-173B X OAuth persistence**, **DM-174 Resend + SES email dispatch**, **DM-176A/DM-176B LinkedIn partner dispatch + config gate**, **DM-177B preview deploy dispatch**, **DM-177C/DM-177E configured production/custom-domain host gate**, and **DM-178/DM-178B Meta campaign dispatch + config gate**. The remaining gaps are live-provider smokes, live public-site DNS/host smoke, and live DM-170 model/embedding calibration behind the existing scorer seam.
+The shipped subset now includes DM-175 channel_connections schema, DM-S06 contracts, **DM-S07 server services**, **DM-179 SSE route**, **DM-182 passthrough refresh**, **DM-180 approval route**, **DM-170 route + durable profile store + persisted key auth + semantic scorer seam + profile-token scorer wiring**, **DM-172 X dispatch**, **DM-173A/DM-173B X OAuth persistence**, **DM-174 Resend + SES email dispatch**, **DM-176A/DM-176B LinkedIn partner dispatch + config gate**, **DM-177B preview deploy dispatch**, **DM-177C/DM-177E configured production/custom-domain host gate**, **DM-178/DM-178B Meta campaign dispatch + config gate**, and **DM-CH-02A/DM-CH-02B OpenClaw Telegram/iMessage gateway dispatch + provider-smoke proof harness**. The remaining gaps are live OpenClaw gateway message smoke, live provider smokes, live public-site DNS/host smoke, and live DM-170 model/embedding calibration behind the existing scorer seam.
 
 ---
 
@@ -345,6 +345,7 @@ slot and never re-implement the gate / approval / audit pipeline.
 | Channel connections | `dearme-channel-connections.ts` | Drizzle queries over `channel_connections`. `getActive` / `markUsed` / `markNeedsReauth` / `upsertActive`. |
 | X connection routes | `server/src/routes/dearme-channel-connections.ts` + `server/src/services/dearme-x-oauth-connection.ts` | `GET /v1/channels/:companyId/x/start` redirects to X with PKCE; `GET /v1/channels/:companyId/x/callback` consumes server-side state, exchanges the X code, loads the profile, encrypts credentials, and persists an active per-user `x` row. `POST /v1/channels/:companyId/x/callback` remains the test/API seam around the same persistence path. |
 | Channel credential resolver | `server/src/services/dearme-channel-credential.ts` | Shared secret-provider envelope resolver used by per-channel dispatchers. Keeps `channel_connections.encryptedCredential` opaque to the generic service and resolves material only at the provider-specific dispatch boundary. |
+| OpenClaw gateway dispatch/config | `server/src/services/dearme-openclaw-gateway-dispatch.ts` + `server/src/services/dearme-openclaw-gateway-dispatch-config.ts` | Default gateway-backed dispatcher for `send_telegram_message` and `send_imessage`. It uses the existing `OPENCLAW_GATEWAY_URL` / token/auth config shape, translates approved outbound calls into OpenClaw gateway payloads, and stays fail-closed when gateway config is absent. |
 | X post dispatch | `server/src/services/dearme-x-post-dispatch.ts` | Default `post_x` dispatcher for approved launch handoffs. It consumes the existing opaque credential, validates `tweet.write`, posts to X API v2, maps delivered tweet ids to stable public URLs, and maps provider auth failures to reauth. |
 | LinkedIn DM dispatch | `server/src/services/dearme-linkedin-dm-dispatch.ts` + `server/src/services/dearme-linkedin-dm-dispatch-config.ts` | Optional direct `send_linkedin_dm` dispatcher for approved launch handoffs when a partner messages endpoint is configured. It consumes the existing opaque LinkedIn channel credential, requires a partner/provider credential with `send_dm` capability, sends with the wrapper idempotency key, and maps provider auth failures to reauth. Browser automation and guessed private APIs stay out of this path. |
 | Email dispatch | `server/src/services/dearme-send-email-dispatch.ts` | Default `send_email` dispatcher for approved launch handoffs. It consumes the resolved opaque `resend` or `ses` credential, validates sender/recipient/subject/plain-text body/expiry, posts to Resend `POST /emails` or SES v2 `SendEmail`, signs SES requests at the provider boundary, maps delivered email ids to receipts, and maps provider auth failures to reauth. HTML is fail-closed until sanitizer support lands. |
@@ -356,10 +357,14 @@ slot and never re-implement the gate / approval / audit pipeline.
 | **Outbound tool wrapper** | `dearme-outbound-tool-wrapper.ts` | The lynchpin. `callOutbound()` runs voice-gate → approval → OAuth → injected `ChannelDispatch` → audit (cost_event + SSE + work-loop transition). |
 
 Adding or replacing an outbound channel after DM-S07 is a `ChannelDispatch`
-registration. `post_x`, `send_email`, `send_linkedin_dm`, `deploy_site`, and
-`create_meta_campaign` now use this exact slot:
+registration. `send_telegram_message`, `send_imessage`, `post_x`,
+`send_email`, `send_linkedin_dm`, `deploy_site`, and `create_meta_campaign`
+now use this exact slot:
 
 ```ts
+const defaultGatewayDispatch = createDearMeOpenClawGatewayDispatchMap(
+  dearMeOpenClawGatewayDispatchConfig,
+);
 const linkedInConfig = resolveDearMeLinkedInDmDispatchConfigFromEnv(env);
 const metaConfig = resolveDearMeMetaCampaignDispatchConfigFromEnv(env);
 
