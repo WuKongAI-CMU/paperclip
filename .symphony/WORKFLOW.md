@@ -113,14 +113,17 @@ Then read the coordination surface without bulk-loading append-only logs:
 - `docs/dearme/OPENCLAW-INTEGRATION-ARCHITECTURE.md`
 - `docs/dearme/PRODUCT-ARCHITECTURE.md`
 - `docs/dearme/POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`
-- `doc/plans/2026-05-08-dearme-symphony-operating-loop.md`
 
-The operating-loop plan is lifecycle/process context, not the current ticket
-queue. Current work comes from the Linear issue plus the bootstrap
-`pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs` evidence.
+Current work comes from the Linear issue plus the bootstrap
+`pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs` evidence,
+not from historical DM queues or old worktree-integration plans.
 Do not follow historical queue sections in older docs when they conflict with
 `INDEX.md`, `TRI-SUBSTRATE-ARCHITECTURE.md`, this workflow file, or runtime
 code.
+
+Read `doc/plans/2026-05-08-dearme-symphony-operating-loop.md` only when the
+issue touches Symphony lifecycle, coordinator workflow, or worker handoff
+rules. That plan is process history/context, not the default ticket queue.
 
 For large append-only files, read only the newest section plus issue-relevant
 matches before acting:

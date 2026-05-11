@@ -2,6 +2,33 @@
 
 Date: 2026-05-11
 
+## Symphony Historical Queue Default-Read Cleanup - 2026-05-11
+
+Product/architecture slice:
+
+- Removed the 2026-05-08 operating-loop plan from the default Symphony worker
+  read list. Workers now start from the assigned Linear `DEA-*` issue, the
+  bootstrap worktree/handoff evidence, and the current DearMe canonical docs.
+- Kept the operating-loop plan available only for Symphony lifecycle,
+  coordinator workflow, or handoff-rule changes, and marked its queue section
+  as a historical snapshot instead of a current queue.
+- This preserves the Goal-thread vs. worker split while reducing the chance
+  that future workers replay old `DM-*` queue entries or old worktree
+  integration plans.
+
+Verification:
+
+- Stale current-queue/current-entrypoint wording search returned no matches in
+  the touched coordination files.
+- `git diff --check -- .symphony/WORKFLOW.md doc/plans/2026-05-08-dearme-symphony-operating-loop.md docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
+  passed with `not_in_current: 0` and latest-by-issue
+  `dirty_patch_handoff: 0`.
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs --ticket DEA-60`
+  passed with the active Symphony lane still recorded as already absorbed in
+  current head.
+
 ## Coordinator Handoff Signal Cleanup - 2026-05-11
 
 Product/architecture slice:

@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `.symphony/WORKFLOW.md` no longer makes the 2026-05-08 operating-loop plan a
+  default worker read. Use that plan only for Symphony lifecycle/coordinator
+  workflow changes; ordinary product workers should start from their assigned
+  `DEA-*` issue, bootstrap worktree/handoff evidence, and the current canonical
+  DearMe docs. The plan's queue language is now explicitly a historical
+  snapshot, not an active source for new tickets.
 - Coordinator status now separates all historical Symphony handoff artifacts
   from the latest handoff per issue. Treat historical `dirty_patch_handoff`
   records as audit trail when the same issue's latest handoff is a committed

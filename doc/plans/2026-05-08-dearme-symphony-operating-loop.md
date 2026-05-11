@@ -8,6 +8,11 @@ Use this plan to start continuous DearMe development with a persistent Codex Goa
 
 Symphony is treated as an execution factory, not as the product brain. The DearMe product direction, build order, acceptance criteria, and merge decisions stay in this repo and in the long-running Goal thread.
 
+Status note (2026-05-11): this is now lifecycle/process history. Active
+Symphony workers should start from `.symphony/WORKFLOW.md`, the assigned
+Linear `DEA-*` issue, and the current canonical DearMe docs. Do not use this
+file as a default work queue.
+
 ## Starting State
 
 - The active checkout at `/Users/peter/dearme` is now a recoverable DearMe
@@ -213,14 +218,14 @@ Stop rules:
 PR notes:
 ```
 
-## Current Coordinator Queue - 2026-05-11
+## Coordinator Queue Snapshot - 2026-05-11
 
 The old first-execution queue above is historical. The current integrated branch
 has already absorbed the DM-102 through DM-125 product spine and many later
 Symphony handoffs. Treat this document as process context for the Goal-thread
 vs. worker split, not as the active ticket queue.
 
-Current worker entrypoint:
+Active worker entrypoint at this snapshot:
 
 - Linear team `DEA`, filtered by `.symphony/WORKFLOW.md`.
 - Bootstrap evidence from
