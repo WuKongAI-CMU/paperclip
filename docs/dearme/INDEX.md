@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-11 (post DM-172B X, DM-174 Resend, DM-177B preview deploy, and DM-178 Meta campaign dispatch proof)
+Last updated: 2026-05-11 (post DM-172B X, DM-174 Resend, DM-176B/DM-178B provider config gates, and DM-177B/DM-177C deploy dispatch proof)
 
 ---
 
@@ -131,8 +131,9 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DEA-11 / DM-183BO private launch-handoff proof** — the current branch browser/API smoke proves a prepared output can be approved, converted into the final launch-call approval, accepted, and surfaced as a private handoff brief through DearMe `work=` / `artifact=` navigation without leaking hidden substrate terms or claiming external execution already happened.
 - **DEA-47 approved X delivery receipts + DEA-51 DM-173B live connect path + DM-172B X dispatch** — the current branch browser/API and UI proof shows the approved `post_x` handoff path records either a delivered receipt or the existing customer-safe connection-needed receipt; the fallback now carries a DearMe-owned `oauthStartUrl` to `GET /v1/channels/:companyId/x/start`, which builds a PKCE X authorize URL when configured and stays 503 when config is missing. The browser callback consumes server-side state, exchanges the X code for tokens, loads the X profile, and persists an active `x` connection row with an opaque credential. Approved X publishing now has a server-side dispatcher that decrypts the stored credential, validates expiry/scope/payload, posts to X API v2, and maps auth failures back to reauth. Live external posting still needs a real credential smoke.
 - **DM-174 live Resend `send_email` dispatch** — approved `send_email` launch handoffs now run through the same voice-gate -> approval -> `channel_connections` -> per-tool dispatch -> audit wrapper as X. The new Resend dispatcher resolves the stored per-user credential through the secret-provider registry, validates sender/recipient/subject/plain-text body/expiry, calls Resend `POST /emails` with a tool+approval/run+payload idempotency key, maps auth failures back to reauth, and records delivered receipts from the provider email id. Customer prompts say "email"; Resend stays internal. HTML remains fail-closed until a sanitizer path is added, and SES remains intentionally fail-closed until the tool binding can resolve an `ses` channel credential instead of the current static `resend` binding. Live external email still needs a real Resend credential smoke.
+- **DM-176A/DM-176B `send_linkedin_dm` partner dispatch** — approved LinkedIn DM handoffs now have a DearMe-owned partner dispatcher and app-level env bridge for `DEARME_LINKEDIN_DM_MESSAGES_URL` / partner endpoint aliases. The dispatcher stays unregistered when no endpoint is configured, so gateway fallback is not shadowed by an empty direct path. Live customer use still needs a real approved partner endpoint + credential smoke.
 - **DM-177B/DM-177C `deploy_site` dispatch** — approved private-site proof handoffs now run through a DearMe-owned `deploy_site` dispatcher instead of needing OpenClaw gateway config. The dispatcher validates safe handles and bounded artifact refs, rejects custom domains in this slice, returns stable preview receipts at `dearme.app/<handle>?preview=*`, and keeps production deploy fail-closed unless the DearMe-owned host is explicitly enabled by env.
-- **DM-178 `create_meta_campaign` dispatch** — approved paid-ad handoffs now run through a DearMe-owned Meta Ads dispatcher on the same approval/OAuth/audit wrapper path. The dispatcher validates the simplified campaign payload, enforces test/ramp/scale daily budget tiers, respects the 7-day learning window, creates a paused Meta campaign receipt, and maps provider auth failures to reconnect without exposing tokens. Live customer use still needs a real Meta OAuth/Marketing API smoke.
+- **DM-178/DM-178B `create_meta_campaign` dispatch** — approved paid-ad handoffs now run through a DearMe-owned Meta Ads dispatcher on the same approval/OAuth/audit wrapper path. The dispatcher validates the simplified campaign payload, enforces test/ramp/scale daily budget tiers, respects the 7-day learning window, creates a paused Meta campaign receipt, and maps provider auth failures to reconnect without exposing tokens. App startup can override the Graph API base URL from operator env for live smoke/tooling; live customer use still needs a real Meta OAuth/Marketing API smoke.
 - **DM-183BV Symphony cooperation spine** — the current branch now treats Symphony as the coordinator/worker cooperation center while keeping it backstage. Workbench stream items have a typed work-event contract (`action`, `customerSummary`, `artifactTarget`, `decisionNeed`, `traceRefs`) for customer-safe decision cards, and the remaining DM-084, DM-086, DM-095, DM-097, DM-098, and DM-101 stale worktree heads are recorded as reviewed absorptions.
 - **DEA-20 / Chief pairing smoke** — Symphony closed the OpenClaw Chief pairing lane as no-code evidence: the current OpenClaw plugin manifest, 12 generated skills, 4 bootstrap files, required config, and outbound approval-gate bindings already prove the backstage pairing surface without adding customer-visible substrate language.
 - **DEA-21 / private site preview smoke** — the first-cycle proof package now carries a handle-safe `dearme.app/<handle>` private preview route through shared schema, server proof documents, apply/report artifacts, and onboarding UI while keeping public deploy behind the existing launch decision.
@@ -146,15 +147,16 @@ The stale local worktree queue is closed by exact-head reviewed absorptions.
 Future collaboration should start from a Linear `DEA` issue and a Symphony
 workspace on the current coordinator head, then land only one bounded
 customer-facing slice at a time. DM-172, the Resend half of DM-174, the
-partner-dispatch half of DM-176, and the preview + configured production host
-gate half of DM-177 are
-now on the canonical `ChannelDispatch` path. The next product-dispatch gap is
-the live LinkedIn partner credential/OAuth smoke, the live Meta OAuth/Marketing
-API smoke, or the remaining DM-177 live host/custom-domain deploy smoke, not another
-connector/settings surface. Reuse still means adapting Polsia choreography, Lindy
-action-card/source patterns, and Naive/Paperclip substrate behind the DearMe
-product shell; do not add another first-run contract, packet schema, runtime
-dashboard, queue system, or customer-visible substrate surface.
+partner-dispatch + endpoint-config half of DM-176, the preview + configured
+production host gate half of DM-177, and the Meta dispatcher + Graph-base-url
+config half of DM-178 are now on the canonical `ChannelDispatch` path. The
+next product-dispatch gap is live credential/provider smoke: LinkedIn partner
+endpoint + credential, Meta OAuth/Marketing API, or the remaining DM-177 live
+host/custom-domain deploy smoke. It is not another connector/settings surface.
+Reuse still means adapting Polsia choreography, Lindy action-card/source
+patterns, and Naive/Paperclip substrate behind the DearMe product shell; do
+not add another first-run contract, packet schema, runtime dashboard, queue
+system, or customer-visible substrate surface.
 
 ### Roadmap (compressed by aggressive port + tri-substrate integration)
 
@@ -163,8 +165,8 @@ dashboard, queue system, or customer-visible substrate surface.
 | 0 | done | Foundation, registry, contracts, OpenClaw plugin, tri-substrate integration **+ runtime** | DM-S01, DM-141 schema, registry, ai-proxy contract, **DM-S05**, **DM-S06** (contracts), **DM-S07** (runtime: 6 server services + lynchpin wrapper) |
 | 1 | days 1–7 | First-run aha moment live through OpenClaw + Chief routes first conversation | DM-138, DM-139, **DM-170-impl** voice-score model + Express route, **DM-171A** plugin install proof complete, **DM-171B** onboarding bridge already surfaced in the existing first-run path, **DM-179** SSE Express route over `dearme-sse-bus` |
 | 2 | days 8–14 | Voice + content loop publishing via DearMe-owned tools | DM-140, DM-142, DM-146, **DM-172** `post_x` `ChannelDispatch`, **DM-173A/DM-173B** X OAuth start + PKCE callback exchange around `channel_connections`, **DM-180** approval resolver Express route |
-| 3 | days 15–21 | Outbound + opportunity + audience care running | DM-141 runtime, DM-149, DM-150, **DM-174** `send_email` `ChannelDispatch` (Resend shipped; SES future dynamic-channel route), **DM-176A** `send_linkedin_dm` partner `ChannelDispatch` (live partner smoke still needed) |
-| 4 | days 22–35 | Site live + ads option + first paid beta | DM-147, DM-148, DM-153, DM-154, **DM-177B/DM-177C** preview + configured production `deploy_site` `ChannelDispatch` shipped, **DM-178** `create_meta_campaign` `ChannelDispatch` shipped; remaining **DM-177** live host/custom-domain smoke plus live LinkedIn/Meta credential smoke |
+| 3 | days 15–21 | Outbound + opportunity + audience care running | DM-141 runtime, DM-149, DM-150, **DM-174** `send_email` `ChannelDispatch` (Resend shipped; SES future dynamic-channel route), **DM-176A/DM-176B** `send_linkedin_dm` partner `ChannelDispatch` + endpoint config gate shipped; live partner smoke still needed |
+| 4 | days 22–35 | Site live + ads option + first paid beta | DM-147, DM-148, DM-153, DM-154, **DM-177B/DM-177C** preview + configured production `deploy_site` `ChannelDispatch` shipped, **DM-178/DM-178B** `create_meta_campaign` `ChannelDispatch` + Graph config gate shipped; remaining **DM-177** live host/custom-domain smoke plus live LinkedIn/Meta credential smoke |
 
 Total to first paid-beta surface: **~4–5 weeks** vs. the original 8–12 with paraphrased re-derivation. OpenClaw integration removes ~27 eng-weeks of substrate work and ~$15K of Gmail CASA cost (see `OPENCLAW-INTEGRATION-ARCHITECTURE.md` §5).
 

@@ -2,6 +2,37 @@
 
 Date: 2026-05-11
 
+## DM-176B / DM-178B Provider Dispatch Config Gates - 2026-05-11
+
+Product/architecture slice:
+
+- Added env bridges for the LinkedIn partner messages endpoint and the Meta
+  Graph API base URL:
+  `server/src/services/dearme-linkedin-dm-dispatch-config.ts` and
+  `server/src/services/dearme-meta-campaign-dispatch-config.ts`.
+- App startup now passes `DEARME_LINKEDIN_DM_MESSAGES_URL` /
+  `DEARME_LINKEDIN_PARTNER_MESSAGES_URL` / `LINKEDIN_DM_MESSAGES_URL` and
+  `DEARME_META_CAMPAIGN_GRAPH_API_BASE_URL` /
+  `DEARME_META_GRAPH_API_BASE_URL` / `META_GRAPH_API_BASE_URL` into the
+  default approved launch handoff path.
+- With no LinkedIn endpoint env, the direct LinkedIn DM dispatcher remains
+  unregistered, so existing gateway fallback behavior is not shadowed by an
+  unconfigured direct path. With no Meta Graph env, Meta keeps the dispatcher's
+  built-in Graph API base URL.
+- This does not open any public/send/spend path by env alone. Delivery still
+  requires the existing approval wrapper, an active per-user channel
+  connection, valid stored credentials, and the per-tool dispatcher checks.
+- Remaining customer claims are live-provider proof, not app-wiring work:
+  real LinkedIn partner endpoint + credential smoke, and real Meta
+  OAuth/Marketing API smoke.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-linkedin-dm-dispatch-config.test.ts server/src/services/dearme-meta-campaign-dispatch-config.test.ts server/src/services/dearme-linkedin-dm-dispatch.test.ts server/src/services/dearme-meta-campaign-dispatch.test.ts server/src/services/dearme-approved-launch-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts --maxWorkers=1`
+  passed: 6 files, 43 tests.
+- `pnpm --filter @paperclipai/server typecheck`
+  passed.
+
 ## DM-177C Configured `deploy_site` Production Host Gate - 2026-05-11
 
 Product/architecture slice:

@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- DM-176B/DM-178B put provider dispatch config on the default app handoff
+  path instead of leaving it as a constructor-only test seam. LinkedIn partner
+  endpoint env now decides whether the direct `send_linkedin_dm` dispatcher is
+  registered; Meta Graph API base URL env can be passed into the paid-ad
+  dispatcher for live smoke/tooling. Neither env bridge bypasses approval,
+  `channel_connections`, credential validation, or per-tool payload checks.
 - DEA-58 reuses the existing Work Ready / Decisions Needed / first proof pack
   choreography and Lindy-style action-card grammar to make the next decision
   and proof lane explicit in the customer cockpit. The cut stays on the
@@ -3006,10 +3012,12 @@ DM-S06 shipped the typed contracts. DM-S07 wires them into the running cloud as 
 | `server/src/services/dearme-channel-credential.ts` | DM-172B / DM-174 / DM-176A | Shared secret-provider envelope resolver for per-channel dispatchers. Keeps `channel_connections.encryptedCredential` opaque to the generic channel service and resolves local-encrypted material only inside the tool-specific dispatch boundary; external secret providers remain fail-closed for this DearMe channel path until explicitly enabled. |
 | `server/src/services/dearme-x-post-dispatch.ts` | DEA-52 / DM-172B | Default approved `post_x` dispatcher. Resolves the opaque X credential through the server secret-provider registry, validates provider/access token/expiry/`tweet.write`, validates the tweet payload, calls X API v2 `POST /2/tweets`, maps delivered ids to `https://x.com/i/web/status/*`, and returns provider auth failures as wrapper reauth errors without exposing access tokens. |
 | `server/src/services/dearme-linkedin-dm-dispatch.ts` | DM-176A | Optional approved `send_linkedin_dm` dispatcher. Resolves the opaque LinkedIn channel credential through the server secret-provider registry, validates a partner/provider credential with `send_dm` capability, validates recipient/body/subject bounds, calls a configured partner messages endpoint with the wrapper idempotency key, and returns provider auth failures as wrapper reauth errors without exposing tokens. Browser automation and guessed private APIs are intentionally out of scope. |
+| `server/src/services/dearme-linkedin-dm-dispatch-config.ts` | DM-176B | Env bridge for default approved `send_linkedin_dm` dispatch. It maps `DEARME_LINKEDIN_DM_MESSAGES_URL` and partner endpoint aliases into dispatcher config so the direct path is only registered when operator config exists. |
 | `server/src/services/dearme-send-email-dispatch.ts` | DM-174 | Default approved `send_email` dispatcher for the `resend` channel. Resolves the opaque Resend credential through the server secret-provider registry, validates provider/API key/from email/expiry and plain-text email payload shape, calls Resend `POST /emails` with the wrapper idempotency key, maps delivered email ids to receipts, and returns sanitized auth failures as wrapper reauth errors without exposing API keys or provider details in customer prompts. HTML is fail-closed until sanitizer support lands. `ses` remains fail-closed until the binding can resolve an `ses` credential. |
 | `server/src/services/dearme-deploy-site-dispatch.ts` | DM-177B/DM-177C | Default approved `deploy_site` dispatcher for the `dearme-cloud` channel. It keeps the existing approval/wrapper/audit path, validates lowercase safe handles and bounded artifact refs, rejects custom domains in this slice, emits stable idempotent preview receipts at `dearme.app/<handle>?preview=*`, and fails production deploys closed unless the DearMe-owned host is explicitly configured. |
 | `server/src/services/dearme-deploy-site-dispatch-config.ts` | DM-177C | Env bridge for default approved `deploy_site` dispatch. It maps DearMe site host env into the dispatcher config so production receipts can be enabled by operator intent without reopening OpenClaw gateway fallback or custom-domain automation. |
 | `server/src/services/dearme-meta-campaign-dispatch.ts` | DM-178 | Default approved `create_meta_campaign` dispatcher for the `meta_ads` channel. It keeps the existing spend approval/wrapper/audit path, resolves the opaque Meta ads credential through the shared secret-provider registry, requires `ads_management`, normalizes ad account ids, validates campaign refs/budget tier/learning window, creates a paused Meta campaign receipt, and returns provider auth failures as wrapper reauth errors without exposing tokens. |
+| `server/src/services/dearme-meta-campaign-dispatch-config.ts` | DM-178B | Env bridge for default approved `create_meta_campaign` dispatch. It maps DearMe Meta Graph API base URL env into the dispatcher config so live smoke can target the intended Graph version/base without a customer-facing connector surface. |
 | `server/src/services/dearme-voice-gate.ts` | DM-S07 / DM-170 | `dearMeVoiceGateService({ scorer? })`. Default scorer is the deterministic stub: 5 negative phrase rules (`ai_disclaimer`, `hype_word`, `stale_template`, `press_release_voice`, `punctuation_storm`), per-artifact length floor/ceiling, `concrete_evidence` reward. The DM-170 route now exposes this scorer; the real fingerprint model lands by replacing `scorer`. |
 | `server/src/routes/dearme-voice-gate.ts` | DM-170 | Root `POST /v1/voice/score` route over the shared proxy contract. Requires `Authorization: Bearer dm_sk_*`, validates `VoiceGateScoreRequest`, and returns `VoiceGateScoreResponse` from the existing cloud-side voice gate service. |
 | `server/src/services/dearme-work-loop.ts` | DM-S07 / DM-179 / DM-180 | `transition({ companyId, issueId, from, to, role, reason, openclawSessionId?, agentId? })` — validates via `canTransitionWorkLoop`, mirrors the new 8-state into `issues.status`, writes `activity_log`, emits `work_loop_transition` SSE. Plus `legalNext(from)`. |
@@ -3018,28 +3026,43 @@ DM-S06 shipped the typed contracts. DM-S07 wires them into the running cloud as 
 | `server/src/services/dearme-outbound-tool-wrapper.test.ts` | DM-S07 | 15 tests covering happy path, rejected gate (work-loop `gate → review`), pending (no dispatch), missing OAuth, auth-error → sanitized `markNeedsReauth`, stable/different idempotency keys, customer-safe email connection labels, missing voice-gate input, voice-gate-skipped tools (`deploy_site`), `cost_events` write on `paid=true`, missing dispatcher, and approved launch delivery edges. |
 | `server/src/services/dearme-x-post-dispatch.test.ts` | DEA-52 / DM-172B | Tests prove local encrypted credential resolution, successful X request construction, delivered id/url mapping, provider auth failure → reauth without token exposure, expired/underscoped credentials fail before posting, invalid or malformed tweet payloads fail before credential resolution, and network failures stay inside the dispatch result. |
 | `server/src/services/dearme-linkedin-dm-dispatch.test.ts` | DM-176A | Tests prove local encrypted credential resolution, successful partner request construction, missing endpoint fail-closed without secret resolution, provider auth failure → reauth without token exposure, expired/missing-capability credentials fail before sending, malformed DM payloads fail before credential resolution, and incomplete partner responses fail closed. |
+| `server/src/services/dearme-linkedin-dm-dispatch-config.test.ts` | DM-176B | Tests prove absent LinkedIn partner config stays null, the preferred DearMe endpoint env is trimmed, and partner/legacy endpoint aliases map to the same dispatcher config. |
 | `server/src/services/dearme-send-email-dispatch.test.ts` | DM-174 | Tests prove local encrypted credential resolution, successful Resend request construction, auth failure → reauth without key/status-text exposure, unsupported SES/malformed/HTML payloads rejected before credential resolution, expired/incomplete credentials fail before sending, incomplete provider responses fail closed, and network failures stay inside a sanitized dispatch result. |
 | `server/src/services/dearme-deploy-site-dispatch.test.ts` | DM-177B/DM-177C | Tests prove stable preview deploy receipts, customer-safe payload validation, custom-domain rejection, production fail-closed behavior by default, explicit production opt-in behavior, and binding mismatch errors. |
 | `server/src/services/dearme-deploy-site-dispatch-config.test.ts` | DM-177C | Tests prove absent config stays null, host env aliases are trimmed, production opt-in is explicit, the default DearMe host can be enabled by flag, and false/malformed flags keep production disabled. |
 | `server/src/services/dearme-meta-campaign-dispatch.test.ts` | DM-178 | Tests prove local encrypted credential resolution, successful Meta campaign request construction, non-HTTPS Graph API URLs fail before credential resolution, auth failure → reauth without token/provider-message exposure, expired/underscoped/malformed credentials fail before sending, malformed campaign payloads fail before credential resolution, incomplete provider responses fail closed, and network failures stay inside the dispatch result. |
+| `server/src/services/dearme-meta-campaign-dispatch-config.test.ts` | DM-178B | Tests prove absent Meta Graph config stays null, the preferred DearMe Graph env is trimmed, and smoke-tooling aliases map to the same dispatcher config. |
 | `server/src/services/dearme-voice-gate.test.ts` | DM-S07 | 6 tests pinning the stub scorer's deterministic rules. |
 | `server/src/services/dearme-sse-bus.test.ts` | DM-S07 | 5 tests on cross-tenant isolation, listener fault containment, missing-companyId guard, unsubscribe. |
 
 After this slice, all five outbound tools (`post_x`, `send_email`,
 `send_linkedin_dm`, `deploy_site`, and `create_meta_campaign`) use the same
-small-file `ChannelDispatch` shape. LinkedIn DM is still gated on a configured
-partner endpoint and credential; Meta ads is gated on a real Meta
-OAuth/Marketing API credential smoke; no browser automation or
-customer-visible connector surface was added.
+small-file `ChannelDispatch` shape. Provider endpoint/base-url config is now
+resolved at app startup and injected into the default approved launch handoff.
+LinkedIn DM is still gated on a configured partner endpoint and credential;
+Meta ads is gated on a real Meta OAuth/Marketing API credential smoke; no
+browser automation or customer-visible connector surface was added.
 
 ```ts
+const linkedInConfig = resolveDearMeLinkedInDmDispatchConfigFromEnv(env);
+const metaConfig = resolveDearMeMetaCampaignDispatchConfigFromEnv(env);
+
 const channelDispatch = {
   post_x: createDearMeXPostDispatch(),
-  send_linkedin_dm: createDearMeLinkedInDmDispatch({ messagesUrl }),
+  ...(linkedInConfig
+    ? { send_linkedin_dm: createDearMeLinkedInDmDispatch(linkedInConfig) }
+    : {}),
   send_email: createDearMeSendEmailDispatch(),
   deploy_site: createDearMeDeploySiteDispatch(siteConfig),
-  create_meta_campaign: createDearMeMetaCampaignDispatch(),
+  create_meta_campaign: createDearMeMetaCampaignDispatch(metaConfig ?? {}),
 };
+```
+
+Provider-config verification (2026-05-11):
+
+```
+pnpm exec vitest run server/src/services/dearme-linkedin-dm-dispatch-config.test.ts server/src/services/dearme-meta-campaign-dispatch-config.test.ts server/src/services/dearme-linkedin-dm-dispatch.test.ts server/src/services/dearme-meta-campaign-dispatch.test.ts server/src/services/dearme-approved-launch-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts --maxWorkers=1   43/43 pass
+pnpm --filter @paperclipai/server typecheck                                                                                                                                    pass
 ```
 
 Verification (2026-05-09):
@@ -3079,7 +3102,7 @@ This commit unblocks all the next-up tickets that wire each substrate to the oth
 | DM-173A | Per-user X OAuth callback persistence proof writing into `channel_connections`. |
 | DM-173B | Approved X next-step fallback now returns a DearMe-owned `oauthStartUrl`; `GET /v1/channels/:companyId/x/start` starts the PKCE flow and stays 503 when OAuth config is absent, and the browser callback exchanges the X code, loads the profile, encrypts credentials, and writes an active `x` row when config is present. DM-172B consumes that active row for approved X posting. |
 | DM-174 | `send_email` via Resend/SES (avoids Gmail CASA cost). Resend plain-text dispatcher is shipped on the canonical wrapper path; HTML and SES remain future work because HTML needs sanitizer support and the current `send_email` binding resolves `channel_connections.channel = "resend"`. |
-| DM-176/177/178 | LinkedIn DM partner endpoint/credential smoke / remaining deploy_site live host/custom-domain smoke / Meta OAuth-Marketing API smoke |
+| DM-176/177/178 | LinkedIn DM partner endpoint/credential live smoke / remaining deploy_site live host/custom-domain smoke / Meta OAuth-Marketing API live smoke |
 | DM-179 | DearMe live workbench SSE route — shipped as `GET /api/dearme/companies/:companyId/events`; future work can add upstream OpenClaw passthrough events behind the same stream |
 | DM-180 | **Shipped.** Approval resolver wire through `POST /api/dearme/companies/:companyId/approvals/resolve`, with issue normalization + `approvals`/`issue_approvals` attribution. ✅ |
 

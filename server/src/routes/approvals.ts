@@ -27,6 +27,8 @@ import {
 } from "../services/dearme-approved-launch-handoff.js";
 import type { DearMeOpenClawGatewayDispatchConfig } from "../services/dearme-openclaw-gateway-dispatch.js";
 import type { DearMeDeploySiteDispatchConfig } from "../services/dearme-deploy-site-dispatch.js";
+import type { DearMeLinkedInDmDispatchConfig } from "../services/dearme-linkedin-dm-dispatch.js";
+import type { DearMeMetaCampaignDispatchConfig } from "../services/dearme-meta-campaign-dispatch.js";
 import type { ChannelDispatch } from "../services/dearme-outbound-tool-wrapper.js";
 import type { DearMeOutboundToolName } from "@paperclipai/dearme-openclaw";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
@@ -48,6 +50,8 @@ export function approvalRoutes(
     dearMeOutboundChannelDispatch?: Partial<Record<DearMeOutboundToolName, ChannelDispatch>>;
     dearMeOpenClawGatewayDispatchConfig?: DearMeOpenClawGatewayDispatchConfig | null;
     dearMeDeploySiteDispatchConfig?: DearMeDeploySiteDispatchConfig | null;
+    dearMeLinkedInDmDispatchConfig?: DearMeLinkedInDmDispatchConfig | null;
+    dearMeMetaCampaignDispatchConfig?: DearMeMetaCampaignDispatchConfig | null;
   } = {},
 ) {
   const router = Router();
@@ -63,8 +67,8 @@ export function approvalRoutes(
       db,
       options.dearMeOutboundChannelDispatch,
       options.dearMeOpenClawGatewayDispatchConfig,
-      null,
-      null,
+      options.dearMeLinkedInDmDispatchConfig,
+      options.dearMeMetaCampaignDispatchConfig,
       options.dearMeDeploySiteDispatchConfig,
     );
   const strictSecretsMode = process.env.PAPERCLIP_SECRETS_STRICT_MODE === "true";

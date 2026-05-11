@@ -31,10 +31,16 @@ export {
   type DearMeLinkedInDmDispatchConfig,
 } from "./dearme-linkedin-dm-dispatch.js";
 export {
+  resolveDearMeLinkedInDmDispatchConfigFromEnv,
+} from "./dearme-linkedin-dm-dispatch-config.js";
+export {
   createDearMeMetaCampaignDispatch,
   resolveDearMeMetaCampaignCredential,
   type DearMeMetaCampaignDispatchConfig,
 } from "./dearme-meta-campaign-dispatch.js";
+export {
+  resolveDearMeMetaCampaignDispatchConfigFromEnv,
+} from "./dearme-meta-campaign-dispatch-config.js";
 export {
   createDearMeSendEmailDispatch,
   resolveDearMeSendEmailCredential,
