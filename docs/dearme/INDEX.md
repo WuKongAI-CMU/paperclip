@@ -139,7 +139,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-183BV Symphony cooperation spine** — the current branch now treats Symphony as the coordinator/worker cooperation center while keeping it backstage. Workbench stream items have a typed work-event contract (`action`, `customerSummary`, `artifactTarget`, `decisionNeed`, `traceRefs`) for customer-safe decision cards, the remaining DM-084, DM-086, DM-095, DM-097, DM-098, and DM-101 stale worktree heads are recorded as reviewed absorptions, and `pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs` gives the coordinator one view of worktree status plus latest durable Symphony handoff artifacts.
 - **DEA-20 / Chief pairing smoke** — Symphony closed the OpenClaw Chief pairing lane as no-code evidence: the current OpenClaw plugin manifest, 12 generated skills, 4 bootstrap files, required config, and outbound approval-gate bindings already prove the backstage pairing surface without adding customer-visible substrate language.
 - **DEA-21 / private site preview smoke** — the first-cycle proof package now carries a handle-safe `dearme.app/<handle>` private preview route through shared schema, server proof documents, apply/report artifacts, and onboarding UI while keeping public deploy behind the existing launch decision.
-- **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
+- **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)
 
@@ -148,7 +148,12 @@ These four rules make the rest of the docs internally consistent. If any older d
 The stale local worktree queue is closed by exact-head reviewed absorptions.
 Future collaboration should start from a Linear `DEA` issue and a Symphony
 workspace on the current coordinator head, then land only one bounded
-customer-facing slice at a time. DM-172, Resend + SES DM-174,
+customer-facing slice at a time. The current product comparison against Polsia
+and Naive is locked in `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`: DearMe is
+strong on the Naive/Paperclip control-plane layer, weaker on Polsia's first
+five-minute customer wow, and should prioritize a private first-wow loop plus a
+customer-safe live work stream before adding another settings or runtime
+surface. DM-172, Resend + SES DM-174,
 partner-dispatch + endpoint-config half of DM-176, the preview + configured
 production/custom-domain gate half of DM-177, and the Meta dispatcher + Graph-base-url
 config half of DM-178 are now on the canonical `ChannelDispatch` path. The
@@ -227,6 +232,7 @@ The four docs below are the only ones that affect runtime decisions. Everything 
 | **`TRI-SUBSTRATE-ARCHITECTURE.md`** | Integration contract: OpenClaw + Naive + Polsia. Layer ownership, work loop, event stream, approval gates, voice gate, per-role map. |
 | **`OPENCLAW-INTEGRATION-ARCHITECTURE.md`** | The runtime contract for OpenClaw specifically: how DearMe becomes an OpenClaw plugin. |
 | **`PRODUCT-ARCHITECTURE.md`** | Surface, packages, doctrine, sprint timing. |
+| **`POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`** | Current product maturity and first-wow gap against Polsia and Naive. |
 | **`POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`** | Ticket-level work breakdown. |
 | **`REUSE-IMPLEMENTATION-LEDGER.md`** | What is actually built and verified. |
 

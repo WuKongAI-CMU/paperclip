@@ -2,6 +2,25 @@
 
 Date: 2026-05-11
 
+## Polsia / Naive / DearMe Current Gap Audit - 2026-05-11
+
+Product/architecture slice:
+
+- Added `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md` as the current product
+  maturity verdict against Polsia and Naive. The audit records DearMe as strong
+  on Naive/Paperclip-style substrate reuse, moderate on DearMe-owned product
+  semantics, and still weak on Polsia's first five-minute customer wow.
+- Updated `INDEX.md` so the next coordinator ticket starts from the current
+  verdict: build a private first-wow loop and customer-safe live work stream
+  before adding another settings page, connector UI, or runtime surface.
+- The audit uses live repo/coordinator evidence: branch status, Symphony status,
+  worktree/handoff summary, unified proof status, current DearMe docs/code
+  surfaces, and the local Polsia / Naive research artifacts.
+
+Verification:
+
+- `git diff --cached --check -- docs/dearme/POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md docs/dearme/INDEX.md docs/dearme/BUILD-STATE.md`
+
 ## DearMe Proof Local Env Autoload - 2026-05-11
 
 Product/architecture slice:
