@@ -153,6 +153,7 @@ const INTEGRATION_AUDIT_SCRIPT_ARGS = [
   "--skip-dirty",
   "--handoffs",
 ] as const;
+const INTEGRATION_AUDIT_TIMEOUT_MS = 60_000;
 
 function includesLane(selected: DearMeProofLane, lane: Exclude<DearMeProofLane, "all">) {
   return selected === "all" || selected === lane;
@@ -406,7 +407,7 @@ export function inspectDearMeIntegrationAuditStatus(): DearMeIntegrationAuditSta
       execFileSync("node", [scriptPath, ...INTEGRATION_AUDIT_SCRIPT_ARGS], {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
-        timeout: 20_000,
+        timeout: INTEGRATION_AUDIT_TIMEOUT_MS,
         maxBuffer: 1024 * 1024,
       }),
     );

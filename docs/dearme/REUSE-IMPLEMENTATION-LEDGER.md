@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `pnpm dearme:status` integration absorption is green again after raising the
+  embedded worktree/handoff audit timeout to match current coordinator scale.
+  The audit command itself was succeeding, but the status wrapper could time
+  out around 20 seconds on 122 worktrees. Future changes should preserve enough
+  timeout headroom or improve audit performance before treating
+  `integration_audit_unavailable` as a product integration blocker.
 - `pnpm dearme:status` now includes an Integration absorption proof section
   backed by `pnpm dearme:worktrees -- --summary-json --skip-dirty --handoffs`.
   Current evidence is 122 tracked worktrees, 118 reviewed absorptions, 3

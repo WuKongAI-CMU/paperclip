@@ -172,6 +172,7 @@ test("DearMe proof status carries current integration absorption evidence", () =
   assert.match(formatted, /Product verdict: Naive\/Paperclip substrate proof is strong, integration absorption is clean/);
   assert.match(formatted, /Integration absorption proof: ready/);
   assert.match(formatted, /pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs/);
+  assert.equal(formatted.includes("integration audit could not run"), false);
 });
 
 test("DearMe proof integration audit blocks on replay candidates or dirty handoffs", () => {

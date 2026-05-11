@@ -2,6 +2,28 @@
 
 Date: 2026-05-11
 
+## Integration Audit Timeout Matches Current Worktree Scale - 2026-05-11
+
+Product/architecture slice:
+
+- Fixed a status-chain regression where `pnpm dearme:status` could mark
+  Integration absorption proof as unavailable even though
+  `pnpm dearme:worktrees -- --summary-json --skip-dirty --handoffs` succeeded.
+- The root cause was not a replay or dirty-lane blocker; the embedded status
+  audit had a 20-second timeout while the current 122-worktree plus Symphony
+  handoff scan takes about 25 seconds on the coordinator Mac.
+- Raised the embedded integration audit timeout to 60 seconds and kept the
+  fail-closed unavailable status for real command failures. The product status
+  now again reports the true evidence: 122 tracked worktrees, 118 reviewed
+  absorptions, 3 in current head, 0 replay candidates, 0 dirty lanes, and
+  latest Symphony handoffs 28/28 committed.
+
+Verification:
+
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:proof -- --status --json`
+
 ## Unified Status Carries Integration Absorption Proof - 2026-05-11
 
 Product/architecture slice:
