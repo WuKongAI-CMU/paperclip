@@ -2,6 +2,36 @@
 
 Date: 2026-05-11
 
+## Unified DearMe Proof Entry - 2026-05-11
+
+Product/architecture slice:
+
+- Added `pnpm dearme:proof` as the coordinator/operator entrypoint over the
+  already-shipped provider and voice smoke lanes. It reuses the existing
+  provider-smoke and voice-smoke readiness/run functions instead of creating a
+  second dispatch path, scorer, settings page, or UI surface.
+- The command prints one readiness view, one ignored `.dearme-proof.env`
+  bootstrap, and one safe local run command. The safe run only executes the
+  deploy-site preview receipt and local Voice Gate proof; live sends, production
+  deploys, spend, and live model calls remain behind the existing provider and
+  voice seams.
+- This gives Symphony workers a single proof handoff command while preserving
+  the narrow lane-specific commands for real provider credentials and future
+  embedding/model voice scoring.
+
+Verification:
+
+- `pnpm test:dearme-proof`
+- `pnpm test:dearme-provider-smoke`
+- `pnpm test:dearme-voice-smoke`
+- `pnpm --silent dearme:proof -- --check`
+- `pnpm --silent dearme:proof -- --check --json`
+- `pnpm --silent dearme:proof -- --run-safe`
+- `DEARME_VOICE_SEMANTIC_SCORER=profile-token pnpm --silent dearme:proof -- --lane voice --run-safe`
+- `pnpm typecheck`
+- `git diff --check -- .gitignore package.json scripts/dearme-proof.ts scripts/dearme-proof.test.ts docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/INDEX.md docs/dearme/README.md`
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
+
 ## Voice-Smoke Operator Proof - 2026-05-11
 
 Product/architecture slice:

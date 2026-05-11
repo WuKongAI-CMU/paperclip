@@ -157,6 +157,14 @@ iMessage through the configured OpenClaw gateway, SES or Resend email,
 LinkedIn partner endpoint + credential, Meta OAuth/Marketing API, or the
 remaining DM-177 live DNS/host deploy smoke. It is not another
 connector/settings surface.
+The internal `pnpm dearme:proof -- --check` command is the first local proof
+entrypoint for coordinators and Symphony workers. It composes the existing
+provider and voice smoke lanes, prints one ignored `.dearme-proof.env`
+bootstrap, and offers `pnpm dearme:proof -- --run-safe` for the no-send,
+no-production-deploy, no-spend, no-live-model proof path. Drop to
+`pnpm dearme:provider-smoke -- --check` for live provider credential work or
+`pnpm dearme:voice-smoke -- --check` for scorer-specific calibration work; do
+not add another setup dashboard or dispatch path.
 The internal `pnpm dearme:provider-smoke -- --check` command now owns that
 operator proof checklist, including the OpenClaw gateway URL/token/auth plus
 recipient/body requirements for Telegram/iMessage, and the production site URL

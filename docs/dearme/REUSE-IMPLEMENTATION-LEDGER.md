@@ -15,6 +15,14 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `pnpm dearme:proof` is now the single local proof entrypoint over the
+  provider and voice smoke lanes. It composes the existing provider-smoke and
+  voice-smoke harnesses, emits one ignored `.dearme-proof.env` bootstrap, and
+  offers a safe local run that only proves deploy-site preview plus local Voice
+  Gate behavior. Future Symphony workers should start proof triage there, then
+  drop to `dearme:provider-smoke` for live provider credentials or
+  `dearme:voice-smoke` for scorer-specific calibration. Do not add another
+  proof dashboard, dispatch wrapper, scorer route, or setup surface.
 - Voice proof now has the same bounded operator shape as provider proof:
   `pnpm dearme:voice-smoke` checks the deterministic local gate, prints a
   local ignored `.dearme-voice-smoke.env` template, and proves the opt-in
