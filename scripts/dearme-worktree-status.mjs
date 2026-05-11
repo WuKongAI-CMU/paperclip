@@ -354,6 +354,7 @@ export function summarizeSymphonyHandoffs(handoffs) {
   const summary = {
     total: 0,
     byMode: {},
+    historicalByMode: {},
     latestByMode: {},
     latestByIssue,
   };
@@ -383,6 +384,17 @@ export function summarizeSymphonyHandoffs(handoffs) {
 
   for (const handoff of Object.values(latestByIssue)) {
     summary.latestByMode[handoff.mode] = (summary.latestByMode[handoff.mode] ?? 0) + 1;
+  }
+
+  const latestSummaryPaths = new Set(
+    Object.values(latestByIssue)
+      .map((handoff) => handoff.summaryPath)
+      .filter(Boolean),
+  );
+  for (const handoff of handoffs) {
+    if (handoff.mode === "unreadable_summary") continue;
+    if (handoff.summaryPath && latestSummaryPaths.has(handoff.summaryPath)) continue;
+    summary.historicalByMode[handoff.mode] = (summary.historicalByMode[handoff.mode] ?? 0) + 1;
   }
 
   return summary;
@@ -740,13 +752,28 @@ function printHandoffSummary(summary) {
     ].join(" | "),
   );
 
+  const historicalTotal = Object.values(summary.historicalByMode).reduce(
+    (total, count) => total + count,
+    0,
+  );
+  if (historicalTotal > 0) {
+    console.log(
+      [
+        `Historical non-latest handoffs: ${historicalTotal}`,
+        `committed_patch: ${summary.historicalByMode.committed_patch ?? 0}`,
+        `dirty_patch_handoff: ${summary.historicalByMode.dirty_patch_handoff ?? 0}`,
+        `no_file_changes: ${summary.historicalByMode.no_file_changes ?? 0}`,
+      ].join(" | "),
+    );
+  }
+
   const latest = Object.entries(summary.latestByIssue).sort(([a], [b]) => a.localeCompare(b));
   if (latest.length === 0) return;
 
   console.log("Latest Symphony handoffs:");
   for (const [issue, handoff] of latest) {
     console.log(
-      `- ${issue}: ${handoff.mode} head=${shortSha(handoff.head) ?? "-"} files=${handoff.changedFiles.length} updated=${handoff.updatedAt} patch=${handoff.patchPath ?? "-"}`,
+      `- ${issue}: ${handoff.mode} head=${shortSha(handoff.head) ?? "-"} files=${handoff.changedFiles?.length ?? 0} updated=${handoff.updatedAt} patch=${handoff.patchPath ?? "-"}`,
     );
   }
 }

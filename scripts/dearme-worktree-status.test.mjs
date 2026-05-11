@@ -584,6 +584,9 @@ test("collectSymphonyHandoffs summarizes latest handoff by issue", () => {
     assert.equal(summary.byMode.unreadable_summary, 1);
     assert.equal(summary.latestByMode.committed_patch, 1);
     assert.equal(summary.latestByMode.dirty_patch_handoff, 1);
+    assert.equal(summary.historicalByMode.dirty_patch_handoff, 1);
+    assert.equal(summary.historicalByMode.committed_patch ?? 0, 0);
+    assert.equal(summary.historicalByMode.unreadable_summary ?? 0, 0);
     assert.equal(summary.latestByIssue["DEA-60"].mode, "committed_patch");
     assert.deepEqual(summary.latestByIssue["DEA-60"].changedFiles, [
       "scripts/dearme-provider-smoke.ts",
