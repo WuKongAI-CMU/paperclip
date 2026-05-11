@@ -2091,6 +2091,19 @@ function TeamWorkstreamPanel({
   );
 }
 
+function deliveryResultLinkLabel(handoff: DearMeWorkbenchProgressItem) {
+  if (handoff.kind !== "next_move_delivery_recorded") return "Open result";
+
+  const deliveryCopy = `${handoff.title} ${handoff.summary} ${handoff.nextStep ?? ""}`.toLowerCase();
+  if (
+    deliveryCopy.includes("website preview") ||
+    handoff.deliveryExternalUrl?.startsWith("https://dearme.app/")
+  ) {
+    return "Open Website preview";
+  }
+  return "Open result";
+}
+
 function PrivateExecutionHandoffPanel({
   handoff,
   onOpenIssue,
@@ -2177,7 +2190,7 @@ function PrivateExecutionHandoffPanel({
                 rel="noreferrer"
                 className="text-sm font-medium text-primary underline-offset-4 hover:underline"
               >
-                Open result
+                {deliveryResultLinkLabel(handoff)}
               </a>
             ) : null}
           </div>

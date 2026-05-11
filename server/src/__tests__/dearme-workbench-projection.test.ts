@@ -200,6 +200,42 @@ describe("DearMe workbench projection helpers", () => {
     expect(JSON.stringify(projected)).not.toMatch(/launch queue|needs_oauth/i);
   });
 
+  it("projects delivered Website preview receipts with the preview URL intact", () => {
+    const projected = dearmeWorkbenchProgressFromActivity({
+      id: "activity-website-preview-delivery",
+      action: DEARME_NEXT_MOVE_DELIVERY_ACTIVITY,
+      entityId: "approval-1",
+      details: {
+        approvalId: "approval-1",
+        issueId: "issue-1",
+        issueIdentifier: "PET-8",
+        outputId: "issue-1:portfolio_update",
+        outputKind: "portfolio_update",
+        riskGate: "deploy_public_site",
+        deliveryStatus: "delivered",
+        deliveryExternalId: "dearme_preview_abc123",
+        deliveryExternalUrl: "https://dearme.app/peter-studio?preview=dearme_preview_abc123",
+        deliveryTitle: "Approved Website preview delivered",
+        deliverySummary: "Delivery: delivered. External action: completed. Next: Open the delivered Website preview, then continue with the next approved step.",
+        nextStep: "Open the delivered Website preview, then continue with the next approved step.",
+      },
+      createdAt: new Date("2026-05-08T12:10:00.000Z"),
+    });
+
+    expect(projected).toEqual(expect.objectContaining({
+      kind: "next_move_delivery_recorded",
+      title: "Approved Website preview delivered",
+      summary: expect.stringContaining("Open the delivered Website preview"),
+      outputKind: "portfolio_update",
+      deliveryStatus: "delivered",
+      deliveryExternalId: "dearme_preview_abc123",
+      deliveryExternalUrl: "https://dearme.app/peter-studio?preview=dearme_preview_abc123",
+      nextStep: "Open the delivered Website preview, then continue with the next approved step.",
+    }));
+    expect(JSON.stringify(projected)).not.toMatch(HIDDEN_SUBSTRATE_PATTERN);
+    expect(JSON.stringify(projected)).not.toMatch(/launch queue|needs_oauth|dearme-cloud/i);
+  });
+
   it("projects connection-needed receipts without leaking the raw outcome code", () => {
     const projected = dearmeWorkbenchProgressFromActivity({
       id: "activity-delivery-connection",

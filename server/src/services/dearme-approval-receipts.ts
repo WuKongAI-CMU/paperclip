@@ -287,8 +287,16 @@ function deliveryOutcomeStatus(outcome: NextMoveDeliveryOutcome): DeliveryStatus
   return "errored";
 }
 
-function deliveryOutcomeTitle(outcome: NextMoveDeliveryOutcome) {
-  if (outcome.kind === "delivered") return "Approved next step delivered";
+function isWebsitePreviewDelivery(details: ReceiptDetails) {
+  return details.launchChannel === "dearme-cloud";
+}
+
+function deliveryOutcomeTitle(details: ReceiptDetails, outcome: NextMoveDeliveryOutcome) {
+  if (outcome.kind === "delivered") {
+    return isWebsitePreviewDelivery(details)
+      ? "Approved Website preview delivered"
+      : "Approved next step delivered";
+  }
   if (outcome.kind === "needs_oauth") return "Approved next step needs connection";
   if (outcome.kind === "pending") return "Approved next step pending";
   if (outcome.kind === "rejected") return "Approved next step needs a new decision";
@@ -317,6 +325,9 @@ function deliveryOutcomeSummary(details: ReceiptDetails, outcome: NextMoveDelive
 
 function deliveryOutcomeNextStep(details: ReceiptDetails, outcome: NextMoveDeliveryOutcome) {
   if (outcome.kind === "delivered") {
+    if (isWebsitePreviewDelivery(details)) {
+      return "Open the delivered Website preview, then continue with the next approved step.";
+    }
     return details.launchChannelLabel
       ? `Review the delivered ${details.launchChannelLabel} result or continue with the next approved step.`
       : "Review the delivered result or continue with the next approved step.";
@@ -353,7 +364,7 @@ function buildDeliveryReceiptDetails(receiptDetails: ReceiptDetails, outcome: Ne
     deliveryStatus,
     deliveryExternalId,
     deliveryExternalUrl,
-    deliveryTitle: deliveryOutcomeTitle(outcome),
+    deliveryTitle: deliveryOutcomeTitle(receiptDetails, outcome),
     deliverySummary: clippedText(deliverySummary, 1_000),
     nextStep,
   };

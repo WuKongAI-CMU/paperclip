@@ -5892,6 +5892,61 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("surfaces a delivered Website preview receipt with a safe preview link", async () => {
+    mockDearmeApi.getWorkbench.mockResolvedValue(
+      workbenchResponseWithDeliveryReceipt(
+        "delivered",
+        "Approved Website preview delivered",
+        "DearMe delivered the approved Website preview and recorded the receipt.",
+        "Open the delivered Website preview, then continue with the next approved step.",
+        "dearme_preview_abc123",
+        "https://dearme.app/peter-studio?preview=dearme_preview_abc123",
+      ),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const handoffPanel = surfaceByLabel(container, "Delivery receipt delivered");
+    expect(handoffPanel.textContent).toContain("Approved Website preview delivered");
+    expect(handoffPanel.textContent).toContain("Delivered");
+    expect(handoffPanel.textContent).toContain("Receipt recorded");
+    expect(handoffPanel.textContent).toContain("Reference dearme_preview_abc123");
+    expect(handoffPanel.textContent).toContain("Open Website preview");
+    expect(handoffPanel.textContent).toContain(
+      "Open the delivered Website preview, then continue with the next approved step.",
+    );
+    expect(handoffPanel.textContent).not.toContain("Open result");
+    expectNoHiddenProductTerms(handoffPanel.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.orchestrationName,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+      HIDDEN_PRODUCT_TERMS.modelName,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+      HIDDEN_PRODUCT_TERMS.workbenchName,
+      HIDDEN_PRODUCT_TERMS.workspaceName,
+    ]);
+    const previewLink = handoffPanel.querySelector(
+      'a[href="https://dearme.app/peter-studio?preview=dearme_preview_abc123"]',
+    );
+    expect(previewLink?.textContent).toBe("Open Website preview");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("surfaces a delivery receipt that still needs channel connection", async () => {
     mockDearmeApi.getWorkbench.mockResolvedValue(
       workbenchResponseWithDeliveryReceipt(

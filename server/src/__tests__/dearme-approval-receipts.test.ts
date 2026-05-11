@@ -352,6 +352,76 @@ describe("recordDearMeNextMoveDeliveryReceipt", () => {
     }));
   });
 
+  it("records a delivered Website preview receipt with a safe preview link", async () => {
+    const { db, values } = makeDb();
+    const approval = makeApproval({
+      payload: {
+        ...makeApproval().payload,
+        launchHandoff: {
+          channel: "dearme-cloud",
+          publishGate: {
+            connectChannelState: "ready",
+          },
+        },
+      },
+    });
+
+    const result = await recordDearMeNextMoveDeliveryReceipt(db, {
+      approval,
+      actorUserId: "user-1",
+      linkedIssueIds: ["issue-1"],
+      outcome: {
+        kind: "delivered",
+        voiceGateScore: null,
+        externalId: "dearme_preview_abc123",
+        externalUrl: "https://dearme.app/peter-studio?preview=dearme_preview_abc123",
+      },
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      deliveryStatus: "delivered",
+      deliveryExternalId: "dearme_preview_abc123",
+      deliveryExternalUrl: "https://dearme.app/peter-studio?preview=dearme_preview_abc123",
+      deliveryTitle: "Approved Website preview delivered",
+      nextStep: "Open the delivered Website preview, then continue with the next approved step.",
+      launchChannelLabel: "Website",
+    }));
+    expect(mockLogActivity).toHaveBeenCalledWith(db, expect.objectContaining({
+      action: DEARME_NEXT_MOVE_DELIVERY_ACTIVITY,
+      details: expect.objectContaining({
+        deliveryTitle: "Approved Website preview delivered",
+        deliveryExternalUrl: "https://dearme.app/peter-studio?preview=dearme_preview_abc123",
+        nextStep: "Open the delivered Website preview, then continue with the next approved step.",
+      }),
+    }));
+
+    const serializedResult = JSON.stringify(result).toLowerCase();
+    const commentRows = values.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+    const serializedComments = commentRows.map((row) => row.body).join("\n").toLowerCase();
+
+    expect(serializedComments).toContain("dearme delivery receipt: approved website preview delivered.");
+    expect(serializedComments).toContain("reference: dearme_preview_abc123");
+    expect(serializedComments).toContain("link: https://dearme.app/peter-studio?preview=dearme_preview_abc123");
+    expect(serializedComments).toContain("open the delivered website preview");
+    for (const hiddenTerm of [
+      "paperclip",
+      "openclaw",
+      "symphony",
+      "adapter",
+      "provider",
+      "setup_payload",
+      "model",
+      "token",
+      "runtime",
+      "queue",
+      "control-plane",
+      "resend",
+    ]) {
+      expect(serializedResult).not.toContain(hiddenTerm);
+      expect(serializedComments).not.toContain(hiddenTerm);
+    }
+  });
+
   it("records a safe needs-connection delivery receipt without leaking internal codes", async () => {
     const { db, values } = makeDb();
     const approval = makeApproval({
