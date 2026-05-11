@@ -19,6 +19,9 @@ It answers three questions before another worker starts building:
   setup work first: generate the target provider-smoke env template into
   `.dearme-proof.env`, run the targeted no-send readiness check, and only then
   use the guarded live command after explicit recipient/provider facts exist.
+- Its loopback host rehearsal now exports into an isolated temporary directory
+  for each audit run, keeping concurrent Symphony checks from racing on the
+  shared proof packet and misrouting the next action.
 - This is the current Symphony routing rule. Workers should not paste or run a
   live Telegram/iMessage command as the first next step when the blocker is a
   missing iMessage recipient or credential fact.

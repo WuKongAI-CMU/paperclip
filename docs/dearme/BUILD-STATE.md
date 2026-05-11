@@ -11,6 +11,9 @@ Product/architecture slice:
   operator command: generate the target env template, run the targeted
   readiness check, then use the guarded live command only after the explicit
   recipient/provider facts exist.
+- The goal audit now runs its loopback host rehearsal against an isolated
+  temporary export directory, so concurrent Symphony workers do not race on the
+  same `dist/dearme-private-proof` files and falsely block the release gate.
 - This keeps Symphony aligned with the product boundary. DearMe can be
   aggressive and autonomous about reuse, status, and proof generation, but a
   missing iMessage recipient is setup work, not permission to send a live

@@ -1,3 +1,6 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   runDearMeHostRehearsal,
@@ -104,6 +107,7 @@ export interface DearMeGoalAuditArgs {
 }
 
 const GOAL_AUDIT_CHECK_COMMAND = "pnpm --silent dearme:goal-audit -- --check";
+const GOAL_AUDIT_HOST_REHEARSAL_TMP_PREFIX = "dearme-goal-host-rehearsal-";
 const PROOF_ENV_FILE = ".dearme-proof.env";
 const OPENCLAW_MESSAGES_TARGET = "openclaw_messages";
 const REQUIRED_STATUS_SECTIONS: DearMeProofStatusSection["key"][] = [
@@ -611,14 +615,25 @@ export async function buildDearMeGoalAudit(
     inspectDearMeIntegrationAuditStatus(),
   );
   let hostRehearsal: DearMeGoalAuditHostRehearsalEvidence;
+  let hostRehearsalExportSiteDir: string | undefined;
   try {
+    hostRehearsalExportSiteDir = await mkdtemp(
+      join(tmpdir(), GOAL_AUDIT_HOST_REHEARSAL_TMP_PREFIX),
+    );
     hostRehearsal = {
-      report: await runDearMeHostRehearsal({ port: 0 }),
+      report: await runDearMeHostRehearsal({
+        port: 0,
+        exportSiteDir: hostRehearsalExportSiteDir,
+      }),
     };
   } catch (error) {
     hostRehearsal = {
       error: error instanceof Error ? error.message : String(error),
     };
+  } finally {
+    if (hostRehearsalExportSiteDir) {
+      await rm(hostRehearsalExportSiteDir, { recursive: true, force: true });
+    }
   }
   let hostProvider: DearMeGoalAuditHostProviderEvidence;
   try {
