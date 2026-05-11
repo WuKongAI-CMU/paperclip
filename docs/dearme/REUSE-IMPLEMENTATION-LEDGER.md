@@ -15,6 +15,18 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- Symphony terminal handoff now de-duplicates repeated committed artifacts for
+  the same `issue + baseHead + head`. If a worker reruns after the coordinator
+  has already captured an absorbable committed patch, the command prints
+  `Already recorded: yes` and points at the existing patch/bundle/summary
+  instead of producing another identical handoff row. Future coordinator status
+  should treat a repeated head as audit evidence, not as a new replay target.
+- Current Polsia/Naive product verdict: DearMe is internal-demo ready for the
+  private first-five-minute loop, but not paid-beta launch ready. Reuse is
+  strongest on the Naive/Paperclip substrate layer (work, approvals, handoffs,
+  proof, Symphony coordination) and weaker on Polsia's live phone-reachable
+  first-wow. `pnpm dearme:status` now prints that verdict so coordinators do
+  not confuse local proof readiness with live provider proof.
 - Voice semantic proof is now locally ready on the coordinator Mac with the
   ignored `.dearme-proof.env` file requiring a customer-like custom corpus.
   The implementation stays on the existing voice-smoke/proof harness and now

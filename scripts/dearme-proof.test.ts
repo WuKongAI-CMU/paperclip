@@ -92,6 +92,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     "meta_campaign",
   ]);
   assert.match(formatted, /DearMe product proof status/);
+  assert.match(formatted, /Product verdict: private first-wow proof exists/);
   assert.match(formatted, /Local no-send proof: ready/);
   assert.match(formatted, /Voice semantic proof: blocked/);
   assert.match(formatted, /Live provider proof: blocked/);
@@ -117,6 +118,7 @@ test("DearMe proof status can be lane scoped", () => {
   assert.equal(status.commands.printEnvTemplate, "pnpm --silent dearme:proof -- --print-env-template --lane voice > .dearme-proof.env");
   assert.equal(status.commands.runSafe, "pnpm --silent dearme:proof -- --run-safe --lane voice");
   assert.equal(status.commands.check, "pnpm --silent dearme:proof -- --check --lane voice");
+  assert.match(formatDearMeProofStatus(status).join("\n"), /scoped proof status only/);
 });
 
 test("DearMe proof env template is a single local file bootstrap", () => {

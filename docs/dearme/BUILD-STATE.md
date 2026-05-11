@@ -2,10 +2,40 @@
 
 Date: 2026-05-11
 
+## Product Maturity Status Verdict - 2026-05-11
+
+Product/architecture slice:
+
+- Re-checked DearMe against the local Polsia and Naive evidence after the
+  customer-corpus voice proof landed. The current product state is now
+  internal-demo ready for the private first-five-minute loop, but not paid-beta
+  launch ready until live provider/host proof is real.
+- Updated `pnpm dearme:status` so the compact coordinator status includes the
+  product verdict directly: the Naive/Paperclip substrate proof is strong and
+  the private DearMe first-wow is locally ready; Polsia-style live,
+  phone-reachable wow is still blocked on live provider proof.
+- Refreshed `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md` with the current
+  Symphony/worktree count, proof status, provider-smoke blocker, and a sharper
+  current scorecard. The key gap is real external proof, not another settings
+  UI, connector discovery pass, or architecture layer.
+
+Verification:
+
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:proof -- --status --json`
+- `pnpm --silent dearme:provider-smoke -- --check --target openclaw_messages`
+- `pnpm --silent dearme:proof -- --check --lane provider`
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
+
 ## Customer-Corpus Voice Proof Ready Locally - 2026-05-11
 
 Product/architecture slice:
 
+- Added a Symphony handoff de-duplication guard: if a worker reruns the terminal
+  handoff with the same `issue + baseHead + head`, the handoff command reuses
+  the existing durable patch/bundle/summary instead of writing another
+  identical artifact set. This keeps repeated absorbed DEA-60 handoffs from
+  looking like new integration work.
 - Kept the Voice Gate proof backstage and extended the existing
   `pnpm dearme:voice-smoke` / `pnpm dearme:proof` lane instead of adding a new
   scorer route, setup screen, provider dashboard, or customer-facing concern.
@@ -23,6 +53,7 @@ Product/architecture slice:
 
 Verification:
 
+- `pnpm test:dearme-symphony-handoff`
 - `pnpm test:dearme-voice-smoke`
 - `pnpm test:dearme-proof`
 - `pnpm --silent dearme:proof -- --check --lane voice`

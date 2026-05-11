@@ -395,8 +395,36 @@ function formatBlockedTargets(blockedTargets: readonly DearMeProofStatusBlocker[
   return ` Blocked targets: ${blockedTargets.map((item) => item.target).join(", ")}.`;
 }
 
+function statusSection(
+  status: DearMeProofStatus,
+  key: DearMeProofStatusSection["key"],
+): DearMeProofStatusSection | undefined {
+  return status.sections.find((section) => section.key === key);
+}
+
+function formatProductVerdict(status: DearMeProofStatus) {
+  const local = statusSection(status, "local_safe_proof");
+  const voice = statusSection(status, "voice_semantic_proof");
+  const live = statusSection(status, "live_provider_proof");
+
+  if (local?.ready && voice?.ready && live?.ready) {
+    return "Product verdict: local first-wow, voice fit, and live provider proof are ready.";
+  }
+  if (local?.ready && voice?.ready && live && !live.ready) {
+    return "Product verdict: Naive/Paperclip substrate proof is strong and the private DearMe first-wow is locally ready; Polsia-style live, phone-reachable wow is still blocked on live provider proof.";
+  }
+  if (local?.ready && voice && !voice.ready) {
+    return "Product verdict: private first-wow proof exists, but voice fit and live provider proof still need work before a launch-ready demo claim.";
+  }
+  if (local && !local.ready) {
+    return "Product verdict: the product is not ready for a first-wow claim until local no-send proof passes.";
+  }
+  return "Product verdict: scoped proof status only; run the all-lane status before making a product-readiness claim.";
+}
+
 export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
   const lines = ["DearMe product proof status"];
+  lines.push(formatProductVerdict(status));
   for (const section of status.sections) {
     lines.push(
       `- ${section.label}: ${section.ready ? "ready" : "blocked"}. ${section.description}${formatBlockedTargets(section.blockedTargets)}`,
