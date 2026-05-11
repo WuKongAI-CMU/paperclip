@@ -185,6 +185,12 @@ function shortSha(value) {
   return typeof value === "string" && value.length > 12 ? value.slice(0, 12) : value;
 }
 
+function handoffIssueFromName(name) {
+  const match = matchTicket(name);
+  if (!match?.groups) return null;
+  return `${match.groups.prefix.toUpperCase()}-${match.groups.number.toUpperCase()}`;
+}
+
 function collectCurrentSubjects(currentHead, repoRoot) {
   return new Set(runGit(["log", "--format=%s", currentHead], repoRoot).split("\n").filter(Boolean));
 }
@@ -299,21 +305,41 @@ export function collectSymphonyHandoffs({
     .map((entry) => {
       const summaryPath = join(handoffRoot, entry.name);
       const stat = statSync(summaryPath);
-      const parsed = JSON.parse(readFileSync(summaryPath, "utf8"));
-      return {
-        mode: parsed.mode ?? "unknown",
-        issue: parsed.issue ?? null,
-        workspace: parsed.workspace ?? null,
-        baseHead: parsed.baseHead ?? null,
-        head: parsed.head ?? null,
-        commits: Array.isArray(parsed.commits) ? parsed.commits : [],
-        changedFiles: Array.isArray(parsed.changedFiles) ? parsed.changedFiles : [],
-        patchPath: parsed.patchPath ?? null,
-        bundlePath: parsed.bundlePath ?? null,
+      const base = {
+        issue: handoffIssueFromName(entry.name),
         summaryPath,
         updatedAt: stat.mtime.toISOString(),
         updatedAtMs: stat.mtimeMs,
       };
+
+      try {
+        const parsed = JSON.parse(readFileSync(summaryPath, "utf8"));
+        return {
+          ...base,
+          mode: parsed.mode ?? "unknown",
+          issue: parsed.issue ?? base.issue,
+          workspace: parsed.workspace ?? null,
+          baseHead: parsed.baseHead ?? null,
+          head: parsed.head ?? null,
+          commits: Array.isArray(parsed.commits) ? parsed.commits : [],
+          changedFiles: Array.isArray(parsed.changedFiles) ? parsed.changedFiles : [],
+          patchPath: parsed.patchPath ?? null,
+          bundlePath: parsed.bundlePath ?? null,
+        };
+      } catch (error) {
+        return {
+          ...base,
+          mode: "unreadable_summary",
+          workspace: null,
+          baseHead: null,
+          head: null,
+          commits: [],
+          changedFiles: [],
+          patchPath: null,
+          bundlePath: null,
+          readError: error instanceof Error ? error.message : String(error),
+        };
+      }
     })
     .sort((a, b) => b.updatedAtMs - a.updatedAtMs || a.summaryPath.localeCompare(b.summaryPath));
 }
@@ -334,6 +360,10 @@ export function summarizeSymphonyHandoffs(handoffs) {
   for (const handoff of handoffs) {
     summary.total += 1;
     summary.byMode[handoff.mode] = (summary.byMode[handoff.mode] ?? 0) + 1;
+
+    if (handoff.mode === "unreadable_summary") {
+      continue;
+    }
 
     if (handoff.issue && !latestByIssue[handoff.issue]) {
       latestByIssue[handoff.issue] = {
@@ -692,6 +722,7 @@ function printHandoffSummary(summary) {
       `committed_patch: ${summary.byMode.committed_patch ?? 0}`,
       `dirty_patch_handoff: ${summary.byMode.dirty_patch_handoff ?? 0}`,
       `no_file_changes: ${summary.byMode.no_file_changes ?? 0}`,
+      `unreadable_summary: ${summary.byMode.unreadable_summary ?? 0}`,
     ].join(" | "),
   );
 

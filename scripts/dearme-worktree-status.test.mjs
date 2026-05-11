@@ -533,6 +533,7 @@ test("collectSymphonyHandoffs summarizes latest handoff by issue", () => {
   const olderPath = join(handoffRoot, "DEA-60-old.json");
   const newerPath = join(handoffRoot, "DEA-60-new.json");
   const otherPath = join(handoffRoot, "DEA-61-new.json");
+  const malformedPath = join(handoffRoot, "DEA-60-writing.json");
 
   try {
     writeFileSync(olderPath, JSON.stringify({
@@ -557,22 +558,29 @@ test("collectSymphonyHandoffs summarizes latest handoff by issue", () => {
       head: "3333333333333333333333333333333333333333",
       patchPath: "/tmp/DEA-61.patch",
     }));
+    writeFileSync(malformedPath, "{\"mode\":", "utf8");
 
     const older = new Date("2026-05-11T01:00:00.000Z");
     const newer = new Date("2026-05-11T02:00:00.000Z");
     const other = new Date("2026-05-11T03:00:00.000Z");
+    const malformed = new Date("2026-05-11T04:00:00.000Z");
     utimesSync(olderPath, older, older);
     utimesSync(newerPath, newer, newer);
     utimesSync(otherPath, other, other);
+    utimesSync(malformedPath, malformed, malformed);
 
     const handoffs = collectSymphonyHandoffs({ handoffRoot });
-    assert.equal(handoffs[0].issue, "DEA-61");
-    assert.equal(handoffs[1].head, "2222222222222222222222222222222222222222");
+    assert.equal(handoffs[0].issue, "DEA-60");
+    assert.equal(handoffs[0].mode, "unreadable_summary");
+    assert.match(handoffs[0].readError, /Unexpected end of JSON input|Unexpected token/);
+    assert.equal(handoffs[1].issue, "DEA-61");
+    assert.equal(handoffs[2].head, "2222222222222222222222222222222222222222");
 
     const summary = summarizeSymphonyHandoffs(handoffs);
-    assert.equal(summary.total, 3);
+    assert.equal(summary.total, 4);
     assert.equal(summary.byMode.committed_patch, 1);
     assert.equal(summary.byMode.dirty_patch_handoff, 1);
+    assert.equal(summary.byMode.unreadable_summary, 1);
     assert.equal(summary.latestByIssue["DEA-60"].mode, "committed_patch");
     assert.deepEqual(summary.latestByIssue["DEA-60"].changedFiles, [
       "scripts/dearme-provider-smoke.ts",
@@ -582,7 +590,7 @@ test("collectSymphonyHandoffs summarizes latest handoff by issue", () => {
       filterSymphonyHandoffs(handoffs, { tickets: new Set(["DEA-60"]) }).map((handoff) =>
         handoff.issue
       ),
-      ["DEA-60", "DEA-60"],
+      ["DEA-60", "DEA-60", "DEA-60"],
     );
   } finally {
     rmSync(handoffRoot, { recursive: true, force: true });
