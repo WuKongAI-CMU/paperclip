@@ -179,7 +179,7 @@ export async function createApp(
   app.use(llmRoutes(db));
   app.use(DEARME_PROXY_BASE_PATH, dearMeAiProxyRoutes(db, createDearMeAiProxyRouteOptions()));
   app.use(dearMeVoiceGateRoutes());
-  app.use("/v1/channels", dearmeChannelConnectionRoutes(db));
+  app.use("/v1/channels", boardMutationGuard(), dearmeChannelConnectionRoutes(db));
 
   const hostServicesDisposers = new Map<string, () => void>();
   const workerManager = opts.pluginWorkerManager ?? createPluginWorkerManager();
