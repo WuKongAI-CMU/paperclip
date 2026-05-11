@@ -85,6 +85,29 @@ interface DearMeFirstCyclePreviewResponse {
     handle: string;
     route: string;
   };
+  starterPosts: Array<{
+    id: string;
+    channel: string;
+    title: string;
+    hook: string;
+    body: string;
+    proofUsed: string;
+  }>;
+  opportunityShortlist: Array<{
+    title: string;
+    target: string;
+    whyRelevant: string;
+    relevanceScore: number;
+    contactEvidence: {
+      status: string;
+      sourceSignal: string;
+      contactEmail?: string | null;
+      contactHandle?: string | null;
+      contactUrl?: string | null;
+    };
+    outreachAngle: string;
+    draftMessage: string;
+  }>;
   portfolioProofCard: {
     placement: string;
     proofSource: string;
@@ -219,6 +242,32 @@ test.describe("DearMe private handoff browser smoke", () => {
       await expect(page.getByText("Private preview path")).toHaveCount(0);
       await expect(page.getByText(`/${companyPrefix}/dearme/site-preview`, { exact: false })).toHaveCount(0);
       await expect(page.getByText("Route", { exact: true })).toHaveCount(0);
+
+      const firstPost = firstCyclePreview.starterPosts.at(0);
+      expect(firstPost).toBeDefined();
+      if (!firstPost) throw new Error("Expected first-cycle preview to include a starter post");
+      await expect(page.getByText("Starter posts are ready to review")).toBeVisible();
+      const draftPanel = page.locator('[aria-label="Prepared starter drafts"]');
+      await expect(draftPanel).toBeVisible();
+      await expect(draftPanel).toContainText(firstPost.title);
+      await expect(draftPanel).toContainText(firstPost.hook);
+      await expect(draftPanel).toContainText(firstPost.body);
+      await expect(draftPanel).toContainText(firstPost.proofUsed);
+
+      const firstLead = firstCyclePreview.opportunityShortlist.at(0);
+      expect(firstLead).toBeDefined();
+      if (!firstLead) throw new Error("Expected first-cycle preview to include an opportunity lead");
+      await expect(page.getByText("Five private targets are prepared")).toBeVisible();
+      const opportunityPanel = page.locator('[aria-label="Private opportunity shortlist"]');
+      await expect(opportunityPanel).toBeVisible();
+      await expect(opportunityPanel).toContainText(firstLead.title);
+      await expect(opportunityPanel).toContainText(firstLead.target);
+      await expect(opportunityPanel).toContainText(`${firstLead.relevanceScore}/10`);
+      await expect(opportunityPanel).toContainText(firstLead.contactEvidence.sourceSignal);
+      await expect(opportunityPanel).toContainText(firstLead.whyRelevant);
+      await expect(opportunityPanel).toContainText(firstLead.outreachAngle);
+      await expect(opportunityPanel).toContainText(firstLead.draftMessage);
+
       expectNoHiddenTerms((await page.locator("body").textContent()) ?? "");
 
       const outputs = await fetchDearMeOutputs(page.request, company.id);

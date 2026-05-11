@@ -15,6 +15,13 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- The DearMe private handoff browser smoke now locks the same first-wow packet
+  at e2e level. The existing paid-beta first-cycle flow opens the private
+  preview route and asserts prepared starter draft content plus the first
+  opportunity lead before continuing into review and launch-brief handoff. This
+  is the current regression boundary for keeping the Polsia-style visible work
+  on the real product route while reusing the existing schema, session-storage
+  preview bridge, and Naive/Paperclip approval machinery.
 - The browser private preview route now renders the same product-level
   first-wow payload as the proof/export lane: starter draft hook/body/proof
   cards and the five-target opportunity shortlist with fit, source signal,

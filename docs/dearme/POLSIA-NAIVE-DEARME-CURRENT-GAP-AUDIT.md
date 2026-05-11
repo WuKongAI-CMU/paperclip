@@ -12,12 +12,12 @@ DearMe architecture docs, and the local Polsia / Naive research artifacts.
 ## Current Coordinator Verdict
 
 DearMe is now **internal-demo ready** for the private first-five-minute loop:
-the local no-send proof is ready, the browser can show the same customer-safe
-progress stream, the aha proof can export a phone-ready static private-site
-artifact, and the voice-fit lane can pass against a customer-like local corpus.
-The branch/worktree integration question is also now answered by the product
-status path: the current coordinator head has no replay candidates or latest
-dirty Symphony handoffs.
+the local no-send proof is ready, the browser can show the customer-safe
+progress stream and the actual private first-wow packet, the aha proof can
+export a phone-ready static private-site artifact, and the voice-fit lane can
+pass against a customer-like local corpus. The branch/worktree integration
+question is also now answered by the product status path: the current
+coordinator head has no replay candidates or latest dirty Symphony handoffs.
 
 DearMe is **not paid-beta launch ready** yet. The missing part is no longer a
 planning/permission problem; it is live customer proof:
@@ -110,6 +110,10 @@ Current DearMe branch:
   - the browser onboarding surface now renders the customer-safe first-five-minute
     progress stream and top-focus live private-pass pulse without hidden
     substrate/provider language
+- `pnpm exec playwright test --config tests/e2e/playwright.config.ts tests/e2e/dearme-private-handoff.spec.ts -g "turns final approval of prepared work into a private launch brief"`
+  - the paid-beta first-cycle browser path now proves the private preview route
+    contains a prepared starter draft and opportunity lead before review and
+    launch-brief handoff continue
 - `pnpm --filter @paperclipai/ui typecheck`
   - the DearMe onboarding surface typechecks after the watchable-progress slice
 
@@ -141,14 +145,16 @@ But DearMe is not yet at Polsia's full customer-visible product maturity.
 Polsia's advantage is the first five minutes: near-zero friction, immediate
 dashboard, visible thinking stream, mood/progress updates, first report, starter
 tasks, and a live asset. DearMe now has the browser-visible first-five-minute
-progress stream and a static private-site export over its private proof
-contract, but it still needs that artifact served from a real phone-reachable
-host plus provider-backed execution before it matches Polsia's demo strength.
+progress stream, a browser-verified private first-wow packet, and a static
+private-site export over its private proof contract, but it still needs that
+artifact served from a real phone-reachable host plus provider-backed execution
+before it matches Polsia's demo strength.
 
 DearMe is closer to Naive/Paperclip on substrate than it is to Polsia on
 first-wow. The control-plane reuse is strong. The first-five-minute private
-contract is runnable, visible in the browser, and exportable as a host-smoke
-artifact, and the local voice proof now requires customer-like corpus evidence.
+contract is runnable, visible in the browser, locked by an e2e path, and
+exportable as a host-smoke artifact, and the local voice proof now requires
+customer-like corpus evidence.
 The Symphony/worktree absorption lane is clean. The external/live provider lane
 is not yet strong enough.
 
@@ -158,9 +164,9 @@ is not yet strong enough.
 | --- | ---: | --- |
 | Substrate/control plane reuse | 82 / 100 | Strong. DearMe is using the Paperclip-style company, issue, approval, route, service, dispatch, handoff, and proof machinery instead of rebuilding it. |
 | DearMe product semantics | 76 / 100 | Good. Brand OS, voice, portfolio, opportunity, reports, Work Ready, launch gates, review memory, and customer-corpus voice proof are now DearMe-owned concepts. |
-| UX simplicity | 67 / 100 | Improving. The browser now shows one-sentence-to-first-five-minute progress and the proof can become a static private site, but onboarding is still heavier than Polsia's one-input activation. |
+| UX simplicity | 69 / 100 | Improving. The browser now shows one-sentence-to-first-five-minute progress and verifies the private starter draft plus first lead on the real preview route, but onboarding is still heavier than Polsia's one-input activation. |
 | Autonomous runtime proof | 71 / 100 | Real but not externally proven. Local safe proof, private aha proof, browser-visible progress, static private-site export, customer-corpus voice proof, recurring private-work contract, clean integration absorption, and fail-closed host-smoke readiness are ready; the host-smoke packet now proves next-cycle work detail, but live provider proof remains open. |
-| Polsia-style first-wow | 76 / 100 | Private proof is runnable, watchable, exportable as a phone-ready artifact, deep enough to show five private drafts, and now tied to a real host-smoke packet with recurring-work detail. The missing main moment is serving it from a real host plus provider-backed execution. |
+| Polsia-style first-wow | 78 / 100 | Private proof is runnable, watchable, browser-verified on the real preview route, exportable as a phone-ready artifact, deep enough to show five private drafts, and tied to a real host-smoke packet with recurring-work detail. The missing main moment is serving it from a real host plus provider-backed execution. |
 | Naive-style durable team runtime | 80 / 100 | Solid substrate fit. Symphony/worktree coordination is clean, latest handoffs are committed, and that absorption proof now appears in `dearme:status`; the recurring private-work contract is visible in the hostable artifact, but live provider smoke is still missing. |
 
 ## What DearMe Has Actually Done
@@ -213,7 +219,7 @@ DearMe has copied the doctrine, but not the full watchable moment.
 | --- | --- | --- |
 | Zero-friction signup and one-input start | DearMe has structured onboarding and Brand OS inputs, but not Polsia-level one-textarea activation. | Simplify. One sentence should start private work. |
 | Work starts immediately | DearMe has first-cycle start routes, proof sequence contracts, and a browser-visible first-five-minute progress stream. | Better. Next proof is real live/provider progress, not another dashboard. |
-| 90-second wow | `pnpm dearme:aha-proof -- --check` proves the local private sequence, the browser shows the customer-safe progress sequence, and `--export-site` renders the same packet as a static private site. | Partly proven. The remaining gap is serving the artifact from a real phone-reachable host and backing it with live provider proof. |
+| 90-second wow | `pnpm dearme:aha-proof -- --check` proves the local private sequence, the browser shows the customer-safe progress sequence, the private preview e2e proves a starter draft plus opportunity lead, and `--export-site` renders the same packet as a static private site. | Partly proven. The remaining gap is serving the artifact from a real phone-reachable host and backing it with live provider proof. |
 | 5-minute complete dashboard | DearMe has many dashboard surfaces. | The pieces exist; the activation sequence does not feel as compressed. |
 | Mood/thinking/tool stream | DearMe has SSE/event contracts, workbench events, and a top-focus customer-safe private-pass pulse. | Projection exists. It still needs a richer live asset and recurring loop. |
 | Public/live proof | DearMe intentionally gates public deploy/send/spend and now has a static private-site export for the host lane. | Correct for reputation safety; the substitute must be private proof that is phone-reachable and feels live. |
@@ -373,8 +379,9 @@ reuse generated skills and role prompts.
 
 DearMe is architecturally ahead of a normal prototype and now has a local
 private first-wow proof gate, five private starter drafts, a browser-visible
-first-five-minute progress stream, and a static private-site export. It is still
-behind Polsia as a live customer demo.
+first-five-minute progress stream, a browser-verified private preview packet,
+and a static private-site export. It is still behind Polsia as a live customer
+demo.
 
 It is strongest where Naive is strongest: typed work, approvals, route/service
 shape, dispatch boundaries, and durable coordination. It is weakest where

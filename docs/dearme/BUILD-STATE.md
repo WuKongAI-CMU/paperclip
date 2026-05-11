@@ -2,6 +2,26 @@
 
 Date: 2026-05-11
 
+## Browser E2E Locks The Private First-Wow Packet - 2026-05-11
+
+Product/architecture slice:
+
+- Extended the DearMe private handoff browser smoke so the paid-beta ->
+  first-cycle -> private-preview -> review -> launch-brief path now proves the
+  actual first-wow packet in a real browser, not only the old proof card and
+  approval boundary.
+- The e2e now asserts the first prepared starter draft's title, hook, body, and
+  source proof plus the first opportunity lead's target, fit score, source
+  signal, relevance, outreach angle, and draft message before it checks the
+  downstream review/approval handoff.
+- This keeps the Polsia-style visible-work proof on the existing DearMe route
+  while preserving the Naive/Paperclip boundary: no new setup surface, no new
+  provider path, and no customer-facing backstage terms.
+
+Verification:
+
+- `pnpm exec playwright test --config tests/e2e/playwright.config.ts tests/e2e/dearme-private-handoff.spec.ts -g "turns final approval of prepared work into a private launch brief"`
+
 ## Browser Private Preview Shows The Actual First-Wow Packet - 2026-05-11
 
 Product/architecture slice:
