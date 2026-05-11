@@ -185,7 +185,7 @@ export async function createApp(
   const dearMeVoiceProfileStore = createDbDearMeVoiceProfileStore(db);
   app.use(llmRoutes(db));
   app.use(DEARME_PROXY_BASE_PATH, dearMeAiProxyRoutes(db, createDearMeAiProxyRouteOptions()));
-  app.use(dearMeVoiceGateRoutes({ profileStore: dearMeVoiceProfileStore }));
+  app.use(dearMeVoiceGateRoutes(db, { profileStore: dearMeVoiceProfileStore }));
   app.use(
     "/v1/channels",
     boardMutationGuard(),

@@ -1,15 +1,36 @@
 import express from "express";
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type { Db } from "@paperclipai/db";
 import { VOICE_GATE_PATH } from "@paperclipai/dearme-ai-proxy";
 import { errorHandler } from "../middleware/error-handler.js";
 import { dearMeVoiceGateRoutes } from "../routes/dearme-voice-gate.js";
 import { createInMemoryDearMeVoiceProfileStore } from "../services/dearme-voice-gate.js";
 
-function createApp(options: Parameters<typeof dearMeVoiceGateRoutes>[0] = {}) {
+function makeDb(keyRow: Record<string, unknown> | null = {
+  id: "dm-key-1",
+  agentId: "agent-1",
+  companyId: "company-1",
+}) {
+  const select = vi.fn(() => ({
+    from() {
+      return {
+        where() {
+          return Promise.resolve(keyRow ? [keyRow] : []);
+        },
+      };
+    },
+  }));
+  return { select } as unknown as Db;
+}
+
+function createApp(
+  options: Parameters<typeof dearMeVoiceGateRoutes>[1] = {},
+  keyRow?: Record<string, unknown> | null,
+) {
   const app = express();
   app.use(express.json());
-  app.use(dearMeVoiceGateRoutes(options));
+  app.use(dearMeVoiceGateRoutes(makeDb(keyRow), options));
   app.use(errorHandler);
   return app;
 }
@@ -113,6 +134,36 @@ describe("dearMeVoiceGateRoutes", () => {
       .expect(401);
 
     expect(res.body).toEqual({ error: "DearMe API key required" });
+  });
+
+  it("rejects syntactically valid but unissued or revoked DearMe keys", async () => {
+    const voiceGate = {
+      scoreVoice: vi.fn(),
+    };
+
+    const res = await request(createApp({ voiceGate }, null))
+      .post(VOICE_GATE_PATH)
+      .set("Authorization", "Bearer dm_sk_test_123")
+      .send(validBody)
+      .expect(401);
+
+    expect(res.body).toEqual({ error: "DearMe API key required" });
+    expect(voiceGate.scoreVoice).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed DearMe bearer tokens before scoring", async () => {
+    const voiceGate = {
+      scoreVoice: vi.fn(),
+    };
+
+    const res = await request(createApp({ voiceGate }))
+      .post(VOICE_GATE_PATH)
+      .set("Authorization", "Bearer dm_sk_test_123 extra")
+      .send(validBody)
+      .expect(401);
+
+    expect(res.body).toEqual({ error: "DearMe API key required" });
+    expect(voiceGate.scoreVoice).not.toHaveBeenCalled();
   });
 
   it("validates the scoring payload against the shared artifact kinds", async () => {

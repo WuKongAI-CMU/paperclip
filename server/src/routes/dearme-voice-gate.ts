@@ -1,13 +1,12 @@
-import { Router, type NextFunction, type Request, type Response } from "express";
+import { Router } from "express";
 import { z } from "zod";
+import type { Db } from "@paperclipai/db";
 import {
-  DM_PROXY_HEADERS,
-  isDearMeApiKey,
   VOICE_GATE_ARTIFACT_KINDS,
   VOICE_GATE_PATH,
   type VoiceGateScoreRequest,
 } from "@paperclipai/dearme-ai-proxy";
-import { unauthorized } from "../errors.js";
+import { requireDearMeApiKey } from "../middleware/dearme-api-key-auth.js";
 import { validate } from "../middleware/validate.js";
 import {
   dearMeVoiceGateService,
@@ -22,22 +21,7 @@ const voiceGateScoreRequestSchema = z.object({
   minScore: z.number().int().min(0).max(100).optional(),
 }).strict();
 
-function bearerTokenFromAuthorizationHeader(rawHeader: string | undefined): string | null {
-  if (!rawHeader) return null;
-  const [scheme, token, extra] = rawHeader.trim().split(/\s+/);
-  if (scheme?.toLowerCase() !== "bearer" || !token || extra) return null;
-  return token;
-}
-
-function requireDearMeApiKey(req: Request, _res: Response, next: NextFunction) {
-  const token = bearerTokenFromAuthorizationHeader(req.get(DM_PROXY_HEADERS.authorization));
-  if (!token || !isDearMeApiKey(token)) {
-    throw unauthorized("DearMe API key required");
-  }
-  next();
-}
-
-export function dearMeVoiceGateRoutes(options: {
+export function dearMeVoiceGateRoutes(db: Db, options: {
   voiceGate?: DearMeVoiceGateService;
   profileStore?: DearMeVoiceProfileStore;
 } = {}) {
@@ -48,7 +32,7 @@ export function dearMeVoiceGateRoutes(options: {
 
   router.post(
     VOICE_GATE_PATH,
-    requireDearMeApiKey,
+    requireDearMeApiKey(db),
     validate(voiceGateScoreRequestSchema),
     async (req, res) => {
       const result = await voiceGate.scoreVoice(req.body as VoiceGateScoreRequest);

@@ -20,10 +20,15 @@ It answers three questions before another worker starts building:
   default app, launch-handoff, output-handoff, and outbound-wrapper paths. This
   reuses Naive/Paperclip persistence for a compact accepted-sample snapshot
   instead of reviving a standalone voice-memory service; the remaining DM-170
-  gap is trained scoring/key issuance, not another storage path. Migration
+  gap is trained scoring, not another storage or key-issuance path. Migration
   `0078` also backfills earlier schema-only `channel_connections` and
   `opportunities` tables, so future workers should not regenerate a competing
   migration for those schemas.
+- DM-170D shares the same persisted `dm_sk_*` API-key middleware between AI
+  Proxy and Voice Gate. A Voice Gate request now needs an issued, unrevoked
+  `agent_api_keys` row instead of only a matching token prefix, so the existing
+  Naive/Paperclip key issuer and revocation path cover the cloud scoring
+  route without adding a DearMe-specific key store.
 - DM-174 now covers both Resend and SES inside the existing `send_email`
   wrapper path. The customer contract stays "email"; provider selection is a
   backstage channel credential choice, and future email providers should route
@@ -3130,7 +3135,7 @@ This commit unblocks all the next-up tickets that wire each substrate to the oth
 
 | Ticket | What it enables |
 |---|---|
-| DM-170 | Cloud `/v1/voice/score` endpoint — Express route is shipped over the deterministic scorer and now has an injectable bounded DB-backed profile store; trained fingerprint model and persisted key issuer remain |
+| DM-170 | Cloud `/v1/voice/score` endpoint — Express route is shipped over the deterministic scorer and now has an injectable bounded DB-backed profile store plus persisted `dm_sk_*` key auth through `agent_api_keys`; trained fingerprint model remains |
 | DM-171 | OpenClaw plugin install + onboarding bridge |
 | DM-172 | `post_x` impl using the typed envelope. Server dispatcher shipped; live external smoke remains credential-dependent. |
 | DM-173A | Per-user X OAuth callback persistence proof writing into `channel_connections`. |
@@ -3200,9 +3205,9 @@ Next-up tickets unlocked by this scaffold:
 | `src/model-routing.ts` | DM-143A | Proxy-owned export surface for the canonical prompt-package complexity `1-10` model routing table and helpers; no duplicated thresholds |
 
 The package still only owns the contract. The HTTP server implementation now
-mounts the proxy skeleton under the same base path; later DM-145 slices still
-own durable key issuance/revocation, stronger tenant binding, live provider
-execution, and the `agent/run` runtime.
+mounts the proxy skeleton under the same base path. Later DM-145 slices closed
+durable key issuance/revocation, stronger tenant binding, and the `agent/run`
+runtime; the remaining runtime proof is live provider execution.
 
 ### DM-145A Runtime Surface — `server/src/routes/dearme-ai-proxy.ts`
 

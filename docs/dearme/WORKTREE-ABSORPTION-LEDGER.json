@@ -3,6 +3,37 @@
   "reviewedAbsorptions": [
     {
       "ticket": "DEA-63",
+      "branch": "dea63-live-replay",
+      "head": "7384cfa455b55798752abee084da4ed10c3d9219",
+      "reviewedAt": "2026-05-11",
+      "reason": "The DEA-63 live replay follow-on head was reviewed after f3dd1046. It only moves the simplified fingerprint_id/snapshot_json voice profile migration to 0079 and trims duplicate imports so the stale replay can typecheck beside the coordinator branch. Replaying it would add a second, weaker voice profile migration after the current scoped 0078_simple_quicksilver migration and would downgrade the tenant-safe scope_key store already present on the coordinator branch. Do not replay this head; keep the current scoped store and generated 0078 migration as the integration truth.",
+      "evidence": [
+        "packages/db/src/migrations/0078_simple_quicksilver.sql",
+        "packages/db/src/migrations/meta/_journal.json",
+        "packages/db/src/schema/dearme_voice_profiles.ts",
+        "packages/db/src/schema/index.ts",
+        "server/src/services/dearme-voice-profile-store.ts",
+        "server/src/routes/approvals.ts",
+        "server/src/routes/dearme.ts"
+      ]
+    },
+    {
+      "ticket": "DEA-63",
+      "branch": "dea63-live-replay",
+      "head": "f3dd10460782ccaa831b18b9d7a6396f6379bd26",
+      "reviewedAt": "2026-05-11",
+      "reason": "The DEA-63 live replay head was reviewed after the current coordinator head reached 262128a3. It replays a simplified durable Voice Gate profile store with fingerprint_id as the primary key and snapshot_json only, which would downgrade the current scoped company/user store, tenant-safe scope key, richer tests, and Drizzle migration shape already present on the coordinator branch. Do not replay this head; keep the current scoped store as the integration truth.",
+      "evidence": [
+        "packages/db/src/schema/dearme_voice_profiles.ts",
+        "server/src/services/dearme-voice-profile-store.ts",
+        "server/src/services/dearme-voice-profile-store.test.ts",
+        "server/src/services/dearme-approved-launch-handoff.ts",
+        "server/src/services/dearme-output-handoff.ts",
+        "server/src/app.ts"
+      ]
+    },
+    {
+      "ticket": "DEA-63",
       "branch": "codex/dearme-dm-136-sample-demo-proof",
       "head": "d6990ee4ecdea08fdb2fa5dc4bcd05beecb3a814",
       "reviewedAt": "2026-05-11",

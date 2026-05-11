@@ -1,15 +1,13 @@
-import { createHash, randomUUID } from "node:crypto";
-import { Router, type Request, type RequestHandler, type Response } from "express";
+import { randomUUID } from "node:crypto";
+import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import type { Db } from "@paperclipai/db";
-import { agentApiKeys, costEvents } from "@paperclipai/db";
-import { and, eq, isNull } from "drizzle-orm";
+import { costEvents } from "@paperclipai/db";
 import {
   buildDearMeCostLedgerEvent,
   DM_PROXY_BASE_URL_DEFAULT,
   DM_PROXY_HEADERS,
   DEARME_PROXY_MODEL_ROUTING_TABLE,
-  isDearMeApiKey,
   normalizeDearMeProxyUsage,
   resolveDearMeProxyModelRouting,
   type AgentRunRequest,
@@ -21,6 +19,7 @@ import {
   type DearMeProxyUsageLike,
 } from "@paperclipai/dearme-ai-proxy";
 import { HttpError, unauthorized } from "../errors.js";
+import { requireDearMeApiKey } from "../middleware/dearme-api-key-auth.js";
 import { validate } from "../middleware/validate.js";
 
 const DEARME_PROXY_BASE_PATH = new URL(DM_PROXY_BASE_URL_DEFAULT).pathname;
@@ -110,64 +109,6 @@ export interface DearMeProxyRoutesOptions {
     },
   ) => Promise<DearMeProxyAgentRunExecutionResult>;
   persistCostEvent?: (event: typeof costEvents.$inferInsert) => Promise<void>;
-}
-
-function bearerTokenFromAuthorizationHeader(rawHeader: string | undefined): string | null {
-  if (!rawHeader) return null;
-  const [scheme, token, extra] = rawHeader.trim().split(/\s+/);
-  if (scheme?.toLowerCase() !== "bearer" || !token || extra) return null;
-  return token;
-}
-
-function hashToken(token: string) {
-  return createHash("sha256").update(token).digest("hex");
-}
-
-function requireDearMeApiKey(db: Db): RequestHandler {
-  return async (req, _res, next) => {
-    const token = bearerTokenFromAuthorizationHeader(req.get(DM_PROXY_HEADERS.authorization));
-    if (!token || !isDearMeApiKey(token)) {
-      throw unauthorized("DearMe API key required");
-    }
-
-    if (req.actor?.type === "agent") {
-      next();
-      return;
-    }
-
-    const keyHash = hashToken(token);
-    const key = await db
-      .select({
-        id: agentApiKeys.id,
-        agentId: agentApiKeys.agentId,
-        companyId: agentApiKeys.companyId,
-      })
-      .from(agentApiKeys)
-      .where(and(eq(agentApiKeys.keyHash, keyHash), isNull(agentApiKeys.revokedAt)))
-      .then((rows) => rows[0] ?? null);
-
-    if (!key) {
-      throw unauthorized("DearMe API key required");
-    }
-
-    const agentId = key.agentId;
-    const companyId = key.companyId;
-    const keyId = key.id;
-
-    if (!agentId || !companyId || !keyId) {
-      throw unauthorized("DearMe API key required");
-    }
-
-    req.actor = {
-      type: "agent",
-      agentId,
-      companyId,
-      keyId,
-      source: "agent_key",
-    };
-
-    next();
-  };
 }
 
 function pickTier(input: { tier?: string | null; complexity?: number | null }): {

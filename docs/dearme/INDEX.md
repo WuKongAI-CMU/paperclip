@@ -165,9 +165,9 @@ host smoke should enter the proof lane there instead of through a new UI,
 connector store, or command-history paste. Do not replace it with another
 settings page or dispatch path.
 For DM-170, the route and deterministic scorer now also have the durable
-profile-store boundary and DB backing store; the remaining voice gap is the
-trained scorer and persisted key issuer, not another `/v1/voice/score` route,
-voice-memory service, or review surface.
+profile-store boundary, DB backing store, and persisted `dm_sk_*` key auth;
+the remaining voice gap is the trained scorer, not another `/v1/voice/score`
+route, voice-memory service, key store, or review surface.
 Reuse still means adapting Polsia choreography, Lindy action-card/source
 patterns, and Naive/Paperclip substrate behind the DearMe product shell; do
 not add another first-run contract, packet schema, runtime dashboard, queue

@@ -2,6 +2,49 @@
 
 Date: 2026-05-11
 
+## Symphony Coordination Hygiene - 2026-05-11
+
+Product/architecture slice:
+
+- Reviewed the late DEA-63 live replay heads `f3dd1046` and `7384cfa4` against
+  the current coordinator head `262128a3`.
+- Did not replay them because they would downgrade the current scoped
+  company/user `dearme_voice_profiles` store into a single `fingerprint_id`
+  / `snapshot_json` table and lose the tenant-safe continuity boundary.
+- The follow-on `7384cfa4` only moved that stale simplified migration to
+  `0079_dearme_voice_profiles` and cleaned duplicate imports so the replay
+  branch could typecheck. Replaying it would add a second weaker migration
+  after the current generated `0078_simple_quicksilver` migration.
+- Recorded both heads in `WORKTREE-ABSORPTION-LEDGER.json` so Symphony/worktree
+  status stays clean and future workers do not treat the older replay as a
+  pending integration candidate.
+
+Verification:
+
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty`
+  passed with `reviewed_absorbed: 117` and `not_in_current: 0`.
+
+## DEA-63 / DM-170D Persisted Voice Gate API-Key Auth - 2026-05-11
+
+Product/architecture slice:
+
+- Extracted the DearMe `dm_sk_*` API-key check into shared server middleware
+  so AI Proxy and Voice Gate now use the same persisted key lookup.
+- Voice Gate no longer accepts a syntactically valid `dm_sk_*` bearer token by
+  prefix alone. The route now requires an issued, unrevoked `agent_api_keys`
+  row and binds the request to the existing agent/company actor shape.
+- Kept the customer-facing Voice Gate contract unchanged: the public
+  `/v1/voice/score` payload and response stay the same, with no new settings
+  surface or connector concern.
+- This closes the DM-170 key-issuance/revocation gap against the existing
+  `dm_sk_*` issuer. The remaining DM-170 production-hardening gap is the
+  trained semantic voice scorer.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-voice-gate-routes.test.ts server/src/__tests__/dearme-ai-proxy-routes.test.ts server/src/__tests__/agent-api-key-service.test.ts --maxWorkers=1`
+  passed: 3 files, 28 tests.
+
 ## DEA-60 / DM-177E Custom-Domain Deploy Receipt Gate - 2026-05-11
 
 Product/architecture slice:
@@ -753,9 +796,9 @@ Product/architecture slice:
 - Reuse decision: keep the existing `agent_api_keys` storage and auth
   semantics. Do not add a second DearMe key store or a separate proxy runtime
   auth model.
-- Remaining DM-145 follow-up: add the actual DearMe proxy-key issuance flow so
-  the `dm_sk_*` prefix can be minted intentionally instead of only being
-  accepted by the proxy/auth path.
+- Later DM-145C/DM-145D slices closed the proxy-key issuance gap, so `dm_sk_*`
+  keys are minted intentionally through the existing agent key store instead of
+  only being accepted by the proxy/auth path.
 
 Verification:
 
@@ -3937,9 +3980,10 @@ Implementation slice:
 - Reused the existing `dearMeVoiceGateService` deterministic scorer instead of
   creating a second scoring path. The route accepts the shared
   `VoiceGateScoreRequest` shape and returns the shared score response.
-- Added the current contract-shape auth gate: `Authorization: Bearer dm_sk_*`.
-  Persisted key issuance/revocation and the trained voice fingerprint model
-  remain the next production-hardening layer.
+- Added the initial contract-shape auth gate:
+  `Authorization: Bearer dm_sk_*`. DM-170D later moved this route onto issued,
+  unrevoked `agent_api_keys` rows; the trained voice fingerprint model remains
+  the next production-hardening layer.
 
 Verification:
 
