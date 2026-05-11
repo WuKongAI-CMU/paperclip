@@ -11,9 +11,10 @@
  *     already enforce the product contract: concrete, first-person, private
  *     work should pass the default floor on the first try, while generic
  *     output and hidden process language get blocked before review.
- *   - A process-local accepted-sample profile gives follow-up drafts a small
- *     continuity boost for the same voice id. It is deliberately bounded and
- *     transparent so the route can be tested without external services.
+ *   - An accepted-sample profile gives follow-up drafts a small continuity
+ *     boost for the same voice id. The default store is in-memory, but the
+ *     service accepts a serializable store so the route is not tied to one
+ *     process when DM-170 moves to durable storage.
  *
  * This is the only place the scoring logic lives — every other layer
  * calls `scoreVoice()` and gets the typed `VoiceGateScoreResponse`.
@@ -31,6 +32,19 @@ type VoiceCorpusProfile = {
   acceptedSamples: number;
   tokenCounts: Map<string, number>;
 };
+
+export type DearMeVoiceCorpusProfileSnapshot = {
+  acceptedSamples: number;
+  tokenCounts: Record<string, number>;
+};
+
+export interface DearMeVoiceProfileStore {
+  readProfile(fingerprintId: string): Promise<DearMeVoiceCorpusProfileSnapshot | null>;
+  writeProfile(fingerprintId: string, profile: DearMeVoiceCorpusProfileSnapshot): Promise<void>;
+}
+
+const MAX_PROFILE_TOKENS = 160;
+const MAX_ACCEPTED_SAMPLES = 1_000;
 
 /**
  * Sycophancy / disclaimer / hype phrase lexicon. These knock points off the
@@ -134,9 +148,10 @@ export interface DearMeVoiceGateService {
  */
 export function dearMeVoiceGateService(options?: {
   scorer?: (req: VoiceGateScoreRequest) => Promise<VoiceGateScoreResponse>;
+  profileStore?: DearMeVoiceProfileStore;
 }): DearMeVoiceGateService {
-  const profiles = new Map<string, VoiceCorpusProfile>();
-  const scorer = options?.scorer ?? ((req: VoiceGateScoreRequest) => scoreWithCorpus(req, profiles));
+  const profileStore = options?.profileStore ?? createInMemoryDearMeVoiceProfileStore();
+  const scorer = options?.scorer ?? ((req: VoiceGateScoreRequest) => scoreWithCorpus(req, profileStore));
   return {
     async scoreVoice(req) {
       return scorer(req);
@@ -144,13 +159,26 @@ export function dearMeVoiceGateService(options?: {
   };
 }
 
+export function createInMemoryDearMeVoiceProfileStore(): DearMeVoiceProfileStore {
+  const profiles = new Map<string, DearMeVoiceCorpusProfileSnapshot>();
+  return {
+    async readProfile(fingerprintId) {
+      const profile = profiles.get(fingerprintId);
+      return profile ? cloneProfileSnapshot(profile) : null;
+    },
+    async writeProfile(fingerprintId, profile) {
+      profiles.set(fingerprintId, cloneProfileSnapshot(profile));
+    },
+  };
+}
+
 async function scoreWithCorpus(
   req: VoiceGateScoreRequest,
-  profiles: Map<string, VoiceCorpusProfile>,
+  profileStore: DearMeVoiceProfileStore,
 ): Promise<VoiceGateScoreResponse> {
   const floor = req.minScore ?? VOICE_GATE_DEFAULT_FLOOR;
   const tuning = ARTIFACT_KIND_TUNING[req.kind];
-  const profile = profiles.get(req.fingerprintId) ?? { acceptedSamples: 0, tokenCounts: new Map() };
+  const profile = profileFromSnapshot(await profileStore.readProfile(req.fingerprintId));
   const signalTokens = extractSignalTokens(req.text);
 
   const reasons: VoiceGateScoreReason[] = [];
@@ -245,7 +273,7 @@ async function scoreWithCorpus(
   const passed = score >= floor;
   if (passed) {
     rememberAcceptedSample(profile, signalTokens);
-    profiles.set(req.fingerprintId, profile);
+    await profileStore.writeProfile(req.fingerprintId, snapshotFromProfile(profile));
   }
 
   return {
@@ -255,6 +283,35 @@ async function scoreWithCorpus(
     reasons: topReasons(reasons),
     rewrite: null,
   };
+}
+
+function profileFromSnapshot(snapshot: DearMeVoiceCorpusProfileSnapshot | null): VoiceCorpusProfile {
+  if (!snapshot) return { acceptedSamples: 0, tokenCounts: new Map() };
+  const tokenCounts = new Map<string, number>();
+  for (const [token, count] of Object.entries(snapshot.tokenCounts)) {
+    if (!token || !Number.isFinite(count) || count <= 0) continue;
+    tokenCounts.set(token, Math.floor(count));
+  }
+  return {
+    acceptedSamples: normalizeAcceptedSamples(snapshot.acceptedSamples),
+    tokenCounts,
+  };
+}
+
+function snapshotFromProfile(profile: VoiceCorpusProfile): DearMeVoiceCorpusProfileSnapshot {
+  const tokenCounts = [...profile.tokenCounts.entries()]
+    .filter(([token, count]) => token.length > 0 && Number.isFinite(count) && count > 0)
+    .sort(([aToken, aCount], [bToken, bCount]) => bCount - aCount || aToken.localeCompare(bToken))
+    .slice(0, MAX_PROFILE_TOKENS);
+
+  return {
+    acceptedSamples: normalizeAcceptedSamples(profile.acceptedSamples),
+    tokenCounts: Object.fromEntries(tokenCounts),
+  };
+}
+
+function cloneProfileSnapshot(snapshot: DearMeVoiceCorpusProfileSnapshot): DearMeVoiceCorpusProfileSnapshot {
+  return snapshotFromProfile(profileFromSnapshot(snapshot));
 }
 
 function hasConcreteEvidence(text: string): boolean {
@@ -289,10 +346,15 @@ function profileSimilarity(tokens: ReadonlyArray<string>, profile: VoiceCorpusPr
 }
 
 function rememberAcceptedSample(profile: VoiceCorpusProfile, tokens: ReadonlyArray<string>) {
-  profile.acceptedSamples += 1;
+  profile.acceptedSamples = Math.min(MAX_ACCEPTED_SAMPLES, profile.acceptedSamples + 1);
   for (const token of tokens) {
     profile.tokenCounts.set(token, (profile.tokenCounts.get(token) ?? 0) + 1);
   }
+}
+
+function normalizeAcceptedSamples(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(MAX_ACCEPTED_SAMPLES, Math.floor(value)));
 }
 
 function topReasons(reasons: ReadonlyArray<VoiceGateScoreReason>): VoiceGateScoreReason[] {

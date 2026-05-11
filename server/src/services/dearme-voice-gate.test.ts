@@ -6,7 +6,12 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { dearMeVoiceGateService } from "./dearme-voice-gate.js";
+import {
+  createInMemoryDearMeVoiceProfileStore,
+  dearMeVoiceGateService,
+  type DearMeVoiceCorpusProfileSnapshot,
+  type DearMeVoiceProfileStore,
+} from "./dearme-voice-gate.js";
 
 const svc = dearMeVoiceGateService();
 const hiddenCustomerTerms = [
@@ -55,6 +60,103 @@ describe("dearMeVoiceGateService scorer", () => {
     });
 
     expect(r.reasons.some((reason) => reason.rule === "voice_continuity")).toBe(true);
+  });
+
+  it("can keep voice continuity across service instances through an injected profile store", async () => {
+    const profileStore = createInMemoryDearMeVoiceProfileStore();
+    const firstSvc = dearMeVoiceGateService({ profileStore });
+    await firstSvc.scoreVoice({
+      fingerprintId: "vf_recreated_service",
+      text: "I keep coming back to the same lesson from launch calls: proof beats polish when a buyer can inspect the work before we ask.",
+      kind: "linkedin-post",
+    });
+
+    const recreatedSvc = dearMeVoiceGateService({ profileStore });
+    const r = await recreatedSvc.scoreVoice({
+      fingerprintId: "vf_recreated_service",
+      text: "I keep coming back to that proof beats polish lesson because buyers trust the work faster when they can inspect it first.",
+      kind: "linkedin-post",
+    });
+
+    expect(r.reasons.some((reason) => reason.rule === "voice_continuity")).toBe(true);
+  });
+
+  it("does not store drafts that fail the voice gate", async () => {
+    const writes: DearMeVoiceCorpusProfileSnapshot[] = [];
+    const profileStore: DearMeVoiceProfileStore = {
+      async readProfile() {
+        return null;
+      },
+      async writeProfile(_fingerprintId, profile) {
+        writes.push(profile);
+      },
+    };
+    const freshSvc = dearMeVoiceGateService({ profileStore });
+
+    const r = await freshSvc.scoreVoice({
+      fingerprintId: "vf_rejects",
+      text: "As an AI, I think you should consider this.",
+      kind: "x-tweet",
+      minScore: 100,
+    });
+
+    expect(r.passed).toBe(false);
+    expect(writes).toEqual([]);
+  });
+
+  it("writes serializable bounded profile snapshots", async () => {
+    const profileState: { storedProfile: DearMeVoiceCorpusProfileSnapshot | null } = { storedProfile: null };
+    const profileStore: DearMeVoiceProfileStore = {
+      async readProfile() {
+        return profileState.storedProfile;
+      },
+      async writeProfile(_fingerprintId, profile) {
+        profileState.storedProfile = profile;
+      },
+    };
+    const freshSvc = dearMeVoiceGateService({ profileStore });
+
+    for (let pass = 0; pass < 3; pass += 1) {
+      const tokens = Array.from({ length: 90 }, (_value, index) => `signal${pass}-${index}`).join(" ");
+      await freshSvc.scoreVoice({
+        fingerprintId: "vf_bounded",
+        text: `I shipped a concrete proof because the launch call needed one inspectable decision before the next yes. ${tokens}`,
+        kind: "x-thread",
+      });
+    }
+
+    const storedProfile = profileState.storedProfile;
+    if (!storedProfile) throw new Error("Expected a stored voice profile");
+    expect(storedProfile.acceptedSamples).toBe(3);
+    expect(Object.keys(storedProfile.tokenCounts)).toHaveLength(160);
+    expect(JSON.parse(JSON.stringify(storedProfile))).toEqual(storedProfile);
+  });
+
+  it("caps accepted sample counts loaded from a profile store", async () => {
+    const profileState: { storedProfile: DearMeVoiceCorpusProfileSnapshot | null } = { storedProfile: null };
+    const profileStore: DearMeVoiceProfileStore = {
+      async readProfile() {
+        return {
+          acceptedSamples: 10_000,
+          tokenCounts: {},
+        };
+      },
+      async writeProfile(_fingerprintId, profile) {
+        profileState.storedProfile = profile;
+      },
+    };
+    const freshSvc = dearMeVoiceGateService({ profileStore });
+
+    await freshSvc.scoreVoice({
+      fingerprintId: "vf_capped",
+      text: "I shipped a concrete proof because the launch call needed one inspectable decision before the next yes.",
+      kind: "linkedin-post",
+      minScore: 70,
+    });
+
+    const storedProfile = profileState.storedProfile;
+    if (!storedProfile) throw new Error("Expected a stored voice profile");
+    expect(storedProfile.acceptedSamples).toBe(1_000);
   });
 
   it("keeps accepted writing isolated by fingerprint id", async () => {

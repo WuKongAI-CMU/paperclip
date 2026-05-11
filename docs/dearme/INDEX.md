@@ -2,7 +2,7 @@
 
 > **The single document a new contributor (or future you) reads first.** Every other doc in this folder is supporting material. If something here conflicts with an older doc, **this wins.**
 
-Last updated: 2026-05-11 (post DM-172B X, DM-174 Resend, DM-176B/DM-178B provider config gates, and DM-177B/DM-177C deploy dispatch proof)
+Last updated: 2026-05-11 (post DM-170 profile-store boundary, DM-172B X, DM-174 Resend, DM-176B/DM-178B provider config gates, and DM-177B/DM-177C deploy dispatch proof)
 
 ---
 
@@ -134,6 +134,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-176A/DM-176B `send_linkedin_dm` partner dispatch** — approved LinkedIn DM handoffs now have a DearMe-owned partner dispatcher and app-level env bridge for `DEARME_LINKEDIN_DM_MESSAGES_URL` / partner endpoint aliases. The dispatcher stays unregistered when no endpoint is configured, so gateway fallback is not shadowed by an empty direct path. Live customer use still needs a real approved partner endpoint + credential smoke.
 - **DM-177B/DM-177C `deploy_site` dispatch** — approved private-site proof handoffs now run through a DearMe-owned `deploy_site` dispatcher instead of needing OpenClaw gateway config. The dispatcher validates safe handles and bounded artifact refs, rejects custom domains in this slice, returns stable preview receipts at `dearme.app/<handle>?preview=*`, and keeps production deploy fail-closed unless the DearMe-owned host is explicitly enabled by env.
 - **DM-178/DM-178B `create_meta_campaign` dispatch** — approved paid-ad handoffs now run through a DearMe-owned Meta Ads dispatcher on the same approval/OAuth/audit wrapper path. The dispatcher validates the simplified campaign payload, enforces test/ramp/scale daily budget tiers, respects the 7-day learning window, creates a paused Meta campaign receipt, and maps provider auth failures to reconnect without exposing tokens. App startup can override the Graph API base URL from operator env for live smoke/tooling; live customer use still needs a real Meta OAuth/Marketing API smoke.
+- **DEA-62 / DM-170 Voice profile store boundary** — the cloud Voice Gate scorer now keeps accepted-sample continuity behind an injectable, serializable, bounded profile store instead of a route-local process `Map`. Current route behavior stays in-memory by default, but the trained scorer/DB-backed profile can now replace storage without changing the `/v1/voice/score` contract.
 - **DM-183BV Symphony cooperation spine** — the current branch now treats Symphony as the coordinator/worker cooperation center while keeping it backstage. Workbench stream items have a typed work-event contract (`action`, `customerSummary`, `artifactTarget`, `decisionNeed`, `traceRefs`) for customer-safe decision cards, and the remaining DM-084, DM-086, DM-095, DM-097, DM-098, and DM-101 stale worktree heads are recorded as reviewed absorptions.
 - **DEA-20 / Chief pairing smoke** — Symphony closed the OpenClaw Chief pairing lane as no-code evidence: the current OpenClaw plugin manifest, 12 generated skills, 4 bootstrap files, required config, and outbound approval-gate bindings already prove the backstage pairing surface without adding customer-visible substrate language.
 - **DEA-21 / private site preview smoke** — the first-cycle proof package now carries a handle-safe `dearme.app/<handle>` private preview route through shared schema, server proof documents, apply/report artifacts, and onboarding UI while keeping public deploy behind the existing launch decision.
@@ -160,6 +161,9 @@ host env is enabled. It now supports a local ignored
 `--print-env-template` bootstrap, so real credentials should enter the proof
 lane there instead of through a new UI, connector store, or command-history
 paste. Do not replace it with another settings page or dispatch path.
+For DM-170, the route and deterministic scorer now also have the durable
+profile-store boundary; the remaining voice gap is the trained scorer and
+actual backing store, not another `/v1/voice/score` route or review surface.
 Reuse still means adapting Polsia choreography, Lindy action-card/source
 patterns, and Naive/Paperclip substrate behind the DearMe product shell; do
 not add another first-run contract, packet schema, runtime dashboard, queue

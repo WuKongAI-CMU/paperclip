@@ -2,6 +2,28 @@
 
 Date: 2026-05-11
 
+## DEA-62 / DM-170 Voice Profile Store Boundary - 2026-05-11
+
+Product/architecture slice:
+
+- Moved the Voice Gate accepted-sample profile behind an injectable
+  `DearMeVoiceProfileStore` instead of tying continuity to one private
+  route-local `Map`.
+- Kept the default store in-memory so current route wiring and tests keep the
+  same behavior, while making the profile snapshot serializable
+  (`acceptedSamples` plus token counts) for the durable store/model swap.
+- Bounded stored signal tokens to the strongest 160 entries so repeated
+  private approvals cannot grow an unbounded voice profile.
+- Failed drafts still do not update the profile. Only drafts that pass the
+  Voice Gate can teach the continuity scorer.
+- Accepted sample counts are capped at 1,000 in the serialized snapshot, which
+  keeps long-lived profiles bounded until the trained model takes over.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-voice-gate.test.ts server/src/__tests__/dearme-voice-gate-routes.test.ts --maxWorkers=1`
+  passed: 2 files, 18 tests.
+
 ## DEA-61 Provider Smoke Local Env Setup - 2026-05-11
 
 Product/architecture slice:
