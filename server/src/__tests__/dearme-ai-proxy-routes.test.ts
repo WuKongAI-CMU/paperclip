@@ -49,6 +49,15 @@ function createApp(
   return { app, insert, values };
 }
 
+function jsonResponse(payload: unknown, status = 200, statusText = "OK") {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    statusText,
+    json: vi.fn(async () => payload),
+  };
+}
+
 const openAiFastModel = DEARME_PROXY_MODEL_ROUTING_TABLE.find((row) => row.tier === "fast")?.model;
 const balancedModel = DEARME_PROXY_MODEL_ROUTING_TABLE.find((row) => row.tier === "balanced")?.model;
 const deepModel = DEARME_PROXY_MODEL_ROUTING_TABLE.find((row) => row.tier === "deep")?.model;
@@ -251,6 +260,84 @@ describe("dearMeAiProxyRoutes", () => {
     );
   });
 
+  it("routes OpenAI-compatible fetch transport through normalization and cost rails", async () => {
+    const fetch = vi.fn(async () =>
+      jsonResponse({
+        choices: [{ message: { content: "Fetch route OpenAI proof" } }],
+        usage: {
+          prompt_tokens: 8,
+          prompt_tokens_details: { cached_tokens: 3 },
+          completion_tokens: 4,
+        },
+        blendedUsdMicros: 20_000,
+      }),
+    );
+    const { app, insert, values } = createApp(
+      {
+        now: () => new Date("2026-05-10T12:15:00.000Z"),
+        ...createDearMeAiProxyRouteOptions({
+          openAiChat: {
+            mode: "fetch",
+            endpoint: "https://llm.example/v1/chat/completions",
+            apiKey: "sk-openai",
+            fetch,
+          },
+        }),
+      },
+      {
+        id: "dm-key-fetch-route-openai",
+        agentId: "agent-real",
+        companyId: "company-real",
+      },
+    );
+
+    const res = await request(app)
+      .post(`${DEARME_PROXY_BASE_PATH}/v1/chat/completions`)
+      .set("Authorization", "Bearer dm_sk_test_123")
+      .set("X-DearMe-Correlation-Id", "corr-fetch-route-openai-1")
+      .send({
+        model: "gpt-4o-mini",
+        task: "fetch-route-openai-proof",
+        complexity: 2,
+        messages: [{ role: "user", content: "Prepare the proof." }],
+      })
+      .expect(200);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(res.body).toMatchObject({
+      id: "chatcmpl_corr-fetch-route-openai-1",
+      model: openAiFastModel,
+      choices: [
+        {
+          message: {
+            role: "assistant",
+            content: "Fetch route OpenAI proof",
+          },
+        },
+      ],
+      usage: {
+        prompt_tokens: 11,
+        completion_tokens: 4,
+        total_tokens: 15,
+      },
+    });
+    expect(insert).toHaveBeenCalledTimes(1);
+    expect(values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        companyId: "company-real",
+        agentId: "agent-real",
+        billingCode: "fetch-route-openai-proof",
+        provider: "dearme_proxy",
+        biller: "dearme_proxy",
+        model: openAiFastModel,
+        inputTokens: 8,
+        cachedInputTokens: 3,
+        outputTokens: 4,
+        costCents: 2,
+      }),
+    );
+  });
+
   it("returns 503 and writes no cost event when the OpenAI-compatible executor is not configured", async () => {
     const { app, insert } = createApp(
       {
@@ -274,6 +361,41 @@ describe("dearMeAiProxyRoutes", () => {
       .expect(503);
 
     expect(res.body).toEqual({ error: "DearMe AI proxy executor is not configured" });
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 and makes no outbound call when fetch executor config is incomplete", async () => {
+    const fetch = vi.fn();
+    const { app, insert } = createApp(
+      {
+        now: () => new Date("2026-05-10T12:25:00.000Z"),
+        ...createDearMeAiProxyRouteOptions({
+          openAiChat: {
+            mode: "fetch",
+            endpoint: "",
+            apiKey: "sk-openai",
+            fetch,
+          },
+        }),
+      },
+      {
+        id: "dm-key-missing-fetch-openai",
+        agentId: "agent-real",
+        companyId: "company-real",
+      },
+    );
+
+    const res = await request(app)
+      .post(`${DEARME_PROXY_BASE_PATH}/v1/chat/completions`)
+      .set("Authorization", "Bearer dm_sk_test_123")
+      .send({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: "Prepare the proof." }],
+      })
+      .expect(503);
+
+    expect(res.body).toEqual({ error: "DearMe AI proxy executor is not configured" });
+    expect(fetch).not.toHaveBeenCalled();
     expect(insert).not.toHaveBeenCalled();
   });
 
@@ -305,6 +427,41 @@ describe("dearMeAiProxyRoutes", () => {
       .expect(500);
 
     expect(res.body).toEqual({ error: "Internal server error" });
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 and writes no cost event when the OpenAI fetch transport fails", async () => {
+    const fetch = vi.fn(async () => jsonResponse({ error: "provider unavailable" }, 503, "Unavailable"));
+    const { app, insert } = createApp(
+      {
+        now: () => new Date("2026-05-10T12:35:00.000Z"),
+        ...createDearMeAiProxyRouteOptions({
+          openAiChat: {
+            mode: "fetch",
+            endpoint: "https://llm.example/v1/chat/completions",
+            apiKey: "sk-openai",
+            fetch,
+          },
+        }),
+      },
+      {
+        id: "dm-key-fetch-failure",
+        agentId: "agent-real",
+        companyId: "company-real",
+      },
+    );
+
+    const res = await request(app)
+      .post(`${DEARME_PROXY_BASE_PATH}/v1/chat/completions`)
+      .set("Authorization", "Bearer dm_sk_test_123")
+      .send({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: "Prepare the proof." }],
+      })
+      .expect(500);
+
+    expect(res.body).toEqual({ error: "Internal server error" });
+    expect(fetch).toHaveBeenCalledTimes(1);
     expect(insert).not.toHaveBeenCalled();
   });
 
@@ -575,6 +732,121 @@ describe("dearMeAiProxyRoutes", () => {
         agentId: "agent-spoofed",
       }),
     );
+  });
+
+  it("returns 500 and writes no cost event when Anthropic fetch payloads are malformed", async () => {
+    const fetch = vi.fn(async () =>
+      jsonResponse({
+        content: [{ type: "text", text: "Missing usage proof" }],
+      }),
+    );
+    const { app, insert } = createApp(
+      {
+        now: () => new Date("2026-05-10T13:20:00.000Z"),
+        ...createDearMeAiProxyRouteOptions({
+          anthropicMessages: {
+            mode: "fetch",
+            endpoint: "https://llm.example/v1/messages",
+            apiKey: "sk-anthropic",
+            fetch,
+          },
+        }),
+      },
+      {
+        id: "dm-key-fetch-malformed",
+        agentId: "agent-real",
+        companyId: "company-real",
+      },
+    );
+
+    const res = await request(app)
+      .post(`${DEARME_PROXY_BASE_PATH}/v1/messages`)
+      .set("Authorization", "Bearer dm_sk_test_123")
+      .set("X-DearMe-Model-Tier", "deep")
+      .send({
+        model: "claude-3-5-sonnet",
+        messages: [{ role: "user", content: "Prepare the proof." }],
+      })
+      .expect(500);
+
+    expect(res.body).toEqual({ error: "Internal server error" });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("routes Anthropic-compatible fetch transport through normalization and cost rails", async () => {
+    const fetch = vi.fn(async () =>
+      jsonResponse({
+        content: [{ type: "text", text: "Fetch route Anthropic proof" }],
+        usage: {
+          input_tokens: 11,
+          cache_read_input_tokens: 5,
+          output_tokens: 4,
+        },
+        blendedUsdMicros: 987_654,
+      }),
+    );
+    const { app, insert, values } = createApp(
+      {
+        now: () => new Date("2026-05-10T13:15:00.000Z"),
+        ...createDearMeAiProxyRouteOptions({
+          anthropicMessages: {
+            mode: "fetch",
+            endpoint: "https://llm.example/v1/messages",
+            apiKey: "sk-anthropic",
+            fetch,
+          },
+        }),
+      },
+      {
+        id: "dm-key-fetch-route-anthropic",
+        agentId: "agent-real",
+        companyId: "company-real",
+      },
+    );
+
+    const res = await request(app)
+      .post(`${DEARME_PROXY_BASE_PATH}/v1/messages`)
+      .set("Authorization", "Bearer dm_sk_test_123")
+      .set("X-DearMe-Correlation-Id", "corr-fetch-route-anthropic-1")
+      .set("X-DearMe-Model-Tier", "deep")
+      .send({
+        model: "claude-3-5-sonnet",
+        subscriptionId: "fetch-route-anthropic-proof",
+        messages: [{ role: "user", content: "Prepare the proof." }],
+      })
+      .expect(200);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(res.body).toMatchObject({
+      id: "msg_corr-fetch-route-anthropic-1",
+      model: deepModel,
+      content: [
+        {
+          type: "text",
+          text: "Fetch route Anthropic proof",
+        },
+      ],
+      usage: {
+        input_tokens: 16,
+        output_tokens: 4,
+      },
+    });
+    expect(values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        companyId: "company-real",
+        agentId: "agent-real",
+        billingCode: "fetch-route-anthropic-proof",
+        provider: "dearme_proxy",
+        biller: "dearme_proxy",
+        model: deepModel,
+        inputTokens: 11,
+        cachedInputTokens: 5,
+        outputTokens: 4,
+        costCents: 99,
+      }),
+    );
+    expect(insert).toHaveBeenCalledTimes(1);
   });
 
   it("routes Anthropic-compatible requests through the configured fixture executor and writes one normalized cost event", async () => {

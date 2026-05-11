@@ -2,6 +2,21 @@
   "updatedAt": "2026-05-11",
   "reviewedAbsorptions": [
     {
+      "ticket": "DEA-43",
+      "branch": "codex/dearme-dm-136-sample-demo-proof",
+      "head": "56189784d8481af52b609e7f28cac5aa4be72454",
+      "reviewedAt": "2026-05-11",
+      "reason": "The DEA-43 Symphony worker fetch-transport proof was reviewed and absorbed into the coordinator cut. The live implementation keeps the worker's useful route type and ledger direction while preserving explicit endpoint config, Anthropic-compatible x-api-key/version headers, route-level cost-rail proof, and no /agent/run widening.",
+      "evidence": [
+        "server/src/services/dearme-ai-proxy-executors.ts",
+        "server/src/services/dearme-ai-proxy-executors.test.ts",
+        "server/src/__tests__/dearme-ai-proxy-routes.test.ts",
+        "server/src/routes/dearme-ai-proxy.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
       "ticket": "DEA-42",
       "branch": "codex/dearme-dm-136-sample-demo-proof",
       "head": "31e9d68366e772218d5255eae0ee06ff1e92ec90",
@@ -12,6 +27,21 @@
         "server/src/services/dearme-ai-proxy-executors.test.ts",
         "server/src/__tests__/dearme-ai-proxy-routes.test.ts",
         "server/src/app.ts",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
+      ]
+    },
+    {
+      "ticket": "DEA-43",
+      "branch": "codex/dearme-dm-136-sample-demo-proof",
+      "head": "6044050846f4af795674a214ac8295bf457ded41",
+      "reviewedAt": "2026-05-11",
+      "reason": "The DEA-43 Symphony handoff proved the fetch-transport direction, but the coordinator absorption keeps the narrower endpoint-based executor, sends the already-resolved routing.model to providers, and uses the Anthropic x-api-key/version headers; replaying the worker tip would regress those boundaries and re-add older doc placements.",
+      "evidence": [
+        "server/src/services/dearme-ai-proxy-executors.ts",
+        "server/src/services/dearme-ai-proxy-executors.test.ts",
+        "server/src/routes/dearme-ai-proxy.ts",
+        "server/src/__tests__/dearme-ai-proxy-routes.test.ts",
         "docs/dearme/BUILD-STATE.md",
         "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md"
       ]

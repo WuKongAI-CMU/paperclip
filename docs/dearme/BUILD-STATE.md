@@ -2,6 +2,40 @@
 
 Date: 2026-05-11
 
+## DEA-43 DM-145F-B Fetch Transport Proof Absorbed - 2026-05-11
+
+Product/architecture slice:
+
+- Absorbed Symphony worker heads `56189784` and `60440508` for the DM-145F-B fetch transport
+  proof into the current proxy executor boundary without adding provider SDKs,
+  a live credential requirement, a new runtime surface, or customer-facing
+  provider language.
+- The coordinator cut keeps the existing executor factory and adds a narrow
+  `fetch` mode for OpenAI-compatible and Anthropic-compatible HTTP endpoints.
+  It sends the already-resolved `routing.model` rather than trusting the
+  caller's request model, keeps Anthropic on `x-api-key` plus
+  `anthropic-version`, and preserves the route's 503 fail-closed behavior when
+  endpoint/key config is absent.
+- Route-level tests now prove OpenAI and Anthropic fetch success through the
+  existing normalization and cost rails, plus missing config/provider failure
+  and malformed payload paths that do not write cost events.
+- The worktree absorption ledger records worker heads `56189784` and `60440508` as
+  reviewed_absorbed so Symphony patrols treat it as integrated rather than as
+  a second active implementation lane.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-ai-proxy-routes.test.ts
+  server/src/services/dearme-ai-proxy-executors.test.ts --maxWorkers=1`
+  passed: 2 files, 25 tests.
+- `pnpm --filter @paperclipai/server typecheck` passed.
+- `pnpm --filter @paperclipai/dearme-ai-proxy typecheck` passed.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty` passed after the
+  absorption entry.
+- `pnpm dearme:worktrees -- --json --status=not_in_current --skip-dirty`
+  returned an empty not_in_current set after the absorption entry.
+- `git diff --check` passed.
+
 ## DEA-42 DM-145F Proxy Executor Boundary Absorbed - 2026-05-11
 
 Product/architecture slice:

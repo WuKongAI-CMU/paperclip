@@ -13,8 +13,14 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
-## Latest Symphony Worker Boundary - 2026-05-10
+## Latest Symphony Worker Boundary - 2026-05-11
 
+- DEA-43 is coordinator-absorbed as the DM-145F-B fetch transport proof. The
+  current branch keeps the worker's useful fetch-transport direction, but on the
+  narrower existing executor seam: explicit endpoint/key config, routed DearMe
+  model selection, Anthropic `x-api-key` plus version headers, and no SDK/UI
+  expansion. Future runtime tickets should consume this seam instead of
+  replaying the worker's older base-url/bearer-header patch.
 - Symphony worker lanes now have an explicit coordinator watchdog boundary in
   `.symphony/WORKFLOW.md`: bounded `turn_timeout_ms` / `stall_timeout_ms`
   values, a first-turn instruction to hand off on context compaction or
@@ -95,8 +101,14 @@ The right reuse split is:
 - Symphony: development factory and cooperation spine only; not the DearMe
   product runtime.
 
-## Latest Symphony Absorption - 2026-05-10
+## Latest Symphony Absorption - 2026-05-11
 
+- DEA-43 is coordinator-absorbed as the DM-145F-B fetch-transport proof at
+  `60440508`. Symphony proved the direction, and the coordinator kept the final
+  cut on the endpoint-based executor, routed model boundary, Anthropic
+  `x-api-key`/version headers, and route/service tests. Both DEA-43 worker heads
+  are recorded in `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` so Symphony
+  patrols treat the lane as reviewed_absorbed rather than replayable work.
 - DEA-42 is coordinator-absorbed as the DM-145F executor-boundary slice at
   `31e9d683`. Symphony produced the worker proof, but the coordinator kept the
   final cut on the existing route-options service, fixture executors, default
@@ -3092,6 +3104,11 @@ injected, so the product path cannot silently return synthetic proxy output.
 All three proxy surfaces share the same key lookup, company/agent resolution,
 and ledger writer. Do not add a parallel auth store or a second proxy cost
 path.
+
+DM-145F extends the same injected executor seam with a small fetch transport
+mode for OpenAI-compatible `/chat/completions` and Anthropic-compatible
+`/messages` responses. Keep later runtime work on this seam and preserve the
+existing fail-closed behavior when the endpoint or key is absent.
 
 Latest focused verification (2026-05-10):
 

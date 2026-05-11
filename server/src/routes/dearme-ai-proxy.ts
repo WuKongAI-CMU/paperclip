@@ -97,6 +97,7 @@ export interface DearMeProxyRoutesOptions {
     input: AnthropicMessagesRequestExtensions & {
       model: string;
       messages: ReadonlyArray<{ role: string; content?: unknown }>;
+      system?: string | ReadonlyArray<unknown>;
       routing: { tier: DearMeProxyModelRoutingTier; model: string; complexity: number };
       correlationId: string;
     },
