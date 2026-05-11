@@ -15,7 +15,7 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
-- DM-176B/DM-178B put provider dispatch config on the default app handoff
+- DEA-59 / DM-176B/DM-178B put provider dispatch config on the default app handoff
   path instead of leaving it as a constructor-only test seam. LinkedIn partner
   endpoint env now decides whether the direct `send_linkedin_dm` dispatcher is
   registered; Meta Graph API base URL env can be passed into the paid-ad
