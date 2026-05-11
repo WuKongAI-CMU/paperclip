@@ -178,8 +178,8 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
         openclawRunId: "oc_run_1",
         openclawSessionId: undefined,
         agentId: "ag_test",
-        approvalId: undefined,
-        idempotencyKey: "oc_run_1",
+        approvalId: "ap_test_1",
+        idempotencyKey: expect.stringMatching(/^post_x:ap_test_1:[a-f0-9]{24}$/),
         originalPayload: baseInput.payload,
       },
     });
@@ -230,10 +230,60 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
         openclawSessionId: undefined,
         agentId: "ag_test",
         approvalId: "approval-final-1",
-        idempotencyKey: "oc_run_1",
+        idempotencyKey: expect.stringMatching(/^post_x:approval-final-1:[a-f0-9]{24}$/),
         originalPayload: baseInput.payload,
       },
     });
+  });
+
+  it("derives stable idempotency keys from tool, approval/run, and payload", async () => {
+    const dispatch = vi.fn(async () => ({
+      kind: "delivered" as const,
+      externalId: "tweet_1",
+      externalUrl: "https://x.com/tester/status/tweet_1",
+      paid: false,
+    }));
+    const { deps } = makeDeps({
+      channelDispatch: { post_x: dispatch as ChannelDispatch },
+    });
+    const wrapper = dearMeOutboundToolWrapper(deps);
+
+    await wrapper.callOutbound({
+      ...baseInput,
+      payload: { text: "First approved proof packet." },
+      voiceGateText: "First approved proof packet.",
+    });
+    await wrapper.callOutbound({
+      ...baseInput,
+      payload: { text: "Second approved proof packet." },
+      voiceGateText: "Second approved proof packet.",
+    });
+
+    const dispatchCalls = dispatch.mock.calls as unknown as Array<[
+      { dispatchContext: { idempotencyKey: string } },
+    ]>;
+    const firstKey = dispatchCalls[0]![0].dispatchContext.idempotencyKey;
+    const secondKey = dispatchCalls[1]![0].dispatchContext.idempotencyKey;
+    expect(firstKey).toMatch(/^post_x:ap_test_1:[a-f0-9]{24}$/);
+    expect(secondKey).toMatch(/^post_x:ap_test_1:[a-f0-9]{24}$/);
+    expect(firstKey).not.toBe(secondKey);
+
+    dispatch.mockClear();
+    await wrapper.callOutbound({
+      ...baseInput,
+      preapprovedApprovalId: "approval-final-1",
+    });
+    await wrapper.callOutbound({
+      ...baseInput,
+      preapprovedApprovalId: "approval-final-1",
+    });
+
+    const retryCalls = dispatch.mock.calls as unknown as Array<[
+      { dispatchContext: { idempotencyKey: string } },
+    ]>;
+    expect(retryCalls[0]![0].dispatchContext.idempotencyKey).toBe(
+      retryCalls[1]![0].dispatchContext.idempotencyKey,
+    );
   });
 
   it("returns rejected and moves work loop gate->review on rejected approval", async () => {
@@ -313,6 +363,45 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
     expect(dispatch).not.toHaveBeenCalled();
   });
 
+  it("labels missing email connections without exposing the provider", async () => {
+    const dispatch = vi.fn(async () => ({
+      kind: "delivered" as const,
+      externalId: "email_1",
+      paid: false,
+    }));
+    const { deps } = makeDeps({
+      channelConnections: {
+        getActive: async () => null,
+        markUsed: async () => undefined,
+        markNeedsReauth: async () => undefined,
+        upsertActive: async () => {
+          throw new Error("not used");
+        },
+      },
+      channelDispatch: { send_email: dispatch as ChannelDispatch },
+    });
+    const wrapper = dearMeOutboundToolWrapper(deps);
+    const result = await wrapper.callOutbound({
+      ...baseInput,
+      toolName: "send_email",
+      payload: {
+        toEmail: "lead@example.com",
+        fromHandle: "Peter",
+        subject: "Proof packet",
+        body: "Thought this would be useful.",
+      },
+      voiceGateText: "Thought this would be useful.",
+      voiceGateArtifactKind: "outbound-email",
+    });
+
+    expect(result.kind).toBe("needs_oauth");
+    if (result.kind !== "needs_oauth") return;
+    expect(result.channel).toBe("resend");
+    expect(result.message).toBe("Connect email before DearMe can continue this approved next step.");
+    expect(result.message?.toLowerCase()).not.toContain("resend");
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
   it("carries the approval id into the channel connect start URL for preapproved retries", async () => {
     const { deps } = makeDeps({
       channelConnections: {
@@ -382,6 +471,64 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
     );
     expect(result.message).toBe("Connect X before DearMe can continue this approved next step.");
     expect(markCalls).toBe(1);
+  });
+
+  it("sanitizes email auth errors before storing or showing reauth reasons", async () => {
+    const markedReasons: string[] = [];
+    const { deps } = makeDeps({
+      channelConnections: {
+        getActive: async () => ({
+          id: "cc_resend_revoked",
+          companyId: "co_test",
+          userId: "u_test",
+          channel: "resend",
+          externalAccountId: "resend_acc_1",
+          externalDisplayName: "Peter Studio",
+          encryptedCredential: "enc:expired",
+          scopes: [],
+          expiresAt: null,
+          status: "active",
+          lastUsedAt: null,
+          lastRefreshedAt: null,
+          lastError: null,
+          metadata: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }) as never,
+        markUsed: async () => undefined,
+        markNeedsReauth: async ({ error }) => {
+          markedReasons.push(error);
+        },
+        upsertActive: async () => {
+          throw new Error("not used");
+        },
+      },
+      channelDispatch: {
+        send_email: (async () => ({
+          kind: "auth-error",
+          reason: "Resend bearer token expired",
+        })) as ChannelDispatch,
+      },
+    });
+    const wrapper = dearMeOutboundToolWrapper(deps);
+    const result = await wrapper.callOutbound({
+      ...baseInput,
+      toolName: "send_email",
+      payload: {
+        toEmail: "lead@example.com",
+        fromHandle: "Peter",
+        subject: "Proof packet",
+        body: "Thought this would be useful.",
+      },
+      voiceGateText: "Thought this would be useful.",
+      voiceGateArtifactKind: "outbound-email",
+    });
+
+    expect(result.kind).toBe("needs_oauth");
+    if (result.kind !== "needs_oauth") return;
+    expect(result.message).toBe("Connect email before DearMe can continue this approved next step.");
+    expect(result.reason).toBe("channel-auth-refresh-required");
+    expect(markedReasons).toEqual(["channel-auth-refresh-required"]);
   });
 
   it("errors immediately when voice-gate input is missing for a voice-gated tool", async () => {

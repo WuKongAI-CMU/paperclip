@@ -28,6 +28,7 @@
  *     real-time.
  */
 
+import { createHash } from "node:crypto";
 import type { Db } from "@paperclipai/db";
 import { costEvents } from "@paperclipai/db";
 import {
@@ -155,6 +156,47 @@ function buildChannelOAuthStartUrl(input: CallOutboundInput, channel: string) {
   return `/v1/channels/${encodeURIComponent(input.companyId)}/${encodeURIComponent(channel)}/start?${params.toString()}`;
 }
 
+function customerChannelLabel(channel: string) {
+  if (channel === "x") return "X";
+  if (channel === "linkedin") return "LinkedIn";
+  if (channel === "resend" || channel === "ses") return "email";
+  if (channel === "meta_ads") return "ads";
+  return "this channel";
+}
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value) ?? "null";
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(",")}]`;
+  }
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
+    .join(",")}}`;
+}
+
+function buildOutboundIdempotencyKey(input: CallOutboundInput, approvalId: string | undefined) {
+  const payloadHash = createHash("sha256")
+    .update(stableStringify(input.payload))
+    .digest("hex")
+    .slice(0, 24);
+  return [input.toolName, approvalId ?? input.openclawRunId, payloadHash].join(":").slice(0, 256);
+}
+
+function sanitizeReauthReason(reason: string) {
+  const trimmed = reason.trim();
+  if (
+    /^[a-z0-9:-]+$/i.test(trimmed) &&
+    !/(api[-_ ]?key|secret|token|bearer|resend|ses|aws|gcp|vault)/i.test(trimmed)
+  ) {
+    return trimmed;
+  }
+  return "channel-auth-refresh-required";
+}
+
 export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
   return {
     async callOutbound(input: CallOutboundInput): Promise<CallOutboundOutcome> {
@@ -250,7 +292,7 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
           channel: binding.channel as "x" | "linkedin" | "resend" | "ses" | "meta_ads",
         });
         if (!connection) {
-          const channelLabel = binding.channel === "x" ? "X" : binding.channel;
+          const channelLabel = customerChannelLabel(binding.channel);
           const oauthStartUrl = buildChannelOAuthStartUrl(input, binding.channel);
           return {
             kind: "needs_oauth",
@@ -283,26 +325,27 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
           openclawRunId: input.openclawRunId,
           openclawSessionId: input.openclawSessionId,
           agentId: input.agentId,
-          approvalId: input.preapprovedApprovalId,
-          idempotencyKey: input.openclawRunId,
+          approvalId: approval.approvalId,
+          idempotencyKey: buildOutboundIdempotencyKey(input, approval.approvalId),
           originalPayload: input.payload,
         },
       });
 
       if (dispatchResult.kind === "auth-error") {
+        const reauthReason = sanitizeReauthReason(dispatchResult.reason);
         if (connection) {
           await deps.channelConnections.markNeedsReauth({
             connectionId: connection.id,
-            error: dispatchResult.reason,
+            error: reauthReason,
           });
         }
         return {
           kind: "needs_oauth",
           channel: binding.channel,
           oauthStartUrl: buildChannelOAuthStartUrl(input, binding.channel),
-          reason: dispatchResult.reason,
+          reason: reauthReason,
           gate: "connect_channel",
-          message: `Connect ${binding.channel === "x" ? "X" : binding.channel} before DearMe can continue this approved next step.`,
+          message: `Connect ${customerChannelLabel(binding.channel)} before DearMe can continue this approved next step.`,
         };
       }
       if (dispatchResult.kind === "errored") {

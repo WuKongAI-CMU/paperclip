@@ -2,6 +2,46 @@
 
 Date: 2026-05-11
 
+## DM-174 Live Resend `send_email` Dispatch Path - 2026-05-11
+
+Product/architecture slice:
+
+- Added a narrow server-side Resend email dispatcher at
+  `server/src/services/dearme-send-email-dispatch.ts`.
+- Approved `send_email` launch handoffs now default to this direct dispatcher
+  after the existing wrapper has completed voice-gate, approval, and active
+  `channel_connections` lookup on the `resend` channel.
+- Added `server/src/services/dearme-channel-credential.ts` so X and email use
+  the same secret-provider envelope resolution boundary instead of duplicating
+  local-encrypted credential handling in each channel. DearMe channel dispatch
+  keeps external secret providers fail-closed until explicitly enabled.
+- The email dispatcher resolves the opaque per-user Resend credential through
+  the server secret-provider registry, validates provider, API key, sender
+  email, optional sender name, optional expiry, recipient, subject, plain-text
+  body, and optional thread id, then calls Resend `POST /emails`. HTML email is
+  intentionally fail-closed until a sanitizer path is added.
+- Resend `401`/`403` responses map back to the wrapper's reauth path without
+  exposing API keys. Successful responses map the Resend email id to the
+  existing delivered receipt shape.
+- The outbound wrapper now derives provider idempotency keys from
+  tool + approval/run + payload hash, so one approved run can send multiple
+  distinct emails without sharing the same provider key. Customer-facing
+  connection prompts say "email"; Resend stays internal.
+- `ses` remains intentionally fail-closed in this static binding path because
+  the current OpenClaw `send_email` binding resolves `channel_connections` with
+  `channel: "resend"`. Future SES support needs a dynamic channel binding or a
+  separate tool/channel route; this slice does not add a connector dashboard.
+- This closes the approved-email send path in mocked tests. It still has not
+  performed a live external send because no real Resend credential was used in
+  this verification pass.
+
+Verification:
+
+- `pnpm exec vitest run server/src/services/dearme-send-email-dispatch.test.ts server/src/services/dearme-x-post-dispatch.test.ts server/src/services/dearme-approved-launch-handoff.test.ts server/src/services/dearme-outbound-tool-wrapper.test.ts --maxWorkers=1`
+  passed: 4 files, 35 tests.
+- `pnpm --filter @paperclipai/server typecheck`
+  passed.
+
 ## DEA-52 DM-172B Live `post_x` Dispatch Path - 2026-05-11
 
 Product/architecture slice:
@@ -10,8 +50,9 @@ Product/architecture slice:
   `server/src/services/dearme-x-post-dispatch.ts`.
 - Approved `post_x` launch handoffs now default to this direct dispatcher after
   the existing wrapper has completed voice-gate, approval, and active
-  `channel_connections` lookup. Other outbound tools continue using the
-  existing gateway dispatch map.
+  `channel_connections` lookup. At the time of this slice, other outbound
+  tools continued using the existing gateway dispatch map; DM-174 now gives
+  `send_email` its own Resend dispatcher on the same wrapper slot.
 - The dispatcher resolves the opaque per-user X credential through the server
   secret-provider registry, validates provider, access token, expiry, and
   `tweet.write` scope, validates tweet text/media payloads, then calls X API

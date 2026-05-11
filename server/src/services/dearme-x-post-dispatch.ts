@@ -1,6 +1,4 @@
-import { SECRET_PROVIDERS, type SecretProvider } from "@paperclipai/shared";
-import { getSecretProvider } from "../secrets/provider-registry.js";
-import type { StoredSecretVersionMaterial } from "../secrets/types.js";
+import { resolveDearMeChannelCredential } from "./dearme-channel-credential.js";
 import type { ChannelDispatch } from "./dearme-outbound-tool-wrapper.js";
 
 const DEFAULT_X_TWEETS_URL = "https://api.x.com/2/tweets";
@@ -76,10 +74,6 @@ function error(message: string): Awaited<ReturnType<ChannelDispatch>> {
 
 function authError(reason: string): Awaited<ReturnType<ChannelDispatch>> {
   return { kind: "auth-error", reason };
-}
-
-function isSecretProvider(value: string): value is SecretProvider {
-  return SECRET_PROVIDERS.includes(value as SecretProvider);
 }
 
 async function safeJson(response: FetchResponseLike) {
@@ -162,28 +156,7 @@ function parseCredentialPayload(plaintext: string, now: Date) {
 }
 
 export async function resolveDearMeXPostCredential(encryptedCredential: string) {
-  let envelope: unknown;
-  try {
-    envelope = JSON.parse(encryptedCredential);
-  } catch {
-    throw new Error("x-credential-envelope-invalid-json");
-  }
-
-  const record = asRecord(envelope);
-  const material = asRecord(record?.material);
-  const providerId = record ? stringField(record, "provider") : null;
-  if (!record || !providerId || !isSecretProvider(providerId) || !material) {
-    throw new Error("x-credential-envelope-invalid");
-  }
-
-  const provider = getSecretProvider(providerId);
-  return provider.resolveVersion({
-    material: material as StoredSecretVersionMaterial,
-    externalRef:
-      typeof record.externalRef === "string" && record.externalRef.trim().length > 0
-        ? record.externalRef
-        : null,
-  });
+  return resolveDearMeChannelCredential(encryptedCredential, "x");
 }
 
 function buildXPostRequest(payload: XPostPayload) {

@@ -17,6 +17,12 @@ export {
   type DearMeOpenClawGatewayDispatchConfig,
   type DearMeOpenClawGatewayDispatchError,
 } from "./dearme-openclaw-gateway-dispatch.js";
+export { resolveDearMeChannelCredential } from "./dearme-channel-credential.js";
+export {
+  createDearMeSendEmailDispatch,
+  resolveDearMeSendEmailCredential,
+  type DearMeSendEmailDispatchConfig,
+} from "./dearme-send-email-dispatch.js";
 export {
   createDearMeXPostDispatch,
   resolveDearMeXPostCredential,

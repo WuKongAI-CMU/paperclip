@@ -29,6 +29,23 @@ const deployLaunchHandoff = {
   },
 };
 
+const emailLaunchHandoff = {
+  toolName: "send_email",
+  channel: "resend",
+  gate: "send",
+  riskGate: "send_email",
+  voiceGateRequired: true,
+  voiceGateArtifactKind: "outbound-email",
+  voiceGateText: "Peter, here's the private proof packet I mentioned.",
+  voiceFingerprintId: "vf_email_1",
+  payload: {
+    toEmail: "lead@example.com",
+    fromHandle: "Peter",
+    subject: "Private proof packet",
+    body: "Peter, here's the private proof packet I mentioned.",
+  },
+};
+
 function approval(overrides: Record<string, unknown> = {}) {
   return {
     id: "approval-1",
@@ -116,6 +133,40 @@ describe("dearMeApprovedLaunchHandoffService", () => {
       voiceGateText: null,
       voiceGateArtifactKind: null,
       voiceFingerprintId: null,
+      preapprovedApprovalId: "approval-1",
+      config: { minVoiceGateScore: 92, dailyUsdCap: 5 },
+    }));
+  });
+
+  it("maps an approved email outreach handoff into a send-email outbound call", async () => {
+    const callOutbound = vi.fn(async () => ({
+      kind: "delivered" as const,
+      voiceGateScore: 94,
+      externalId: "email_1",
+    }));
+    const svc = dearMeApprovedLaunchHandoffService({ callOutbound });
+
+    const result = await svc.executeApprovedNextMove({
+      approval: approval({
+        payload: {
+          issueId: "issue-1",
+          launchHandoff: emailLaunchHandoff,
+        },
+      }),
+      actorUserId: "user-1",
+    });
+
+    expect(result.kind).toBe("called");
+    expect(callOutbound).toHaveBeenCalledWith(expect.objectContaining({
+      toolName: "send_email",
+      companyId: "company-1",
+      userId: "user-1",
+      issueId: "issue-1",
+      agentId: "agent-1",
+      payload: emailLaunchHandoff.payload,
+      voiceGateText: emailLaunchHandoff.voiceGateText,
+      voiceGateArtifactKind: "outbound-email",
+      voiceFingerprintId: "vf_email_1",
       preapprovedApprovalId: "approval-1",
       config: { minVoiceGateScore: 92, dailyUsdCap: 5 },
     }));
