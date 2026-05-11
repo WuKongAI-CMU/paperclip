@@ -2,6 +2,28 @@
 
 Date: 2026-05-11
 
+## Voice-Smoke Operator Proof - 2026-05-11
+
+Product/architecture slice:
+
+- Added `pnpm dearme:voice-smoke` as the local operator proof lane for the
+  already-shipped Voice Gate contract. It runs the deterministic scorer with no
+  external config and the opt-in profile-token semantic scorer when
+  `DEARME_VOICE_SEMANTIC_SCORER=profile-token` is enabled.
+- The command prints readiness, a local ignored `.dearme-voice-smoke.env`
+  template, and targeted run commands. It does not send, deploy, spend, or call
+  a live model; the remaining DM-170 gap is still real model/embedding
+  calibration behind the same scorer seam.
+- This keeps voice proof on the current route/store/scorer boundary instead of
+  adding another voice route, memory service, settings page, or review surface.
+
+Verification:
+
+- `pnpm test:dearme-voice-smoke`
+- `pnpm --silent dearme:voice-smoke -- --check`
+- `DEARME_VOICE_SEMANTIC_SCORER=profile-token pnpm --silent dearme:voice-smoke -- --target profile_token_semantic`
+- `pnpm typecheck`
+
 ## OpenClaw Provider-Smoke Command Grouping - 2026-05-11
 
 Product/architecture slice:

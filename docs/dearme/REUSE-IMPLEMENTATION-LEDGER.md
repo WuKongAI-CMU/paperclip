@@ -15,6 +15,13 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- Voice proof now has the same bounded operator shape as provider proof:
+  `pnpm dearme:voice-smoke` checks the deterministic local gate, prints a
+  local ignored `.dearme-voice-smoke.env` template, and proves the opt-in
+  profile-token semantic scorer can match approved writing and block drift.
+  This is local scorer proof only; live model/embedding calibration should
+  replace or wrap the existing semantic scorer seam, not add another route,
+  voice-memory service, settings page, or review surface.
 - Provider-smoke operator next steps now group Telegram plus iMessage under the
   shared `openclaw_messages` run command whenever both OpenClaw message smokes
   are blocked. This keeps the remaining live proof work aligned to one gateway

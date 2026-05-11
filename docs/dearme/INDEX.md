@@ -174,6 +174,12 @@ semantic scorer seam wired through a profile-token calibration scorer; the
 remaining voice gap is real model/embedding calibration and live scoring smoke,
 not another
 `/v1/voice/score` route, voice-memory service, key store, or review surface.
+The internal `pnpm dearme:voice-smoke -- --check` command now owns the local
+voice proof lane: deterministic gate readiness plus opt-in
+`DEARME_VOICE_SEMANTIC_SCORER=profile-token` match/drift proof through a local
+ignored `.dearme-voice-smoke.env`. It is not a live model smoke and should be
+replaced or wrapped by the real embedding scorer behind the same seam when that
+provider is ready.
 Reuse still means adapting Polsia choreography, Lindy action-card/source
 patterns, and Naive/Paperclip substrate behind the DearMe product shell; do
 not add another first-run contract, packet schema, runtime dashboard, queue
