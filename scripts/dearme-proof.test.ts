@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
@@ -18,6 +19,71 @@ import {
 } from "./dearme-proof.ts";
 
 const now = () => new Date("2026-05-11T12:00:00.000Z");
+
+function sha256(value: string) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+async function writeHostSmokePacket(dir: string, options: {
+  expectedText?: string;
+  handle?: string;
+} = {}) {
+  const handle = options.handle ?? "peter-studio";
+  const expectedText = options.expectedText ?? "Peter Studio has a private growth team already working";
+  const handleDir = join(dir, handle);
+  const html = `<html><body>${expectedText}</body></html>`;
+  const proofJson = JSON.stringify({ handle, status: "ready" }, null, 2);
+  const manifest = {
+    version: 1,
+    handle,
+    route: `https://dearme.app/${handle}`,
+    files: {
+      html: "index.html",
+      proof: "proof.json",
+    },
+    expectedText,
+    checks: {
+      viewport: true,
+      customerSafeLanguage: true,
+      approvalBoundary: "Launch stays private until approved",
+      waitsFor: ["publish", "send", "deploy", "spend"],
+      starterDraftCount: 5,
+      opportunityCount: 3,
+      continuationCount: 3,
+      continuation: {
+        title: "Keeps working after the first proof",
+        nextReview: "Next private review",
+        preparedArtifacts: [
+          "Next proof-backed draft",
+          "Updated opportunity angle",
+          "Updated private proof card",
+        ],
+        ownerRoles: ["content_producer", "opportunity_scout", "portfolio_builder"],
+        approvalBoundaries: [
+          "The draft can improve privately; posting waits for approval.",
+          "The outreach can be prepared privately; sending waits for approval.",
+          "The page can be staged privately; public changes wait for approval.",
+        ],
+      },
+    },
+    checksums: {
+      htmlSha256: sha256(html),
+      proofSha256: sha256(proofJson),
+    },
+  };
+
+  await mkdir(handleDir, { recursive: true });
+  await writeFile(join(handleDir, "index.html"), html, "utf8");
+  await writeFile(join(handleDir, "proof.json"), proofJson, "utf8");
+  await writeFile(join(handleDir, "host-smoke.json"), JSON.stringify(manifest, null, 2), "utf8");
+
+  return {
+    artifactRef: join(handleDir, "index.html"),
+    handle,
+    manifestPath: join(handleDir, "host-smoke.json"),
+    expectedText,
+  };
+}
 
 test("DearMe proof readiness combines provider and voice lanes without secrets", () => {
   const readiness = inspectDearMeProofReadiness({});
@@ -312,6 +378,49 @@ test("DearMe proof safe run only executes non-live proof by default", async () =
   assert.deepEqual(provider?.results.map((item) => item.status), ["delivered"]);
   assert.deepEqual(voice?.results.map((item) => item.target), ["deterministic_gate"]);
   assert.deepEqual(voice?.results.map((item) => item.status), ["passed"]);
+});
+
+test("DearMe proof safe run includes loopback host rehearsal when configured", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-proof-host-rehearsal-"));
+  try {
+    const packet = await writeHostSmokePacket(dir);
+    const fetch = async (url: string) => ({
+      ok: true,
+      status: 200,
+      async text() {
+        assert.equal(url, "http://127.0.0.1:8787/peter-studio/index.html");
+        return `<html><body>${packet.expectedText}</body></html>`;
+      },
+      async json() {
+        return {};
+      },
+    });
+
+    const result = await runDearMeProofSafe({
+      lane: "provider",
+      env: {
+        DEARME_DEPLOY_SITE_BASE_URL: "http://127.0.0.1:8787",
+        DEARME_DEPLOY_SITE_SMOKE_HANDLE: packet.handle,
+        DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: packet.artifactRef,
+        DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF: packet.manifestPath,
+      },
+      fetch,
+      now,
+    });
+
+    const provider = result.lanes.find((lane) => lane.lane === "provider");
+    assert.deepEqual(provider?.results.map((item) => item.target), [
+      "deploy_site_preview",
+      "deploy_site_host_rehearsal",
+    ]);
+    assert.deepEqual(provider?.results.map((item) => item.status), [
+      "delivered",
+      "delivered",
+    ]);
+    assert.equal(provider?.results[1]?.hostStatus, 200);
+  } finally {
+    await rm(dir, { force: true, recursive: true });
+  }
 });
 
 test("DearMe proof safe run includes semantic local scorer when configured", async () => {

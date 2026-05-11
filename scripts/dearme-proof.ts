@@ -8,6 +8,7 @@ import {
   inspectDearMeProviderSmokeReadiness,
   loadDearMeProviderSmokeEnv,
   runDearMeProviderSmoke,
+  type DearMeProviderSmokeOptions,
   type DearMeProviderSmokeReadiness,
   type DearMeProviderSmokeResult,
 } from "./dearme-provider-smoke.ts";
@@ -106,6 +107,7 @@ export interface DearMeProofSafeResult {
 export interface DearMeProofSafeOptions {
   lane?: DearMeProofLane;
   env?: Env;
+  fetch?: DearMeProviderSmokeOptions["fetch"];
   now?: () => Date;
 }
 
@@ -321,7 +323,8 @@ function uniqueCommands(commands: readonly string[]) {
 function needsPrivateSiteExport(
   blockedTargets: readonly DearMeProviderSmokeReadiness["target"][],
 ) {
-  return blockedTargets.includes("deploy_site_production");
+  return blockedTargets.includes("deploy_site_production") ||
+    blockedTargets.includes("deploy_site_host_rehearsal");
 }
 
 export function dearMeProofOperatorCommands(
@@ -833,13 +836,28 @@ export async function runDearMeProofSafe(
   const lanes: DearMeProofSafeLaneResult[] = [];
 
   if (includesLane(lane, "provider")) {
+    const results: DearMeProviderSmokeResult[] = [];
+    results.push(...await runDearMeProviderSmoke({
+      target: "deploy_site_preview",
+      env,
+      fetch: options.fetch,
+      now: options.now,
+    }));
+
+    const hostRehearsalReadiness =
+      inspectDearMeProviderSmokeReadiness(env, "deploy_site_host_rehearsal")[0];
+    if (hostRehearsalReadiness?.ready) {
+      results.push(...await runDearMeProviderSmoke({
+        target: "deploy_site_host_rehearsal",
+        env,
+        fetch: options.fetch,
+        now: options.now,
+      }));
+    }
+
     lanes.push({
       lane: "provider",
-      results: await runDearMeProviderSmoke({
-        target: "deploy_site_preview",
-        env,
-        now: options.now,
-      }),
+      results,
     });
   }
 

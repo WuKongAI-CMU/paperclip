@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `deploy_site_host_rehearsal` is now the opt-in local-host counterpart to
+  `deploy_site_production`: it reuses the exported private first-wow packet,
+  host-smoke manifest, and provider-smoke fetch verifier, but only accepts
+  loopback `http(s)` URLs and is excluded from default readiness/status. Keep
+  this split intact so local serving proves artifact integrity without being
+  mistaken for Polsia-style phone-reachable production proof.
 - The direct provider-smoke operator path now starts production-host setup with
   the existing `pnpm --silent dearme:aha-proof -- --export-site
   dist/dearme-private-proof` command whenever `deploy_site_production` is a

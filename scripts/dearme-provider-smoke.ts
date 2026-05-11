@@ -55,6 +55,7 @@ type FetchLike = (url: string, init?: FetchInitLike) => Promise<FetchResponseLik
 
 export const DEARME_PROVIDER_SMOKE_TARGETS = [
   "deploy_site_preview",
+  "deploy_site_host_rehearsal",
   "deploy_site_production",
   "linkedin_dm",
   "telegram_message",
@@ -63,6 +64,9 @@ export const DEARME_PROVIDER_SMOKE_TARGETS = [
 ] as const;
 
 export type DearMeProviderSmokeTarget = (typeof DEARME_PROVIDER_SMOKE_TARGETS)[number];
+const DEARME_PROVIDER_SMOKE_DEFAULT_TARGETS = DEARME_PROVIDER_SMOKE_TARGETS.filter(
+  (target) => target !== "deploy_site_host_rehearsal",
+) as Exclude<DearMeProviderSmokeTarget, "deploy_site_host_rehearsal">[];
 
 const DEARME_PROVIDER_SMOKE_TARGET_GROUPS = {
   openclaw_messages: ["telegram_message", "imessage_message"],
@@ -214,15 +218,20 @@ export function dearMeProviderSmokeEnvTemplate(targetArg: TargetArg = "all"): st
     ? [`${PROVIDER_SMOKE_BASE_COMMAND} --target deploy_site_preview`]
     : [providerSmokeRunCommand(targetArg)];
   const includesProductionHostSmoke = includesTemplateTarget(targetArg, "deploy_site_production");
-  const siteSmokeArtifactRef = includesProductionHostSmoke
+  const includesHostRehearsalSmoke = includesTemplateTarget(targetArg, "deploy_site_host_rehearsal");
+  const includesHostSmoke = includesProductionHostSmoke || includesHostRehearsalSmoke;
+  const siteSmokeArtifactRef = includesHostSmoke
     ? "dist/dearme-private-proof/peter-studio/index.html"
     : "smoke:provider-dispatch";
-  const siteSmokeManifestRef = includesProductionHostSmoke
+  const siteSmokeManifestRef = includesHostSmoke
     ? "dist/dearme-private-proof/peter-studio/host-smoke.json"
     : "";
-  const siteSmokeExpectedText = includesProductionHostSmoke
+  const siteSmokeExpectedText = includesHostSmoke
     ? ""
     : "peter-studio";
+  const siteBaseUrl = includesHostRehearsalSmoke && !includesProductionHostSmoke
+    ? "http://127.0.0.1:8787"
+    : "https://dearme.example.test";
   const sections = [`# DearMe provider smoke local env.
 # Keep this file local. The repository ignores .dearme-provider-smoke.env.
 #
@@ -236,21 +245,24 @@ ${selectedRunCommands.map((command) => `# ${command}`).join("\n")}
 # and passing --live on the command line.
 `];
 
-  if (includesTemplateTarget(targetArg, "deploy_site_preview", "deploy_site_production")) {
-    const productionHostSmokeArtifactHelp = includesProductionHostSmoke
+  if (includesTemplateTarget(
+    targetArg,
+    "deploy_site_preview",
+    "deploy_site_host_rehearsal",
+    "deploy_site_production",
+  )) {
+    const hostSmokeArtifactHelp = includesHostSmoke
       ? `#
-# Production host smoke artifact:
+# Host smoke artifact:
 # pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof
-# Host the dist/dearme-private-proof/peter-studio directory at the production URL.
-# The production URL must be public HTTPS; localhost/private-network URLs are not phone-reachable proof.
-# The smoke reads dist/dearme-private-proof/peter-studio/host-smoke.json for expected text/checksums.
+${includesHostRehearsalSmoke ? "# For deploy_site_host_rehearsal, serve dist/dearme-private-proof at the loopback URL.\n" : ""}${includesProductionHostSmoke ? "# For deploy_site_production, host dist/dearme-private-proof at the production URL.\n# The production URL must be public HTTPS; localhost/private-network URLs are not phone-reachable proof.\n" : ""}# The host smoke reads dist/dearme-private-proof/peter-studio/host-smoke.json for expected text/checksums.
 # DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT is only needed as a manual override.
 # DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=dist/dearme-private-proof/peter-studio/index.html
 # DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF=dist/dearme-private-proof/peter-studio/host-smoke.json
 `
       : "";
     sections.push(`
-DEARME_DEPLOY_SITE_BASE_URL=https://dearme.example.test
+DEARME_DEPLOY_SITE_BASE_URL=${siteBaseUrl}
 DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=0
 DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=0
 DEARME_DEPLOY_SITE_SMOKE_HANDLE=peter-studio
@@ -258,7 +270,7 @@ DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=${siteSmokeArtifactRef}
 DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF=${siteSmokeManifestRef}
 DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN=
 DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=${siteSmokeExpectedText}
-${productionHostSmokeArtifactHelp}`);
+${hostSmokeArtifactHelp}`);
   }
 
   if (includesTemplateTarget(targetArg, "linkedin_dm")) {
@@ -328,7 +340,10 @@ export function dearMeProviderSmokeOperatorCommands(
     `pnpm --silent dearme:provider-smoke -- --print-env-template${targetFlag} > ${PROVIDER_SMOKE_ENV_FILE}`,
     `${PROVIDER_SMOKE_BASE_COMMAND} --check${targetFlag}`,
   ];
-  if (blockedTargets.includes("deploy_site_production")) {
+  if (
+    blockedTargets.includes("deploy_site_production") ||
+    blockedTargets.includes("deploy_site_host_rehearsal")
+  ) {
     commands.unshift(PRIVATE_SITE_EXPORT_COMMAND);
   }
   for (const target of providerSmokeRunTargetsForCommands(blockedTargets, targetArg)) {
@@ -354,6 +369,14 @@ function firstEnv(env: Env, keys: readonly string[]) {
   return null;
 }
 
+function deploySiteBaseUrl(env: Env) {
+  return firstEnv(env, [
+    "DEARME_DEPLOY_SITE_BASE_URL",
+    "DEARME_SITE_BASE_URL",
+    "DEARME_PUBLIC_SITE_BASE_URL",
+  ]);
+}
+
 function parseNumber(value: string | undefined, fallback: number) {
   const parsed = value ? Number(value) : Number.NaN;
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -371,6 +394,8 @@ function targetDescription(target: DearMeProviderSmokeTarget) {
   switch (target) {
     case "deploy_site_preview":
       return "emit a private preview receipt through the deploy_site dispatcher";
+    case "deploy_site_host_rehearsal":
+      return "prove the exported private site packet can be served from a loopback host";
     case "deploy_site_production":
       return "prove the configured production DearMe site host serves the smoke page";
     case "linkedin_dm":
@@ -389,7 +414,7 @@ function credentialRequirement(env: Env, jsonKey: string, fileKey: string) {
 }
 
 function expandProviderSmokeTargets(targetArg: TargetArg): readonly DearMeProviderSmokeTarget[] {
-  if (targetArg === "all") return DEARME_PROVIDER_SMOKE_TARGETS;
+  if (targetArg === "all") return DEARME_PROVIDER_SMOKE_DEFAULT_TARGETS;
   const group = DEARME_PROVIDER_SMOKE_TARGET_GROUPS[targetArg as DearMeProviderSmokeTargetGroup];
   if (group) return group;
   return [targetArg as DearMeProviderSmokeTarget];
@@ -407,11 +432,7 @@ function openClawGatewayRequirement(env: Env) {
 
 function deploySiteBaseUrlRequirement(env: Env) {
   if (nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN)) return [];
-  return firstEnv(env, [
-    "DEARME_DEPLOY_SITE_BASE_URL",
-    "DEARME_SITE_BASE_URL",
-    "DEARME_PUBLIC_SITE_BASE_URL",
-  ])
+  return deploySiteBaseUrl(env)
     ? []
     : ["DEARME_DEPLOY_SITE_BASE_URL or DEARME_SITE_BASE_URL or DEARME_PUBLIC_SITE_BASE_URL"];
 }
@@ -432,6 +453,23 @@ function isPrivateIpv4(hostname: string) {
   );
 }
 
+function ipv4MappedToIpv4(hostname: string) {
+  if (!hostname.startsWith("::ffff:")) return null;
+  const mapped = hostname.slice("::ffff:".length);
+  if (isIP(mapped) === 4) return mapped;
+  const match = /^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i.exec(mapped);
+  if (!match) return null;
+  const high = Number.parseInt(match[1], 16);
+  const low = Number.parseInt(match[2], 16);
+  if (!Number.isInteger(high) || !Number.isInteger(low)) return null;
+  return [
+    (high >> 8) & 255,
+    high & 255,
+    (low >> 8) & 255,
+    low & 255,
+  ].join(".");
+}
+
 function isLocalProductionHost(hostname: string) {
   const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, "");
   if (
@@ -444,9 +482,8 @@ function isLocalProductionHost(hostname: string) {
   }
   if (isIP(normalized) === 4) return isPrivateIpv4(normalized);
   if (isIP(normalized) === 6) {
-    if (normalized.startsWith("::ffff:")) {
-      return isPrivateIpv4(normalized.slice("::ffff:".length));
-    }
+    const mappedIpv4 = ipv4MappedToIpv4(normalized);
+    if (mappedIpv4) return isPrivateIpv4(mappedIpv4);
     return (
       normalized === "::" ||
       normalized.startsWith("fc") ||
@@ -457,13 +494,28 @@ function isLocalProductionHost(hostname: string) {
   return false;
 }
 
+function isLoopbackHost(hostname: string) {
+  const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (
+    normalized === "localhost" ||
+    normalized.endsWith(".localhost") ||
+    normalized === "::1"
+  ) {
+    return true;
+  }
+  if (isIP(normalized) === 4) {
+    return normalized.split(".")[0] === "127";
+  }
+  if (isIP(normalized) === 6) {
+    const mappedIpv4 = ipv4MappedToIpv4(normalized);
+    return mappedIpv4 ? mappedIpv4.split(".")[0] === "127" : false;
+  }
+  return false;
+}
+
 function deploySiteProductionHostRequirement(env: Env) {
   if (nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_CUSTOM_DOMAIN)) return [];
-  const baseUrl = firstEnv(env, [
-    "DEARME_DEPLOY_SITE_BASE_URL",
-    "DEARME_SITE_BASE_URL",
-    "DEARME_PUBLIC_SITE_BASE_URL",
-  ]);
+  const baseUrl = deploySiteBaseUrl(env);
   if (!baseUrl) return [];
 
   let parsed: URL;
@@ -481,6 +533,39 @@ function deploySiteProductionHostRequirement(env: Env) {
     missing.push("DEARME_DEPLOY_SITE_BASE_URL must be a phone-reachable public host, not localhost or a private network");
   }
   return missing;
+}
+
+function deploySiteHostRehearsalBaseUrlRequirement(env: Env) {
+  const baseUrl = deploySiteBaseUrl(env);
+  if (!baseUrl) return [];
+
+  let parsed: URL;
+  try {
+    parsed = new URL(baseUrl);
+  } catch {
+    return ["DEARME_DEPLOY_SITE_BASE_URL must be a valid loopback http(s) URL"];
+  }
+
+  const missing: string[] = [];
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    missing.push("DEARME_DEPLOY_SITE_BASE_URL must use http or https for loopback host rehearsal");
+  }
+  if (!isLoopbackHost(parsed.hostname)) {
+    missing.push("DEARME_DEPLOY_SITE_BASE_URL must be loopback for host rehearsal");
+  }
+  return missing;
+}
+
+function deploySiteHostSmokeUrl(env: Env) {
+  const baseUrl = deploySiteBaseUrl(env);
+  if (!baseUrl) return null;
+  const parsed = new URL(baseUrl);
+  const handle = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_HANDLE) ?? "dearme-smoke";
+  const basePath = parsed.pathname.replace(/\/+$/, "");
+  parsed.pathname = `${basePath}/${encodeURIComponent(handle)}/index.html`;
+  parsed.search = "";
+  parsed.hash = "";
+  return parsed.toString();
 }
 
 function deploySiteProductionArtifactRequirement(env: Env) {
@@ -722,6 +807,13 @@ function targetMissingRequirements(target: DearMeProviderSmokeTarget, env: Env) 
         && !resolveDearMeDeploySiteDispatchConfigFromEnv(env as NodeJS.ProcessEnv)?.allowCustomDomains
         ? ["DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=1"]
         : [];
+    case "deploy_site_host_rehearsal":
+      return [
+        ...deploySiteBaseUrlRequirement(env),
+        ...deploySiteHostRehearsalBaseUrlRequirement(env),
+        ...deploySiteProductionArtifactRequirement(env),
+        ...deploySiteExpectedTextRequirement(env),
+      ];
     case "deploy_site_production": {
       const config = resolveDearMeDeploySiteDispatchConfigFromEnv(env as NodeJS.ProcessEnv);
       return [
@@ -917,6 +1009,11 @@ function normalizeTarget(value: string): TargetArg {
     deploy_preview: "deploy_site_preview",
     site_preview: "deploy_site_preview",
     preview: "deploy_site_preview",
+    host_rehearsal: "deploy_site_host_rehearsal",
+    site_rehearsal: "deploy_site_host_rehearsal",
+    loopback_host: "deploy_site_host_rehearsal",
+    loopback_rehearsal: "deploy_site_host_rehearsal",
+    deploy_site_host_rehearsal: "deploy_site_host_rehearsal",
     deploy_production: "deploy_site_production",
     site_production: "deploy_site_production",
     production: "deploy_site_production",
@@ -1063,14 +1160,14 @@ function fetchFailureMessage(error: unknown) {
   return message;
 }
 
-async function verifyDeploySiteProductionHost(params: {
+async function verifyDeploySiteHost(params: {
   result: DeliveredProviderSmokeResult;
   expectedText: string;
   options: DearMeProviderSmokeOptions;
 }): Promise<DearMeProviderSmokeResult> {
   const { result, expectedText, options } = params;
   if (!result.externalUrl) {
-    return { target: result.target, status: "errored", reason: "deploy-site-production-url-missing" };
+    return { target: result.target, status: "errored", reason: "deploy-site-host-url-missing" };
   }
 
   const fetcher = currentFetch(options);
@@ -1189,9 +1286,47 @@ async function runDeploySiteSmoke(
     return dispatchResult;
   }
 
-  return verifyDeploySiteProductionHost({
+  return verifyDeploySiteHost({
     result: dispatchResult,
     expectedText: hostSmokeProof.proof?.expectedText ?? payload.handle,
+    options,
+  });
+}
+
+async function runDeploySiteHostRehearsalSmoke(
+  options: DearMeProviderSmokeOptions,
+) {
+  const target = "deploy_site_host_rehearsal";
+  const env = options.env ?? process.env;
+  const missing = targetMissingRequirements(target, env);
+  if (missing.length > 0) {
+    return blockedResult(target, "missing-provider-smoke-config", missing);
+  }
+
+  const hostSmokeProof = await resolveDeploySiteHostSmokeProof(env);
+  if (hostSmokeProof.errors.length > 0) {
+    return blockedResult(target, "invalid-host-smoke-manifest", hostSmokeProof.errors);
+  }
+
+  const externalUrl = deploySiteHostSmokeUrl(env);
+  if (!externalUrl) {
+    return blockedResult(target, "missing-provider-smoke-config", [
+      "DEARME_DEPLOY_SITE_BASE_URL or DEARME_SITE_BASE_URL or DEARME_PUBLIC_SITE_BASE_URL",
+    ]);
+  }
+
+  const artifactRef = nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF) ?? "";
+  return verifyDeploySiteHost({
+    result: {
+      target,
+      status: "delivered",
+      externalId: `dearme_host_rehearsal_${sha256(`${externalUrl}:${artifactRef}`).slice(0, 16)}`,
+      externalUrl,
+    },
+    expectedText:
+      hostSmokeProof.proof?.expectedText ??
+      nonEmpty(env.DEARME_DEPLOY_SITE_SMOKE_HANDLE) ??
+      "dearme-smoke",
     options,
   });
 }
@@ -1354,6 +1489,8 @@ async function runTarget(
     case "deploy_site_preview":
     case "deploy_site_production":
       return runDeploySiteSmoke(target, options);
+    case "deploy_site_host_rehearsal":
+      return runDeploySiteHostRehearsalSmoke(options);
     case "linkedin_dm":
       return runLinkedInDmSmoke(options);
     case "telegram_message":
@@ -1379,13 +1516,14 @@ function printHelp() {
 
 Targets:
   deploy_site_preview       Safe receipt smoke for the private preview path.
+  deploy_site_host_rehearsal Optional loopback host smoke for the exported private site packet.
   deploy_site_production    Production host smoke; verifies the returned URL serves expected page text.
   linkedin_dm               Live partner endpoint smoke. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
   telegram_message          Live Telegram smoke through OpenClaw gateway. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
   imessage_message          Live iMessage/SMS smoke through OpenClaw gateway. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
   openclaw_messages         Group: Telegram + iMessage through the shared OpenClaw gateway config.
   meta_campaign             Live Meta Marketing API smoke. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
-  all                       Run every target.
+  all                       Run default readiness targets. Host rehearsal is opt-in.
 
 Setup:
   pnpm --silent dearme:provider-smoke -- --print-env-template > .dearme-provider-smoke.env

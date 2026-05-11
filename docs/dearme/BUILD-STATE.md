@@ -2,6 +2,34 @@
 
 Date: 2026-05-11
 
+## Optional Loopback Host Rehearsal Is Separated From Production Proof - 2026-05-11
+
+Product/architecture slice:
+
+- Completed the `deploy_site_host_rehearsal` provider-smoke target as an
+  opt-in local host rehearsal instead of a default product-readiness blocker.
+- Reused the existing private first-wow site packet, host-smoke manifest, and
+  provider-smoke fetch verifier. No new deploy wrapper, customer setup surface,
+  or second proof lane was added.
+- Kept the boundary explicit: loopback host rehearsal accepts only loopback
+  `http(s)` URLs, while `deploy_site_production` still requires public HTTPS
+  phone-reachable proof.
+- Added operator setup guidance so the local rehearsal starts by exporting
+  `dist/dearme-private-proof`, then serving that packet from loopback.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+- `pnpm test:dearme-proof`
+- `pnpm --filter @paperclipai/dearme-openclaw test`
+- `pnpm typecheck`
+- `pnpm --silent dearme:provider-smoke -- --check --target deploy_site_host_rehearsal`
+- `pnpm --silent dearme:provider-smoke -- --check`
+- `pnpm --silent dearme:proof -- --check`
+- `pnpm --silent dearme:worktrees -- --summary-json --skip-dirty --handoffs`
+- `pnpm --silent dearme:status`
+- `git diff --check`
+
 ## Direct Provider Smoke Setup Exports The Phone Packet First - 2026-05-11
 
 Product/architecture slice:

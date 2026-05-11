@@ -90,11 +90,13 @@ async function writeHostSmokePacket(dir: string, options: {
 
 test("provider smoke readiness reports missing live provider config without secrets", () => {
   const readiness = inspectDearMeProviderSmokeReadiness({});
+  const hostRehearsal = readiness.find((item) => item.target === "deploy_site_host_rehearsal");
   const linkedin = readiness.find((item) => item.target === "linkedin_dm");
   const telegram = readiness.find((item) => item.target === "telegram_message");
   const imessage = readiness.find((item) => item.target === "imessage_message");
   const meta = readiness.find((item) => item.target === "meta_campaign");
 
+  assert.equal(hostRehearsal, undefined);
   assert.deepEqual(linkedin?.missing, [
     "DEARME_LINKEDIN_DM_MESSAGES_URL",
     "DEARME_LINKEDIN_DM_CREDENTIAL_JSON or DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE",
@@ -167,6 +169,7 @@ test("provider smoke readiness formatting deduplicates shared OpenClaw blockers"
 test("provider smoke parses target aliases", () => {
   assert.equal(parseDearMeProviderSmokeArgs(["--target", "linkedin"]).target, "linkedin_dm");
   assert.equal(parseDearMeProviderSmokeArgs(["site-production"]).target, "deploy_site_production");
+  assert.equal(parseDearMeProviderSmokeArgs(["host-rehearsal"]).target, "deploy_site_host_rehearsal");
   assert.equal(parseDearMeProviderSmokeArgs(["telegram"]).target, "telegram_message");
   assert.equal(parseDearMeProviderSmokeArgs(["send-imessage"]).target, "imessage_message");
   assert.equal(parseDearMeProviderSmokeArgs(["--target", "openclaw"]).target, "openclaw_messages");
@@ -227,6 +230,7 @@ test("provider smoke env files override base env and merge in order", async () =
 test("provider smoke env template is local-only and keeps live actions disabled", () => {
   const template = dearMeProviderSmokeEnvTemplate();
   const previewTemplate = dearMeProviderSmokeEnvTemplate("deploy_site_preview");
+  const hostRehearsalTemplate = dearMeProviderSmokeEnvTemplate("deploy_site_host_rehearsal");
   const productionTemplate = dearMeProviderSmokeEnvTemplate("deploy_site_production");
   const telegramTemplate = dearMeProviderSmokeEnvTemplate("telegram_message");
   const openClawTemplate = dearMeProviderSmokeEnvTemplate("openclaw_messages");
@@ -261,6 +265,16 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   assert.match(previewTemplate, /DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=peter-studio/);
   assert.doesNotMatch(previewTemplate, /dearme:aha-proof -- --export-site/);
 
+  assert.match(hostRehearsalTemplate, /--check --target deploy_site_host_rehearsal/);
+  assert.match(hostRehearsalTemplate, /DEARME_DEPLOY_SITE_BASE_URL=http:\/\/127\.0\.0\.1:8787/);
+  assert.match(hostRehearsalTemplate, /dearme:aha-proof -- --export-site dist\/dearme-private-proof/);
+  assert.match(
+    hostRehearsalTemplate,
+    /DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=dist\/dearme-private-proof\/peter-studio\/index\.html/,
+  );
+  assert.match(hostRehearsalTemplate, /serve dist\/dearme-private-proof at the loopback URL/);
+  assert.doesNotMatch(hostRehearsalTemplate, /production URL must be public HTTPS/);
+
   assert.match(productionTemplate, /--check --target deploy_site_production/);
   assert.match(productionTemplate, /dearme:aha-proof -- --export-site dist\/dearme-private-proof/);
   assert.match(
@@ -274,7 +288,7 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   assert.match(productionTemplate, /DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=\n/);
   assert.match(
     productionTemplate,
-    /Host the dist\/dearme-private-proof\/peter-studio directory at the production URL/,
+    /For deploy_site_production, host dist\/dearme-private-proof at the production URL/,
   );
   assert.match(
     productionTemplate,
@@ -327,6 +341,13 @@ test("provider smoke operator commands give local-only setup and live guards", (
     "pnpm --silent dearme:provider-smoke -- --print-env-template --target telegram_message > .dearme-provider-smoke.env",
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check --target telegram_message",
     "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target telegram_message --live",
+  ]);
+
+  assert.deepEqual(dearMeProviderSmokeOperatorCommands(["deploy_site_host_rehearsal"]), [
+    "pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof",
+    "pnpm --silent dearme:provider-smoke -- --print-env-template --target deploy_site_host_rehearsal > .dearme-provider-smoke.env",
+    "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check --target deploy_site_host_rehearsal",
+    "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target deploy_site_host_rehearsal",
   ]);
 
   assert.deepEqual(
@@ -708,6 +729,65 @@ test("provider smoke verifies the production site host before claiming delivery"
   assert.equal(capturedInit.method, "GET");
   assert.match(result.externalId, /^dearme_production_/);
   assert.equal(result.externalUrl, "https://dearme.example.test/peter-studio");
+});
+
+test("provider smoke verifies the optional loopback host rehearsal", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-provider-smoke-"));
+  try {
+    const packet = await writeHostSmokePacket(dir);
+    let capturedUrl = "";
+    const fetch = async (url: string) => {
+      capturedUrl = url;
+      return {
+        ok: true,
+        status: 200,
+        async text() {
+          return `<html><body>${packet.expectedText}</body></html>`;
+        },
+        async json() {
+          return {};
+        },
+      };
+    };
+
+    const [result] = await runDearMeProviderSmoke({
+      target: "deploy_site_host_rehearsal",
+      env: {
+        DEARME_DEPLOY_SITE_BASE_URL: "http://127.0.0.1:8787",
+        DEARME_DEPLOY_SITE_SMOKE_HANDLE: packet.handle,
+        DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: packet.artifactRef,
+        DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF: packet.manifestPath,
+      },
+      fetch,
+      now,
+    });
+
+    assert.equal(result.status, "delivered");
+    assert.equal(result.target, "deploy_site_host_rehearsal");
+    assert.equal(result.hostStatus, 200);
+    assert.equal(capturedUrl, "http://127.0.0.1:8787/peter-studio/index.html");
+    assert.match(result.externalId, /^dearme_host_rehearsal_/);
+  } finally {
+    await rm(dir, { force: true, recursive: true });
+  }
+});
+
+test("provider smoke keeps host rehearsal on loopback only", async () => {
+  const [result] = await runDearMeProviderSmoke({
+    target: "deploy_site_host_rehearsal",
+    env: {
+      DEARME_DEPLOY_SITE_BASE_URL: "https://dearme.example.test",
+      DEARME_DEPLOY_SITE_SMOKE_HANDLE: "peter-studio",
+      DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: "dist/dearme-private-proof/peter-studio/index.html",
+      DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT: "Peter Studio has a private growth team already working",
+    },
+    now,
+  });
+
+  assert.equal(result.status, "blocked");
+  assert.deepEqual(result.missing, [
+    "DEARME_DEPLOY_SITE_BASE_URL must be loopback for host rehearsal",
+  ]);
 });
 
 test("provider smoke verifies a configured custom-domain host", async () => {
