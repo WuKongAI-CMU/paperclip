@@ -31,6 +31,70 @@ function deliveredHostRehearsalEvidence() {
   };
 }
 
+function readyHostProviderEvidence() {
+  return {
+    audit: {
+      ready: true,
+      verdict: "Host provider authorization: ready.",
+      providers: [
+        {
+          key: "vercel" as const,
+          label: "Vercel",
+          status: "ready" as const,
+          ready: true,
+          installed: true,
+          tokenPresent: true,
+          authenticated: true,
+          evidence: "Vercel token env is present and the CLI is installed.",
+        },
+      ],
+      missingCapabilities: [],
+      operatorCommands: ["pnpm --silent dearme:host-provider-audit"],
+    },
+  };
+}
+
+function blockedHostProviderEvidence() {
+  return {
+    audit: {
+      ready: false,
+      verdict: "Host provider authorization: blocked. No authenticated host provider and no configured public HTTPS DearMe host were found.",
+      providers: [
+        {
+          key: "vercel" as const,
+          label: "Vercel",
+          status: "blocked" as const,
+          ready: false,
+          installed: true,
+          tokenPresent: false,
+          authenticated: false,
+          evidence: "Vercel CLI is installed but not authenticated; VERCEL_TOKEN is unset.",
+          setupCommand: "vercel login",
+        },
+        {
+          key: "netlify" as const,
+          label: "Netlify",
+          status: "blocked" as const,
+          ready: false,
+          installed: true,
+          tokenPresent: false,
+          authenticated: false,
+          evidence: "Netlify CLI is installed but not authenticated; NETLIFY_AUTH_TOKEN is unset.",
+          setupCommand: "netlify login",
+        },
+      ],
+      missingCapabilities: [
+        "host_provider_token_or_login" as const,
+        "public_https_dearme_host" as const,
+      ],
+      operatorCommands: [
+        "vercel login",
+        "netlify login",
+      ],
+    },
+  };
+}
+
 function readyStatus(): DearMeProofStatus {
   return {
     lane: "all",
@@ -159,25 +223,34 @@ test("DearMe goal audit blocks completion on live production host proof", () => 
     integrationAudit,
   );
   const audit = summarizeDearMeGoalAudit(status, deliveredHostRehearsalEvidence());
-  const formatted = formatDearMeGoalAudit(audit).join("\n");
+  const auditWithHostProvider = summarizeDearMeGoalAudit(
+    status,
+    deliveredHostRehearsalEvidence(),
+    readyHostProviderEvidence(),
+  );
+  const formatted = formatDearMeGoalAudit(auditWithHostProvider).join("\n");
 
-  assert.equal(audit.complete, false);
-  assert.match(audit.verdict, /not complete/);
-  assert.equal(audit.nextAction.label, "Polsia-level phone-reachable private proof page");
+  assert.equal(auditWithHostProvider.complete, false);
+  assert.match(auditWithHostProvider.verdict, /not complete/);
+  assert.equal(auditWithHostProvider.nextAction.label, "Polsia-level phone-reachable private proof page");
   assert.equal(
-    audit.items.find((item) => item.key === "private_first_wow")?.status,
+    auditWithHostProvider.items.find((item) => item.key === "private_first_wow")?.status,
     "met",
   );
   assert.equal(
-    audit.items.find((item) => item.key === "loopback_host_rehearsal")?.status,
+    auditWithHostProvider.items.find((item) => item.key === "loopback_host_rehearsal")?.status,
     "met",
   );
   assert.equal(
-    audit.items.find((item) => item.key === "production_host_live_wow")?.status,
+    auditWithHostProvider.items.find((item) => item.key === "production_host_provider_auth")?.status,
+    "met",
+  );
+  assert.equal(
+    auditWithHostProvider.items.find((item) => item.key === "production_host_live_wow")?.status,
     "blocked",
   );
   assert.deepEqual(
-    audit.items.find((item) => item.key === "production_host_live_wow")?.blockers,
+    auditWithHostProvider.items.find((item) => item.key === "production_host_live_wow")?.blockers,
     ["deploy_site_production"],
   );
   assert.match(formatted, /DearMe active goal completion audit/);
@@ -185,10 +258,63 @@ test("DearMe goal audit blocks completion on live production host proof", () => 
   assert.match(formatted, /\[ \] Polsia-level phone-reachable private proof page: blocked/);
   assert.match(formatted, /Missing capabilities: enable production host smoke; public HTTPS DearMe host; exported private proof artifact; proof-page text or host-smoke manifest/);
   assert.match(formatted, /Run: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --target deploy_site_production/);
+  assert.equal(
+    audit.items.find((item) => item.key === "production_host_provider_auth")?.status,
+    "unverified",
+  );
+});
+
+test("DearMe goal audit reports host provider authorization before production host smoke", () => {
+  const integrationAudit = parseDearMeIntegrationAuditStatus(JSON.stringify({
+    summary: {
+      total: 122,
+      reviewed_absorbed: 118,
+      in_current: 3,
+      not_in_current: 0,
+      dirty: 0,
+    },
+    handoffSummary: {
+      latestIssueCount: 28,
+      latestByMode: {
+        committed_patch: 28,
+        dirty_patch_handoff: 0,
+        no_file_changes: 0,
+      },
+    },
+  }));
+  const status = summarizeDearMeProofStatus(
+    inspectDearMeProofReadiness({ DEARME_VOICE_SEMANTIC_SCORER: "profile-token" }),
+    "all",
+    integrationAudit,
+  );
+  const audit = summarizeDearMeGoalAudit(
+    status,
+    deliveredHostRehearsalEvidence(),
+    blockedHostProviderEvidence(),
+  );
+  const formatted = formatDearMeGoalAudit(audit).join("\n");
+
+  assert.equal(audit.complete, false);
+  assert.equal(audit.nextAction.label, "Production host provider authorization");
+  assert.equal(
+    audit.items.find((item) => item.key === "production_host_provider_auth")?.status,
+    "blocked",
+  );
+  assert.deepEqual(
+    audit.items.find((item) => item.key === "production_host_provider_auth")?.blockers,
+    ["host_provider_token_or_login", "public_https_dearme_host"],
+  );
+  assert.match(formatted, /\[ \] Production host provider authorization: blocked/);
+  assert.match(formatted, /Vercel CLI is installed but not authenticated/);
+  assert.match(formatted, /Run: vercel login/);
 });
 
 test("DearMe goal audit passes only when every required proof item is ready", () => {
-  const audit = summarizeDearMeGoalAudit(readyStatus(), deliveredHostRehearsalEvidence());
+  const audit = summarizeDearMeGoalAudit(
+    readyStatus(),
+    deliveredHostRehearsalEvidence(),
+    readyHostProviderEvidence(),
+  );
   const formatted = formatDearMeGoalAudit(audit).join("\n");
 
   assert.equal(audit.complete, true);

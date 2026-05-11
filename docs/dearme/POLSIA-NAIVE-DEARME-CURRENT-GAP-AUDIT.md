@@ -38,6 +38,10 @@ That status now also names the blocker class in safe product/coordination
 language instead of leaking provider env names: the immediate production-host
 gap is production host opt-in plus a public HTTPS DearMe host, while the shared
 message gap is gateway endpoint/auth plus smoke recipients and bodies.
+The current machine-level host check is now explicit too: Vercel and Netlify
+CLIs exist, but neither is authenticated and no host token env is present. That
+means the next production-host move is provider login/token or an equivalent
+public HTTPS DearMe host, not another local proof script.
 
 ## Evidence Checked
 
@@ -112,8 +116,17 @@ Current DearMe branch:
   - architecture/status spine, Naive/Paperclip absorption, Symphony
     coordination, private first-wow, no-secret loopback host rehearsal, and
     DearMe voice autonomy are met
-  - remaining gaps are the Polsia-level phone-reachable production host,
-    OpenClaw shared message proof, and the complete live provider set
+  - host-provider authorization now blocks before production host smoke when
+    no logged-in deploy provider, host token, or equivalent public HTTPS host is
+    available
+  - remaining gaps are the host-provider/public-host gate, the Polsia-level
+    phone-reachable production host, OpenClaw shared message proof, and the
+    complete live provider set
+- `pnpm --silent dearme:host-provider-audit`
+  - Vercel CLI is installed but not authenticated
+  - Netlify CLI is installed but not authenticated
+  - no Vercel, Netlify, or Cloudflare host token/account env is present
+  - no public HTTPS DearMe host is configured in the current proof env
 - `pnpm --silent dearme:proof -- --run-safe --lane voice`
   - deterministic local gate passes
   - profile-token semantic proof passes with custom corpus evidence, including

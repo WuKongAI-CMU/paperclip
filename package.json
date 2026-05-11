@@ -49,6 +49,8 @@
     "test:dearme-proof": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-proof.test.ts",
     "dearme:goal-audit": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-goal-audit.ts",
     "test:dearme-goal-audit": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-goal-audit.test.ts",
+    "dearme:host-provider-audit": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-host-provider-audit.ts",
+    "test:dearme-host-provider-audit": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-host-provider-audit.test.ts",
     "dearme:aha-proof": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-aha-proof.ts",
     "test:dearme-aha-proof": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-aha-proof.test.ts",
     "dearme:host-rehearsal": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-host-rehearsal.ts",

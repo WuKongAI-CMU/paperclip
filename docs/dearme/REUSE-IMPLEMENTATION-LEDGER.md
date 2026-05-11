@@ -15,6 +15,13 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `pnpm dearme:host-provider-audit` is now the first production-host
+  authorization check before workers attempt `deploy_site_production`. The
+  current coordinator machine has Vercel and Netlify CLIs installed but not
+  authenticated, and no Vercel/Netlify/Cloudflare host token env is present.
+  Workers should fix that by logging into a host provider, setting a host token,
+  or providing an equivalent public HTTPS DearMe host; do not add another local
+  host proof lane or report loopback rehearsal as phone-reachable proof.
 - `dearme:status` / `dearme:proof -- --status` now translate provider-smoke
   missing config into safe capability blockers. Workers should read
   `liveProviderFocus[].missingCapabilities` before starting or routing a live

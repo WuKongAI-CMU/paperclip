@@ -4,6 +4,10 @@ import {
   type DearMeHostRehearsalReport,
 } from "./dearme-host-rehearsal.ts";
 import {
+  inspectDearMeHostProviderAudit,
+  type DearMeHostProviderAudit,
+} from "./dearme-host-provider-audit.ts";
+import {
   inspectDearMeIntegrationAuditStatus,
   inspectDearMeProofReadiness,
   loadDearMeProofEnv,
@@ -23,6 +27,7 @@ export type DearMeGoalAuditItemKey =
   | "private_first_wow"
   | "loopback_host_rehearsal"
   | "voice_autonomy"
+  | "production_host_provider_auth"
   | "production_host_live_wow"
   | "openclaw_message_reuse"
   | "live_provider_set";
@@ -54,6 +59,11 @@ export interface DearMeGoalAudit {
 
 export interface DearMeGoalAuditHostRehearsalEvidence {
   report?: DearMeHostRehearsalReport;
+  error?: string;
+}
+
+export interface DearMeGoalAuditHostProviderEvidence {
+  audit?: DearMeHostProviderAudit;
   error?: string;
 }
 
@@ -233,6 +243,51 @@ function focusItem(
   };
 }
 
+function hostProviderAuthItem(
+  evidence?: DearMeGoalAuditHostProviderEvidence,
+): DearMeGoalAuditItem {
+  const command = "pnpm --silent dearme:host-provider-audit";
+  if (!evidence) {
+    return {
+      key: "production_host_provider_auth",
+      label: "Production host provider authorization",
+      status: "unverified",
+      requiredForGoal: true,
+      evidence: "The current machine has not checked host-provider login/token state or equivalent public host config.",
+      blockers: ["host_provider_audit_not_run"],
+      commands: [command],
+    };
+  }
+  if (evidence.error) {
+    return {
+      key: "production_host_provider_auth",
+      label: "Production host provider authorization",
+      status: "blocked",
+      requiredForGoal: true,
+      evidence: `The host-provider audit failed before it could prove authorization state: ${evidence.error}`,
+      blockers: ["host_provider_audit_failed"],
+      commands: [command],
+    };
+  }
+
+  const audit = evidence.audit;
+  return {
+    key: "production_host_provider_auth",
+    label: "Production host provider authorization",
+    status: audit?.ready ? "met" : "blocked",
+    requiredForGoal: true,
+    evidence: audit
+      ? `${audit.verdict} ${audit.providers.map((provider) => provider.evidence).join(" ")}`
+      : "The host-provider audit report is missing.",
+    blockers: audit?.ready
+      ? []
+      : audit?.missingCapabilities ?? ["host_provider_audit_missing_report"],
+    commands: audit?.operatorCommands.length
+      ? audit.operatorCommands
+      : [command],
+  };
+}
+
 function architectureSpineItem(status: DearMeProofStatus): DearMeGoalAuditItem {
   const missing = REQUIRED_STATUS_SECTIONS.filter((key) => !section(status, key));
   return {
@@ -273,6 +328,7 @@ function symphonyCoordinationItem(status: DearMeProofStatus): DearMeGoalAuditIte
 export function summarizeDearMeGoalAudit(
   status: DearMeProofStatus,
   hostRehearsal?: DearMeGoalAuditHostRehearsalEvidence,
+  hostProvider?: DearMeGoalAuditHostProviderEvidence,
 ): DearMeGoalAudit {
   const productionHost = focus(status, "production_host");
   const openclawMessages = focus(status, "openclaw_messages");
@@ -295,6 +351,7 @@ export function summarizeDearMeGoalAudit(
       section: section(status, "voice_semantic_proof"),
       commands: [status.commands.check],
     }),
+    hostProviderAuthItem(hostProvider),
     focusItem({
       key: "production_host_live_wow",
       label: "Polsia-level phone-reachable private proof page",
@@ -359,7 +416,17 @@ export async function buildDearMeGoalAudit(
       error: error instanceof Error ? error.message : String(error),
     };
   }
-  return summarizeDearMeGoalAudit(status, hostRehearsal);
+  let hostProvider: DearMeGoalAuditHostProviderEvidence;
+  try {
+    hostProvider = {
+      audit: await inspectDearMeHostProviderAudit(env),
+    };
+  } catch (error) {
+    hostProvider = {
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+  return summarizeDearMeGoalAudit(status, hostRehearsal, hostProvider);
 }
 
 export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {

@@ -2,6 +2,35 @@
 
 Date: 2026-05-11
 
+## Host Provider Auth Audit Lands - 2026-05-11
+
+Product/architecture slice:
+
+- Added `pnpm dearme:host-provider-audit` as the backstage check for whether
+  the current machine can create or use a public HTTPS DearMe host before
+  `deploy_site_production` runs.
+- The audit treats either path as sufficient for this gate: an already
+  configured public production host, or deploy-provider authorization through
+  Vercel, Netlify, or Cloudflare token/account env. It never prints token
+  values.
+- Wired the host-provider audit into `pnpm dearme:goal-audit` before the
+  Polsia-level production host smoke. On this machine, Vercel and Netlify CLIs
+  are installed but not authenticated, and no host token env is present, so the
+  next blocker is provider login/token or an equivalent public HTTPS DearMe
+  host.
+- Kept production proof fail-closed: this does not deploy, send, spend, call a
+  model, or make loopback proof count as phone-reachable proof. It only prevents
+  Symphony/Linear workers from rediscovering the same host authorization gap.
+
+Verification:
+
+- `pnpm test:dearme-host-provider-audit`
+- `pnpm test:dearme-goal-audit`
+- `pnpm --silent dearme:host-provider-audit`
+- `pnpm --silent dearme:goal-audit`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Active Goal Audit And Host Rehearsal Gate Land - 2026-05-11
 
 Product/architecture slice:
