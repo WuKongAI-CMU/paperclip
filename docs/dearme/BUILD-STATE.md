@@ -2,6 +2,35 @@
 
 Date: 2026-05-11
 
+## Browser First-Wow Preview Trail - 2026-05-11
+
+Product/architecture slice:
+
+- Kept the next product proof away from the active DEA-60 provider-smoke lane
+  and hardened the existing customer browser path instead:
+  `/dearme` to `/dearme/site-preview/:handle`.
+- The private site preview now renders the first proof trail from the same
+  first-cycle preview contract used by `pnpm dearme:aha-proof`: 0-30s,
+  60-120s, and 3-5min windows, prepared artifacts, source labels, and launch
+  wait boundaries.
+- Recorded latest DEA-60 head `88f8483a9f84` as reviewed/absorbed in
+  `WORKTREE-ABSORPTION-LEDGER.json`; current coordinator code already keeps
+  the useful env-template and `--handoffs` behavior while preserving newer
+  provider-smoke proof details.
+- Fixed the clean Postgres migration blocker exposed by the browser proof:
+  `channel_connections.user_id` now matches the existing auth `user.id` text
+  type before adding the foreign key.
+
+Verification:
+
+- `pnpm exec vitest ui/src/pages/DearMeSitePreview.test.tsx --run --maxWorkers=1`
+  passed: 1 file, 1 test.
+- `pnpm --filter @paperclipai/db typecheck` passed, including migration
+  numbering checks.
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs --ticket DEA-60`
+  passed and reported 2 reviewed/absorbed Symphony worktrees, with the latest
+  DEA-60 handoff left as audit trail rather than replayed.
+
 ## Local First-Wow Aha Proof - 2026-05-11
 
 Product/architecture slice:
@@ -12556,6 +12585,31 @@ Verification:
 - `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs --ticket DEA-60`
   passed and reported the latest DEA-60 handoff as `committed_patch` with the
   worktree already `reviewed_absorbed`.
+
+## DM-WOW-2A Customer-Watchable First-Five-Minute Stream - 2026-05-11
+
+Thirty-ninth verified DearMe slice:
+
+- Reused the existing first-cycle preview/proof-sequence contract to add a
+  browser-visible first-five-minute progress stream: studying voice, finding
+  likely audiences, drafting first moves, preparing private proof, and readying
+  the launch call.
+- Reused the existing DearMe event stream projection so the top focus card now
+  shows the latest customer-safe private-pass pulse while keeping Symphony,
+  OpenClaw, provider, model, setup payload, and workbench language backstage.
+- Made first-cycle start refresh the workbench, outputs, issue list, and
+  activity queries so the browser can pull newly prepared private work without
+  a manual page reload.
+- Updated the Polsia/Naive gap audit: DearMe now has a visible browser
+  activation stream on top of the local private aha proof gate. The remaining
+  Polsia gap is phone-reachable/live proof and provider-backed execution, not a
+  new settings surface.
+
+Verification:
+
+- `pnpm exec vitest ui/src/pages/DearMeOnboarding.test.tsx --run --maxWorkers=1`
+  passed: 1 file, 74 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
 
 ## Known Gaps
 

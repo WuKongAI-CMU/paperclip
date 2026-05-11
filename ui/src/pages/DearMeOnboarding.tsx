@@ -1762,6 +1762,14 @@ const FIRST_PAYOFF_STEPS = [
   },
 ] as const;
 
+const FIRST_CYCLE_LIVE_PROGRESS_LABELS = [
+  "Studying your voice",
+  "Finding likely audiences",
+  "Drafting first moves",
+  "Preparing your private proof",
+  "Ready for your launch call",
+] as const;
+
 const SAMPLE_FIRST_CYCLE_PREVIEW = createDearMeFirstCyclePreview("sample-company", {
   brand: {
     displayName: "Maya Chen",
@@ -2201,6 +2209,110 @@ function PrivateExecutionHandoffPanel({
   );
 }
 
+function FirstCycleLiveProgress({
+  preview,
+  isSample,
+  isPending,
+}: {
+  preview: DearMeFirstCyclePreviewResponse;
+  isSample: boolean;
+  isPending: boolean;
+}) {
+  const identityMoment = preview.proofSequence[0];
+  const audienceMoment = preview.proofSequence[1];
+  const proofMoment = preview.proofSequence[2];
+  const moments = [
+    {
+      label: FIRST_CYCLE_LIVE_PROGRESS_LABELS[0],
+      window: identityMoment?.window ?? "0-30s",
+      title: preview.voiceProfile.title,
+      summary: identityMoment?.summary ?? preview.voiceProfile.guidance,
+      proof: identityMoment?.preparedArtifact ?? "Voice profile and known-for line",
+    },
+    {
+      label: FIRST_CYCLE_LIVE_PROGRESS_LABELS[1],
+      window: audienceMoment?.window ?? "60-120s",
+      title: `${preview.opportunityShortlist.length} private targets`,
+      summary: audienceMoment?.summary ?? `${preview.opportunityLead.target} is ready for review before any outreach.`,
+      proof: preview.opportunityLead.title,
+    },
+    {
+      label: FIRST_CYCLE_LIVE_PROGRESS_LABELS[2],
+      window: "90s",
+      title: `${preview.starterPosts.length} starter posts`,
+      summary: `${preview.starterPosts[0]?.title ?? "A starter post"} and two more private drafts are staged with proof and voice checks.`,
+      proof: preview.portfolioProofCard.title,
+    },
+    {
+      label: FIRST_CYCLE_LIVE_PROGRESS_LABELS[3],
+      window: proofMoment?.window ?? "3-5min",
+      title: preview.sitePreview.route,
+      summary: proofMoment?.summary ?? preview.sitePreview.approvalBoundary,
+      proof: proofMoment?.preparedArtifact ?? "Private proof page move",
+    },
+    {
+      label: FIRST_CYCLE_LIVE_PROGRESS_LABELS[4],
+      window: "Launch call",
+      title: preview.approvalBoundary.label,
+      summary: preview.approvalBoundary.summary,
+      proof: preview.approvalBoundary.blockedActions.slice(0, 2).join(", "),
+    },
+  ];
+  const headline = isPending
+    ? "Your first proof is being prepared."
+    : isSample
+      ? "See the first five minutes before you start."
+      : "Your first five minutes are ready.";
+  const description = isPending
+    ? "DearMe is turning your sentence into private progress now. Public moves still wait for your call."
+    : isSample
+      ? "This sample replay shows the visible path from one sentence to a private proof pack."
+      : "DearMe prepared the visible first pass: voice, audience, drafts, proof, and the launch call.";
+  const badgeLabel = isPending ? "Preparing now" : isSample ? "Sample replay" : "Proof ready";
+
+  function statusLabel(index: number) {
+    if (isPending) return index <= 2 ? "Preparing" : "Next";
+    if (isSample) return "Sample";
+    return index === moments.length - 1 ? "Your call" : "Ready";
+  }
+
+  return (
+    <DearMeWorkbenchCard
+      className="mt-5 bg-background/75"
+      title={headline}
+      description={description}
+      badge={<Badge variant={isSample ? "secondary" : "default"}>{badgeLabel}</Badge>}
+    >
+      <div className="grid gap-3 md:grid-cols-5" aria-label="First five minutes progress">
+        {moments.map((moment, index) => (
+          <div
+            key={moment.label}
+            className={cn(
+              "flex min-h-52 flex-col rounded-md border p-3",
+              isPending && index <= 2
+                ? "border-primary/30 bg-primary/5"
+                : isSample
+                  ? "border-border bg-muted/20"
+                  : "border-primary/25 bg-background",
+            )}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <Badge variant="outline">{moment.window}</Badge>
+              <Badge variant={isSample ? "secondary" : index === moments.length - 1 ? "outline" : "default"}>
+                {statusLabel(index)}
+              </Badge>
+            </div>
+            <p className="mt-3 text-sm font-medium leading-snug">{moment.label}</p>
+            <p className="mt-1 text-sm text-foreground/80">{moment.title}</p>
+            <p className="mt-2 line-clamp-4 text-xs text-muted-foreground">{moment.summary}</p>
+            <p className="mt-auto pt-3 text-xs font-medium text-muted-foreground">{moment.proof}</p>
+          </div>
+        ))}
+      </div>
+    </DearMeWorkbenchCard>
+  );
+}
+
 function FirstCyclePanel({
   intent,
   preview,
@@ -2264,6 +2376,12 @@ function FirstCyclePanel({
           />
         </div>
       </div>
+
+      <FirstCycleLiveProgress
+        preview={preview ?? SAMPLE_FIRST_CYCLE_PREVIEW}
+        isSample={!preview}
+        isPending={isPending}
+      />
 
       <FirstCycleProofPackage
         preview={preview ?? SAMPLE_FIRST_CYCLE_PREVIEW}
@@ -2348,7 +2466,7 @@ function FirstCycleProofPackage({
 
       <DearMeWorkbenchCard
         title="First-run proof sequence"
-        description="One sentence becomes an identity dossier, audience map, and private site proof before DearMe asks you to manage settings."
+        description="One sentence becomes an identity dossier, audience map, and private site proof before DearMe asks for the next call."
         badge={<Sparkles className="h-4 w-4 text-muted-foreground" />}
       >
         <div className="grid gap-3 md:grid-cols-3">
@@ -3653,7 +3771,14 @@ function TeamFocusWorkbenchPanel({
           }
           badge={<Workflow className="h-4 w-4 text-muted-foreground" />}
           footer={
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className={cn("grid gap-3", livePulse ? "sm:grid-cols-2 xl:grid-cols-3" : "sm:grid-cols-2")}>
+              {livePulse ? (
+                <div className="rounded-md border border-primary/25 bg-primary/5 p-3 sm:col-span-2 xl:col-span-1">
+                  <p className="text-xs font-medium text-muted-foreground">Happening now</p>
+                  <p className="mt-1 text-sm font-medium">{livePulse.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{livePulse.description}</p>
+                </div>
+              ) : null}
               <div className="rounded-md border border-border bg-background/70 p-3">
                 <p className="text-xs font-medium text-muted-foreground">Next move</p>
                 <p className="mt-1 text-sm font-medium">
@@ -6940,6 +7065,12 @@ export function DearMeOnboarding() {
       setPreviewSignature(null);
       setActionError(null);
       writeDearMeFirstCyclePreview(result);
+      if (selectedCompanyId && input.startPrivateWork) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(selectedCompanyId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.dearme.outputs(selectedCompanyId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(selectedCompanyId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.activity(selectedCompanyId) });
+      }
     },
     onError: (err) => {
       setActionError(

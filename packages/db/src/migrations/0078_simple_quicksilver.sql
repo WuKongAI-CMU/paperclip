@@ -1,7 +1,7 @@
 CREATE TABLE "channel_connections" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"company_id" uuid NOT NULL,
-	"user_id" uuid NOT NULL,
+	"user_id" text NOT NULL,
 	"channel" text NOT NULL,
 	"external_account_id" text,
 	"external_display_name" text,

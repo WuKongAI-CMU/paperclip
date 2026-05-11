@@ -4,7 +4,10 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createDearMeFirstCyclePreview } from "@paperclipai/shared";
+import {
+  DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN,
+  createDearMeFirstCyclePreview,
+} from "@paperclipai/shared";
 import { DearMeSitePreview } from "./DearMeSitePreview";
 import { writeDearMeFirstCyclePreview } from "../lib/dearme-site-preview";
 
@@ -101,10 +104,19 @@ describe("DearMeSitePreview", () => {
     expect(container.textContent).toContain(`Source proof: ${preview.portfolioProofCard.proofSource}`);
     expect(container.textContent).toContain(preview.portfolioProofCard.proposedCopy);
     expect(container.textContent).toContain(preview.approvalBoundary.summary);
+    expect(container.textContent).toContain("First proof trail");
+    expect(container.textContent).toContain("From one sentence to private proof");
+    for (const moment of preview.proofSequence) {
+      expect(container.textContent).toContain(moment.window);
+      expect(container.textContent).toContain(moment.title);
+      expect(container.textContent).toContain(moment.preparedArtifact);
+      expect(container.textContent).toContain(moment.approvalBoundary);
+    }
     expect(container.textContent).toContain("Private address");
     expect(container.textContent).not.toContain("Private preview path");
     expect(container.textContent).not.toContain("/PET/dearme/site-preview");
     expect(container.textContent).not.toContain("Route");
+    expect(container.textContent ?? "").not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
 
     await act(async () => {
       root.unmount();

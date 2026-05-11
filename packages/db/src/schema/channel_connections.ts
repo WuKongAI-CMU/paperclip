@@ -79,7 +79,7 @@ export const channelConnections = pgTable(
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
     /** The human who owns the OAuth grant. Personal-brand product = always 1:1. */
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
       .references(() => authUsers.id, { onDelete: "cascade" }),
     /** See CHANNEL_CONNECTION_CHANNELS. */

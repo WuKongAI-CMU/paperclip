@@ -3421,6 +3421,7 @@ UI, not server-side runtime artifacts the user never sees).
 |---|---|---|---|
 | DM-138 | First-run personal proof sequence (DM-138A start bridge, DM-138B proof-sequence contract, DM-138C proof hydration, DM-138D proof-output write, and DM-138E live browser/API smoke shipped locally) | Polsia 5-min onboarding shock | `server/src/routes/dearme.ts`, DearMe worker/plugin layer |
 | DM-WOW-1A | Local first-five-minute aha proof gate over the shared preview contract | Polsia 0-30s / 60-120s / 3-5min first-wow rhythm | `scripts/dearme-aha-proof.ts`, `packages/shared/src/validators/dearme.ts` |
+| DM-WOW-2A | Customer-watchable first-five-minute browser progress stream over the existing preview and event contracts | Polsia live progress stream translated into DearMe language, without copying runtime/dashboard concerns | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
 | DM-139 | Autonomous Reporting plugin (queue-always-non-empty, plain-prose updates, next-step driver) | Polsia CEO 4-step prompt | `packages/plugins/dearme-reporting/` |
 | DM-140 | Voice Gate + Content Producer plugin (voice-match score, attribution link rule, rate cap) | Polsia Twitter agent rules | `packages/plugins/dearme-content-producer/` |
 | DM-183AQ | Private source link traceability on current Voice & Memory contract | DM-016 source-reference intent, adapted without stale `referenceUrl` schema replay | `ui/src/pages/DearMeOnboarding.tsx` |

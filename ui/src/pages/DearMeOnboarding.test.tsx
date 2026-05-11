@@ -1941,6 +1941,13 @@ describe("DearMeOnboarding", () => {
     expect(firstPayoff.textContent).toContain("One launch call before anything public or external");
     expect(firstPayoff.textContent).toContain("Approve, revise, or redirect the team from one place.");
     expect(firstPayoff.textContent).toContain("Start with one sentence");
+    expect(container.textContent).toContain("See the first five minutes before you start.");
+    expect(container.querySelector('[aria-label="First five minutes progress"]')).not.toBeNull();
+    expect(container.textContent).toContain("Studying your voice");
+    expect(container.textContent).toContain("Finding likely audiences");
+    expect(container.textContent).toContain("Drafting first moves");
+    expect(container.textContent).toContain("Preparing your private proof");
+    expect(container.textContent).toContain("Ready for your launch call");
     expect(container.textContent).toContain("Your brand team today");
     expect(container.textContent).toContain("Dear me, your team has decisions ready");
     expect(container.textContent).toContain("Team operating policy");
@@ -2947,6 +2954,9 @@ describe("DearMeOnboarding", () => {
     );
     expect(mockDearmeApi.previewFirstCycle).not.toHaveBeenCalled();
     expect(container.textContent).toContain("First-run proof sequence");
+    expect(container.textContent).toContain("Your first five minutes are ready.");
+    expect(container.textContent).toContain("DearMe prepared the visible first pass");
+    expect(container.textContent).toContain("Ready for your launch call");
     expect(container.textContent).toContain("0-30s");
     expect(container.textContent).toContain("60-120s");
     expect(container.textContent).toContain("3-5min");
@@ -3076,6 +3086,7 @@ describe("DearMeOnboarding", () => {
     );
     expect(mockDearmeApi.startFirstCycle).not.toHaveBeenCalled();
     expect(container.textContent).toContain("First-run proof sequence");
+    expect(container.textContent).toContain("Your first five minutes are ready.");
     expect(container.textContent).toContain("Prepared from private Brand OS work");
     expect(container.textContent).toContain("dearme.app/peter-studio");
     expect(container.textContent).toContain("Ready for approval");
@@ -3854,6 +3865,8 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("The private cycle pulled in new execution progress for review.");
     const topFocus = surfaceByLabel(container, "Today's brand team focus");
     expect(topFocus.textContent).toContain("Private work moving");
+    expect(topFocus.textContent).toContain("Happening now");
+    expect(topFocus.textContent).toContain("Team started a private pass");
     expect(topFocus.textContent).not.toContain("Live team pulse");
     expectNoHiddenProductTerms(topFocus.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,

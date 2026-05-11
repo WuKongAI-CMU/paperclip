@@ -94,6 +94,39 @@ export function DearMeSitePreview() {
             </div>
           </DearMePanel>
 
+          <DearMeWorkbenchCard
+            eyebrow="First proof trail"
+            title="From one sentence to private proof"
+            description="The first run shows what DearMe prepared before anything is sent or published."
+            badge={<Sparkles className="h-4 w-4 text-muted-foreground" />}
+          >
+            <div className="grid gap-3 md:grid-cols-3" aria-label="Private preview proof trail">
+              {preview.proofSequence.map((moment) => (
+                <div key={moment.window} className="rounded-md border border-border bg-muted/20 p-3">
+                  <Badge variant="outline">{moment.window}</Badge>
+                  <p className="mt-3 text-sm font-medium">{moment.title}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{moment.summary}</p>
+                  <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+                    <p>
+                      <span className="font-medium text-foreground/80">Prepared:</span>{" "}
+                      {moment.preparedArtifact}
+                    </p>
+                    {moment.sourceLabel ? (
+                      <p>
+                        <span className="font-medium text-foreground/80">From:</span>{" "}
+                        {moment.sourceLabel}
+                      </p>
+                    ) : null}
+                    <p>
+                      <span className="font-medium text-foreground/80">Waits:</span>{" "}
+                      {moment.approvalBoundary}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </DearMeWorkbenchCard>
+
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
             <DearMeWorkbenchCard
               eyebrow="Portfolio proof card"
