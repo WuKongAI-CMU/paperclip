@@ -15,6 +15,14 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- `pnpm dearme:host-rehearsal` is now the repeatable local bridge between the
+  Naive/Paperclip-style private-site packet and the provider-smoke host proof:
+  it exports `dist/dearme-private-proof`, starts a loopback static host, and
+  verifies `deploy_site_host_rehearsal` through a real fetch. Future workers
+  should use this command for local host integrity proof instead of writing
+  one-off server scripts or relying on injected fetch tests. Do not report this
+  as Polsia-style phone proof; `deploy_site_production` still requires public
+  HTTPS and real host/provider configuration.
 - `deploy_site_host_rehearsal` is now the opt-in local-host counterpart to
   `deploy_site_production`: it reuses the exported private first-wow packet,
   host-smoke manifest, and provider-smoke fetch verifier, but only accepts

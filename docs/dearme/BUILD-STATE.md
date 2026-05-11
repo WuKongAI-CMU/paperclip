@@ -2,6 +2,26 @@
 
 Date: 2026-05-11
 
+## Real Loopback Host Rehearsal Command Lands - 2026-05-11
+
+Product/architecture slice:
+
+- Added `pnpm dearme:host-rehearsal` as the repeatable operator command for
+  the local host proof bridge: it exports the existing private first-wow site
+  packet, serves it from `127.0.0.1`, then runs
+  `deploy_site_host_rehearsal` against the real HTTP response.
+- Reused the current `dearme:aha-proof` export, the static host-smoke manifest,
+  and the provider-smoke verifier. No new dependency, customer setup surface,
+  deploy wrapper, or second product lane was added.
+- Kept the proof boundary explicit: this command proves the Naive/Paperclip
+  packet can be hosted and fetched locally, while Polsia-style phone-reachable
+  production proof still requires `deploy_site_production` on public HTTPS.
+
+Verification:
+
+- `pnpm test:dearme-host-rehearsal`
+- `pnpm --silent dearme:host-rehearsal -- --port 0`
+
 ## Optional Loopback Host Rehearsal Is Separated From Production Proof - 2026-05-11
 
 Product/architecture slice:
