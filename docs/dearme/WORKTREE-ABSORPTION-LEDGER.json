@@ -6,7 +6,7 @@
       "branch": "codex/dearme-dm-136-sample-demo-proof",
       "head": "1e3088647b1157cd62c11443b1172f13d8ac75a0",
       "reviewedAt": "2026-05-11",
-      "reason": "The DEA-49 Symphony handoff is absorbed into coordinator commit 17c58bca as a no-code first-run bridge proof: the onboarding page already carries the ready-team bridge and proof-pack surface, the build/index/reuse docs point at that surfaced bridge, and the architecture table no longer treats DM-171 as a missing first-run blocker. Replaying the worker tip would duplicate the same docs proof as two separate commits.",
+      "reason": "The DEA-49 Symphony handoff is absorbed into the current coordinator head as a no-code first-run bridge proof: the onboarding page already carries the ready-team bridge and proof-pack surface, the build/index/reuse docs point at that surfaced bridge, and the architecture table no longer treats DM-171 as a missing first-run blocker. Replaying the worker tip would duplicate the same docs proof as two separate commits.",
       "evidence": [
         "docs/dearme/BUILD-STATE.md",
         "docs/dearme/INDEX.md",
