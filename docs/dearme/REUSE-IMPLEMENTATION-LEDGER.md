@@ -15,6 +15,12 @@ It answers three questions before another worker starts building:
 
 ## Latest Symphony Worker Boundary - 2026-05-11
 
+- DEA-61 makes the provider smoke harness operator-usable by adding local
+  `--env-file` loading, a `--print-env-template` bootstrap, and ignore rules
+  for `.dearme-provider-smoke.env`. Real provider credentials should now feed
+  the existing smoke gate from that local file or host env, while production
+  deploy remains disabled by default and LinkedIn/Meta live smokes still need
+  both `--live` and `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`.
 - DEA-60 adds an internal provider smoke harness on top of the existing
   `ChannelDispatch` implementations instead of adding another connector or
   settings surface. `pnpm dearme:provider-smoke -- --check` now tells the

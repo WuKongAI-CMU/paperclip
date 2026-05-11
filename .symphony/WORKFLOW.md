@@ -104,14 +104,25 @@ this prompt. Read that runner-provided evidence before any product analysis. If
 the runner evidence is missing, stale, or contradicts the issue, run the same
 bootstrap commands yourself and record the exact failure/fallback.
 
-Then read:
+Then read the coordination surface without bulk-loading append-only logs:
 
 - `AGENTS.md`
 - `docs/dearme/README.md`
-- `docs/dearme/BUILD-STATE.md`
-- `docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
 - `docs/dearme/PRODUCT-ARCHITECTURE.md`
 - `doc/plans/2026-05-08-dearme-symphony-operating-loop.md`
+
+For large append-only files, read only the newest section plus issue-relevant
+matches before acting:
+
+- `docs/dearme/BUILD-STATE.md`: read the top 120 lines, then `rg` for the
+  issue id, DM id, touched command names, and product surface named by the
+  Linear issue.
+- `docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`: read the top 80 lines, then
+  `rg` for donor paths, issue id, DM id, command names, and touched files.
+
+Do not paste or summarize whole append-only docs into the context. If the
+targeted reads do not answer the issue-specific question, narrow the `rg`
+queries once more before falling back to broader reads.
 
 Issue context:
 

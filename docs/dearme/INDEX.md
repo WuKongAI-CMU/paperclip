@@ -155,8 +155,11 @@ endpoint + credential, Meta OAuth/Marketing API, or the remaining DM-177 live
 host/custom-domain deploy smoke. It is not another connector/settings surface.
 The internal `pnpm dearme:provider-smoke -- --check` command now owns that
 operator proof checklist, including the production site URL content smoke once
-host env is enabled; do not replace it with another settings page or dispatch
-path.
+host env is enabled. It now supports a local ignored
+`.dearme-provider-smoke.env` file through `--env-file` plus a clean
+`--print-env-template` bootstrap, so real credentials should enter the proof
+lane there instead of through a new UI, connector store, or command-history
+paste. Do not replace it with another settings page or dispatch path.
 Reuse still means adapting Polsia choreography, Lindy action-card/source
 patterns, and Naive/Paperclip substrate behind the DearMe product shell; do
 not add another first-run contract, packet schema, runtime dashboard, queue

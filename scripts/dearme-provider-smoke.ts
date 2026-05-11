@@ -97,12 +97,52 @@ export interface ParsedDearMeProviderSmokeArgs {
   check: boolean;
   live: boolean;
   target: TargetArg | null;
+  envFiles: string[];
+  printEnvTemplate: boolean;
 }
 
 const LIVE_TARGETS = new Set<DearMeProviderSmokeTarget>([
   "linkedin_dm",
   "meta_campaign",
 ]);
+
+export function dearMeProviderSmokeEnvTemplate(): string {
+  return `# DearMe provider smoke local env.
+# Keep this file local. The repository ignores .dearme-provider-smoke.env.
+#
+# Check readiness:
+# pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check
+#
+# Run a safe preview receipt smoke:
+# pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target deploy_site_preview
+#
+# Run live provider smokes only after setting DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1
+# and passing --live on the command line.
+
+DEARME_DEPLOY_SITE_BASE_URL=https://dearme.example.test
+DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=0
+DEARME_DEPLOY_SITE_SMOKE_HANDLE=dearme-smoke
+DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=smoke:provider-dispatch
+DEARME_DEPLOY_SITE_SMOKE_EXPECT_TEXT=dearme-smoke
+
+DEARME_LINKEDIN_DM_MESSAGES_URL=
+DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE=/absolute/path/to/linkedin-credential.json
+DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN=
+DEARME_LINKEDIN_DM_SMOKE_SUBJECT=Private proof
+DEARME_LINKEDIN_DM_SMOKE_BODY=Your private DearMe proof packet is ready.
+
+DEARME_META_CAMPAIGN_GRAPH_API_BASE_URL=https://graph.facebook.com/v25.0
+DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/absolute/path/to/meta-credential.json
+DEARME_META_CAMPAIGN_SMOKE_NAME=DearMe provider smoke
+DEARME_META_CAMPAIGN_SMOKE_OBJECTIVE=OUTCOME_LEADS
+DEARME_META_CAMPAIGN_SMOKE_DAILY_BUDGET_USD=1
+DEARME_META_CAMPAIGN_SMOKE_CREATIVE_REFS=smoke:creative
+DEARME_META_CAMPAIGN_SMOKE_AUDIENCE_REF=smoke:audience
+DEARME_META_CAMPAIGN_SMOKE_BUDGET_TIER=test
+DEARME_META_CAMPAIGN_SMOKE_LEARNING_WINDOW_HOURS=168
+
+DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0`;
+}
 
 function nonEmpty(value: string | undefined): string | null {
   return value && value.trim().length > 0 ? value.trim() : null;
@@ -200,6 +240,69 @@ export function inspectDearMeProviderSmokeReadiness(
   });
 }
 
+function parseEnvValue(rawValue: string, lineNumber: number): string {
+  const raw = rawValue.trim();
+  if (!raw) return "";
+
+  if (raw.startsWith("'")) {
+    if (!raw.endsWith("'") || raw.length === 1) {
+      throw new Error(`invalid env file quoted value on line ${lineNumber}`);
+    }
+    return raw.slice(1, -1);
+  }
+
+  if (raw.startsWith('"')) {
+    if (!raw.endsWith('"') || raw.length === 1) {
+      throw new Error(`invalid env file quoted value on line ${lineNumber}`);
+    }
+    return raw
+      .slice(1, -1)
+      .replace(/\\n/g, "\n")
+      .replace(/\\r/g, "\r")
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, "\\");
+  }
+
+  return raw.replace(/\s+#.*$/, "").trim();
+}
+
+export function parseDearMeProviderSmokeEnvFile(contents: string): Env {
+  const parsed: Env = {};
+  const lines = contents.split(/\r?\n/);
+  for (let index = 0; index < lines.length; index += 1) {
+    let line = lines[index].trim();
+    const lineNumber = index + 1;
+    if (!line || line.startsWith("#")) continue;
+    if (line.startsWith("export ")) {
+      line = line.slice("export ".length).trimStart();
+    }
+
+    const separatorIndex = line.indexOf("=");
+    if (separatorIndex <= 0) {
+      throw new Error(`invalid env file entry on line ${lineNumber}`);
+    }
+
+    const key = line.slice(0, separatorIndex).trim();
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+      throw new Error(`invalid env file key on line ${lineNumber}`);
+    }
+    parsed[key] = parseEnvValue(line.slice(separatorIndex + 1), lineNumber);
+  }
+  return parsed;
+}
+
+export async function loadDearMeProviderSmokeEnv(
+  envFiles: readonly string[],
+  baseEnv: Env = process.env,
+): Promise<Env> {
+  let env: Env = { ...baseEnv };
+  for (const envFile of envFiles) {
+    const contents = await readFile(resolve(envFile), "utf8");
+    env = { ...env, ...parseDearMeProviderSmokeEnvFile(contents) };
+  }
+  return env;
+}
+
 function normalizeTarget(value: string): TargetArg {
   const normalized = value.trim().toLowerCase().replace(/-/g, "_");
   const aliases: Record<string, TargetArg> = {
@@ -230,6 +333,8 @@ export function parseDearMeProviderSmokeArgs(argv: readonly string[]): ParsedDea
     check: false,
     live: false,
     target: null,
+    envFiles: [],
+    printEnvTemplate: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -244,6 +349,17 @@ export function parseDearMeProviderSmokeArgs(argv: readonly string[]): ParsedDea
       parsed.check = true;
     } else if (arg === "--live") {
       parsed.live = true;
+    } else if (arg === "--print-env-template") {
+      parsed.printEnvTemplate = true;
+    } else if (arg === "--env-file") {
+      const next = argv[index + 1];
+      if (!next) throw new Error("--env-file requires a value");
+      parsed.envFiles.push(next);
+      index += 1;
+    } else if (arg.startsWith("--env-file=")) {
+      const envFile = arg.slice("--env-file=".length);
+      if (!envFile) throw new Error("--env-file requires a value");
+      parsed.envFiles.push(envFile);
     } else if (arg === "--target") {
       const next = argv[index + 1];
       if (!next) throw new Error("--target requires a value");
@@ -552,7 +668,7 @@ export async function runDearMeProviderSmoke(
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm dearme:provider-smoke -- [--check] [--target <target>] [--live] [--json]
+  console.log(`Usage: pnpm dearme:provider-smoke -- [--check] [--target <target>] [--live] [--json] [--env-file <path>]
 
 Targets:
   deploy_site_preview       Safe receipt smoke for the private preview path.
@@ -560,6 +676,10 @@ Targets:
   linkedin_dm               Live partner endpoint smoke. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
   meta_campaign             Live Meta Marketing API smoke. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
   all                       Run every target.
+
+Setup:
+  pnpm --silent dearme:provider-smoke -- --print-env-template > .dearme-provider-smoke.env
+  pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check
 
 Default with no target is --check. Secret JSON can be passed directly or by file:
   DEARME_LINKEDIN_DM_CREDENTIAL_JSON(_FILE)
@@ -601,8 +721,15 @@ async function main() {
       return;
     }
 
+    if (parsed.printEnvTemplate) {
+      console.log(dearMeProviderSmokeEnvTemplate());
+      return;
+    }
+
+    const env = await loadDearMeProviderSmokeEnv(parsed.envFiles, process.env);
+
     if (!parsed.target || parsed.check) {
-      const readiness = inspectDearMeProviderSmokeReadiness();
+      const readiness = inspectDearMeProviderSmokeReadiness(env);
       if (parsed.json) {
         console.log(JSON.stringify({ readiness }, null, 2));
       } else {
@@ -614,7 +741,7 @@ async function main() {
     const results = await runDearMeProviderSmoke({
       target: parsed.target,
       live: parsed.live,
-      env: process.env,
+      env,
     });
     if (parsed.json) {
       console.log(JSON.stringify({ results }, null, 2));

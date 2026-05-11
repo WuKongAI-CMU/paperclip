@@ -2,6 +2,35 @@
 
 Date: 2026-05-11
 
+## DEA-61 Provider Smoke Local Env Setup - 2026-05-11
+
+Product/architecture slice:
+
+- Added `--env-file <path>` to `pnpm dearme:provider-smoke` so the remaining
+  provider proof can be driven from a local, untracked operator file instead
+  of pasted shell history. Later env files override earlier values and the
+  smoke command still merges from the process env for host-provided settings.
+- Added `--print-env-template` for the exact local keys needed by the preview
+  site receipt, production site host smoke, LinkedIn partner DM smoke, and
+  Meta campaign smoke. The template keeps production deploy and live
+  send/spend confirmation disabled by default.
+- Added `.dearme-provider-smoke.env` ignore rules so the suggested local file
+  is not staged with credentials. Readiness and result output continue to show
+  missing key names, provider ids, and receipt URLs only, never token material.
+- This preserves the current architecture boundary: provider credentials feed
+  the existing smoke harness and `ChannelDispatch` path; no customer settings
+  surface, connector store, or second runtime path was added.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke`
+  passed: 12 node:test checks.
+- `pnpm --silent dearme:provider-smoke -- --print-env-template`
+  printed a clean dotenv-compatible template with live confirmation disabled.
+- `pnpm --silent dearme:provider-smoke -- --check`
+  passed and reported the same remaining live-provider blocks without running
+  live sends.
+
 ## DEA-60 Provider Smoke Harness - 2026-05-11
 
 Product/architecture slice:

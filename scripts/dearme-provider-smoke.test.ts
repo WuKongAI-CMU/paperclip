@@ -1,8 +1,14 @@
 import assert from "node:assert/strict";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import test from "node:test";
+import { tmpdir } from "node:os";
 import {
+  dearMeProviderSmokeEnvTemplate,
   inspectDearMeProviderSmokeReadiness,
+  loadDearMeProviderSmokeEnv,
   parseDearMeProviderSmokeArgs,
+  parseDearMeProviderSmokeEnvFile,
   runDearMeProviderSmoke,
 } from "./dearme-provider-smoke.ts";
 
@@ -30,6 +36,67 @@ test("provider smoke parses target aliases", () => {
   assert.equal(parseDearMeProviderSmokeArgs(["site-production"]).target, "deploy_site_production");
   assert.equal(parseDearMeProviderSmokeArgs(["--live", "--json"]).live, true);
   assert.equal(parseDearMeProviderSmokeArgs(["--", "--check"]).check, true);
+  assert.deepEqual(
+    parseDearMeProviderSmokeArgs(["--env-file", ".dearme-provider-smoke.env"]).envFiles,
+    [".dearme-provider-smoke.env"],
+  );
+  assert.deepEqual(
+    parseDearMeProviderSmokeArgs(["--env-file=.one.env", "--env-file", ".two.env"]).envFiles,
+    [".one.env", ".two.env"],
+  );
+  assert.equal(
+    parseDearMeProviderSmokeArgs(["--print-env-template"]).printEnvTemplate,
+    true,
+  );
+});
+
+test("provider smoke parses local env files without leaking secret values into readiness", () => {
+  const env = parseDearMeProviderSmokeEnvFile(`
+    # Local provider smoke configuration.
+    DEARME_LINKEDIN_DM_MESSAGES_URL=https://partner.example.test/messages
+    DEARME_LINKEDIN_DM_CREDENTIAL_JSON='{"provider":"linkedin_partner","accessToken":"li-token","capabilities":["send_dm"]}'
+    export DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN=urn:li:person:lead-1
+    DEARME_LINKEDIN_DM_SMOKE_BODY="Private proof packet is ready."
+  `);
+
+  const readiness = inspectDearMeProviderSmokeReadiness(env);
+  const linkedin = readiness.find((item) => item.target === "linkedin_dm");
+
+  assert.equal(linkedin?.ready, true);
+  assert.equal(env.DEARME_LINKEDIN_DM_CREDENTIAL_JSON?.includes("li-token"), true);
+  assert.equal(JSON.stringify(readiness).includes("li-token"), false);
+});
+
+test("provider smoke env files override base env and merge in order", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-provider-smoke-"));
+  const first = join(dir, "first.env");
+  const second = join(dir, "second.env");
+
+  try {
+    await writeFile(first, "DEARME_DEPLOY_SITE_BASE_URL=https://first.example.test\n", "utf8");
+    await writeFile(second, "DEARME_DEPLOY_SITE_BASE_URL=https://second.example.test\n", "utf8");
+    const env = await loadDearMeProviderSmokeEnv([first, second], {
+      DEARME_DEPLOY_SITE_BASE_URL: "https://base.example.test",
+      DEARME_DEPLOY_SITE_ALLOW_PRODUCTION: "0",
+    });
+
+    assert.equal(env.DEARME_DEPLOY_SITE_BASE_URL, "https://second.example.test");
+    assert.equal(env.DEARME_DEPLOY_SITE_ALLOW_PRODUCTION, "0");
+  } finally {
+    await rm(dir, { force: true, recursive: true });
+  }
+});
+
+test("provider smoke env template is local-only and keeps live actions disabled", () => {
+  const template = dearMeProviderSmokeEnvTemplate();
+
+  assert.match(template, /DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=0/);
+  assert.match(template, /DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=0/);
+  assert.match(template, /DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE=/);
+  assert.match(template, /DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/);
+  assert.equal(template.includes("accessToken"), false);
+  assert.equal(template.includes("li-token"), false);
+  assert.equal(template.includes("meta-token"), false);
 });
 
 test("provider smoke delivers a safe deploy_site preview receipt", async () => {

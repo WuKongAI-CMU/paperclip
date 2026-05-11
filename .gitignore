@@ -13,6 +13,8 @@ coverage/
 data/
 .paperclip/
 .pnpm-store/
+.dearme-provider-smoke.env
+.dearme-provider-smoke.*.env
 tmp-*
 cli/tmp/
 
