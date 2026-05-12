@@ -179,6 +179,8 @@ const LOCAL_TELEGRAM_SMOKE_BODY =
   "DearMe live proof smoke: private proof packet is reachable and OpenClaw Telegram delivery is being verified.";
 const DEFAULT_IMESSAGE_SMOKE_BODY =
   "DearMe live proof smoke: private proof packet is ready and OpenClaw iMessage delivery is being verified.";
+const OPENCLAW_IMESSAGE_SMOKE_SERVICE_REQUIREMENT =
+  "DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE=imessage or sms";
 
 function providerSmokeRunCommand(target: ProviderSmokeRunnableTarget): string {
   const command = `${PROVIDER_SMOKE_BASE_COMMAND} --target ${target}`;
@@ -363,6 +365,19 @@ export function dearMeProviderSmokeOperatorCommands(
 
 function nonEmpty(value: string | undefined): string | null {
   return value && value.trim().length > 0 ? value.trim() : null;
+}
+
+function openClawImessageSmokeService(env: Env): "imessage" | "sms" | null {
+  const value = nonEmpty(env.DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE);
+  if (!value) return "imessage";
+  const normalized = value.toLowerCase();
+  return normalized === "imessage" || normalized === "sms" ? normalized : null;
+}
+
+function openClawImessageSmokeServiceRequirement(env: Env) {
+  return openClawImessageSmokeService(env)
+    ? []
+    : [OPENCLAW_IMESSAGE_SMOKE_SERVICE_REQUIREMENT];
 }
 
 function boolFlag(value: string | undefined): boolean {
@@ -1004,6 +1019,7 @@ function targetMissingRequirements(target: DearMeProviderSmokeTarget, env: Env) 
         ...(nonEmpty(env.DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY)
           ? []
           : ["DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY"]),
+        ...openClawImessageSmokeServiceRequirement(env),
       ];
     case "meta_campaign":
       return credentialRequirement(
@@ -1542,6 +1558,8 @@ async function runOpenClawGatewayMessageSmoke(
   const toolName = isTelegram ? "send_telegram_message" : "send_imessage";
   const dispatch = dispatchMap[toolName];
   assert(dispatch);
+  const imessageService = isTelegram ? null : openClawImessageSmokeService(env);
+  if (!isTelegram) assert(imessageService);
 
   return fromDispatchResult(
     target,
@@ -1557,7 +1575,7 @@ async function runOpenClawGatewayMessageSmoke(
         : {
             to: nonEmpty(env.DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT),
             body: nonEmpty(env.DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY),
-            service: nonEmpty(env.DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE) ?? "imessage",
+            service: imessageService,
           },
       now,
     })),

@@ -14198,3 +14198,24 @@ The current product comparison is:
 Next bounded work should deepen the voice-quality loop or complete the live
 provider proof once the required external facts are available. Do not add a new
 settings dashboard for this gap.
+
+## DM-OpenClaw iMessage Service Preflight - 2026-05-12
+
+Forty-third verified DearMe slice:
+
+- Reused the existing provider-smoke and OpenClaw gateway dispatch path instead
+  of adding a new live-proof runner.
+- Hardened the iMessage/SMS proof setup so
+  `DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE` must resolve to `imessage` or `sms`
+  before any live OpenClaw dispatch can run.
+- Kept the default operator path simple: blank service still defaults to
+  `imessage`, whitespace/case are normalized, and typo values are reported as a
+  setup blocker without echoing the bad value or any token.
+- Product gate remains unchanged: DearMe is private-proof-ready and usable for
+  the private demo. Public launch is still blocked on approved live-provider
+  facts, especially the LinkedIn delivery route/recipient and the iMessage/SMS
+  proof recipient.
+
+Verification:
+
+- `pnpm test:dearme-provider-smoke` passed: 37 tests.

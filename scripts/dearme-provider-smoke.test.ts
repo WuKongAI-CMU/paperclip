@@ -452,6 +452,7 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   assert.match(openClawTemplate, /OPENCLAW_GATEWAY_TOKEN=/);
   assert.match(openClawTemplate, /DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT=/);
   assert.match(openClawTemplate, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=/);
+  assert.match(openClawTemplate, /DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE=imessage/);
   assert.doesNotMatch(openClawTemplate, /DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY=/);
   assert.doesNotMatch(openClawTemplate, /DEARME_LINKEDIN_DM_MESSAGES_URL=/);
   assert.doesNotMatch(openClawTemplate, /DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/);
@@ -1052,6 +1053,40 @@ test("provider smoke refuses live OpenClaw message sends without the explicit li
   assert.deepEqual(result.missing, ["--live", "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1"]);
 });
 
+test("provider smoke blocks invalid iMessage service before live dispatch", async () => {
+  let called = false;
+  const env = {
+    DEARME_PROVIDER_SMOKE_CONFIRM_LIVE: "1",
+    OPENCLAW_GATEWAY_URL: "wss://gateway.example",
+    OPENCLAW_WEBHOOK_AUTH: "Bearer gateway-token",
+    DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT: "+15555550123",
+    DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE: "fax",
+  };
+  const readiness = inspectDearMeProviderSmokeReadiness(env, "imessage_message");
+  const [result] = await runDearMeProviderSmoke({
+    target: "imessage_message",
+    live: true,
+    env,
+    openClawGatewayExecute: async () => {
+      called = true;
+      throw new Error("live dispatch should be blocked before execution");
+    },
+    now,
+  });
+
+  assert.equal(readiness[0]?.ready, false);
+  assert.deepEqual(readiness[0]?.missing, [
+    "DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE=imessage or sms",
+  ]);
+  assert.equal(result.status, "blocked");
+  assert.deepEqual(result.status === "blocked" ? result.missing : [], [
+    "DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE=imessage or sms",
+  ]);
+  assert.equal(called, false);
+  assert.equal(JSON.stringify(readiness).includes("fax"), false);
+  assert.equal(JSON.stringify(result).includes("fax"), false);
+});
+
 test("provider smoke sends Telegram live target through injected OpenClaw gateway", async () => {
   let capturedContext: AdapterExecutionContext | null = null;
   const openClawGatewayExecute = async (ctx: AdapterExecutionContext) => {
@@ -1190,7 +1225,7 @@ test("provider smoke sends iMessage live target through injected OpenClaw gatewa
       OPENCLAW_WEBHOOK_AUTH: "Bearer gateway-token",
       DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT: "+15555550123",
       DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY: "Dear me, day 1 - the team is ready.",
-      DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE: "sms",
+      DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE: " SMS ",
     },
     openClawGatewayExecute,
     now,

@@ -3909,3 +3909,19 @@ DEA-13 have landed, been recovered, or been verified on the current
 coordination head. The next non-negotiable slice should build on the existing
 first-cycle/private-handoff proof instead of adding another customer-facing
 runtime contract.
+
+## DM-OpenClaw iMessage Service Preflight - 2026-05-12
+
+| Slice | Donor mechanism | Path |
+|---|---|---|
+| Guard iMessage/SMS service selection before live provider smoke | OpenClaw shared-message gateway contract, reused through the existing DearMe provider-smoke harness | `scripts/dearme-provider-smoke.ts`, `scripts/dearme-provider-smoke.test.ts` |
+
+Reuse note:
+
+- This keeps OpenClaw as the shared delivery substrate and avoids a new DearMe
+  message runner.
+- The supported service names are explicit (`imessage` or `sms`), while blank
+  setup still follows the existing `imessage` default for the simple operator
+  path.
+- Invalid service setup now blocks before live dispatch, preserving the
+  approval boundary for the remaining public-launch proof.
