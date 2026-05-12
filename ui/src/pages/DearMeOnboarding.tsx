@@ -11,6 +11,7 @@ import {
   DEARME_LAUNCH_PROOF_GAP_ITEMS,
   DEARME_LAUNCH_PROOF_HANDOFF_STEPS,
   DEARME_OWNER_PROOF_CHECKLIST_ITEMS,
+  DEARME_OWNER_PROOF_FACT_SPECS,
   createDearMeFirstCyclePreview,
   dearMeCustomerSafeText,
   dearMeWorkbenchResponseSchema,
@@ -4914,6 +4915,42 @@ function LaunchProofGapPanel() {
         ))}
         aria-label="Public launch proof handoff"
       />
+
+      <div
+        className="mt-4 rounded-md border border-amber-500/25 bg-background/85 p-3"
+        aria-label="Owner live-proof details to provide"
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">What I need from you</p>
+            <h4 className="mt-1 text-sm font-semibold text-foreground">
+              Three approved details unlock the guarded receipt.
+            </h4>
+          </div>
+          <Badge variant="outline">{DEARME_OWNER_PROOF_FACT_SPECS.length} details</Badge>
+        </div>
+        <div className="mt-3 grid gap-2">
+          {DEARME_OWNER_PROOF_FACT_SPECS.map((fact, index) => (
+            <div
+              key={fact.provideAs}
+              className="grid gap-3 rounded-md border border-border bg-background/70 p-3 sm:grid-cols-[2rem_minmax(0,1fr)]"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-md border border-amber-500/30 bg-amber-100 text-xs font-semibold text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
+                {index + 1}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">{fact.label}</p>
+                <p className="mt-1 text-sm text-foreground/80">{fact.ownerPrompt}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground/80">Example: </span>
+                  {fact.safeExample}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">{fact.boundary}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)]">
         <div className="rounded-md border border-amber-500/25 bg-background/85 p-3">

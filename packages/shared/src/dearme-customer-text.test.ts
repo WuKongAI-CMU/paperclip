@@ -4,7 +4,9 @@ import {
   DEARME_LAUNCH_PROOF_GAP_ITEMS,
   DEARME_LAUNCH_PROOF_HANDOFF_STEPS,
   DEARME_OWNER_PROOF_CHECKLIST_ITEMS,
+  DEARME_OWNER_PROOF_FACT_SPECS,
   compactDearMeCustomerText,
+  dearMeOwnerProofFactSpec,
   dearMeCustomerSafeLaunchNeed,
   dearMeCustomerSafeText,
 } from "./dearme-customer-text.js";
@@ -56,6 +58,54 @@ describe("DearMe customer text", () => {
       "Approved professional-network recipient",
       "Approved phone-message proof recipient",
     ]);
+    expect(DEARME_LAUNCH_PROOF_GAP_ITEMS).toEqual(
+      DEARME_OWNER_PROOF_FACT_SPECS.map(({ label, summary }) => ({ label, summary })),
+    );
+    expect(DEARME_OWNER_PROOF_FACT_SPECS.map((fact) => ({
+      provideAs: fact.provideAs,
+      operatorLabel: fact.operatorLabel,
+      sensitive: fact.sensitive,
+      captureFlag: fact.captureFlag,
+      placeholder: fact.placeholder,
+      ownerPrompt: fact.ownerPrompt,
+      safeExample: fact.safeExample,
+      boundary: fact.boundary,
+    }))).toEqual([
+      {
+        provideAs: "DEARME_LINKEDIN_DM_MESSAGES_URL",
+        operatorLabel: "LinkedIn partner messages endpoint",
+        sensitive: false,
+        captureFlag: "--linkedin-messages-url",
+        placeholder: "<partner-messages-url>",
+        ownerPrompt: "Paste the approved delivery-route link for the first receipt check.",
+        safeExample: "A partner-approved messages page or delivery-route link.",
+        boundary: "DearMe checks this in no-send mode before any live receipt can move.",
+      },
+      {
+        provideAs: "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
+        operatorLabel: "LinkedIn approved smoke recipient",
+        sensitive: false,
+        captureFlag: "--linkedin-recipient-urn",
+        placeholder: "<approved-linkedin-recipient-urn>",
+        ownerPrompt: "Choose one real professional-network recipient approved for the proof pass.",
+        safeExample: "A specific recipient profile or recipient detail you have approved.",
+        boundary: "Only this selected recipient is used for the first guarded receipt.",
+      },
+      {
+        provideAs: "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+        operatorLabel: "iMessage/SMS approved smoke recipient",
+        sensitive: false,
+        captureFlag: "--imessage-recipient",
+        placeholder: "<approved-phone-or-imessage>",
+        ownerPrompt: "Choose one approved phone-message recipient for the shared proof pass.",
+        safeExample: "A phone number or contact already cleared for the receipt check.",
+        boundary: "The receipt still waits for owner approval after the no-send check.",
+      },
+    ]);
+    expect(dearMeOwnerProofFactSpec("DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT")?.label).toBe(
+      "Approved phone-message proof recipient",
+    );
+    expect(dearMeOwnerProofFactSpec("UNKNOWN_FACT")).toBeNull();
 
     expect(
       dearMeCustomerSafeLaunchNeed({
@@ -78,6 +128,11 @@ describe("DearMe customer text", () => {
         sensitive: false,
       }),
     ).toBe("Approved phone-message proof recipient");
+
+    for (const fact of DEARME_OWNER_PROOF_FACT_SPECS) {
+      expect(`${fact.label} ${fact.summary} ${fact.ownerPrompt} ${fact.safeExample} ${fact.boundary}`)
+        .not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
+    }
   });
 
   it("keeps launch proof handoff steps customer-safe", () => {

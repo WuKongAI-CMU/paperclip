@@ -15043,6 +15043,10 @@ Fifty-fourth verified DearMe slice:
 - Reused the same checklist in `dearme:status` / `ownerProofChecklist`, keeping
   CLI handoffs, Symphony status, and the customer-facing Decisions panel on one
   owner-readable spine.
+- Centralized the three owner-approved live-proof detail specs in shared
+  customer-safe text, then reused them in the Decisions panel, release gate, and
+  next-proof setup so operator handoffs no longer maintain a separate blocker
+  vocabulary.
 - Reused the existing release-gate/status/next-proof posture instead of adding a
   new setup dashboard. Public launch status is unchanged: private proof is
   usable; live external-channel receipts still require approved facts first.
@@ -15062,3 +15066,38 @@ Verification:
 - `pnpm --silent dearme:proof -- --status` prints the owner checklist with the
   three missing facts, the no-send check, and the two guarded live proof commands.
 - `git diff --check` passed.
+
+## DM-WOW-3N Shared Owner Proof Fact Specs - 2026-05-12
+
+Fifty-fifth verified DearMe slice:
+
+- Moved the three public-launch proof facts into one shared owner-proof spec:
+  professional-network delivery route, approved professional-network recipient,
+  and approved phone-message proof recipient.
+- The shared spec now carries owner-facing prompts, safe examples, no-send/live
+  boundary copy, operator labels, capture flags, and placeholders. This lets the
+  Decisions panel, `dearme:next-proof`, and `dearme:release-gate` reuse one
+  source of truth instead of carrying parallel handoff tables.
+- Reused the richer shared spec in the Decisions launch-proof panel so the
+  owner sees exactly what is needed without seeing env keys, provider language,
+  or command syntax. The command/placeholder details stay in the CLI handoff.
+- Removed the duplicate capture-spec maps from `dearme:next-proof` and
+  `dearme:release-gate`; both scripts now read from the shared spec.
+- Public launch status is unchanged: private proof remains usable, while public
+  launch still requires the real approved external proof facts and guarded live
+  receipts.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/dearme-customer-text.test.ts --maxWorkers=1`
+  passed: 8 shared customer-text tests.
+- `node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-next-proof.test.ts`
+  passed: 10 next-proof tests.
+- `pnpm --silent test:dearme-release-gate` passed: 5 release-gate tests.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "launch-proof gap"`
+  passed: 1 focused Decisions launch-proof test.
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json` confirmed
+  the owner handoff still emits the same three fact keys, capture flags,
+  placeholders, and capture command without writing local proof setup.
+- `pnpm --silent dearme:release-gate -- --json` confirmed
+  `overall=private-proof-ready`, `canUse=true`, and `canPublish=false`.

@@ -65,26 +65,68 @@ export interface DearMeOwnerProofChecklistItem {
   summary: string;
 }
 
+export interface DearMeOwnerProofFactSpec {
+  provideAs: string;
+  label: string;
+  summary: string;
+  ownerPrompt: string;
+  safeExample: string;
+  boundary: string;
+  operatorLabel: string;
+  sensitive: boolean;
+  placeholder: string;
+  captureFlag: string;
+}
+
 export interface DearMeCustomerSafeLaunchFact {
   label: string;
   provideAs: string;
   sensitive: boolean;
 }
 
-export const DEARME_LAUNCH_PROOF_GAP_ITEMS = [
+export const DEARME_OWNER_PROOF_FACT_SPECS = [
   {
+    provideAs: "DEARME_LINKEDIN_DM_MESSAGES_URL",
     label: "Professional-network delivery route",
     summary: "The approved route for the first live professional-network proof.",
+    ownerPrompt: "Paste the approved delivery-route link for the first receipt check.",
+    safeExample: "A partner-approved messages page or delivery-route link.",
+    boundary: "DearMe checks this in no-send mode before any live receipt can move.",
+    operatorLabel: "LinkedIn partner messages endpoint",
+    sensitive: false,
+    placeholder: "<partner-messages-url>",
+    captureFlag: "--linkedin-messages-url",
   },
   {
+    provideAs: "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
     label: "Approved professional-network recipient",
     summary: "One real recipient selected for the first receipt check.",
+    ownerPrompt: "Choose one real professional-network recipient approved for the proof pass.",
+    safeExample: "A specific recipient profile or recipient detail you have approved.",
+    boundary: "Only this selected recipient is used for the first guarded receipt.",
+    operatorLabel: "LinkedIn approved smoke recipient",
+    sensitive: false,
+    placeholder: "<approved-linkedin-recipient-urn>",
+    captureFlag: "--linkedin-recipient-urn",
   },
   {
+    provideAs: "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
     label: "Approved phone-message proof recipient",
     summary: "One real recipient selected for the shared phone-message proof.",
+    ownerPrompt: "Choose one approved phone-message recipient for the shared proof pass.",
+    safeExample: "A phone number or contact already cleared for the receipt check.",
+    boundary: "The receipt still waits for owner approval after the no-send check.",
+    operatorLabel: "iMessage/SMS approved smoke recipient",
+    sensitive: false,
+    placeholder: "<approved-phone-or-imessage>",
+    captureFlag: "--imessage-recipient",
   },
-] as const satisfies readonly DearMeLaunchProofGapItem[];
+] as const satisfies readonly DearMeOwnerProofFactSpec[];
+
+export const DEARME_LAUNCH_PROOF_GAP_ITEMS = DEARME_OWNER_PROOF_FACT_SPECS.map((fact) => ({
+  label: fact.label,
+  summary: fact.summary,
+})) satisfies readonly DearMeLaunchProofGapItem[];
 
 export const DEARME_LAUNCH_PROOF_HANDOFF_STEPS = [
   {
@@ -115,6 +157,10 @@ export const DEARME_OWNER_PROOF_CHECKLIST_ITEMS = [
     summary: "The guarded receipt pass stays held until the owner approves the exact details.",
   },
 ] as const satisfies readonly DearMeOwnerProofChecklistItem[];
+
+export function dearMeOwnerProofFactSpec(provideAs: string) {
+  return DEARME_OWNER_PROOF_FACT_SPECS.find((fact) => fact.provideAs === provideAs) ?? null;
+}
 
 const DEARME_CUSTOMER_TEXT_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bDearMe Runtime Smoke\b/g, "DearMe Private Proof Check"],

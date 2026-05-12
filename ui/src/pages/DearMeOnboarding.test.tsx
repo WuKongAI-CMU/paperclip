@@ -4247,6 +4247,15 @@ describe("DearMeOnboarding", () => {
     expect(decisionsSurface.textContent).toContain("Use private proof now");
     expect(decisionsSurface.textContent).toContain("Capture approved live details");
     expect(decisionsSurface.textContent).toContain("Return with receipts before launch");
+    expect(decisionsSurface.querySelector('[aria-label="Owner live-proof details to provide"]')).not.toBeNull();
+    expect(decisionsSurface.textContent).toContain("What I need from you");
+    expect(decisionsSurface.textContent).toContain("Three approved details unlock the guarded receipt.");
+    expect(decisionsSurface.textContent).toContain("Paste the approved delivery-route link");
+    expect(decisionsSurface.textContent).toContain("Choose one real professional-network recipient");
+    expect(decisionsSurface.textContent).toContain("Choose one approved phone-message recipient");
+    expect(decisionsSurface.textContent).toContain("DearMe checks this in no-send mode");
+    expect(decisionsSurface.textContent).toContain("Only this selected recipient is used");
+    expect(decisionsSurface.textContent).toContain("The receipt still waits for owner approval");
     expect(decisionsSurface.querySelector('[aria-label="Owner proof checklist"]')).not.toBeNull();
     expect(decisionsSurface.textContent).toContain("Only three facts are missing");
     expect(decisionsSurface.textContent).toContain("No-send check comes first");

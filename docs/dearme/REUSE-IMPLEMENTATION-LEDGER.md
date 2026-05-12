@@ -4120,6 +4120,8 @@ UI, not server-side runtime artifacts the user never sees).
 | DM-WOW-3K | Public launch proof handoff | Polsia-style live-proof gap reporting reused on the existing Decisions launch-proof panel so the user sees what can be used now, what approved facts are missing, and why launch stays held | `packages/shared/src/dearme-customer-text.ts`, `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
 | DM-WOW-3L | Customer-safe DearMe workspace shell | Polsia-style single-manager front door applied to the shared company switcher, reusing DearMe customer-safe text so local proof fixture names stay backstage | `packages/shared/src/dearme-customer-text.ts`, `ui/src/components/DearMeSidebar.tsx`, `ui/src/components/SidebarCompanyMenu.tsx` |
 | DM-WOW-3M | Owner proof checklist surface | Polsia-style receipt/blocker clarity applied to the public-launch hold: the Decisions panel and status handoff now show the exact three remaining facts, the no-send check, and the owner-approval boundary without exposing backstage setup | `packages/shared/src/dearme-customer-text.ts`, `scripts/dearme-proof.ts`, `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+| DM-WOW-3N | Owner proof detail capture panel | Polsia live-proof blocker clarity plus Littlebird compact task-row grammar and Lindy action-boundary copy, reused on the same Decisions launch-proof panel so the owner knows exactly what to provide without seeing operator commands | `packages/shared/src/dearme-customer-text.ts`, `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+| DM-WOW-3N | Shared owner proof fact specs | Polsia-style setup clarity without another dashboard: one shared owner-proof fact spec now feeds Decisions copy, next-proof capture flags, and release-gate operator handoff | `packages/shared/src/dearme-customer-text.ts`, `scripts/dearme-next-proof.ts`, `scripts/dearme-release-gate.ts`, `ui/src/pages/DearMeOnboarding.tsx` |
 | DM-PROOF-HANDOFF-2 | Owner-readable proof lane summary | Polsia-style live-proof simplicity over the existing provider-smoke readiness facts | `scripts/dearme-next-proof.ts`, `scripts/dearme-next-proof.test.ts` |
 | DM-139 | Autonomous Reporting plugin (queue-always-non-empty, plain-prose updates, next-step driver) | Polsia CEO 4-step prompt | `packages/plugins/dearme-reporting/` |
 | DM-140 | Voice Gate + Content Producer plugin (voice-match score, attribution link rule, rate cap) | Polsia Twitter agent rules | `packages/plugins/dearme-content-producer/` |
@@ -4219,6 +4221,8 @@ Reuse note:
 | Launch handoff checklist | Polsia-style result receipts plus Lindy-style task boundaries, reused on the existing private handoff panel so the user sees what is ready, what to inspect, and what stays safely held | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
 | Public launch proof handoff | Polsia-style live-proof gap reporting, reused through shared customer-safe launch copy so the user sees what private proof can be used now, what approved live facts are missing, and why public launch stays held | `packages/shared/src/dearme-customer-text.ts`, `packages/shared/src/dearme-customer-text.test.ts`, `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
 | Customer-safe DearMe workspace shell | Polsia's manager front door applied to inherited navigation chrome, using shared customer-safe text plus an optional switcher display formatter instead of changing company data | `packages/shared/src/dearme-customer-text.ts`, `packages/shared/src/dearme-customer-text.test.ts`, `ui/src/components/DearMeSidebar.tsx`, `ui/src/components/DearMeSidebar.test.tsx`, `ui/src/components/SidebarCompanyMenu.tsx`, `ui/src/components/SidebarCompanyMenu.test.tsx` |
+| Owner live-proof detail specs | Polsia-style exact blocker clarity, centralized as customer-safe proof-fact specs and reused by the Decisions surface, release gate, and next-proof setup instead of duplicating operator-only copy | `packages/shared/src/dearme-customer-text.ts`, `packages/shared/src/dearme-customer-text.test.ts`, `scripts/dearme-next-proof.ts`, `scripts/dearme-release-gate.ts`, `ui/src/pages/DearMeOnboarding.tsx` |
+| Owner proof detail capture panel | Polsia's live-proof gap becomes a three-row owner task list; Littlebird's compact todo rows inform the numbered input rows, and Lindy's action-card/safe-boundary pattern informs the per-detail boundary copy | `packages/shared/src/dearme-customer-text.ts`, `packages/shared/src/dearme-customer-text.test.ts`, `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
 
 Reuse note:
 
@@ -4236,5 +4240,11 @@ Reuse note:
 - The DearMe shell now applies the same customer-safe mapper to inherited
   navigation chrome, so local proof workspace names read as private proof checks
   without changing the underlying company records or generic switcher behavior.
+- The owner live-proof details now share one customer-safe fact spec across UI
+  and setup commands, so the exact missing details stay readable without
+  exposing operator-only terms.
+- The detail capture panel turns that same spec into a three-row owner task
+  list on the Decisions surface: what to provide, a safe example, and the
+  launch boundary for each detail.
 - The next reuse work should deepen receipt quality and return-handoff clarity.
   Do not spend the next slice on a new dashboard for the same approval problem.

@@ -17,6 +17,7 @@ import {
 } from "./dearme-proof-facts.ts";
 import {
   dearMeCustomerSafeLaunchNeed,
+  dearMeOwnerProofFactSpec,
 } from "../packages/shared/src/dearme-customer-text.ts";
 
 export type DearMeReleaseGateTarget = "private-proof" | "public-launch";
@@ -117,24 +118,6 @@ const PRIVATE_PROOF_ITEMS: readonly DearMeGoalAuditItemKey[] = [
   "openclaw_message_contract_rehearsal",
 ];
 
-const OPERATOR_CAPTURE_SPECS = {
-  DEARME_LINKEDIN_DM_MESSAGES_URL: {
-    captureFlag: "--linkedin-messages-url",
-    placeholder: "<partner-messages-url>",
-  },
-  DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN: {
-    captureFlag: "--linkedin-recipient-urn",
-    placeholder: "<approved-linkedin-recipient-urn>",
-  },
-  DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT: {
-    captureFlag: "--imessage-recipient",
-    placeholder: "<approved-phone-or-imessage>",
-  },
-} as const satisfies Record<string, {
-  captureFlag: string;
-  placeholder: string;
-}>;
-
 function unique(values: readonly string[]): string[] {
   return [...new Set(values.filter(Boolean))];
 }
@@ -171,15 +154,14 @@ function commandsFor(items: readonly DearMeGoalAuditItem[]): string[] {
 }
 
 function operatorFactPlaceholder(fact: DearMeProofFactNeed) {
-  const spec = OPERATOR_CAPTURE_SPECS[fact.provideAs as keyof typeof OPERATOR_CAPTURE_SPECS];
+  const spec = dearMeOwnerProofFactSpec(fact.provideAs);
   if (spec) return spec.placeholder;
   if (fact.sensitive) return "<keep-local-secret>";
   return "<approved-value>";
 }
 
 function operatorFactCaptureFlag(fact: DearMeProofFactNeed) {
-  return OPERATOR_CAPTURE_SPECS[fact.provideAs as keyof typeof OPERATOR_CAPTURE_SPECS]
-    ?.captureFlag ?? null;
+  return dearMeOwnerProofFactSpec(fact.provideAs)?.captureFlag ?? null;
 }
 
 function buildOperatorHandoff(

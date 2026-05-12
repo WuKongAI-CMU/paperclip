@@ -18,6 +18,10 @@ import {
   summarizeDearMeReleaseGate,
   type DearMeReleaseGate,
 } from "./dearme-release-gate.ts";
+import {
+  DEARME_OWNER_PROOF_FACT_SPECS,
+  dearMeOwnerProofFactSpec,
+} from "../packages/shared/src/dearme-customer-text.ts";
 
 type Env = Record<string, string | undefined>;
 export type DearMeNextProofTarget = NonNullable<
@@ -112,33 +116,7 @@ interface PrepareDearMeNextProofSetupOptions {
 }
 
 const DEFAULT_PROOF_ENV_FILE = ".dearme-proof.env";
-const FACT_CAPTURE_SPECS = {
-  DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT: {
-    label: "iMessage/SMS approved smoke recipient",
-    sensitive: false,
-    flag: "--imessage-recipient",
-    placeholder: "<approved-phone-or-imessage>",
-  },
-  DEARME_LINKEDIN_DM_MESSAGES_URL: {
-    label: "LinkedIn partner messages endpoint",
-    sensitive: false,
-    flag: "--linkedin-messages-url",
-    placeholder: "<partner-messages-url>",
-  },
-  DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN: {
-    label: "LinkedIn approved smoke recipient",
-    sensitive: false,
-    flag: "--linkedin-recipient-urn",
-    placeholder: "<approved-linkedin-recipient-urn>",
-  },
-} as const satisfies Record<string, {
-  label: string;
-  sensitive: boolean;
-  flag: string;
-  placeholder: string;
-}>;
-
-type FactCaptureKey = keyof typeof FACT_CAPTURE_SPECS;
+type FactCaptureKey = typeof DEARME_OWNER_PROOF_FACT_SPECS[number]["provideAs"];
 
 function envFileExists(path: string) {
   return access(path).then(
@@ -183,7 +161,7 @@ function nextProofEnvTemplate(target: DearMeNextProofTarget, envFile: string) {
 }
 
 function isFactCaptureKey(key: string): key is FactCaptureKey {
-  return Object.prototype.hasOwnProperty.call(FACT_CAPTURE_SPECS, key);
+  return dearMeOwnerProofFactSpec(key) !== null;
 }
 
 function assertFactCaptureValue(key: FactCaptureKey, value: string): DearMeNextProofFactCapture {
@@ -193,13 +171,11 @@ function assertFactCaptureValue(key: FactCaptureKey, value: string): DearMeNextP
 }
 
 function capturedFactMetadata(capture: DearMeNextProofFactCapture): DearMeNextProofCapturedFact {
-  const spec = isFactCaptureKey(capture.key)
-    ? FACT_CAPTURE_SPECS[capture.key]
-    : { label: capture.key, sensitive: /TOKEN|AUTH|CREDENTIAL|SECRET|PASSWORD/.test(capture.key) };
+  const spec = dearMeOwnerProofFactSpec(capture.key);
   return {
     key: capture.key,
-    label: spec.label,
-    sensitive: spec.sensitive,
+    label: spec?.operatorLabel ?? capture.key,
+    sensitive: spec?.sensitive ?? /TOKEN|AUTH|CREDENTIAL|SECRET|PASSWORD/.test(capture.key),
   };
 }
 
@@ -261,13 +237,14 @@ function augmentEnvTemplate(
 }
 
 function placeholderForFact(fact: DearMeProofFactNeed) {
-  if (isFactCaptureKey(fact.provideAs)) return FACT_CAPTURE_SPECS[fact.provideAs].placeholder;
+  const spec = dearMeOwnerProofFactSpec(fact.provideAs);
+  if (spec) return spec.placeholder;
   if (fact.sensitive) return "<keep-local-secret>";
   return "<approved-value>";
 }
 
 function captureFlagForFact(fact: DearMeProofFactNeed) {
-  return isFactCaptureKey(fact.provideAs) ? FACT_CAPTURE_SPECS[fact.provideAs].flag : null;
+  return dearMeOwnerProofFactSpec(fact.provideAs)?.captureFlag ?? null;
 }
 
 function ownerHandoffTargetLabel(target: DearMeNextProofTarget) {
