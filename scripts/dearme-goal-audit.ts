@@ -220,6 +220,16 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
     snippet: "See the first proof pack",
   },
   {
+    key: "source_private_receipt_hook",
+    file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
+    snippet: "Watch DearMe prepare private brand work live",
+  },
+  {
+    key: "source_private_receipt_stats",
+    file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
+    snippet: 'aria-label="Live private proof receipts"',
+  },
+  {
     key: "source_live_work_trail_contract",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
     snippet: "SAMPLE_FIRST_CYCLE_PREVIEW.liveWorkTrail",
@@ -243,6 +253,11 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
     key: "test_live_work_receipts",
     file: PUBLIC_FIRST_RUN_LANDING_TEST,
     snippet: "First-run live work receipts",
+  },
+  {
+    key: "test_private_receipt_hook",
+    file: PUBLIC_FIRST_RUN_LANDING_TEST,
+    snippet: "Watch DearMe prepare private brand work live",
   },
   {
     key: "test_workroom_queues",

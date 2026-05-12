@@ -26,8 +26,10 @@ export interface DearMeAhaProofArgs {
 export interface DearMeAhaProofCheck {
   key:
     | "one_sentence_start"
+    | "aha_bridge_contract"
     | "five_minute_sequence"
     | "live_work_receipts"
+    | "cycle_report_contract"
     | "private_outputs"
     | "recurring_private_work"
     | "phone_ready_private_site"
@@ -296,6 +298,21 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
       `Waits: ${step.approvalBoundary}`,
     ].filter(Boolean)),
   ).join("\n");
+  const firstOpportunity = preview.opportunityShortlist[0];
+  const ahaBridgeCards = [
+    renderCard("You answered", preview.positioning, [
+      `Prompt: ${preview.prompt}`,
+    ]),
+    renderCard("DearMe staged", preview.sitePreview.route, [
+      "Private proof page ready before a public launch decision.",
+    ]),
+    renderCard("It prepared", `${preview.starterPosts.length} drafts and ${preview.opportunityShortlist.length} leads`, [
+      firstOpportunity ? `First lead: ${firstOpportunity.target}` : "First opportunity lane is ready.",
+    ]),
+    renderCard("Still waits", preview.approvalBoundary.label, [
+      "Nothing is sent, published, updated, or spent until approval.",
+    ]),
+  ].join("\n");
   const proofLoopCards = [
     renderCard("Proof ready", "The current private proof pack is ready to review before anything goes public.", [
       `Prepared: ${preview.proofSequence[2]?.preparedArtifact ?? "Private proof page move"}`,
@@ -396,6 +413,12 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
     <section aria-label="Private proof loop">
       <h2>Current proof, next pass, launch call</h2>
       <div class="grid">${proofLoopCards}</div>
+    </section>
+
+    <section aria-label="Aha bridge">
+      <h2>Your one sentence became a private proof system</h2>
+      <p class="summary">DearMe turns the starting answer into a private page, draft packet, opportunity list, and launch boundary before anything goes public.</p>
+      <div class="grid">${ahaBridgeCards}</div>
     </section>
 
     <section aria-label="First proof trail">
@@ -633,6 +656,7 @@ export function inspectDearMeAhaProofPreview(
   const cycleReportLabels = preview.cycleReport.items.map((item) => item.label);
   const cycleReportStatuses = preview.cycleReport.items.map((item) => item.status);
   const cycleReportSources = preview.cycleReport.items.map((item) => item.source);
+  const firstOpportunity = preview.opportunityShortlist[0];
   const ownerRoles = new Set<string>([
     preview.growthPlan.ownerRole,
     preview.voiceProfile.ownerRole,
@@ -670,6 +694,23 @@ export function inspectDearMeAhaProofPreview(
       [
         `prompt=${preview.prompt}`,
         `positioning=${preview.positioning}`,
+      ],
+    ),
+    check(
+      "aha_bridge_contract",
+      "Aha bridge",
+      staticHtml.includes("Your one sentence became a private proof system") &&
+        staticHtml.includes(preview.positioning) &&
+        staticHtml.includes(preview.sitePreview.route) &&
+        staticHtml.includes(`${preview.starterPosts.length} drafts and ${preview.opportunityShortlist.length} leads`) &&
+        staticHtml.includes(preview.approvalBoundary.label),
+      "The private preview explains the cause-and-effect jump from one answer to concrete private work and the launch boundary.",
+      [
+        `positioning=${preview.positioning}`,
+        `route=${preview.sitePreview.route}`,
+        `drafts=${preview.starterPosts.length}`,
+        `opportunities=${preview.opportunityShortlist.length}`,
+        `firstLead=${firstOpportunity?.target ?? "none"}`,
       ],
     ),
     check(
@@ -756,6 +797,7 @@ export function inspectDearMeAhaProofPreview(
       "phone_ready_private_site",
       "Phone-ready private site artifact",
       staticHtml.includes('<meta name="viewport" content="width=device-width, initial-scale=1" />') &&
+        staticHtml.includes("Your one sentence became a private proof system") &&
         staticHtml.includes(preview.sitePreview.route) &&
         staticHtml.includes(preview.continuationPlan.title) &&
         staticHtml.includes(preview.approvalBoundary.label) &&

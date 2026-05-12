@@ -1934,6 +1934,10 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain(
       "Private. Public only with approval.",
     );
+    expect(container.textContent).toContain("Watch DearMe prepare private brand work live");
+    expect(container.textContent).toContain("5 private work receipts");
+    expect(container.textContent).toContain("5 opportunity leads");
+    expect(container.textContent).toContain("0 public actions without approval");
     expect(container.textContent).toContain("Your workroom opens with");
     expect(container.textContent).toContain("What moved while you were away");
     expect(container.textContent).toContain("Ready for your launch call");
@@ -1943,6 +1947,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Private proof pack");
     expect(container.textContent).toContain("DearMe keeps working privately");
     expect(container.querySelector('[aria-label="DearMe public first run"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Live private proof receipts"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="First proof pack"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="First-run workroom queues"]')).not.toBeNull();
     expect(container.textContent).not.toContain("Today's brand team focus");

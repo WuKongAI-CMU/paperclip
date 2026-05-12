@@ -112,6 +112,31 @@ export function DearMeSitePreview() {
         },
       ]
     : [];
+  const firstOpportunity = preview?.opportunityShortlist[0];
+  const ahaBridge = preview
+    ? [
+        {
+          label: "You answered",
+          title: preview.positioning,
+          detail: preview.prompt,
+        },
+        {
+          label: "DearMe staged",
+          title: proofRoute,
+          detail: "A private proof page is ready before a public launch decision.",
+        },
+        {
+          label: "It prepared",
+          title: `${preview.starterPosts.length} drafts and ${preview.opportunityShortlist.length} leads`,
+          detail: firstOpportunity ? `First lead: ${firstOpportunity.target}` : "The first opportunity lane is ready.",
+        },
+        {
+          label: "Still waits",
+          title: preview.approvalBoundary.label,
+          detail: "Nothing is sent, published, updated, or spent until approval.",
+        },
+      ]
+    : [];
 
   if (loading && !activeCompany) {
     return <div className="mx-auto max-w-4xl py-10 text-sm text-muted-foreground">Loading private preview...</div>;
@@ -165,6 +190,23 @@ export function DearMeSitePreview() {
               </p>
             </div>
           </DearMePanel>
+
+          <DearMeWorkbenchCard
+            eyebrow="Aha bridge"
+            title="Your one sentence became a private proof system"
+            description="DearMe turns the starting answer into a private page, draft packet, opportunity list, and launch boundary before anything goes public."
+            badge={<Sparkles className="h-4 w-4 text-muted-foreground" />}
+          >
+            <div className="grid gap-3 md:grid-cols-4" aria-label="Private preview aha bridge">
+              {ahaBridge.map((item) => (
+                <div key={item.label} className="rounded-md border border-border bg-muted/20 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{item.label}</p>
+                  <p className="mt-2 text-sm font-medium">{item.title}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.detail}</p>
+                </div>
+              ))}
+            </div>
+          </DearMeWorkbenchCard>
 
           <DearMeWorkbenchCard
             eyebrow="Private proof loop"

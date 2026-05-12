@@ -2491,6 +2491,24 @@ function DearMePublicFirstRunLanding({
 
   const liveMoments = SAMPLE_FIRST_CYCLE_PREVIEW.liveWorkTrail;
   const cycleReport = SAMPLE_FIRST_CYCLE_PREVIEW.cycleReport;
+  const proofReceiptStats = [
+    {
+      label: `${liveMoments.length} private work receipts`,
+      summary: "Voice, audience, drafts, proof, and the launch call are visible immediately.",
+    },
+    {
+      label: `${DEARME_FIRST_CYCLE_STARTER_POST_COUNT} starter drafts`,
+      summary: "The first packet opens with reviewable content instead of setup steps.",
+    },
+    {
+      label: `${SAMPLE_FIRST_CYCLE_PREVIEW.opportunityShortlist.length} opportunity leads`,
+      summary: "DearMe prepares concrete next relationships before asking to send anything.",
+    },
+    {
+      label: "0 public actions without approval",
+      summary: "Posts, outreach, page changes, and spend stay private until the launch call.",
+    },
+  ];
 
   return (
     <section
@@ -2550,6 +2568,27 @@ function DearMePublicFirstRunLanding({
               Private. Public only with approval.
             </div>
           </div>
+
+          <section
+            aria-label="Live private proof receipts"
+            className="grid max-w-3xl gap-3 rounded-md border border-border bg-muted/20 p-3 sm:grid-cols-2"
+          >
+            <div className="sm:col-span-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <RefreshCw className="h-4 w-4 text-primary" />
+                Watch DearMe prepare private brand work live
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                The first run shows visible receipts before anything represents you publicly.
+              </p>
+            </div>
+            {proofReceiptStats.map((item) => (
+              <div key={item.label} className="rounded-md border border-border bg-background/80 px-3 py-2">
+                <p className="text-sm font-medium">{item.label}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.summary}</p>
+              </div>
+            ))}
+          </section>
         </div>
 
         <aside className="border-t border-border bg-muted/20 p-5 sm:p-7 lg:border-l lg:border-t-0 lg:p-8">

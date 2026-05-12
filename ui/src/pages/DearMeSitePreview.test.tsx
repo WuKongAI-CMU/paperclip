@@ -104,6 +104,13 @@ describe("DearMeSitePreview", () => {
     expect(container.textContent).toContain(`Source proof: ${preview.portfolioProofCard.proofSource}`);
     expect(container.textContent).toContain(preview.portfolioProofCard.proposedCopy);
     expect(container.textContent).toContain(preview.approvalBoundary.summary);
+    expect(container.textContent).toContain("Aha bridge");
+    expect(container.textContent).toContain("Your one sentence became a private proof system");
+    expect(container.textContent).toContain(preview.prompt);
+    expect(container.textContent).toContain(preview.positioning);
+    expect(container.textContent).toContain(`${preview.starterPosts.length} drafts and ${preview.opportunityShortlist.length} leads`);
+    expect(container.textContent).toContain(`First lead: ${preview.opportunityShortlist[0]?.target}`);
+    expect(container.querySelector('[aria-label="Private preview aha bridge"]')).not.toBeNull();
     expect(container.textContent).toContain("Private proof loop");
     expect(container.textContent).toContain("Current proof, next pass, launch call");
     expect(container.textContent).toContain("Proof ready");

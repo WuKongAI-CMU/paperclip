@@ -20,6 +20,7 @@ test("DearMe aha proof proves the first private five-minute loop", () => {
   assert.equal(report.status, "ready");
   assert.deepEqual(report.checks.map((item) => item.key), [
     "one_sentence_start",
+    "aha_bridge_contract",
     "five_minute_sequence",
     "live_work_receipts",
     "cycle_report_contract",
@@ -127,6 +128,7 @@ test("DearMe aha proof output is operator-readable without leaking secrets", () 
 
   assert.match(formatted, /DearMe aha proof/);
   assert.match(formatted, /Status: ready/);
+  assert.match(formatted, /Aha bridge: ready/);
   assert.match(formatted, /Five-minute private wow sequence: ready/);
   assert.match(formatted, /Live work receipts: ready/);
   assert.match(formatted, /Cycle report contract: ready/);
@@ -150,6 +152,11 @@ test("DearMe aha proof renders a static private site artifact without hidden ter
   assert.match(html, /dearme\.app\/peter-studio/);
   assert.match(html, /Current proof, next pass, launch call/);
   assert.match(html, /3 private improvements are already lined up/);
+  assert.match(html, /Your one sentence became a private proof system/);
+  assert.match(html, /You answered/);
+  assert.match(html, /It prepared/);
+  assert.match(html, /5 drafts and 5 leads/);
+  assert.match(html, /Still waits/);
   assert.match(html, /From one sentence to private proof/);
   assert.match(html, /Live work receipts/);
   assert.match(html, /Studying your voice/);
