@@ -13,6 +13,26 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Public Proof Aha Bridge - 2026-05-12
+
+- The latest Symphony read-only review converged on the same conclusion:
+  public launch is blocked by real external-channel facts, so the next useful
+  product cut is to make the existing private-proof spine easier to understand.
+- DearMe now reuses the generated first-cycle `liveWorkTrail`, starter draft
+  count, opportunity shortlist count, and approval boundary as a Polsia-style
+  first-screen proof hook: users can watch private brand work appear without
+  exposing provider setup or live-send mechanics.
+- The private site preview now has an `Aha bridge` that connects the single
+  positioning answer to the private proof page, draft packet, opportunity list,
+  and launch boundary. This keeps the wow moment causal instead of making the
+  page feel like a dense results dashboard.
+- `dearme:aha-proof` now checks that the static private site export carries the
+  same bridge, and `dearme:goal-audit` checks the first-run receipt hook in
+  source and regression tests.
+- Do not add a new settings/provider surface for this blocker. The remaining
+  release gap is still the owner-approved LinkedIn endpoint/recipient and
+  iMessage/SMS recipient followed by guarded live receipts.
+
 ## Latest Polsia CEO Report Port - 2026-05-12
 
 - The third Polsia pass focused on the CEO/reporting loop rather than the broad

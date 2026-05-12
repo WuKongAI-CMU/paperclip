@@ -2,6 +2,35 @@
 
 Date: 2026-05-12
 
+## Public Proof Aha Bridge - 2026-05-12
+
+Product/architecture slice:
+
+- Folded the latest Symphony reviews into one bounded cut: strengthen the
+  existing private-proof spine instead of adding another provider setup page.
+- Added a Polsia-style first-screen proof hook to the public content landing:
+  "Watch DearMe prepare private brand work live", backed by the generated
+  first-cycle receipt counts, starter drafts, opportunity leads, and the
+  no-public-action approval boundary.
+- Added an `Aha bridge` to the private site preview so the user can read the
+  cause-and-effect jump: one positioning answer becomes a private proof page,
+  draft packet, opportunity list, and launch boundary.
+- Extended the static aha-proof export and goal-audit markers so this bridge is
+  contract-backed, not just presentational copy.
+- Release posture is unchanged and intentional: private proof is usable; public
+  launch still waits on real external-channel facts and guarded live receipts.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx ui/src/pages/DearMeSitePreview.test.tsx --maxWorkers=1 -t "public first-run landing|smokeable private preview"`
+- `pnpm test:dearme-aha-proof`
+- `pnpm test:dearme-goal-audit`
+- `pnpm --silent dearme:aha-proof -- --check`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm -r typecheck`
+- `git diff --check`
+- Browser preview: `http://localhost:5173/DEAA/dearme?view=content`
+
 ## Polsia CEO Report Port - 2026-05-12
 
 Product/architecture slice:
