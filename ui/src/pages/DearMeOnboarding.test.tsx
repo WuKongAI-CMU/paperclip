@@ -1952,6 +1952,12 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).not.toContain("Start Brand OS");
     const topFocus = surfaceByLabel(container, "Today's brand team focus");
     expect(topFocus.textContent).toContain("While you were away");
+    const reviewPath = surfaceByLabel(topFocus, "Today's review path");
+    expect(topFocus.textContent).toContain("Review first");
+    expect(topFocus.textContent).toContain("Your launch call");
+    expect(topFocus.textContent).toContain("Autonomous lane");
+    expect(reviewPath.textContent).toContain("4 calls");
+    expect(reviewPath.textContent).toContain("Private work moving");
     expect(topFocus.textContent).toContain("Next decision");
     expect(topFocus.textContent).toContain("Open next decision");
     expect(topFocus.textContent).toContain("Start with one sentence");

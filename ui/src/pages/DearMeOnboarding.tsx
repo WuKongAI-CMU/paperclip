@@ -3762,9 +3762,41 @@ function TeamFocusWorkbenchPanel({
         nextSourceReview?.nextAction ??
         "Your team can keep preparing private work.",
     );
+  const workCount = workbench.workReady.length + workbench.activeWork.length;
+  const decisionCount =
+    workbench.decisionsNeeded.length +
+    workbench.batchDecisions.length +
+    workbench.memory.sourceReviewQueue.length;
   const firstCycleActionLabel = canStartPrivateWork
     ? "Start with one sentence"
     : "Preview the first proof pack";
+  const reviewPath = [
+    {
+      icon: FileText,
+      label: "Review first",
+      title: nextMove ? customerProofPackSummary(nextMove.title) : "Start the first proof pack",
+      detail: nextMove
+        ? customerProofPackSummary(nextMove.summary)
+        : "One sentence gives the team enough to prepare the first reviewable work.",
+    },
+    {
+      icon: ShieldCheck,
+      label: "Your launch call",
+      title: decisionCount > 0 ? pluralizeCount(decisionCount, "call") : "No call waiting",
+      detail: decisionCount > 0
+        ? nextDecisionSummary
+        : "The team can keep moving privately until a public or external move needs you.",
+    },
+    {
+      icon: Workflow,
+      label: "Autonomous lane",
+      title: livePulse ? "Working now" : workCount > 0 ? "Private work moving" : "Ready to begin",
+      detail: livePulse?.description ??
+        (workCount > 0
+          ? "Prepared assets stay in motion while public moves remain gated."
+          : "The first private cycle starts without a setup tour."),
+    },
+  ];
 
   return (
     <DearMeFocusSurface aria-label="Today's brand team focus" className="space-y-5">
@@ -3792,6 +3824,23 @@ function TeamFocusWorkbenchPanel({
       />
 
       <TeamProofPackContinuityRibbon workbench={workbench} />
+
+      <section aria-label="Today's review path" className="grid gap-3 md:grid-cols-3">
+        {reviewPath.map((step) => {
+          const StepIcon = step.icon;
+
+          return (
+            <div key={step.label} className="rounded-md border border-border bg-background/75 p-3">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <StepIcon className="h-4 w-4 text-primary" aria-hidden="true" />
+                {step.label}
+              </div>
+              <p className="mt-2 text-sm font-medium text-foreground">{step.title}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{step.detail}</p>
+            </div>
+          );
+        })}
+      </section>
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
         <DearMeWorkbenchCard
@@ -3854,7 +3903,7 @@ function TeamFocusWorkbenchPanel({
           <div className="rounded-md border border-border bg-background/70 p-3">
             <p className="text-xs font-medium text-muted-foreground">Work ready</p>
             <p className="mt-1 text-sm font-medium">
-              {workbench.workReady.length + workbench.activeWork.length}
+              {workCount}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Prepared assets and active lanes your team can keep moving privately.
