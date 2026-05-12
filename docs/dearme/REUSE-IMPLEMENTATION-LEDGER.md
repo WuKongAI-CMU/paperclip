@@ -13,6 +13,26 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Workroom Queue And Release-Gate Handoff Integration - 2026-05-12
+
+- The next Polsia reuse step is now absorbed into the first-run path: the cold
+  content landing previews concrete workroom queues after the first private
+  cycle, and `dearme:goal-audit` requires those markers in both source and the
+  focused onboarding regression test.
+- `dearme:release-gate -- --json` now carries `operatorHandoff` next to
+  `factsNeeded`, `productReadiness`, and `productComparison`. Symphony workers
+  should use it as the compact owner handoff for approved facts, local capture,
+  no-send check, and guarded live commands.
+- `dearme:status -- --json` now mirrors that same spine as `liveProofHandoff`.
+  This keeps the status dashboard, release gate, and next-proof setup aligned
+  instead of creating another owner-proof workflow.
+- `dearme:next-proof` and `dearme:release-gate` now ignore pnpm's forwarded
+  `--` separator anywhere in argv, matching the status/proof command
+  convention used by the coordinator.
+- This is integration and handoff polish, not a new setup lane. The remaining
+  release gap stays real provider truth: LinkedIn partner endpoint + recipient
+  and approved iMessage/SMS recipient followed by guarded live receipts.
+
 ## Latest Polsia Second-Pass Architecture Study - 2026-05-12
 
 - The second Polsia pass used the local production archive, authenticated API

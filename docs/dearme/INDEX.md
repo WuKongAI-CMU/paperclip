@@ -252,6 +252,9 @@ to "where are we versus Polsia, Naive/Paperclip, and OpenClaw?": DearMe has
 matched the Naive/Paperclip reuse layer, reached a private Polsia-style wow,
 proved the OpenClaw message contract locally, and remains partial until live
 external channel proof is supplied and verified.
+Its JSON also carries `operatorHandoff`, which mirrors the owner-facing proof
+handoff: approved facts to capture, the no-send check, guarded live commands,
+and the live-confirmation safety boundary.
 When the remaining blocker is `openclaw_messages`, `dearme:goal-audit` now
 shows no-send setup first: run
 `pnpm dearme:next-proof -- --target openclaw_messages`, then the targeted

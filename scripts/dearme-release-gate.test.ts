@@ -129,6 +129,44 @@ test("DearMe release gate allows private proof while blocking public launch", ()
     "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
     "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
   ]);
+  assert.equal(gate.operatorHandoff.status, "blocked");
+  assert.deepEqual(gate.operatorHandoff.factsToCapture.map((fact) => [
+    fact.provideAs,
+    fact.captureFlag,
+    fact.placeholder,
+  ]), [
+    [
+      "DEARME_LINKEDIN_DM_MESSAGES_URL",
+      "--linkedin-messages-url",
+      "<partner-messages-url>",
+    ],
+    [
+      "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
+      "--linkedin-recipient-urn",
+      "<approved-linkedin-recipient-urn>",
+    ],
+    [
+      "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+      "--imessage-recipient",
+      "<approved-phone-or-imessage>",
+    ],
+  ]);
+  assert.equal(
+    gate.operatorHandoff.captureCommand,
+    "pnpm --silent dearme:next-proof -- --target all --linkedin-messages-url <partner-messages-url> --linkedin-recipient-urn <approved-linkedin-recipient-urn> --imessage-recipient <approved-phone-or-imessage>",
+  );
+  assert.equal(
+    gate.operatorHandoff.checkCommand,
+    "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
+  );
+  assert.equal(gate.operatorHandoff.noSendGuarantee, true);
+  assert.deepEqual(gate.operatorHandoff.guardedLiveCommands, [
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+  ]);
+  assert.doesNotMatch(
+    JSON.stringify(gate.operatorHandoff),
+    /secret|DEARME_LINKEDIN_DM_CREDENTIAL_JSON/,
+  );
   assert.equal(gate.productReadiness.headline, "Private proof is usable");
   assert.deepEqual(gate.productReadiness.publicLaunchNeeds, [
     "Professional-network delivery route",
@@ -171,6 +209,10 @@ test("DearMe release gate allows private proof while blocking public launch", ()
   assert.match(formatted, /OpenClaw shared Telegram\/iMessage message proof: imessage_message/);
   assert.match(formatted, /Facts needed before live proof:/);
   assert.match(formatted, /LinkedIn approved smoke recipient: provide DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN/);
+  assert.match(formatted, /Operator handoff:/);
+  assert.match(formatted, /Capture approved facts locally: pnpm --silent dearme:next-proof -- --target all --linkedin-messages-url <partner-messages-url> --linkedin-recipient-urn <approved-linkedin-recipient-urn> --imessage-recipient <approved-phone-or-imessage>/);
+  assert.match(formatted, /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
+  assert.match(formatted, /Guarded live proof:/);
   assert.match(formatted, /Product readiness needs:/);
   assert.match(formatted, /Professional-network delivery route/);
   assert.match(formatted, /Approved professional-network recipient/);
@@ -200,6 +242,9 @@ test("DearMe release gate passes public launch only when the goal audit is compl
   assert.equal(gate.privateProof.ready, true);
   assert.equal(gate.publicLaunch.ready, true);
   assert.deepEqual(gate.publicLaunch.blockers, []);
+  assert.equal(gate.operatorHandoff.status, "ready");
+  assert.deepEqual(gate.operatorHandoff.factsToCapture, []);
+  assert.equal(gate.operatorHandoff.captureCommand, null);
   assert.deepEqual(
     gate.productComparison.items.map((item) => [item.benchmark, item.status]),
     [
@@ -255,8 +300,10 @@ test("DearMe release gate blocks private proof when the public first-run landing
 
 test("DearMe release gate parses check target, json, and env files", () => {
   assert.deepEqual(parseDearMeReleaseGateArgs([
+    "--",
     "--check",
     "--json",
+    "--",
     "--target",
     "private-proof",
     "--env-file",
@@ -269,6 +316,13 @@ test("DearMe release gate parses check target, json, and env files", () => {
     target: "private-proof" satisfies DearMeReleaseGateTarget,
     envFiles: [".one.env", ".two.env"],
   });
+  assert.deepEqual(
+    {
+      check: parseDearMeReleaseGateArgs(["--check", "--", "--json"]).check,
+      json: parseDearMeReleaseGateArgs(["--check", "--", "--json"]).json,
+    },
+    { check: true, json: true },
+  );
   assert.equal(parseDearMeReleaseGateArgs(["--target=public-launch"]).target, "public-launch");
   assert.throws(
     () => parseDearMeReleaseGateArgs(["--target"]),

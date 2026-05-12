@@ -29,6 +29,10 @@ import {
   runDearMeOpenClawMessageRehearsal,
   type DearMeOpenClawMessageRehearsalReport,
 } from "./dearme-openclaw-message-rehearsal.ts";
+import {
+  dearMeProofFactsNeededFromReadiness,
+  type DearMeProofFactNeed,
+} from "./dearme-proof-facts.ts";
 
 type Env = Record<string, string | undefined>;
 
@@ -129,10 +133,19 @@ export interface DearMeProofLiveProviderFocus {
   operatorCommand: string;
 }
 
+export interface DearMeProofLiveProofHandoff {
+  factsNeeded: DearMeProofFactNeed[];
+  setupCommands: string[];
+  checkCommand: string;
+  guardedLiveCommands: string[];
+  noSendGuarantee: true;
+}
+
 export interface DearMeProofStatus {
   lane: DearMeProofLane;
   sections: DearMeProofStatusSection[];
   liveProviderFocus: DearMeProofLiveProviderFocus[];
+  liveProofHandoff: DearMeProofLiveProofHandoff;
   commands: {
     ahaProof: string;
     integrationAudit: string;
@@ -997,6 +1010,13 @@ export function summarizeDearMeProofStatus(
   const sections: DearMeProofStatusSection[] = [];
   let liveProviderSetup: string[] = [];
   let liveProviderFocus: DearMeProofLiveProviderFocus[] = [];
+  let liveProofHandoff: DearMeProofLiveProofHandoff = {
+    factsNeeded: [],
+    setupCommands: [],
+    checkCommand: `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --check`,
+    guardedLiveCommands: [],
+    noSendGuarantee: true,
+  };
 
   if (lane === "all") {
     sections.push(firstWowAhaSection(runDearMeAhaProof().report));
@@ -1056,6 +1076,17 @@ export function summarizeDearMeProofStatus(
       blockedTargets.map((item) => item.target as DearMeProviderSmokeReadiness["target"]),
     );
     liveProviderFocus = liveProviderFocusPlan(provider);
+    liveProofHandoff = {
+      factsNeeded: dearMeProofFactsNeededFromReadiness(provider.readiness),
+      setupCommands: liveProviderSetup.filter((command) =>
+        command.includes("dearme:next-proof")
+      ),
+      checkCommand: `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --check`,
+      guardedLiveCommands: liveProviderSetup.filter((command) =>
+        command.includes("DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1")
+      ),
+      noSendGuarantee: true,
+    };
     sections.push({
       key: "live_provider_proof",
       label: "Live provider proof",
@@ -1070,6 +1101,7 @@ export function summarizeDearMeProofStatus(
     lane,
     sections,
     liveProviderFocus,
+    liveProofHandoff,
     commands: {
       ahaProof: "pnpm --silent dearme:aha-proof -- --check",
       integrationAudit: INTEGRATION_AUDIT_COMMAND,
@@ -1182,6 +1214,31 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
       lines.push(
         `- ${focus.label}: ${state}.${formatCapabilityBlockers(focus.missingCapabilities)} ${focus.reason} Run: ${focus.operatorCommand}`,
       );
+    }
+  }
+
+  if (
+    status.liveProofHandoff.factsNeeded.length > 0 ||
+    status.liveProofHandoff.setupCommands.length > 0 ||
+    status.liveProofHandoff.guardedLiveCommands.length > 0
+  ) {
+    lines.push("");
+    lines.push("Live proof handoff:");
+    if (status.liveProofHandoff.factsNeeded.length > 0) {
+      lines.push(`- facts needed: ${status.liveProofHandoff.factsNeeded.length}`);
+      for (const fact of status.liveProofHandoff.factsNeeded) {
+        const sensitivity = fact.sensitive ? " (sensitive; keep local)" : "";
+        lines.push(`  - ${fact.label}: provide ${fact.provideAs}${sensitivity}`);
+      }
+    } else {
+      lines.push("- facts needed: none");
+    }
+    lines.push(`- No-send check: ${status.liveProofHandoff.checkCommand}`);
+    if (status.liveProofHandoff.guardedLiveCommands.length > 0) {
+      lines.push("- Guarded live proof:");
+      for (const command of status.liveProofHandoff.guardedLiveCommands) {
+        lines.push(`  - ${command}`);
+      }
     }
   }
 

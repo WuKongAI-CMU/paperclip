@@ -1934,8 +1934,15 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain(
       "Private. Public only with approval.",
     );
+    expect(container.textContent).toContain("Your workroom opens with");
+    expect(container.textContent).toContain("What moved while you were away");
+    expect(container.textContent).toContain("Ready for your launch call");
+    expect(container.textContent).toContain("Prepared but blocked");
+    expect(container.textContent).toContain("Proof used");
+    expect(container.textContent).toContain("Next private cycle");
     expect(container.querySelector('[aria-label="DearMe public first run"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Brand work live"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="First-run workroom queues"]')).not.toBeNull();
     expect(container.textContent).not.toContain("Today's brand team focus");
     expect(container.textContent).not.toContain("90-second first cycle");
     expect(mockDearmeApi.getWorkbench).not.toHaveBeenCalled();

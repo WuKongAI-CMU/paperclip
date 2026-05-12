@@ -2,6 +2,46 @@
 
 Date: 2026-05-12
 
+## Public First-Run Workroom Queues And Operator Handoff - 2026-05-12
+
+Product/coordination slice:
+
+- Continued the Polsia comparison by moving the useful lesson into the first
+  DearMe screen: visible autonomous progress should read as a workroom, not a
+  static marketing claim.
+- Added first-run workroom queues to the public content landing:
+  `What moved while you were away`, `Ready for your launch call`, `Prepared but
+  blocked`, `Proof used`, and `Next private cycle`.
+- Extended the public first-run goal audit markers so the Polsia-style proof
+  now requires the queue contract in both source and regression test. The
+  product posture remains unchanged: private proof is usable; public launch
+  still waits on real live-channel proof.
+- Extended `dearme:release-gate` with an `operatorHandoff` payload so Symphony
+  and owner-facing status reads no longer have to manually merge
+  release-gate, next-proof, and provider-smoke output. The payload includes
+  approved facts to capture, local capture command, no-send check, guarded live
+  commands, and live-confirmation safety notes.
+- Mirrored the same owner-proof handoff into `dearme:status` as
+  `liveProofHandoff`, keeping status JSON aligned with the release gate: facts
+  needed, setup commands, no-send check, and guarded live commands are now one
+  structured operator spine.
+- Normalized pnpm-forwarded `--` parsing for `dearme:next-proof` and
+  `dearme:release-gate`, matching the already-cleaned `dearme:status` path.
+
+Verification:
+
+- `pnpm test:dearme-next-proof`
+- `pnpm test:dearme-release-gate`
+- `pnpm test:dearme-proof`
+- `pnpm test:dearme-goal-audit`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "public first-run landing"`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:status -- --json`
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
+- `git diff --check`
+- `pnpm -r typecheck`
+- Browser QA on `http://127.0.0.1:3100/DEAA/dearme?view=content&codexProductQa=20260512d`: hero, workroom queues, approval boundary, no restart banner, and no framework overlay.
+
 ## Polsia Second-Pass Product Architecture Study - 2026-05-12
 
 Product/architecture slice:

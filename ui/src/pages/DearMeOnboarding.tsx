@@ -1778,6 +1778,29 @@ const FIRST_CYCLE_LIVE_WORK_STATUS_LABELS: Record<DearMeFirstCyclePreviewRespons
   your_call: "Your call",
 };
 
+const FIRST_RUN_WORKROOM_RAILS = [
+  {
+    label: "What moved while you were away",
+    detail: "Research, drafts, opportunities, and proof receipts stay visible.",
+  },
+  {
+    label: "Ready for your launch call",
+    detail: "Only public-facing moves ask for approval.",
+  },
+  {
+    label: "Prepared but blocked",
+    detail: "Work waits safely when sources, channels, or spend need your call.",
+  },
+  {
+    label: "Proof used",
+    detail: "Every draft and pitch points back to private source proof.",
+  },
+  {
+    label: "Next private cycle",
+    detail: "Feedback becomes the next pass without another setup flow.",
+  },
+] as const;
+
 const SAMPLE_FIRST_CYCLE_PREVIEW = createDearMeFirstCyclePreview("sample-company", {
   brand: {
     displayName: "Maya Chen",
@@ -2576,6 +2599,19 @@ function DearMePublicFirstRunLanding({
                     </div>
                   </div>
                 ))}
+              </div>
+              <div className="mt-5 border-t border-border pt-4" aria-label="First-run workroom queues">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Your workroom opens with
+                </p>
+                <div className="mt-3 grid gap-2">
+                  {FIRST_RUN_WORKROOM_RAILS.map((rail) => (
+                    <div key={rail.label} className="grid gap-1 rounded-md bg-muted/35 px-3 py-2">
+                      <p className="text-sm font-medium text-foreground">{rail.label}</p>
+                      <p className="text-xs leading-relaxed text-muted-foreground">{rail.detail}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

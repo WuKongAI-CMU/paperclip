@@ -318,7 +318,7 @@ export function parseDearMeNextProofArgs(argv: readonly string[]): DearMeNextPro
     envFile: DEFAULT_PROOF_ENV_FILE,
     factCaptures: [],
   };
-  const normalizedArgv = argv[0] === "--" ? argv.slice(1) : argv;
+  const normalizedArgv = argv.filter((arg) => arg !== "--");
 
   for (let index = 0; index < normalizedArgv.length; index += 1) {
     const arg = normalizedArgv[index];

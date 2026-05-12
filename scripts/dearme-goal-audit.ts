@@ -225,6 +225,11 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
     snippet: "SAMPLE_FIRST_CYCLE_PREVIEW.liveWorkTrail",
   },
   {
+    key: "source_workroom_queue_contract",
+    file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
+    snippet: "FIRST_RUN_WORKROOM_RAILS",
+  },
+  {
     key: "source_approval_boundary",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
     snippet: "Private. Public only with approval.",
@@ -238,6 +243,11 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
     key: "test_live_work_receipts",
     file: PUBLIC_FIRST_RUN_LANDING_TEST,
     snippet: "First-run live work receipts",
+  },
+  {
+    key: "test_workroom_queues",
+    file: PUBLIC_FIRST_RUN_LANDING_TEST,
+    snippet: "First-run workroom queues",
   },
   {
     key: "test_dense_workbench_hidden_before_start",
@@ -592,7 +602,7 @@ export async function inspectDearMePublicFirstRunLandingEvidence(): Promise<
     return {
       ready: missing.length === 0,
       evidence: missing.length === 0
-        ? "Content view starts with one positioning sentence, a known-for input, brand-cycle CTA, live private-work receipts, and an approval-boundary promise; the regression test keeps dense workbench fetches behind user intent."
+        ? "Content view starts with one positioning sentence, a known-for input, brand-cycle CTA, live private-work receipts, first-run workroom queues, and an approval-boundary promise; the regression test keeps dense workbench fetches behind user intent."
         : `Public first-run landing proof is missing ${missing.length} required source/test marker(s): ${missing.join(", ")}.`,
       missing,
     };

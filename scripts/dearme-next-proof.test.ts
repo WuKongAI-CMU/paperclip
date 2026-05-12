@@ -13,8 +13,10 @@ import type { DearMeReleaseGate } from "./dearme-release-gate.ts";
 
 test("DearMe next proof args parse provider target aliases and env controls", () => {
   const args = parseDearMeNextProofArgs([
+    "--",
     "--target",
     "openclaw",
+    "--",
     "--env-file",
     "local-proof.env",
     "--force",
@@ -30,6 +32,13 @@ test("DearMe next proof args parse provider target aliases and env controls", ()
     envFile: "local-proof.env",
     factCaptures: [],
   });
+  assert.deepEqual(
+    {
+      target: parseDearMeNextProofArgs(["--target", "openclaw", "--", "--json"]).target,
+      json: parseDearMeNextProofArgs(["--target", "openclaw", "--", "--json"]).json,
+    },
+    { target: "openclaw_messages", json: true },
+  );
 });
 
 test("DearMe next proof args parse non-secret fact capture flags", () => {

@@ -45,6 +45,7 @@ export interface DearMeReleaseGate {
   privateProof: DearMeReleaseGateDecision;
   publicLaunch: DearMeReleaseGateDecision;
   factsNeeded: DearMeProofFactNeed[];
+  operatorHandoff: DearMeReleaseGateOperatorHandoff;
   productReadiness: DearMeProductReadiness;
   productComparison: DearMeProductComparison;
   nextAction: DearMeGoalAudit["nextAction"];
@@ -63,6 +64,25 @@ export interface DearMeProductReadiness {
   };
 }
 
+export interface DearMeReleaseGateOperatorFact {
+  label: string;
+  provideAs: string;
+  targets: DearMeProviderSmokeTarget[];
+  sensitive: boolean;
+  placeholder: string;
+  captureFlag: string | null;
+}
+
+export interface DearMeReleaseGateOperatorHandoff {
+  status: "blocked" | "ready";
+  factsToCapture: DearMeReleaseGateOperatorFact[];
+  captureCommand: string | null;
+  checkCommand: string;
+  guardedLiveCommands: string[];
+  noSendGuarantee: true;
+  safety: string[];
+}
+
 export type DearMeBenchmarkStatus = "ahead" | "matched" | "partial" | "behind";
 
 export interface DearMeProductComparisonItem {
@@ -78,7 +98,10 @@ export interface DearMeProductComparison {
   items: DearMeProductComparisonItem[];
 }
 
-type DearMeReleaseGateBase = Omit<DearMeReleaseGate, "productReadiness" | "productComparison">;
+type DearMeReleaseGateBase = Omit<
+  DearMeReleaseGate,
+  "operatorHandoff" | "productReadiness" | "productComparison"
+>;
 type DearMeProviderSmokeTarget = DearMeProviderSmokeReadiness["target"];
 
 const PRIVATE_PROOF_ITEMS: readonly DearMeGoalAuditItemKey[] = [
@@ -93,6 +116,24 @@ const PRIVATE_PROOF_ITEMS: readonly DearMeGoalAuditItemKey[] = [
   "production_host_live_wow",
   "openclaw_message_contract_rehearsal",
 ];
+
+const OPERATOR_CAPTURE_SPECS = {
+  DEARME_LINKEDIN_DM_MESSAGES_URL: {
+    captureFlag: "--linkedin-messages-url",
+    placeholder: "<partner-messages-url>",
+  },
+  DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN: {
+    captureFlag: "--linkedin-recipient-urn",
+    placeholder: "<approved-linkedin-recipient-urn>",
+  },
+  DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT: {
+    captureFlag: "--imessage-recipient",
+    placeholder: "<approved-phone-or-imessage>",
+  },
+} as const satisfies Record<string, {
+  captureFlag: string;
+  placeholder: string;
+}>;
 
 function unique(values: readonly string[]): string[] {
   return [...new Set(values.filter(Boolean))];
@@ -127,6 +168,56 @@ function commandsFor(items: readonly DearMeGoalAuditItem[]): string[] {
       .filter((item) => item.status !== "met")
       .flatMap((item) => item.commands),
   );
+}
+
+function operatorFactPlaceholder(fact: DearMeProofFactNeed) {
+  const spec = OPERATOR_CAPTURE_SPECS[fact.provideAs as keyof typeof OPERATOR_CAPTURE_SPECS];
+  if (spec) return spec.placeholder;
+  if (fact.sensitive) return "<keep-local-secret>";
+  return "<approved-value>";
+}
+
+function operatorFactCaptureFlag(fact: DearMeProofFactNeed) {
+  return OPERATOR_CAPTURE_SPECS[fact.provideAs as keyof typeof OPERATOR_CAPTURE_SPECS]
+    ?.captureFlag ?? null;
+}
+
+function buildOperatorHandoff(
+  gate: DearMeReleaseGateBase,
+): DearMeReleaseGateOperatorHandoff {
+  const factsToCapture = gate.factsNeeded.map((fact): DearMeReleaseGateOperatorFact => ({
+    label: fact.label,
+    provideAs: fact.provideAs,
+    targets: fact.targets,
+    sensitive: fact.sensitive,
+    placeholder: operatorFactPlaceholder(fact),
+    captureFlag: operatorFactCaptureFlag(fact),
+  }));
+  const captureArgs = factsToCapture
+    .filter((fact) => fact.captureFlag)
+    .map((fact) => `${fact.captureFlag} ${fact.placeholder}`);
+  const captureCommand = captureArgs.length > 0
+    ? `pnpm --silent dearme:next-proof -- --target all ${captureArgs.join(" ")}`
+    : null;
+  const guardedLiveCommands = unique(
+    gate.publicLaunch.commands.filter((command) =>
+      command.includes("DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1")
+    ),
+  );
+
+  return {
+    status: factsToCapture.length > 0 ? "blocked" : "ready",
+    factsToCapture,
+    captureCommand,
+    checkCommand: "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
+    guardedLiveCommands,
+    noSendGuarantee: true,
+    safety: [
+      "The capture command only writes local proof setup; it does not send messages, publish, deploy, or spend.",
+      "Run the no-send check before any guarded live proof.",
+      "Live proof still requires DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.",
+    ],
+  };
 }
 
 function buildProductReadiness(
@@ -372,10 +463,12 @@ export function summarizeDearMeReleaseGate(
     nextAction: audit.nextAction,
     audit,
   };
+  const operatorHandoff = buildOperatorHandoff(base);
   const productReadiness = buildProductReadiness(base);
   const productComparison = buildProductComparison(base, providerReadiness);
   return {
     ...base,
+    operatorHandoff,
     productReadiness,
     productComparison,
   };
@@ -428,6 +521,22 @@ export function formatDearMeReleaseGate(gate: DearMeReleaseGate): string[] {
   }
 
   lines.push("");
+  lines.push("Operator handoff:");
+  lines.push(`- status: ${gate.operatorHandoff.status}`);
+  if (gate.operatorHandoff.captureCommand) {
+    lines.push(`- Capture approved facts locally: ${gate.operatorHandoff.captureCommand}`);
+  } else {
+    lines.push("- Capture approved facts locally: no non-secret owner facts missing.");
+  }
+  lines.push(`- No-send check: ${gate.operatorHandoff.checkCommand}`);
+  if (gate.operatorHandoff.guardedLiveCommands.length > 0) {
+    lines.push("- Guarded live proof:");
+    for (const command of gate.operatorHandoff.guardedLiveCommands) {
+      lines.push(`  - ${command}`);
+    }
+  }
+
+  lines.push("");
   lines.push("Benchmark comparison:");
   lines.push(`- ${gate.productComparison.verdict}`);
   for (const item of gate.productComparison.items) {
@@ -461,7 +570,7 @@ export function parseDearMeReleaseGateArgs(argv: readonly string[]): DearMeRelea
     target: "public-launch",
     envFiles: [],
   };
-  const normalizedArgv = argv[0] === "--" ? argv.slice(1) : argv;
+  const normalizedArgv = argv.filter((arg) => arg !== "--");
 
   for (let index = 0; index < normalizedArgv.length; index += 1) {
     const arg = normalizedArgv[index];
