@@ -2,6 +2,25 @@
 
 Date: 2026-05-12
 
+## Sidebar Shows Current Readiness Split - 2026-05-12
+
+Product/architecture slice:
+
+- Recorded and verified commit `5faeb478` so the customer shell now shows the
+  current readiness split directly: private proof is ready, while launch proof
+  is still pending.
+- The readiness cards route to the existing Work Ready and Decisions views
+  instead of creating another dashboard or setup surface.
+- Copy stays customer-safe: it does not expose OpenClaw, Symphony, provider,
+  model, setup, or raw control-plane language.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/DearMeSidebar.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --json`
+- `git diff --check`
+
 ## Coordinator Worktree Metadata Pruned - 2026-05-12
 
 Product/architecture slice:
