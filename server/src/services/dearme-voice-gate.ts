@@ -334,8 +334,20 @@ async function scoreWithCorpus(
     passed,
     floor,
     reasons: topReasons(reasons),
-    rewrite: null,
+    rewrite: passed ? null : buildSoftRejectRewrite(req.kind),
   };
+}
+
+function buildSoftRejectRewrite(kind: VoiceGateArtifactKind): string {
+  if (kind === "site-bio") {
+    return "I turn scattered proof into a sharper public story: what changed, why it matters, and the one next step worth asking for.";
+  }
+
+  if (kind === "linkedin-dm" || kind === "direct-message" || kind === "outbound-email") {
+    return "I shipped one inspectable launch proof because the next conversation needed a clearer yes. If it is useful, I can send the short version and one concrete next step.";
+  }
+
+  return "I shipped the private proof after the launch call because the buyer needed one inspectable next yes before we asked for more. I would rather show the work than over-explain it.";
 }
 
 function profileFromSnapshot(snapshot: DearMeVoiceCorpusProfileSnapshot | null): VoiceCorpusProfile {

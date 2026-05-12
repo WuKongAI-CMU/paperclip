@@ -12,6 +12,7 @@ type VoiceGateScoreResponse = Awaited<ReturnType<ReturnType<typeof dearMeVoiceGa
 export const DEARME_VOICE_SMOKE_TARGETS = [
   "deterministic_gate",
   "profile_token_semantic",
+  "profile_token_review_loop",
 ] as const;
 
 export type DearMeVoiceSmokeTarget = typeof DEARME_VOICE_SMOKE_TARGETS[number];
@@ -42,6 +43,10 @@ export type DearMeVoiceSmokePassedResult = {
   matchScore?: number;
   driftScore?: number;
   driftBlocked?: boolean;
+  rewriteScore?: number;
+  rewritePassed?: boolean;
+  rewriteSuggested?: boolean;
+  reviewLoopProven?: boolean;
   profileAcceptedSamples?: number;
   profileTokenCount?: number;
   customCorpus?: boolean;
@@ -80,6 +85,7 @@ const PROFILE_TOKEN_MODE_REQUIREMENT = "DEARME_VOICE_SEMANTIC_SCORER=profile-tok
 const PROFILE_SEEDS_REQUIREMENT = "DEARME_VOICE_SMOKE_PROFILE_SEEDS";
 const MATCH_TEXT_REQUIREMENT = "DEARME_VOICE_SMOKE_MATCH_TEXT";
 const DRIFT_TEXT_REQUIREMENT = "DEARME_VOICE_SMOKE_DRIFT_TEXT";
+const REWRITE_TEXT_REQUIREMENT = "DEARME_VOICE_SMOKE_REWRITE_TEXT";
 const VOICE_SMOKE_DEFAULT_FLOOR = 92;
 
 const DETERMINISTIC_SMOKE_TEXT =
@@ -93,6 +99,8 @@ const PROFILE_MATCH_TEXT =
   "I shipped another inspectable launch proof because the buyer needed a clearer next yes before the call.";
 const PROFILE_DRIFT_TEXT =
   "Amazing platform synergy unlocks automated marketing workflows for everyone at scale without a specific buyer proof.";
+const PROFILE_REWRITE_TEXT =
+  "I shipped one inspectable launch proof because the buyer needed a clearer next yes before the call. The point is simple: show the work, name the decision, then ask for one concrete step.";
 
 function expandVoiceSmokeTargets(targetArg: DearMeVoiceSmokeTargetArg): readonly DearMeVoiceSmokeTarget[] {
   return targetArg === "all" ? DEARME_VOICE_SMOKE_TARGETS : [targetArg];
@@ -104,6 +112,8 @@ function targetDescription(target: DearMeVoiceSmokeTarget) {
       return "score one concrete private draft through the local voice gate";
     case "profile_token_semantic":
       return "prove the opt-in profile-token scorer can match approved voice and block drift";
+    case "profile_token_review_loop":
+      return "prove the local review loop blocks drift and accepts the safe rewrite";
   }
 }
 
@@ -119,6 +129,15 @@ function targetMissingRequirements(target: DearMeVoiceSmokeTarget, env: Env) {
             : [PROFILE_TOKEN_MODE_REQUIREMENT]
         ),
         ...customCorpusMissingRequirements(env),
+      ];
+    case "profile_token_review_loop":
+      return [
+        ...(
+          resolveDearMeVoiceSemanticScorerFromEnv(env as NodeJS.ProcessEnv)
+            ? []
+            : [PROFILE_TOKEN_MODE_REQUIREMENT]
+        ),
+        ...customCorpusMissingRequirements(env, { requireRewriteText: true }),
       ];
   }
 }
@@ -185,7 +204,10 @@ export function formatDearMeVoiceSmokeReadiness(
 export function dearMeVoiceSmokeEnvTemplate(targetArg: DearMeVoiceSmokeTargetArg = "all"): string {
   const targetFlag = targetArg === "all" ? "" : ` --target ${targetArg}`;
   const selectedRunCommands = targetArg === "all"
-    ? [`${VOICE_SMOKE_BASE_COMMAND} --target profile_token_semantic`]
+    ? [
+      `${VOICE_SMOKE_BASE_COMMAND} --target profile_token_semantic`,
+      `${VOICE_SMOKE_BASE_COMMAND} --target profile_token_review_loop`,
+    ]
     : [`${VOICE_SMOKE_BASE_COMMAND} --target ${targetArg}`];
 
   return `# DearMe voice smoke local env.
@@ -208,7 +230,9 @@ DEARME_VOICE_SEMANTIC_MIN_PROFILE_TOKENS=8
 # DEARME_VOICE_SMOKE_REQUIRE_CUSTOM_CORPUS=1
 # DEARME_VOICE_SMOKE_PROFILE_SEEDS=\"I turn rough notes into buyer proof before launch.|||I prefer inspectable proof over broad claims.|||I keep the next call focused on one concrete yes.\"
 # DEARME_VOICE_SMOKE_MATCH_TEXT=\"I turn rough notes into buyer proof before launch because inspectable proof makes one concrete yes easier to trust.\"
-# DEARME_VOICE_SMOKE_DRIFT_TEXT=\"Amazing platform synergy unlocks automated workflows for everyone at scale.\"`;
+# DEARME_VOICE_SMOKE_DRIFT_TEXT=\"Amazing platform synergy unlocks automated workflows for everyone at scale.\"
+# Required only when custom corpus is required for --target profile_token_review_loop.
+# DEARME_VOICE_SMOKE_REWRITE_TEXT=\"I turn rough notes into buyer proof before launch because the next call needs one concrete yes.\"`;
 }
 
 function envFlagEnabled(value: string | undefined) {
@@ -235,16 +259,25 @@ function readVoiceSmokeCorpus(env: Env) {
   const customSeeds = parseCorpusTexts(env.DEARME_VOICE_SMOKE_PROFILE_SEEDS);
   const customMatchText = env.DEARME_VOICE_SMOKE_MATCH_TEXT?.trim();
   const customDriftText = env.DEARME_VOICE_SMOKE_DRIFT_TEXT?.trim();
+  const customRewriteText = env.DEARME_VOICE_SMOKE_REWRITE_TEXT?.trim();
 
   return {
     seedTexts: customSeeds.length > 0 ? customSeeds : [...PROFILE_SEED_TEXTS],
     matchText: customMatchText || PROFILE_MATCH_TEXT,
     driftText: customDriftText || PROFILE_DRIFT_TEXT,
-    customCorpus: customSeeds.length > 0 || Boolean(customMatchText) || Boolean(customDriftText),
+    rewriteText: customRewriteText || PROFILE_REWRITE_TEXT,
+    customRewriteText: Boolean(customRewriteText),
+    customCorpus: customSeeds.length > 0
+      || Boolean(customMatchText)
+      || Boolean(customDriftText)
+      || Boolean(customRewriteText),
   };
 }
 
-function customCorpusMissingRequirements(env: Env): string[] {
+function customCorpusMissingRequirements(
+  env: Env,
+  options: { requireRewriteText?: boolean } = {},
+): string[] {
   if (!envFlagEnabled(env.DEARME_VOICE_SMOKE_REQUIRE_CUSTOM_CORPUS)) return [];
 
   const missing: string[] = [];
@@ -258,6 +291,9 @@ function customCorpusMissingRequirements(env: Env): string[] {
   }
   if (!env.DEARME_VOICE_SMOKE_DRIFT_TEXT?.trim()) {
     missing.push(DRIFT_TEXT_REQUIREMENT);
+  }
+  if (options.requireRewriteText && !env.DEARME_VOICE_SMOKE_REWRITE_TEXT?.trim()) {
+    missing.push(REWRITE_TEXT_REQUIREMENT);
   }
 
   return missing;
@@ -386,6 +422,12 @@ function normalizeTargetArg(value: string): DearMeVoiceSmokeTargetArg {
     case "semantic":
     case "semantic_profile":
       return "profile_token_semantic";
+    case "review":
+    case "review_loop":
+    case "profile_token_review_loop":
+    case "soft_reject":
+    case "soft_reject_review":
+      return "profile_token_review_loop";
     default:
       throw new Error(`Unknown voice smoke target: ${value}`);
   }
@@ -411,6 +453,8 @@ async function runTarget(
       return runDeterministicGateSmoke();
     case "profile_token_semantic":
       return runProfileTokenSemanticSmoke(env);
+    case "profile_token_review_loop":
+      return runProfileTokenReviewLoopSmoke(env);
   }
 }
 
@@ -512,6 +556,89 @@ async function runProfileTokenSemanticSmoke(env: Env): Promise<DearMeVoiceSmokeR
   };
 }
 
+async function runProfileTokenReviewLoopSmoke(env: Env): Promise<DearMeVoiceSmokeResult> {
+  const missing = targetMissingRequirements("profile_token_review_loop", env);
+  if (missing.length > 0) {
+    return {
+      target: "profile_token_review_loop",
+      status: "blocked",
+      reason: "missing-voice-semantic-scorer-config",
+      missing,
+    };
+  }
+
+  const semanticScorer = resolveDearMeVoiceSemanticScorerFromEnv(env as NodeJS.ProcessEnv);
+  if (!semanticScorer) {
+    return {
+      target: "profile_token_review_loop",
+      status: "blocked",
+      reason: "missing-voice-semantic-scorer-config",
+      missing: [PROFILE_TOKEN_MODE_REQUIREMENT],
+    };
+  }
+
+  const corpus = readVoiceSmokeCorpus(env);
+  const profileStore = createInMemoryDearMeVoiceProfileStore();
+  const service = dearMeVoiceGateService({ profileStore, semanticScorer });
+  const fingerprintId = "vf_voice_smoke_review_loop";
+  for (const text of corpus.seedTexts) {
+    const seed = await service.scoreVoice({
+      fingerprintId,
+      text,
+      kind: "linkedin-post",
+      minScore: 70,
+    });
+    if (!seed.passed) {
+      return erroredResult("profile_token_review_loop", "profile-seed-failed", seed);
+    }
+  }
+
+  const drift = await service.scoreVoice({
+    fingerprintId,
+    text: corpus.driftText,
+    kind: "linkedin-post",
+    minScore: VOICE_SMOKE_DEFAULT_FLOOR,
+  });
+  const driftBlocked = !drift.passed && hasReason(drift, "semantic_voice_drift");
+  if (!driftBlocked || !drift.rewrite) {
+    return erroredResult(
+      "profile_token_review_loop",
+      "review-loop-drift-not-rewritten",
+      drift,
+    );
+  }
+
+  const rewriteText = corpus.customRewriteText ? corpus.rewriteText : drift.rewrite;
+  const rewrite = await service.scoreVoice({
+    fingerprintId,
+    text: rewriteText,
+    kind: "linkedin-post",
+    minScore: VOICE_SMOKE_DEFAULT_FLOOR,
+  });
+  const rewritePassed = rewrite.passed;
+  if (!rewritePassed) {
+    return erroredResult(
+      "profile_token_review_loop",
+      "review-loop-rewrite-not-accepted",
+      rewrite,
+    );
+  }
+
+  const profile = await profileStore.readProfile(fingerprintId);
+  return {
+    ...passedResult("profile_token_review_loop", rewrite),
+    driftScore: drift.score,
+    driftBlocked,
+    rewriteScore: rewrite.score,
+    rewritePassed,
+    rewriteSuggested: true,
+    reviewLoopProven: true,
+    profileAcceptedSamples: profile?.acceptedSamples ?? 0,
+    profileTokenCount: Object.keys(profile?.tokenCounts ?? {}).length,
+    customCorpus: corpus.customCorpus,
+  };
+}
+
 function passedResult(
   target: DearMeVoiceSmokeTarget,
   result: VoiceGateScoreResponse,
@@ -550,12 +677,14 @@ function printHelp() {
 Targets:
   deterministic_gate        Local deterministic gate smoke; no external config.
   profile_token_semantic    Local profile-token semantic scorer smoke.
+  profile_token_review_loop Local review-loop smoke: block drift, accept rewrite.
   all                       Run every target.
 
 Setup:
   pnpm --silent dearme:voice-smoke -- --print-env-template > .dearme-voice-smoke.env
   pnpm --silent dearme:voice-smoke -- --env-file .dearme-voice-smoke.env --check
   pnpm --silent dearme:voice-smoke -- --env-file .dearme-voice-smoke.env --target profile_token_semantic
+  pnpm --silent dearme:voice-smoke -- --env-file .dearme-voice-smoke.env --target profile_token_review_loop
 
 Default with no target is --check. This command is local scorer proof only:
   DEARME_VOICE_SEMANTIC_SCORER=profile-token`);
@@ -576,12 +705,14 @@ function printResults(results: readonly DearMeVoiceSmokeResult[]) {
     if (result.status === "passed") {
       const match = typeof result.matchScore === "number" ? ` match=${result.matchScore}` : "";
       const drift = typeof result.driftScore === "number" ? ` drift=${result.driftScore}` : "";
+      const rewrite = typeof result.rewriteScore === "number" ? ` rewrite=${result.rewriteScore}` : "";
+      const review = result.reviewLoopProven ? " reviewLoop=proven" : "";
       const profile = typeof result.profileAcceptedSamples === "number" && typeof result.profileTokenCount === "number"
         ? ` profileSamples=${result.profileAcceptedSamples} profileTokens=${result.profileTokenCount}`
         : "";
       const corpus = result.customCorpus ? " corpus=custom" : "";
       console.log(
-        `- ${result.target}: passed score=${result.score} floor=${result.floor}${match}${drift}${profile}${corpus} reasons=${result.reasons.join(",")}`,
+        `- ${result.target}: passed score=${result.score} floor=${result.floor}${match}${drift}${rewrite}${review}${profile}${corpus} reasons=${result.reasons.join(",")}`,
       );
     } else if (result.status === "blocked") {
       console.log(`- ${result.target}: blocked ${result.reason}; missing ${result.missing.join(", ")}`);

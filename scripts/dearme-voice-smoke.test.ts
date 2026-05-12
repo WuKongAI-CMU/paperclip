@@ -20,22 +20,30 @@ test("voice smoke readiness reports local gate ready and semantic config gap", (
   assert.deepEqual(readiness.map((item) => item.target), [
     "deterministic_gate",
     "profile_token_semantic",
+    "profile_token_review_loop",
   ]);
   assert.equal(readiness[0]?.ready, true);
   assert.equal(readiness[1]?.ready, false);
   assert.deepEqual(readiness[1]?.missing, [
     "DEARME_VOICE_SEMANTIC_SCORER=profile-token",
   ]);
+  assert.equal(readiness[2]?.ready, false);
+  assert.deepEqual(readiness[2]?.missing, [
+    "DEARME_VOICE_SEMANTIC_SCORER=profile-token",
+  ]);
 
   const lines = formatDearMeVoiceSmokeReadiness(readiness);
   assert.match(lines.join("\n"), /Next voice-smoke setup:/);
   assert.match(lines.join("\n"), /--target profile_token_semantic/);
+  assert.match(lines.join("\n"), /--target profile_token_review_loop/);
 });
 
 test("voice smoke readiness is scoped by target and accepts aliases", () => {
   assert.equal(parseDearMeVoiceSmokeArgs(["--target", "deterministic"]).target, "deterministic_gate");
   assert.equal(parseDearMeVoiceSmokeArgs(["semantic"]).target, "profile_token_semantic");
   assert.equal(parseDearMeVoiceSmokeArgs(["profile-token"]).target, "profile_token_semantic");
+  assert.equal(parseDearMeVoiceSmokeArgs(["review-loop"]).target, "profile_token_review_loop");
+  assert.equal(parseDearMeVoiceSmokeArgs(["soft-reject"]).target, "profile_token_review_loop");
   assert.deepEqual(
     parseDearMeVoiceSmokeArgs(["--env-file", ".dearme-voice-smoke.env"]).envFiles,
     [".dearme-voice-smoke.env"],
@@ -97,8 +105,10 @@ test("voice smoke env template is local scorer proof only", () => {
   assert.match(template, /DEARME_VOICE_SEMANTIC_MIN_PROFILE_TOKENS=8/);
   assert.match(template, /DEARME_VOICE_SMOKE_REQUIRE_CUSTOM_CORPUS=1/);
   assert.match(template, /DEARME_VOICE_SMOKE_PROFILE_SEEDS=/);
+  assert.match(template, /DEARME_VOICE_SMOKE_REWRITE_TEXT=/);
   assert.match(template, /does not send, deploy, spend, or call a live model/);
   assert.match(template, /--target profile_token_semantic/);
+  assert.match(template, /--target profile_token_review_loop/);
   assert.match(scoped, /--check --target profile_token_semantic/);
 });
 
@@ -171,6 +181,23 @@ test("voice smoke can require custom profile corpus before semantic readiness", 
   }, "profile_token_semantic");
 
   assert.equal(ready[0]?.ready, true);
+
+  const missingReviewRewrite = inspectDearMeVoiceSmokeReadiness({
+    DEARME_VOICE_SEMANTIC_SCORER: "profile-token",
+    DEARME_VOICE_SMOKE_REQUIRE_CUSTOM_CORPUS: "1",
+    DEARME_VOICE_SMOKE_PROFILE_SEEDS: [
+      "I turn rough positioning notes into buyer proof before the launch call.",
+      "I prefer inspectable proof over broad claims because one concrete next yes is easier to trust.",
+    ].join("|||"),
+    DEARME_VOICE_SMOKE_MATCH_TEXT:
+      "I turn rough positioning notes into buyer proof before the launch call because inspectable proof makes one concrete next yes easier to trust.",
+    DEARME_VOICE_SMOKE_DRIFT_TEXT:
+      "Amazing platform synergy unlocks automated marketing workflows for everyone at scale.",
+  }, "profile_token_review_loop");
+
+  assert.deepEqual(missingReviewRewrite[0]?.missing, [
+    "DEARME_VOICE_SMOKE_REWRITE_TEXT",
+  ]);
 });
 
 test("voice smoke proves profile-token match and drift block when enabled", async () => {
@@ -191,6 +218,27 @@ test("voice smoke proves profile-token match and drift block when enabled", asyn
   assert.equal(result.reasons.includes("semantic_voice_match"), true);
   assert.equal(result.profileAcceptedSamples, 4);
   assert.equal(typeof result.profileTokenCount, "number");
+});
+
+test("voice smoke proves profile-token review loop accepts the safe rewrite", async () => {
+  const results = await runDearMeVoiceSmoke({
+    target: "profile_token_review_loop",
+    env: {
+      DEARME_VOICE_SEMANTIC_SCORER: "profile-token",
+    },
+  });
+
+  assert.deepEqual(results.map((result) => result.status), ["passed"]);
+  const result = results[0];
+  if (result?.status !== "passed") throw new Error("Expected profile-token review-loop smoke to pass");
+  assert.equal(result.target, "profile_token_review_loop");
+  assert.equal(result.driftBlocked, true);
+  assert.equal(result.rewriteSuggested, true);
+  assert.equal(result.rewritePassed, true);
+  assert.equal(result.reviewLoopProven, true);
+  assert.equal((result.driftScore ?? 100) < result.floor, true);
+  assert.equal((result.rewriteScore ?? 0) >= result.floor, true);
+  assert.equal(result.profileAcceptedSamples, 4);
 });
 
 test("voice smoke proves profile-token match and drift block with custom corpus", async () => {
@@ -218,5 +266,35 @@ test("voice smoke proves profile-token match and drift block with custom corpus"
   assert.equal(result.profileAcceptedSamples, 4);
   assert.equal((result.profileTokenCount ?? 0) >= 8, true);
   assert.equal(result.driftBlocked, true);
+  assert.equal(result.reasons.includes("semantic_voice_match"), true);
+});
+
+test("voice smoke proves review-loop rewrite with custom corpus", async () => {
+  const results = await runDearMeVoiceSmoke({
+    target: "profile_token_review_loop",
+    env: {
+      DEARME_VOICE_SEMANTIC_SCORER: "profile-token",
+      DEARME_VOICE_SMOKE_REQUIRE_CUSTOM_CORPUS: "1",
+      DEARME_VOICE_SMOKE_PROFILE_SEEDS: [
+        "I turn rough positioning notes into buyer proof before the launch call.",
+        "I prefer inspectable proof over broad claims because one concrete next yes is easier to trust.",
+        "I keep every launch move grounded in a proof the buyer can read before we ask for more.",
+      ].join("|||"),
+      DEARME_VOICE_SMOKE_MATCH_TEXT:
+        "I turn rough positioning notes into buyer proof before the launch call because inspectable proof makes one concrete next yes easier to trust.",
+      DEARME_VOICE_SMOKE_DRIFT_TEXT:
+        "Amazing platform synergy unlocks automated marketing workflows for everyone at scale.",
+      DEARME_VOICE_SMOKE_REWRITE_TEXT:
+        "I turn rough positioning notes into buyer proof before the launch call because one concrete next yes is easier to trust.",
+    },
+  });
+
+  assert.deepEqual(results.map((result) => result.status), ["passed"]);
+  const result = results[0];
+  if (result?.status !== "passed") throw new Error("Expected custom review-loop smoke to pass");
+  assert.equal(result.customCorpus, true);
+  assert.equal(result.reviewLoopProven, true);
+  assert.equal(result.rewritePassed, true);
+  assert.equal(result.profileAcceptedSamples, 4);
   assert.equal(result.reasons.includes("semantic_voice_match"), true);
 });

@@ -109,6 +109,45 @@ describe("dearMeVoiceGateService scorer", () => {
     expect(writes).toEqual([]);
   });
 
+  it("returns a customer-safe rewrite for rejected drafts without learning the failed text", async () => {
+    const writes: DearMeVoiceCorpusProfileSnapshot[] = [];
+    const profileStore: DearMeVoiceProfileStore = {
+      async readProfile() {
+        return null;
+      },
+      async writeProfile(_fingerprintId, profile) {
+        writes.push(profile);
+      },
+    };
+    const freshSvc = dearMeVoiceGateService({ profileStore });
+
+    const rejected = await freshSvc.scoreVoice({
+      fingerprintId: "vf_rewrite",
+      text: "As an AI, the OpenClaw model runtime queue used a provider adapter token in the Paperclip workbench with an API key credential worker run id raw control plane.",
+      kind: "linkedin-post",
+      minScore: 92,
+    });
+
+    expect(rejected.passed).toBe(false);
+    expect(rejected.rewrite).toEqual(expect.any(String));
+    expect(writes).toEqual([]);
+    const safeRewrite = rejected.rewrite?.toLowerCase() ?? "";
+    for (const term of hiddenCustomerTerms) {
+      expect(safeRewrite).not.toContain(term);
+    }
+
+    const rewritten = await freshSvc.scoreVoice({
+      fingerprintId: "vf_rewrite",
+      text: rejected.rewrite ?? "",
+      kind: "linkedin-post",
+      minScore: 92,
+    });
+
+    expect(rewritten.passed).toBe(true);
+    expect(rewritten.rewrite).toBeNull();
+    expect(writes).toHaveLength(1);
+  });
+
   it("writes serializable bounded profile snapshots", async () => {
     const profileState: { storedProfile: DearMeVoiceCorpusProfileSnapshot | null } = { storedProfile: null };
     const profileStore: DearMeVoiceProfileStore = {
