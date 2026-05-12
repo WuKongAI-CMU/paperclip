@@ -1936,6 +1936,13 @@ describe("DearMeOnboarding", () => {
     expect(buttonByText(container, "Start with one sentence")?.getAttribute("data-variant")).toBe("default");
     expect(buttonByText(container, "View private proof")?.getAttribute("data-variant")).toBe("outline");
     expect(buttonByText(container, "Open full profile controls")?.getAttribute("data-variant")).toBe("outline");
+    expect(readDearMeFirstCyclePreview("company-1", "maya-chen")).toBeNull();
+    await act(async () => {
+      buttonByText(container, "View private proof")?.click();
+    });
+    expect(readDearMeFirstCyclePreview("company-1", "maya-chen")).not.toBeNull();
+    expect(mockNavigate).toHaveBeenCalledWith("/dearme/site-preview/maya-chen");
+    mockNavigate.mockClear();
     expect(buttonByText(container, "Open full profile controls")?.getAttribute("aria-expanded")).toBe("false");
     expect(container.querySelector('[data-dearme-profile-controls="collapsed"]')).not.toBeNull();
     expect(container.querySelector("#dearme-display-name")).toBeNull();

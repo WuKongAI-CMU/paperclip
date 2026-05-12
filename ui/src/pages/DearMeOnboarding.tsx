@@ -7455,6 +7455,17 @@ export function DearMeOnboarding() {
   }
 
   function handleOpenFirstCyclePreview(handle: string) {
+    const previewToOpen =
+      firstCyclePreview?.sitePreview.handle === handle
+        ? firstCyclePreview
+        : selectedCompanyId && SAMPLE_FIRST_CYCLE_PREVIEW.sitePreview.handle === handle
+          ? { ...SAMPLE_FIRST_CYCLE_PREVIEW, companyId: selectedCompanyId }
+          : null;
+
+    if (previewToOpen) {
+      writeDearMeFirstCyclePreview(previewToOpen);
+    }
+
     navigate(buildDearMeSitePreviewPath(handle));
   }
 

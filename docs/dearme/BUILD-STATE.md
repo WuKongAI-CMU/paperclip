@@ -14084,6 +14084,9 @@ Forty-second verified DearMe slice:
 - Reused the existing workbench response to make the first focus panel explain
   the product path before the dense workbench: review first, your launch call,
   and the autonomous private lane.
+- Kept the private-proof link useful from the sample state by writing the
+  current first-cycle preview before opening the private preview route, so the
+  proof page does not dead-end on an empty local session.
 - Kept the Polsia/Naive split intact. The UI now feels closer to Polsia's
   simple first-wow path, while still reusing Naive/Paperclip workbench state
   and leaving Symphony, providers, worker details, and OpenClaw mechanics off
@@ -14100,6 +14103,9 @@ Verification:
 - `pnpm --filter @paperclipai/ui typecheck` passed.
 - Browser verification on `http://127.0.0.1:3100/dearme` found the new review
   path labels: `Review first`, `Your launch call`, and `Autonomous lane`.
+- Browser verification from the sample `View private proof` action opened the
+  `maya-chen` private preview with the proof loop present and without the
+  unavailable empty state.
 - `pnpm --silent dearme:release-gate -- --json` reported
   `overall: private-proof-ready`, `canUse: true`, `canPublish: false`.
 - `pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs` reported
