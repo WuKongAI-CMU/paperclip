@@ -2,6 +2,23 @@
 
 Date: 2026-05-12
 
+## Return Handoff Workbench - 2026-05-12
+
+Product/architecture slice:
+
+- Added a "When you come back" handoff to the private team workbench so the
+  autonomous loop summarizes what moved, what needs approval, what continues,
+  and where proof was saved.
+- Reused existing workbench/report/proof/lifecycle data instead of adding a new
+  status model or setup surface.
+- Kept the customer-facing language private-first: the section brings launch
+  calls forward without exposing provider setup, substrate names, or raw control
+  plane mechanics.
+
+Verification:
+
+- `pnpm --silent vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+
 ## Public Proof Aha Bridge - 2026-05-12
 
 Product/architecture slice:
@@ -29,7 +46,9 @@ Verification:
 - `pnpm --silent dearme:release-gate -- --json`
 - `pnpm -r typecheck`
 - `git diff --check`
-- Browser preview: `http://localhost:5173/DEAA/dearme?view=content`
+- Browser preview: `http://localhost:5174/DEAA/dearme?view=content`
+  (`/tmp/dearme-first-run-content-1440.png` and
+  `/tmp/dearme-first-run-content-mobile.png`; no console errors)
 
 ## Polsia CEO Report Port - 2026-05-12
 
@@ -14628,3 +14647,21 @@ Forty-third verified DearMe slice:
 Verification:
 
 - `pnpm test:dearme-provider-smoke` passed: 37 tests.
+
+## DM-WOW-3D Return Handoff Strip - 2026-05-12
+
+Forty-fourth verified DearMe slice:
+
+- Added a top-of-workroom "When you come back" handoff strip so a returning
+  user immediately sees what moved, what needs their call, what can keep
+  running privately, and where the proof/report was saved.
+- Reused Polsia's manager-style progress report as the product behavior, while
+  borrowing Littlebird's no-data honesty and Lindy's clear task boundary pattern.
+- Kept the same customer-safe boundary: no donor names, provider names,
+  substrate IDs, setup payloads, or execution machinery appear on the paid-beta
+  surface.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed and covers the UI contract for the new handoff strip.

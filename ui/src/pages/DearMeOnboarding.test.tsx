@@ -2041,6 +2041,15 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).not.toContain("Start Brand OS");
     const topFocus = surfaceByLabel(container, "Today's brand team focus");
     expect(topFocus.textContent).toContain("Today's brand cycle");
+    const returnHandoff = surfaceByLabel(topFocus, "When you come back");
+    expect(returnHandoff.textContent).toContain("When you come back");
+    expect(returnHandoff.textContent).toContain("What moved");
+    expect(returnHandoff.textContent).toContain("What needs you");
+    expect(returnHandoff.textContent).toContain("What continues");
+    expect(returnHandoff.textContent).toContain("Proof saved");
+    expect(returnHandoff.textContent).toContain("launch call");
+    expect(returnHandoff.textContent).toContain("private lane");
+    expectNoHiddenProductTerms(returnHandoff.textContent, Object.values(HIDDEN_PRODUCT_TERMS));
     const reviewPath = surfaceByLabel(topFocus, "Today's review path");
     expect(topFocus.textContent).toContain("Ready from the cycle");
     expect(topFocus.textContent).toContain("Launch call");

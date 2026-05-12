@@ -4054,6 +4054,62 @@ function TeamFocusWorkbenchPanel({
           : "The first private cycle starts without a setup tour."),
     },
   ];
+  const returnHandoff: Array<{
+    icon: LucideIcon;
+    label: string;
+    title: string;
+    detail: string;
+  }> = [
+    {
+      icon: Gauge,
+      label: "What moved",
+      title: latestProof
+        ? customerProofPackSummary(latestProof.title)
+        : workbench.report
+          ? customerProofPackSummary(workbench.report.title)
+          : "No private move yet",
+      detail: latestProof
+        ? customerProofPackSummary(latestProof.summary)
+        : workbench.report
+          ? "The latest letter is ready as your private receipt."
+          : "Start with one sentence and DearMe will create the first private receipts.",
+    },
+    {
+      icon: ShieldCheck,
+      label: "What needs you",
+      title: decisionCount > 0 ? pluralizeCount(decisionCount, "launch call") : "Nothing public is waiting",
+      detail: decisionCount > 0
+        ? nextDecisionSummary
+        : "Private work can continue without asking you to approve a public move.",
+    },
+    {
+      icon: Workflow,
+      label: "What continues",
+      title: livePulse
+        ? livePulse.title
+        : workCount > 0
+          ? pluralizeCount(workCount, "private lane")
+          : "First cycle can start",
+      detail: livePulse?.description ??
+        (workCount > 0
+          ? "Drafts, scouting, proof, and reporting stay private until a launch call is ready."
+          : "No setup tour is needed before the first private cycle."),
+    },
+    {
+      icon: FileText,
+      label: "Proof saved",
+      title: workbench.report
+        ? customerProofPackSummary(workbench.report.title)
+        : latestProof
+          ? "Private proof is being gathered"
+          : "No proof pack yet",
+      detail: workbench.report
+        ? customerProofPackSummary(workbench.report.summary)
+        : latestProof
+          ? "The current work trail is already visible in your private proof feed."
+          : "The first report appears after DearMe has a private cycle to summarize.",
+    },
+  ];
 
   return (
     <DearMeFocusSurface aria-label="Today's brand team focus" className="space-y-5">
@@ -4079,6 +4135,29 @@ function TeamFocusWorkbenchPanel({
           </div>
         }
       />
+
+      <section aria-label="When you come back" className="space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+          <RefreshCw className="h-4 w-4 text-primary" aria-hidden="true" />
+          When you come back
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {returnHandoff.map((item) => {
+            const ItemIcon = item.icon;
+
+            return (
+              <div key={item.label} className="rounded-md border border-border bg-background/75 p-3">
+                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                  <ItemIcon className="h-4 w-4 text-primary" aria-hidden="true" />
+                  {item.label}
+                </div>
+                <p className="mt-2 text-sm font-medium text-foreground">{item.title}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{item.detail}</p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       <TeamProofPackContinuityRibbon workbench={workbench} />
 

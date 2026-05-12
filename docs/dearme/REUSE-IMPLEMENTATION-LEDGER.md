@@ -13,6 +13,20 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Return Handoff Workbench - 2026-05-12
+
+- DearMe now reuses the existing workbench report, latest proof item, active
+  work lanes, and launch-call count to show a compact "When you come back"
+  summary.
+- This is a Polsia-style reuse of existing motion receipts: no new setup page,
+  no new provider abstraction, and no extra model was added just to explain
+  progress.
+- The section answers four user questions from live workbench state: what moved,
+  what needs me, what continues, and where proof is saved.
+- Keep future iterations tied to existing workbench/report/proof data. Do not
+  turn this into a separate dashboard model unless the current data contract can
+  no longer express the autonomous loop.
+
 ## Latest Public Proof Aha Bridge - 2026-05-12
 
 - The latest Symphony read-only review converged on the same conclusion:
@@ -4082,6 +4096,7 @@ UI, not server-side runtime artifacts the user never sees).
 | DM-WOW-3A | Recurring private-work proof contract on the first-cycle pack | Polsia's "keeps working" autonomy feel, implemented through the shared DearMe preview contract instead of a new dashboard | `packages/shared/src/validators/dearme.ts`, `scripts/dearme-aha-proof.ts`, `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeSitePreview.tsx` |
 | DM-WOW-3B | Private proof loop readout in the preview and static export | Polsia's proof-ready / next-pass / launch-call rhythm, reused from the existing first-cycle continuation plan | `ui/src/pages/DearMeSitePreview.tsx`, `scripts/dearme-aha-proof.ts` |
 | DM-WOW-3C | Autonomous review path before dense workbench details | Polsia's simple review-first path over the existing Naive/Paperclip workbench response | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+| DM-WOW-3D | Return handoff strip before the dense workbench | Polsia's "what changed while away" manager report, with Littlebird-style no-data honesty and Lindy-style task boundaries | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
 | DM-139 | Autonomous Reporting plugin (queue-always-non-empty, plain-prose updates, next-step driver) | Polsia CEO 4-step prompt | `packages/plugins/dearme-reporting/` |
 | DM-140 | Voice Gate + Content Producer plugin (voice-match score, attribution link rule, rate cap) | Polsia Twitter agent rules | `packages/plugins/dearme-content-producer/` |
 | DM-183AQ | Private source link traceability on current Voice & Memory contract | DM-016 source-reference intent, adapted without stale `referenceUrl` schema replay | `ui/src/pages/DearMeOnboarding.tsx` |
