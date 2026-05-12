@@ -93,6 +93,13 @@ export function Layout() {
     const requestedPrefix = companyPrefix.toUpperCase();
     return companies.find((company) => company.issuePrefix.toUpperCase() === requestedPrefix) ?? null;
   }, [companies, companyPrefix]);
+  const fallbackCompany = useMemo(
+    () =>
+      (selectedCompanyId ? companies.find((company) => company.id === selectedCompanyId) : null) ??
+      companies[0] ??
+      null,
+    [companies, selectedCompanyId],
+  );
   const hasUnknownCompanyPrefix =
     Boolean(companyPrefix) && !companiesLoading && companies.length > 0 && !matchedCompany;
   const pluginRoutePath = useMemo(
@@ -100,6 +107,8 @@ export function Layout() {
     [companyPrefix, location.pathname],
   );
   const isDearMeRoute = pluginRoutePath === "dearme";
+  const shouldRedirectUnknownDearMeRoute =
+    hasUnknownCompanyPrefix && isDearMeRoute && Boolean(fallbackCompany);
   const routeSidebarCompanyId = matchedCompany?.id ?? null;
   const routeSidebarCompanyPrefix = matchedCompany?.issuePrefix ?? null;
   const { slots: routeSidebarSlots } = usePluginSlots({
@@ -158,18 +167,21 @@ export function Layout() {
     if (!companyPrefix || companiesLoading || companies.length === 0) return;
 
     if (!matchedCompany) {
-      const fallback = (selectedCompanyId ? companies.find((company) => company.id === selectedCompanyId) : null)
-        ?? companies[0]
-        ?? null;
-      if (fallback && selectedCompanyId !== fallback.id) {
-        setSelectedCompanyId(fallback.id, { source: "route_sync" });
+      if (fallbackCompany && selectedCompanyId !== fallbackCompany.id) {
+        setSelectedCompanyId(fallbackCompany.id, { source: "route_sync" });
+      }
+      if (fallbackCompany && isDearMeRoute) {
+        const suffix = location.pathname.replace(/^\/[^/]+/, "");
+        navigate(`/${fallbackCompany.issuePrefix}${suffix}${location.search}${location.hash}`, {
+          replace: true,
+        });
       }
       return;
     }
 
     if (companyPrefix !== matchedCompany.issuePrefix) {
       const suffix = location.pathname.replace(/^\/[^/]+/, "");
-      navigate(`/${matchedCompany.issuePrefix}${suffix}${location.search}`, { replace: true });
+      navigate(`/${matchedCompany.issuePrefix}${suffix}${location.search}${location.hash}`, { replace: true });
       return;
     }
 
@@ -186,6 +198,9 @@ export function Layout() {
     companyPrefix,
     companies,
     companiesLoading,
+    fallbackCompany,
+    isDearMeRoute,
+    location.hash,
     matchedCompany,
     location.pathname,
     location.search,
@@ -440,7 +455,7 @@ export function Layout() {
                 isMobile ? "overflow-visible pb-[calc(5rem+env(safe-area-inset-bottom))]" : "overflow-auto",
               )}
             >
-              {hasUnknownCompanyPrefix ? (
+              {shouldRedirectUnknownDearMeRoute ? null : hasUnknownCompanyPrefix ? (
                 <NotFoundPage
                   scope="invalid_company_prefix"
                   requestedPrefix={companyPrefix ?? selectedCompany?.issuePrefix}

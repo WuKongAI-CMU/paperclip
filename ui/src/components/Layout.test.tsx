@@ -432,6 +432,35 @@ describe("Layout", () => {
     });
   });
 
+  it("redirects mistyped DearMe company prefixes to the selected company route", async () => {
+    currentPathname = "/COD/dearme";
+    mockCompanyState.companies = [{ id: "company-1", issuePrefix: "DEAA", name: "DearMe" }];
+    mockCompanyState.selectedCompany = { id: "company-1", issuePrefix: "DEAA", name: "DearMe" };
+    mockCompanyState.selectedCompanyId = "company-1";
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <Layout />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    expect(mockNavigate).toHaveBeenCalledWith("/DEAA/dearme", { replace: true });
+    expect(container.textContent).toContain("DearMe customer nav");
+    expect(container.textContent).not.toContain("Company not found");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("uses the DearMe mobile navigation instead of the generic mobile app nav", async () => {
     currentPathname = "/PAP/dearme";
     mockSidebarState.isMobile = true;
