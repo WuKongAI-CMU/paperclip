@@ -104,6 +104,12 @@ describe("DearMeSitePreview", () => {
     expect(container.textContent).toContain(`Source proof: ${preview.portfolioProofCard.proofSource}`);
     expect(container.textContent).toContain(preview.portfolioProofCard.proposedCopy);
     expect(container.textContent).toContain(preview.approvalBoundary.summary);
+    expect(container.textContent).toContain("Private proof loop");
+    expect(container.textContent).toContain("Current proof, next pass, launch call");
+    expect(container.textContent).toContain("Proof ready");
+    expect(container.textContent).toContain("Next pass");
+    expect(container.textContent).toContain("Launch call");
+    expect(container.textContent).toContain("3 private improvements are already lined up");
     expect(container.textContent).toContain("First proof trail");
     expect(container.textContent).toContain("From one sentence to private proof");
     for (const moment of preview.proofSequence) {

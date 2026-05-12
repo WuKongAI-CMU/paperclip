@@ -256,6 +256,17 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
       `Waits: ${step.approvalBoundary}`,
     ].filter(Boolean)),
   ).join("\n");
+  const proofLoopCards = [
+    renderCard("Proof ready", "The current private proof pack is ready to review before anything goes public.", [
+      `Prepared: ${preview.proofSequence[2]?.preparedArtifact ?? "Private proof page move"}`,
+    ]),
+    renderCard("Next pass", `${preview.continuationPlan.items.length} private improvements are already lined up.`, [
+      `Review: ${preview.continuationPlan.nextReview}`,
+    ]),
+    renderCard("Launch call", "Public posts, outreach, page changes, and spend still wait for one approval.", [
+      `Boundary: ${preview.approvalBoundary.label}`,
+    ]),
+  ].join("\n");
   const continuationCards = preview.continuationPlan.items.map((item) =>
     renderCard(item.title, item.summary, [
       `Prepared: ${item.preparedArtifact}`,
@@ -326,6 +337,11 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
       <p class="summary">${escapeHtml(preview.growthPlan.summary)}</p>
       <span class="route">${escapeHtml(preview.sitePreview.route)}</span>
     </header>
+
+    <section aria-label="Private proof loop">
+      <h2>Current proof, next pass, launch call</h2>
+      <div class="grid">${proofLoopCards}</div>
+    </section>
 
     <section aria-label="First proof trail">
       <h2>From one sentence to private proof</h2>

@@ -3,7 +3,7 @@ import type { DearMeFirstCyclePreviewResponse } from "@paperclipai/shared";
 import { Link, useParams } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { ArrowLeft, FileText, RefreshCw, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { useCompany } from "../context/CompanyContext";
 import {
   DearMeChecklist,
@@ -70,6 +70,28 @@ export function DearMeSitePreview() {
 
   const proofRoute = preview?.sitePreview.route ?? (handle ? `dearme.app/${handle}` : "dearme.app/<handle>");
   const proofHandle = preview?.sitePreview.handle ?? handle ?? "<handle>";
+  const proofLoop = preview
+    ? [
+        {
+          icon: Sparkles,
+          label: "Proof ready",
+          title: preview.proofSequence[2]?.preparedArtifact ?? "Private proof page move",
+          detail: "The current private proof pack is ready to review before anything goes public.",
+        },
+        {
+          icon: RefreshCw,
+          label: "Next pass",
+          title: preview.continuationPlan.nextReview,
+          detail: `${preview.continuationPlan.items.length} private improvements are already lined up for the next cycle.`,
+        },
+        {
+          icon: ShieldCheck,
+          label: "Launch call",
+          title: preview.approvalBoundary.label,
+          detail: "Public posts, outreach, page changes, and spend still wait for one approval.",
+        },
+      ]
+    : [];
 
   if (loading && !activeCompany) {
     return <div className="mx-auto max-w-4xl py-10 text-sm text-muted-foreground">Loading private preview...</div>;
@@ -123,6 +145,30 @@ export function DearMeSitePreview() {
               </p>
             </div>
           </DearMePanel>
+
+          <DearMeWorkbenchCard
+            eyebrow="Private proof loop"
+            title="Current proof, next pass, launch call"
+            description="The preview shows what is ready now, what DearMe keeps improving privately, and where your approval still controls public moves."
+            badge={<RefreshCw className="h-4 w-4 text-muted-foreground" />}
+          >
+            <div className="grid gap-3 md:grid-cols-3" aria-label="Private proof loop">
+              {proofLoop.map((item) => {
+                const LoopIcon = item.icon;
+
+                return (
+                  <div key={item.label} className="rounded-md border border-border bg-muted/20 p-3">
+                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                      <LoopIcon className="h-4 w-4 text-primary" aria-hidden="true" />
+                      {item.label}
+                    </div>
+                    <p className="mt-3 text-sm font-medium">{item.title}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{item.detail}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </DearMeWorkbenchCard>
 
           <DearMeWorkbenchCard
             eyebrow="First proof trail"

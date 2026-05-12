@@ -109,6 +109,8 @@ test("DearMe aha proof renders a static private site artifact without hidden ter
   assert.match(html, /<meta name="viewport" content="width=device-width, initial-scale=1" \/>/);
   assert.match(html, /DearMe private proof/);
   assert.match(html, /dearme\.app\/peter-studio/);
+  assert.match(html, /Current proof, next pass, launch call/);
+  assert.match(html, /3 private improvements are already lined up/);
   assert.match(html, /From one sentence to private proof/);
   assert.match(html, /Keeps working after the first proof/);
   assert.match(html, /What Peter wants to become known for/);

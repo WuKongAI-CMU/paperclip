@@ -14012,6 +14012,28 @@ Verification:
 - `pnpm exec vitest run ui/src/pages/DearMeSitePreview.test.tsx --maxWorkers=1` passed.
 - `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "sample team package|starts a 90-second first cycle"` passed: 2 tests.
 
+## DM-WOW-3B Private Proof Loop Readout - 2026-05-12
+
+Forty-first verified DearMe slice:
+
+- Reused the existing first-cycle preview and continuation-plan contract to put
+  a compact proof loop at the top of the private preview: current proof ready,
+  next private pass, and launch call.
+- Mirrored the same proof-loop readout in the static private-site export so the
+  phone-ready artifact communicates that DearMe keeps working after the first
+  packet without adding a second demo path.
+- Kept the release boundary honest: the loop strengthens private usability, but
+  public launch still waits on live provider proof.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeSitePreview.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm test:dearme-aha-proof` passed.
+- Browser verification on the current local private preview found the new
+  proof-loop labels: `Private proof loop`, `Current proof, next pass, launch
+  call`, `Proof ready`, `Next pass`, and `Launch call`.
+
 ## Known Gaps
 
 - The `Process adapter missing command` blocker is fixed for newly applied Brand OS approvals, not retroactively for old smoke data.
@@ -14054,3 +14076,46 @@ Make the runtime loop paid-beta credible now that Codex receives task context, p
 3. Re-run full `pnpm test:run`, `pnpm -r typecheck`, and `pnpm build` after the
    next implementation slice; the latest DM-019 worktree is green for focused
    UI test/typecheck/build plus browser verification.
+
+## DM-WOW-3C Autonomous Review Path - 2026-05-12
+
+Forty-second verified DearMe slice:
+
+- Reused the existing workbench response to make the first focus panel explain
+  the product path before the dense workbench: review first, your launch call,
+  and the autonomous private lane.
+- Kept the Polsia/Naive split intact. The UI now feels closer to Polsia's
+  simple first-wow path, while still reusing Naive/Paperclip workbench state
+  and leaving Symphony, providers, worker details, and OpenClaw mechanics off
+  the paid-beta surface.
+- Product gate remains unchanged: DearMe is private-proof-ready and usable for
+  the private demo. Public launch is still blocked on real live external proof,
+  specifically the approved LinkedIn DM endpoint/recipient and the approved
+  iMessage/SMS proof recipient.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 74 tests.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- Browser verification on `http://127.0.0.1:3100/dearme` found the new review
+  path labels: `Review first`, `Your launch call`, and `Autonomous lane`.
+- `pnpm --silent dearme:release-gate -- --json` reported
+  `overall: private-proof-ready`, `canUse: true`, `canPublish: false`.
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs` reported
+  1 current worktree, 0 dirty lanes, and 0 Symphony handoffs.
+
+## Next Slice After DM-WOW-3C
+
+The current product comparison is:
+
+1. Polsia: private first-wow and phone-reachable proof are present; live
+   external channel proof is still missing.
+2. Naive/Paperclip: reuse and worktree absorption are matched on the current
+   head.
+3. OpenClaw: message contract rehearsal is present; live iMessage/SMS proof
+   needs the approved smoke recipient.
+
+Next bounded work should deepen the voice-quality loop or complete the live
+provider proof once the required external facts are available. Do not add a new
+settings dashboard for this gap.
