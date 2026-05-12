@@ -13,6 +13,22 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Voice Review Loop Proof - 2026-05-12
+
+- Voice Gate now uses the existing `rewrite` field in the AI proxy contract for
+  a Polsia-style soft reject: failed drafts receive a safe DearMe rewrite,
+  while passed drafts still return no rewrite.
+- The implementation stays on the inherited Naive/Paperclip voice profile path:
+  failed drafts are not learned, accepted rewrites update the bounded profile
+  store, and the profile-token scorer proves match/drift locally.
+- `pnpm dearme:voice-smoke -- --target profile_token_review_loop` is now the
+  focused no-send proof for this loop. It blocks drift, requires a rewrite,
+  rescoring proves `semantic_voice_match`, and custom-corpus runs can supply
+  `DEARME_VOICE_SMOKE_REWRITE_TEXT`.
+- Do not add another settings dashboard, prompt lab, provider setup surface, or
+  separate review runtime for this gap. The next product gap remains live
+  provider proof, not private voice-review mechanics.
+
 ## Latest Launch-Proof Gap Surface - 2026-05-12
 
 - The Decisions Needed surface now carries the release-gate split directly:

@@ -2,6 +2,29 @@
 
 Date: 2026-05-12
 
+## Voice Gate Soft-Reject Review Loop - 2026-05-12
+
+Product/architecture slice:
+
+- Added the existing `/v1/voice/score` rewrite field to the real scorer path:
+  failed drafts now get a customer-safe rewrite, while passing drafts still
+  return `rewrite: null`.
+- Reused the Naive/Paperclip voice profile store and profile-token scorer seam
+  instead of adding a second review runtime, dashboard, route, dependency, or
+  live model call.
+- Added the `profile_token_review_loop` voice-smoke target so the local proof
+  now blocks drift, verifies the failed draft is not learned, and accepts the
+  safe rewrite as matching the approved profile.
+- This closes a Polsia-style review-loop gap in private proof: DearMe can keep
+  moving from bad draft to usable draft without exposing provider/runtime/
+  substrate terms or asking the user to operate the machinery.
+
+Verification:
+
+- `pnpm test:dearme-voice-smoke`
+- `pnpm exec vitest run server/src/services/dearme-voice-gate.test.ts server/src/__tests__/dearme-voice-gate-routes.test.ts --maxWorkers=1`
+- `DEARME_VOICE_SEMANTIC_SCORER=profile-token pnpm --silent dearme:voice-smoke -- --target profile_token_review_loop --json`
+
 ## Release Gate Exposes Three Launch Needs - 2026-05-12
 
 Product/architecture slice:
