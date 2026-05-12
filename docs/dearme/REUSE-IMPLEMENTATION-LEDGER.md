@@ -13,6 +13,22 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Private Proof Carries Public Launch Needs - 2026-05-12
+
+- DearMe now reuses the shared owner-proof fact spec beyond the workbench and
+  CLI handoff: the phone-ready private proof artifact and private site preview
+  also explain the same three approved live-proof details needed before broad
+  launch.
+- This keeps the Polsia-style first wow honest. The owner can use the private
+  proof immediately, while the artifact itself says public launch still waits
+  for live receipts and no-send checking.
+- The host-smoke manifest now records the launch-proof need count, labels,
+  summaries, and boundaries so a future worker can verify the private proof
+  page carries the public-launch hold without adding another dashboard.
+- Continue using `DEARME_OWNER_PROOF_FACT_SPECS` as the single source for this
+  gap; do not fork separate proof-need copy into the preview, release gate, or
+  setup scripts.
+
 ## Latest OpenClaw Proof Lane Summary - 2026-05-12
 
 - DearMe now ports Polsia's manager-style status digest into the last live-proof
@@ -4248,3 +4264,26 @@ Reuse note:
   launch boundary for each detail.
 - The next reuse work should deepen receipt quality and return-handoff clarity.
   Do not spend the next slice on a new dashboard for the same approval problem.
+
+## OpenPolsia OSS + Product Kernel Study - 2026-05-12
+
+| Slice | Donor mechanism | Path |
+|---|---|---|
+| OpenPolsia executable skeleton study | One-company durable cell, five starter tasks, document-backed live site, recurring task alarm, compact operator toolset, subscription/tool fail-closed gate | `docs/dearme/POLSIA-DEEP-STUDY-2026-05-12.md`, `/tmp/openpolsia-study/src/company-do.ts`, `/tmp/openpolsia-study/src/llm-operator.ts`, `/tmp/openpolsia-study/src/worker.ts` |
+| DearMe reuse mapping | Polsia's manager-report choreography and live private work receipts mapped onto DearMe's existing 8-state work loop, first-cycle proof contract, owner proof checklist, and Symphony/OpenClaw handoff spine | `packages/plugins/dearme-agent-prompts/src/state-machines/work-loop.ts`, `packages/plugins/dearme-agent-prompts/src/registry.ts`, `scripts/dearme-proof.ts`, `scripts/dearme-release-gate.ts` |
+
+Reuse note:
+
+- OpenPolsia is not a full production Polsia source dump. It is useful because
+  it shows the smallest viable Polsia loop: create a company, seed visible
+  starter work, execute one due task at a time, turn documents into live
+  artifacts, and keep the owner oriented through a thin dashboard.
+- DearMe should absorb the product choreography, not the runtime shape. The
+  current OpenClaw/Naive/Paperclip/Symphony spine already gives DearMe the
+  durable state, approval boundary, receipts, and worker handoff substrate.
+- The next DearMe slice should improve owner-safe receipt quality and
+  return-handoff clarity across completed, prepared, blocked, skipped, and
+  needs-approval states.
+- Do not add a customer-facing provider selector, setup dashboard, agent roster,
+  raw tool stream, or shared outbound identity to chase Polsia parity. Those are
+  either backstage concerns or product risks.

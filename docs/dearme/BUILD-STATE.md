@@ -2,6 +2,32 @@
 
 Date: 2026-05-12
 
+## Private Proof Carries Public Launch Needs - 2026-05-12
+
+Product/architecture slice:
+
+- Reused the shared owner-proof fact spec in the phone-ready private proof
+  artifact and private site preview, so the same three approved live-proof
+  details now appear in the workbench, proof tools, release gate, and private
+  proof page.
+- Added a customer-safe launch-proof section to the static `dearme:aha-proof`
+  export: private proof is ready, broad launch waits for three live receipts,
+  and no-send checking comes before any guarded receipt.
+- Extended the host-smoke manifest with launch-proof need labels, summaries,
+  and boundaries, giving operators a machine-checkable signal that the private
+  artifact carries the public-launch hold.
+- Product posture remains unchanged: DearMe is private-proof-ready and usable;
+  public launch still needs real owner-approved external proof facts and live
+  receipts.
+
+Verification:
+
+- `pnpm test:dearme-aha-proof`
+- `pnpm exec vitest run ui/src/pages/DearMeSitePreview.test.tsx --maxWorkers=1`
+- `pnpm --silent dearme:aha-proof -- --check`
+- `pnpm -r typecheck`
+- `git diff --check`
+
 ## OpenClaw Proof Lane Summary - 2026-05-12
 
 Product/architecture slice:
@@ -15101,3 +15127,30 @@ Verification:
   placeholders, and capture command without writing local proof setup.
 - `pnpm --silent dearme:release-gate -- --json` confirmed
   `overall=private-proof-ready`, `canUse=true`, and `canPublish=false`.
+
+## Polsia OSS + Product Kernel Study - 2026-05-12
+
+Architecture research update:
+
+- Re-read Polsia as a product and as an executable architecture skeleton:
+  public product surface, `openpolsia` OSS source, and the local production
+  recon archive.
+- Captured the key product lesson: Polsia's strongest reusable part is the
+  owner choreography, not the visible agent count. The loop is one input,
+  immediate private work, live receipts, queue continuity, and a manager report.
+- Mapped OpenPolsia's compact runtime to DearMe: per-company durable state,
+  five starter tasks, document-backed live artifacts, recurring task alarms,
+  compact operator tools, and fail-closed subscription/provider gates.
+- Confirmed DearMe should not copy the runtime shape. The existing
+  OpenClaw/Naive/Paperclip/Symphony spine already covers durable state,
+  approval boundaries, first-cycle proof, proof status, and worker handoffs.
+- Reaffirmed the next product slice: improve owner-safe receipt quality and
+  return-handoff clarity across completed, prepared, blocked, skipped, and
+  needs-approval states. Do not add a provider selector, setup dashboard, agent
+  roster, raw tool stream, or shared outbound identity.
+
+Verification:
+
+- Documentation-only update.
+- `git diff --check -- docs/dearme/POLSIA-DEEP-STUDY-2026-05-12.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/BUILD-STATE.md`
+  passed.

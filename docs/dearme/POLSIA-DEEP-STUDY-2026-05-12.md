@@ -452,3 +452,123 @@ Next absorption target:
 3. Treat approval/rejection notes as future voice and launch-rule learning.
 4. Leave live outbound proof blocked until approved LinkedIn and iMessage/SMS
    recipient facts are present.
+
+## Fifth-Pass OpenPolsia OSS + Product Kernel Study - 2026-05-12
+
+Evidence reviewed in this pass:
+
+- `https://www.openpolsia.com/about`
+- `https://github.com/janwilmake/openpolsia`
+- `/tmp/openpolsia-study/README.md`
+- `/tmp/openpolsia-study/src/company-do.ts`
+- `/tmp/openpolsia-study/src/llm-operator.ts`
+- `/tmp/openpolsia-study/src/worker.ts`
+- `/tmp/openpolsia-study/src/pages/dashboard.ts`
+- `/tmp/openpolsia-study/src/pages/tasks.ts`
+- `/tmp/openpolsia-study/src/pages/documents.ts`
+- `/tmp/openpolsia-study/src/pages/emails.ts`
+- `/tmp/openpolsia-study/public/index.html`
+- `/tmp/openpolsia-study/public/new.html`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/REAL_PRODUCTION_FACTS.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/02-ONBOARDING-FLOW.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/08-POLSIA-WEAKNESSES.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/12-REAL-SOURCE-CODE-DEEP-DIVE.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/13-PRODUCTION-API-RESPONSES-DEEP-DIVE.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/14-AGENT-PROMPTS-AND-WORKSPACE-DEEP-DIVE.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/15-PERSONAL-BRAND-FORK-SPEC.md`
+
+OpenPolsia is not the whole production Polsia. It is still valuable because it
+compresses the product into a small executable skeleton:
+
+1. One auth/user account can create multiple companies.
+2. Each company maps to one Durable Object cell with documents, tasks, chat,
+   email, and logs in local SQL storage.
+3. Company creation immediately seeds five starter tasks: develop or research
+   the idea, write mission, conduct market research, build the landing page,
+   and send the founder welcome email.
+4. The first task alarm starts almost immediately, then the alarm loop keeps
+   pulling the next due task until the queue is empty or waiting on recurrence.
+5. Pages and subdomains are served from generated documents such as
+   `website/index.html`, so a document becomes a live artifact.
+6. The dashboard is thin: tasks, documents, email, billing, and chat are the
+   visible proof surface; provider/runtime machinery stays behind it.
+7. The operator prompt rebuilds current state from documents, tasks, and email
+   before every chat or task run.
+8. Tools are compact: read/write documents, run sandboxed bash over documents,
+   list/create/edit tasks, send/read/list mail, search/fetch web, update company
+   metadata, and log chat.
+9. Subscription and task-credit gates disable tool execution rather than
+   returning fake progress.
+10. Interrupted in-progress tasks are reset to todo on initialization, which is
+    a simple recovery rule that keeps the product moving.
+
+The stronger product read is that Polsia sells "autonomous company operator,"
+not an agent dashboard. Its front door is intentionally simple:
+
+- Tell it an idea, website, or "surprise me."
+- It immediately creates visible private work.
+- The customer sees docs, tasks, email, and a live activity feel.
+- A manager loop keeps the queue alive and returns with reports.
+- The customer is not asked to understand models, providers, MCPs, queues, or
+  execution workspaces.
+
+Production Polsia appears more capable than the OSS skeleton, but the durable
+pattern is the same: one manager voice, a compact work queue, recurring work,
+visible receipts, and hidden complexity routing. The most important production
+detail is not the number of roles. It is the choreography from input to work to
+review to report.
+
+### DearMe Reuse Decisions
+
+Copy these patterns:
+
+1. Per-customer durable cell: DearMe should keep using the inherited
+   OpenClaw/Naive/Paperclip state boundary instead of rebuilding a Durable
+   Object clone.
+2. Starter bundle: the first run should always create a proof pack, starter
+   drafts, opportunity leads, a private page, and launch decisions.
+3. Live receipt stream: show summarized owner-safe receipts for completed,
+   prepared, blocked, skipped, and needs-approval work.
+4. Manager report: keep the "what moved, what is ready, what needs your call"
+   return handoff as the main product grammar.
+5. Recurring private rhythm: express recurrence as a team that keeps moving,
+   not as cron, runtime, or worker controls.
+6. Compact tool surface: route by task complexity and available tools backstage;
+   never turn the paid-beta product into a provider/tool selector.
+7. Fail-closed subscription/provider gates: if live delivery facts are missing,
+   say what is missing and keep preparing private work.
+8. Recovery rule: any interrupted or stale work item should return to an
+   owner-readable pending/prepared state with a receipt, not disappear into
+   internal logs.
+
+Reject these patterns:
+
+1. Shared outbound identity such as a product-owned email/domain for DearMe live
+   customer delivery. DearMe needs owner-approved channels and receipts.
+2. Raw tool calls, tool results, thinking streams, or SSE payloads in customer
+   UI. They are evidence inputs, not product copy.
+3. Starter tasks without rationale, proof, approval boundary, and next decision.
+   DearMe's task contract must stay stricter than OpenPolsia's simple task row.
+4. Public live-work counters or claims that are not backed by durable receipts.
+5. IP geolocation, professional-network enrichment, or contact discovery without
+   explicit consent and provenance.
+6. A new setup dashboard for the same live-proof blocker. Missing owner facts
+   belong in a compact proof handoff, not in a control panel.
+
+### Current DearMe Gap
+
+DearMe already has the stronger substrate shape: an 8-state work loop, role
+registry, first-cycle proof contract, launch approval boundary, proof status,
+Symphony handoffs, and OpenClaw message rehearsal. That means DearMe does not
+need to copy OpenPolsia's runtime shape.
+
+The remaining product gap is presentation and live proof:
+
+- Presentation: make every return handoff read like a manager report with
+  receipts and owner decisions, not like a task table.
+- Live proof: keep public launch blocked until approved LinkedIn DM and
+  iMessage/SMS recipient facts produce guarded receipts.
+
+The next DearMe work should therefore deepen receipt quality and return-handoff
+clarity. It should not add another agent roster, setup wizard, provider page,
+or runtime dashboard.
