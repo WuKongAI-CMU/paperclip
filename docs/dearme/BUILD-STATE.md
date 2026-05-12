@@ -2,6 +2,28 @@
 
 Date: 2026-05-12
 
+## Decisions Surface Shows Launch-Proof Gap - 2026-05-12
+
+Product/architecture slice:
+
+- Added a customer-safe launch-proof gap panel to the existing Decisions
+  Needed surface, so the product itself explains why DearMe is usable for
+  private proof but not yet publishable.
+- Reused the current workbench/decision architecture instead of adding another
+  setup dashboard: users see the three missing live-proof details as plain
+  decisions, then one guarded launch-proof pass.
+- Kept donor and runtime mechanics backstage. The surface avoids Paperclip,
+  Symphony, provider, model, setup payload, workbench, workspace, OpenClaw,
+  credential, token, and command language.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:goal-audit -- --json`
+- `git diff --check`
+
 ## First Cycle Leads With Proof Package - 2026-05-12
 
 Product/architecture slice:

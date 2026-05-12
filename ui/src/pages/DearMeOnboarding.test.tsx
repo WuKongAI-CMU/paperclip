@@ -4097,6 +4097,37 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("shows the launch-proof gap inside decisions without exposing backstage terms", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const decisionsSurface = surfaceByLabel(container, "Decisions needed");
+    expect(decisionsSurface.textContent).toContain("Launch proof");
+    expect(decisionsSurface.textContent).toContain(
+      "Private proof is usable. Public launch still needs live receipts.",
+    );
+    expect(decisionsSurface.textContent).toContain("Professional-network delivery route");
+    expect(decisionsSurface.textContent).toContain("Approved professional-network recipient");
+    expect(decisionsSurface.textContent).toContain("Approved phone-message recipient");
+    expect(decisionsSurface.textContent).toContain("collect the approved live-proof details");
+    expectNoHiddenProductTerms(decisionsSurface.textContent, Object.values(HIDDEN_PRODUCT_TERMS));
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("opens work-ready output with DearMe decision focus", async () => {
     const root = createRoot(container);
     const queryClient = new QueryClient({

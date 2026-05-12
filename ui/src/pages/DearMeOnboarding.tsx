@@ -135,6 +135,21 @@ const CHANNEL_LABELS: Record<DearMeBrandChannel, string> = {
   website: "Website",
 };
 
+const LAUNCH_PROOF_GAP_ITEMS = [
+  {
+    label: "Professional-network delivery route",
+    summary: "The approved route for the first live professional-network proof.",
+  },
+  {
+    label: "Approved professional-network recipient",
+    summary: "One real recipient selected for the first receipt check.",
+  },
+  {
+    label: "Approved phone-message recipient",
+    summary: "One real recipient selected for the shared phone-message proof.",
+  },
+];
+
 const CADENCE_LABELS: Record<DearMeBrandCadence, string> = {
   daily: "Daily",
   weekly: "Weekly",
@@ -4362,6 +4377,45 @@ function WorkReadyPanel({
   );
 }
 
+function LaunchProofGapPanel() {
+  return (
+    <section
+      aria-label="Launch proof gap"
+      className="mt-4 rounded-md border border-amber-500/30 bg-amber-50/70 p-4 text-amber-950 dark:bg-amber-950/20 dark:text-amber-100"
+    >
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase text-amber-800 dark:text-amber-200">
+            Launch proof
+          </p>
+          <h3 className="mt-1 text-base font-semibold">
+            Private proof is usable. Public launch still needs live receipts.
+          </h3>
+          <p className="mt-1 max-w-3xl text-sm text-amber-900/80 dark:text-amber-100/80">
+            Keep reviewing private work here. Public launch stays held until the approved live delivery details are
+            supplied and checked.
+          </p>
+        </div>
+        <Badge variant="secondary">Launch held</Badge>
+      </div>
+
+      <DearMeEvidenceGrid className="mt-4">
+        {LAUNCH_PROOF_GAP_ITEMS.map((item) => (
+          <div key={item.label} className="rounded-md border border-amber-500/25 bg-background/85 p-3">
+            <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
+            <p className="mt-1 text-sm text-foreground/85">{item.summary}</p>
+          </div>
+        ))}
+      </DearMeEvidenceGrid>
+
+      <p className="mt-3 rounded-md border border-amber-500/25 bg-background/80 p-3 text-sm text-foreground/85">
+        Next action: collect the approved live-proof details, run one guarded launch-proof pass, then bring the receipt
+        back as the launch call.
+      </p>
+    </section>
+  );
+}
+
 function DecisionsNeededPanel({
   batches,
   decisions,
@@ -4394,6 +4448,7 @@ function DecisionsNeededPanel({
           ) : null
         }
       />
+      <LaunchProofGapPanel />
       {batches.length > 0 ? (
         <div className="mt-4 space-y-3">
           <p className="text-xs font-medium text-muted-foreground">Batch decisions</p>

@@ -13,6 +13,20 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Launch-Proof Gap Surface - 2026-05-12
+
+- The Decisions Needed surface now carries the release-gate split directly:
+  private proof is usable, while public launch waits on live receipts.
+- This reuses the existing DearMe workbench/decision shell and Polsia-style
+  review-first flow instead of adding another setup or operator dashboard.
+- The three remaining public-launch facts are presented in customer-safe
+  language: professional-network delivery route, approved professional-network
+  recipient, and approved phone-message recipient.
+- Symphony workers should keep treating this as the next non-live product
+  handoff surface. Do not open new substrate-explanation UI for the same gap;
+  collect the approved live-proof details, run no-send checks, then run the
+  guarded proof only with explicit live confirmation.
+
 ## Latest Coordinator Live-Proof Readiness - 2026-05-11
 
 - The coordinator proof env has been safely augmented through
