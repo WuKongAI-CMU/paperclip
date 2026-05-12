@@ -2,6 +2,32 @@
 
 Date: 2026-05-12
 
+## Coordinator Product Readiness Recheck - 2026-05-12
+
+Product/architecture slice:
+
+- Re-checked the current release gate after the worktree, Linear, and sidebar
+  integration commits. DearMe is `private-proof-ready`: it can be used for
+  private proof and review, but should not be claimed as public-launch-ready.
+- Current benchmark posture is stable: Naive/Paperclip reuse is matched,
+  Polsia-style private first-wow is present, OpenClaw Telegram setup is ready,
+  and the remaining OpenClaw gap is the approved iMessage/SMS proof recipient.
+- Public launch is still blocked only by three operator facts:
+  `DEARME_LINKEDIN_DM_MESSAGES_URL`,
+  `DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN`, and
+  `DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT`.
+- Symphony is usable as the collaboration spine: the dashboard is running at
+  `http://127.0.0.1:4100/`, has `0/2` active agents, no queued retries, and the
+  local pid file was refreshed to the real listener process. No live provider
+  sends, campaign creation, or public deploys were run.
+
+Verification:
+
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
+- `.symphony/bin/dearme-symphony status`
+- `lsof -iTCP:4100 -sTCP:LISTEN -n -P`
+
 ## Sidebar Shows Current Readiness Split - 2026-05-12
 
 Product/architecture slice:
