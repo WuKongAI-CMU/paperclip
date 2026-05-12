@@ -4119,7 +4119,7 @@ describe("DearMeOnboarding", () => {
     );
     expect(decisionsSurface.textContent).toContain("Professional-network delivery route");
     expect(decisionsSurface.textContent).toContain("Approved professional-network recipient");
-    expect(decisionsSurface.textContent).toContain("Approved phone-message recipient");
+    expect(decisionsSurface.textContent).toContain("Approved phone-message proof recipient");
     expect(decisionsSurface.textContent).toContain("collect the approved live-proof details");
     expectNoHiddenProductTerms(decisionsSurface.textContent, Object.values(HIDDEN_PRODUCT_TERMS));
 

@@ -20,11 +20,14 @@ It answers three questions before another worker starts building:
 - The structured `dearme:release-gate` product-readiness payload now reports
   the same three customer-safe launch needs as the UI, so Symphony and Linear
   do not collapse separate external-proof handoffs into one vague blocker.
+- Those launch-proof need labels now live in `@paperclipai/shared` alongside
+  the customer-safe text guard, so the Decisions surface and release gate reuse
+  the same product-language source.
 - This reuses the existing DearMe workbench/decision shell and Polsia-style
   review-first flow instead of adding another setup or operator dashboard.
 - The three remaining public-launch facts are presented in customer-safe
   language: professional-network delivery route, approved professional-network
-  recipient, and approved phone-message recipient.
+  recipient, and approved phone-message proof recipient.
 - Symphony workers should keep treating this as the next non-live product
   handoff surface. Do not open new substrate-explanation UI for the same gap;
   collect the approved live-proof details, run no-send checks, then run the

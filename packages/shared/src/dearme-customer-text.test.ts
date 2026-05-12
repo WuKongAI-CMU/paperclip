@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN,
+  DEARME_LAUNCH_PROOF_GAP_ITEMS,
   compactDearMeCustomerText,
+  dearMeCustomerSafeLaunchNeed,
   dearMeCustomerSafeText,
 } from "./dearme-customer-text.js";
 
@@ -29,5 +31,35 @@ describe("DearMe customer text", () => {
     expect(dearMeCustomerSafeText("   ", "DearMe is preparing the next update.")).toBe(
       "DearMe is preparing the next update.",
     );
+  });
+
+  it("keeps launch proof needs customer-safe and shared with product surfaces", () => {
+    expect(DEARME_LAUNCH_PROOF_GAP_ITEMS.map((item) => item.label)).toEqual([
+      "Professional-network delivery route",
+      "Approved professional-network recipient",
+      "Approved phone-message proof recipient",
+    ]);
+
+    expect(
+      dearMeCustomerSafeLaunchNeed({
+        label: "LinkedIn partner messages endpoint",
+        provideAs: "DEARME_LINKEDIN_DM_MESSAGES_URL",
+        sensitive: false,
+      }),
+    ).toBe("Professional-network delivery route");
+    expect(
+      dearMeCustomerSafeLaunchNeed({
+        label: "LinkedIn approved smoke recipient",
+        provideAs: "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
+        sensitive: false,
+      }),
+    ).toBe("Approved professional-network recipient");
+    expect(
+      dearMeCustomerSafeLaunchNeed({
+        label: "iMessage/SMS approved smoke recipient",
+        provideAs: "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+        sensitive: false,
+      }),
+    ).toBe("Approved phone-message proof recipient");
   });
 });

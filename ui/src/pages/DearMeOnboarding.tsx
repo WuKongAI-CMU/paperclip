@@ -8,6 +8,7 @@ import {
   DEARME_MEMORY_UPDATE_KINDS,
   DEARME_PAID_BETA_MIN_PAYMENT_CENTS,
   DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN,
+  DEARME_LAUNCH_PROOF_GAP_ITEMS,
   createDearMeFirstCyclePreview,
   dearMeCustomerSafeText,
   dearMeWorkbenchResponseSchema,
@@ -134,21 +135,6 @@ const CHANNEL_LABELS: Record<DearMeBrandChannel, string> = {
   community: "Community",
   website: "Website",
 };
-
-const LAUNCH_PROOF_GAP_ITEMS = [
-  {
-    label: "Professional-network delivery route",
-    summary: "The approved route for the first live professional-network proof.",
-  },
-  {
-    label: "Approved professional-network recipient",
-    summary: "One real recipient selected for the first receipt check.",
-  },
-  {
-    label: "Approved phone-message recipient",
-    summary: "One real recipient selected for the shared phone-message proof.",
-  },
-];
 
 const CADENCE_LABELS: Record<DearMeBrandCadence, string> = {
   daily: "Daily",
@@ -4400,7 +4386,7 @@ function LaunchProofGapPanel() {
       </div>
 
       <DearMeEvidenceGrid className="mt-4">
-        {LAUNCH_PROOF_GAP_ITEMS.map((item) => (
+        {DEARME_LAUNCH_PROOF_GAP_ITEMS.map((item) => (
           <div key={item.label} className="rounded-md border border-amber-500/25 bg-background/85 p-3">
             <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
             <p className="mt-1 text-sm text-foreground/85">{item.summary}</p>

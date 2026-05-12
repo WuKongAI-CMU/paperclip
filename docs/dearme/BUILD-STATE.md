@@ -9,7 +9,10 @@ Product/architecture slice:
 - Updated the structured `dearme:release-gate` product-readiness payload so it
   exposes the same three customer-safe launch needs shown in Decisions:
   professional-network delivery route, approved professional-network recipient,
-  and approved phone-message recipient.
+  and approved phone-message proof recipient.
+- Moved the launch-proof need labels and customer-safe fact mapping into
+  `@paperclipai/shared` so the UI and release gate reuse one product-language
+  source instead of drifting separate hardcoded lists.
 - Kept provider names, environment keys, and live-command details out of the
   product-readiness surface while preserving them in lower-level facts for the
   operator proof path.
@@ -19,6 +22,10 @@ Product/architecture slice:
 Verification:
 
 - `pnpm test:dearme-release-gate`
+- `pnpm exec vitest run packages/shared/src/dearme-customer-text.test.ts --maxWorkers=1`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/shared typecheck`
+- `pnpm --filter @paperclipai/ui typecheck`
 - `pnpm --silent dearme:release-gate -- --json`
 - `pnpm --silent dearme:goal-audit -- --json`
 - `git diff --check`

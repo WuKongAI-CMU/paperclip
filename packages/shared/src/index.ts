@@ -236,8 +236,12 @@ export {
 
 export {
   DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN,
+  DEARME_LAUNCH_PROOF_GAP_ITEMS,
   compactDearMeCustomerText,
+  dearMeCustomerSafeLaunchNeed,
   dearMeCustomerSafeText,
+  type DearMeCustomerSafeLaunchFact,
+  type DearMeLaunchProofGapItem,
 } from "./dearme-customer-text.js";
 
 export type {

@@ -15,6 +15,9 @@ import {
   dearMeProofFactsNeededFromReadiness,
   type DearMeProofFactNeed,
 } from "./dearme-proof-facts.ts";
+import {
+  dearMeCustomerSafeLaunchNeed,
+} from "../packages/shared/src/dearme-customer-text.ts";
 
 export type DearMeReleaseGateTarget = "private-proof" | "public-launch";
 
@@ -125,27 +128,10 @@ function commandsFor(items: readonly DearMeGoalAuditItem[]): string[] {
   );
 }
 
-function customerSafeLaunchNeed(fact: DearMeProofFactNeed): string {
-  const key = fact.provideAs.toLowerCase();
-  const text = `${fact.label} ${fact.provideAs}`.toLowerCase();
-  if (key.includes("messages_url")) return "Professional-network delivery route";
-  if (key.includes("smoke_recipient_urn")) return "Approved professional-network recipient";
-  if (text.includes("linkedin")) return "Approved professional-network proof details";
-  if (text.includes("imessage") || text.includes("sms")) return "Approved phone-message proof recipient";
-  if (text.includes("telegram")) return "Approved chat proof recipient";
-  if (text.includes("credential") || fact.sensitive) {
-    return "Local live-proof authorization kept outside customer-facing surfaces";
-  }
-  if (text.includes("host") || text.includes("deploy") || text.includes("site")) {
-    return "Phone-reachable proof page configuration";
-  }
-  return "Current live-proof handoff fact";
-}
-
 function buildProductReadiness(
   gate: DearMeReleaseGateBase,
 ): DearMeProductReadiness {
-  const publicLaunchNeeds = unique(gate.factsNeeded.map(customerSafeLaunchNeed));
+  const publicLaunchNeeds = unique(gate.factsNeeded.map(dearMeCustomerSafeLaunchNeed));
   if (gate.canPublish) {
     return {
       status: gate.overall,
