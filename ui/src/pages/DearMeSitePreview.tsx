@@ -1,5 +1,8 @@
 import { useMemo } from "react";
-import type { DearMeFirstCyclePreviewResponse } from "@paperclipai/shared";
+import {
+  DEARME_OWNER_PROOF_FACT_SPECS,
+  type DearMeFirstCyclePreviewResponse,
+} from "@paperclipai/shared";
 import { Link, useParams } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -229,6 +232,24 @@ export function DearMeSitePreview() {
                   </div>
                 );
               })}
+            </div>
+          </DearMeWorkbenchCard>
+
+          <DearMeWorkbenchCard
+            eyebrow="Launch proof"
+            title="Private proof is ready. Public launch waits for three live receipts."
+            description="Use this private proof now. Broad launch stays held until the approved live-proof details are supplied and checked."
+            badge={<ShieldCheck className="h-4 w-4 text-muted-foreground" />}
+          >
+            <div className="grid gap-3 md:grid-cols-3" aria-label="Private preview public launch proof needs">
+              {DEARME_OWNER_PROOF_FACT_SPECS.map((fact) => (
+                <div key={fact.provideAs} className="rounded-md border border-border bg-muted/20 p-3">
+                  <p className="text-sm font-medium">{fact.label}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{fact.summary}</p>
+                  <p className="mt-3 text-xs text-muted-foreground">{fact.ownerPrompt}</p>
+                  <p className="mt-2 text-xs font-medium text-foreground/80">{fact.boundary}</p>
+                </div>
+              ))}
             </div>
           </DearMeWorkbenchCard>
 

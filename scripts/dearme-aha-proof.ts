@@ -13,6 +13,7 @@ import {
 } from "../packages/shared/src/validators/dearme.ts";
 import {
   DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN,
+  DEARME_OWNER_PROOF_FACT_SPECS,
 } from "../packages/shared/src/dearme-customer-text.ts";
 
 export interface DearMeAhaProofArgs {
@@ -35,6 +36,7 @@ export interface DearMeAhaProofCheck {
     | "phone_ready_private_site"
     | "minimum_team"
     | "approval_boundaries"
+    | "public_launch_proof_needs"
     | "customer_language";
   label: string;
   ready: boolean;
@@ -98,6 +100,12 @@ export interface DearMePrivateSiteHostSmokeManifest {
       preparedArtifacts: string[];
       ownerRoles: string[];
       approvalBoundaries: string[];
+    };
+    launchProofNeedCount: number;
+    launchProofNeeds: {
+      labels: string[];
+      summaries: string[];
+      boundaries: string[];
     };
   };
   checksums: {
@@ -324,6 +332,12 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
       `Boundary: ${preview.approvalBoundary.label}`,
     ]),
   ].join("\n");
+  const launchProofCards = DEARME_OWNER_PROOF_FACT_SPECS.map((fact) =>
+    renderCard(fact.label, fact.summary, [
+      fact.ownerPrompt,
+      fact.boundary,
+    ]),
+  ).join("\n");
   const liveWorkCards = preview.liveWorkTrail.map((item) =>
     renderCard(item.action, item.receipt, [
       `${item.window}: ${item.artifact}`,
@@ -413,6 +427,12 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
     <section aria-label="Private proof loop">
       <h2>Current proof, next pass, launch call</h2>
       <div class="grid">${proofLoopCards}</div>
+    </section>
+
+    <section aria-label="Public launch proof needs">
+      <h2>Private proof is ready. Public launch waits for three live receipts.</h2>
+      <p class="summary">Use this private proof now. Broad launch stays held until these approved live-proof details are supplied and checked.</p>
+      <div class="grid">${launchProofCards}</div>
     </section>
 
     <section aria-label="Aha bridge">
@@ -543,6 +563,13 @@ function dearMeCustomerVisiblePreviewText(preview: DearMeFirstCyclePreviewRespon
   for (const item of preview.continuationPlan.items) {
     pushTexts([item.title, item.preparedArtifact, item.summary, item.approvalBoundary]);
   }
+  pushTexts([
+    "Private proof is ready. Public launch waits for three live receipts.",
+    "Use this private proof now. Broad launch stays held until these approved live-proof details are supplied and checked.",
+  ]);
+  for (const fact of DEARME_OWNER_PROOF_FACT_SPECS) {
+    pushTexts([fact.label, fact.summary, fact.ownerPrompt, fact.boundary]);
+  }
 
   pushTexts([preview.voiceGate.summary]);
   for (const checkItem of preview.voiceGate.checks) {
@@ -606,6 +633,12 @@ export function createDearMePrivateSiteHostSmokeManifest(
         preparedArtifacts: preview.continuationPlan.items.map((item) => item.preparedArtifact),
         ownerRoles: preview.continuationPlan.items.map((item) => item.ownerRole),
         approvalBoundaries: preview.continuationPlan.items.map((item) => item.approvalBoundary),
+      },
+      launchProofNeedCount: DEARME_OWNER_PROOF_FACT_SPECS.length,
+      launchProofNeeds: {
+        labels: DEARME_OWNER_PROOF_FACT_SPECS.map((fact) => fact.label),
+        summaries: DEARME_OWNER_PROOF_FACT_SPECS.map((fact) => fact.summary),
+        boundaries: DEARME_OWNER_PROOF_FACT_SPECS.map((fact) => fact.boundary),
       },
     },
     checksums: {
@@ -832,6 +865,22 @@ export function inspectDearMeAhaProofPreview(
       [
         `waitsFor=${preview.autonomyPlan.waitsFor.join(",")}`,
         `blockedActions=${preview.approvalBoundary.blockedActions.join(" | ")}`,
+      ],
+    ),
+    check(
+      "public_launch_proof_needs",
+      "Public launch proof needs",
+      DEARME_OWNER_PROOF_FACT_SPECS.length === 3 &&
+        DEARME_OWNER_PROOF_FACT_SPECS.every((fact) =>
+          staticHtml.includes(fact.label) &&
+          staticHtml.includes(fact.summary) &&
+          staticHtml.includes(fact.ownerPrompt) &&
+          staticHtml.includes(fact.boundary),
+        ),
+      "The phone-ready private proof tells the owner exactly which approved live-proof details are still needed before broad launch.",
+      [
+        `needs=${DEARME_OWNER_PROOF_FACT_SPECS.map((fact) => fact.label).join(" | ")}`,
+        "noSendFirst=true",
       ],
     ),
     check(

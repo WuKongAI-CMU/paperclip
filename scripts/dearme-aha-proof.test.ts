@@ -29,6 +29,7 @@ test("DearMe aha proof proves the first private five-minute loop", () => {
     "phone_ready_private_site",
     "minimum_team",
     "approval_boundaries",
+    "public_launch_proof_needs",
     "customer_language",
   ]);
   assert.equal(report.checks.every((item) => item.ready), true);
@@ -134,6 +135,7 @@ test("DearMe aha proof output is operator-readable without leaking secrets", () 
   assert.match(formatted, /Cycle report contract: ready/);
   assert.match(formatted, /Recurring private work: ready/);
   assert.match(formatted, /Phone-ready private site artifact: ready/);
+  assert.match(formatted, /Public launch proof needs: ready/);
   assert.match(formatted, /hostSmoke=host-smoke\.json/);
   assert.match(formatted, /pnpm --silent dearme:aha-proof -- --check/);
   assert.match(formatted, /pnpm --silent dearme:aha-proof -- --export-site dist\/dearme-private-proof/);
@@ -153,6 +155,11 @@ test("DearMe aha proof renders a static private site artifact without hidden ter
   assert.match(html, /Current proof, next pass, launch call/);
   assert.match(html, /3 private improvements are already lined up/);
   assert.match(html, /Your one sentence became a private proof system/);
+  assert.match(html, /Private proof is ready\. Public launch waits for three live receipts/);
+  assert.match(html, /Professional-network delivery route/);
+  assert.match(html, /Approved professional-network recipient/);
+  assert.match(html, /Approved phone-message proof recipient/);
+  assert.match(html, /DearMe checks this in no-send mode/);
   assert.match(html, /You answered/);
   assert.match(html, /It prepared/);
   assert.match(html, /5 drafts and 5 leads/);
@@ -220,6 +227,12 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
           preparedArtifacts: string[];
           ownerRoles: string[];
           approvalBoundaries: string[];
+        };
+        launchProofNeedCount: number;
+        launchProofNeeds: {
+          labels: string[];
+          summaries: string[];
+          boundaries: string[];
         };
       };
       checksums: { htmlSha256: string; proofSha256: string };
@@ -304,6 +317,17 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
         "The page can be staged privately; public changes wait for approval.",
       ],
     });
+    assert.equal(manifest.checks.launchProofNeedCount, 3);
+    assert.deepEqual(manifest.checks.launchProofNeeds.labels, [
+      "Professional-network delivery route",
+      "Approved professional-network recipient",
+      "Approved phone-message proof recipient",
+    ]);
+    assert.deepEqual(manifest.checks.launchProofNeeds.boundaries, [
+      "DearMe checks this in no-send mode before any live receipt can move.",
+      "Only this selected recipient is used for the first guarded receipt.",
+      "The receipt still waits for owner approval after the no-send check.",
+    ]);
     assert.match(manifest.checksums.htmlSha256, /^[a-f0-9]{64}$/);
     assert.match(manifest.checksums.proofSha256, /^[a-f0-9]{64}$/);
   } finally {

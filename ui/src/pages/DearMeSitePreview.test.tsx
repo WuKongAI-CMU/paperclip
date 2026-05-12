@@ -6,6 +6,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN,
+  DEARME_OWNER_PROOF_FACT_SPECS,
   createDearMeFirstCyclePreview,
 } from "@paperclipai/shared";
 import { DearMeSitePreview } from "./DearMeSitePreview";
@@ -117,6 +118,21 @@ describe("DearMeSitePreview", () => {
     expect(container.textContent).toContain("Next pass");
     expect(container.textContent).toContain("Launch call");
     expect(container.textContent).toContain("3 private improvements are already lined up");
+    expect(container.textContent).toContain("Launch proof");
+    expect(container.textContent).toContain("Private proof is ready. Public launch waits for three live receipts.");
+    expect(container.textContent).toContain(
+      "Use this private proof now. Broad launch stays held until the approved live-proof details are supplied and checked.",
+    );
+    expect(container.querySelector('[aria-label="Private preview public launch proof needs"]')).not.toBeNull();
+    for (const fact of DEARME_OWNER_PROOF_FACT_SPECS) {
+      expect(container.textContent).toContain(fact.label);
+      expect(container.textContent).toContain(fact.summary);
+      expect(container.textContent).toContain(fact.ownerPrompt);
+      expect(container.textContent).toContain(fact.boundary);
+      expect(container.textContent).not.toContain(fact.provideAs);
+      expect(container.textContent).not.toContain(fact.captureFlag);
+      expect(container.textContent).not.toContain(fact.placeholder);
+    }
     expect(container.textContent).toContain("First proof trail");
     expect(container.textContent).toContain("From one sentence to private proof");
     for (const moment of preview.proofSequence) {
