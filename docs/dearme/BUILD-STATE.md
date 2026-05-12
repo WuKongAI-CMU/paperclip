@@ -175,9 +175,9 @@ Product slice:
 
 - Restored the public first-run landing structure to the release-gate contract:
   one positioning sentence, one known-for input, one private-start CTA, one
-  live-work proof hook, and one explicit approval-boundary promise. The current
+  first-proof-pack hook, and one explicit approval-boundary promise. The current
   copy is `DearMe grows your personal brand while you work.`, `Start my first
-  brand cycle`, `Watch the brand team work live`, and `Private. Public only with
+  brand cycle`, `See the first proof pack`, and `Private. Public only with
   approval.`
 - This keeps the Polsia acquisition structure on the existing DearMe content
   route rather than adding a second marketing shell.

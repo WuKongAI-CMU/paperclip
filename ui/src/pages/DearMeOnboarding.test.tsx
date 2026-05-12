@@ -1926,7 +1926,7 @@ describe("DearMeOnboarding", () => {
     );
     expect(container.textContent).toContain("What do you want to be known for?");
     expect(container.textContent).toContain("Start my first brand cycle");
-    expect(container.textContent).toContain("Watch the brand team work live");
+    expect(container.textContent).toContain("See the first proof pack");
     expect(container.textContent).toContain("Studying your voice");
     expect(container.textContent).toContain("Voice Editor");
     expect(container.textContent).toContain("5 starter drafts");
@@ -1941,7 +1941,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Proof used");
     expect(container.textContent).toContain("Next private cycle");
     expect(container.querySelector('[aria-label="DearMe public first run"]')).not.toBeNull();
-    expect(container.querySelector('[aria-label="Brand work live"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="First proof pack"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="First-run workroom queues"]')).not.toBeNull();
     expect(container.textContent).not.toContain("Today's brand team focus");
     expect(container.textContent).not.toContain("90-second first cycle");

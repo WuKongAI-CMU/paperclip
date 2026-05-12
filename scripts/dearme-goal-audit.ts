@@ -215,9 +215,9 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
     snippet: "Start my first brand cycle",
   },
   {
-    key: "source_live_private_work_proof",
+    key: "source_first_proof_pack_hook",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "Watch the brand team work live",
+    snippet: "See the first proof pack",
   },
   {
     key: "source_live_work_trail_contract",

@@ -2557,7 +2557,7 @@ function DearMePublicFirstRunLanding({
               onClick={onWatchLive}
             >
               <Telescope className="h-4 w-4" />
-              Watch the brand team work live
+              See the first proof pack
               <ArrowRight className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -2569,11 +2569,11 @@ function DearMePublicFirstRunLanding({
 
         <aside className="border-t border-border bg-muted/20 p-5 sm:p-7 lg:border-l lg:border-t-0 lg:p-8">
           <div className="flex h-full flex-col justify-center">
-            <div className="rounded-lg border border-border bg-background/80 p-4" aria-label="Brand work live">
+            <div className="rounded-lg border border-border bg-background/80 p-4" aria-label="First proof pack">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Sparkles className="h-4 w-4" />
-                  Brand work live
+                  First proof pack
                 </div>
                 <Badge variant="secondary">Working privately</Badge>
               </div>
