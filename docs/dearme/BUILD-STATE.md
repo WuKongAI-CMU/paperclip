@@ -14877,3 +14877,43 @@ Verification:
   Paperclip, OpenClaw, sandbox, provider, model, queue, and workspace terms are
   absent from the rendered review page.
 - `git diff --check` passed.
+
+## DM-WOW-3J Launch Handoff Checklist - 2026-05-12
+
+Fifty-first verified DearMe slice:
+
+- Absorbed the parallel UI work that turns each launch-ready private handoff
+  and delivery receipt into a three-point checklist: what is ready or recorded,
+  what the owner should inspect next, and why the launch boundary still holds.
+- Covered ready-to-review, paused, delivered, needs-channel-connection, pending,
+  rejected, and failed-safe receipt states through the existing DearMe
+  Workbench progress surface.
+- Product rationale: this is the Polsia manager-report pattern without copying
+  raw work streams or tool catalogs. The user sees the return handoff and the
+  next call, not the runtime behind it.
+- Reused the existing `PrivateExecutionHandoffPanel`, `DearMeChecklist`, and
+  Workbench progress data. No new route, backend state, provider setup surface,
+  or public-send path was introduced.
+- Public launch status is unchanged: private proof is usable, but live public
+  proof remains blocked until approved LinkedIn and iMessage/SMS facts exist.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "handoff|delivery receipt"`
+  passed: 7 focused tests.
+- `pnpm exec vitest run packages/shared/src/dearme-customer-text.test.ts --maxWorkers=1`
+  passed: 6 tests.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 80 tests.
+- `pnpm -r typecheck` passed.
+- Browser verification on
+  `http://127.0.0.1:3100/DEAA/dearme?codexProductQa=20260512k-handoff`
+  confirmed two `Launch handoff checklist` DOM surfaces, delivered and
+  needs-connection checklist copy in the main product surface, zero recent
+  console warnings/errors, and no hidden donor/substrate terms in the checked
+  main surface. The only whole-page `workspace` match was the global company
+  switcher outside the DearMe product surface.
+- `pnpm --silent dearme:release-gate -- --json` passed with
+  `overall=private-proof-ready`, `canUse=true`, and `canPublish=false` because
+  live external-channel proof is still intentionally blocked.
+- `git diff --check` passed.

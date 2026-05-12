@@ -9,6 +9,7 @@ import {
   DEARME_PAID_BETA_MIN_PAYMENT_CENTS,
   DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN,
   DEARME_LAUNCH_PROOF_GAP_ITEMS,
+  DEARME_LAUNCH_PROOF_HANDOFF_STEPS,
   createDearMeFirstCyclePreview,
   dearMeCustomerSafeText,
   dearMeWorkbenchResponseSchema,
@@ -2120,6 +2121,71 @@ function deliveryResultLinkLabel(handoff: DearMeWorkbenchProgressItem) {
   return "Open result";
 }
 
+function privateExecutionHandoffChecklist({
+  artifact,
+  isDeliveryReceipt,
+  deliveryStatus,
+  isPaused,
+}: {
+  artifact: string;
+  isDeliveryReceipt: boolean;
+  deliveryStatus?: DearMeWorkbenchProgressItem["deliveryStatus"];
+  isPaused: boolean;
+}) {
+  if (!isDeliveryReceipt) {
+    if (isPaused) {
+      return [
+        `Saved for later: ${artifact}.`,
+        "DearMe is paused until you resume or approve a new direction.",
+        "Nothing public or external runs while paused.",
+      ];
+    }
+    return [
+      `Ready to review: ${artifact}.`,
+      "Open the brief to check voice, proof, and boundary before launch.",
+      "Nothing public or external runs until you make the next call.",
+    ];
+  }
+
+  if (deliveryStatus === "delivered") {
+    return [
+      "Result is recorded for the approved move.",
+      "Open the result or brief to review what changed.",
+      "The next private cycle can keep moving under your launch boundary.",
+    ];
+  }
+
+  if (deliveryStatus === "needs_channel_connection") {
+    return [
+      "Approved move is ready, but the channel is not connected.",
+      "Connect the channel before DearMe can continue this move.",
+      "No external action ran without the connection.",
+    ];
+  }
+
+  if (deliveryStatus === "pending") {
+    return [
+      "Approved move is waiting on its result.",
+      "Keep the brief open until DearMe records the receipt.",
+      "The boundary stays visible while the result is pending.",
+    ];
+  }
+
+  if (deliveryStatus === "rejected") {
+    return [
+      "The approved move needs a new decision.",
+      "Open the brief to choose a safer direction.",
+      "No new external action runs until you approve again.",
+    ];
+  }
+
+  return [
+    "DearMe failed safely before representing you again.",
+    "Open the brief to inspect the prepared move.",
+    "Choose a new direction before any public move continues.",
+  ];
+}
+
 function PrivateExecutionHandoffPanel({
   handoff,
   onOpenIssue,
@@ -2181,6 +2247,12 @@ function PrivateExecutionHandoffPanel({
     : isPaused
       ? "destructive"
       : "secondary";
+  const handoffChecklistItems = privateExecutionHandoffChecklist({
+    artifact,
+    isDeliveryReceipt,
+    deliveryStatus: deliveryStatus ?? undefined,
+    isPaused,
+  });
 
   return (
     <DearMeFocusSurface aria-label={surfaceLabel} className="space-y-4">
@@ -2215,6 +2287,13 @@ function PrivateExecutionHandoffPanel({
           </div>
         </div>
       ) : null}
+      <DearMeChecklist
+        className="grid gap-2 md:grid-cols-3"
+        icon={CheckCircle2}
+        itemClassName="items-start"
+        items={handoffChecklistItems}
+        aria-label="Launch handoff checklist"
+      />
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div className="rounded-md border border-primary/20 bg-background/80 p-3">
           <p className="text-xs font-medium uppercase text-muted-foreground">Next</p>
@@ -4821,6 +4900,19 @@ function LaunchProofGapPanel() {
           </div>
         ))}
       </DearMeEvidenceGrid>
+
+      <DearMeChecklist
+        className="mt-4 grid gap-2 md:grid-cols-3"
+        icon={CheckCircle2}
+        itemClassName="items-start border-amber-500/25 bg-background/85"
+        items={DEARME_LAUNCH_PROOF_HANDOFF_STEPS.map((step) => (
+          <span key={step.label}>
+            <span className="block font-medium text-foreground">{step.label}</span>
+            <span className="mt-1 block text-xs text-muted-foreground">{step.summary}</span>
+          </span>
+        ))}
+        aria-label="Public launch proof handoff"
+      />
 
       <p className="mt-3 rounded-md border border-amber-500/25 bg-background/80 p-3 text-sm text-foreground/85">
         Next action: collect the approved live-proof details, run one guarded launch-proof pass, then bring the receipt

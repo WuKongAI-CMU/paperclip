@@ -55,6 +55,11 @@ export interface DearMeLaunchProofGapItem {
   summary: string;
 }
 
+export interface DearMeLaunchProofHandoffStep {
+  label: string;
+  summary: string;
+}
+
 export interface DearMeCustomerSafeLaunchFact {
   label: string;
   provideAs: string;
@@ -75,6 +80,21 @@ export const DEARME_LAUNCH_PROOF_GAP_ITEMS = [
     summary: "One real recipient selected for the shared phone-message proof.",
   },
 ] as const satisfies readonly DearMeLaunchProofGapItem[];
+
+export const DEARME_LAUNCH_PROOF_HANDOFF_STEPS = [
+  {
+    label: "Use private proof now",
+    summary: "Review drafts, proof assets, reports, and launch calls while everything stays private.",
+  },
+  {
+    label: "Capture approved live details",
+    summary: "Add the delivery route, professional-network recipient, and phone-message recipient only after owner approval.",
+  },
+  {
+    label: "Return with receipts before launch",
+    summary: "Run the guarded proof pass, then bring the result back before any broad public launch.",
+  },
+] as const satisfies readonly DearMeLaunchProofHandoffStep[];
 
 const DEARME_CUSTOMER_TEXT_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bOpenClaw[_ -]?gateway\b/gi, "DearMe"],

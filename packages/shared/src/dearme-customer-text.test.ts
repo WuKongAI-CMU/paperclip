@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN,
   DEARME_LAUNCH_PROOF_GAP_ITEMS,
+  DEARME_LAUNCH_PROOF_HANDOFF_STEPS,
   compactDearMeCustomerText,
   dearMeCustomerSafeLaunchNeed,
   dearMeCustomerSafeText,
@@ -61,5 +62,17 @@ describe("DearMe customer text", () => {
         sensitive: false,
       }),
     ).toBe("Approved phone-message proof recipient");
+  });
+
+  it("keeps launch proof handoff steps customer-safe", () => {
+    expect(DEARME_LAUNCH_PROOF_HANDOFF_STEPS.map((step) => step.label)).toEqual([
+      "Use private proof now",
+      "Capture approved live details",
+      "Return with receipts before launch",
+    ]);
+
+    for (const step of DEARME_LAUNCH_PROOF_HANDOFF_STEPS) {
+      expect(`${step.label} ${step.summary}`).not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
+    }
   });
 });

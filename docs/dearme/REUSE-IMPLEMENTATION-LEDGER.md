@@ -4116,6 +4116,8 @@ UI, not server-side runtime artifacts the user never sees).
 | DM-WOW-3F | Before-approve quality checks in Decisions | Polsia autonomy plus Lindy-style review grammar: voice fit, proof attached, and boundary clear before approval, without adding another workflow surface | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
 | DM-WOW-3G | Review-then-launch path copy | Polsia-style single-path simplicity over existing Work Ready, proof-pack, and Decisions surfaces | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
 | DM-WOW-3H | Fast feedback notes in focused review | Lindy-style action-needed review shortcuts over the existing DearMe approval/output review controls, so voice/proof/private-pass feedback can be sent without writing from scratch | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+| DM-WOW-3J | Launch handoff checklist | Polsia-style manager return report translated into a three-point owner checklist for ready, paused, delivered, connection-needed, pending, rejected, and failed-safe handoffs | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+| DM-WOW-3K | Public launch proof handoff | Polsia-style live-proof gap reporting reused on the existing Decisions launch-proof panel so the user sees what can be used now, what approved facts are missing, and why launch stays held | `packages/shared/src/dearme-customer-text.ts`, `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
 | DM-PROOF-HANDOFF-2 | Owner-readable proof lane summary | Polsia-style live-proof simplicity over the existing provider-smoke readiness facts | `scripts/dearme-next-proof.ts`, `scripts/dearme-next-proof.test.ts` |
 | DM-139 | Autonomous Reporting plugin (queue-always-non-empty, plain-prose updates, next-step driver) | Polsia CEO 4-step prompt | `packages/plugins/dearme-reporting/` |
 | DM-140 | Voice Gate + Content Producer plugin (voice-match score, attribution link rule, rate cap) | Polsia Twitter agent rules | `packages/plugins/dearme-content-producer/` |
@@ -4212,6 +4214,8 @@ Reuse note:
 |---|---|---|
 | Review-then-launch path plus fast feedback notes | Polsia's one-manager choreography and recurring proof loop, with Lindy-style compact feedback shortcuts, reused on existing DearMe Work Ready and Decisions surfaces | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx`, `docs/dearme/POLSIA-DEEP-STUDY-2026-05-12.md` |
 | Customer-safe prepared-work smoke copy | Polsia-style proof receipts should read like owner-facing work, not internal verification artifacts; reused DearMe's existing customer summary sanitizer instead of changing backend data or adding a content cleanup workflow | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+| Launch handoff checklist | Polsia-style result receipts plus Lindy-style task boundaries, reused on the existing private handoff panel so the user sees what is ready, what to inspect, and what stays safely held | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+| Public launch proof handoff | Polsia-style live-proof gap reporting, reused through shared customer-safe launch copy so the user sees what private proof can be used now, what approved live facts are missing, and why public launch stays held | `packages/shared/src/dearme-customer-text.ts`, `packages/shared/src/dearme-customer-text.test.ts`, `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
 
 Reuse note:
 
@@ -4220,5 +4224,11 @@ Reuse note:
 - DearMe absorbed that loop without adding another setup screen, visible tool
   catalog, provider selector, backend workflow state, or customer-facing
   substrate vocabulary.
+- The launch handoff checklist is the next reuse of that same loop: each
+  private or delivered handoff now says what is ready, what the user should
+  inspect, and why nothing public moves outside the launch boundary.
+- The public launch proof handoff shares the launch-boundary language between
+  shared customer text and the Decisions surface, so release readiness reads as
+  an owner decision instead of an internal blocker list.
 - The next reuse work should deepen receipt quality and return-handoff clarity.
   Do not spend the next slice on a new dashboard for the same approval problem.

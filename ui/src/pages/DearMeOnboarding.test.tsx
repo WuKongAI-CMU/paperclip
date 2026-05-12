@@ -4243,6 +4243,10 @@ describe("DearMeOnboarding", () => {
     expect(decisionsSurface.textContent).toContain("Professional-network delivery route");
     expect(decisionsSurface.textContent).toContain("Approved professional-network recipient");
     expect(decisionsSurface.textContent).toContain("Approved phone-message proof recipient");
+    expect(decisionsSurface.querySelector('[aria-label="Public launch proof handoff"]')).not.toBeNull();
+    expect(decisionsSurface.textContent).toContain("Use private proof now");
+    expect(decisionsSurface.textContent).toContain("Capture approved live details");
+    expect(decisionsSurface.textContent).toContain("Return with receipts before launch");
     expect(decisionsSurface.textContent).toContain("collect the approved live-proof details");
     expectNoHiddenProductTerms(decisionsSurface.textContent, Object.values(HIDDEN_PRODUCT_TERMS));
 
@@ -4656,6 +4660,10 @@ describe("DearMeOnboarding", () => {
     expect(handoffPanel.textContent).toContain("External action not run");
     expect(handoffPanel.textContent).toContain("channel-ready posting brief");
     expect(handoffPanel.textContent).toContain("Content drafts");
+    expect(handoffPanel.querySelector('[aria-label="Launch handoff checklist"]')).not.toBeNull();
+    expect(handoffPanel.textContent).toContain("Ready to review: Content drafts.");
+    expect(handoffPanel.textContent).toContain("Open the brief to check voice, proof, and boundary before launch.");
+    expect(handoffPanel.textContent).toContain("Nothing public or external runs until you make the next call.");
     expect(handoffPanel.textContent).not.toMatch(/execution handoff|launch queue/i);
     expectNoHiddenProductTerms(handoffPanel.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
@@ -4722,6 +4730,8 @@ describe("DearMeOnboarding", () => {
     expect(handoffPanel.textContent).toContain("Paused");
     expect(handoffPanel.textContent).toContain("DearMe is paused until you resume or approve a new direction.");
     expect(handoffPanel.textContent).toContain("External action not run");
+    expect(handoffPanel.textContent).toContain("Saved for later: Content drafts.");
+    expect(handoffPanel.textContent).toContain("Nothing public or external runs while paused.");
     expectNoHiddenProductTerms(handoffPanel.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
       HIDDEN_PRODUCT_TERMS.orchestrationName,
@@ -6218,6 +6228,9 @@ describe("DearMeOnboarding", () => {
     expect(handoffPanel.textContent).toContain("Reference tweet-1");
     expect(handoffPanel.textContent).toContain("Open result");
     expect(handoffPanel.textContent).toContain("Review the delivered X result or continue with the next approved step.");
+    expect(handoffPanel.textContent).toContain("Result is recorded for the approved move.");
+    expect(handoffPanel.textContent).toContain("Open the result or brief to review what changed.");
+    expect(handoffPanel.textContent).toContain("The next private cycle can keep moving under your launch boundary.");
     expect(handoffPanel.textContent).not.toContain("External action not run");
     expectNoHiddenProductTerms(handoffPanel.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
@@ -6290,6 +6303,100 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("surfaces a pending delivery receipt without losing the launch boundary", async () => {
+    mockDearmeApi.getWorkbench.mockResolvedValue(
+      workbenchResponseWithDeliveryReceipt(
+        "pending",
+        "Approved next step waiting on result",
+        "DearMe is waiting for the approved result.",
+        "Keep the brief open until DearMe records the receipt.",
+      ),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const handoffPanel = surfaceByLabel(container, "Delivery receipt pending");
+    expect(handoffPanel.textContent).toContain("Approved next step waiting on result");
+    expect(handoffPanel.textContent).toContain("Pending");
+    expect(handoffPanel.textContent).toContain("Waiting to send");
+    expect(handoffPanel.textContent).toContain("Approved move is waiting on its result.");
+    expect(handoffPanel.textContent).toContain("Keep the brief open until DearMe records the receipt.");
+    expect(handoffPanel.textContent).toContain("The boundary stays visible while the result is pending.");
+    expect(handoffPanel.textContent).not.toContain("External action not run");
+    expectNoHiddenProductTerms(handoffPanel.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.orchestrationName,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+      HIDDEN_PRODUCT_TERMS.modelName,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+      HIDDEN_PRODUCT_TERMS.workbenchName,
+      HIDDEN_PRODUCT_TERMS.workspaceName,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("surfaces a rejected delivery receipt as a new owner decision", async () => {
+    mockDearmeApi.getWorkbench.mockResolvedValue(
+      workbenchResponseWithDeliveryReceipt(
+        "rejected",
+        "Approved next step needs a new decision",
+        "DearMe recorded that the approved move needs a safer direction.",
+        "Open the brief to choose the next approved step.",
+      ),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const handoffPanel = surfaceByLabel(container, "Delivery receipt needs new decision");
+    expect(handoffPanel.textContent).toContain("Approved next step needs a new decision");
+    expect(handoffPanel.textContent).toContain("Needs new decision");
+    expect(handoffPanel.textContent).toContain("Needs a new decision");
+    expect(handoffPanel.textContent).toContain("The approved move needs a new decision.");
+    expect(handoffPanel.textContent).toContain("Open the brief to choose a safer direction.");
+    expect(handoffPanel.textContent).toContain("No new external action runs until you approve again.");
+    expect(handoffPanel.textContent).not.toContain("External action not run");
+    expectNoHiddenProductTerms(handoffPanel.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.orchestrationName,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+      HIDDEN_PRODUCT_TERMS.modelName,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+      HIDDEN_PRODUCT_TERMS.workbenchName,
+      HIDDEN_PRODUCT_TERMS.workspaceName,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("surfaces a delivery receipt that still needs channel connection", async () => {
     mockDearmeApi.getWorkbench.mockResolvedValue(
       workbenchResponseWithDeliveryReceipt(
@@ -6317,6 +6424,9 @@ describe("DearMeOnboarding", () => {
     expect(handoffPanel.textContent).toContain("Approved next step needs connection");
     expect(handoffPanel.textContent).toContain("Needs connection");
     expect(handoffPanel.textContent).toContain("Connection needed");
+    expect(handoffPanel.textContent).toContain("Approved move is ready, but the channel is not connected.");
+    expect(handoffPanel.textContent).toContain("Connect the channel before DearMe can continue this move.");
+    expect(handoffPanel.textContent).toContain("No external action ran without the connection.");
     expect(handoffPanel.textContent).not.toContain("External action not run");
     expectNoHiddenProductTerms(handoffPanel.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
@@ -6360,6 +6470,9 @@ describe("DearMeOnboarding", () => {
     const handoffPanel = surfaceByLabel(container, "Delivery receipt failed safely");
     expect(handoffPanel.textContent).toContain("Approved next step failed safely");
     expect(handoffPanel.textContent).toContain("Failed safely");
+    expect(handoffPanel.textContent).toContain("DearMe failed safely before representing you again.");
+    expect(handoffPanel.textContent).toContain("Open the brief to inspect the prepared move.");
+    expect(handoffPanel.textContent).toContain("Choose a new direction before any public move continues.");
     expect(handoffPanel.textContent).not.toContain("External action not run");
     expectNoHiddenProductTerms(handoffPanel.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,

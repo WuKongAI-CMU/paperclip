@@ -432,6 +432,9 @@ Current implementation response:
 - DM-WOW-3H added fast feedback note starters to focused review controls so the
   owner can say "voice feels off", "need stronger proof", or "keep it private"
   without typing a custom note.
+- DM-WOW-3J added a launch handoff checklist to each private or delivered
+  handoff state so the return report says what is ready, what to inspect, and
+  why nothing public or external moves outside the launch boundary.
 - Both changes reuse existing approval/output-review mutation paths. There is
   no new route, provider setup screen, workflow dashboard, backend state, or
   visible substrate surface.

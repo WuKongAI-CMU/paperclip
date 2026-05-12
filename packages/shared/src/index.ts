@@ -237,11 +237,13 @@ export {
 export {
   DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN,
   DEARME_LAUNCH_PROOF_GAP_ITEMS,
+  DEARME_LAUNCH_PROOF_HANDOFF_STEPS,
   compactDearMeCustomerText,
   dearMeCustomerSafeLaunchNeed,
   dearMeCustomerSafeText,
   type DearMeCustomerSafeLaunchFact,
   type DearMeLaunchProofGapItem,
+  type DearMeLaunchProofHandoffStep,
 } from "./dearme-customer-text.js";
 
 export type {
