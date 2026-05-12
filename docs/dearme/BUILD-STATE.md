@@ -2,6 +2,27 @@
 
 Date: 2026-05-12
 
+## Release Gate Exposes Three Launch Needs - 2026-05-12
+
+Product/architecture slice:
+
+- Updated the structured `dearme:release-gate` product-readiness payload so it
+  exposes the same three customer-safe launch needs shown in Decisions:
+  professional-network delivery route, approved professional-network recipient,
+  and approved phone-message recipient.
+- Kept provider names, environment keys, and live-command details out of the
+  product-readiness surface while preserving them in lower-level facts for the
+  operator proof path.
+- This keeps Symphony, Linear, and the product shell on one source of truth:
+  private proof is usable, public launch still waits on live receipts.
+
+Verification:
+
+- `pnpm test:dearme-release-gate`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:goal-audit -- --json`
+- `git diff --check`
+
 ## Decisions Surface Shows Launch-Proof Gap - 2026-05-12
 
 Product/architecture slice:

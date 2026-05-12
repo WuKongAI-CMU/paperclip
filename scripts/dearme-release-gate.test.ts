@@ -130,7 +130,8 @@ test("DearMe release gate allows private proof while blocking public launch", ()
   ]);
   assert.equal(gate.productReadiness.headline, "Private proof is usable");
   assert.deepEqual(gate.productReadiness.publicLaunchNeeds, [
-    "Approved professional-network proof details",
+    "Professional-network delivery route",
+    "Approved professional-network recipient",
     "Approved phone-message proof recipient",
   ]);
   assert.equal(gate.productReadiness.nextAction.label, "Supply approved live-proof details");
@@ -170,6 +171,8 @@ test("DearMe release gate allows private proof while blocking public launch", ()
   assert.match(formatted, /Facts needed before live proof:/);
   assert.match(formatted, /LinkedIn approved smoke recipient: provide DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN/);
   assert.match(formatted, /Product readiness needs:/);
+  assert.match(formatted, /Professional-network delivery route/);
+  assert.match(formatted, /Approved professional-network recipient/);
   assert.match(formatted, /Approved phone-message proof recipient/);
   assert.match(formatted, /Benchmark comparison:/);
   assert.match(formatted, /Naive\/Paperclip: matched/);

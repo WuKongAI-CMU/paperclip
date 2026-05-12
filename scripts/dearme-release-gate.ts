@@ -126,7 +126,10 @@ function commandsFor(items: readonly DearMeGoalAuditItem[]): string[] {
 }
 
 function customerSafeLaunchNeed(fact: DearMeProofFactNeed): string {
+  const key = fact.provideAs.toLowerCase();
   const text = `${fact.label} ${fact.provideAs}`.toLowerCase();
+  if (key.includes("messages_url")) return "Professional-network delivery route";
+  if (key.includes("smoke_recipient_urn")) return "Approved professional-network recipient";
   if (text.includes("linkedin")) return "Approved professional-network proof details";
   if (text.includes("imessage") || text.includes("sms")) return "Approved phone-message proof recipient";
   if (text.includes("telegram")) return "Approved chat proof recipient";
