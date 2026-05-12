@@ -49,6 +49,7 @@ export const DEARME_FIRST_CYCLE_CONCERN_GATES = [
 ] as const;
 
 export const DEARME_FIRST_CYCLE_PROOF_WINDOWS = ["0-30s", "60-120s", "3-5min"] as const;
+export const DEARME_FIRST_CYCLE_LIVE_WORK_STATUSES = ["ready", "working", "your_call"] as const;
 export const DEARME_FIRST_CYCLE_STARTER_POST_COUNT = 5;
 
 export const DEARME_APPROVAL_GATES = ["publish", "send", "deploy", "spend"] as const;
@@ -705,6 +706,16 @@ const dearMeFirstCycleProofSequenceItemSchema = z.object({
   approvalBoundary: mediumTextSchema,
 }).strict();
 
+const dearMeFirstCycleLiveWorkItemSchema = z.object({
+  id: shortTextSchema,
+  window: shortTextSchema,
+  status: z.enum(DEARME_FIRST_CYCLE_LIVE_WORK_STATUSES),
+  ownerRole: z.enum(DEARME_TEAM_ROLES),
+  action: shortTextSchema,
+  artifact: shortTextSchema,
+  receipt: mediumTextSchema,
+}).strict();
+
 const dearMeFirstCycleOpportunityLeadSchema = z.object({
   title: shortTextSchema,
   target: shortTextSchema,
@@ -784,6 +795,7 @@ export const dearMeFirstCyclePreviewResponseSchema = z.object({
   voiceProfile: dearMeFirstCycleVoiceProfileSchema,
   starterPosts: z.array(dearMeFirstCycleStarterPostSchema).length(DEARME_FIRST_CYCLE_STARTER_POST_COUNT),
   proofSequence: z.array(dearMeFirstCycleProofSequenceItemSchema).length(3),
+  liveWorkTrail: z.array(dearMeFirstCycleLiveWorkItemSchema).length(5),
   opportunityLead: dearMeFirstCycleOpportunityLeadSchema,
   opportunityShortlist: z.array(dearMeFirstCycleOpportunityShortlistItemSchema).length(5),
   portfolioProofCard: dearMeFirstCyclePortfolioProofCardSchema,
@@ -2134,6 +2146,53 @@ export function createDearMeFirstCyclePreview(
       approvalGate: "publish_social",
     },
   ];
+  const liveWorkTrail: DearMeFirstCyclePreviewResponse["liveWorkTrail"] = [
+    {
+      id: "identity-dossier-ready",
+      window: proofSequence[0]?.window ?? "0-30s",
+      status: "ready",
+      ownerRole: "voice_editor",
+      action: "Studying your voice",
+      artifact: proofSequence[0]?.preparedArtifact ?? "Voice profile and known-for line",
+      receipt: `${displayName}'s known-for line, voice stance, proof, and launch constraints are ready for review.`,
+    },
+    {
+      id: "audience-map-ready",
+      window: proofSequence[1]?.window ?? "60-120s",
+      status: "ready",
+      ownerRole: "opportunity_scout",
+      action: "Finding likely audiences",
+      artifact: proofSequence[1]?.preparedArtifact ?? "Audience shortlist and first opportunity",
+      receipt: `${primaryAudience} is the first lane, with ${opportunityShortlist.length} private targets and ${opportunityShortlist[0]?.target ?? "one lead"} prepared.`,
+    },
+    {
+      id: "starter-drafts-ready",
+      window: "90s",
+      status: "ready",
+      ownerRole: "content_producer",
+      action: "Drafting first moves",
+      artifact: `${starterPosts.length} starter drafts`,
+      receipt: `${starterPosts.length} proof-backed drafts are staged privately from ${primaryProof}.`,
+    },
+    {
+      id: "private-proof-page-ready",
+      window: proofSequence[2]?.window ?? "3-5min",
+      status: "ready",
+      ownerRole: "portfolio_builder",
+      action: "Preparing your private proof",
+      artifact: proofSequence[2]?.preparedArtifact ?? "Private proof page move",
+      receipt: `${siteRoute} is staged privately with a proof card tied to ${primaryOffer}.`,
+    },
+    {
+      id: "launch-call-ready",
+      window: "Launch call",
+      status: "your_call",
+      ownerRole: "chief_of_staff",
+      action: "Ready for your launch call",
+      artifact: "Launch boundary",
+      receipt: "Public posts, outreach, page changes, and spend are held for one launch decision.",
+    },
+  ];
   const voiceGate = evaluateDearMeVoiceGate({
     brand: preview.brand,
     artifact: {
@@ -2167,6 +2226,7 @@ export function createDearMeFirstCyclePreview(
     },
     starterPosts,
     proofSequence,
+    liveWorkTrail,
     opportunityLead: {
       ...opportunityShortlist[0],
     },

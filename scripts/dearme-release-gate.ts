@@ -85,6 +85,7 @@ const PRIVATE_PROOF_ITEMS: readonly DearMeGoalAuditItemKey[] = [
   "architecture_status_spine",
   "donor_reuse_absorption",
   "symphony_coordination",
+  "public_first_run_landing",
   "private_first_wow",
   "loopback_host_rehearsal",
   "voice_autonomy",
@@ -218,7 +219,8 @@ function buildProductComparison(
   const audit = gate.audit;
   const naiveAbsorbed = itemMet(audit, "donor_reuse_absorption") &&
     itemMet(audit, "symphony_coordination");
-  const polsiaPrivateWow = itemMet(audit, "private_first_wow") &&
+  const polsiaPrivateWow = itemMet(audit, "public_first_run_landing") &&
+    itemMet(audit, "private_first_wow") &&
     itemMet(audit, "production_host_live_wow");
   const openClawContract = itemMet(audit, "openclaw_message_contract_rehearsal");
   const openClawLive = itemMet(audit, "openclaw_message_reuse");
@@ -245,9 +247,10 @@ function buildProductComparison(
         benchmark: "Polsia",
         status: gate.canPublish ? "matched" : polsiaPrivateWow ? "partial" : "behind",
         summary: polsiaPrivateWow
-          ? "Private first-wow and phone-reachable proof are present."
-          : "The first-five-minute wow is not yet fully proven.",
+          ? "Public first-run landing, private first-wow, and phone-reachable proof are present."
+          : "The cold-start landing or first-five-minute wow is not yet fully proven.",
         evidence: metEvidence(audit, [
+          "public_first_run_landing",
           "private_first_wow",
           "production_host_live_wow",
         ]),
@@ -329,7 +332,7 @@ function decisionFor(
       target,
       ready,
       verdict: ready
-        ? "Private/internal proof is usable: DearMe can show the first wow, absorbed reuse, host proof, and OpenClaw message contract without unsafe live actions."
+        ? "Private/internal proof is usable: DearMe can show the public first-run, first wow, absorbed reuse, host proof, and OpenClaw message contract without unsafe live actions."
         : "Private/internal proof is blocked: the local product proof is missing required architecture, reuse, host, or safe-contract evidence.",
       evidence,
       blockers: missing,

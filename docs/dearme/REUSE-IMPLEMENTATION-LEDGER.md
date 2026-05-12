@@ -13,6 +13,41 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Public First-Run Release Gate - 2026-05-12
+
+- The Polsia acquisition structure is now a release-gate proof item:
+  `public_first_run_landing` must be met before DearMe can claim private proof
+  readiness.
+- The proof reuses the existing first-cycle preview, first-run landing, and
+  onboarding regression test. It does not create a second marketing shell,
+  setup dashboard, runtime, or workbench lane.
+- The gate checks the customer-visible cold start: one known-for input, private
+  proof-pack CTA, live private-work receipts, and explicit approval boundary
+  before any dense content/team surface is fetched.
+- The aha proof now scans visible preview text and static HTML for backstage
+  language instead of failing on raw internal status fields. Future agents
+  should keep internal enums backstage and block only customer-visible leaks.
+- Remaining release work is still live provider truth: collect the approved
+  professional-network route/recipient and phone-message recipient, run
+  no-send checks, then guarded live proof. Do not add more landing or setup UI
+  for the same blocker.
+
+## Latest Polsia-Style Live Work Receipts - 2026-05-12
+
+- DearMe first-cycle preview now carries a shared `liveWorkTrail`: five
+  customer-safe role/action/artifact/receipt entries for the first private pass.
+- The public first-run landing, first-cycle proof package, private site preview,
+  static aha proof export, and host-smoke manifest all render or verify the
+  same receipt trail. This keeps Polsia's visible-work advantage without
+  copying Sapiom/backend mechanics or exposing provider/control-plane language.
+- The release/goal audit should count this under the existing
+  `public_first_run_landing` proof, not as a new product lane. Future Symphony
+  or Linear tickets should strengthen this receipt trail only when it improves
+  the first-wow evidence.
+- This does not change live provider readiness: private/internal proof remains
+  usable, while public launch still waits on approved professional-network and
+  phone-message proof facts plus guarded live smoke confirmation.
+
 ## Latest Public First-Run Landing - 2026-05-12
 
 - `/DEAA/dearme?view=content` now reuses the existing DearMe first-cycle proof

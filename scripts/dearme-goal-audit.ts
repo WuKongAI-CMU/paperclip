@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,6 +31,7 @@ export type DearMeGoalAuditItemKey =
   | "architecture_status_spine"
   | "donor_reuse_absorption"
   | "symphony_coordination"
+  | "public_first_run_landing"
   | "private_first_wow"
   | "loopback_host_rehearsal"
   | "voice_autonomy"
@@ -99,6 +100,13 @@ export interface DearMeGoalAuditOpenClawMessageRehearsalEvidence {
   error?: string;
 }
 
+export interface DearMeGoalAuditPublicFirstRunLandingEvidence {
+  ready: boolean;
+  evidence: string;
+  missing: string[];
+  error?: string;
+}
+
 export interface DearMeGoalAuditArgs {
   help: boolean;
   json: boolean;
@@ -110,6 +118,10 @@ const GOAL_AUDIT_CHECK_COMMAND = "pnpm --silent dearme:goal-audit -- --check";
 const GOAL_AUDIT_HOST_REHEARSAL_TMP_PREFIX = "dearme-goal-host-rehearsal-";
 const PROOF_ENV_FILE = ".dearme-proof.env";
 const OPENCLAW_MESSAGES_TARGET = "openclaw_messages";
+const PUBLIC_FIRST_RUN_LANDING_SOURCE = "ui/src/pages/DearMeOnboarding.tsx";
+const PUBLIC_FIRST_RUN_LANDING_TEST = "ui/src/pages/DearMeOnboarding.test.tsx";
+const PUBLIC_FIRST_RUN_LANDING_TEST_COMMAND =
+  'pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "public first-run landing"';
 const REQUIRED_STATUS_SECTIONS: DearMeProofStatusSection["key"][] = [
   "first_wow_aha_proof",
   "integration_absorption_proof",
@@ -153,6 +165,7 @@ const PROMPT_TO_ARTIFACT_REQUIREMENTS: readonly {
     key: "polsia_style_aha",
     promptRequirement: "Deliver a simple Polsia-style first wow that is phone-reachable and feels real",
     artifactItems: [
+      "public_first_run_landing",
       "private_first_wow",
       "production_host_live_wow",
     ],
@@ -175,6 +188,72 @@ const PROMPT_TO_ARTIFACT_REQUIREMENTS: readonly {
     ],
   },
 ];
+
+const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
+  key: string;
+  file: typeof PUBLIC_FIRST_RUN_LANDING_SOURCE | typeof PUBLIC_FIRST_RUN_LANDING_TEST;
+  snippet: string;
+}[] = [
+  {
+    key: "source_public_surface",
+    file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
+    snippet: 'aria-label="DearMe public first run"',
+  },
+  {
+    key: "source_one_sentence_positioning",
+    file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
+    snippet: "Your AI team builds your personal brand every week.",
+  },
+  {
+    key: "source_known_for_input",
+    file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
+    snippet: "What do you want to be known for?",
+  },
+  {
+    key: "source_private_proof_pack_cta",
+    file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
+    snippet: "Start my first private proof pack",
+  },
+  {
+    key: "source_live_private_work_proof",
+    file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
+    snippet: "Watch DearMe prepare real private brand work live",
+  },
+  {
+    key: "source_live_work_trail_contract",
+    file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
+    snippet: "SAMPLE_FIRST_CYCLE_PREVIEW.liveWorkTrail",
+  },
+  {
+    key: "source_approval_boundary",
+    file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
+    snippet: "No public posts. No outreach. Nothing launches without approval.",
+  },
+  {
+    key: "test_public_first_run_landing",
+    file: PUBLIC_FIRST_RUN_LANDING_TEST,
+    snippet: "uses the content view as a public first-run landing before the dense team surface",
+  },
+  {
+    key: "test_live_work_receipts",
+    file: PUBLIC_FIRST_RUN_LANDING_TEST,
+    snippet: "First-run live work receipts",
+  },
+  {
+    key: "test_dense_workbench_hidden_before_start",
+    file: PUBLIC_FIRST_RUN_LANDING_TEST,
+    snippet: "expect(mockDearmeApi.getWorkbench).not.toHaveBeenCalled();",
+  },
+  {
+    key: "test_outputs_hidden_before_start",
+    file: PUBLIC_FIRST_RUN_LANDING_TEST,
+    snippet: "expect(mockDearmeApi.getOutputs).not.toHaveBeenCalled();",
+  },
+];
+
+function repoFile(relativePath: string): string {
+  return join(fileURLToPath(new URL("..", import.meta.url)), relativePath);
+}
 
 function section(
   status: DearMeProofStatus,
@@ -496,6 +575,63 @@ function symphonyCoordinationItem(status: DearMeProofStatus): DearMeGoalAuditIte
   };
 }
 
+export async function inspectDearMePublicFirstRunLandingEvidence(): Promise<
+  DearMeGoalAuditPublicFirstRunLandingEvidence
+> {
+  try {
+    const source = await readFile(repoFile(PUBLIC_FIRST_RUN_LANDING_SOURCE), "utf8");
+    const testSource = await readFile(repoFile(PUBLIC_FIRST_RUN_LANDING_TEST), "utf8");
+    const contentsByFile = new Map([
+      [PUBLIC_FIRST_RUN_LANDING_SOURCE, source],
+      [PUBLIC_FIRST_RUN_LANDING_TEST, testSource],
+    ]);
+    const missing = PUBLIC_FIRST_RUN_LANDING_MARKERS
+      .filter((marker) => !contentsByFile.get(marker.file)?.includes(marker.snippet))
+      .map((marker) => marker.key);
+
+    return {
+      ready: missing.length === 0,
+      evidence: missing.length === 0
+        ? "Content view starts with one positioning sentence, a known-for input, private proof-pack CTA, live private-work receipts, and an approval-boundary promise; the regression test keeps dense workbench fetches behind user intent."
+        : `Public first-run landing proof is missing ${missing.length} required source/test marker(s): ${missing.join(", ")}.`,
+      missing,
+    };
+  } catch (error) {
+    return {
+      ready: false,
+      evidence: "Public first-run landing proof could not read the product source or regression test.",
+      missing: ["public_first_run_landing_files"],
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+function publicFirstRunLandingItem(
+  evidence?: DearMeGoalAuditPublicFirstRunLandingEvidence,
+): DearMeGoalAuditItem {
+  if (!evidence) {
+    return {
+      key: "public_first_run_landing",
+      label: "Polsia-style public first-run landing",
+      status: "unverified",
+      requiredForGoal: true,
+      evidence: "The content route has not been checked for the cold-start landing before the dense workbench.",
+      blockers: ["public_first_run_landing_not_checked"],
+      commands: [PUBLIC_FIRST_RUN_LANDING_TEST_COMMAND],
+    };
+  }
+
+  return {
+    key: "public_first_run_landing",
+    label: "Polsia-style public first-run landing",
+    status: evidence.ready ? "met" : "blocked",
+    requiredForGoal: true,
+    evidence: evidence.error ? `${evidence.evidence} ${evidence.error}` : evidence.evidence,
+    blockers: evidence.ready ? [] : evidence.missing,
+    commands: [PUBLIC_FIRST_RUN_LANDING_TEST_COMMAND],
+  };
+}
+
 function promptToArtifactChecklist(
   items: readonly DearMeGoalAuditItem[],
 ): DearMeGoalAuditPromptChecklistItem[] {
@@ -533,6 +669,7 @@ export function summarizeDearMeGoalAudit(
   hostRehearsal?: DearMeGoalAuditHostRehearsalEvidence,
   hostProvider?: DearMeGoalAuditHostProviderEvidence,
   openClawMessageRehearsal?: DearMeGoalAuditOpenClawMessageRehearsalEvidence,
+  publicFirstRunLanding?: DearMeGoalAuditPublicFirstRunLandingEvidence,
 ): DearMeGoalAudit {
   const productionHost = focus(status, "production_host");
   const openclawMessages = focus(status, "openclaw_messages");
@@ -547,6 +684,7 @@ export function summarizeDearMeGoalAudit(
       evidencePrefix: "Naive/Paperclip substrate evidence",
     }),
     symphonyCoordinationItem(status),
+    publicFirstRunLandingItem(publicFirstRunLanding),
     combinedPrivateFirstWowItem(status),
     loopbackHostRehearsalItem(hostRehearsal),
     sectionItem({
@@ -584,7 +722,7 @@ export function summarizeDearMeGoalAudit(
   return {
     complete,
     verdict: complete
-      ? "Goal audit: complete. DearMe has proven architecture, reuse, private aha, Symphony absorption, OpenClaw message proof, and live provider proof."
+      ? "Goal audit: complete. DearMe has proven architecture, reuse, public first-run, private aha, Symphony absorption, OpenClaw message proof, and live provider proof."
       : `Goal audit: not complete. ${incompleteItem?.label ?? "A required item"} is still ${incompleteItem?.status ?? "unverified"}.`,
     promptToArtifactChecklist: promptChecklist,
     items,
@@ -655,11 +793,13 @@ export async function buildDearMeGoalAudit(
       error: error instanceof Error ? error.message : String(error),
     };
   }
+  const publicFirstRunLanding = await inspectDearMePublicFirstRunLandingEvidence();
   return summarizeDearMeGoalAudit(
     status,
     hostRehearsal,
     hostProvider,
     openClawMessageRehearsal,
+    publicFirstRunLanding,
   );
 }
 

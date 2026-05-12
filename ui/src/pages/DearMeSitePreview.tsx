@@ -19,6 +19,12 @@ import {
 type StarterPost = DearMeFirstCyclePreviewResponse["starterPosts"][number];
 type OpportunityLead = DearMeFirstCyclePreviewResponse["opportunityShortlist"][number];
 
+const LIVE_WORK_STATUS_LABELS: Record<DearMeFirstCyclePreviewResponse["liveWorkTrail"][number]["status"], string> = {
+  ready: "Ready",
+  working: "Working",
+  your_call: "Your call",
+};
+
 const CHANNEL_LABELS: Record<StarterPost["channel"], string> = {
   linkedin: "LinkedIn",
   x: "X",
@@ -48,6 +54,13 @@ function contactEvidenceLine(lead: OpportunityLead): string {
     lead.contactEvidence.contactUrl,
   ].filter((value): value is string => Boolean(value && value.trim().length > 0)).join(" · ") ||
     "No direct contact record yet";
+}
+
+function roleLabel(role: string) {
+  return role
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 export function DearMeSitePreview() {
@@ -198,6 +211,30 @@ export function DearMeSitePreview() {
                       {moment.approvalBoundary}
                     </p>
                   </div>
+                </div>
+              ))}
+            </div>
+          </DearMeWorkbenchCard>
+
+          <DearMeWorkbenchCard
+            eyebrow="Live work receipts"
+            title="Who worked and what is ready"
+            description="The private preview carries the first-run role trail so progress is visible without sending, publishing, or deploying."
+            badge={<RefreshCw className="h-4 w-4 text-muted-foreground" />}
+          >
+            <div className="grid gap-3 lg:grid-cols-5" aria-label="Private preview live work receipts">
+              {preview.liveWorkTrail.map((item) => (
+                <div key={item.id} className="flex min-h-44 flex-col rounded-md border border-border bg-muted/20 p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">{item.window}</Badge>
+                    <Badge variant={item.status === "your_call" ? "secondary" : "default"}>
+                      {LIVE_WORK_STATUS_LABELS[item.status]}
+                    </Badge>
+                  </div>
+                  <p className="mt-3 text-sm font-medium">{item.action}</p>
+                  <p className="mt-1 text-xs font-medium text-muted-foreground">{roleLabel(item.ownerRole)}</p>
+                  <p className="mt-2 line-clamp-4 text-xs text-muted-foreground">{item.receipt}</p>
+                  <p className="mt-auto pt-3 text-xs font-medium text-foreground/80">{item.artifact}</p>
                 </div>
               ))}
             </div>

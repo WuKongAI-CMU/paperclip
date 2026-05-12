@@ -147,6 +147,14 @@ function readyOpenClawMessageRehearsalEvidence() {
   };
 }
 
+function readyPublicFirstRunLandingEvidence() {
+  return {
+    ready: true,
+    evidence: "Content view starts with one positioning sentence, known-for input, proof-pack CTA, live work receipts, and approval boundary.",
+    missing: [],
+  };
+}
+
 function readyStatus(): DearMeProofStatus {
   return {
     lane: "all",
@@ -321,18 +329,29 @@ test("DearMe goal audit blocks completion on live production host proof", () => 
     "all",
     integrationAudit,
   );
-  const audit = summarizeDearMeGoalAudit(status, deliveredHostRehearsalEvidence());
+  const auditWithoutHostProvider = summarizeDearMeGoalAudit(
+    status,
+    deliveredHostRehearsalEvidence(),
+    undefined,
+    undefined,
+    readyPublicFirstRunLandingEvidence(),
+  );
   const auditWithHostProvider = summarizeDearMeGoalAudit(
     status,
     deliveredHostRehearsalEvidence(),
     readyHostProviderEvidence(),
     readyOpenClawMessageRehearsalEvidence(),
+    readyPublicFirstRunLandingEvidence(),
   );
   const formatted = formatDearMeGoalAudit(auditWithHostProvider).join("\n");
 
   assert.equal(auditWithHostProvider.complete, false);
   assert.match(auditWithHostProvider.verdict, /not complete/);
   assert.equal(auditWithHostProvider.nextAction.label, "Polsia-level phone-reachable private proof page");
+  assert.equal(
+    auditWithHostProvider.items.find((item) => item.key === "public_first_run_landing")?.status,
+    "met",
+  );
   assert.equal(
     auditWithHostProvider.items.find((item) => item.key === "private_first_wow")?.status,
     "met",
@@ -379,7 +398,7 @@ test("DearMe goal audit blocks completion on live production host proof", () => 
     ["OpenClaw shared Telegram/iMessage message proof", "Live provider proof set"],
   );
   assert.equal(
-    audit.items.find((item) => item.key === "production_host_provider_auth")?.status,
+    auditWithoutHostProvider.items.find((item) => item.key === "production_host_provider_auth")?.status,
     "unverified",
   );
 });
@@ -412,6 +431,7 @@ test("DearMe goal audit reports host provider authorization before production ho
     deliveredHostRehearsalEvidence(),
     blockedHostProviderEvidence(),
     readyOpenClawMessageRehearsalEvidence(),
+    readyPublicFirstRunLandingEvidence(),
   );
   const formatted = formatDearMeGoalAudit(audit).join("\n");
 
@@ -436,6 +456,7 @@ test("DearMe goal audit routes blocked OpenClaw message proof through no-send se
     deliveredHostRehearsalEvidence(),
     readyHostProviderEvidence(),
     readyOpenClawMessageRehearsalEvidence(),
+    readyPublicFirstRunLandingEvidence(),
   );
   const formatted = formatDearMeGoalAudit(audit).join("\n");
   const openClawProof = audit.items.find((item) => item.key === "openclaw_message_reuse");
@@ -461,6 +482,7 @@ test("DearMe goal audit passes only when every required proof item is ready", ()
     deliveredHostRehearsalEvidence(),
     readyHostProviderEvidence(),
     readyOpenClawMessageRehearsalEvidence(),
+    readyPublicFirstRunLandingEvidence(),
   );
   const formatted = formatDearMeGoalAudit(audit).join("\n");
 
@@ -480,8 +502,30 @@ test("DearMe goal audit passes only when every required proof item is ready", ()
   assert.match(formatted, /pnpm --silent dearme:goal-audit -- --check/);
 });
 
+test("DearMe goal audit does not silently skip the public first-run landing proof", () => {
+  const audit = summarizeDearMeGoalAudit(
+    readyStatus(),
+    deliveredHostRehearsalEvidence(),
+    readyHostProviderEvidence(),
+    readyOpenClawMessageRehearsalEvidence(),
+  );
+
+  assert.equal(audit.complete, false);
+  assert.equal(audit.nextAction.label, "Polsia-style public first-run landing");
+  assert.deepEqual(
+    audit.items.find((item) => item.key === "public_first_run_landing")?.blockers,
+    ["public_first_run_landing_not_checked"],
+  );
+});
+
 test("DearMe goal audit does not silently skip the host rehearsal proof", () => {
-  const audit = summarizeDearMeGoalAudit(readyStatus());
+  const audit = summarizeDearMeGoalAudit(
+    readyStatus(),
+    undefined,
+    undefined,
+    undefined,
+    readyPublicFirstRunLandingEvidence(),
+  );
 
   assert.equal(audit.complete, false);
   assert.equal(audit.nextAction.label, "No-secret loopback host rehearsal");
@@ -496,6 +540,8 @@ test("DearMe goal audit does not silently skip the OpenClaw message rehearsal", 
     readyStatus(),
     deliveredHostRehearsalEvidence(),
     readyHostProviderEvidence(),
+    undefined,
+    readyPublicFirstRunLandingEvidence(),
   );
 
   assert.equal(audit.complete, false);

@@ -1772,6 +1772,12 @@ const FIRST_CYCLE_LIVE_PROGRESS_LABELS = [
   "Ready for your launch call",
 ] as const;
 
+const FIRST_CYCLE_LIVE_WORK_STATUS_LABELS: Record<DearMeFirstCyclePreviewResponse["liveWorkTrail"][number]["status"], string> = {
+  ready: "Ready",
+  working: "Working",
+  your_call: "Your call",
+};
+
 const SAMPLE_FIRST_CYCLE_PREVIEW = createDearMeFirstCyclePreview("sample-company", {
   brand: {
     displayName: "Maya Chen",
@@ -2226,43 +2232,55 @@ function FirstCycleLiveProgress({
   const identityMoment = preview.proofSequence[0];
   const audienceMoment = preview.proofSequence[1];
   const proofMoment = preview.proofSequence[2];
-  const moments = [
-    {
-      label: FIRST_CYCLE_LIVE_PROGRESS_LABELS[0],
-      window: identityMoment?.window ?? "0-30s",
-      title: preview.voiceProfile.title,
-      summary: identityMoment?.summary ?? preview.voiceProfile.guidance,
-      proof: identityMoment?.preparedArtifact ?? "Voice profile and known-for line",
-    },
-    {
-      label: FIRST_CYCLE_LIVE_PROGRESS_LABELS[1],
-      window: audienceMoment?.window ?? "60-120s",
-      title: `${preview.opportunityShortlist.length} private targets`,
-      summary: audienceMoment?.summary ?? `${preview.opportunityLead.target} is ready for review before any outreach.`,
-      proof: preview.opportunityLead.title,
-    },
-    {
-      label: FIRST_CYCLE_LIVE_PROGRESS_LABELS[2],
-      window: "90s",
-      title: `${preview.starterPosts.length} starter drafts`,
-      summary: `${preview.starterPosts.length} proof-backed private drafts are staged with proof and voice checks.`,
-      proof: preview.portfolioProofCard.title,
-    },
-    {
-      label: FIRST_CYCLE_LIVE_PROGRESS_LABELS[3],
-      window: proofMoment?.window ?? "3-5min",
-      title: preview.sitePreview.route,
-      summary: proofMoment?.summary ?? preview.sitePreview.approvalBoundary,
-      proof: proofMoment?.preparedArtifact ?? "Private proof page move",
-    },
-    {
-      label: FIRST_CYCLE_LIVE_PROGRESS_LABELS[4],
-      window: "Launch call",
-      title: preview.approvalBoundary.label,
-      summary: preview.approvalBoundary.summary,
-      proof: preview.approvalBoundary.blockedActions.slice(0, 2).join(", "),
-    },
-  ];
+  const moments = preview.liveWorkTrail.length === FIRST_CYCLE_LIVE_PROGRESS_LABELS.length
+    ? preview.liveWorkTrail
+    : [
+        {
+          id: "identity-dossier-ready",
+          action: FIRST_CYCLE_LIVE_PROGRESS_LABELS[0],
+          window: identityMoment?.window ?? "0-30s",
+          status: "ready" as const,
+          ownerRole: "voice_editor" as const,
+          artifact: identityMoment?.preparedArtifact ?? "Voice profile and known-for line",
+          receipt: identityMoment?.summary ?? preview.voiceProfile.guidance,
+        },
+        {
+          id: "audience-map-ready",
+          action: FIRST_CYCLE_LIVE_PROGRESS_LABELS[1],
+          window: audienceMoment?.window ?? "60-120s",
+          status: "ready" as const,
+          ownerRole: "opportunity_scout" as const,
+          artifact: preview.opportunityLead.title,
+          receipt: audienceMoment?.summary ?? `${preview.opportunityLead.target} is ready for review before any outreach.`,
+        },
+        {
+          id: "starter-drafts-ready",
+          action: FIRST_CYCLE_LIVE_PROGRESS_LABELS[2],
+          window: "90s",
+          status: "ready" as const,
+          ownerRole: "content_producer" as const,
+          artifact: preview.portfolioProofCard.title,
+          receipt: `${preview.starterPosts.length} proof-backed private drafts are staged with proof and voice checks.`,
+        },
+        {
+          id: "private-proof-page-ready",
+          action: FIRST_CYCLE_LIVE_PROGRESS_LABELS[3],
+          window: proofMoment?.window ?? "3-5min",
+          status: "ready" as const,
+          ownerRole: "portfolio_builder" as const,
+          artifact: proofMoment?.preparedArtifact ?? "Private proof page move",
+          receipt: proofMoment?.summary ?? preview.sitePreview.approvalBoundary,
+        },
+        {
+          id: "launch-call-ready",
+          action: FIRST_CYCLE_LIVE_PROGRESS_LABELS[4],
+          window: "Launch call",
+          status: "your_call" as const,
+          ownerRole: "chief_of_staff" as const,
+          artifact: "Launch boundary",
+          receipt: preview.approvalBoundary.summary,
+        },
+      ];
   const headline = isPending
     ? "Your first proof is being prepared."
     : isSample
@@ -2278,7 +2296,7 @@ function FirstCycleLiveProgress({
   function statusLabel(index: number) {
     if (isPending) return index <= 2 ? "Preparing" : "Next";
     if (isSample) return "Sample";
-    return index === moments.length - 1 ? "Your call" : "Ready";
+    return FIRST_CYCLE_LIVE_WORK_STATUS_LABELS[moments[index]?.status ?? "ready"];
   }
 
   return (
@@ -2291,7 +2309,7 @@ function FirstCycleLiveProgress({
       <div className="grid gap-3 md:grid-cols-5" aria-label="First five minutes progress">
         {moments.map((moment, index) => (
           <div
-            key={moment.label}
+            key={moment.id}
             className={cn(
               "flex min-h-52 flex-col rounded-md border p-3",
               isPending && index <= 2
@@ -2307,10 +2325,10 @@ function FirstCycleLiveProgress({
                 {statusLabel(index)}
               </Badge>
             </div>
-            <p className="mt-3 text-sm font-medium leading-snug">{moment.label}</p>
-            <p className="mt-1 text-sm text-foreground/80">{moment.title}</p>
-            <p className="mt-2 line-clamp-4 text-xs text-muted-foreground">{moment.summary}</p>
-            <p className="mt-auto pt-3 text-xs font-medium text-muted-foreground">{moment.proof}</p>
+            <p className="mt-3 text-sm font-medium leading-snug">{moment.action}</p>
+            <p className="mt-1 text-sm text-foreground/80">{roleLabel(moment.ownerRole)}</p>
+            <p className="mt-2 line-clamp-4 text-xs text-muted-foreground">{moment.receipt}</p>
+            <p className="mt-auto pt-3 text-xs font-medium text-muted-foreground">{moment.artifact}</p>
           </div>
         ))}
       </div>
@@ -2464,20 +2482,7 @@ function DearMePublicFirstRunLanding({
     onStart();
   }
 
-  const liveMoments = [
-    {
-      label: "Known-for line",
-      description: "DearMe turns one sentence into a clear private brief.",
-    },
-    {
-      label: "Private proof pack",
-      description: "Voice, starter posts, opportunities, proof, and first plan appear before launch.",
-    },
-    {
-      label: "Your launch call",
-      description: "Public moves wait until you approve the exact next step.",
-    },
-  ] as const;
+  const liveMoments = SAMPLE_FIRST_CYCLE_PREVIEW.liveWorkTrail;
 
   return (
     <section
@@ -2555,15 +2560,19 @@ function DearMePublicFirstRunLanding({
               <div className="mt-5 space-y-3">
                 {liveMoments.map((moment, index) => (
                   <div
-                    key={moment.label}
+                    key={moment.id}
                     className="grid gap-3 rounded-md border border-border bg-background px-3 py-3 sm:grid-cols-[auto_minmax(0,1fr)]"
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-sm font-semibold text-primary">
                       {index + 1}
                     </div>
                     <div>
-                      <p className="text-sm font-medium">{moment.label}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">{moment.description}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium">{moment.action}</p>
+                        <Badge variant="outline">{roleLabel(moment.ownerRole)}</Badge>
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">{moment.receipt}</p>
+                      <p className="mt-2 text-xs font-medium text-muted-foreground">{moment.artifact}</p>
                     </div>
                   </div>
                 ))}
@@ -2617,6 +2626,29 @@ function FirstCycleProofPackage({
                 ) : null}
                 <p><span className="font-medium text-foreground/80">Waits:</span> {moment.approvalBoundary}</p>
               </div>
+            </div>
+          ))}
+        </div>
+      </DearMeWorkbenchCard>
+
+      <DearMeWorkbenchCard
+        title="Live work receipts"
+        description="Each first-run step names who worked, what changed, and what private artifact is ready."
+        badge={<RefreshCw className="h-4 w-4 text-muted-foreground" />}
+      >
+        <div className="grid gap-3 lg:grid-cols-5" aria-label="First-run live work receipts">
+          {preview.liveWorkTrail.map((item) => (
+            <div key={item.id} className="flex min-h-44 flex-col rounded-md border border-border bg-muted/20 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline">{item.window}</Badge>
+                <Badge variant={item.status === "your_call" ? "secondary" : "default"}>
+                  {FIRST_CYCLE_LIVE_WORK_STATUS_LABELS[item.status]}
+                </Badge>
+              </div>
+              <p className="mt-3 text-sm font-medium">{item.action}</p>
+              <p className="mt-1 text-xs font-medium text-muted-foreground">{roleLabel(item.ownerRole)}</p>
+              <p className="mt-2 line-clamp-4 text-xs text-muted-foreground">{item.receipt}</p>
+              <p className="mt-auto pt-3 text-xs font-medium text-foreground/80">{item.artifact}</p>
             </div>
           ))}
         </div>

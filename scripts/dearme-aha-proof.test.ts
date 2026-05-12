@@ -21,6 +21,7 @@ test("DearMe aha proof proves the first private five-minute loop", () => {
   assert.deepEqual(report.checks.map((item) => item.key), [
     "one_sentence_start",
     "five_minute_sequence",
+    "live_work_receipts",
     "private_outputs",
     "recurring_private_work",
     "phone_ready_private_site",
@@ -38,6 +39,27 @@ test("DearMe aha proof proves the first private five-minute loop", () => {
     "Voice profile and known-for line",
     "Audience shortlist and first opportunity",
     "Private proof page move",
+  ]);
+  assert.deepEqual(preview.liveWorkTrail.map((item) => item.action), [
+    "Studying your voice",
+    "Finding likely audiences",
+    "Drafting first moves",
+    "Preparing your private proof",
+    "Ready for your launch call",
+  ]);
+  assert.deepEqual(preview.liveWorkTrail.map((item) => item.ownerRole), [
+    "voice_editor",
+    "opportunity_scout",
+    "content_producer",
+    "portfolio_builder",
+    "chief_of_staff",
+  ]);
+  assert.deepEqual(preview.liveWorkTrail.map((item) => item.status), [
+    "ready",
+    "ready",
+    "ready",
+    "ready",
+    "your_call",
   ]);
   assert.equal(preview.starterPosts.length, DEARME_FIRST_CYCLE_STARTER_POST_COUNT);
   assert.equal(preview.opportunityShortlist.length, 5);
@@ -91,6 +113,7 @@ test("DearMe aha proof output is operator-readable without leaking secrets", () 
   assert.match(formatted, /DearMe aha proof/);
   assert.match(formatted, /Status: ready/);
   assert.match(formatted, /Five-minute private wow sequence: ready/);
+  assert.match(formatted, /Live work receipts: ready/);
   assert.match(formatted, /Recurring private work: ready/);
   assert.match(formatted, /Phone-ready private site artifact: ready/);
   assert.match(formatted, /hostSmoke=host-smoke\.json/);
@@ -112,6 +135,10 @@ test("DearMe aha proof renders a static private site artifact without hidden ter
   assert.match(html, /Current proof, next pass, launch call/);
   assert.match(html, /3 private improvements are already lined up/);
   assert.match(html, /From one sentence to private proof/);
+  assert.match(html, /Live work receipts/);
+  assert.match(html, /Studying your voice/);
+  assert.match(html, /Voice Editor/);
+  assert.match(html, /Ready for your launch call/);
   assert.match(html, /Keeps working after the first proof/);
   assert.match(html, /What Peter wants to become known for/);
   assert.match(html, /The positioning to test this week/);
@@ -144,6 +171,13 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
         customerSafeLanguage: boolean;
         starterDraftCount: number;
         opportunityCount: number;
+        liveWorkTrailCount: number;
+        liveWorkTrail: {
+          actions: string[];
+          ownerRoles: string[];
+          statuses: string[];
+          artifacts: string[];
+        };
         continuationCount: number;
         continuation: {
           title: string;
@@ -176,6 +210,31 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
     assert.equal(manifest.checks.customerSafeLanguage, true);
     assert.equal(manifest.checks.starterDraftCount, DEARME_FIRST_CYCLE_STARTER_POST_COUNT);
     assert.equal(manifest.checks.opportunityCount, 5);
+    assert.equal(manifest.checks.liveWorkTrailCount, 5);
+    assert.deepEqual(manifest.checks.liveWorkTrail, {
+      actions: [
+        "Studying your voice",
+        "Finding likely audiences",
+        "Drafting first moves",
+        "Preparing your private proof",
+        "Ready for your launch call",
+      ],
+      ownerRoles: [
+        "voice_editor",
+        "opportunity_scout",
+        "content_producer",
+        "portfolio_builder",
+        "chief_of_staff",
+      ],
+      statuses: ["ready", "ready", "ready", "ready", "your_call"],
+      artifacts: [
+        "Voice profile and known-for line",
+        "Audience shortlist and first opportunity",
+        "5 starter drafts",
+        "Private proof page move",
+        "Launch boundary",
+      ],
+    });
     assert.equal(manifest.checks.continuationCount, 3);
     assert.deepEqual(manifest.checks.continuation, {
       title: "Keeps working after the first proof",

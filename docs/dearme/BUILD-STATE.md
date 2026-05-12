@@ -2,6 +2,36 @@
 
 Date: 2026-05-12
 
+## Public First-Run Landing Release Gate - 2026-05-12
+
+Product/architecture slice:
+
+- Promoted the Polsia-style cold start from UI copy into the DearMe goal audit
+  and release gate as `public_first_run_landing`.
+- Private proof now fails if `/DEAA/dearme?view=content` stops opening on one
+  positioning sentence, one known-for input, `Start my first private proof
+  pack`, visible private-work receipts, and the approval boundary promise.
+- The regression check also proves the dense content/team workbench fetches are
+  still hidden until the user starts or watches the first private preparation
+  flow.
+- Adjusted the aha proof customer-language check to keep raw proof JSON,
+  customer-visible preview text, and static HTML free of backstage terms.
+- Current release split is unchanged: private/internal proof is usable; public
+  launch remains blocked on the approved LinkedIn/professional-network and
+  phone-message live proof facts.
+
+Verification:
+
+- `pnpm test:dearme-aha-proof`
+- `pnpm test:dearme-goal-audit`
+- `pnpm test:dearme-release-gate`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "public first-run landing"`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx ui/src/pages/DearMeSitePreview.test.tsx --maxWorkers=1`
+- `pnpm -r typecheck`
+- `pnpm --silent dearme:aha-proof -- --check --json`
+- `pnpm --silent dearme:goal-audit -- --json`
+- `pnpm --silent dearme:release-gate -- --json`
+
 ## Public First-Run Landing Before Content Workbench - 2026-05-12
 
 Product/acquisition slice:

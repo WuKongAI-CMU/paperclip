@@ -27,6 +27,7 @@ export interface DearMeAhaProofCheck {
   key:
     | "one_sentence_start"
     | "five_minute_sequence"
+    | "live_work_receipts"
     | "private_outputs"
     | "recurring_private_work"
     | "phone_ready_private_site"
@@ -73,6 +74,13 @@ export interface DearMePrivateSiteHostSmokeManifest {
     waitsFor: string[];
     starterDraftCount: number;
     opportunityCount: number;
+    liveWorkTrailCount: number;
+    liveWorkTrail: {
+      actions: string[];
+      ownerRoles: string[];
+      statuses: string[];
+      artifacts: string[];
+    };
     continuationCount: number;
     continuation: {
       title: string;
@@ -230,6 +238,17 @@ function contactEvidenceLabel(status: string): string {
   }
 }
 
+function liveWorkStatusLabel(status: DearMeFirstCyclePreviewResponse["liveWorkTrail"][number]["status"]): string {
+  switch (status) {
+    case "ready":
+      return "Ready";
+    case "working":
+      return "Working";
+    case "your_call":
+      return "Your call";
+  }
+}
+
 function privateSiteDisplayName(preview: DearMeFirstCyclePreviewResponse): string {
   return preview.sitePreview.handle
     .split("-")
@@ -267,6 +286,13 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
       `Boundary: ${preview.approvalBoundary.label}`,
     ]),
   ].join("\n");
+  const liveWorkCards = preview.liveWorkTrail.map((item) =>
+    renderCard(item.action, item.receipt, [
+      `${item.window}: ${item.artifact}`,
+      `By: ${formatEnumLabel(item.ownerRole)}`,
+      `Status: ${liveWorkStatusLabel(item.status)}`,
+    ]),
+  ).join("\n");
   const continuationCards = preview.continuationPlan.items.map((item) =>
     renderCard(item.title, item.summary, [
       `Prepared: ${item.preparedArtifact}`,
@@ -348,6 +374,11 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
       <div class="grid">${proofCards}</div>
     </section>
 
+    <section aria-label="Live work receipts">
+      <h2>Live work receipts</h2>
+      <div class="grid">${liveWorkCards}</div>
+    </section>
+
     <section aria-label="Keeps working">
       <h2>${escapeHtml(preview.continuationPlan.title)}</h2>
       <p class="summary">${escapeHtml(preview.continuationPlan.summary)}</p>
@@ -379,13 +410,99 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
 </html>`;
 }
 
+function dearMeCustomerVisiblePreviewText(preview: DearMeFirstCyclePreviewResponse) {
+  const segments: string[] = [];
+  const pushText = (value: string | null | undefined) => {
+    if (value) segments.push(value);
+  };
+  const pushTexts = (values: readonly (string | null | undefined)[]) => {
+    for (const value of values) pushText(value);
+  };
+
+  pushTexts([
+    preview.prompt,
+    preview.positioning,
+    preview.voiceProfile.title,
+    preview.voiceProfile.guidance,
+  ]);
+  pushTexts(preview.voiceProfile.draftTone);
+
+  for (const post of preview.starterPosts) {
+    pushTexts([post.title, post.hook, post.body, post.proofUsed]);
+  }
+
+  for (const step of preview.proofSequence) {
+    pushTexts([step.window, step.title, step.summary, step.preparedArtifact, step.sourceLabel, step.approvalBoundary]);
+  }
+
+  for (const item of preview.liveWorkTrail) {
+    pushTexts([item.window, item.action, item.artifact, item.receipt]);
+  }
+
+  for (const lead of [preview.opportunityLead, ...preview.opportunityShortlist]) {
+    pushTexts([
+      lead.title,
+      lead.target,
+      lead.whyRelevant,
+      lead.contactEvidence.sourceSignal,
+      lead.contactEvidence.email ?? undefined,
+      lead.contactEvidence.linkedinUrl ?? undefined,
+      lead.outreachAngle,
+      lead.draftMessage,
+    ]);
+  }
+
+  pushTexts([
+    preview.portfolioProofCard.title,
+    preview.portfolioProofCard.proofSource,
+    preview.portfolioProofCard.proposedCopy,
+    preview.portfolioProofCard.placement,
+    preview.sitePreview.handle,
+    preview.sitePreview.route,
+    preview.sitePreview.approvalBoundary,
+    preview.growthPlan.title,
+    preview.growthPlan.summary,
+  ]);
+  pushTexts(preview.growthPlan.priorities);
+  pushTexts(preview.growthPlan.nextActions);
+  pushTexts([preview.autonomyPlan.label, preview.autonomyPlan.summary]);
+  for (const step of preview.autonomyPlan.autonomousSteps) {
+    pushTexts([step.title, step.summary]);
+  }
+
+  pushTexts([
+    preview.continuationPlan.title,
+    preview.continuationPlan.summary,
+    preview.continuationPlan.cadence,
+    preview.continuationPlan.nextReview,
+  ]);
+  for (const item of preview.continuationPlan.items) {
+    pushTexts([item.title, item.preparedArtifact, item.summary, item.approvalBoundary]);
+  }
+
+  pushTexts([preview.voiceGate.summary]);
+  for (const checkItem of preview.voiceGate.checks) {
+    pushTexts([checkItem.label, checkItem.summary, checkItem.recommendation]);
+    pushTexts(checkItem.evidence);
+  }
+  pushTexts(preview.voiceGate.blockedActions);
+  pushTexts([preview.approvalBoundary.label, preview.approvalBoundary.summary]);
+  pushTexts(preview.approvalBoundary.blockedActions);
+  pushTexts(preview.warnings);
+
+  return segments.join("\n");
+}
+
 export function createDearMePrivateSiteHostSmokeManifest(
   preview: DearMeFirstCyclePreviewResponse,
   html: string,
   proofJson: string,
 ): DearMePrivateSiteHostSmokeManifest {
+  const visiblePreviewText = dearMeCustomerVisiblePreviewText(preview);
+  const serializedPreview = JSON.stringify(preview);
   const customerSafeLanguage =
-    DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(JSON.stringify(preview)) === null &&
+    DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(serializedPreview) === null &&
+    DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(visiblePreviewText) === null &&
     DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(html) === null;
   return {
     version: 1,
@@ -403,6 +520,13 @@ export function createDearMePrivateSiteHostSmokeManifest(
       waitsFor: [...preview.autonomyPlan.waitsFor],
       starterDraftCount: preview.starterPosts.length,
       opportunityCount: preview.opportunityShortlist.length,
+      liveWorkTrailCount: preview.liveWorkTrail.length,
+      liveWorkTrail: {
+        actions: preview.liveWorkTrail.map((item) => item.action),
+        ownerRoles: preview.liveWorkTrail.map((item) => item.ownerRole),
+        statuses: preview.liveWorkTrail.map((item) => item.status),
+        artifacts: preview.liveWorkTrail.map((item) => item.artifact),
+      },
       continuationCount: preview.continuationPlan.items.length,
       continuation: {
         title: preview.continuationPlan.title,
@@ -454,6 +578,9 @@ export function inspectDearMeAhaProofPreview(
 ): DearMeAhaProofReport {
   const windows = preview.proofSequence.map((step) => step.window);
   const preparedArtifacts = preview.proofSequence.map((step) => step.preparedArtifact);
+  const liveWorkActions = preview.liveWorkTrail.map((item) => item.action);
+  const liveWorkOwnerRoles = preview.liveWorkTrail.map((item) => item.ownerRole);
+  const liveWorkStatuses = preview.liveWorkTrail.map((item) => item.status);
   const ownerRoles = new Set<string>([
     preview.growthPlan.ownerRole,
     preview.voiceProfile.ownerRole,
@@ -461,13 +588,17 @@ export function inspectDearMeAhaProofPreview(
     ...preview.starterPosts.map((post) => post.ownerRole),
     ...preview.opportunityShortlist.map((lead) => lead.ownerRole),
     ...preview.autonomyPlan.autonomousSteps.map((step) => step.ownerRole),
+    ...liveWorkOwnerRoles,
   ]);
   const serializedPreview = JSON.stringify(preview);
-  const hiddenMatch = DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(serializedPreview);
+  const visiblePreviewText = dearMeCustomerVisiblePreviewText(preview);
+  const serializedHiddenMatch = DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(serializedPreview);
+  const visibleHiddenMatch = DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(visiblePreviewText);
   const staticHtml = renderDearMePrivateSitePreviewHtml(preview);
   const proofJson = JSON.stringify(preview, null, 2);
   const hostSmokeManifest = createDearMePrivateSiteHostSmokeManifest(preview, staticHtml, proofJson);
   const staticHtmlHiddenMatch = DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN.exec(staticHtml);
+  const hiddenMatch = serializedHiddenMatch ?? visibleHiddenMatch ?? staticHtmlHiddenMatch;
   const outputCount =
     1 +
     preview.starterPosts.length +
@@ -495,6 +626,26 @@ export function inspectDearMeAhaProofPreview(
       [
         `windows=${windows.join(",")}`,
         `preparedArtifacts=${preparedArtifacts.join(" | ")}`,
+      ],
+    ),
+    check(
+      "live_work_receipts",
+      "Live work receipts",
+      preview.liveWorkTrail.length === 5 &&
+        sameValues(liveWorkActions, [
+          "Studying your voice",
+          "Finding likely audiences",
+          "Drafting first moves",
+          "Preparing your private proof",
+          "Ready for your launch call",
+        ]) &&
+        liveWorkStatuses.includes("your_call") &&
+        preview.liveWorkTrail.every((item) => item.ownerRole && item.artifact && item.receipt),
+      "The first wow loop shows visible role presence and receipts without sending, publishing, deploying, or spending.",
+      [
+        `actions=${liveWorkActions.join(" | ")}`,
+        `ownerRoles=${liveWorkOwnerRoles.join(",")}`,
+        `statuses=${liveWorkStatuses.join(",")}`,
       ],
     ),
     check(

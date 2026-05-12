@@ -53,6 +53,7 @@ function goalAudit(
     item("architecture_status_spine", "Architecture-first proof spine"),
     item("donor_reuse_absorption", "Naive/Paperclip reuse and worktree absorption"),
     item("symphony_coordination", "Symphony/worktree coordination is absorbed, not forked"),
+    item("public_first_run_landing", "Polsia-style public first-run landing"),
     item("private_first_wow", "Polsia-style private first-wow without unsafe live actions"),
     item("loopback_host_rehearsal", "No-secret loopback host rehearsal"),
     item("voice_autonomy", "DearMe voice autonomy proof"),
@@ -227,6 +228,29 @@ test("DearMe release gate blocks private proof when the phone-reachable wow proo
   assert.deepEqual(gate.privateProof.blockers, [
     "Polsia-level phone-reachable private proof page: deploy_site_production",
   ]);
+});
+
+test("DearMe release gate blocks private proof when the public first-run landing proof is missing", () => {
+  const gate = summarizeDearMeReleaseGate(goalAudit({
+    public_first_run_landing: item(
+      "public_first_run_landing",
+      "Polsia-style public first-run landing",
+      "blocked",
+      ["public_first_run_landing_not_checked"],
+      ['pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "public first-run landing"'],
+    ),
+  }));
+
+  assert.equal(gate.overall, "blocked");
+  assert.equal(gate.canUse, false);
+  assert.equal(gate.canPublish, false);
+  assert.deepEqual(gate.privateProof.blockers, [
+    "Polsia-style public first-run landing: public_first_run_landing_not_checked",
+  ]);
+  assert.equal(
+    gate.productComparison.items.find((item) => item.benchmark === "Polsia")?.status,
+    "behind",
+  );
 });
 
 test("DearMe release gate parses check target, json, and env files", () => {

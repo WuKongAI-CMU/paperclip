@@ -118,6 +118,14 @@ describe("DearMeSitePreview", () => {
       expect(container.textContent).toContain(moment.preparedArtifact);
       expect(container.textContent).toContain(moment.approvalBoundary);
     }
+    expect(container.textContent).toContain("Live work receipts");
+    expect(container.textContent).toContain("Who worked and what is ready");
+    for (const item of preview.liveWorkTrail) {
+      expect(container.textContent).toContain(item.action);
+      expect(container.textContent).toContain(item.artifact);
+    }
+    expect(container.textContent).toContain("Voice Editor");
+    expect(container.textContent).toContain("Content Producer");
     expect(container.textContent).toContain("Keeps working");
     expect(container.textContent).toContain("Keeps working after the first proof");
     expect(container.textContent).toContain("Next private pass");

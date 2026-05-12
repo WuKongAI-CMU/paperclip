@@ -1925,6 +1925,10 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("What do you want to be known for?");
     expect(container.textContent).toContain("Start my first private proof pack");
     expect(container.textContent).toContain("Watch DearMe prepare real private brand work live");
+    expect(container.textContent).toContain("Studying your voice");
+    expect(container.textContent).toContain("Voice Editor");
+    expect(container.textContent).toContain("5 starter drafts");
+    expect(container.textContent).toContain("Launch boundary");
     expect(container.textContent).toContain("No public posts. No outreach. Nothing launches without approval.");
     expect(container.querySelector('[aria-label="DearMe public first run"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Live private brand work preview"]')).not.toBeNull();
@@ -2977,6 +2981,12 @@ describe("DearMeOnboarding", () => {
       "Known for turning messy customer research into calm B2B product decisions",
     );
     expect(container.textContent).toContain("First-run proof sequence");
+    expect(container.textContent).toContain("Live work receipts");
+    expect(container.querySelector('[aria-label="First-run live work receipts"]')).not.toBeNull();
+    expect(container.textContent).toContain("Studying your voice");
+    expect(container.textContent).toContain("Voice Editor");
+    expect(container.textContent).toContain("5 starter drafts");
+    expect(container.textContent).toContain("Launch boundary");
     expect(container.textContent).toContain("Identity dossier");
     expect(container.textContent).toContain("Audience map");
     expect(container.textContent).toContain("Private site proof");
@@ -3071,6 +3081,11 @@ describe("DearMeOnboarding", () => {
     );
     expect(mockDearmeApi.previewFirstCycle).not.toHaveBeenCalled();
     expect(container.textContent).toContain("First-run proof sequence");
+    expect(container.textContent).toContain("Live work receipts");
+    expect(container.querySelector('[aria-label="First-run live work receipts"]')).not.toBeNull();
+    expect(container.textContent).toContain("Drafting first moves");
+    expect(container.textContent).toContain("Content Producer");
+    expect(container.textContent).toContain("Launch boundary");
     expect(container.textContent).toContain("Your first five minutes are ready.");
     expect(container.textContent).toContain("DearMe prepared the visible first pass");
     expect(container.textContent).toContain("Ready for your launch call");
@@ -3210,6 +3225,9 @@ describe("DearMeOnboarding", () => {
     );
     expect(mockDearmeApi.startFirstCycle).not.toHaveBeenCalled();
     expect(container.textContent).toContain("First-run proof sequence");
+    expect(container.textContent).toContain("Live work receipts");
+    expect(container.textContent).toContain("Finding likely audiences");
+    expect(container.textContent).toContain("Opportunity Scout");
     expect(container.textContent).toContain("Your first five minutes are ready.");
     expect(container.textContent).toContain("Prepared from private profile work");
     expect(container.textContent).toContain("dearme.app/peter-studio");
