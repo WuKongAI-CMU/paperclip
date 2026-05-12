@@ -177,10 +177,10 @@ function readyStatus(): DearMeProofStatus {
       },
       {
         key: "voice_semantic_proof",
-        label: "Voice semantic proof",
+        label: "Voice semantic/review-loop proof",
         ready: true,
-        description: "Profile-token scorer is ready.",
-        targets: ["profile_token_semantic"],
+        description: "Profile-token scorer and review loop are ready.",
+        targets: ["profile_token_semantic", "profile_token_review_loop"],
         blockedTargets: [],
       },
       {

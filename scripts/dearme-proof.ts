@@ -1024,13 +1024,14 @@ export function summarizeDearMeProofStatus(
   }
 
   if (voice) {
-    const targets = ["profile_token_semantic"] as const;
+    const targets = ["profile_token_semantic", "profile_token_review_loop"] as const;
     const blockedTargets = blockedVoiceTargets(voice.readiness, targets);
     sections.push({
       key: "voice_semantic_proof",
-      label: "Voice semantic proof",
+      label: "Voice semantic/review-loop proof",
       ready: blockedTargets.length === 0,
-      description: "Uses the local profile-token scorer seam until a live embedding/model scorer is plugged in.",
+      description:
+        "Uses the local profile-token scorer seam and soft-reject review loop until a live embedding/model scorer is plugged in.",
       targets: [...targets],
       blockedTargets,
     });
@@ -1321,6 +1322,11 @@ export async function runDearMeProofSafe(
       inspectDearMeVoiceSmokeReadiness(env, "profile_token_semantic")[0];
     if (semanticReadiness?.ready) {
       voiceTargets.push("profile_token_semantic");
+    }
+    const reviewLoopReadiness =
+      inspectDearMeVoiceSmokeReadiness(env, "profile_token_review_loop")[0];
+    if (reviewLoopReadiness?.ready) {
+      voiceTargets.push("profile_token_review_loop");
     }
 
     const results: DearMeVoiceSmokeResult[] = [];

@@ -230,6 +230,14 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   ]);
   assert.equal(local?.ready, true);
   assert.equal(semantic?.ready, false);
+  assert.deepEqual(semantic?.targets, [
+    "profile_token_semantic",
+    "profile_token_review_loop",
+  ]);
+  assert.deepEqual(semantic?.blockedTargets.map((item) => item.target), [
+    "profile_token_semantic",
+    "profile_token_review_loop",
+  ]);
   assert.equal(live?.ready, false);
   assert.equal(status.commands.ahaProof, "pnpm --silent dearme:aha-proof -- --check");
   assert.deepEqual(live?.blockedTargets.map((item) => item.target), [
@@ -290,7 +298,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /pnpm --silent dearme:aha-proof -- --check/);
   assert.match(formatted, /pnpm --silent dearme:aha-proof -- --export-site dist\/dearme-private-proof/);
   assert.match(formatted, /Local no-send proof: ready/);
-  assert.match(formatted, /Voice semantic proof: blocked/);
+  assert.match(formatted, /Voice semantic\/review-loop proof: blocked/);
   assert.match(formatted, /Live provider proof: blocked/);
   assert.match(formatted, /Next live proof focus:/);
   assert.match(formatted, /Production host smoke: blocked on deploy_site_production/);
@@ -482,6 +490,7 @@ test("DearMe proof env files merge into both proof lanes", async () => {
     assert.equal(env.DEARME_DEPLOY_SITE_BASE_URL, "https://sites.example.test");
     const voice = inspectDearMeProofReadiness(env, "voice").lanes[0];
     assert.equal(voice?.readiness.find((item) => item.target === "profile_token_semantic")?.ready, true);
+    assert.equal(voice?.readiness.find((item) => item.target === "profile_token_review_loop")?.ready, true);
   } finally {
     await rm(dir, { force: true, recursive: true });
   }
@@ -506,6 +515,10 @@ test("DearMe proof auto-loads the local proof env when present", async () => {
     const voice = inspectDearMeProofReadiness(env, "voice").lanes[0];
     assert.equal(
       voice?.readiness.find((item) => item.target === "profile_token_semantic")?.ready,
+      true,
+    );
+    assert.equal(
+      voice?.readiness.find((item) => item.target === "profile_token_review_loop")?.ready,
       true,
     );
   } finally {
@@ -574,7 +587,7 @@ test("DearMe proof safe run includes loopback host rehearsal when configured", a
   }
 });
 
-test("DearMe proof safe run includes semantic local scorer when configured", async () => {
+test("DearMe proof safe run includes semantic local scorer and review loop when configured", async () => {
   const result = await runDearMeProofSafe({
     lane: "voice",
     env: {
@@ -587,6 +600,7 @@ test("DearMe proof safe run includes semantic local scorer when configured", asy
   assert.deepEqual(voice?.results.map((item) => item.target), [
     "deterministic_gate",
     "profile_token_semantic",
+    "profile_token_review_loop",
   ]);
-  assert.deepEqual(voice?.results.map((item) => item.status), ["passed", "passed"]);
+  assert.deepEqual(voice?.results.map((item) => item.status), ["passed", "passed", "passed"]);
 });

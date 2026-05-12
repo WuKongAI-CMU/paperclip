@@ -28,6 +28,22 @@ It answers three questions before another worker starts building:
   until the approved professional-network and phone-message live proof facts are
   supplied and verified.
 
+## Latest Unified Voice Proof Spine - 2026-05-12
+
+- The unified `dearme:proof` lane now treats voice readiness as semantic scorer
+  plus review-loop proof. The `profile_token_review_loop` target is no longer a
+  focused smoke-only result.
+- Release gate and goal audit evidence now use one
+  `Voice semantic/review-loop proof` label, so Symphony and Linear should count
+  the soft-reject recovery loop as part of DearMe's private product proof.
+- This reuses the existing Naive/Paperclip profile-token scorer and DearMe
+  voice-smoke harness. Do not add another runtime, dashboard, or provider setup
+  surface for the same private voice-autonomy claim.
+- The next product gap remains live external channel proof: approved
+  LinkedIn/professional-network details and approved phone-message recipient,
+  followed by no-send readiness and guarded live proof only after explicit
+  owner facts exist.
+
 ## Latest Voice Review Loop Proof - 2026-05-12
 
 - Voice Gate now uses the existing `rewrite` field in the AI proxy contract for

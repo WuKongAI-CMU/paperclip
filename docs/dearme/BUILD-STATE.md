@@ -29,6 +29,32 @@ Verification:
 - `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
 - `git diff --check`
 
+## Unified Proof Spine Counts Voice Review Loop - 2026-05-12
+
+Product/architecture slice:
+
+- Updated the unified `dearme:proof` voice lane so it counts both the
+  profile-token semantic scorer and the soft-reject review loop.
+- `dearme:proof -- --run-safe --lane voice` now runs
+  `profile_token_review_loop` automatically when the local scorer seam is
+  ready, instead of leaving the review-loop proof stranded in the focused
+  `dearme:voice-smoke` command.
+- The release gate and goal audit now report voice autonomy through the same
+  semantic/review-loop label, keeping Symphony, Linear, and product-readiness
+  handoffs aligned on one no-send proof spine.
+- This is still private proof only. Public launch remains blocked on the live
+  external channel facts and guarded provider proof.
+
+Verification:
+
+- `pnpm test:dearme-proof`
+- `pnpm test:dearme-release-gate`
+- `node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-goal-audit.test.ts`
+- `DEARME_VOICE_SEMANTIC_SCORER=profile-token pnpm --silent dearme:proof -- --run-safe --lane voice --json`
+- `DEARME_VOICE_SEMANTIC_SCORER=profile-token pnpm --silent dearme:proof -- --status --lane voice`
+- `pnpm --silent dearme:release-gate -- --json`
+- `git diff --check`
+
 ## Voice Gate Soft-Reject Review Loop - 2026-05-12
 
 Product/architecture slice:
