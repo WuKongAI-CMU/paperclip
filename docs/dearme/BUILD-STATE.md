@@ -2,6 +2,31 @@
 
 Date: 2026-05-12
 
+## Coordinator Worktree Metadata Pruned - 2026-05-12
+
+Product/architecture slice:
+
+- Pruned stale git worktree metadata after `dearme:worktrees` reported 115
+  prunable temporary integration/worker entries whose gitdir files no longer
+  existed.
+- The coordinator checkout now has one tracked worktree: the current
+  `codex/dearme-dm-136-sample-demo-proof` head. `dearme:worktrees` reports
+  `prunable: 0`, `dirty: 0`, and no replay candidates or pending Symphony
+  handoffs.
+- Refreshed Linear `DEA-64` so Symphony workers inherit the current release
+  gate truth: private proof is usable, public launch is blocked only by the
+  LinkedIn endpoint/recipient facts and the iMessage/SMS approved smoke
+  recipient. Old Meta and Telegram setup blockers should not be replayed
+  unless the gates reintroduce them.
+
+Verification:
+
+- `git worktree prune --dry-run --verbose`
+- `git worktree prune --verbose`
+- `pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
+
 ## Release Gate Splits OpenClaw Message Readiness - 2026-05-12
 
 Product/architecture slice:
