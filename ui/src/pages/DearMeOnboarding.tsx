@@ -1778,28 +1778,12 @@ const FIRST_CYCLE_LIVE_WORK_STATUS_LABELS: Record<DearMeFirstCyclePreviewRespons
   your_call: "Your call",
 };
 
-const FIRST_RUN_WORKROOM_RAILS = [
-  {
-    label: "What moved while you were away",
-    detail: "Research, drafts, opportunities, and proof receipts stay visible.",
-  },
-  {
-    label: "Ready for your launch call",
-    detail: "Only public-facing moves ask for approval.",
-  },
-  {
-    label: "Prepared but blocked",
-    detail: "Work waits safely when sources, channels, or spend need your call.",
-  },
-  {
-    label: "Proof used",
-    detail: "Every draft and pitch points back to private source proof.",
-  },
-  {
-    label: "Next private cycle",
-    detail: "Feedback becomes the next pass without another setup flow.",
-  },
-] as const;
+const FIRST_CYCLE_REPORT_STATUS_LABELS: Record<DearMeFirstCyclePreviewResponse["cycleReport"]["items"][number]["status"], string> = {
+  moved: "Moved",
+  ready: "Ready",
+  blocked: "Blocked",
+  next: "Next",
+};
 
 const SAMPLE_FIRST_CYCLE_PREVIEW = createDearMeFirstCyclePreview("sample-company", {
   brand: {
@@ -2506,6 +2490,7 @@ function DearMePublicFirstRunLanding({
   }
 
   const liveMoments = SAMPLE_FIRST_CYCLE_PREVIEW.liveWorkTrail;
+  const cycleReport = SAMPLE_FIRST_CYCLE_PREVIEW.cycleReport;
 
   return (
     <section
@@ -2601,17 +2586,25 @@ function DearMePublicFirstRunLanding({
                 ))}
               </div>
               <div className="mt-5 border-t border-border pt-4" aria-label="First-run workroom queues">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Your workroom opens with
-                </p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Your workroom opens with
+                  </p>
+                  <Badge variant="outline">{cycleReport.title}</Badge>
+                </div>
                 <div className="mt-3 grid gap-2">
-                  {FIRST_RUN_WORKROOM_RAILS.map((rail) => (
-                    <div key={rail.label} className="grid gap-1 rounded-md bg-muted/35 px-3 py-2">
-                      <p className="text-sm font-medium text-foreground">{rail.label}</p>
-                      <p className="text-xs leading-relaxed text-muted-foreground">{rail.detail}</p>
+                  {cycleReport.items.map((item) => (
+                    <div key={item.id} className="grid gap-1 rounded-md bg-muted/35 px-3 py-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium text-foreground">{item.label}</p>
+                        <Badge variant="outline">{FIRST_CYCLE_REPORT_STATUS_LABELS[item.status]}</Badge>
+                      </div>
+                      <p className="text-xs leading-relaxed text-muted-foreground">{item.summary}</p>
+                      <p className="text-xs font-medium text-foreground/75">{item.source}</p>
                     </div>
                   ))}
                 </div>
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{cycleReport.closingLine}</p>
               </div>
             </div>
           </div>
@@ -2688,6 +2681,32 @@ function FirstCycleProofPackage({
             </div>
           ))}
         </div>
+      </DearMeWorkbenchCard>
+
+      <DearMeWorkbenchCard
+        title={preview.cycleReport.title}
+        description={preview.cycleReport.summary}
+        badge={<FileText className="h-4 w-4 text-muted-foreground" />}
+      >
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" aria-label="First-cycle report">
+          {preview.cycleReport.items.map((item) => (
+            <div key={item.id} className="flex min-h-44 flex-col rounded-md border border-border bg-muted/20 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={item.status === "blocked" ? "secondary" : "outline"}>
+                  {FIRST_CYCLE_REPORT_STATUS_LABELS[item.status]}
+                </Badge>
+                <Badge variant="outline">{roleLabel(item.ownerRole)}</Badge>
+              </div>
+              <p className="mt-3 text-sm font-medium">{item.label}</p>
+              <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              {item.nextCall ? (
+                <p className="mt-3 text-xs text-muted-foreground">{item.nextCall}</p>
+              ) : null}
+              <p className="mt-auto pt-3 text-xs font-medium text-foreground/80">{item.source}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">{preview.cycleReport.closingLine}</p>
       </DearMeWorkbenchCard>
 
       {isSample ? (

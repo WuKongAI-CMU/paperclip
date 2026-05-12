@@ -141,11 +141,25 @@ export interface DearMeProofLiveProofHandoff {
   noSendGuarantee: true;
 }
 
+export interface DearMeProofOwnerChecklist {
+  status: "blocked" | "ready_for_guarded_live_proof";
+  headline: string;
+  summary: string;
+  factsNeededCount: number;
+  factsNeeded: DearMeProofFactNeed[];
+  captureCommands: string[];
+  checkCommand: string;
+  guardedLiveCommands: string[];
+  noSendGuarantee: true;
+  safety: string[];
+}
+
 export interface DearMeProofStatus {
   lane: DearMeProofLane;
   sections: DearMeProofStatusSection[];
   liveProviderFocus: DearMeProofLiveProviderFocus[];
   liveProofHandoff: DearMeProofLiveProofHandoff;
+  ownerProofChecklist: DearMeProofOwnerChecklist;
   commands: {
     ahaProof: string;
     integrationAudit: string;
@@ -999,6 +1013,33 @@ function openClawMessageContractSection(
   };
 }
 
+function buildOwnerProofChecklist(
+  handoff: DearMeProofLiveProofHandoff,
+): DearMeProofOwnerChecklist {
+  const factsNeededCount = handoff.factsNeeded.length;
+  const blocked = factsNeededCount > 0;
+  return {
+    status: blocked ? "blocked" : "ready_for_guarded_live_proof",
+    headline: blocked
+      ? "Owner proof facts needed before public launch"
+      : "Ready for guarded live proof",
+    summary: blocked
+      ? `Public launch stays blocked until ${factsNeededCount} owner-approved external proof fact${factsNeededCount === 1 ? "" : "s"} are captured and the no-send check passes.`
+      : "No owner proof facts are missing; run the no-send check before any guarded live proof.",
+    factsNeededCount,
+    factsNeeded: handoff.factsNeeded,
+    captureCommands: handoff.setupCommands,
+    checkCommand: handoff.checkCommand,
+    guardedLiveCommands: handoff.guardedLiveCommands,
+    noSendGuarantee: true,
+    safety: [
+      "Capture commands only write local proof setup; they do not send messages, publish, deploy, or spend.",
+      "Run the no-send check before any guarded live proof.",
+      "Guarded live proof still requires DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.",
+    ],
+  };
+}
+
 export function summarizeDearMeProofStatus(
   readiness: DearMeProofReadiness,
   lane: DearMeProofLane = "all",
@@ -1102,6 +1143,7 @@ export function summarizeDearMeProofStatus(
     sections,
     liveProviderFocus,
     liveProofHandoff,
+    ownerProofChecklist: buildOwnerProofChecklist(liveProofHandoff),
     commands: {
       ahaProof: "pnpm --silent dearme:aha-proof -- --check",
       integrationAudit: INTEGRATION_AUDIT_COMMAND,
@@ -1197,6 +1239,7 @@ function formatProductVerdict(status: DearMeProofStatus) {
 
 export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
   const lines = ["DearMe product proof status"];
+  const checklist = status.ownerProofChecklist;
   lines.push(formatProductVerdict(status));
   for (const section of status.sections) {
     lines.push(
@@ -1218,25 +1261,32 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
   }
 
   if (
-    status.liveProofHandoff.factsNeeded.length > 0 ||
-    status.liveProofHandoff.setupCommands.length > 0 ||
-    status.liveProofHandoff.guardedLiveCommands.length > 0
+    checklist.factsNeededCount > 0 ||
+    checklist.captureCommands.length > 0 ||
+    checklist.guardedLiveCommands.length > 0
   ) {
     lines.push("");
-    lines.push("Live proof handoff:");
-    if (status.liveProofHandoff.factsNeeded.length > 0) {
-      lines.push(`- facts needed: ${status.liveProofHandoff.factsNeeded.length}`);
-      for (const fact of status.liveProofHandoff.factsNeeded) {
+    lines.push("Owner proof checklist before public launch:");
+    lines.push(`- ${checklist.headline}: ${checklist.summary}`);
+    if (checklist.factsNeededCount > 0) {
+      lines.push(`- facts needed: ${checklist.factsNeededCount}`);
+      for (const fact of checklist.factsNeeded) {
         const sensitivity = fact.sensitive ? " (sensitive; keep local)" : "";
         lines.push(`  - ${fact.label}: provide ${fact.provideAs}${sensitivity}`);
       }
     } else {
       lines.push("- facts needed: none");
     }
-    lines.push(`- No-send check: ${status.liveProofHandoff.checkCommand}`);
-    if (status.liveProofHandoff.guardedLiveCommands.length > 0) {
+    if (checklist.captureCommands.length > 0) {
+      lines.push("- Capture setup locally:");
+      for (const command of checklist.captureCommands) {
+        lines.push(`  - ${command}`);
+      }
+    }
+    lines.push(`- No-send check: ${checklist.checkCommand}`);
+    if (checklist.guardedLiveCommands.length > 0) {
       lines.push("- Guarded live proof:");
-      for (const command of status.liveProofHandoff.guardedLiveCommands) {
+      for (const command of checklist.guardedLiveCommands) {
         lines.push(`  - ${command}`);
       }
     }

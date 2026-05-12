@@ -1938,8 +1938,10 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("What moved while you were away");
     expect(container.textContent).toContain("Ready for your launch call");
     expect(container.textContent).toContain("Prepared but blocked");
-    expect(container.textContent).toContain("Proof used");
     expect(container.textContent).toContain("Next private cycle");
+    expect(container.textContent).toContain("First-cycle report");
+    expect(container.textContent).toContain("Private proof pack");
+    expect(container.textContent).toContain("DearMe keeps working privately");
     expect(container.querySelector('[aria-label="DearMe public first run"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="First proof pack"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="First-run workroom queues"]')).not.toBeNull();

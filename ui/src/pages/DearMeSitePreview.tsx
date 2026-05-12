@@ -25,6 +25,13 @@ const LIVE_WORK_STATUS_LABELS: Record<DearMeFirstCyclePreviewResponse["liveWorkT
   your_call: "Your call",
 };
 
+const CYCLE_REPORT_STATUS_LABELS: Record<DearMeFirstCyclePreviewResponse["cycleReport"]["items"][number]["status"], string> = {
+  moved: "Moved",
+  ready: "Ready",
+  blocked: "Blocked",
+  next: "Next",
+};
+
 const CHANNEL_LABELS: Record<StarterPost["channel"], string> = {
   linkedin: "LinkedIn",
   x: "X",
@@ -238,6 +245,33 @@ export function DearMeSitePreview() {
                 </div>
               ))}
             </div>
+          </DearMeWorkbenchCard>
+
+          <DearMeWorkbenchCard
+            eyebrow="Cycle report"
+            title={preview.cycleReport.title}
+            description={preview.cycleReport.summary}
+            badge={<FileText className="h-4 w-4 text-muted-foreground" />}
+          >
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" aria-label="Private preview cycle report">
+              {preview.cycleReport.items.map((item) => (
+                <div key={item.id} className="flex min-h-44 flex-col rounded-md border border-border bg-muted/20 p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={item.status === "blocked" ? "secondary" : "outline"}>
+                      {CYCLE_REPORT_STATUS_LABELS[item.status]}
+                    </Badge>
+                    <Badge variant="outline">{roleLabel(item.ownerRole)}</Badge>
+                  </div>
+                  <p className="mt-3 text-sm font-medium">{item.label}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+                  {item.nextCall ? (
+                    <p className="mt-3 text-xs text-muted-foreground">{item.nextCall}</p>
+                  ) : null}
+                  <p className="mt-auto pt-3 text-xs font-medium text-foreground/80">{item.source}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-sm text-muted-foreground">{preview.cycleReport.closingLine}</p>
           </DearMeWorkbenchCard>
 
           <DearMeWorkbenchCard

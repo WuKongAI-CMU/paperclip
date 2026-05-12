@@ -232,6 +232,27 @@ describe("DearMe brand blueprint contract", () => {
         ],
       }).proofSequence[0]?.sourceLabel,
     ).toBe("Prepared from private profile work");
+    expect(firstCycle.cycleReport.title).toBe("First-cycle report");
+    expect(firstCycle.cycleReport.cadence).toBe("weekly");
+    expect(firstCycle.cycleReport.items.map((item) => item.label)).toEqual([
+      "What moved while you were away",
+      "Ready for your launch call",
+      "Prepared but blocked",
+      "Next private cycle",
+    ]);
+    expect(firstCycle.cycleReport.items.map((item) => item.status)).toEqual([
+      "moved",
+      "ready",
+      "blocked",
+      "next",
+    ]);
+    expect(firstCycle.cycleReport.items.map((item) => item.source)).toEqual([
+      "Live work receipts",
+      "Private proof pack",
+      "Launch boundary",
+      "Next private pass",
+    ]);
+    expect(firstCycle.cycleReport.closingLine).toContain("only public or costly moves");
     expect(firstCycle.starterPosts.every((post) => post.approvalGate === "publish_social")).toBe(true);
     expect(firstCycle.starterPosts[0]?.body).toContain(
       "The positioning to test this week: Known for turning AI research into practical local products.",

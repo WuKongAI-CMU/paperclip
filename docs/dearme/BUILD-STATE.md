@@ -2,6 +2,36 @@
 
 Date: 2026-05-12
 
+## Polsia CEO Report Port - 2026-05-12
+
+Product/architecture slice:
+
+- Re-read Polsia through the CEO prompt, reporting prompt, monitoring prompt,
+  source/API deep dives, production response data, and real tool-call reference.
+  The strongest reusable part is the operator report loop, not the visible agent
+  catalog.
+- Added a shared DearMe first-cycle `cycleReport`: four customer-safe report
+  states for what moved, what is ready, what is blocked, and what continues next.
+- Replaced the public first-run static workroom rails with generated cycle-report
+  data, then rendered the same report in the proof package, private preview,
+  static aha-proof HTML, and host-smoke manifest.
+- Extended the aha-proof and goal-audit checks so future changes cannot drop the
+  Polsia-style report contract while leaving the rest of the proof path green.
+- Product posture remains conservative: private proof is stronger and usable;
+  public launch still waits on real external-channel facts and guarded live
+  receipts.
+
+Verification:
+
+- `pnpm test:dearme-aha-proof`
+- `pnpm test:dearme-goal-audit`
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts --maxWorkers=1 -t "first cycle"`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx ui/src/pages/DearMeSitePreview.test.tsx --maxWorkers=1 -t "public first-run landing|smokeable private preview"`
+- `pnpm --silent dearme:aha-proof -- --check`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm -r typecheck`
+- `git diff --check`
+
 ## Symphony Handoff Contract Hardening - 2026-05-12
 
 Coordination slice:

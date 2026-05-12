@@ -22,6 +22,7 @@ test("DearMe aha proof proves the first private five-minute loop", () => {
     "one_sentence_start",
     "five_minute_sequence",
     "live_work_receipts",
+    "cycle_report_contract",
     "private_outputs",
     "recurring_private_work",
     "phone_ready_private_site",
@@ -60,6 +61,20 @@ test("DearMe aha proof proves the first private five-minute loop", () => {
     "ready",
     "ready",
     "your_call",
+  ]);
+  assert.equal(preview.cycleReport.title, "First-cycle report");
+  assert.deepEqual(preview.cycleReport.items.map((item) => item.label), [
+    "What moved while you were away",
+    "Ready for your launch call",
+    "Prepared but blocked",
+    "Next private cycle",
+  ]);
+  assert.deepEqual(preview.cycleReport.items.map((item) => item.status), ["moved", "ready", "blocked", "next"]);
+  assert.deepEqual(preview.cycleReport.items.map((item) => item.source), [
+    "Live work receipts",
+    "Private proof pack",
+    "Launch boundary",
+    "Next private pass",
   ]);
   assert.equal(preview.starterPosts.length, DEARME_FIRST_CYCLE_STARTER_POST_COUNT);
   assert.equal(preview.opportunityShortlist.length, 5);
@@ -114,6 +129,7 @@ test("DearMe aha proof output is operator-readable without leaking secrets", () 
   assert.match(formatted, /Status: ready/);
   assert.match(formatted, /Five-minute private wow sequence: ready/);
   assert.match(formatted, /Live work receipts: ready/);
+  assert.match(formatted, /Cycle report contract: ready/);
   assert.match(formatted, /Recurring private work: ready/);
   assert.match(formatted, /Phone-ready private site artifact: ready/);
   assert.match(formatted, /hostSmoke=host-smoke\.json/);
@@ -139,6 +155,10 @@ test("DearMe aha proof renders a static private site artifact without hidden ter
   assert.match(html, /Studying your voice/);
   assert.match(html, /Voice Editor/);
   assert.match(html, /Ready for your launch call/);
+  assert.match(html, /First-cycle report/);
+  assert.match(html, /What moved while you were away/);
+  assert.match(html, /Prepared but blocked/);
+  assert.match(html, /DearMe keeps working privately/);
   assert.match(html, /Keeps working after the first proof/);
   assert.match(html, /What Peter wants to become known for/);
   assert.match(html, /The positioning to test this week/);
@@ -177,6 +197,14 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
           ownerRoles: string[];
           statuses: string[];
           artifacts: string[];
+        };
+        cycleReportCount: number;
+        cycleReport: {
+          title: string;
+          labels: string[];
+          ownerRoles: string[];
+          statuses: string[];
+          sources: string[];
         };
         continuationCount: number;
         continuation: {
@@ -233,6 +261,24 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
         "5 starter drafts",
         "Private proof page move",
         "Launch boundary",
+      ],
+    });
+    assert.equal(manifest.checks.cycleReportCount, 4);
+    assert.deepEqual(manifest.checks.cycleReport, {
+      title: "First-cycle report",
+      labels: [
+        "What moved while you were away",
+        "Ready for your launch call",
+        "Prepared but blocked",
+        "Next private cycle",
+      ],
+      ownerRoles: ["chief_of_staff", "chief_of_staff", "voice_editor", "portfolio_builder"],
+      statuses: ["moved", "ready", "blocked", "next"],
+      sources: [
+        "Live work receipts",
+        "Private proof pack",
+        "Launch boundary",
+        "Next private pass",
       ],
     });
     assert.equal(manifest.checks.continuationCount, 3);

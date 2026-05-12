@@ -787,6 +787,24 @@ const dearMeFirstCycleContinuationPlanSchema = z.object({
   items: z.array(dearMeFirstCycleContinuationItemSchema).length(3),
 }).strict();
 
+const dearMeFirstCycleReportItemSchema = z.object({
+  id: shortTextSchema,
+  label: shortTextSchema,
+  status: z.enum(["moved", "ready", "blocked", "next"]),
+  ownerRole: z.enum(DEARME_TEAM_ROLES),
+  summary: mediumTextSchema,
+  source: shortTextSchema,
+  nextCall: mediumTextSchema.optional(),
+}).strict();
+
+const dearMeFirstCycleReportSchema = z.object({
+  title: shortTextSchema,
+  summary: mediumTextSchema,
+  cadence: z.enum(DEARME_BRAND_CADENCES),
+  items: z.array(dearMeFirstCycleReportItemSchema).length(4),
+  closingLine: mediumTextSchema,
+}).strict();
+
 export const dearMeFirstCyclePreviewResponseSchema = z.object({
   companyId: z.string().min(1),
   status: z.literal("first_cycle_preview"),
@@ -796,6 +814,7 @@ export const dearMeFirstCyclePreviewResponseSchema = z.object({
   starterPosts: z.array(dearMeFirstCycleStarterPostSchema).length(DEARME_FIRST_CYCLE_STARTER_POST_COUNT),
   proofSequence: z.array(dearMeFirstCycleProofSequenceItemSchema).length(3),
   liveWorkTrail: z.array(dearMeFirstCycleLiveWorkItemSchema).length(5),
+  cycleReport: dearMeFirstCycleReportSchema,
   opportunityLead: dearMeFirstCycleOpportunityLeadSchema,
   opportunityShortlist: z.array(dearMeFirstCycleOpportunityShortlistItemSchema).length(5),
   portfolioProofCard: dearMeFirstCyclePortfolioProofCardSchema,
@@ -2193,6 +2212,48 @@ export function createDearMeFirstCyclePreview(
       receipt: "Public posts, outreach, page changes, and spend are held for one launch decision.",
     },
   ];
+  const cycleReport: DearMeFirstCyclePreviewResponse["cycleReport"] = {
+    title: "First-cycle report",
+    summary: `What moved privately for ${displayName}: voice, audience, drafts, proof, and the launch boundary are ready before anything public changes.`,
+    cadence: blueprint.cycles[0]?.cadence ?? "weekly",
+    items: [
+      {
+        id: "what-moved",
+        label: "What moved while you were away",
+        status: "moved",
+        ownerRole: "chief_of_staff",
+        summary: `${liveWorkTrail.length - 1} private work receipts moved from positioning to proof without publishing, sending, deploying, or spending.`,
+        source: "Live work receipts",
+      },
+      {
+        id: "ready-for-launch-call",
+        label: "Ready for your launch call",
+        status: "ready",
+        ownerRole: "chief_of_staff",
+        summary: `${starterPosts.length} drafts, ${opportunityShortlist.length} opportunity leads, and one proof card are ready for review.`,
+        source: "Private proof pack",
+        nextCall: "Approve, revise, or redirect the launch boundary from one place.",
+      },
+      {
+        id: "prepared-but-blocked",
+        label: "Prepared but blocked",
+        status: "blocked",
+        ownerRole: "voice_editor",
+        summary: "Public posts, outreach, page changes, and spend are blocked by design until the launch decision is approved.",
+        source: "Launch boundary",
+        nextCall: "Keep preparing privately; wait for approval before any public move.",
+      },
+      {
+        id: "next-private-cycle",
+        label: "Next private cycle",
+        status: "next",
+        ownerRole: "portfolio_builder",
+        summary: "The next pass sharpens one draft, refreshes one opportunity, and improves the private proof card.",
+        source: "Next private pass",
+      },
+    ],
+    closingLine: "DearMe keeps working privately; only public or costly moves come back for your call.",
+  };
   const voiceGate = evaluateDearMeVoiceGate({
     brand: preview.brand,
     artifact: {
@@ -2227,6 +2288,7 @@ export function createDearMeFirstCyclePreview(
     starterPosts,
     proofSequence,
     liveWorkTrail,
+    cycleReport,
     opportunityLead: {
       ...opportunityShortlist[0],
     },

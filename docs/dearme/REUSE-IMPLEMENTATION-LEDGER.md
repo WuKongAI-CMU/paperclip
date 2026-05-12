@@ -13,6 +13,23 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Polsia CEO Report Port - 2026-05-12
+
+- The third Polsia pass focused on the CEO/reporting loop rather than the broad
+  MCP catalog. The reusable mechanism is now explicit: monitor facts, keep a
+  useful queue alive, report what moved, show what is ready, name what is blocked,
+  and continue the next private cycle.
+- DearMe first-cycle preview now has one shared `cycleReport` contract with four
+  customer-safe states: moved, ready, blocked, and next. The public first-run
+  landing, proof package, private preview, static aha proof export, host-smoke
+  manifest, and aha-proof audit all use this same contract.
+- The old static workroom-queue copy is intentionally replaced by generated
+  first-cycle report data. This keeps Polsia's operator-report advantage while
+  keeping OpenClaw, Symphony, provider routing, and worker details backstage.
+- This does not change the release split: private proof is stronger and usable;
+  public launch still waits on real professional-network and phone-message live
+  proof facts plus guarded receipts.
+
 ## Latest Symphony Handoff Contract Hardening - 2026-05-12
 
 - The proof-lane coordination contract now treats

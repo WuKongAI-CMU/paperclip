@@ -126,6 +126,13 @@ describe("DearMeSitePreview", () => {
     }
     expect(container.textContent).toContain("Voice Editor");
     expect(container.textContent).toContain("Content Producer");
+    expect(container.textContent).toContain("Cycle report");
+    expect(container.textContent).toContain("First-cycle report");
+    for (const item of preview.cycleReport.items) {
+      expect(container.textContent).toContain(item.label);
+      expect(container.textContent).toContain(item.summary);
+      expect(container.textContent).toContain(item.source);
+    }
     expect(container.textContent).toContain("Keeps working");
     expect(container.textContent).toContain("Keeps working after the first proof");
     expect(container.textContent).toContain("Next private pass");

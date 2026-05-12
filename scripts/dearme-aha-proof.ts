@@ -81,6 +81,14 @@ export interface DearMePrivateSiteHostSmokeManifest {
       statuses: string[];
       artifacts: string[];
     };
+    cycleReportCount: number;
+    cycleReport: {
+      title: string;
+      labels: string[];
+      ownerRoles: string[];
+      statuses: string[];
+      sources: string[];
+    };
     continuationCount: number;
     continuation: {
       title: string;
@@ -249,6 +257,19 @@ function liveWorkStatusLabel(status: DearMeFirstCyclePreviewResponse["liveWorkTr
   }
 }
 
+function cycleReportStatusLabel(status: DearMeFirstCyclePreviewResponse["cycleReport"]["items"][number]["status"]): string {
+  switch (status) {
+    case "moved":
+      return "Moved";
+    case "ready":
+      return "Ready";
+    case "blocked":
+      return "Blocked";
+    case "next":
+      return "Next";
+  }
+}
+
 function privateSiteDisplayName(preview: DearMeFirstCyclePreviewResponse): string {
   return preview.sitePreview.handle
     .split("-")
@@ -292,6 +313,14 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
       `By: ${formatEnumLabel(item.ownerRole)}`,
       `Status: ${liveWorkStatusLabel(item.status)}`,
     ]),
+  ).join("\n");
+  const cycleReportCards = preview.cycleReport.items.map((item) =>
+    renderCard(item.label, item.summary, [
+      `Status: ${cycleReportStatusLabel(item.status)}`,
+      `By: ${formatEnumLabel(item.ownerRole)}`,
+      `Source: ${item.source}`,
+      item.nextCall ? `Next call: ${item.nextCall}` : "",
+    ].filter(Boolean)),
   ).join("\n");
   const continuationCards = preview.continuationPlan.items.map((item) =>
     renderCard(item.title, item.summary, [
@@ -379,6 +408,13 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
       <div class="grid">${liveWorkCards}</div>
     </section>
 
+    <section aria-label="Cycle report">
+      <h2>${escapeHtml(preview.cycleReport.title)}</h2>
+      <p class="summary">${escapeHtml(preview.cycleReport.summary)}</p>
+      <div class="grid">${cycleReportCards}</div>
+      <p class="next-review">${escapeHtml(preview.cycleReport.closingLine)}</p>
+    </section>
+
     <section aria-label="Keeps working">
       <h2>${escapeHtml(preview.continuationPlan.title)}</h2>
       <p class="summary">${escapeHtml(preview.continuationPlan.summary)}</p>
@@ -437,6 +473,11 @@ function dearMeCustomerVisiblePreviewText(preview: DearMeFirstCyclePreviewRespon
 
   for (const item of preview.liveWorkTrail) {
     pushTexts([item.window, item.action, item.artifact, item.receipt]);
+  }
+
+  pushTexts([preview.cycleReport.title, preview.cycleReport.summary, preview.cycleReport.closingLine]);
+  for (const item of preview.cycleReport.items) {
+    pushTexts([item.label, item.summary, item.source, item.nextCall]);
   }
 
   for (const lead of [preview.opportunityLead, ...preview.opportunityShortlist]) {
@@ -527,6 +568,14 @@ export function createDearMePrivateSiteHostSmokeManifest(
         statuses: preview.liveWorkTrail.map((item) => item.status),
         artifacts: preview.liveWorkTrail.map((item) => item.artifact),
       },
+      cycleReportCount: preview.cycleReport.items.length,
+      cycleReport: {
+        title: preview.cycleReport.title,
+        labels: preview.cycleReport.items.map((item) => item.label),
+        ownerRoles: preview.cycleReport.items.map((item) => item.ownerRole),
+        statuses: preview.cycleReport.items.map((item) => item.status),
+        sources: preview.cycleReport.items.map((item) => item.source),
+      },
       continuationCount: preview.continuationPlan.items.length,
       continuation: {
         title: preview.continuationPlan.title,
@@ -581,6 +630,9 @@ export function inspectDearMeAhaProofPreview(
   const liveWorkActions = preview.liveWorkTrail.map((item) => item.action);
   const liveWorkOwnerRoles = preview.liveWorkTrail.map((item) => item.ownerRole);
   const liveWorkStatuses = preview.liveWorkTrail.map((item) => item.status);
+  const cycleReportLabels = preview.cycleReport.items.map((item) => item.label);
+  const cycleReportStatuses = preview.cycleReport.items.map((item) => item.status);
+  const cycleReportSources = preview.cycleReport.items.map((item) => item.source);
   const ownerRoles = new Set<string>([
     preview.growthPlan.ownerRole,
     preview.voiceProfile.ownerRole,
@@ -589,6 +641,7 @@ export function inspectDearMeAhaProofPreview(
     ...preview.opportunityShortlist.map((lead) => lead.ownerRole),
     ...preview.autonomyPlan.autonomousSteps.map((step) => step.ownerRole),
     ...liveWorkOwnerRoles,
+    ...preview.cycleReport.items.map((item) => item.ownerRole),
   ]);
   const serializedPreview = JSON.stringify(preview);
   const visiblePreviewText = dearMeCustomerVisiblePreviewText(preview);
@@ -606,7 +659,8 @@ export function inspectDearMeAhaProofPreview(
     1 +
     1 +
     1 +
-    preview.continuationPlan.items.length;
+    preview.continuationPlan.items.length +
+    preview.cycleReport.items.length;
   const checks: DearMeAhaProofCheck[] = [
     check(
       "one_sentence_start",
@@ -646,6 +700,26 @@ export function inspectDearMeAhaProofPreview(
         `actions=${liveWorkActions.join(" | ")}`,
         `ownerRoles=${liveWorkOwnerRoles.join(",")}`,
         `statuses=${liveWorkStatuses.join(",")}`,
+      ],
+    ),
+    check(
+      "cycle_report_contract",
+      "Cycle report contract",
+      preview.cycleReport.items.length === 4 &&
+        sameValues(cycleReportLabels, [
+          "What moved while you were away",
+          "Ready for your launch call",
+          "Prepared but blocked",
+          "Next private cycle",
+        ]) &&
+        sameValues(cycleReportStatuses, ["moved", "ready", "blocked", "next"]) &&
+        preview.cycleReport.items.every((item) => item.ownerRole && item.source && item.summary),
+      "The first wow loop returns a Polsia-style operator report: what moved, what is ready, what is blocked, and what continues next.",
+      [
+        `title=${preview.cycleReport.title}`,
+        `labels=${cycleReportLabels.join(" | ")}`,
+        `statuses=${cycleReportStatuses.join(",")}`,
+        `sources=${cycleReportSources.join(" | ")}`,
       ],
     ),
     check(

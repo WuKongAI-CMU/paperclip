@@ -48,6 +48,12 @@ Primary archive material inspected:
 - `expanded/api-responses/public-dashboard.json`
 - `expanded/instances/podpersona/server.js`
 - `expanded/instances/runloop/server.js`
+- `/Users/peter/dearme-archive/prompts/polsia-reference/51-ceo.md`
+- `/Users/peter/dearme-archive/prompts/polsia-reference/35-reporting.md`
+- `/Users/peter/dearme-archive/prompts/polsia-reference/37-monitoring.md`
+- `final-summary/tool-call-reference/REAL-TOOL-CALLS.md`
+- `final-summary/12-REAL-SOURCE-CODE-DEEP-DIVE.md`
+- `final-summary/13-PRODUCTION-API-RESPONSES-DEEP-DIVE.md`
 
 The runtime logs show real execution evidence: task ids, execution ids, live
 events, tool calls, reports, partial external sends, deploy activity, costs,
@@ -88,6 +94,41 @@ The practical runtime is smaller than the marketing surface. Most useful work
 comes from a compact internal set: tasks, reports, live replies, dashboard
 updates, infrastructure helpers, memory, and a cost-aware AI proxy. DearMe does
 not need to expose a giant tool catalog to match the customer feeling.
+
+## Third-Pass Operator Findings
+
+The prompt and production-response read makes the product lesson more specific:
+Polsia is a CEO loop with specialists, not a specialist chooser.
+
+Reusable mechanisms:
+
+- The CEO prompt keeps the user-facing loop simple: monitor current state,
+  review what happened, maintain a useful queue, and report back. It aims to
+  keep at least three useful tasks alive, so the product feels like it continues
+  after the first response.
+- Reporting is a product primitive, not an afterthought. The reporting prompt
+  orders work through owner email, dashboard inbox, and report creation. DearMe
+  should mirror the shape as a first-cycle report, private preview, and stored
+  proof artifact.
+- Monitoring and reporting are separate. Monitoring captures factual state only;
+  reporting converts facts into owner-readable decisions. DearMe should avoid
+  mixing telemetry, recommendations, and launch calls into one noisy surface.
+- The real tool surface is compact: file/read/write/edit/search, task/report
+  operations, dashboard updates, infra helpers, support/email/billing, and
+  capability checks. The 22-MCP story is not the product surface to copy.
+- Polsia workspaces are isolated per company, agent, and execution. DearMe should
+  preserve Symphony/OpenClaw worker isolation backstage while showing only clean
+  receipts and artifacts.
+
+Current DearMe implementation response:
+
+- The first-cycle preview now carries a shared `cycleReport` contract: what
+  moved, what is ready, what is blocked, and what continues next.
+- The public first-run landing, proof package, private preview, static aha proof
+  export, and host-smoke manifest all read that same report instead of carrying
+  a separate static queue list.
+- This directly ports the useful Polsia CEO reporting mechanism without exposing
+  raw agents, raw runtime events, or donor product language.
 
 ## Polsia Product Kernel
 
@@ -291,8 +332,8 @@ DearMe is already strong in the substrate layer:
 DearMe has reached the private Polsia-style proof bar:
 
 - A cold user can start from one positioning input.
-- The first cycle produces private proof, starter work, visible work trail, and
-  launch boundaries.
+- The first cycle produces private proof, starter work, visible work trail, a
+  first-cycle report, and launch boundaries.
 - The product can be used for private/internal proof without live public sends.
 
 DearMe has not yet reached the full public Polsia-equivalent live-delivery bar:

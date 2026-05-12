@@ -233,6 +233,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     "one_sentence_start",
     "five_minute_sequence",
     "live_work_receipts",
+    "cycle_report_contract",
     "private_outputs",
     "recurring_private_work",
     "phone_ready_private_site",
@@ -335,6 +336,32 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target meta_campaign --live",
   ]);
   assert.equal(status.liveProofHandoff.noSendGuarantee, true);
+  assert.equal(status.ownerProofChecklist.status, "blocked");
+  assert.equal(
+    status.ownerProofChecklist.headline,
+    "Owner proof facts needed before public launch",
+  );
+  assert.equal(
+    status.ownerProofChecklist.factsNeededCount,
+    status.liveProofHandoff.factsNeeded.length,
+  );
+  assert.deepEqual(
+    status.ownerProofChecklist.captureCommands,
+    status.liveProofHandoff.setupCommands,
+  );
+  assert.equal(
+    status.ownerProofChecklist.checkCommand,
+    status.liveProofHandoff.checkCommand,
+  );
+  assert.deepEqual(
+    status.ownerProofChecklist.guardedLiveCommands,
+    status.liveProofHandoff.guardedLiveCommands,
+  );
+  assert.equal(status.ownerProofChecklist.noSendGuarantee, true);
+  assert.match(
+    status.ownerProofChecklist.summary,
+    /Public launch stays blocked until/,
+  );
   assert.match(formatted, /DearMe product proof status/);
   assert.match(formatted, /Product verdict: private first-wow proof exists/);
   assert.match(formatted, /First-wow aha proof: ready/);
@@ -350,7 +377,9 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /OpenClaw message smoke: blocked on telegram_message, imessage_message/);
   assert.match(formatted, /Needs: shared message gateway endpoint; shared message gateway auth; Telegram smoke recipient; Telegram smoke body; iMessage smoke recipient/);
   assert.match(formatted, /Next live provider proof setup:/);
-  assert.match(formatted, /Live proof handoff:/);
+  assert.match(formatted, /Owner proof checklist before public launch:/);
+  assert.match(formatted, /Owner proof facts needed before public launch/);
+  assert.match(formatted, /Capture setup locally:/);
   assert.match(formatted, /OpenClaw gateway URL: provide OPENCLAW_GATEWAY_URL or DEARME_USE_LOCAL_OPENCLAW_CONFIG=1/);
   assert.match(formatted, /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
   assert.match(formatted, /Guarded live proof:/);
@@ -503,6 +532,8 @@ test("DearMe proof status can be lane scoped", () => {
   assert.deepEqual(status.liveProofHandoff.factsNeeded, []);
   assert.deepEqual(status.liveProofHandoff.setupCommands, []);
   assert.deepEqual(status.liveProofHandoff.guardedLiveCommands, []);
+  assert.equal(status.ownerProofChecklist.status, "ready_for_guarded_live_proof");
+  assert.equal(status.ownerProofChecklist.factsNeededCount, 0);
   const formatted = formatDearMeProofStatus(status).join("\n");
   assert.match(formatted, /scoped proof status only/);
   assert.match(formatted, /pnpm --silent dearme:proof -- --print-env-template --lane voice > \.dearme-proof\.env/);
