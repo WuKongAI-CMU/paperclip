@@ -76,6 +76,7 @@ export interface DearMeProductComparison {
 }
 
 type DearMeReleaseGateBase = Omit<DearMeReleaseGate, "productReadiness" | "productComparison">;
+type DearMeProviderSmokeTarget = DearMeProviderSmokeReadiness["target"];
 
 const PRIVATE_PROOF_ITEMS: readonly DearMeGoalAuditItemKey[] = [
   "architecture_status_spine",
@@ -202,8 +203,28 @@ function metEvidence(
     .map((item) => item.label);
 }
 
+function providerReadinessFor(
+  readiness: readonly DearMeProviderSmokeReadiness[],
+  target: DearMeProviderSmokeTarget,
+): DearMeProviderSmokeReadiness | undefined {
+  return readiness.find((item) => item.target === target);
+}
+
+function providerReadinessEvidence(
+  readiness: readonly DearMeProviderSmokeReadiness[],
+  target: DearMeProviderSmokeTarget,
+  label: string,
+): string[] {
+  const item = providerReadinessFor(readiness, target);
+  if (!item) return [];
+  if (item.ready) return [`${label} readiness has no missing setup facts.`];
+  if (item.missing.length === 0) return [`${label} readiness is blocked.`];
+  return [`${label} readiness is missing ${item.missing.join(", ")}.`];
+}
+
 function buildProductComparison(
   gate: DearMeReleaseGateBase,
+  providerReadiness: readonly DearMeProviderSmokeReadiness[],
 ): DearMeProductComparison {
   const audit = gate.audit;
   const naiveAbsorbed = itemMet(audit, "donor_reuse_absorption") &&
@@ -213,6 +234,16 @@ function buildProductComparison(
   const openClawContract = itemMet(audit, "openclaw_message_contract_rehearsal");
   const openClawLive = itemMet(audit, "openclaw_message_reuse");
   const architectureSpine = itemMet(audit, "architecture_status_spine");
+  const telegramReady = providerReadinessFor(providerReadiness, "telegram_message")?.ready === true;
+  const imessageReady = providerReadinessFor(providerReadiness, "imessage_message")?.ready === true;
+  const openClawEvidence = [
+    ...metEvidence(audit, [
+      "openclaw_message_contract_rehearsal",
+      "openclaw_message_reuse",
+    ]),
+    ...providerReadinessEvidence(providerReadiness, "telegram_message", "Telegram message"),
+    ...providerReadinessEvidence(providerReadiness, "imessage_message", "iMessage/SMS"),
+  ];
 
   return {
     verdict: gate.canPublish
@@ -253,14 +284,15 @@ function buildProductComparison(
         benchmark: "OpenClaw",
         status: openClawLive ? "matched" : openClawContract ? "partial" : "behind",
         summary: openClawContract
-          ? "The shared message gateway contract is proven locally; live iMessage/SMS proof is still the blocker."
+          ? telegramReady && !imessageReady
+            ? "The shared message gateway contract is proven locally and Telegram setup is ready; iMessage/SMS recipient proof is still the blocker."
+            : "The shared message gateway contract is proven locally; live iMessage/SMS proof is still the blocker."
           : "The shared message gateway contract is not yet proven.",
-        evidence: metEvidence(audit, [
-          "openclaw_message_contract_rehearsal",
-          "openclaw_message_reuse",
-        ]),
+        evidence: openClawEvidence,
         remainingGap: openClawLive
           ? "None for the current release gate."
+          : telegramReady && !imessageReady
+            ? "Supply the approved phone-message proof recipient and run guarded live proof; Telegram setup is already ready."
           : "Supply the approved phone-message proof recipient and run guarded live proof.",
       },
       {
@@ -349,7 +381,7 @@ export function summarizeDearMeReleaseGate(
     audit,
   };
   const productReadiness = buildProductReadiness(base);
-  const productComparison = buildProductComparison(base);
+  const productComparison = buildProductComparison(base, providerReadiness);
   return {
     ...base,
     productReadiness,

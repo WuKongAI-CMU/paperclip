@@ -147,6 +147,18 @@ test("DearMe release gate allows private proof while blocking public launch", ()
       ["DearMe architecture", "matched"],
     ],
   );
+  const openClawComparison = gate.productComparison.items.find((item) => item.benchmark === "OpenClaw");
+  assert.ok(openClawComparison);
+  assert.match(openClawComparison.summary, /Telegram setup is ready/);
+  assert.ok(
+    openClawComparison.evidence.includes("Telegram message readiness has no missing setup facts."),
+  );
+  assert.ok(
+    openClawComparison.evidence.includes(
+      "iMessage/SMS readiness is missing DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT.",
+    ),
+  );
+  assert.match(openClawComparison.remainingGap, /Telegram setup is already ready/);
   assert.doesNotMatch(
     JSON.stringify(gate.productReadiness),
     /DEARME_|OPENCLAW_|OpenClaw|LinkedIn|Telegram|iMessage/,
@@ -162,6 +174,7 @@ test("DearMe release gate allows private proof while blocking public launch", ()
   assert.match(formatted, /Benchmark comparison:/);
   assert.match(formatted, /Naive\/Paperclip: matched/);
   assert.match(formatted, /Polsia: partial/);
+  assert.match(formatted, /OpenClaw: partial\. The shared message gateway contract is proven locally and Telegram setup is ready/);
   assert.match(
     formatted,
     /Run: pnpm --silent dearme:next-proof -- --target openclaw_messages/,

@@ -2,6 +2,24 @@
 
 Date: 2026-05-12
 
+## Release Gate Splits OpenClaw Message Readiness - 2026-05-12
+
+Product/architecture slice:
+
+- Refined release-gate `productComparison` so the OpenClaw benchmark uses the
+  live provider readiness map, not only the broad goal-audit item.
+- The OpenClaw comparison now preserves the useful split: shared gateway
+  contract proven locally, Telegram setup ready, and iMessage/SMS approved
+  recipient still missing before guarded live proof.
+- This keeps Symphony from replaying the Telegram lane when the remaining
+  shared-message blocker is only the phone-message recipient fact.
+
+Verification:
+
+- `pnpm test:dearme-release-gate`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm typecheck`
+
 ## Release Gate Carries Benchmark Comparison - 2026-05-12
 
 Product/architecture slice:
