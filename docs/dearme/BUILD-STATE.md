@@ -2,6 +2,24 @@
 
 Date: 2026-05-12
 
+## First Cycle Leads With Proof Package - 2026-05-12
+
+Product/architecture slice:
+
+- Absorbed the concurrent DearMeOnboarding change that moves the first-cycle
+  proof package above the intent form.
+- The first run now opens with the prepared private proof/team package before
+  asking the user what they want to become known for, which better matches the
+  Polsia-style "show the value first" aha moment.
+- The change keeps the existing Work Ready and Decisions architecture intact:
+  no new setup surface, no provider language, and no extra customer concern.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+
 ## Release Gate Human Output Prioritizes Fact Handoff - 2026-05-12
 
 Product/architecture slice:

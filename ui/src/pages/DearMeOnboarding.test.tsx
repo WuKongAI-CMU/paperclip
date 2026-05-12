@@ -2893,6 +2893,12 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Sample team package");
     expect(container.textContent).toContain("Private preview");
     expect(container.textContent).toContain("Maya's team prepared private posts");
+    const sampleProofPackage = surfaceByLabel(container, "Sample first-cycle proof package");
+    const firstCycleIntent = container.querySelector("#dearme-first-cycle-intent");
+    expect(firstCycleIntent).not.toBeNull();
+    expect(
+      Boolean(sampleProofPackage.compareDocumentPosition(firstCycleIntent as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
+    ).toBe(true);
     expect(container.textContent).toContain("Maya Chen");
     expect(container.textContent).toContain(
       "Known for turning messy customer research into calm B2B product decisions",

@@ -2341,7 +2341,13 @@ function FirstCyclePanel({
 
   return (
     <DearMePanel aria-label="90-second first cycle">
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+      <FirstCycleProofPackage
+        preview={preview ?? SAMPLE_FIRST_CYCLE_PREVIEW}
+        isSample={!preview}
+        onOpenPreview={onOpenPreview}
+      />
+
+      <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <div>
           <Badge variant="outline">90-second first cycle</Badge>
           <h2 className="mt-3 text-xl font-semibold">What do you want to become known for?</h2>
@@ -2385,12 +2391,6 @@ function FirstCyclePanel({
         preview={preview ?? SAMPLE_FIRST_CYCLE_PREVIEW}
         isSample={!preview}
         isPending={isPending}
-      />
-
-      <FirstCycleProofPackage
-        preview={preview ?? SAMPLE_FIRST_CYCLE_PREVIEW}
-        isSample={!preview}
-        onOpenPreview={onOpenPreview}
       />
     </DearMePanel>
   );
@@ -2455,7 +2455,7 @@ function FirstCycleProofPackage({
   onOpenPreview: (handle: string) => void;
 }) {
   return (
-    <div className="mt-5 space-y-4" aria-label={isSample ? "Sample first-cycle proof package" : "First-cycle proof package"}>
+    <div className="space-y-4" aria-label={isSample ? "Sample first-cycle proof package" : "First-cycle proof package"}>
       {isSample ? (
         <div className="flex flex-col gap-2 rounded-md border border-border bg-background/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
