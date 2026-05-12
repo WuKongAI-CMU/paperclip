@@ -24,6 +24,21 @@ It answers three questions before another worker starts building:
   source copy, and `DearMeOnboarding` regression test together. Do not let the
   gate silently drift away from what a cold user actually sees.
 
+## Latest Polsia Deep Study - 2026-05-12
+
+- `POLSIA-DEEP-STUDY-2026-05-12.md` records the current Polsia mechanism study
+  from the local archive. Treat it as the current product-architecture answer
+  for what to copy, what to reject, and where DearMe still falls short.
+- The reusable Polsia value is visible autonomous work: one manager surface,
+  immediate private output, bounded tasks with rationale, receipt trails,
+  recurring plan/work/review rhythm, memory compounding, and hidden
+  complexity/cost routing.
+- Do not copy raw reasoning streams, Sapiom identity, shared outbound accounts,
+  public metric claims without receipts, or another setup/dashboard surface.
+- Current DearMe verdict remains unchanged: private proof is usable and strong;
+  public launch still waits on live LinkedIn DM and iMessage proof facts.
+  Strengthen live receipts and the workroom before adding more UI.
+
 ## Latest LinkedIn DM Contract Rehearsal - 2026-05-12
 
 - `pnpm dearme:linkedin-dm-rehearsal` now gives the LinkedIn live-proof lane a

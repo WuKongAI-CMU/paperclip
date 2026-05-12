@@ -2489,18 +2489,18 @@ function DearMePublicFirstRunLanding({
       aria-label="DearMe public first run"
       className="overflow-hidden rounded-lg border border-primary/30 bg-background"
     >
-      <div className="grid min-h-[560px] gap-0 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)]">
-        <div className="flex flex-col justify-center gap-6 p-5 sm:p-8 lg:p-10">
+      <div className="grid min-h-[500px] gap-0 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)]">
+        <div className="flex flex-col justify-start gap-5 p-5 sm:p-7 lg:p-8">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-md border border-border bg-muted/25 px-3 py-1 text-sm text-muted-foreground">
               <Sparkles className="h-4 w-4" />
-              AI personal brand team
+              Autonomous personal brand team
             </div>
-            <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-tight tracking-normal sm:text-5xl">
-              Your AI team builds your personal brand every week.
+            <h1 className="mt-4 max-w-4xl text-4xl font-semibold leading-tight tracking-normal sm:text-5xl">
+              DearMe grows your personal brand while you work.
             </h1>
-            <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
-              AI personal brand team that grows your reputation while you work.
+            <p className="mt-3 max-w-2xl text-base text-muted-foreground sm:text-lg">
+              It runs private research, drafts, opportunities, proof, and weekly direction, then brings you the launch calls that need your judgment.
             </p>
           </div>
 
@@ -2520,7 +2520,7 @@ function DearMePublicFirstRunLanding({
                 disabled={isPending}
               >
                 {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Start my first private proof pack
+                Start my first brand cycle
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
@@ -2534,28 +2534,28 @@ function DearMePublicFirstRunLanding({
               onClick={onWatchLive}
             >
               <Telescope className="h-4 w-4" />
-              Watch DearMe prepare real private brand work live
+              Watch the brand team work live
               <ArrowRight className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <ShieldCheck className="h-4 w-4 text-primary" />
-              No public posts. No outreach. Nothing launches without approval.
+              It works autonomously in private. Your launch rules decide what can represent you publicly.
             </div>
           </div>
         </div>
 
-        <aside className="border-t border-border bg-muted/20 p-5 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
+        <aside className="border-t border-border bg-muted/20 p-5 sm:p-7 lg:border-l lg:border-t-0 lg:p-8">
           <div className="flex h-full flex-col justify-center">
-            <div className="rounded-lg border border-border bg-background/80 p-4" aria-label="Live private brand work preview">
+            <div className="rounded-lg border border-border bg-background/80 p-4" aria-label="Brand work live">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Sparkles className="h-4 w-4" />
-                  Private work live
+                  Brand work live
                 </div>
-                <Badge variant="secondary">Private by default</Badge>
+                <Badge variant="secondary">Working privately</Badge>
               </div>
               <p className="mt-3 text-sm text-muted-foreground">
-                Watch DearMe prepare real private brand work live, then decide what can represent you.
+                Watch the team research, draft, package proof, and prepare the next launch call before anything represents you publicly.
               </p>
               <div className="mt-5 space-y-3">
                 {liveMoments.map((moment, index) => (

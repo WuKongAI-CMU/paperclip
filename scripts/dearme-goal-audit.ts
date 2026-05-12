@@ -202,7 +202,7 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
   {
     key: "source_one_sentence_positioning",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "Your AI team builds your personal brand every week.",
+    snippet: "DearMe grows your personal brand while you work.",
   },
   {
     key: "source_known_for_input",
@@ -212,12 +212,12 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
   {
     key: "source_private_proof_pack_cta",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "Start my first private proof pack",
+    snippet: "Start my first brand cycle",
   },
   {
     key: "source_live_private_work_proof",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "Watch DearMe prepare real private brand work live",
+    snippet: "Watch the brand team work live",
   },
   {
     key: "source_live_work_trail_contract",
@@ -227,7 +227,7 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
   {
     key: "source_approval_boundary",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "No public posts. No outreach. Nothing launches without approval.",
+    snippet: "It works autonomously in private. Your launch rules decide what can represent you publicly.",
   },
   {
     key: "test_public_first_run_landing",
@@ -592,7 +592,7 @@ export async function inspectDearMePublicFirstRunLandingEvidence(): Promise<
     return {
       ready: missing.length === 0,
       evidence: missing.length === 0
-        ? "Content view starts with one positioning sentence, a known-for input, private proof-pack CTA, live private-work receipts, and an approval-boundary promise; the regression test keeps dense workbench fetches behind user intent."
+        ? "Content view starts with one positioning sentence, a known-for input, brand-cycle CTA, live private-work receipts, and an approval-boundary promise; the regression test keeps dense workbench fetches behind user intent."
         : `Public first-run landing proof is missing ${missing.length} required source/test marker(s): ${missing.join(", ")}.`,
       missing,
     };

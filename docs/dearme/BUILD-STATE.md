@@ -2,6 +2,31 @@
 
 Date: 2026-05-12
 
+## Polsia Deep Study - 2026-05-12
+
+Product/architecture slice:
+
+- Added `POLSIA-DEEP-STUDY-2026-05-12.md` as the current DearMe product
+  architecture record for Polsia reuse. The conclusion is direct: reuse
+  Polsia's visible autonomous work loop, task/proof contract, operating rhythm,
+  and single-manager posture; reject raw reasoning streams, donor identity,
+  shared outbound accounts, and more setup UI.
+- Linked the study from the README and north-star index as reference material,
+  not as a new canonical runtime contract.
+- Current product posture is unchanged: DearMe is usable for private proof and
+  still public-launch-blocked until real LinkedIn DM and iMessage receipts are
+  supplied and guarded live proof is run.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "public first-run landing"`
+- `pnpm test:dearme-goal-audit`
+- `pnpm test:dearme-release-gate`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
+- `git diff --check`
+
 ## Coordinator Proof Handoff Recheck - 2026-05-12
 
 Product/architecture slice:
@@ -35,10 +60,12 @@ Verification:
 
 Product slice:
 
-- Restored the public first-run landing copy to the release-gate contract:
-  `Your AI team builds your personal brand every week.`, `Start my first
-  private proof pack`, `Watch DearMe prepare real private brand work live`, and
-  `No public posts. No outreach. Nothing launches without approval.`
+- Restored the public first-run landing structure to the release-gate contract:
+  one positioning sentence, one known-for input, one private-start CTA, one
+  live-work proof hook, and one explicit approval-boundary promise. The current
+  copy is `DearMe grows your personal brand while you work.`, `Start my first
+  brand cycle`, `Watch the brand team work live`, and `It works autonomously in
+  private. Your launch rules decide what can represent you publicly.`
 - This keeps the Polsia acquisition structure on the existing DearMe content
   route rather than adding a second marketing shell.
 - `dearme:release-gate` now returns `overall: private-proof-ready`,
@@ -167,10 +194,10 @@ Product/acquisition slice:
   into a Polsia-style first-run landing instead of dropping cold users into the
   dense content workbench.
 - The cold screen now leads with one positioning sentence, one known-for input,
-  `Start my first private proof pack`, live private-work proof, and the launch
-  boundary: no public posts, outreach, or launch without approval.
+  `Start my first brand cycle`, live private-work proof, and a launch-boundary
+  promise that private autonomy still waits for the user's public launch rules.
 - The internal content/team workbench remains available after the user starts
-  the first private proof pack or chooses to watch the live preparation flow.
+  the first brand cycle or chooses to watch the live preparation flow.
 - Product gate is unchanged: private proof is usable; public launch still waits
   on real live external channel/provider proof.
 
