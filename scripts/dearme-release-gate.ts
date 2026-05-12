@@ -447,13 +447,15 @@ export function formatDearMeReleaseGate(gate: DearMeReleaseGate): string[] {
 
   lines.push("");
   lines.push("Next action:");
-  lines.push(`- ${gate.nextAction.label}: ${gate.nextAction.reason}`);
-  if (gate.nextAction.command) {
+  lines.push(`- ${gate.productReadiness.nextAction.label}: ${gate.productReadiness.nextAction.reason}`);
+  if (gate.factsNeeded.length > 0) {
+    lines.push("- Do not run live provider proof until those facts are present and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 is set.");
+  } else if (gate.nextAction.command) {
     lines.push(`- Run: ${gate.nextAction.command}`);
   }
 
   lines.push("");
-  lines.push("Underlying goal audit:");
+  lines.push("Underlying goal audit (debug detail):");
   lines.push(...formatDearMeGoalAudit(gate.audit));
 
   return lines;

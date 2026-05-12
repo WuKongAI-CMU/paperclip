@@ -175,9 +175,15 @@ test("DearMe release gate allows private proof while blocking public launch", ()
   assert.match(formatted, /Naive\/Paperclip: matched/);
   assert.match(formatted, /Polsia: partial/);
   assert.match(formatted, /OpenClaw: partial\. The shared message gateway contract is proven locally and Telegram setup is ready/);
+  assert.match(formatted, /Supply approved live-proof details/);
   assert.match(
     formatted,
-    /Run: pnpm --silent dearme:next-proof -- --target openclaw_messages/,
+    /Do not run live provider proof until those facts are present and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 is set/,
+  );
+  assert.match(formatted, /Underlying goal audit \(debug detail\):/);
+  assert.ok(
+    formatted.indexOf("Supply approved live-proof details") <
+      formatted.indexOf("Run: pnpm --silent dearme:next-proof -- --target openclaw_messages"),
   );
 });
 

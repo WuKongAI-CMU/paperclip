@@ -2,6 +2,29 @@
 
 Date: 2026-05-12
 
+## Release Gate Human Output Prioritizes Fact Handoff - 2026-05-12
+
+Product/architecture slice:
+
+- Updated the human-readable `dearme:release-gate` output so the top-level
+  next action now follows the customer-safe `productReadiness.nextAction`
+  rather than leading with a debug setup command.
+- When private proof is usable but public launch is blocked by missing
+  live-proof facts, the output now says to supply approved live-proof details
+  and explicitly forbids live provider proof until the facts exist and
+  `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1` is set.
+- The underlying goal-audit command remains present under a debug-detail
+  section for traceability, so `next-proof` can still use the structured JSON
+  while human/Symphony handoffs do not mistake setup detail for the product
+  next step.
+
+Verification:
+
+- `pnpm test:dearme-release-gate`
+- `pnpm --silent dearme:release-gate`
+- `pnpm --silent dearme:release-gate -- --json`
+- `git diff --check -- scripts/dearme-release-gate.ts scripts/dearme-release-gate.test.ts`
+
 ## Coordinator Product Readiness Recheck - 2026-05-12
 
 Product/architecture slice:
