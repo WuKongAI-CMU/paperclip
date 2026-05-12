@@ -2494,13 +2494,13 @@ function DearMePublicFirstRunLanding({
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-md border border-border bg-muted/25 px-3 py-1 text-sm text-muted-foreground">
               <Sparkles className="h-4 w-4" />
-              Autonomous personal brand team
+              AI personal brand team
             </div>
             <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-tight tracking-normal sm:text-5xl">
-              DearMe grows your personal brand while you work.
+              Your AI team builds your personal brand every week.
             </h1>
             <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
-              It runs private research, drafts, opportunities, proof, and weekly direction, then brings you the launch calls that need your judgment.
+              AI personal brand team that grows your reputation while you work.
             </p>
           </div>
 
@@ -2520,7 +2520,7 @@ function DearMePublicFirstRunLanding({
                 disabled={isPending}
               >
                 {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Start my first brand cycle
+                Start my first private proof pack
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
@@ -2534,12 +2534,12 @@ function DearMePublicFirstRunLanding({
               onClick={onWatchLive}
             >
               <Telescope className="h-4 w-4" />
-              Watch the brand team work live
+              Watch DearMe prepare real private brand work live
               <ArrowRight className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <ShieldCheck className="h-4 w-4 text-primary" />
-              It works autonomously in private. Your launch rules decide what can represent you publicly.
+              No public posts. No outreach. Nothing launches without approval.
             </div>
           </div>
         </div>
@@ -2550,12 +2550,12 @@ function DearMePublicFirstRunLanding({
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Sparkles className="h-4 w-4" />
-                  Brand work live
+                  Private work live
                 </div>
-                <Badge variant="secondary">Working privately</Badge>
+                <Badge variant="secondary">Private by default</Badge>
               </div>
               <p className="mt-3 text-sm text-muted-foreground">
-                Watch the team research, draft, package proof, and prepare the next launch call before anything represents you publicly.
+                Watch DearMe prepare real private brand work live, then decide what can represent you.
               </p>
               <div className="mt-5 space-y-3">
                 {liveMoments.map((moment, index) => (

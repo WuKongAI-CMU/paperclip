@@ -1920,16 +1920,16 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
-    expect(container.textContent).toContain("DearMe grows your personal brand while you work.");
-    expect(container.textContent).toContain("It runs private research, drafts, opportunities, proof, and weekly direction");
+    expect(container.textContent).toContain("Your AI team builds your personal brand every week.");
+    expect(container.textContent).toContain("AI personal brand team that grows your reputation while you work.");
     expect(container.textContent).toContain("What do you want to be known for?");
-    expect(container.textContent).toContain("Start my first brand cycle");
-    expect(container.textContent).toContain("Watch the brand team work live");
+    expect(container.textContent).toContain("Start my first private proof pack");
+    expect(container.textContent).toContain("Watch DearMe prepare real private brand work live");
     expect(container.textContent).toContain("Studying your voice");
     expect(container.textContent).toContain("Voice Editor");
     expect(container.textContent).toContain("5 starter drafts");
     expect(container.textContent).toContain("Launch boundary");
-    expect(container.textContent).toContain("It works autonomously in private. Your launch rules decide what can represent you publicly.");
+    expect(container.textContent).toContain("No public posts. No outreach. Nothing launches without approval.");
     expect(container.querySelector('[aria-label="DearMe public first run"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Live private brand work preview"]')).not.toBeNull();
     expect(container.textContent).not.toContain("Today's brand team focus");
@@ -1945,7 +1945,7 @@ describe("DearMeOnboarding", () => {
     });
 
     await act(async () => {
-      buttonByText(container, "Start my first brand cycle")?.click();
+      buttonByText(container, "Start my first private proof pack")?.click();
     });
     await flushReact();
 
