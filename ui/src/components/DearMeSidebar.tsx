@@ -25,7 +25,7 @@ interface DearMeNavItem {
 }
 
 const primaryItems: DearMeNavItem[] = [
-  { to: "/dearme", label: "Home", icon: Home },
+  { to: "/dearme", label: "Workroom", icon: Home },
   { to: "/dearme?view=decisions", label: "Decisions", icon: ClipboardCheck },
   { to: "/dearme?view=work-ready", label: "Work Ready", icon: Sparkles },
 ];
@@ -40,7 +40,7 @@ const growthItems: DearMeNavItem[] = [
 ];
 
 const mobileNavItems: DearMeNavItem[] = [
-  { to: "/dearme", label: "Home", icon: Home },
+  { to: "/dearme", label: "Workroom", icon: Home },
   { to: "/dearme?view=decisions", label: "Decisions", icon: ClipboardCheck },
   { to: "/dearme?view=work-ready", label: "Work Ready", icon: Sparkles },
   { to: "/dearme?view=voice", label: "Voice", icon: Mic2 },
@@ -176,9 +176,9 @@ export function DearMeSidebar() {
         <div className="rounded-md border border-border bg-muted/20 p-3">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Sparkles className="h-4 w-4 text-primary" />
-            <span>Personal brand team</span>
+            <span>Brand workroom</span>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">Team is working. Decisions stay with you.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Team works while you do. Launch rules stay with you.</p>
           <div className="mt-3 grid gap-2" aria-label="DearMe readiness status">
             <Link
               to="/dearme?view=work-ready"
@@ -198,9 +198,9 @@ export function DearMeSidebar() {
             >
               <ClipboardCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="min-w-0">
-                <span className="block text-xs font-medium text-foreground">Launch proof pending</span>
+                <span className="block text-xs font-medium text-foreground">Launch calls</span>
                 <span className="block text-[11px] leading-4 text-muted-foreground">
-                  Public moves wait for live receipts.
+                  Public moves wait for your rules.
                 </span>
               </span>
             </Link>

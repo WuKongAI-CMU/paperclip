@@ -49,11 +49,11 @@ describe("DearMeSidebar", () => {
       root.render(<DearMeSidebar />);
     });
 
-    expect(container.textContent).toContain("Personal brand team");
+    expect(container.textContent).toContain("Brand workroom");
     expect(container.textContent).toContain("Private proof ready");
     expect(container.textContent).toContain("Work is usable for private review.");
-    expect(container.textContent).toContain("Launch proof pending");
-    expect(container.textContent).toContain("Public moves wait for live receipts.");
+    expect(container.textContent).toContain("Launch calls");
+    expect(container.textContent).toContain("Public moves wait for your rules.");
     expect(container.textContent).toContain("Work Ready");
     expect(container.textContent).toContain("Voice & Memory");
     expect(container.textContent).toContain("Opportunities");
@@ -71,7 +71,7 @@ describe("DearMeSidebar", () => {
       "Private proof ready",
     );
     expect(readiness?.querySelector('a[href="/dearme?view=decisions"]')?.textContent).toContain(
-      "Launch proof pending",
+      "Launch calls",
     );
 
     await act(async () => {
@@ -119,7 +119,7 @@ describe("DearMeSidebar", () => {
     });
 
     expect(container.querySelector("nav[aria-label='DearMe mobile navigation']")).not.toBeNull();
-    expect(container.textContent).toContain("Home");
+    expect(container.textContent).toContain("Workroom");
     expect(container.textContent).toContain("Decisions");
     expect(container.textContent).toContain("Work Ready");
     expect(container.textContent).toContain("Voice");
