@@ -2,6 +2,56 @@
 
 Date: 2026-05-12
 
+## Stale Branch No-Replay Review - 2026-05-12
+
+Coordination slice:
+
+- Reviewed `codex/dearme-dm-136-sample-demo-proof-handoff` at
+  `399dcd94d8101acd5fd31a3858d7d8f2f83d77ac`. Its useful private handoff pause
+  behavior is already present on the coordinator branch through the shared
+  `private_handoff_paused` validator state, approval receipts, workbench, and
+  onboarding surfaces.
+- Reviewed `codex/dea-7-content-producer-private-drafts-fix` at
+  `1b8de9ad7074db4aaef844b30380abe85c3133d1`. Its useful Content Producer
+  private-review-draft guardrail is already present in the generated skill,
+  role registry, and plugin tests.
+- Both old branches have very large stale-base diffs that would remove current
+  public-first-run, provider-smoke, release-gate, proof-script, and docs work if
+  replayed wholesale. Treat them as `reviewed_absorbed` no-replay branches and
+  keep the coordinator head as the integration truth.
+
+Verification:
+
+- `git cherry -v HEAD codex/dearme-dm-136-sample-demo-proof-handoff`
+- `git cherry -v HEAD codex/dea-7-content-producer-private-drafts-fix`
+- `git diff --stat HEAD..codex/dearme-dm-136-sample-demo-proof-handoff`
+- `git diff --stat HEAD..codex/dea-7-content-producer-private-drafts-fix`
+- `rg private_handoff_paused ...`
+- `rg "Voice Gate score|Do not publish, send, schedule|private review drafts" ...`
+
+## Owner Live-Proof Handoff - 2026-05-12
+
+Product/architecture slice:
+
+- Turned the remaining public-launch blocker into an explicit owner handoff in
+  `pnpm dearme:next-proof`.
+- The setup JSON now exposes `ownerHandoff.status`, the exact proof facts to
+  provide, safe placeholders, a non-secret capture command, the no-send check,
+  and the guarded live command.
+- The handoff remains operator-only: it does not send messages, publish,
+  deploy, spend, or print captured values. Live proof still requires
+  `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`.
+- Product state is unchanged: DearMe is usable for private proof, while public
+  release waits on real approved professional-network and phone-message proof
+  facts followed by no-send checks and guarded live receipts.
+
+Verification:
+
+- `pnpm test:dearme-next-proof`
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
+- `pnpm --silent dearme:release-gate -- --json`
+- `git diff --check`
+
 ## Public First-Run Landing Release Gate - 2026-05-12
 
 Product/architecture slice:

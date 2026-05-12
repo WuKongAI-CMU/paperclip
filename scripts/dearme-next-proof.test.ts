@@ -119,6 +119,17 @@ test("DearMe next proof creates the local proof env and prints no-send readiness
     assert.match(output, /OpenClaw gateway URL: provide OPENCLAW_GATEWAY_URL or DEARME_USE_LOCAL_OPENCLAW_CONFIG=1 for telegram_message, imessage_message/);
     assert.match(output, /OpenClaw gateway auth: provide OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH for telegram_message, imessage_message \(keep value local; do not paste secrets\)/);
     assert.match(output, /iMessage\/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT for imessage_message/);
+    assert.match(output, /Owner handoff:/);
+    assert.match(output, /status: blocked/);
+    assert.match(output, /Owner facts needed before public launch proof/);
+    assert.match(output, /Capture command: pnpm --silent dearme:next-proof -- --target openclaw_messages --imessage-recipient <approved-phone-or-imessage>/);
+    assert.match(output, /Check first: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check --target openclaw_messages/);
+    assert.equal(setup.ownerHandoff.status, "blocked");
+    assert.equal(setup.ownerHandoff.noSendGuarantee, true);
+    assert.equal(setup.ownerHandoff.requiresLiveGuard, true);
+    assert.equal(setup.ownerHandoff.captureCommand?.includes("--imessage-recipient"), true);
+    assert.equal(setup.ownerHandoff.liveOrRunCommand, setup.commands.liveOrRun);
+    assert.equal(setup.ownerHandoff.safety[0]?.includes("does not send messages"), true);
     assert.deepEqual(
       setup.factsNeeded.find((fact) => fact.provideAs === "OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH"),
       {
@@ -132,6 +143,50 @@ test("DearMe next proof creates the local proof env and prints no-send readiness
     assert.doesNotMatch(JSON.stringify(setup.factsNeeded), /secret-token/);
     assert.doesNotMatch(contents, /\.dearme-provider-smoke\.env/);
     assert.doesNotMatch(output, /\.dearme-provider-smoke\.env/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("DearMe next proof builds an owner handoff capture command for approved external proof facts", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-next-proof-owner-handoff-"));
+  try {
+    const setup = await prepareDearMeNextProofSetup({
+      cwd: dir,
+      target: "linkedin_dm",
+      envFile: ".dearme-proof.env",
+      noWrite: true,
+      baseEnv: {
+        HOME: dir,
+        DEARME_LINKEDIN_DM_CREDENTIAL_JSON: JSON.stringify({
+          provider: "linkedin_partner",
+          accessToken: "li-token",
+          capabilities: ["send_dm"],
+        }),
+        DEARME_LINKEDIN_DM_SMOKE_BODY: "Private proof packet is ready.",
+      },
+    });
+    const output = formatDearMeNextProofSetup(setup).join("\n");
+
+    assert.equal(setup.envStatus, "skipped");
+    assert.deepEqual(
+      setup.ownerHandoff.factsToProvide.map((fact) => fact.provideAs),
+      [
+        "DEARME_LINKEDIN_DM_MESSAGES_URL",
+        "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
+      ],
+    );
+    assert.equal(
+      setup.ownerHandoff.captureCommand,
+      "pnpm --silent dearme:next-proof -- --target linkedin_dm --linkedin-messages-url <partner-messages-url> --linkedin-recipient-urn <approved-linkedin-recipient-urn>",
+    );
+    assert.equal(setup.ownerHandoff.status, "blocked");
+    assert.equal(setup.ownerHandoff.noSendGuarantee, true);
+    assert.equal(setup.ownerHandoff.requiresLiveGuard, true);
+    assert.match(output, /LinkedIn partner messages endpoint: DEARME_LINKEDIN_DM_MESSAGES_URL=<partner-messages-url>/);
+    assert.match(output, /LinkedIn approved smoke recipient: DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN=<approved-linkedin-recipient-urn>/);
+    assert.doesNotMatch(output, /li-token/);
+    assert.doesNotMatch(JSON.stringify(setup.ownerHandoff), /li-token/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -199,8 +254,17 @@ test("DearMe next proof captures local facts without printing captured values", 
     assert.match(contents, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT="\+15551234567"/);
     assert.match(output, /Captured local facts:/);
     assert.match(output, /iMessage\/SMS approved smoke recipient: DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT \(value hidden\)/);
+    assert.equal(setup.ownerHandoff.status, "ready");
+    assert.equal(setup.ownerHandoff.headline, "Ready for guarded live proof");
+    assert.equal(setup.ownerHandoff.captureCommand, null);
+    assert.equal(setup.ownerHandoff.noSendGuarantee, true);
+    assert.equal(setup.ownerHandoff.requiresLiveGuard, true);
+    assert.match(output, /status: ready/);
+    assert.match(output, /Ready for guarded live proof/);
+    assert.match(output, /Provide: no owner facts missing/);
     assert.doesNotMatch(output, /\+15551234567/);
     assert.doesNotMatch(JSON.stringify(setup.capturedFacts), /\+15551234567/);
+    assert.doesNotMatch(JSON.stringify(setup.ownerHandoff), /\+15551234567/);
     assert.doesNotMatch(output, /secret-token/);
   } finally {
     await rm(dir, { recursive: true, force: true });

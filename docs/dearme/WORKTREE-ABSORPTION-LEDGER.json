@@ -1,6 +1,37 @@
 {
-  "updatedAt": "2026-05-11",
+  "updatedAt": "2026-05-12",
   "reviewedAbsorptions": [
+    {
+      "ticket": "DEA-27",
+      "branch": "codex/dearme-dm-136-sample-demo-proof-handoff",
+      "head": "399dcd94d8101acd5fd31a3858d7d8f2f83d77ac",
+      "reviewedAt": "2026-05-12",
+      "reason": "The stale handoff branch still appears unmerged, but the useful product value has already been absorbed on the coordinator branch: approved private handoffs can pause before any external dispatch, and the pause state is visible through the shared validator, approval receipts, workbench, onboarding panel, and tests. Replaying the branch wholesale would regress the current proof spine and delete newer public-first-run, provider-smoke, release-gate, and docs work, so keep it as reviewed/no-replay evidence.",
+      "evidence": [
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/services/dearme-approval-receipts.ts",
+        "server/src/services/dearme-workbench.ts",
+        "server/src/__tests__/dearme-workbench-projection.test.ts",
+        "server/src/__tests__/dearme-approval-receipts.test.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "ui/src/pages/DearMeOnboarding.test.tsx",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
+      "ticket": "DEA-7",
+      "branch": "codex/dea-7-content-producer-private-drafts-fix",
+      "head": "1b8de9ad7074db4aaef844b30380abe85c3133d1",
+      "reviewedAt": "2026-05-12",
+      "reason": "The stale Content Producer private-drafts branch still appears unmerged, but the current coordinator branch already carries the useful guardrail: Content Producer prepares voice-gated private review drafts and every public move stays behind approval. Replaying the branch wholesale would remove large portions of the current proof harness and docs, so keep the current generated skill, registry, and plugin tests as the integration truth.",
+      "evidence": [
+        "packages/plugins/dearme-openclaw/generated/skills/dearme-content-producer/SKILL.md",
+        "packages/plugins/dearme-agent-prompts/src/registry.ts",
+        "packages/plugins/dearme-openclaw/src/index.test.ts",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
     {
       "ticket": "DEA-60",
       "branch": "codex/dearme-dm-136-sample-demo-proof",

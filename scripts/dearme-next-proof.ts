@@ -46,6 +46,7 @@ export interface DearMeNextProofSetup {
   envStatus: DearMeNextProofEnvStatus;
   readiness: DearMeProviderSmokeReadiness[];
   factsNeeded: DearMeProofFactNeed[];
+  ownerHandoff: DearMeNextProofOwnerHandoff;
   capturedFacts: DearMeNextProofCapturedFact[];
   commands: {
     setup: string;
@@ -67,6 +68,28 @@ export interface DearMeNextProofCapturedFact {
   sensitive: boolean;
 }
 
+export interface DearMeNextProofOwnerFact {
+  label: string;
+  provideAs: string;
+  targets: DearMeNextProofTarget[];
+  sensitive: boolean;
+  placeholder: string;
+  captureFlag: string | null;
+}
+
+export interface DearMeNextProofOwnerHandoff {
+  status: "blocked" | "ready";
+  headline: string;
+  summary: string;
+  factsToProvide: DearMeNextProofOwnerFact[];
+  captureCommand: string | null;
+  checkCommand: string;
+  liveOrRunCommand: string;
+  noSendGuarantee: true;
+  requiresLiveGuard: boolean;
+  safety: string[];
+}
+
 interface PrepareDearMeNextProofSetupOptions {
   target?: DearMeNextProofTarget | null;
   envFile?: string;
@@ -82,16 +105,27 @@ const FACT_CAPTURE_SPECS = {
   DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT: {
     label: "iMessage/SMS approved smoke recipient",
     sensitive: false,
+    flag: "--imessage-recipient",
+    placeholder: "<approved-phone-or-imessage>",
   },
   DEARME_LINKEDIN_DM_MESSAGES_URL: {
     label: "LinkedIn partner messages endpoint",
     sensitive: false,
+    flag: "--linkedin-messages-url",
+    placeholder: "<partner-messages-url>",
   },
   DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN: {
     label: "LinkedIn approved smoke recipient",
     sensitive: false,
+    flag: "--linkedin-recipient-urn",
+    placeholder: "<approved-linkedin-recipient-urn>",
   },
-} as const satisfies Record<string, { label: string; sensitive: boolean }>;
+} as const satisfies Record<string, {
+  label: string;
+  sensitive: boolean;
+  flag: string;
+  placeholder: string;
+}>;
 
 type FactCaptureKey = keyof typeof FACT_CAPTURE_SPECS;
 
@@ -213,6 +247,65 @@ function augmentEnvTemplate(
   const missing = missingTemplateAssignments(existing, template);
   if (missing.length === 0) return null;
   return `${existing.trimEnd()}\n\n# Added by dearme:next-proof for ${target}\n${missing.join("\n")}\n`;
+}
+
+function placeholderForFact(fact: DearMeProofFactNeed) {
+  if (isFactCaptureKey(fact.provideAs)) return FACT_CAPTURE_SPECS[fact.provideAs].placeholder;
+  if (fact.sensitive) return "<keep-local-secret>";
+  return "<approved-value>";
+}
+
+function captureFlagForFact(fact: DearMeProofFactNeed) {
+  return isFactCaptureKey(fact.provideAs) ? FACT_CAPTURE_SPECS[fact.provideAs].flag : null;
+}
+
+function ownerHandoffTargetLabel(target: DearMeNextProofTarget) {
+  return target === "all" ? "the selected public proof lanes" : target;
+}
+
+function buildDearMeOwnerHandoff(
+  target: DearMeNextProofTarget,
+  envFile: string,
+  factsNeeded: readonly DearMeProofFactNeed[],
+  commands: DearMeNextProofSetup["commands"],
+): DearMeNextProofOwnerHandoff {
+  const factsToProvide = factsNeeded.map((fact): DearMeNextProofOwnerFact => ({
+    label: fact.label,
+    provideAs: fact.provideAs,
+    targets: fact.targets,
+    sensitive: fact.sensitive,
+    placeholder: placeholderForFact(fact),
+    captureFlag: captureFlagForFact(fact),
+  }));
+  const captureArgs = factsToProvide
+    .filter((fact) => fact.captureFlag)
+    .map((fact) => `${fact.captureFlag} ${fact.placeholder}`);
+  const captureCommand = captureArgs.length > 0
+    ? `${commands.setup} ${captureArgs.join(" ")}`
+    : null;
+  const blocked = factsToProvide.length > 0;
+  const targetLabel = ownerHandoffTargetLabel(target);
+
+  return {
+    status: blocked ? "blocked" : "ready",
+    headline: blocked
+      ? "Owner facts needed before public launch proof"
+      : "Ready for guarded live proof",
+    summary: blocked
+      ? `Supply the approved proof target(s) for ${targetLabel}, then run the no-send check before any guarded live proof.`
+      : `No owner facts are missing for ${targetLabel}; run the no-send check before the guarded live proof.`,
+    factsToProvide,
+    captureCommand,
+    checkCommand: commands.check,
+    liveOrRunCommand: commands.liveOrRun,
+    noSendGuarantee: true,
+    requiresLiveGuard: commands.liveOrRun.includes("DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1"),
+    safety: [
+      "dearme:next-proof only prepares local proof setup; it does not send messages, publish, deploy, or spend.",
+      "Run the no-send check command before the guarded live/run command.",
+      "Any live external proof still requires the explicit DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 guard.",
+    ],
+  };
 }
 
 export function parseDearMeNextProofArgs(argv: readonly string[]): DearMeNextProofArgs {
@@ -391,6 +484,11 @@ export async function prepareDearMeNextProofSetup(
   const readiness = inspectDearMeProviderSmokeReadiness(env, target);
   const factsNeeded = dearMeProofFactsNeededFromReadiness(readiness);
   const capturedFacts = factCaptures.map(capturedFactMetadata);
+  const commands = {
+    setup: `pnpm --silent dearme:next-proof --${envFileFlag(envFile)}${providerTargetFlag(target)}`,
+    check: providerCheckCommand(target, envFile),
+    liveOrRun: providerRunCommand(target, envFile, readiness),
+  };
 
   return {
     target,
@@ -398,12 +496,9 @@ export async function prepareDearMeNextProofSetup(
     envStatus,
     readiness,
     factsNeeded,
+    ownerHandoff: buildDearMeOwnerHandoff(target, envFile, factsNeeded, commands),
     capturedFacts,
-    commands: {
-      setup: `pnpm --silent dearme:next-proof --${envFileFlag(envFile)}${providerTargetFlag(target)}`,
-      check: providerCheckCommand(target, envFile),
-      liveOrRun: providerRunCommand(target, envFile, readiness),
-    },
+    commands,
   };
 }
 
@@ -447,6 +542,28 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
   }
 
   lines.push("");
+  lines.push("Owner handoff:");
+  lines.push(`- status: ${setup.ownerHandoff.status}`);
+  lines.push(`- ${setup.ownerHandoff.headline}.`);
+  lines.push(`- ${setup.ownerHandoff.summary}`);
+  if (setup.ownerHandoff.factsToProvide.length > 0) {
+    lines.push("- Provide:");
+    for (const fact of setup.ownerHandoff.factsToProvide) {
+      const targetList = fact.targets.length > 1
+        ? ` for ${fact.targets.join(", ")}`
+        : ` for ${fact.targets[0]}`;
+      const redaction = fact.sensitive ? " (keep value local; do not paste secrets)" : "";
+      lines.push(`  - ${fact.label}: ${fact.provideAs}=${fact.placeholder}${targetList}${redaction}`);
+    }
+  } else {
+    lines.push("- Provide: no owner facts missing.");
+  }
+  if (setup.ownerHandoff.captureCommand) {
+    lines.push(`- Capture command: ${setup.ownerHandoff.captureCommand}`);
+  }
+  lines.push(`- Check first: ${setup.ownerHandoff.checkCommand}`);
+
+  lines.push("");
   lines.push("Next commands:");
   lines.push(`- ${setup.commands.check}`);
   lines.push(`- ${setup.commands.liveOrRun}`);
@@ -459,6 +576,8 @@ function printHelp() {
 
 Creates or preserves the local DearMe proof env file, then prints no-send
 readiness plus the guarded live/run command for the next blocked provider proof.
+The output includes an owner handoff block that states which approved proof
+targets are still needed and how to capture non-secret values locally.
 
 Optional fact-capture flags write non-secret launch facts into the local env file
 and never print captured values.

@@ -13,6 +13,36 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Stale Branch Absorption Review - 2026-05-12
+
+- `codex/dearme-dm-136-sample-demo-proof-handoff` and
+  `codex/dea-7-content-producer-private-drafts-fix` were reviewed as local
+  unmerged branches, not physical worktrees or Symphony handoffs.
+- The useful product value is already in current DearMe: private handoffs pause
+  before external dispatch, and Content Producer stays on voice-gated private
+  review drafts with every public move behind approval.
+- Do not merge either branch wholesale. Both are stale-base branches whose diffs
+  would remove newer proof scripts, release gates, public first-run work, and
+  current docs. The reusable value is recorded in
+  `WORKTREE-ABSORPTION-LEDGER.json`; keep the coordinator head as integration
+  truth.
+
+## Latest Owner Live-Proof Handoff - 2026-05-12
+
+- `pnpm dearme:next-proof` now emits a structured owner handoff for the real
+  external proof blocker instead of leaving Peter or Symphony workers to infer
+  it from raw readiness output.
+- The handoff reuses the existing provider-smoke and release-gate spine:
+  `factsToProvide`, placeholders, capture flags, no-send check, guarded live
+  command, `blocked/ready` status, no-send guarantee, and live-guard requirement
+  are all produced by one command.
+- This closes the non-live handoff gap. Do not add another setup dashboard or
+  substrate explanation for the same blocker; collect the approved route and
+  recipient facts, run the no-send check, then run guarded live proof only with
+  explicit live confirmation.
+- Public launch remains blocked on real receipts. Private/internal product
+  proof remains usable for review.
+
 ## Latest Public First-Run Release Gate - 2026-05-12
 
 - The Polsia acquisition structure is now a release-gate proof item:
