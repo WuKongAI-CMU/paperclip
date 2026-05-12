@@ -2,6 +2,31 @@
 
 Date: 2026-05-12
 
+## Polsia Second-Pass Product Architecture Study - 2026-05-12
+
+Product/architecture slice:
+
+- Re-read the Polsia archive through production API responses, task data,
+  public dashboard data, onboarding traces, cost summaries, workspace/prompt
+  findings, weaknesses, and the personal-brand fork spec.
+- Updated `POLSIA-DEEP-STUDY-2026-05-12.md` with the sharper conclusion:
+  Polsia's reusable value is not the visible agent catalog; it is one manager
+  front door, immediate starter work, watchable live receipts, a recurring
+  cycle report, strict task contracts, durable memory, and hidden
+  complexity/cost routing.
+- Product direction remains unchanged but better justified: DearMe should copy
+  Polsia's choreography and proof mechanics while rejecting raw thinking
+  streams, donor identity, shared outbound accounts, unsupported enrichment,
+  public metric overclaims, and more setup/provider UI.
+- Current release posture is unchanged: private proof is usable; public launch
+  still waits on real LinkedIn partner endpoint + recipient proof and approved
+  iMessage/SMS recipient proof.
+
+Verification:
+
+- `git diff --check`
+- `pnpm --silent dearme:status -- --json`
+
 ## Coordinator Status Command Friction Cleanup - 2026-05-12
 
 Product/coordination slice:

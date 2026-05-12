@@ -13,6 +13,24 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Polsia Second-Pass Architecture Study - 2026-05-12
+
+- The second Polsia pass used the local production archive, authenticated API
+  responses, cost summary, onboarding evidence, public dashboard data, prompt
+  and workspace findings, weaknesses, and the personal-brand fork spec.
+- Treat Polsia as a choreography donor, not an identity or UI donor. The useful
+  product kernel is: one manager front door, immediate private starter work,
+  live proof receipts, cycle reporting, task contracts, memory compounding, and
+  hidden model/provider/cost routing.
+- Keep DearMe stricter than Polsia on trust: no raw thinking stream, no shared
+  outbound identity, no enrichment without consent, no public send/post/deploy
+  without approval receipts, and no public proof metric without underlying
+  durable receipts.
+- Current implementation priority: make the workroom and live receipt trail
+  feel more obviously active and contract-backed, then close the live provider
+  smoke facts. Do not open another setup dashboard, agent roster, or provider
+  management lane for the same blocker.
+
 ## Latest Coordinator Status Friction Cleanup - 2026-05-12
 
 - `pnpm --silent dearme:status -- --json` now works. The proof/status parser

@@ -54,6 +54,124 @@ events, tool calls, reports, partial external sends, deploy activity, costs,
 durations, and completion records. They also show rough edges: stale public
 task snapshots, shared-account limits, and summary-layer overclaims.
 
+## Second-Pass Production Findings
+
+The deeper read changes the emphasis. Polsia's moat is not "many agents" or
+the 22-MCP story. The strongest product mechanism is choreography: one user
+prompt creates visible work, a starter queue, a live feed, a cycle report, and
+economic control behind the scenes.
+
+Concrete production evidence:
+
+- The authenticated agent response exposes 12 role prompts, while the live
+  cycle config shows 10 active customer-visible operators: Browser, CEO, Cold
+  Outreach, Data, Engineering, Monitoring, Reporting, Research, Support, and
+  Twitter. Chat and onboarding are hidden front-door/runtime roles.
+- The TrueCheck task response creates five starter tasks immediately, with
+  useful metadata on some tasks: source, tag, complexity, priority, and
+  owner-requested state. It also shows a weakness: at least one generated task
+  is missing tag, complexity, and executability metadata.
+- The cost summary for the sample company records two executions, 13,865 input
+  tokens, 917 output tokens, and `1.991114` dollars of model cost. That is the
+  real reason Polsia hides model/provider choice from customers and routes by
+  complexity.
+- The public dashboard claims large proof numbers: ARR, active companies,
+  total companies, completed tasks, messages, and emails. This is powerful
+  marketing, but it should be treated as a proof surface only when backed by
+  durable underlying receipts.
+- The deeper architecture notes show the customer-app lock-in pattern:
+  generated apps and skills call Polsia proxy endpoints for AI, email, storage,
+  and payments. DearMe should port the cost/accounting idea, not Polsia's
+  platform identity.
+
+The practical runtime is smaller than the marketing surface. Most useful work
+comes from a compact internal set: tasks, reports, live replies, dashboard
+updates, infrastructure helpers, memory, and a cost-aware AI proxy. DearMe does
+not need to expose a giant tool catalog to match the customer feeling.
+
+## Polsia Product Kernel
+
+Polsia works because it compresses a founder's anxiety into a watchable
+sequence:
+
+1. "Tell me the idea."
+2. "I understood it."
+3. "I created the first useful documents."
+4. "I made a queue."
+5. "I am working now."
+6. "Here is what moved, what is ready, and what I need from you."
+
+For DearMe, the equivalent is not company creation. It is personal-brand
+momentum:
+
+1. "Tell me what you want to be known for."
+2. "I understood your voice and audience."
+3. "I prepared the first private proof pack."
+4. "I created the next launch calls."
+5. "I am working privately now."
+6. "Here is what is ready to approve, what is blocked, and what changed."
+
+That means the correct DearMe surface is a private brand workroom with a single
+manager voice. The user should not have to manage agents, providers, worktrees,
+MCP servers, or orchestration concerns.
+
+## Reuse Decisions From Polsia
+
+Port these mechanisms into DearMe:
+
+- Front-door manager/chat: classify the user's ask, create or update the right
+  work item, and route it backstage without asking the user to pick an agent.
+- Strict task contract: every customer-visible task needs title, source,
+  rationale, state, priority, complexity or effort, proof, and next owner call.
+- Live proof feed: show customer-safe progress receipts every meaningful step,
+  with completed, prepared, blocked, skipped, and needs-approval states.
+- Cycle report: summarize "what moved, what is ready, what needs your call,
+  what is next" on a repeating private work rhythm.
+- Hidden routing economics: use complexity, risk, and channel sensitivity to
+  pick provider/model/workspace internally while surfacing only outcomes and
+  receipts.
+- Durable brand memory: keep voice profile, personal pitch, audience map,
+  portfolio proof, rejected phrases, and approval history as the actual lock-in.
+- Isolated execution workspace: keep per-task worker state isolated, disposable,
+  and receipt-backed before it updates the product workroom.
+
+Reject these Polsia choices:
+
+- Raw thinking streams or chain text as product proof.
+- Donor identity, prompt copy, Sapiom language, or Polsia-style public claims in
+  customer-facing DearMe UI.
+- Shared outbound identity for social, email, or DMs.
+- Auto-send, auto-post, auto-deploy, or auto-spend without an approval receipt.
+- IP geolocation or professional-network enrichment without explicit consent
+  and provenance.
+- A large visible agent roster, provider picker, or setup dashboard before the
+  first private work output.
+- Public metrics that cannot be traced back to signed or durable receipts.
+
+## DearMe Gap After The Polsia Read
+
+DearMe is already pointed in the right direction:
+
+- The product is a private brand team, not a control panel.
+- OpenClaw, Paperclip/Naive, Symphony, provider adapters, and worktrees are
+  correctly backstage.
+- Private proof is usable: first-run, receipt trail, voice proof, approval
+  boundary, release gate, and status command are now coherent.
+
+The remaining gap is narrower than "build more Polsia." It is live delivery
+proof and receipt polish:
+
+- The workroom should feel more like Polsia's live work sequence, but with
+  summarized receipts instead of raw thinking.
+- Tasks should be stricter than Polsia's sample data: no generated task should
+  be customer-visible without a route/tag, effort or complexity, proof field,
+  and next decision.
+- Public launch cannot be claimed until the real LinkedIn partner route,
+  approved recipient, and iMessage/SMS proof recipient are supplied and guarded
+  live smoke receipts exist.
+- The next Symphony tickets should strengthen workroom receipts and live proof,
+  not reopen setup, provider management, or agent-dashboard work.
+
 ## What To Reuse
 
 ### 1. Singular Manager Surface
