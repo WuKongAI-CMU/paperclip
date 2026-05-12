@@ -2,6 +2,33 @@
 
 Date: 2026-05-11
 
+## Production Host Proof Re-Verified - 2026-05-11
+
+Product/architecture slice:
+
+- Re-ran the live-safe product proof commands after the Symphony handoff update
+  to ensure the Polsia-style first wow is not just represented by release-gate
+  summary state.
+- `dearme:aha-proof -- --check` reports the private five-minute aha proof as
+  ready, including the one-sentence start, private output package, recurring
+  work, phone-ready site artifact, and customer-safe language.
+- `dearme:provider-smoke -- --target deploy_site_production --json` delivered
+  the production host smoke at
+  `https://wukongai-cmu.github.io/dearme-private-proof/peter-studio` with HTTP
+  status `200`.
+- `dearme:openclaw-message-rehearsal -- --json` still proves the shared
+  OpenClaw Telegram/iMessage contract without live sends. Live external
+  delivery remains required before public launch completion.
+
+Verification:
+
+- `pnpm --silent dearme:aha-proof -- --check`
+- `pnpm --silent dearme:proof -- --run-safe`
+- `pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target deploy_site_production --json`
+- `pnpm --silent dearme:openclaw-message-rehearsal -- --json`
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
+- `pnpm --silent dearme:release-gate -- --json`
+
 ## Symphony Public-Readiness Handoff Uses FactsNeeded - 2026-05-11
 
 Product/architecture slice:
