@@ -25,6 +25,7 @@ test("DearMe Symphony bootstrap exposes proof readiness before worktree triage",
     "pnpm --silent dearme:proof -- --status --lane provider",
     "pnpm --silent dearme:host-rehearsal -- --port 0 --json",
     "pnpm --silent dearme:openclaw-message-rehearsal -- --json",
+    "pnpm --silent dearme:release-gate -- --json",
     "pnpm --silent dearme:next-proof -- --target all --no-write --json",
     "pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs",
   ]);
@@ -36,6 +37,7 @@ test("DearMe Symphony bootstrap exposes proof readiness before worktree triage",
   assert.match(workflow, /loopback\s+host proof/);
   assert.match(workflow, /OpenClaw message rehearsal/);
   assert.match(workflow, /factsNeeded/);
+  assert.match(workflow, /productReadiness/);
   assert.match(workflow, /dearme:provider-smoke/);
   assert.match(workflow, /dearme:voice-smoke/);
 });
@@ -48,6 +50,7 @@ test("DearMe Symphony README documents the unified proof readiness lane", () => 
   assert.match(readme, /pnpm --silent dearme:proof -- --status --lane provider/);
   assert.match(readme, /pnpm --silent dearme:host-rehearsal -- --port 0 --json/);
   assert.match(readme, /pnpm --silent dearme:openclaw-message-rehearsal -- --json/);
+  assert.match(readme, /pnpm --silent dearme:release-gate -- --json/);
   assert.match(readme, /pnpm --silent dearme:next-proof -- --target all --no-write --json/);
   assert.match(readme, /without sending, deploying to\s+production, spending, or calling a live model/);
   assert.match(readme, /production host smoke first/);
@@ -55,6 +58,7 @@ test("DearMe Symphony README documents the unified proof readiness lane", () => 
   assert.match(readme, /no-secret proof/);
   assert.match(readme, /shared Telegram\/iMessage provider-smoke path/);
   assert.match(readme, /factsNeeded/);
+  assert.match(readme, /productReadiness/);
   assert.match(readme, /pnpm dearme:provider-smoke/);
   assert.match(readme, /pnpm dearme:voice-smoke/);
 });

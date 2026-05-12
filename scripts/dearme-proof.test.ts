@@ -384,6 +384,8 @@ test("DearMe proof status carries current integration absorption evidence", () =
   assert.match(formatted, /Captured tools: send_telegram_message, send_imessage/);
   assert.match(formatted, /pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs/);
   assert.match(formatted, /pnpm --silent dearme:openclaw-message-rehearsal -- --json/);
+  assert.match(formatted, /pnpm --silent dearme:next-proof -- --target openclaw_messages/);
+  assert.doesNotMatch(formatted, /pnpm --silent dearme:proof -- --print-env-template > \.dearme-proof\.env/);
   assert.equal(formatted.includes("integration audit could not run"), false);
 });
 
@@ -441,7 +443,9 @@ test("DearMe proof status can be lane scoped", () => {
   assert.equal(status.commands.check, "pnpm --silent dearme:proof -- --check --lane voice");
   assert.deepEqual(status.commands.liveProviderSetup, []);
   assert.deepEqual(status.liveProviderFocus, []);
-  assert.match(formatDearMeProofStatus(status).join("\n"), /scoped proof status only/);
+  const formatted = formatDearMeProofStatus(status).join("\n");
+  assert.match(formatted, /scoped proof status only/);
+  assert.match(formatted, /pnpm --silent dearme:proof -- --print-env-template --lane voice > \.dearme-proof\.env/);
 });
 
 test("DearMe proof env template is a single local file bootstrap", () => {

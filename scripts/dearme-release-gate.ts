@@ -1,11 +1,20 @@
 import { fileURLToPath } from "node:url";
 import {
+  inspectDearMeProviderSmokeReadiness,
+  type DearMeProviderSmokeReadiness,
+} from "./dearme-provider-smoke.ts";
+import {
   buildDearMeGoalAudit,
   formatDearMeGoalAudit,
   type DearMeGoalAudit,
   type DearMeGoalAuditItem,
   type DearMeGoalAuditItemKey,
 } from "./dearme-goal-audit.ts";
+import { loadDearMeProofEnv } from "./dearme-proof.ts";
+import {
+  dearMeProofFactsNeededFromReadiness,
+  type DearMeProofFactNeed,
+} from "./dearme-proof-facts.ts";
 
 export type DearMeReleaseGateTarget = "private-proof" | "public-launch";
 
@@ -32,8 +41,22 @@ export interface DearMeReleaseGate {
   canPublish: boolean;
   privateProof: DearMeReleaseGateDecision;
   publicLaunch: DearMeReleaseGateDecision;
+  factsNeeded: DearMeProofFactNeed[];
+  productReadiness: DearMeProductReadiness;
   nextAction: DearMeGoalAudit["nextAction"];
   audit: DearMeGoalAudit;
+}
+
+export interface DearMeProductReadiness {
+  status: DearMeReleaseGate["overall"];
+  headline: string;
+  summary: string;
+  publicLaunchNeeds: string[];
+  operatorFactsNeeded: number;
+  nextAction: {
+    label: string;
+    reason: string;
+  };
 }
 
 const PRIVATE_PROOF_ITEMS: readonly DearMeGoalAuditItemKey[] = [
@@ -83,6 +106,63 @@ function commandsFor(items: readonly DearMeGoalAuditItem[]): string[] {
   );
 }
 
+function customerSafeLaunchNeed(fact: DearMeProofFactNeed): string {
+  const text = `${fact.label} ${fact.provideAs}`.toLowerCase();
+  if (text.includes("linkedin")) return "Approved professional-network proof details";
+  if (text.includes("imessage") || text.includes("sms")) return "Approved phone-message proof recipient";
+  if (text.includes("telegram")) return "Approved chat proof recipient";
+  if (text.includes("credential") || fact.sensitive) {
+    return "Local live-proof authorization kept outside customer-facing surfaces";
+  }
+  if (text.includes("host") || text.includes("deploy") || text.includes("site")) {
+    return "Phone-reachable proof page configuration";
+  }
+  return "Current live-proof handoff fact";
+}
+
+function buildProductReadiness(
+  gate: Omit<DearMeReleaseGate, "productReadiness">,
+): DearMeProductReadiness {
+  const publicLaunchNeeds = unique(gate.factsNeeded.map(customerSafeLaunchNeed));
+  if (gate.canPublish) {
+    return {
+      status: gate.overall,
+      headline: "Ready for public launch",
+      summary: "DearMe has private proof, reuse, message delivery proof, and live-channel proof evidence.",
+      publicLaunchNeeds,
+      operatorFactsNeeded: gate.factsNeeded.length,
+      nextAction: {
+        label: "Prepare public release",
+        reason: "Every required proof item is met by the release gate.",
+      },
+    };
+  }
+  if (gate.canUse) {
+    return {
+      status: gate.overall,
+      headline: "Private proof is usable",
+      summary: "DearMe can demonstrate the first wow privately, but public launch remains blocked until the current live-proof facts are supplied and verified.",
+      publicLaunchNeeds,
+      operatorFactsNeeded: gate.factsNeeded.length,
+      nextAction: {
+        label: "Supply approved live-proof details",
+        reason: "Public launch needs owner-approved external delivery facts before any live send or campaign proof.",
+      },
+    };
+  }
+  return {
+    status: gate.overall,
+    headline: "Private proof is blocked",
+    summary: "DearMe is still missing required product, reuse, host, or safe-contract proof before it should be used as a private demo.",
+    publicLaunchNeeds,
+    operatorFactsNeeded: gate.factsNeeded.length,
+    nextAction: {
+      label: "Repair private proof blockers",
+      reason: "Private proof must be restored before public launch proof work continues.",
+    },
+  };
+}
+
 function decisionFor(
   audit: DearMeGoalAudit,
   target: DearMeReleaseGateTarget,
@@ -129,10 +209,13 @@ function decisionFor(
   };
 }
 
-export function summarizeDearMeReleaseGate(audit: DearMeGoalAudit): DearMeReleaseGate {
+export function summarizeDearMeReleaseGate(
+  audit: DearMeGoalAudit,
+  providerReadiness: readonly DearMeProviderSmokeReadiness[] = [],
+): DearMeReleaseGate {
   const privateProof = decisionFor(audit, "private-proof");
   const publicLaunch = decisionFor(audit, "public-launch");
-  return {
+  const base = {
     overall: publicLaunch.ready
       ? "public-launch-ready"
       : privateProof.ready
@@ -142,8 +225,13 @@ export function summarizeDearMeReleaseGate(audit: DearMeGoalAudit): DearMeReleas
     canPublish: publicLaunch.ready,
     privateProof,
     publicLaunch,
+    factsNeeded: dearMeProofFactsNeededFromReadiness(providerReadiness),
     nextAction: audit.nextAction,
     audit,
+  };
+  return {
+    ...base,
+    productReadiness: buildProductReadiness(base),
   };
 }
 
@@ -173,6 +261,23 @@ export function formatDearMeReleaseGate(gate: DearMeReleaseGate): string[] {
     lines.push("Public launch blockers:");
     for (const item of gate.publicLaunch.blockers) {
       lines.push(`- ${item}`);
+    }
+  }
+
+  if (gate.factsNeeded.length > 0) {
+    lines.push("");
+    lines.push("Facts needed before live proof:");
+    for (const fact of gate.factsNeeded) {
+      const sensitivity = fact.sensitive ? " (sensitive; keep local)" : "";
+      lines.push(`- ${fact.label}: provide ${fact.provideAs}${sensitivity}`);
+    }
+  }
+
+  if (gate.productReadiness.publicLaunchNeeds.length > 0) {
+    lines.push("");
+    lines.push("Product readiness needs:");
+    for (const need of gate.productReadiness.publicLaunchNeeds) {
+      lines.push(`- ${need}`);
     }
   }
 
@@ -254,8 +359,10 @@ async function main() {
       return;
     }
 
+    const env = await loadDearMeProofEnv(parsed.envFiles, process.env);
     const gate = summarizeDearMeReleaseGate(
       await buildDearMeGoalAudit(parsed.envFiles, process.env),
+      inspectDearMeProviderSmokeReadiness(env, "all"),
     );
     if (parsed.json) {
       console.log(JSON.stringify({ gate }, null, 2));

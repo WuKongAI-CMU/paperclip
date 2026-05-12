@@ -1,6 +1,60 @@
 # DearMe Build State
 
-Date: 2026-05-11
+Date: 2026-05-12
+
+## Release Gate Carries Live Fact Needs - 2026-05-12
+
+Product/architecture slice:
+
+- Moved the exact no-secret live-proof `factsNeeded` descriptor into the
+  release-gate status spine, so the product answer to "can use / can publish"
+  and the operator handoff no longer require manually merging release-gate,
+  next-proof, and provider-smoke output.
+- Added a customer-safe `productReadiness` summary beside the operator fact
+  list. It says whether DearMe is private-proof usable or public-launch ready
+  without exposing env keys or substrate setup details.
+- Kept `dearme:next-proof` as the setup/detail command by sharing the same
+  proof-facts descriptor instead of duplicating blocker language.
+- Updated Symphony bootstrap and handoff docs so workers copy `factsNeeded`
+  from `dearme:release-gate -- --json` and use next-proof only for setup
+  details.
+
+Verification:
+
+- `pnpm test:dearme-release-gate`
+- `pnpm test:dearme-next-proof`
+- `pnpm test:dearme-symphony-workflow`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
+- `pnpm typecheck`
+
+## Status Commands Prefer Current Proof Setup - 2026-05-12
+
+Product/architecture slice:
+
+- `dearme:status` now keeps the public/provider setup path pointed at
+  `dearme:next-proof` and the generated live-proof facts list. It no longer
+  shows the old all-lane `.dearme-proof.env` template bootstrap once voice
+  semantic proof is already ready.
+- The voice-scoped proof lane still shows the `--print-env-template --lane
+  voice` bootstrap because local voice calibration remains a legitimate setup
+  gap when that lane is scoped or blocked.
+- The shared provider fact descriptor now feeds both `dearme:next-proof` and
+  `dearme:release-gate`, so Symphony handoffs and product-readiness output
+  stay aligned on the same current blockers instead of diverging into separate
+  stale checklists.
+
+Verification:
+
+- `pnpm test:dearme-proof`
+- `pnpm test:dearme-next-proof`
+- `pnpm test:dearme-release-gate`
+- `pnpm test:dearme-goal-audit`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:proof -- --status --lane voice`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm typecheck`
+- `git diff --check`
 
 ## Production Host Proof Re-Verified - 2026-05-11
 

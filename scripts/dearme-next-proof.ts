@@ -7,9 +7,12 @@ import {
   loadDearMeProviderSmokeEnv,
   parseDearMeProviderSmokeArgs,
   type DearMeProviderSmokeReadiness,
-  type DearMeProviderSmokeTarget,
 } from "./dearme-provider-smoke.ts";
 import { buildDearMeGoalAudit } from "./dearme-goal-audit.ts";
+import {
+  dearMeProofFactsNeededFromReadiness,
+  type DearMeProofFactNeed,
+} from "./dearme-proof-facts.ts";
 import {
   summarizeDearMeReleaseGate,
   type DearMeReleaseGate,
@@ -42,7 +45,7 @@ export interface DearMeNextProofSetup {
   envFile: string;
   envStatus: DearMeNextProofEnvStatus;
   readiness: DearMeProviderSmokeReadiness[];
-  factsNeeded: DearMeNextProofFactNeed[];
+  factsNeeded: DearMeProofFactNeed[];
   capturedFacts: DearMeNextProofCapturedFact[];
   commands: {
     setup: string;
@@ -51,12 +54,7 @@ export interface DearMeNextProofSetup {
   };
 }
 
-export interface DearMeNextProofFactNeed {
-  label: string;
-  provideAs: string;
-  targets: DearMeProviderSmokeTarget[];
-  sensitive: boolean;
-}
+export type DearMeNextProofFactNeed = DearMeProofFactNeed;
 
 export interface DearMeNextProofFactCapture {
   key: string;
@@ -186,132 +184,6 @@ function upsertEnvFacts(existing: string, captures: readonly DearMeNextProofFact
     lines.push(`${capture.key}=${envQuotedValue(capture.value)}`);
   }
   return `${lines.join("\n").trimEnd()}\n`;
-}
-
-function factNeedDescriptor(requirement: string): Omit<DearMeNextProofFactNeed, "targets"> {
-  switch (requirement) {
-    case "DEARME_LINKEDIN_DM_MESSAGES_URL":
-      return {
-        label: "LinkedIn partner messages endpoint",
-        provideAs: "DEARME_LINKEDIN_DM_MESSAGES_URL",
-        sensitive: false,
-      };
-    case "DEARME_LINKEDIN_DM_CREDENTIAL_JSON or DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE":
-      return {
-        label: "LinkedIn send credential",
-        provideAs: "DEARME_LINKEDIN_DM_CREDENTIAL_JSON_FILE or DEARME_LINKEDIN_DM_CREDENTIAL_JSON",
-        sensitive: true,
-      };
-    case "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN":
-      return {
-        label: "LinkedIn approved smoke recipient",
-        provideAs: "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
-        sensitive: false,
-      };
-    case "DEARME_LINKEDIN_DM_SMOKE_BODY":
-      return {
-        label: "LinkedIn private-proof message body",
-        provideAs: "DEARME_LINKEDIN_DM_SMOKE_BODY",
-        sensitive: false,
-      };
-    case "OPENCLAW_GATEWAY_URL":
-      return {
-        label: "OpenClaw gateway URL",
-        provideAs: "OPENCLAW_GATEWAY_URL or DEARME_USE_LOCAL_OPENCLAW_CONFIG=1",
-        sensitive: false,
-      };
-    case "OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH":
-      return {
-        label: "OpenClaw gateway auth",
-        provideAs: "OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH",
-        sensitive: true,
-      };
-    case "DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT":
-      return {
-        label: "Telegram approved smoke recipient",
-        provideAs: "DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT or local Telegram smoke config",
-        sensitive: false,
-      };
-    case "DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY":
-      return {
-        label: "Telegram private-proof message body",
-        provideAs: "DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY",
-        sensitive: false,
-      };
-    case "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT":
-      return {
-        label: "iMessage/SMS approved smoke recipient",
-        provideAs: "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
-        sensitive: false,
-      };
-    case "DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY":
-      return {
-        label: "iMessage/SMS private-proof message body",
-        provideAs: "DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY",
-        sensitive: false,
-      };
-    case "DEARME_META_CAMPAIGN_CREDENTIAL_JSON or DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE":
-      return {
-        label: "Meta campaign credential",
-        provideAs: "DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE or DEARME_META_CAMPAIGN_CREDENTIAL_JSON",
-        sensitive: true,
-      };
-    case "DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=1":
-      return {
-        label: "Production host opt-in",
-        provideAs: "DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=1",
-        sensitive: false,
-      };
-    case "DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=1":
-      return {
-        label: "Custom domain opt-in",
-        provideAs: "DEARME_DEPLOY_SITE_ALLOW_CUSTOM_DOMAINS=1",
-        sensitive: false,
-      };
-    case "DEARME_DEPLOY_SITE_BASE_URL":
-      return {
-        label: "Hosted private proof base URL",
-        provideAs: "DEARME_DEPLOY_SITE_BASE_URL",
-        sensitive: false,
-      };
-    case "DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF=dist/dearme-private-proof/<handle>/index.html":
-      return {
-        label: "Exported private proof page artifact",
-        provideAs: "DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF",
-        sensitive: false,
-      };
-    default:
-      return {
-        label: requirement
-          .replace(/^DEARME_/, "")
-          .replace(/^OPENCLAW_/, "OpenClaw ")
-          .replaceAll("_", " ")
-          .toLowerCase(),
-        provideAs: requirement,
-        sensitive: /TOKEN|AUTH|CREDENTIAL|SECRET|PASSWORD/.test(requirement),
-      };
-  }
-}
-
-function factsNeededFromReadiness(
-  readiness: readonly DearMeProviderSmokeReadiness[],
-): DearMeNextProofFactNeed[] {
-  const byRequirement = new Map<string, DearMeNextProofFactNeed>();
-  for (const item of readiness) {
-    if (item.ready) continue;
-    for (const requirement of item.missing) {
-      const existing = byRequirement.get(requirement);
-      if (existing) {
-        if (!existing.targets.includes(item.target)) existing.targets.push(item.target);
-        continue;
-      }
-      byRequirement.set(requirement, {
-        ...factNeedDescriptor(requirement),
-        targets: [item.target],
-      });
-    }
-  }
-  return [...byRequirement.values()];
 }
 
 function envKeysFromText(text: string) {
@@ -517,7 +389,7 @@ export async function prepareDearMeNextProofSetup(
   const envFiles = await envFileExists(resolvedEnvFile) ? [resolvedEnvFile] : [];
   const env = await loadDearMeProviderSmokeEnv(envFiles, options.baseEnv ?? process.env);
   const readiness = inspectDearMeProviderSmokeReadiness(env, target);
-  const factsNeeded = factsNeededFromReadiness(readiness);
+  const factsNeeded = dearMeProofFactsNeededFromReadiness(readiness);
   const capturedFacts = factCaptures.map(capturedFactMetadata);
 
   return {

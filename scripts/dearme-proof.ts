@@ -1088,6 +1088,13 @@ function formatBlockedTargets(blockedTargets: readonly DearMeProofStatusBlocker[
   )}`;
 }
 
+function shouldShowProofEnvTemplateCommand(status: DearMeProofStatus) {
+  if (status.lane === "voice") return true;
+  return status.sections.some((section) =>
+    section.key === "voice_semantic_proof" && !section.ready
+  );
+}
+
 function statusSection(
   status: DearMeProofStatus,
   key: DearMeProofStatusSection["key"],
@@ -1177,7 +1184,9 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
     lines.push(`- ${status.commands.integrationAudit}`);
     lines.push(`- ${status.commands.openClawMessageRehearsal}`);
   }
-  lines.push(`- ${status.commands.printEnvTemplate}`);
+  if (shouldShowProofEnvTemplateCommand(status)) {
+    lines.push(`- ${status.commands.printEnvTemplate}`);
+  }
   lines.push(`- ${status.commands.runSafe}`);
   lines.push(`- ${status.commands.check}`);
   if (status.commands.liveProviderSetup.length > 0) {

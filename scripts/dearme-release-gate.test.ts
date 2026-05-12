@@ -6,12 +6,26 @@ import {
   summarizeDearMeReleaseGate,
   type DearMeReleaseGateTarget,
 } from "./dearme-release-gate.ts";
+import type { DearMeProviderSmokeReadiness } from "./dearme-provider-smoke.ts";
 import type {
   DearMeGoalAudit,
   DearMeGoalAuditItem,
   DearMeGoalAuditItemKey,
   DearMeGoalAuditItemStatus,
 } from "./dearme-goal-audit.ts";
+
+function readiness(
+  target: DearMeProviderSmokeReadiness["target"],
+  missing: string[] = [],
+): DearMeProviderSmokeReadiness {
+  return {
+    target,
+    ready: missing.length === 0,
+    missing,
+    liveConfirmationRequired: true,
+    description: `${target} readiness`,
+  };
+}
 
 function item(
   key: DearMeGoalAuditItemKey,
@@ -85,7 +99,17 @@ function goalAudit(
 }
 
 test("DearMe release gate allows private proof while blocking public launch", () => {
-  const gate = summarizeDearMeReleaseGate(goalAudit());
+  const gate = summarizeDearMeReleaseGate(goalAudit(), [
+    readiness("deploy_site_preview"),
+    readiness("deploy_site_production"),
+    readiness("linkedin_dm", [
+      "DEARME_LINKEDIN_DM_MESSAGES_URL",
+      "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
+    ]),
+    readiness("telegram_message"),
+    readiness("imessage_message", ["DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT"]),
+    readiness("meta_campaign"),
+  ]);
   const formatted = formatDearMeReleaseGate(gate).join("\n");
 
   assert.equal(gate.overall, "private-proof-ready");
@@ -99,10 +123,29 @@ test("DearMe release gate allows private proof while blocking public launch", ()
     "Live provider proof set: imessage_message",
     "Live provider proof set: meta_campaign",
   ]);
+  assert.deepEqual(gate.factsNeeded.map((fact) => fact.provideAs), [
+    "DEARME_LINKEDIN_DM_MESSAGES_URL",
+    "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
+    "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+  ]);
+  assert.equal(gate.productReadiness.headline, "Private proof is usable");
+  assert.deepEqual(gate.productReadiness.publicLaunchNeeds, [
+    "Approved professional-network proof details",
+    "Approved phone-message proof recipient",
+  ]);
+  assert.equal(gate.productReadiness.nextAction.label, "Supply approved live-proof details");
+  assert.doesNotMatch(
+    JSON.stringify(gate.productReadiness),
+    /DEARME_|OPENCLAW_|OpenClaw|LinkedIn|Telegram|iMessage/,
+  );
   assert.match(formatted, /usable for private\/internal proof, not ready for public launch/);
   assert.match(formatted, /Private proof: ready/);
   assert.match(formatted, /Public launch: blocked/);
   assert.match(formatted, /OpenClaw shared Telegram\/iMessage message proof: imessage_message/);
+  assert.match(formatted, /Facts needed before live proof:/);
+  assert.match(formatted, /LinkedIn approved smoke recipient: provide DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN/);
+  assert.match(formatted, /Product readiness needs:/);
+  assert.match(formatted, /Approved phone-message proof recipient/);
   assert.match(
     formatted,
     /Run: pnpm --silent dearme:next-proof -- --target openclaw_messages/,
