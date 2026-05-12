@@ -2,6 +2,31 @@
 
 Date: 2026-05-12
 
+## Symphony Handoff Contract Hardening - 2026-05-12
+
+Coordination slice:
+
+- Updated the Symphony worker proof-lane instructions so public-readiness
+  handoffs copy `operatorHandoff` from `dearme:release-gate -- --json` instead
+  of rebuilding setup commands from older blocker lists.
+- Added the matching status-surface rule: workers should mirror
+  `liveProofHandoff` from `dearme:status -- --json` when the task touches a
+  dashboard/status view.
+- Tightened the Symphony workflow contract test to require
+  `operatorHandoff`, `factsToCapture`, `captureCommand`,
+  `guardedLiveCommands`, and `liveProofHandoff` in the worker protocol.
+- Normalized `dearme:goal-audit` argument parsing so pnpm-forwarded `--`
+  separators are ignored anywhere in argv, matching release-gate and
+  next-proof behavior.
+
+Verification:
+
+- `pnpm test:dearme-symphony-workflow`
+- `pnpm test:dearme-goal-audit`
+- `pnpm --silent dearme:goal-audit -- --check -- --json` (expected blocked
+  exit: public proof still needs real external channel facts)
+- `git diff --check`
+
 ## Public First-Run Workroom Queues And Operator Handoff - 2026-05-12
 
 Product/coordination slice:

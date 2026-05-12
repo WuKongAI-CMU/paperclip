@@ -13,6 +13,23 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Symphony Handoff Contract Hardening - 2026-05-12
+
+- The proof-lane coordination contract now treats
+  `dearme:release-gate -- --json` `operatorHandoff` as the worker handoff
+  source for approved facts, local capture, no-send check, guarded live
+  commands, and safety notes.
+- Status-surface work now mirrors `dearme:status -- --json`
+  `liveProofHandoff`, keeping dashboards aligned with the release gate instead
+  of letting workers reconstruct setup commands by hand.
+- `scripts/dearme-symphony-workflow-contract.test.mjs` now requires the new
+  handoff fields in `.symphony/WORKFLOW.md` and `.symphony/README.md`, so
+  future worker protocol edits cannot quietly drop the one-spine operator
+  handoff.
+- `dearme:goal-audit` now ignores pnpm-forwarded `--` separators anywhere in
+  argv, which keeps coordinator and Symphony no-send checks robust when
+  commands are nested through pnpm.
+
 ## Latest Workroom Queue And Release-Gate Handoff Integration - 2026-05-12
 
 - The next Polsia reuse step is now absorbed into the first-run path: the cold

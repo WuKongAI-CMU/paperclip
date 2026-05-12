@@ -554,10 +554,13 @@ test("DearMe goal audit does not silently skip the OpenClaw message rehearsal", 
 
 test("DearMe goal audit parses check, json, and env files", () => {
   assert.deepEqual(parseDearMeGoalAuditArgs([
+    "--",
     "--check",
+    "--",
     "--json",
     "--env-file",
     ".one.env",
+    "--",
     "--env-file=.two.env",
   ]), {
     help: false,

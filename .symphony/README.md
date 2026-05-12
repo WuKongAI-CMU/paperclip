@@ -153,12 +153,15 @@ remaining public HTTPS production host blocker. The OpenClaw message rehearsal
 runs the shared Telegram/iMessage provider-smoke path through an injected local
 gateway executor, so workers have a no-secret proof that both sends use one
 OpenClaw contract before the remaining live gateway/auth/recipient blocker.
-The release-gate JSON is the operator handoff source for exact `factsNeeded`,
-the customer-safe `productReadiness` summary, and the internal
-`productComparison` against Polsia, Naive/Paperclip, OpenClaw, and the DearMe
-architecture spine. Next-proof remains the setup detail check. Do not copy
-stale setup lists when the coordinator env has already made a provider lane
-ready.
+The release-gate JSON is the operator handoff source for exact
+`operatorHandoff.factsToCapture`, `operatorHandoff.captureCommand`,
+`operatorHandoff.checkCommand`, guarded live commands, the customer-safe
+`productReadiness` summary, and the internal `productComparison` against
+Polsia, Naive/Paperclip, OpenClaw, and the DearMe architecture spine.
+Status-surface work should mirror `liveProofHandoff` from
+`pnpm --silent dearme:status -- --json` instead of rebuilding setup commands by
+hand. Next-proof remains the setup detail check. Do not copy stale setup lists
+when the coordinator env has already made a provider lane ready.
 Drop to
 `pnpm dearme:provider-smoke` only for live provider credential work, or
 `pnpm dearme:voice-smoke` only for scorer-specific calibration work.

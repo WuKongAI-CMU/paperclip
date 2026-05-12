@@ -858,7 +858,7 @@ export function parseDearMeGoalAuditArgs(argv: readonly string[]): DearMeGoalAud
     check: false,
     envFiles: [],
   };
-  const normalizedArgv = argv[0] === "--" ? argv.slice(1) : argv;
+  const normalizedArgv = argv.filter((arg) => arg !== "--");
 
   for (let index = 0; index < normalizedArgv.length; index += 1) {
     const arg = normalizedArgv[index];

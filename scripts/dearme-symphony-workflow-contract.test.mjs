@@ -36,7 +36,11 @@ test("DearMe Symphony bootstrap exposes proof readiness before worktree triage",
   assert.match(workflow, /shared\s+OpenClaw messages second/);
   assert.match(workflow, /loopback\s+host proof/);
   assert.match(workflow, /OpenClaw message rehearsal/);
-  assert.match(workflow, /factsNeeded/);
+  assert.match(workflow, /operatorHandoff/);
+  assert.match(workflow, /factsToCapture/);
+  assert.match(workflow, /captureCommand/);
+  assert.match(workflow, /guardedLiveCommands/);
+  assert.match(workflow, /liveProofHandoff/);
   assert.match(workflow, /productReadiness/);
   assert.match(workflow, /productComparison/);
   assert.match(workflow, /dearme:provider-smoke/);
@@ -58,7 +62,11 @@ test("DearMe Symphony README documents the unified proof readiness lane", () => 
   assert.match(readme, /OpenClaw Telegram\/iMessage smoke second/);
   assert.match(readme, /no-secret proof/);
   assert.match(readme, /shared Telegram\/iMessage provider-smoke path/);
-  assert.match(readme, /factsNeeded/);
+  assert.match(readme, /operatorHandoff\.factsToCapture/);
+  assert.match(readme, /operatorHandoff\.captureCommand/);
+  assert.match(readme, /operatorHandoff\.checkCommand/);
+  assert.match(readme, /guarded live commands/);
+  assert.match(readme, /liveProofHandoff/);
   assert.match(readme, /productReadiness/);
   assert.match(readme, /productComparison/);
   assert.match(readme, /pnpm dearme:provider-smoke/);
