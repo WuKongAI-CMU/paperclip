@@ -15000,3 +15000,65 @@ Verification:
   `overall=private-proof-ready`, `canUse=true`, and `canPublish=false` because
   live external-channel proof is still intentionally blocked.
 - `git diff --check` passed.
+
+## DM-WOW-3L Owner-Facing Shell Names - 2026-05-12
+
+Fifty-third verified DearMe slice:
+
+- Kept the shared company switcher generic, but let DearMe pass the same
+  customer-safe company display name into the shell icon path and invite copy.
+- This closes the visible-shell gap where a local proof company could be renamed
+  in text while its icon alt text still inherited the raw local name.
+- Product rationale: DearMe should feel like one owner-facing product shell,
+  not a reused workspace console. This absorbs the Polsia-style single-manager
+  front door without changing the underlying company record, selection behavior,
+  route, logo source, or generic switcher default.
+- Public launch status is unchanged: private proof is usable, but live public
+  proof remains blocked until approved LinkedIn and iMessage/SMS facts exist.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/dearme-customer-text.test.ts ui/src/components/DearMeSidebar.test.tsx ui/src/components/SidebarCompanyMenu.test.tsx --maxWorkers=1`
+  passed: 16 tests.
+- `pnpm -r typecheck` passed.
+- Browser accessibility snapshot on `http://127.0.0.1:3100/DEAA/dearme?view=decisions`
+  confirmed the shell button reads
+  `Open DearMe Private Proof Check 1778131117797 workspace switcher`, with the
+  local proof fixture name translated before it reaches the owner-facing shell.
+
+## DM-WOW-3M Owner Proof Checklist Surface - 2026-05-12
+
+Fifty-fourth verified DearMe slice:
+
+- Re-read the Polsia production/onboarding evidence and kept the product lesson
+  narrow: users trust autonomy when the product shows useful work, concrete
+  receipts, and the exact remaining blocker.
+- Added a shared owner-proof checklist for the public-launch gap:
+  only three facts are missing, the no-send check comes first, and the guarded
+  live receipt still needs owner approval.
+- Rendered that checklist inside the Decisions launch-proof panel beside an
+  explicit safety boundary, so DearMe can stay usable for private proof while
+  public launch remains held without exposing provider, worker, or substrate
+  terms.
+- Reused the same checklist in `dearme:status` / `ownerProofChecklist`, keeping
+  CLI handoffs, Symphony status, and the customer-facing Decisions panel on one
+  owner-readable spine.
+- Reused the existing release-gate/status/next-proof posture instead of adding a
+  new setup dashboard. Public launch status is unchanged: private proof is
+  usable; live external-channel receipts still require approved facts first.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/dearme-customer-text.test.ts ui/src/pages/DearMeOnboarding.test.tsx ui/src/components/SidebarCompanyMenu.test.tsx --maxWorkers=1 -t "launch proof|owner proof|workspace switcher|customer-safe"`
+  passed: 18 focused tests.
+- `node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-proof.test.ts`
+  passed: 14 Node proof-status tests, including the owner checklist in formatted
+  status output.
+- `pnpm --silent test:dearme-release-gate` passed: 5 release-gate tests.
+- `pnpm -r typecheck` passed.
+- `pnpm --silent dearme:release-gate -- --json` passed with
+  `overall=private-proof-ready`, `canUse=true`, and `canPublish=false` because
+  the three owner-approved live external-channel facts are still missing.
+- `pnpm --silent dearme:proof -- --status` prints the owner checklist with the
+  three missing facts, the no-send check, and the two guarded live proof commands.
+- `git diff --check` passed.

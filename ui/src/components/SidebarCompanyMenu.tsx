@@ -26,10 +26,10 @@ interface SidebarCompanyMenuProps {
   formatCompanyName?: (company: Company) => string;
 }
 
-function WorkspaceIcon({ company }: { company: Company }) {
+function WorkspaceIcon({ company, companyName }: { company: Company; companyName: string }) {
   return (
     <CompanyPatternIcon
-      companyName={company.name}
+      companyName={companyName}
       logoUrl={company.logoUrl}
       brandColor={company.brandColor}
       className="size-5 shrink-0 rounded-md text-[11px]"
@@ -105,7 +105,9 @@ export function SidebarCompanyMenu({
           aria-label={selectedCompanyName ? `Open ${selectedCompanyName} workspace switcher` : "Open workspace switcher"}
         >
           <span className="flex min-w-0 flex-1 items-center gap-2">
-            {selectedCompany ? <WorkspaceIcon company={selectedCompany} /> : null}
+            {selectedCompany && selectedCompanyName ? (
+              <WorkspaceIcon company={selectedCompany} companyName={selectedCompanyName} />
+            ) : null}
             <span className="truncate text-sm font-bold text-foreground">
               {selectedCompanyName ?? "Select workspace"}
             </span>
@@ -129,7 +131,7 @@ export function SidebarCompanyMenu({
                   isSelected && "bg-accent text-accent-foreground",
                 )}
               >
-                <WorkspaceIcon company={company} />
+                <WorkspaceIcon company={company} companyName={companyName(company)} />
                 <span className="min-w-0 flex-1 truncate">{companyName(company)}</span>
                 {isSelected ? <Check className="size-4 text-muted-foreground" /> : null}
               </DropdownMenuItem>

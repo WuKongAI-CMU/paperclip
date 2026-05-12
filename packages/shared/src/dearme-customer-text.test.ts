@@ -3,6 +3,7 @@ import {
   DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN,
   DEARME_LAUNCH_PROOF_GAP_ITEMS,
   DEARME_LAUNCH_PROOF_HANDOFF_STEPS,
+  DEARME_OWNER_PROOF_CHECKLIST_ITEMS,
   compactDearMeCustomerText,
   dearMeCustomerSafeLaunchNeed,
   dearMeCustomerSafeText,
@@ -88,6 +89,18 @@ describe("DearMe customer text", () => {
 
     for (const step of DEARME_LAUNCH_PROOF_HANDOFF_STEPS) {
       expect(`${step.label} ${step.summary}`).not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
+    }
+  });
+
+  it("keeps owner proof checklist items customer-safe", () => {
+    expect(DEARME_OWNER_PROOF_CHECKLIST_ITEMS.map((item) => item.label)).toEqual([
+      "Only three facts are missing",
+      "No-send check comes first",
+      "Live receipt needs approval",
+    ]);
+
+    for (const item of DEARME_OWNER_PROOF_CHECKLIST_ITEMS) {
+      expect(`${item.label} ${item.summary}`).not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
     }
   });
 });

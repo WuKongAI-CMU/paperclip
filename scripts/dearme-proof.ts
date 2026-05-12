@@ -33,6 +33,10 @@ import {
   dearMeProofFactsNeededFromReadiness,
   type DearMeProofFactNeed,
 } from "./dearme-proof-facts.ts";
+import {
+  DEARME_OWNER_PROOF_CHECKLIST_ITEMS,
+  type DearMeOwnerProofChecklistItem,
+} from "../packages/shared/src/dearme-customer-text.ts";
 
 type Env = Record<string, string | undefined>;
 
@@ -151,6 +155,7 @@ export interface DearMeProofOwnerChecklist {
   checkCommand: string;
   guardedLiveCommands: string[];
   noSendGuarantee: true;
+  checklistItems: readonly DearMeOwnerProofChecklistItem[];
   safety: string[];
 }
 
@@ -1032,6 +1037,7 @@ function buildOwnerProofChecklist(
     checkCommand: handoff.checkCommand,
     guardedLiveCommands: handoff.guardedLiveCommands,
     noSendGuarantee: true,
+    checklistItems: DEARME_OWNER_PROOF_CHECKLIST_ITEMS,
     safety: [
       "Capture commands only write local proof setup; they do not send messages, publish, deploy, or spend.",
       "Run the no-send check before any guarded live proof.",
@@ -1268,6 +1274,9 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
     lines.push("");
     lines.push("Owner proof checklist before public launch:");
     lines.push(`- ${checklist.headline}: ${checklist.summary}`);
+    for (const item of checklist.checklistItems) {
+      lines.push(`- ${item.label}: ${item.summary}`);
+    }
     if (checklist.factsNeededCount > 0) {
       lines.push(`- facts needed: ${checklist.factsNeededCount}`);
       for (const fact of checklist.factsNeeded) {

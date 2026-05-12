@@ -4247,6 +4247,13 @@ describe("DearMeOnboarding", () => {
     expect(decisionsSurface.textContent).toContain("Use private proof now");
     expect(decisionsSurface.textContent).toContain("Capture approved live details");
     expect(decisionsSurface.textContent).toContain("Return with receipts before launch");
+    expect(decisionsSurface.querySelector('[aria-label="Owner proof checklist"]')).not.toBeNull();
+    expect(decisionsSurface.textContent).toContain("Only three facts are missing");
+    expect(decisionsSurface.textContent).toContain("No-send check comes first");
+    expect(decisionsSurface.textContent).toContain("Live receipt needs approval");
+    expect(decisionsSurface.querySelector('[aria-label="Launch proof safety boundary"]')).not.toBeNull();
+    expect(decisionsSurface.textContent).toContain("No public message, page change, spend, or broad launch");
+    expect(decisionsSurface.textContent).toContain("guarded live receipt runs only after the owner approves");
     expect(decisionsSurface.textContent).toContain("collect the approved live-proof details");
     expectNoHiddenProductTerms(decisionsSurface.textContent, Object.values(HIDDEN_PRODUCT_TERMS));
 

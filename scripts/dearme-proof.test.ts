@@ -231,6 +231,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.equal(aha?.ready, true);
   assert.deepEqual(aha?.targets, [
     "one_sentence_start",
+    "aha_bridge_contract",
     "five_minute_sequence",
     "live_work_receipts",
     "cycle_report_contract",
@@ -358,6 +359,14 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     status.liveProofHandoff.guardedLiveCommands,
   );
   assert.equal(status.ownerProofChecklist.noSendGuarantee, true);
+  assert.deepEqual(
+    status.ownerProofChecklist.checklistItems.map((item) => item.label),
+    [
+      "Only three facts are missing",
+      "No-send check comes first",
+      "Live receipt needs approval",
+    ],
+  );
   assert.match(
     status.ownerProofChecklist.summary,
     /Public launch stays blocked until/,
@@ -379,6 +388,9 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /Next live provider proof setup:/);
   assert.match(formatted, /Owner proof checklist before public launch:/);
   assert.match(formatted, /Owner proof facts needed before public launch/);
+  assert.match(formatted, /Only three facts are missing: Delivery route, professional-network recipient, and phone-message recipient\./);
+  assert.match(formatted, /No-send check comes first: DearMe verifies the setup before anything is delivered publicly\./);
+  assert.match(formatted, /Live receipt needs approval: The guarded receipt pass stays held until the owner approves the exact details\./);
   assert.match(formatted, /Capture setup locally:/);
   assert.match(formatted, /OpenClaw gateway URL: provide OPENCLAW_GATEWAY_URL or DEARME_USE_LOCAL_OPENCLAW_CONFIG=1/);
   assert.match(formatted, /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);

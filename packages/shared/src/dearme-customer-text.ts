@@ -60,6 +60,11 @@ export interface DearMeLaunchProofHandoffStep {
   summary: string;
 }
 
+export interface DearMeOwnerProofChecklistItem {
+  label: string;
+  summary: string;
+}
+
 export interface DearMeCustomerSafeLaunchFact {
   label: string;
   provideAs: string;
@@ -95,6 +100,21 @@ export const DEARME_LAUNCH_PROOF_HANDOFF_STEPS = [
     summary: "Run the guarded proof pass, then bring the result back before any broad public launch.",
   },
 ] as const satisfies readonly DearMeLaunchProofHandoffStep[];
+
+export const DEARME_OWNER_PROOF_CHECKLIST_ITEMS = [
+  {
+    label: "Only three facts are missing",
+    summary: "Delivery route, professional-network recipient, and phone-message recipient.",
+  },
+  {
+    label: "No-send check comes first",
+    summary: "DearMe verifies the setup before anything is delivered publicly.",
+  },
+  {
+    label: "Live receipt needs approval",
+    summary: "The guarded receipt pass stays held until the owner approves the exact details.",
+  },
+] as const satisfies readonly DearMeOwnerProofChecklistItem[];
 
 const DEARME_CUSTOMER_TEXT_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bDearMe Runtime Smoke\b/g, "DearMe Private Proof Check"],

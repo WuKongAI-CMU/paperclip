@@ -40,6 +40,7 @@ vi.mock("@/context/CompanyContext", () => ({
         issuePrefix: "PAP",
         name: "Acme Labs",
         brandColor: "#3366ff",
+        logoUrl: "/logos/acme.png",
         status: "active",
       },
       {
@@ -55,6 +56,7 @@ vi.mock("@/context/CompanyContext", () => ({
       issuePrefix: "PAP",
       name: "Acme Labs",
       brandColor: "#3366ff",
+      logoUrl: "/logos/acme.png",
       status: "active",
     },
     setSelectedCompanyId: mockSetSelectedCompanyId,
@@ -68,8 +70,18 @@ vi.mock("@/context/DialogContext", () => ({
 }));
 
 vi.mock("./CompanyPatternIcon", () => ({
-  CompanyPatternIcon: ({ companyName }: { companyName: string }) => (
-    <span aria-hidden="true">{companyName.slice(0, 1)}</span>
+  CompanyPatternIcon: ({
+    companyName,
+    logoUrl,
+  }: {
+    companyName: string;
+    logoUrl?: string | null;
+  }) => (
+    logoUrl ? (
+      <img src={logoUrl} alt={`${companyName} logo`} />
+    ) : (
+      <span aria-hidden="true">{companyName.slice(0, 1)}</span>
+    )
   ),
 }));
 
@@ -229,6 +241,8 @@ describe("SidebarCompanyMenu", () => {
 
     expect(container.textContent).toContain("DearMe Private Proof Check");
     expect(container.textContent).not.toContain("Acme Labs");
+    expect(container.querySelector('img[alt="DearMe Private Proof Check logo"]')).not.toBeNull();
+    expect(container.querySelector('img[alt="Acme Labs logo"]')).toBeNull();
 
     const trigger = container.querySelector(
       'button[aria-label="Open DearMe Private Proof Check workspace switcher"]',
@@ -243,6 +257,8 @@ describe("SidebarCompanyMenu", () => {
 
     expect(document.body.textContent).toContain("Invite people to DearMe Private Proof Check");
     expect(document.body.textContent).toContain("Strata");
+    expect(document.body.querySelector('img[alt="DearMe Private Proof Check logo"]')).not.toBeNull();
+    expect(document.body.querySelector('img[alt="Acme Labs logo"]')).toBeNull();
 
     const strataItem = Array.from(document.body.querySelectorAll('[data-slot="dropdown-menu-item"]'))
       .find((element) => element.textContent?.includes("Strata"));

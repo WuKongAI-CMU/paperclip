@@ -10,6 +10,7 @@ import {
   DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN,
   DEARME_LAUNCH_PROOF_GAP_ITEMS,
   DEARME_LAUNCH_PROOF_HANDOFF_STEPS,
+  DEARME_OWNER_PROOF_CHECKLIST_ITEMS,
   createDearMeFirstCyclePreview,
   dearMeCustomerSafeText,
   dearMeWorkbenchResponseSchema,
@@ -4913,6 +4914,34 @@ function LaunchProofGapPanel() {
         ))}
         aria-label="Public launch proof handoff"
       />
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)]">
+        <div className="rounded-md border border-amber-500/25 bg-background/85 p-3">
+          <p className="text-xs font-medium uppercase text-muted-foreground">Owner proof checklist</p>
+          <DearMeChecklist
+            className="mt-3"
+            icon={CheckCircle2}
+            itemClassName="items-start border-amber-500/20 bg-transparent"
+            items={DEARME_OWNER_PROOF_CHECKLIST_ITEMS.map((item) => (
+              <span key={item.label}>
+                <span className="block font-medium text-foreground">{item.label}</span>
+                <span className="mt-1 block text-xs text-muted-foreground">{item.summary}</span>
+              </span>
+            ))}
+            aria-label="Owner proof checklist"
+          />
+        </div>
+        <div
+          className="rounded-md border border-amber-500/25 bg-background/85 p-3"
+          aria-label="Launch proof safety boundary"
+        >
+          <p className="text-xs font-medium uppercase text-muted-foreground">Safety boundary</p>
+          <p className="mt-2 text-sm text-foreground/85">
+            No public message, page change, spend, or broad launch moves from this panel. The first pass is a no-send
+            check; the guarded live receipt runs only after the owner approves the exact details.
+          </p>
+        </div>
+      </div>
 
       <p className="mt-3 rounded-md border border-amber-500/25 bg-background/80 p-3 text-sm text-foreground/85">
         Next action: collect the approved live-proof details, run one guarded launch-proof pass, then bring the receipt
