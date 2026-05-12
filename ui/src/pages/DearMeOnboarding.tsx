@@ -2446,6 +2446,136 @@ function FirstCyclePayoffStrip({
   );
 }
 
+function DearMePublicFirstRunLanding({
+  intent,
+  isPending,
+  onIntentChange,
+  onStart,
+  onWatchLive,
+}: {
+  intent: string;
+  isPending: boolean;
+  onIntentChange: (value: string) => void;
+  onStart: () => void;
+  onWatchLive: () => void;
+}) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onStart();
+  }
+
+  const liveMoments = [
+    {
+      label: "Known-for line",
+      description: "DearMe turns one sentence into a clear private brief.",
+    },
+    {
+      label: "Private proof pack",
+      description: "Voice, starter posts, opportunities, proof, and first plan appear before launch.",
+    },
+    {
+      label: "Your launch call",
+      description: "Public moves wait until you approve the exact next step.",
+    },
+  ] as const;
+
+  return (
+    <section
+      aria-label="DearMe public first run"
+      className="overflow-hidden rounded-lg border border-primary/30 bg-background"
+    >
+      <div className="grid min-h-[560px] gap-0 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)]">
+        <div className="flex flex-col justify-center gap-6 p-5 sm:p-8 lg:p-10">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-md border border-border bg-muted/25 px-3 py-1 text-sm text-muted-foreground">
+              <Sparkles className="h-4 w-4" />
+              AI personal brand team
+            </div>
+            <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-tight tracking-normal sm:text-5xl">
+              Your AI team builds your personal brand every week.
+            </h1>
+            <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
+              AI personal brand team that grows your reputation while you work.
+            </p>
+          </div>
+
+          <form className="max-w-2xl space-y-3" onSubmit={handleSubmit}>
+            <FieldLabel htmlFor="dearme-first-cycle-intent" label="What do you want to be known for?" />
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+              <Input
+                id="dearme-first-cycle-intent"
+                value={intent}
+                placeholder="Known for turning real work into trusted public proof..."
+                autoComplete="off"
+                onChange={(event: ChangeEvent<HTMLInputElement>) => onIntentChange(event.target.value)}
+              />
+              <Button
+                type="submit"
+                className="h-auto min-h-10 w-full min-w-0 whitespace-normal sm:w-auto sm:max-w-xs"
+                disabled={isPending}
+              >
+                {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                Start my first private proof pack
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </form>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto min-h-10 w-full min-w-0 whitespace-normal sm:w-auto sm:max-w-sm"
+              onClick={onWatchLive}
+            >
+              <Telescope className="h-4 w-4" />
+              Watch DearMe prepare real private brand work live
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              No public posts. No outreach. Nothing launches without approval.
+            </div>
+          </div>
+        </div>
+
+        <aside className="border-t border-border bg-muted/20 p-5 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
+          <div className="flex h-full flex-col justify-center">
+            <div className="rounded-lg border border-border bg-background/80 p-4" aria-label="Live private brand work preview">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Sparkles className="h-4 w-4" />
+                  Private work live
+                </div>
+                <Badge variant="secondary">Private by default</Badge>
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Watch DearMe prepare real private brand work live, then decide what can represent you.
+              </p>
+              <div className="mt-5 space-y-3">
+                {liveMoments.map((moment, index) => (
+                  <div
+                    key={moment.label}
+                    className="grid gap-3 rounded-md border border-border bg-background px-3 py-3 sm:grid-cols-[auto_minmax(0,1fr)]"
+                  >
+                    <div className="flex h-8 w-8 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-sm font-semibold text-primary">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{moment.label}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{moment.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
 function FirstCycleProofPackage({
   preview,
   isSample,
@@ -7192,6 +7322,7 @@ export function DearMeOnboarding() {
   const [previewSignature, setPreviewSignature] = useState<string | null>(null);
   const [firstCycleIntent, setFirstCycleIntent] = useState("");
   const [firstCyclePreview, setFirstCyclePreview] = useState<DearMeFirstCyclePreviewResponse | null>(null);
+  const [contentFirstRunStarted, setContentFirstRunStarted] = useState(false);
   const [fullProfileControlsOpen, setFullProfileControlsOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingApprovalReview, setPendingApprovalReview] = useState<{
@@ -7454,6 +7585,20 @@ export function DearMeOnboarding() {
     });
   }
 
+  function handleContentFirstRunStart() {
+    const positioning = firstCycleIntent.trim() || form.positioning.trim();
+    if (positioning) setContentFirstRunStarted(true);
+    handleFirstCyclePreview();
+  }
+
+  function handleContentFirstRunWatch() {
+    setContentFirstRunStarted(true);
+    window.setTimeout(() => {
+      const target = document.querySelector('[aria-label="90-second first cycle"]');
+      target?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    }, 0);
+  }
+
   function handleApplyRequest() {
     if (!previewResult || !previewMatchesForm) {
       setActionError("Refresh the preview before starting the private team.");
@@ -7542,6 +7687,34 @@ export function DearMeOnboarding() {
     !canRequestPaidBetaWork ||
     previewMutation.isPending ||
     applyRequestMutation.isPending;
+  const showContentFirstRunLanding =
+    selectedView === "content" &&
+    !decisionFocus &&
+    !contentFirstRunStarted &&
+    !firstCyclePreview;
+
+  if (showContentFirstRunLanding) {
+    return (
+      <DearMePageShell>
+        <DearMePublicFirstRunLanding
+          intent={firstCycleIntent}
+          isPending={firstCycleMutation.isPending}
+          onIntentChange={(value) => {
+            setActionError(null);
+            setFirstCycleIntent(value);
+          }}
+          onStart={handleContentFirstRunStart}
+          onWatchLive={handleContentFirstRunWatch}
+        />
+
+        {actionError ? (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {actionError}
+          </div>
+        ) : null}
+      </DearMePageShell>
+    );
+  }
 
   return (
     <DearMePageShell>

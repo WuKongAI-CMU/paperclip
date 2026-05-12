@@ -1902,6 +1902,66 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("uses the content view as a public first-run landing before the dense team surface", async () => {
+    mockLocation.pathname = "/DEAA/dearme";
+    mockLocation.search = "?view=content";
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Your AI team builds your personal brand every week.");
+    expect(container.textContent).toContain("AI personal brand team that grows your reputation while you work.");
+    expect(container.textContent).toContain("What do you want to be known for?");
+    expect(container.textContent).toContain("Start my first private proof pack");
+    expect(container.textContent).toContain("Watch DearMe prepare real private brand work live");
+    expect(container.textContent).toContain("No public posts. No outreach. Nothing launches without approval.");
+    expect(container.querySelector('[aria-label="DearMe public first run"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Live private brand work preview"]')).not.toBeNull();
+    expect(container.textContent).not.toContain("Today's brand team focus");
+    expect(container.textContent).not.toContain("90-second first cycle");
+    expect(mockDearmeApi.getWorkbench).not.toHaveBeenCalled();
+    expect(mockDearmeApi.getOutputs).not.toHaveBeenCalled();
+
+    await act(async () => {
+      setInputValue(
+        container.querySelector("#dearme-first-cycle-intent") as HTMLInputElement,
+        "Known for turning operator work into trusted public proof",
+      );
+    });
+
+    await act(async () => {
+      buttonByText(container, "Start my first private proof pack")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.startFirstCycle).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        brand: expect.objectContaining({
+          displayName: "Peter Studio",
+          positioning: "Known for turning operator work into trusted public proof",
+        }),
+      }),
+    );
+    expect(container.textContent).toContain("90-second first cycle");
+    expect(container.textContent).toContain("Today's operating focus");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("previews a full profile and creates an approval request", async () => {
     mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
     const root = createRoot(container);

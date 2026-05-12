@@ -13,6 +13,21 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Public First-Run Landing - 2026-05-12
+
+- `/DEAA/dearme?view=content` now reuses the existing DearMe first-cycle proof
+  path as a cold-user landing screen: one known-for input, private proof CTA,
+  live private-work proof, and explicit approval boundary before any public
+  launch.
+- This is the Polsia acquisition structure applied to DearMe depth, not a new
+  runtime: the same first-cycle preview/start path feeds the dense content and
+  team workbench after the user starts or watches the private preparation flow.
+- Keep future cold-start work on this spine. Do not add another marketing shell
+  or setup dashboard before strengthening the live proof receipts.
+- Current release split remains private-proof-ready and public-launch-blocked
+  until the approved professional-network and phone-message live proof facts are
+  supplied and verified.
+
 ## Latest Voice Review Loop Proof - 2026-05-12
 
 - Voice Gate now uses the existing `rewrite` field in the AI proxy contract for

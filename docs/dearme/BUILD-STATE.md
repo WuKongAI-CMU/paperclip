@@ -2,6 +2,33 @@
 
 Date: 2026-05-12
 
+## Public First-Run Landing Before Content Workbench - 2026-05-12
+
+Product/acquisition slice:
+
+- Reused the existing first-cycle proof path to turn `/DEAA/dearme?view=content`
+  into a Polsia-style first-run landing instead of dropping cold users into the
+  dense content workbench.
+- The cold screen now leads with one positioning sentence, one known-for input,
+  `Start my first private proof pack`, live private-work proof, and the launch
+  boundary: no public posts, outreach, or launch without approval.
+- The internal content/team workbench remains available after the user starts
+  the first private proof pack or chooses to watch the live preparation flow.
+- Product gate is unchanged: private proof is usable; public launch still waits
+  on real live external channel/provider proof.
+
+Verification:
+
+- Browser check on `http://127.0.0.1:3100/DEAA/dearme?view=content`: landing
+  copy/CTA/promise visible, dense workbench hidden, CTA enters `90-second first
+  cycle`.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "content view"`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
+- `git diff --check`
+
 ## Voice Gate Soft-Reject Review Loop - 2026-05-12
 
 Product/architecture slice:
