@@ -1924,7 +1924,13 @@ function customerProofPackSummary(text: string) {
     .replace(/\bshared (?:cycle output|cycle|evidence) packet\b/gi, "shared proof pack")
     .replace(/\bshared packet\b/gi, "shared proof pack")
     .replace(/\bcycle output packet\b/gi, "proof pack")
-    .replace(/\bcycle packet\b/gi, "first proof pack");
+    .replace(/\bcycle packet\b/gi, "first proof pack")
+    .replace(/\bsource review queue verification\b/gi, "source review verification")
+    .replace(/\bsource review queue\b/gi, "source review")
+    .replace(/\bWork Ready queue\b/gi, "Work Ready list")
+    .replace(/\bwork queue\b/gi, "prepared work")
+    .replace(/\blaunch queue\b/gi, "launch calls")
+    .replace(/\bqueue\b/gi, "list");
 }
 
 function cyclePacketSummary(output: DearMeOutputItem) {
@@ -4754,6 +4760,42 @@ function DecisionsNeededPanel({
   onOpenSourceReview: (sourceReview: DearMeSourceReviewItem) => void;
 }) {
   const waitingCount = batches.length + decisions.length + sourceReviews.length;
+  const launchCallChoices: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    title: string;
+    summary: string;
+  }> = [
+    {
+      key: "approve",
+      icon: CheckCircle2,
+      label: "Approve inside boundary",
+      title: "Let the prepared move go forward when the proof is safe.",
+      summary: "Useful when the draft, source, audience, and launch rule all match what you want represented.",
+    },
+    {
+      key: "revise",
+      icon: MessageSquare,
+      label: "Request changes",
+      title: "Send the work back with one plain note.",
+      summary: "DearMe keeps the context, updates the private draft, and returns with a cleaner pass.",
+    },
+    {
+      key: "pause",
+      icon: XCircle,
+      label: "Pause the lane",
+      title: "Stop this path before it spends more attention.",
+      summary: "Use this when the angle, target, or timing is wrong and should not keep looping.",
+    },
+    {
+      key: "private-pass",
+      icon: RefreshCw,
+      label: "Another private pass",
+      title: "Let the team keep working without public action.",
+      summary: "Useful when the direction is right but the work needs more proof, voice, or options.",
+    },
+  ];
 
   return (
     <DearMePanel aria-label="Decisions needed">
@@ -4769,6 +4811,41 @@ function DecisionsNeededPanel({
         }
       />
       <LaunchProofGapPanel />
+      <section
+        aria-label="Launch call choices"
+        className="mt-4 rounded-md border border-border bg-background/75 p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Launch call choices</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              One call can approve, revise, pause, or keep work private.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              DearMe keeps moving autonomously until a move would represent you. Then it gives you one clear call instead of a process to manage.
+            </p>
+          </div>
+          <Badge variant={waitingCount > 0 ? "secondary" : "outline"}>
+            {waitingCount > 0 ? pluralizeCount(waitingCount, "waiting call") : "No call waiting"}
+          </Badge>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {launchCallChoices.map((choice) => {
+            const ChoiceIcon = choice.icon;
+
+            return (
+              <div key={choice.key} className="rounded-md border border-border bg-background/80 p-3">
+                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                  <ChoiceIcon className="h-4 w-4 text-primary" aria-hidden="true" />
+                  {choice.label}
+                </div>
+                <p className="mt-2 text-sm font-medium text-foreground">{choice.title}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{choice.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
       {batches.length > 0 ? (
         <div className="mt-4 space-y-3">
           <p className="text-xs font-medium text-muted-foreground">Batch decisions</p>

@@ -10,6 +10,7 @@ import {
 } from "./dearme-provider-smoke.ts";
 import { buildDearMeGoalAudit } from "./dearme-goal-audit.ts";
 import {
+  describeDearMeProofFactNeed,
   dearMeProofFactsNeededFromReadiness,
   type DearMeProofFactNeed,
 } from "./dearme-proof-facts.ts";
@@ -77,10 +78,20 @@ export interface DearMeNextProofOwnerFact {
   captureFlag: string | null;
 }
 
+export interface DearMeNextProofLaneSummary {
+  target: DearMeProviderSmokeReadiness["target"];
+  status: "ready" | "waiting";
+  description: string;
+  waitingOn: string[];
+  liveGuardRequired: boolean;
+  nextStep: string;
+}
+
 export interface DearMeNextProofOwnerHandoff {
   status: "blocked" | "ready";
   headline: string;
   summary: string;
+  proofLanes: DearMeNextProofLaneSummary[];
   factsToProvide: DearMeNextProofOwnerFact[];
   captureCommand: string | null;
   checkCommand: string;
@@ -263,9 +274,28 @@ function ownerHandoffTargetLabel(target: DearMeNextProofTarget) {
   return target === "all" ? "the selected public proof lanes" : target;
 }
 
+function buildDearMeProofLaneSummary(
+  item: DearMeProviderSmokeReadiness,
+): DearMeNextProofLaneSummary {
+  const waitingOn = item.missing.map((requirement) =>
+    describeDearMeProofFactNeed(requirement).label
+  );
+
+  return {
+    target: item.target,
+    status: item.ready ? "ready" : "waiting",
+    description: item.description,
+    waitingOn,
+    liveGuardRequired: item.liveConfirmationRequired,
+    nextStep: item.ready
+      ? "Run the no-send check, then the guarded live proof."
+      : `Provide ${waitingOn.join(", ")}, then run the no-send check.`,
+  };
+}
+
 function buildDearMeOwnerHandoff(
   target: DearMeNextProofTarget,
-  envFile: string,
+  readiness: readonly DearMeProviderSmokeReadiness[],
   factsNeeded: readonly DearMeProofFactNeed[],
   commands: DearMeNextProofSetup["commands"],
 ): DearMeNextProofOwnerHandoff {
@@ -294,6 +324,7 @@ function buildDearMeOwnerHandoff(
     summary: blocked
       ? `Supply the approved proof target(s) for ${targetLabel}, then run the no-send check before any guarded live proof.`
       : `No owner facts are missing for ${targetLabel}; run the no-send check before the guarded live proof.`,
+    proofLanes: readiness.map(buildDearMeProofLaneSummary),
     factsToProvide,
     captureCommand,
     checkCommand: commands.check,
@@ -496,7 +527,7 @@ export async function prepareDearMeNextProofSetup(
     envStatus,
     readiness,
     factsNeeded,
-    ownerHandoff: buildDearMeOwnerHandoff(target, envFile, factsNeeded, commands),
+    ownerHandoff: buildDearMeOwnerHandoff(target, readiness, factsNeeded, commands),
     capturedFacts,
     commands,
   };
@@ -518,6 +549,16 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
       ? " Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1."
       : "";
     lines.push(`- ${item.target}: ${state}. ${item.description}.${live}`);
+  }
+
+  lines.push("");
+  lines.push("Proof lane summary:");
+  for (const lane of setup.ownerHandoff.proofLanes) {
+    const state = lane.status === "ready"
+      ? "ready"
+      : `waiting on ${lane.waitingOn.join(", ")}`;
+    const live = lane.liveGuardRequired ? " Guarded live proof required." : "";
+    lines.push(`- ${lane.target}: ${state}. ${lane.nextStep}${live}`);
   }
 
   if (setup.factsNeeded.length > 0) {

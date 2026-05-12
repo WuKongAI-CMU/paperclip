@@ -157,6 +157,52 @@ test("DearMe next proof creates the local proof env and prints no-send readiness
   }
 });
 
+test("DearMe next proof summarizes OpenClaw lanes when only phone proof is waiting", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-next-proof-openclaw-summary-"));
+  try {
+    const setup = await prepareDearMeNextProofSetup({
+      cwd: dir,
+      target: "openclaw_messages",
+      envFile: ".dearme-proof.env",
+      noWrite: true,
+      baseEnv: {
+        HOME: dir,
+        OPENCLAW_GATEWAY_URL: "ws://127.0.0.1:3030",
+        OPENCLAW_GATEWAY_TOKEN: "secret-token",
+        DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT: "approved-chat",
+        DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY: "Private proof is ready.",
+      },
+    });
+    const output = formatDearMeNextProofSetup(setup).join("\n");
+
+    assert.deepEqual(setup.ownerHandoff.proofLanes, [
+      {
+        target: "telegram_message",
+        status: "ready",
+        description: "send one Telegram message through the configured OpenClaw gateway",
+        waitingOn: [],
+        liveGuardRequired: true,
+        nextStep: "Run the no-send check, then the guarded live proof.",
+      },
+      {
+        target: "imessage_message",
+        status: "waiting",
+        description: "send one iMessage/SMS through the configured OpenClaw gateway",
+        waitingOn: ["iMessage/SMS approved smoke recipient"],
+        liveGuardRequired: true,
+        nextStep: "Provide iMessage/SMS approved smoke recipient, then run the no-send check.",
+      },
+    ]);
+    assert.match(output, /Proof lane summary:/);
+    assert.match(output, /telegram_message: ready\. Run the no-send check, then the guarded live proof\. Guarded live proof required\./);
+    assert.match(output, /imessage_message: waiting on iMessage\/SMS approved smoke recipient\. Provide iMessage\/SMS approved smoke recipient, then run the no-send check\. Guarded live proof required\./);
+    assert.doesNotMatch(output, /secret-token/);
+    assert.doesNotMatch(JSON.stringify(setup.ownerHandoff), /secret-token/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("DearMe next proof builds an owner handoff capture command for approved external proof facts", async () => {
   const dir = await mkdtemp(join(tmpdir(), "dearme-next-proof-owner-handoff-"));
   try {

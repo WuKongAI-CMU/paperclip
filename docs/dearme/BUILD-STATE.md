@@ -2,6 +2,28 @@
 
 Date: 2026-05-12
 
+## OpenClaw Proof Lane Summary - 2026-05-12
+
+Product/architecture slice:
+
+- Continued the Polsia manager-report lesson on the remaining public-launch
+  blocker: the owner proof handoff now separates lanes that are ready from lanes
+  still waiting on approved facts.
+- `dearme:next-proof` now emits a `Proof lane summary` and structured
+  `ownerHandoff.proofLanes`, so the current OpenClaw state reads plainly:
+  Telegram message proof is ready for guarded live proof; iMessage/SMS is only
+  waiting on the approved smoke recipient.
+- Reused the existing provider-smoke, release-gate, fact-label, capture-command,
+  no-send check, and live-guard spine. No new setup dashboard, public UI, or
+  provider abstraction was added.
+- Product posture is unchanged: DearMe remains private-proof-ready and usable;
+  public launch still needs owner-approved live proof facts and guarded receipts.
+
+Verification:
+
+- `pnpm test:dearme-next-proof`
+- `pnpm --silent dearme:next-proof -- --target openclaw_messages --no-write`
+
 ## Return Handoff Workbench - 2026-05-12
 
 Product/architecture slice:
@@ -14664,4 +14686,61 @@ Forty-fourth verified DearMe slice:
 Verification:
 
 - `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
-  passed and covers the UI contract for the new handoff strip.
+  passed: 76 tests.
+- `pnpm -r typecheck` passed.
+- `git diff --check` passed.
+- Browser verification after restarting the local dev server confirmed the
+  public first-run view has no restart banner or framework overlay, and the
+  workroom view renders `When you come back`, `What moved`, `What needs you`,
+  `What continues`, and `Proof saved` without Polsia/Paperclip/OpenClaw terms.
+- `pnpm --silent dearme:goal-audit -- --check` remains blocked by the existing
+  live-provider gap: approved LinkedIn and iMessage/SMS proof facts are still
+  missing.
+
+## DM-WOW-3E Launch-Call Choice Strip - 2026-05-12
+
+Forty-fifth verified DearMe slice:
+
+- Added a `Launch call choices` strip at the top of Decisions so the user can
+  read every waiting launch call as four safe choices: approve inside the
+  boundary, request changes, pause the lane, or ask for another private pass.
+- Reused the existing DearMe decision list and review controls; no new backend,
+  provider, settings surface, or customer-facing control plane was added.
+- Cleaned customer-facing proof-pack wording so stale local proof text that
+  mentions internal queues now reads as source review, prepared work, or launch
+  calls in the UI.
+- Product rationale: this keeps Polsia-style autonomy while making the override
+  model obvious to a non-technical user before any public/outbound/spend/page
+  move can represent them.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 76 tests.
+- `pnpm -r typecheck` passed.
+- Browser verification on
+  `http://127.0.0.1:3100/DEAA/dearme?view=decisions`
+  confirmed no restart banner, no framework overlay, no donor/substrate terms,
+  no customer-visible `queue` term, and the four choices: approve inside the
+  boundary, request changes, pause the lane, and another private pass.
+- `git diff --check` passed.
+
+## DM-PROOF-HANDOFF-2 Proof Lane Summary - 2026-05-12
+
+Forty-sixth verified DearMe slice:
+
+- Added an owner-readable proof-lane summary to `dearme:next-proof` so public
+  proof setup reports which lanes are ready and exactly which lane is waiting
+  for owner input.
+- Reused the existing provider-smoke readiness model and proof-fact descriptor
+  instead of adding a second checklist.
+- Product rationale: the public-launch blocker is now phrased as an action list
+  for the owner, not as an internal provider/debugging report.
+
+Verification:
+
+- `node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-next-proof.test.ts`
+  passed: 10 tests.
+- `pnpm --silent dearme:next-proof -- --target openclaw_messages --no-write`
+  prints Telegram as ready and iMessage/SMS as waiting on the approved
+  iMessage/SMS proof recipient, without printing secrets.

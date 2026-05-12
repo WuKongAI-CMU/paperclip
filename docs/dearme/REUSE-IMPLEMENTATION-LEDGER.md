@@ -13,6 +13,21 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest OpenClaw Proof Lane Summary - 2026-05-12
+
+- DearMe now ports Polsia's manager-style status digest into the last live-proof
+  handoff gap: `dearme:next-proof` reports each proof lane as `ready` or
+  `waiting`, with owner-safe missing fact labels and the next no-send/live step.
+- The current OpenClaw proof state is no longer a flat blocker list. Telegram is
+  shown as ready for guarded live proof, while iMessage/SMS is shown as waiting
+  only on the approved smoke recipient.
+- This reuses existing provider-smoke readiness, proof-fact labels,
+  release-gate handoff, local capture flags, and guarded live commands. Do not
+  add another provider setup page for this same gap.
+- Next action remains concrete: capture the approved iMessage/SMS recipient,
+  run the no-send check, then run the guarded live OpenClaw proof only with the
+  live-confirmation guard.
+
 ## Latest Return Handoff Workbench - 2026-05-12
 
 - DearMe now reuses the existing workbench report, latest proof item, active
@@ -4097,6 +4112,8 @@ UI, not server-side runtime artifacts the user never sees).
 | DM-WOW-3B | Private proof loop readout in the preview and static export | Polsia's proof-ready / next-pass / launch-call rhythm, reused from the existing first-cycle continuation plan | `ui/src/pages/DearMeSitePreview.tsx`, `scripts/dearme-aha-proof.ts` |
 | DM-WOW-3C | Autonomous review path before dense workbench details | Polsia's simple review-first path over the existing Naive/Paperclip workbench response | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
 | DM-WOW-3D | Return handoff strip before the dense workbench | Polsia's "what changed while away" manager report, with Littlebird-style no-data honesty and Lindy-style task boundaries | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+| DM-WOW-3E | Launch-call choice strip in Decisions | Polsia autonomous worker with explicit operator override, expressed as approve/revise/pause/private-pass choices over the existing DearMe decision queue | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+| DM-PROOF-HANDOFF-2 | Owner-readable proof lane summary | Polsia-style live-proof simplicity over the existing provider-smoke readiness facts | `scripts/dearme-next-proof.ts`, `scripts/dearme-next-proof.test.ts` |
 | DM-139 | Autonomous Reporting plugin (queue-always-non-empty, plain-prose updates, next-step driver) | Polsia CEO 4-step prompt | `packages/plugins/dearme-reporting/` |
 | DM-140 | Voice Gate + Content Producer plugin (voice-match score, attribution link rule, rate cap) | Polsia Twitter agent rules | `packages/plugins/dearme-content-producer/` |
 | DM-183AQ | Private source link traceability on current Voice & Memory contract | DM-016 source-reference intent, adapted without stale `referenceUrl` schema replay | `ui/src/pages/DearMeOnboarding.tsx` |

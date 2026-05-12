@@ -2202,6 +2202,14 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Review content batch");
     expect(container.textContent).toContain("Review posts");
     expect(container.textContent).toContain("Waiting on you");
+    const launchCallChoices = surfaceByLabel(container, "Launch call choices");
+    expect(launchCallChoices.textContent).toContain("One call can approve, revise, pause, or keep work private.");
+    expect(launchCallChoices.textContent).toContain("Approve inside boundary");
+    expect(launchCallChoices.textContent).toContain("Request changes");
+    expect(launchCallChoices.textContent).toContain("Pause the lane");
+    expect(launchCallChoices.textContent).toContain("Another private pass");
+    expect(launchCallChoices.textContent).toContain("4 waiting calls");
+    expectNoHiddenProductTerms(launchCallChoices.textContent, Object.values(HIDDEN_PRODUCT_TERMS));
     expect(container.textContent).toContain("After your call");
     expect(container.textContent).toContain("Launched work moves forward inside the boundary");
     expect(
