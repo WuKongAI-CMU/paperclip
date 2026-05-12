@@ -2,6 +2,28 @@
 
 Date: 2026-05-12
 
+## Release Gate Carries Benchmark Comparison - 2026-05-12
+
+Product/architecture slice:
+
+- Added `productComparison` to `dearme:release-gate` so the current "where are
+  we versus Polsia, Naive/Paperclip, and OpenClaw?" answer is generated from
+  the same goal-audit evidence as release readiness.
+- The comparison now says DearMe has matched the Naive/Paperclip reuse layer,
+  reached a private Polsia-style wow, proved the OpenClaw message contract
+  locally, and remains partial until live external channel proof is supplied
+  and verified.
+- Updated Symphony and DearMe orientation docs to treat release-gate JSON as
+  the shared product/architecture comparison source, while keeping
+  `productReadiness` customer-safe and `next-proof` as setup detail only.
+
+Verification:
+
+- `pnpm test:dearme-release-gate`
+- `pnpm test:dearme-symphony-workflow`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm typecheck`
+
 ## Release Gate Carries Live Fact Needs - 2026-05-12
 
 Product/architecture slice:

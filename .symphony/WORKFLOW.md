@@ -161,10 +161,12 @@ blocker evidence rather than treating the workflow itself as failed.
 The handoff artifact or Linear note should copy the `factsNeeded` labels from
 `dearme:release-gate -- --json` before any live command is considered. Use
 the same JSON's `productReadiness` summary for the customer-safe "usable versus
-publishable" verdict. Use `dearme:next-proof -- --target all --no-write --json`
-as the setup/detail check, not as a competing release verdict. Do not hardcode
-an older blocker list; the coordinator may already have host, Telegram, or Meta
-proof facts in its local ignored `.dearme-proof.env`.
+publishable" verdict, and `productComparison` for the internal Polsia /
+Naive-Paperclip / OpenClaw maturity answer. Use
+`dearme:next-proof -- --target all --no-write --json` as the setup/detail
+check, not as a competing release verdict. Do not hardcode an older blocker
+list; the coordinator may already have host, Telegram, or Meta proof facts in
+its local ignored `.dearme-proof.env`.
 Current coordinator evidence has narrowed public launch to the explicit
 iMessage smoke recipient plus LinkedIn endpoint/recipient facts, but workers
 must treat the command output as the source of truth.

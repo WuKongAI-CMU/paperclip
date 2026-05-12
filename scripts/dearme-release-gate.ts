@@ -43,6 +43,7 @@ export interface DearMeReleaseGate {
   publicLaunch: DearMeReleaseGateDecision;
   factsNeeded: DearMeProofFactNeed[];
   productReadiness: DearMeProductReadiness;
+  productComparison: DearMeProductComparison;
   nextAction: DearMeGoalAudit["nextAction"];
   audit: DearMeGoalAudit;
 }
@@ -58,6 +59,23 @@ export interface DearMeProductReadiness {
     reason: string;
   };
 }
+
+export type DearMeBenchmarkStatus = "ahead" | "matched" | "partial" | "behind";
+
+export interface DearMeProductComparisonItem {
+  benchmark: "Polsia" | "Naive/Paperclip" | "OpenClaw" | "DearMe architecture";
+  status: DearMeBenchmarkStatus;
+  summary: string;
+  evidence: string[];
+  remainingGap: string;
+}
+
+export interface DearMeProductComparison {
+  verdict: string;
+  items: DearMeProductComparisonItem[];
+}
+
+type DearMeReleaseGateBase = Omit<DearMeReleaseGate, "productReadiness" | "productComparison">;
 
 const PRIVATE_PROOF_ITEMS: readonly DearMeGoalAuditItemKey[] = [
   "architecture_status_spine",
@@ -121,7 +139,7 @@ function customerSafeLaunchNeed(fact: DearMeProofFactNeed): string {
 }
 
 function buildProductReadiness(
-  gate: Omit<DearMeReleaseGate, "productReadiness">,
+  gate: DearMeReleaseGateBase,
 ): DearMeProductReadiness {
   const publicLaunchNeeds = unique(gate.factsNeeded.map(customerSafeLaunchNeed));
   if (gate.canPublish) {
@@ -160,6 +178,107 @@ function buildProductReadiness(
       label: "Repair private proof blockers",
       reason: "Private proof must be restored before public launch proof work continues.",
     },
+  };
+}
+
+function itemByKey(
+  audit: DearMeGoalAudit,
+  key: DearMeGoalAuditItemKey,
+): DearMeGoalAuditItem | undefined {
+  return audit.items.find((item) => item.key === key);
+}
+
+function itemMet(audit: DearMeGoalAudit, key: DearMeGoalAuditItemKey): boolean {
+  return itemByKey(audit, key)?.status === "met";
+}
+
+function metEvidence(
+  audit: DearMeGoalAudit,
+  keys: readonly DearMeGoalAuditItemKey[],
+): string[] {
+  return keys
+    .map((key) => itemByKey(audit, key))
+    .filter((item): item is DearMeGoalAuditItem => item?.status === "met")
+    .map((item) => item.label);
+}
+
+function buildProductComparison(
+  gate: DearMeReleaseGateBase,
+): DearMeProductComparison {
+  const audit = gate.audit;
+  const naiveAbsorbed = itemMet(audit, "donor_reuse_absorption") &&
+    itemMet(audit, "symphony_coordination");
+  const polsiaPrivateWow = itemMet(audit, "private_first_wow") &&
+    itemMet(audit, "production_host_live_wow");
+  const openClawContract = itemMet(audit, "openclaw_message_contract_rehearsal");
+  const openClawLive = itemMet(audit, "openclaw_message_reuse");
+  const architectureSpine = itemMet(audit, "architecture_status_spine");
+
+  return {
+    verdict: gate.canPublish
+      ? "DearMe matches the target benchmark set: private wow, substrate reuse, OpenClaw live proof, and public-launch evidence are all met."
+      : gate.canUse
+        ? "DearMe has matched the Naive/Paperclip reuse layer and reached a private Polsia-style wow; the remaining benchmark gap is live external channel proof."
+        : "DearMe is still behind the benchmark set because private proof is not fully usable.",
+    items: [
+      {
+        benchmark: "Polsia",
+        status: gate.canPublish ? "matched" : polsiaPrivateWow ? "partial" : "behind",
+        summary: polsiaPrivateWow
+          ? "Private first-wow and phone-reachable proof are present."
+          : "The first-five-minute wow is not yet fully proven.",
+        evidence: metEvidence(audit, [
+          "private_first_wow",
+          "production_host_live_wow",
+        ]),
+        remainingGap: gate.canPublish
+          ? "None for the current release gate."
+          : "Live external channel/provider proof must be verified before claiming Polsia-level public readiness.",
+      },
+      {
+        benchmark: "Naive/Paperclip",
+        status: naiveAbsorbed ? "matched" : "behind",
+        summary: naiveAbsorbed
+          ? "Control-plane reuse and worktree absorption are clean on the current head."
+          : "Control-plane reuse or Symphony absorption is not fully proven.",
+        evidence: metEvidence(audit, [
+          "donor_reuse_absorption",
+          "symphony_coordination",
+        ]),
+        remainingGap: naiveAbsorbed
+          ? "None for the current release gate."
+          : "Finish worktree/Symphony absorption before treating the substrate as reused.",
+      },
+      {
+        benchmark: "OpenClaw",
+        status: openClawLive ? "matched" : openClawContract ? "partial" : "behind",
+        summary: openClawContract
+          ? "The shared message gateway contract is proven locally; live iMessage/SMS proof is still the blocker."
+          : "The shared message gateway contract is not yet proven.",
+        evidence: metEvidence(audit, [
+          "openclaw_message_contract_rehearsal",
+          "openclaw_message_reuse",
+        ]),
+        remainingGap: openClawLive
+          ? "None for the current release gate."
+          : "Supply the approved phone-message proof recipient and run guarded live proof.",
+      },
+      {
+        benchmark: "DearMe architecture",
+        status: architectureSpine && gate.canUse ? "matched" : "behind",
+        summary: architectureSpine
+          ? "The product has one status spine separating private usability from public launch readiness."
+          : "The product lacks a verified status spine.",
+        evidence: metEvidence(audit, [
+          "architecture_status_spine",
+          "private_first_wow",
+          "live_provider_set",
+        ]),
+        remainingGap: gate.canPublish
+          ? "None for the current release gate."
+          : "Keep public launch blocked until live provider truth is real.",
+      },
+    ],
   };
 }
 
@@ -229,9 +348,12 @@ export function summarizeDearMeReleaseGate(
     nextAction: audit.nextAction,
     audit,
   };
+  const productReadiness = buildProductReadiness(base);
+  const productComparison = buildProductComparison(base);
   return {
     ...base,
-    productReadiness: buildProductReadiness(base),
+    productReadiness,
+    productComparison,
   };
 }
 
@@ -278,6 +400,16 @@ export function formatDearMeReleaseGate(gate: DearMeReleaseGate): string[] {
     lines.push("Product readiness needs:");
     for (const need of gate.productReadiness.publicLaunchNeeds) {
       lines.push(`- ${need}`);
+    }
+  }
+
+  lines.push("");
+  lines.push("Benchmark comparison:");
+  lines.push(`- ${gate.productComparison.verdict}`);
+  for (const item of gate.productComparison.items) {
+    lines.push(`- ${item.benchmark}: ${item.status}. ${item.summary}`);
+    if (item.remainingGap) {
+      lines.push(`  Remaining gap: ${item.remainingGap}`);
     }
   }
 

@@ -134,6 +134,19 @@ test("DearMe release gate allows private proof while blocking public launch", ()
     "Approved phone-message proof recipient",
   ]);
   assert.equal(gate.productReadiness.nextAction.label, "Supply approved live-proof details");
+  assert.equal(
+    gate.productComparison.verdict,
+    "DearMe has matched the Naive/Paperclip reuse layer and reached a private Polsia-style wow; the remaining benchmark gap is live external channel proof.",
+  );
+  assert.deepEqual(
+    gate.productComparison.items.map((item) => [item.benchmark, item.status]),
+    [
+      ["Polsia", "partial"],
+      ["Naive/Paperclip", "matched"],
+      ["OpenClaw", "partial"],
+      ["DearMe architecture", "matched"],
+    ],
+  );
   assert.doesNotMatch(
     JSON.stringify(gate.productReadiness),
     /DEARME_|OPENCLAW_|OpenClaw|LinkedIn|Telegram|iMessage/,
@@ -146,6 +159,9 @@ test("DearMe release gate allows private proof while blocking public launch", ()
   assert.match(formatted, /LinkedIn approved smoke recipient: provide DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN/);
   assert.match(formatted, /Product readiness needs:/);
   assert.match(formatted, /Approved phone-message proof recipient/);
+  assert.match(formatted, /Benchmark comparison:/);
+  assert.match(formatted, /Naive\/Paperclip: matched/);
+  assert.match(formatted, /Polsia: partial/);
   assert.match(
     formatted,
     /Run: pnpm --silent dearme:next-proof -- --target openclaw_messages/,
@@ -161,6 +177,15 @@ test("DearMe release gate passes public launch only when the goal audit is compl
   assert.equal(gate.privateProof.ready, true);
   assert.equal(gate.publicLaunch.ready, true);
   assert.deepEqual(gate.publicLaunch.blockers, []);
+  assert.deepEqual(
+    gate.productComparison.items.map((item) => [item.benchmark, item.status]),
+    [
+      ["Polsia", "matched"],
+      ["Naive/Paperclip", "matched"],
+      ["OpenClaw", "matched"],
+      ["DearMe architecture", "matched"],
+    ],
+  );
 });
 
 test("DearMe release gate blocks private proof when the phone-reachable wow proof is missing", () => {
