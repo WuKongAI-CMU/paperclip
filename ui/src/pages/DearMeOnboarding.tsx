@@ -2539,7 +2539,7 @@ function DearMePublicFirstRunLanding({
             </Button>
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <ShieldCheck className="h-4 w-4 text-primary" />
-              It works autonomously in private. Your launch rules decide what can represent you publicly.
+              Private. Public only with approval.
             </div>
           </div>
         </div>

@@ -13,6 +13,21 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Coordinator Status Friction Cleanup - 2026-05-12
+
+- `pnpm --silent dearme:status -- --json` now works. The proof/status parser
+  ignores pnpm's forwarded `--` separator wherever it appears, so Symphony and
+  Linear workers can use the same argument convention as the rest of the DearMe
+  proof commands.
+- The currently dirty first-run approval-boundary copy was absorbed into the
+  gate spine instead of left as drift: source copy, goal-audit marker, focused
+  regression test, and build-state now all say `Private. Public only with
+  approval.`
+- This is a coordination cleanup, not a new product lane. It keeps the
+  coordinator answer easy to retrieve while the remaining public-launch gap
+  stays live provider truth: LinkedIn partner endpoint + recipient and the
+  approved iMessage/SMS recipient.
+
 ## Latest Public First-Run Gate Restore - 2026-05-12
 
 - The content-view first-run landing now matches the release-gate copy contract:

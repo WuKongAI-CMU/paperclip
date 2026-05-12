@@ -207,6 +207,13 @@ test("DearMe proof parses lane aliases and env files", () => {
   assert.equal(parseDearMeProofArgs(["--status"]).status, true);
   assert.equal(parseDearMeProofArgs(["--safe", "--json"]).runSafe, true);
   assert.deepEqual(
+    {
+      json: parseDearMeProofArgs(["--status", "--", "--json"]).json,
+      status: parseDearMeProofArgs(["--status", "--", "--json"]).status,
+    },
+    { json: true, status: true },
+  );
+  assert.deepEqual(
     parseDearMeProofArgs(["--env-file", ".one.env", "--env-file=.two.env"]).envFiles,
     [".one.env", ".two.env"],
   );

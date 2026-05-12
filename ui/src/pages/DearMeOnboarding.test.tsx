@@ -1932,7 +1932,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("5 starter drafts");
     expect(container.textContent).toContain("Launch boundary");
     expect(container.textContent).toContain(
-      "It works autonomously in private. Your launch rules decide what can represent you publicly.",
+      "Private. Public only with approval.",
     );
     expect(container.querySelector('[aria-label="DearMe public first run"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Brand work live"]')).not.toBeNull();

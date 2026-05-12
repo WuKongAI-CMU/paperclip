@@ -227,7 +227,7 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
   {
     key: "source_approval_boundary",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "It works autonomously in private. Your launch rules decide what can represent you publicly.",
+    snippet: "Private. Public only with approval.",
   },
   {
     key: "test_public_first_run_landing",

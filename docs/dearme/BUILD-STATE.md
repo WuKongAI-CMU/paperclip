@@ -2,6 +2,29 @@
 
 Date: 2026-05-12
 
+## Coordinator Status Command Friction Cleanup - 2026-05-12
+
+Product/coordination slice:
+
+- Absorbed the current first-run approval-boundary copy drift into the canonical
+  gate contract: the public first-run landing, goal audit marker, regression
+  test, and build-state record now use `Private. Public only with approval.`
+- Fixed the shared DearMe proof/status parser so coordinator and Symphony
+  workers can run the common pnpm-forwarded form
+  `pnpm --silent dearme:status -- --json` without hitting `unknown argument:
+  --`. The parser now ignores pnpm's separator anywhere in the argument list,
+  so `dearme:status` behaves like the other DearMe proof scripts.
+- Product posture is unchanged and intentionally conservative: private proof is
+  usable, while public launch remains blocked on real LinkedIn partner endpoint
+  + recipient proof and the approved iMessage/SMS proof recipient.
+
+Verification:
+
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:status -- --json`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "public first-run landing"`
+- `pnpm --silent dearme:release-gate -- --json`
+
 ## Polsia Deep Study - 2026-05-12
 
 Product/architecture slice:
@@ -64,8 +87,8 @@ Product slice:
   one positioning sentence, one known-for input, one private-start CTA, one
   live-work proof hook, and one explicit approval-boundary promise. The current
   copy is `DearMe grows your personal brand while you work.`, `Start my first
-  brand cycle`, `Watch the brand team work live`, and `It works autonomously in
-  private. Your launch rules decide what can represent you publicly.`
+  brand cycle`, `Watch the brand team work live`, and `Private. Public only with
+  approval.`
 - This keeps the Polsia acquisition structure on the existing DearMe content
   route rather than adding a second marketing shell.
 - `dearme:release-gate` now returns `overall: private-proof-ready`,
