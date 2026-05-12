@@ -14719,7 +14719,7 @@ Verification:
   passed: 76 tests.
 - `pnpm -r typecheck` passed.
 - Browser verification on
-  `http://localhost:5174/DEAA/dearme?view=decisions`
+  `http://127.0.0.1:3100/DEAA/dearme?codexProductQa=20260512d&qa=launch-call-choices`
   confirmed no restart banner, no framework overlay, no donor/substrate terms,
   no customer-visible `queue` term, and the four choices: approve inside the
   boundary, request changes, pause the lane, and another private pass.
@@ -14764,9 +14764,116 @@ Verification:
   passed: 76 tests.
 - `pnpm -r typecheck` passed.
 - Browser verification on
-  `http://localhost:5174/DEAA/dearme?codexProductQa=20260512f&qa=before-approve`
+  `http://127.0.0.1:3100/DEAA/dearme?codexProductQa=20260512d&qa=before-approve-checks`
   confirmed `Launch call choices`, `Before approve`, `Voice fit`,
   `Proof attached`, `Boundary clear`, and `Quality gate` render without a
   restart banner, framework overlay, customer-visible `queue`, or
   Polsia/Paperclip/OpenClaw terms.
+- `git diff --check` passed.
+
+## DM-WOW-3G Review-Then-Launch Path Copy - 2026-05-12
+
+Forty-eighth verified DearMe slice:
+
+- Tightened the first proof pack and Work Ready copy so the user sees one
+  review path: inspect proof in Work Ready, make the launch call in Decisions,
+  and let the private lane keep moving between calls.
+- Reused the existing first-proof-pack, Work Ready, Decisions, and launch-call
+  surfaces; no new route, provider setup, settings surface, or workflow state
+  was introduced.
+- Product rationale: this keeps the Polsia-style autonomous loop simple and
+  makes the proof-to-approval path obvious before a user sees the dense
+  workbench.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 78 tests.
+- `pnpm -r typecheck` passed.
+- Browser verification on
+  `http://127.0.0.1:3100/DEAA/dearme?view=content&codexProductQa=20260512i-public`
+  confirmed the public first-run sections render without console errors,
+  framework overlay, or hidden donor/substrate terms in the DearMe first-run
+  sections.
+- Browser verification on
+  `http://127.0.0.1:3100/DEAA/dearme?codexProductQa=20260512j-workroom`
+  confirmed the first proof pack, Work Ready, and Decisions path copy renders
+  without console errors, framework overlay, or hidden donor/substrate terms in
+  the product-owned sections.
+- `pnpm --silent dearme:release-gate -- --json` passed with
+  `overall=private-proof-ready`, `canUse=true`, and `canPublish=false` because
+  live LinkedIn and iMessage/SMS proof facts remain owner-supplied blockers.
+
+## DM-WOW-3H Fast Feedback Notes - 2026-05-12
+
+Forty-ninth verified DearMe slice:
+
+- Added `Fast feedback` note starters to focused decision and prepared-work
+  review controls so the user can send common feedback without writing from
+  scratch: voice feels off, stronger proof needed, or keep it private.
+- Reused the existing approval and output-review mutation path; the buttons
+  only fill the review note and do not introduce a new workflow, backend route,
+  or approval state.
+- Product rationale: this keeps Polsia-style autonomy usable while borrowing
+  Lindy's action-needed shortcut grammar at the exact moment the user needs to
+  steer quality.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 78 tests.
+- Focused test coverage confirms `Need stronger proof` fills the note and
+  submits through the existing DearMe request-changes approval gate.
+- `pnpm -r typecheck` passed.
+- Browser verification on
+  `http://127.0.0.1:3100/DEAA/dearme?codexProductQa=20260512j-workroom`
+  confirmed `Fast feedback` renders in the live workroom without console
+  errors or framework overlay.
+- `pnpm --silent dearme:release-gate -- --json` passed with
+  `overall=private-proof-ready`, `canUse=true`, and `canPublish=false` because
+  live external-channel proof is still intentionally blocked.
+
+## DM-WOW-3I Polsia Fourth-Pass Product Absorption - 2026-05-12
+
+Fiftieth verified DearMe slice:
+
+- Re-read the local Polsia production/recon archive and recorded the practical
+  product decision: absorb Polsia's choreography, proof, queue, cycle, and
+  manager-report mechanics; do not copy raw thinking streams, shared outbound
+  identity, setup-heavy provider UI, or visible tool catalogs.
+- Updated the current DearMe comparison with the stricter conclusion that
+  Polsia's value is one owner loop: private work starts immediately, the system
+  returns with receipts, and the user makes compact launch calls.
+- Folded that conclusion into the current UI changes: Work Ready now reads as
+  the review point, Decisions reads as the launch-call point, and fast feedback
+  notes let the owner steer voice/proof/privacy without becoming a workflow
+  manager.
+- Hardened prepared-work summary copy so local `Runtime Smoke` fixture wording
+  is rewritten as private proof-check language before it appears in
+  product-owned proof/review sections.
+- Public launch status is unchanged: private proof is usable, but live public
+  proof remains blocked until approved LinkedIn and iMessage/SMS facts exist.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "runtime-smoke|fast feedback"`
+  passed: 2 focused tests.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 78 tests.
+- `pnpm -r typecheck` passed.
+- `pnpm --silent dearme:release-gate -- --json` passed with overall status
+  `private-proof-ready`, `canUse: true`, and `canPublish: false`.
+- `pnpm --silent dearme:goal-audit -- --check` still exits blocked because
+  approved live-provider proof facts are missing.
+- Browser verification on
+  `http://127.0.0.1:3100/DEAA/dearme?view=content&codexProductQa=20260512j-public`
+  and `http://127.0.0.1:3100/DEAA/dearme?codexProductQa=20260512j-workroom`
+  confirmed no console errors, no framework overlay, and no hidden
+  donor/substrate terms in the checked product-owned sections.
+- Browser verification on
+  `http://127.0.0.1:3100/DEAA/dearme?view=decisions&work=73d7c704-383c-432a-8dce-29d235eb6b4f&artifact=73d7c704-383c-432a-8dce-29d235eb6b4f%3Acontent_drafts`
+  confirmed focused prepared-work review still shows `Fast feedback`, no
+  console warnings/errors are present, and `runtime smoke`, `runtime`, Polsia,
+  Paperclip, OpenClaw, sandbox, provider, model, queue, and workspace terms are
+  absent from the rendered review page.
 - `git diff --check` passed.

@@ -4114,6 +4114,8 @@ UI, not server-side runtime artifacts the user never sees).
 | DM-WOW-3D | Return handoff strip before the dense workbench | Polsia's "what changed while away" manager report, with Littlebird-style no-data honesty and Lindy-style task boundaries | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
 | DM-WOW-3E | Launch-call choice strip in Decisions | Polsia autonomous worker with explicit operator override, expressed as approve/revise/pause/private-pass choices over the existing DearMe decision queue | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
 | DM-WOW-3F | Before-approve quality checks in Decisions | Polsia autonomy plus Lindy-style review grammar: voice fit, proof attached, and boundary clear before approval, without adding another workflow surface | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+| DM-WOW-3G | Review-then-launch path copy | Polsia-style single-path simplicity over existing Work Ready, proof-pack, and Decisions surfaces | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+| DM-WOW-3H | Fast feedback notes in focused review | Lindy-style action-needed review shortcuts over the existing DearMe approval/output review controls, so voice/proof/private-pass feedback can be sent without writing from scratch | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
 | DM-PROOF-HANDOFF-2 | Owner-readable proof lane summary | Polsia-style live-proof simplicity over the existing provider-smoke readiness facts | `scripts/dearme-next-proof.ts`, `scripts/dearme-next-proof.test.ts` |
 | DM-139 | Autonomous Reporting plugin (queue-always-non-empty, plain-prose updates, next-step driver) | Polsia CEO 4-step prompt | `packages/plugins/dearme-reporting/` |
 | DM-140 | Voice Gate + Content Producer plugin (voice-match score, attribution link rule, rate cap) | Polsia Twitter agent rules | `packages/plugins/dearme-content-producer/` |
@@ -4203,3 +4205,20 @@ Reuse note:
   path.
 - Invalid service setup now blocks before live dispatch, preserving the
   approval boundary for the remaining public-launch proof.
+
+## Polsia Fourth-Pass Product Absorption - 2026-05-12
+
+| Slice | Donor mechanism | Path |
+|---|---|---|
+| Review-then-launch path plus fast feedback notes | Polsia's one-manager choreography and recurring proof loop, with Lindy-style compact feedback shortcuts, reused on existing DearMe Work Ready and Decisions surfaces | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx`, `docs/dearme/POLSIA-DEEP-STUDY-2026-05-12.md` |
+| Customer-safe prepared-work smoke copy | Polsia-style proof receipts should read like owner-facing work, not internal verification artifacts; reused DearMe's existing customer summary sanitizer instead of changing backend data or adding a content cleanup workflow | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+
+Reuse note:
+
+- Polsia's reusable product is the owner loop: immediate private work, live
+  proof, manager report, queue continuity, and compact launch calls.
+- DearMe absorbed that loop without adding another setup screen, visible tool
+  catalog, provider selector, backend workflow state, or customer-facing
+  substrate vocabulary.
+- The next reuse work should deepen receipt quality and return-handoff clarity.
+  Do not spend the next slice on a new dashboard for the same approval problem.

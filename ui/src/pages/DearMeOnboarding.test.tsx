@@ -1950,6 +1950,7 @@ describe("DearMeOnboarding", () => {
     expect(container.querySelector('[aria-label="Live private proof receipts"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="First proof pack"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="First-run workroom queues"]')).not.toBeNull();
+    expectNoHiddenProductTerms(container.textContent, Object.values(HIDDEN_PRODUCT_TERMS));
     expect(container.textContent).not.toContain("Today's brand team focus");
     expect(container.textContent).not.toContain("90-second first cycle");
     expect(mockDearmeApi.getWorkbench).not.toHaveBeenCalled();
@@ -4834,11 +4835,60 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Launch prepared move");
     expect(container.textContent).toContain("Request changes");
     expect(container.textContent).toContain("Reject");
+    const focusedDecision = surfaceByLabel(container, "Focused decision");
+    expect(focusedDecision.textContent).toContain("Fast feedback");
+    expect(focusedDecision.textContent).toContain("Voice feels off");
+    expect(focusedDecision.textContent).toContain("Need stronger proof");
+    expect(focusedDecision.textContent).toContain("Keep it private");
+    expectNoHiddenProductTerms(focusedDecision.textContent, Object.values(HIDDEN_PRODUCT_TERMS));
     expectMobileSafeFocusedDecision(surfaceByLabel(container, "Focused decision"), "approval-review");
     expect(container.textContent).not.toContain("/approvals/");
     expect(focusedCardsInSurface(container, "Decisions needed").some((card) =>
       card.textContent?.includes("Start private team for Peter Studio"),
     )).toBe(true);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("uses a fast feedback note on a focused DearMe decision", async () => {
+    mockLocation.search = "?view=decisions&approval=approval-ready";
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const focusedDecision = surfaceByLabel(container, "Focused decision");
+    await act(async () => {
+      buttonByText(focusedDecision, "Need stronger proof")?.click();
+    });
+    await flushReact();
+
+    expect((focusedDecision.querySelector("#dearme-focused-decision-note") as HTMLTextAreaElement).value).toBe(
+      "Attach stronger proof for the claim before moving forward.",
+    );
+
+    await act(async () => {
+      buttonByText(focusedDecision, "Request changes")?.click();
+    });
+    await flushReact();
+
+    expect(mockApprovalsApi.requestRevision).toHaveBeenCalledWith(
+      "approval-ready",
+      "Attach stronger proof for the claim before moving forward.",
+    );
+    expect(mockApprovalsApi.approve).not.toHaveBeenCalled();
+    expect(mockApprovalsApi.reject).not.toHaveBeenCalled();
 
     await act(async () => {
       root.unmount();
@@ -5854,8 +5904,10 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     expect(mockDearmeApi.getOutputs).toHaveBeenCalledWith("company-1");
-    expect(container.textContent).toContain("Private work ready");
     expect(container.textContent).toContain("Ready for your review");
+    expect(container.textContent).toContain(
+      "Review first in Work Ready, make launch calls in Decisions, and let the private lane keep moving between your calls.",
+    );
     expect(container.textContent).toContain("1 private item ready");
     expect(container.textContent).toContain("Dear me report");
     expect(container.textContent).toContain("Completed work: refreshed positioning");
@@ -5887,6 +5939,57 @@ describe("DearMeOnboarding", () => {
     expect(mockNavigate).toHaveBeenCalledWith(
       "/dearme?view=decisions&work=PET-7&artifact=issue-1%3Aweekly_report",
     );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("scrubs runtime-smoke wording from customer-facing prepared work", async () => {
+    const response = outputsResponse();
+    const unsafeOutput = response.outputs[0]!;
+    mockDearmeApi.getOutputs.mockResolvedValue({
+      ...response,
+      outputs: [
+        {
+          ...unsafeOutput,
+          title: "DearMe Runtime Smoke 1778131117797",
+          summary:
+            "Private preview route: dearme.app/dearme runtime smoke 1778131117797. Proposed copy: DearMe Runtime Smoke 1778131117797 helps potential customers.",
+          documents: unsafeOutput.documents.map((document) => ({
+            ...document,
+            bodyPreview:
+              "Proposed copy: DearMe Runtime Smoke 1778131117797 helps potential customers make the work public.",
+          })),
+          details: unsafeOutput.details.map((detail) => ({
+            ...detail,
+            value: "Proposed copy: DearMe Runtime Smoke 1778131117797 helps potential customers.",
+          })),
+          sourceEvidence: unsafeOutput.sourceEvidence.map((evidence) => ({
+            ...evidence,
+            summary: "Private preview route: dearme.app/dearme runtime smoke 1778131117797.",
+          })),
+        },
+      ],
+    });
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const privateWork = surfaceByLabel(container, "Private work ready");
+    expect(privateWork.textContent).toContain("DearMe Private Proof Check 1778131117797");
+    expect(privateWork.textContent).toContain("dearme.app/dearme private proof check 1778131117797");
+    expect(privateWork.textContent).not.toMatch(/runtime smoke/i);
 
     await act(async () => {
       root.unmount();
@@ -5977,16 +6080,16 @@ describe("DearMeOnboarding", () => {
 
     const packetSurface = surfaceByLabel(container, "First proof pack");
     expect(packetSurface.textContent).toContain("First proof pack ready");
-    expect(packetSurface.textContent).toContain("One launch-ready next step is ready for your call.");
+    expect(packetSurface.textContent).toContain("One review path: check the proof pack in Work Ready");
     expect(packetSurface.textContent).toContain("2 ready");
-    expect(packetSurface.textContent).toContain("Work Ready path");
-    expect(packetSurface.textContent).toContain("Proof lane");
-    expect(packetSurface.textContent).toContain("Private until approved");
+    expect(packetSurface.textContent).toContain("Review first");
+    expect(packetSurface.textContent).toContain("Work Ready");
+    expect(packetSurface.textContent).toContain("Decisions");
+    expect(packetSurface.textContent).toContain("Private lane");
     expect(packetSurface.textContent).toContain("Starter post draft prepared from the first proof pack");
     expect(container.textContent).toContain("Prepared by Content Producer");
     expect(packetSurface.textContent).toContain("Report prepared from the same first proof pack");
-    expect(packetSurface.textContent).toContain("Work Ready and Decisions");
-    expect(packetSurface.textContent).toContain("Review it in Work Ready. Decisions keeps the launch boundary in one place.");
+    expect(packetSurface.textContent).toContain("Review first in Work Ready; Decisions holds the launch call.");
     expect(packetSurface.textContent).toContain("Voice check");
     expect(packetSurface.textContent).toContain("Voice ");
     expect(packetSurface.textContent).toContain("/100");
@@ -6062,8 +6165,10 @@ describe("DearMeOnboarding", () => {
     const packetSurface = surfaceByLabel(container, "First proof pack");
     expect(packetSurface.textContent).toContain("First proof pack ready");
     expect(packetSurface.textContent).toContain("2 ready");
-    expect(packetSurface.textContent).toContain("Work Ready path");
-    expect(packetSurface.textContent).toContain("Private until approved");
+    expect(packetSurface.textContent).toContain("Review first");
+    expect(packetSurface.textContent).toContain("Work Ready");
+    expect(packetSurface.textContent).toContain("Decisions");
+    expect(packetSurface.textContent).toContain("Private lane");
     expect(packetSurface.textContent).toContain("Private starter content prepared from the first cycle.");
     expect(packetSurface.textContent).toContain("Report reference: First 5 minute proof package");
     expect(packetSurface.textContent).toContain("Review proof pack");

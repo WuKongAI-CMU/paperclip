@@ -1913,6 +1913,9 @@ function isProofPackOutput(output: DearMeOutputItem) {
 
 function customerProofPackSummary(text: string) {
   return text
+    .replace(/\bdearme runtime smoke\b/g, "dearme private proof check")
+    .replace(/\bDearMe Runtime Smoke\b/g, "DearMe Private Proof Check")
+    .replace(/\bruntime smoke\b/gi, "private proof check")
     .replace(/\bsend_email\b/gi, "Send approval required")
     .replace(/\blead packets\b/gi, "lead batches")
     .replace(/\bcurrent opportunity packet\b/gi, "current opportunity draft")
@@ -3124,6 +3127,65 @@ function batchPreparedOutputId(batch: DearMeWorkbenchBatchDecision): string | nu
 const FOCUSED_DECISION_SURFACE_CLASSNAME = "scroll-mt-4 pb-24 sm:pb-5";
 const FOCUSED_DECISION_ACTION_GROUP_CLASSNAME = "mt-4 grid grid-cols-1 gap-2";
 const FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME = "h-auto min-h-9 w-full min-w-0 justify-start whitespace-normal text-left leading-snug";
+const FOCUSED_DECISION_NOTE_STARTERS: Array<{
+  key: string;
+  icon: LucideIcon;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "voice",
+    icon: Gauge,
+    label: "Voice feels off",
+    note: "Make this sound more like me before it represents me.",
+  },
+  {
+    key: "proof",
+    icon: FileText,
+    label: "Need stronger proof",
+    note: "Attach stronger proof for the claim before moving forward.",
+  },
+  {
+    key: "private",
+    icon: ShieldCheck,
+    label: "Keep it private",
+    note: "Keep this private and prepare another pass before launch.",
+  },
+];
+
+function FocusedDecisionNoteStarters({
+  disabled,
+  onSelect,
+}: {
+  disabled?: boolean;
+  onSelect: (note: string) => void;
+}) {
+  return (
+    <div aria-label="Fast feedback notes" className="mt-3 rounded-md border border-border bg-muted/20 p-3">
+      <p className="text-xs font-medium text-muted-foreground">Fast feedback</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {FOCUSED_DECISION_NOTE_STARTERS.map((starter) => {
+          const StarterIcon = starter.icon;
+
+          return (
+            <Button
+              key={starter.key}
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-auto min-h-8 min-w-0 whitespace-normal text-left text-xs"
+              onClick={() => onSelect(starter.note)}
+              disabled={disabled}
+            >
+              <StarterIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              {starter.label}
+            </Button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function FocusedPreparedWorkReviewControls({
   outputId,
@@ -3145,17 +3207,24 @@ function FocusedPreparedWorkReviewControls({
   onReviewOutput: (outputId: string, action: DearMeOutputReviewAction, decisionNote: string) => void;
 }) {
   const [decisionNote, setDecisionNote] = useState("");
+  const decisionNoteRef = useRef("");
   const isReviewingOutput = Boolean(outputId && reviewState.isPending && reviewState.outputId === outputId);
   const canReview = Boolean(outputId) && isReviewable && !isReviewingOutput;
   const pendingAction = isReviewingOutput ? reviewState.action : null;
 
   useEffect(() => {
+    decisionNoteRef.current = "";
     setDecisionNote("");
   }, [outputId]);
 
+  function updateDecisionNote(nextDecisionNote: string) {
+    decisionNoteRef.current = nextDecisionNote;
+    setDecisionNote(nextDecisionNote);
+  }
+
   function review(action: DearMeOutputReviewAction) {
     if (!outputId) return;
-    onReviewOutput(outputId, action, decisionNote);
+    onReviewOutput(outputId, action, decisionNoteRef.current);
   }
 
   return (
@@ -3179,10 +3248,11 @@ function FocusedPreparedWorkReviewControls({
         rows={compact ? 2 : 3}
         value={decisionNote}
         placeholder="Optional note for your team."
-        onChange={(event) => setDecisionNote(event.target.value)}
+        onChange={(event) => updateDecisionNote(event.target.value)}
         disabled={!canReview}
         className="mt-3"
       />
+      <FocusedDecisionNoteStarters disabled={!canReview} onSelect={updateDecisionNote} />
       <div
         className={FOCUSED_DECISION_ACTION_GROUP_CLASSNAME}
         data-dearme-mobile-action-group="prepared-work-review"
@@ -3275,6 +3345,12 @@ function FocusedDecisionPanel({
   outputReviewState: DearMeOutputReviewState;
 }) {
   const [decisionNote, setDecisionNote] = useState("");
+  const decisionNoteRef = useRef("");
+
+  function updateDecisionNote(nextDecisionNote: string) {
+    decisionNoteRef.current = nextDecisionNote;
+    setDecisionNote(nextDecisionNote);
+  }
 
   if (decision) {
     const isReviewingDecision = reviewState.isPending && reviewState.approvalId === decision.approvalId;
@@ -3322,7 +3398,11 @@ function FocusedDecisionPanel({
               rows={3}
               value={decisionNote}
               placeholder="Optional note for your team."
-              onChange={(event) => setDecisionNote(event.target.value)}
+              onChange={(event) => updateDecisionNote(event.target.value)}
+            />
+            <FocusedDecisionNoteStarters
+              disabled={isReviewingDecision}
+              onSelect={updateDecisionNote}
             />
             <div className="mt-4 grid gap-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
               <p className="text-xs text-muted-foreground">
@@ -3336,7 +3416,7 @@ function FocusedDecisionPanel({
                   type="button"
                   size="sm"
                   className={FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME}
-                  onClick={() => onReviewApproval(decision.approvalId!, "approve", decisionNote)}
+                  onClick={() => onReviewApproval(decision.approvalId!, "approve", decisionNoteRef.current)}
                   disabled={isReviewingDecision}
                 >
                   {isReviewingDecision && reviewState.action === "approve" ? (
@@ -3351,7 +3431,7 @@ function FocusedDecisionPanel({
                   size="sm"
                   variant="outline"
                   className={FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME}
-                  onClick={() => onReviewApproval(decision.approvalId!, "request_revision", decisionNote)}
+                  onClick={() => onReviewApproval(decision.approvalId!, "request_revision", decisionNoteRef.current)}
                   disabled={isReviewingDecision}
                 >
                   {isReviewingDecision && reviewState.action === "request_revision" ? (
@@ -3366,7 +3446,7 @@ function FocusedDecisionPanel({
                   size="sm"
                   variant="destructive"
                   className={FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME}
-                  onClick={() => onReviewApproval(decision.approvalId!, "reject", decisionNote)}
+                  onClick={() => onReviewApproval(decision.approvalId!, "reject", decisionNoteRef.current)}
                   disabled={isReviewingDecision}
                 >
                   {isReviewingDecision && reviewState.action === "reject" ? (
@@ -3596,16 +3676,23 @@ function FocusedOutputPanel({
   const voiceGate = primaryOutputVoiceGate(output);
   const entryGuidance = reviewEntryGuidance(entryIntent, output.reviewLoop);
   const [decisionNote, setDecisionNote] = useState("");
+  const decisionNoteRef = useRef("");
   const isReviewingOutput = reviewState.isPending && reviewState.outputId === output.id;
   const canReview = output.isReviewable && !isReviewingOutput;
   const pendingAction = isReviewingOutput ? reviewState.action : null;
 
   useEffect(() => {
+    decisionNoteRef.current = "";
     setDecisionNote("");
   }, [output.id]);
 
+  function updateDecisionNote(nextDecisionNote: string) {
+    decisionNoteRef.current = nextDecisionNote;
+    setDecisionNote(nextDecisionNote);
+  }
+
   function review(action: DearMeOutputReviewAction) {
-    onReviewOutput(output.id, action, decisionNote);
+    onReviewOutput(output.id, action, decisionNoteRef.current);
   }
 
   return (
@@ -3674,11 +3761,12 @@ function FocusedOutputPanel({
           id="dearme-focused-output-note"
           rows={3}
           value={decisionNote}
-          onChange={(event) => setDecisionNote(event.target.value)}
+          onChange={(event) => updateDecisionNote(event.target.value)}
           placeholder="Optional note for the team"
           disabled={isReviewingOutput || !output.isReviewable}
           className="mt-3"
         />
+        <FocusedDecisionNoteStarters disabled={!canReview} onSelect={updateDecisionNote} />
         <div className="mt-3 flex flex-wrap gap-2">
           <Button type="button" size="sm" onClick={() => review("approve")} disabled={!canReview}>
             {pendingAction === "approve" ? (
@@ -4828,7 +4916,7 @@ function DecisionsNeededPanel({
         icon={ShieldCheck}
         eyebrow="Decisions needed"
         title="High-leverage calls"
-        description="Choose what ships, request changes, pause a lane, or ask for another private pass on the moves that would represent you."
+        description="After Work Ready, make the launch call here: approve, request changes, pause a lane, or ask for another private pass."
         trailing={
           waitingCount > 0 ? (
             <Badge variant="secondary">{waitingCount} waiting</Badge>
@@ -7397,18 +7485,18 @@ function FirstCyclePacketSpotlight({
             First proof pack ready
           </div>
           <p className="mt-1 text-sm text-foreground/85">
-            One launch-ready next step is ready for your call. The same private proof pack feeds Work Ready and
-            Decisions, so the team moved, the proof lane stays visible, and one launch call still controls anything
-            public or external.
+            One review path: check the proof pack in Work Ready, make the launch call in Decisions, then let the
+            private lane keep moving until approval.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline">
             {readyCount || packetOutputs.length} ready
           </Badge>
-          <Badge variant="outline">Work Ready path</Badge>
-          <Badge variant="outline">Proof lane</Badge>
-          <Badge variant="outline">Private until approved</Badge>
+          <Badge variant="outline">Review first</Badge>
+          <Badge variant="outline">Work Ready</Badge>
+          <Badge variant="outline">Decisions</Badge>
+          <Badge variant="outline">Private lane</Badge>
         </div>
       </div>
 
@@ -7435,7 +7523,7 @@ function FirstCyclePacketSpotlight({
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">
-          Review it in Work Ready. Decisions keeps the launch boundary in one place.
+          Review first in Work Ready; Decisions holds the launch call.
         </p>
         <Button
           type="button"
@@ -7489,7 +7577,7 @@ function PrivateWorkPanel({
           <p className="mt-1 text-sm text-muted-foreground">
             {isOpportunityView
               ? "Prepared opportunity drafts: targets, contact evidence, fit reasons, outreach angles, draft messages, and launch boundaries."
-              : "Private work ready for review: reports, drafts, voice guidance, and portfolio work DearMe has prepared. Decisions carries the launch call for anything external."}
+              : "Review first in Work Ready, make launch calls in Decisions, and let the private lane keep moving between your calls."}
           </p>
         </div>
         {outputs.length > 0 ? (

@@ -370,3 +370,78 @@ DearMe has not yet reached the full public Polsia-equivalent live-delivery bar:
    customer proof or coordinator decisions.
 5. Do not add another settings dashboard, setup flow, or visible provider
    management surface for the same public-launch blocker.
+
+## Fourth-Pass Product Absorption - 2026-05-12
+
+Evidence reviewed in this pass:
+
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/final-summary/REAL_PRODUCTION_FACTS.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/13-PRODUCTION-API-RESPONSES-DEEP-DIVE.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/14-AGENT-PROMPTS-AND-WORKSPACE-DEEP-DIVE.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/01-TECH-ARCHITECTURE.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/02-ONBOARDING-FLOW.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/08-POLSIA-WEAKNESSES.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/polsia-internal-docs/UI_DESIGN.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/polsia-internal-docs/CYCLE_ENGINE.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/polsia-internal-docs/TASK_SYSTEM.md`
+- `/Users/peter/Desktop/polsia-recon-2026-05-05/polsia-internal-docs/MEMORY_SYSTEM.md`
+- `/Users/peter/dearme-archive/POLSIA-VS-DEARME.md`
+- `/Users/peter/dearme-archive/POLSIA-VS-DEARME-PART-2.md`
+
+The stronger conclusion is that Polsia's useful product is choreography, not
+the visible count of agents or integrations. The production pattern is:
+
+1. One manager/front-door voice, not an exposed agent catalog.
+2. One idea/input moment, then the system starts work immediately.
+3. A live work stream that makes the system feel active.
+4. A queue and recurring cycle that keep work moving without more setup.
+5. A manager report that turns work into decisions, next steps, and receipts.
+6. Hidden routing by complexity, budget, and tool availability.
+
+That maps cleanly to DearMe, but only if the machinery stays backstage. DearMe
+should absorb the cadence and proof grammar while rejecting Polsia's risky
+surfaces: raw thinking streams, shared outbound identity, provider setup
+prominence, and live public claims without durable receipt proof.
+
+Polsia production details that matter for DearMe architecture:
+
+- The real active surface is smaller than the marketing/spec impression. One
+  sample shows a compact active MCP/tool set, so DearMe should not build a
+  visible "22 tools" dashboard.
+- Recurrence is the product feel. The archive's cycle config points to a
+  roughly six-hour autonomous routine with automatic model/intelligence
+  selection. DearMe should keep the "keeps moving privately" rhythm and express
+  it as "what moved, what is ready, what needs your call."
+- The CEO/manager prompt is the important routing primitive. It keeps the queue
+  alive, chooses cheap/mid/high effort by complexity, and writes reports. DearMe
+  should keep Symphony as the backstage coordinator and make the customer see a
+  chief-of-staff style product voice.
+- Execution workspace isolation is worth keeping: company, agent, and execution
+  run boundaries make work reproducible and durable. DearMe should continue to
+  reuse the inherited workspace/issue/document substrate instead of inventing a
+  second runtime.
+- The onboarding win is speed to visible proof. DearMe should keep the first
+  input and first-cycle proof path short; setup and provider questions should
+  come only when a live channel cannot be proven without owner facts.
+
+Current implementation response:
+
+- DM-WOW-3G tightened the first proof pack and Work Ready copy into one path:
+  review proof in Work Ready, make the launch call in Decisions, and let the
+  private lane keep moving until approval.
+- DM-WOW-3H added fast feedback note starters to focused review controls so the
+  owner can say "voice feels off", "need stronger proof", or "keep it private"
+  without typing a custom note.
+- Both changes reuse existing approval/output-review mutation paths. There is
+  no new route, provider setup screen, workflow dashboard, backend state, or
+  visible substrate surface.
+
+Next absorption target:
+
+1. Make receipt trails clearer across completed, prepared, blocked, skipped,
+   and needs-approval states.
+2. Keep the return-handoff summary focused on decisions and proof, not runtime
+   internals.
+3. Treat approval/rejection notes as future voice and launch-rule learning.
+4. Leave live outbound proof blocked until approved LinkedIn and iMessage/SMS
+   recipient facts are present.
