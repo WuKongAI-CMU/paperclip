@@ -23,6 +23,7 @@ import { CompanyPatternIcon } from "./CompanyPatternIcon";
 interface SidebarCompanyMenuProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  formatCompanyName?: (company: Company) => string;
 }
 
 function WorkspaceIcon({ company }: { company: Company }) {
@@ -36,7 +37,11 @@ function WorkspaceIcon({ company }: { company: Company }) {
   );
 }
 
-export function SidebarCompanyMenu({ open: controlledOpen, onOpenChange }: SidebarCompanyMenuProps = {}) {
+export function SidebarCompanyMenu({
+  open: controlledOpen,
+  onOpenChange,
+  formatCompanyName,
+}: SidebarCompanyMenuProps = {}) {
   const [internalOpen, setInternalOpen] = useState(false);
   const queryClient = useQueryClient();
   const { companies, selectedCompany, setSelectedCompanyId } = useCompany();
@@ -47,6 +52,8 @@ export function SidebarCompanyMenu({ open: controlledOpen, onOpenChange }: Sideb
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
   const sidebarCompanies = companies.filter((company) => company.status !== "archived");
+  const companyName = (company: Company) => formatCompanyName?.(company) ?? company.name;
+  const selectedCompanyName = selectedCompany ? companyName(selectedCompany) : null;
   const { data: session } = useQuery({
     queryKey: queryKeys.auth.session,
     queryFn: () => authApi.getSession(),
@@ -95,12 +102,12 @@ export function SidebarCompanyMenu({ open: controlledOpen, onOpenChange }: Sideb
         <Button
           variant="ghost"
           className="h-9 flex-1 justify-start gap-2 px-2 text-left"
-          aria-label={selectedCompany ? `Open ${selectedCompany.name} workspace switcher` : "Open workspace switcher"}
+          aria-label={selectedCompanyName ? `Open ${selectedCompanyName} workspace switcher` : "Open workspace switcher"}
         >
           <span className="flex min-w-0 flex-1 items-center gap-2">
             {selectedCompany ? <WorkspaceIcon company={selectedCompany} /> : null}
             <span className="truncate text-sm font-bold text-foreground">
-              {selectedCompany?.name ?? "Select workspace"}
+              {selectedCompanyName ?? "Select workspace"}
             </span>
           </span>
           <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" />
@@ -123,7 +130,7 @@ export function SidebarCompanyMenu({ open: controlledOpen, onOpenChange }: Sideb
                 )}
               >
                 <WorkspaceIcon company={company} />
-                <span className="min-w-0 flex-1 truncate">{company.name}</span>
+                <span className="min-w-0 flex-1 truncate">{companyName(company)}</span>
                 {isSelected ? <Check className="size-4 text-muted-foreground" /> : null}
               </DropdownMenuItem>
             );
@@ -142,7 +149,7 @@ export function SidebarCompanyMenu({ open: controlledOpen, onOpenChange }: Sideb
           <Link to="/company/settings/invites" onClick={closeNavigationChrome}>
             <UserPlus className="size-4" />
             <span className="truncate">
-              {selectedCompany ? `Invite people to ${selectedCompany.name}` : "Invite people"}
+              {selectedCompanyName ? `Invite people to ${selectedCompanyName}` : "Invite people"}
             </span>
           </Link>
         </DropdownMenuItem>

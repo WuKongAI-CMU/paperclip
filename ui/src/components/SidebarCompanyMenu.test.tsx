@@ -206,4 +206,57 @@ describe("SidebarCompanyMenu", () => {
       root.unmount();
     });
   });
+
+  it("can render customer-safe workspace names without changing selection behavior", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <SidebarCompanyMenu
+            formatCompanyName={(company) => (
+              company.name === "Acme Labs" ? "DearMe Private Proof Check" : company.name
+            )}
+          />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    expect(container.textContent).toContain("DearMe Private Proof Check");
+    expect(container.textContent).not.toContain("Acme Labs");
+
+    const trigger = container.querySelector(
+      'button[aria-label="Open DearMe Private Proof Check workspace switcher"]',
+    );
+    expect(trigger).not.toBeNull();
+
+    await act(async () => {
+      trigger?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0 }));
+      trigger?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flushReact();
+
+    expect(document.body.textContent).toContain("Invite people to DearMe Private Proof Check");
+    expect(document.body.textContent).toContain("Strata");
+
+    const strataItem = Array.from(document.body.querySelectorAll('[data-slot="dropdown-menu-item"]'))
+      .find((element) => element.textContent?.includes("Strata"));
+    expect(strataItem).toBeTruthy();
+
+    await act(async () => {
+      strataItem?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flushReact();
+
+    expect(mockSetSelectedCompanyId).toHaveBeenCalledWith("company-2");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
 });

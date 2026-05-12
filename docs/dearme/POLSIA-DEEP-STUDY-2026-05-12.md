@@ -435,6 +435,10 @@ Current implementation response:
 - DM-WOW-3J added a launch handoff checklist to each private or delivered
   handoff state so the return report says what is ready, what to inspect, and
   why nothing public or external moves outside the launch boundary.
+- DM-WOW-3L extended the same manager-front-door rule into the inherited
+  navigation chrome: local proof workspace names are shown as private proof
+  checks on DearMe, while the underlying company data and generic switcher stay
+  unchanged.
 - Both changes reuse existing approval/output-review mutation paths. There is
   no new route, provider setup screen, workflow dashboard, backend state, or
   visible substrate surface.

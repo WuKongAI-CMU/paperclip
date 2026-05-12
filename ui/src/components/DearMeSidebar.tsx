@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { dearMeCustomerSafeText, type Company } from "@paperclipai/shared";
 import {
   BarChart3,
   BriefcaseBusiness,
@@ -48,6 +49,10 @@ const mobileNavItems: DearMeNavItem[] = [
 
 function openSearch() {
   document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
+}
+
+function dearMeWorkspaceName(company: Company) {
+  return dearMeCustomerSafeText(company.name, "DearMe Private Proof");
 }
 
 function isItemActive(pathname: string, search: string, to: string): boolean {
@@ -159,7 +164,7 @@ export function DearMeSidebar() {
   return (
     <aside className="flex h-full min-h-0 w-full flex-col border-r border-border bg-background">
       <div className="flex h-12 shrink-0 items-center gap-1 px-3">
-        <SidebarCompanyMenu />
+        <SidebarCompanyMenu formatCompanyName={dearMeWorkspaceName} />
         <Button
           type="button"
           variant="ghost"

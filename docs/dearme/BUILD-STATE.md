@@ -1930,6 +1930,52 @@ Verification:
   DEA-60 handoff left as audit trail rather than replayed.
 - `git diff --check` passed.
 
+## DM-WOW-3L Customer-Safe DearMe Workspace Shell - 2026-05-12
+
+Fifty-third verified DearMe slice:
+
+- Extended the Polsia manager-front-door absorption into inherited navigation
+  chrome: DearMe now formats company/workspace display names through the shared
+  customer-safe text helper before they reach the customer shell.
+- Added explicit local proof fixture rewrites so `DearMe Runtime Smoke ...`
+  appears as `DearMe Private Proof Check ...` in DearMe-owned surfaces while
+  lowercase preview routes keep lowercase private-proof wording.
+- Added an optional display-name formatter to the shared company switcher. The
+  generic switcher still uses the real company record by default; DearMe opts in
+  at the shell boundary without changing selection, navigation, or company data.
+- Product rationale: Polsia's useful pattern is a single owner-facing manager
+  surface. The user should see the private proof/check name, not local smoke
+  fixtures, providers, models, or control-plane labels.
+- Public launch status is unchanged: private proof is usable, but live public
+  proof remains blocked until approved LinkedIn and iMessage/SMS facts exist.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/dearme-customer-text.test.ts ui/src/components/SidebarCompanyMenu.test.tsx --maxWorkers=1`
+  passed: 10 tests.
+- `pnpm exec vitest run ui/src/components/DearMeSidebar.test.tsx ui/src/components/SidebarCompanyMenu.test.tsx packages/shared/src/dearme-customer-text.test.ts --maxWorkers=1`
+  passed: 15 tests.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "handoff|delivery receipt|Launch handoff|runtime-smoke"`
+  passed: 8 focused tests.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 80 tests.
+- `pnpm -r typecheck` passed.
+- Browser plugin setup was attempted first, but the in-app browser had no
+  active pane. Fallback Playwright verification on
+  `http://127.0.0.1:3100/DEAA/dearme?codexProductQa=20260512k-handoff`
+  confirmed two `Launch handoff checklist` DOM surfaces, delivered and
+  needs-connection checklist copy, `DearMe Private Proof Check 1778131117797`
+  in the shell, zero console warnings/errors, and no `runtime smoke`, Polsia,
+  Paperclip, OpenClaw, provider, model-provider, raw control-plane, or
+  setup-payload terms in the rendered page. The page still showed the expected
+  local dev-server restart banner after shared-file edits.
+- `pnpm --silent dearme:release-gate -- --json` passed with
+  `overall=private-proof-ready`, `canUse=true`, and `canPublish=false` because
+  live external-channel proof is still intentionally blocked.
+- `pnpm --silent dearme:goal-audit -- --check` still exits blocked because
+  OpenClaw shared Telegram/iMessage message proof, LinkedIn live proof, and
+  iMessage/SMS recipient proof are missing.
+
 ## Local First-Wow Aha Proof - 2026-05-11
 
 Product/architecture slice:
@@ -14913,6 +14959,43 @@ Verification:
   console warnings/errors, and no hidden donor/substrate terms in the checked
   main surface. The only whole-page `workspace` match was the global company
   switcher outside the DearMe product surface.
+- `pnpm --silent dearme:release-gate -- --json` passed with
+  `overall=private-proof-ready`, `canUse=true`, and `canPublish=false` because
+  live external-channel proof is still intentionally blocked.
+- `git diff --check` passed.
+
+## DM-WOW-3K Public Launch Proof Handoff - 2026-05-12
+
+Fifty-second verified DearMe slice:
+
+- Added a customer-safe public launch proof handoff to the existing Decisions
+  launch-proof gap so users can distinguish private proof they can use now from
+  live details still needed before public launch.
+- Moved the handoff copy into shared DearMe customer text so release-gate and
+  product surfaces can stay aligned without exposing backstage terms.
+- Reused the existing launch-proof gap panel and checklist component; no new
+  route, backend state, live-send path, provider selector, or dashboard was
+  introduced.
+- Public launch status is unchanged: private proof is usable, but live public
+  proof remains blocked until approved LinkedIn and iMessage/SMS facts exist.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/dearme-customer-text.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "launch proof|customer text"`
+  passed: shared customer text tests passed; the UI file was skipped by the
+  focused filter.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "launch-proof gap"`
+  passed: 1 focused launch-proof gap test.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 80 tests.
+- `pnpm -r typecheck` passed.
+- Browser verification on
+  `http://127.0.0.1:3100/DEAA/dearme?view=decisions&codexProductQa=20260512l-launch-proof`
+  confirmed one `Launch proof gap`, one `Public launch proof handoff`, all
+  three handoff steps, zero recent console warnings/errors, no framework error
+  overlay, and no hidden donor/substrate terms in the checked launch-proof
+  product surface. The page showed the expected local dev-server restart banner
+  after shared-file edits, but the DearMe product surface rendered and passed.
 - `pnpm --silent dearme:release-gate -- --json` passed with
   `overall=private-proof-ready`, `canUse=true`, and `canPublish=false` because
   live external-channel proof is still intentionally blocked.

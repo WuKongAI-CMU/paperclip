@@ -97,6 +97,9 @@ export const DEARME_LAUNCH_PROOF_HANDOFF_STEPS = [
 ] as const satisfies readonly DearMeLaunchProofHandoffStep[];
 
 const DEARME_CUSTOMER_TEXT_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/\bDearMe Runtime Smoke\b/g, "DearMe Private Proof Check"],
+  [/\bdearme runtime smoke\b/g, "dearme private proof check"],
+  [/\bruntime smoke\b/gi, "private proof check"],
   [/\bOpenClaw[_ -]?gateway\b/gi, "DearMe"],
   [/\bOpenClaw\b/gi, "DearMe"],
   [/\bSymphony\b/gi, "DearMe"],

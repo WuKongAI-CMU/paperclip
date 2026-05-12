@@ -28,6 +28,21 @@ describe("DearMe customer text", () => {
     expect(safe).not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
   });
 
+  it("translates local proof fixture names into owner-facing language", () => {
+    expect(
+      dearMeCustomerSafeText(
+        "DearMe Runtime Smoke 1778131117797",
+        "DearMe Private Proof",
+      ),
+    ).toBe("DearMe Private Proof Check 1778131117797");
+    expect(
+      dearMeCustomerSafeText(
+        "Private preview route: dearme.app/dearme runtime smoke 1778131117797.",
+        "DearMe Private Proof",
+      ),
+    ).toBe("Private preview route: dearme.app/dearme private proof check 1778131117797.");
+  });
+
   it("uses the fallback when text is empty after compaction", () => {
     expect(dearMeCustomerSafeText("   ", "DearMe is preparing the next update.")).toBe(
       "DearMe is preparing the next update.",
