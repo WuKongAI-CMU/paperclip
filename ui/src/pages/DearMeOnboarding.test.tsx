@@ -1920,16 +1920,16 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
-    expect(container.textContent).toContain("Your AI team builds your personal brand every week.");
-    expect(container.textContent).toContain("AI personal brand team that grows your reputation while you work.");
+    expect(container.textContent).toContain("DearMe grows your personal brand while you work.");
+    expect(container.textContent).toContain("It runs private research, drafts, opportunities, proof, and weekly direction");
     expect(container.textContent).toContain("What do you want to be known for?");
-    expect(container.textContent).toContain("Start my first private proof pack");
-    expect(container.textContent).toContain("Watch DearMe prepare real private brand work live");
+    expect(container.textContent).toContain("Start my first brand cycle");
+    expect(container.textContent).toContain("Watch the brand team work live");
     expect(container.textContent).toContain("Studying your voice");
     expect(container.textContent).toContain("Voice Editor");
     expect(container.textContent).toContain("5 starter drafts");
     expect(container.textContent).toContain("Launch boundary");
-    expect(container.textContent).toContain("No public posts. No outreach. Nothing launches without approval.");
+    expect(container.textContent).toContain("It works autonomously in private. Your launch rules decide what can represent you publicly.");
     expect(container.querySelector('[aria-label="DearMe public first run"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Live private brand work preview"]')).not.toBeNull();
     expect(container.textContent).not.toContain("Today's brand team focus");
@@ -1945,7 +1945,7 @@ describe("DearMeOnboarding", () => {
     });
 
     await act(async () => {
-      buttonByText(container, "Start my first private proof pack")?.click();
+      buttonByText(container, "Start my first brand cycle")?.click();
     });
     await flushReact();
 
@@ -1984,18 +1984,18 @@ describe("DearMeOnboarding", () => {
 
     expect(mockDearmeApi.getWorkbench).toHaveBeenCalledWith("company-1");
     expect(container.textContent).toContain("Private team profile");
-    expect(container.textContent).toContain("Your personal brand growth team");
-    expect(container.textContent).toContain("Dear me, your team is working");
+    expect(container.textContent).toContain("DearMe grows your personal brand while you work.");
+    expect(container.textContent).toContain("Dear me, your brand team worked while you were away");
     expect(container.textContent).toContain("Team working");
     expect(container.textContent).toContain("Launch boundary");
-    expect(container.textContent).toContain("The team keeps preparing private work: drafts, reports, opportunities");
-    expect(container.textContent).toContain("Public posts, outbound messages, spend, and page changes return as one launch call.");
+    expect(container.textContent).toContain("DearMe keeps the private brand cycle moving: drafts, reports, opportunities");
+    expect(container.textContent).toContain("Public posts, outbound messages, spend, and page changes become launch calls under your rules.");
     expect(container.textContent).toContain("Ready for your review");
     expect(container.textContent).toContain("Today's operating focus");
-    expect(container.textContent).toContain("It starts with usable work and brings you the few decisions that matter.");
-    expect(container.textContent).toContain("While you were away");
+    expect(container.textContent).toContain("It shows the work it did and brings you only the launch calls that matter.");
+    expect(container.textContent).toContain("Today's brand cycle");
     expect(container.textContent).toContain("Next decision");
-    expect(container.textContent).toContain("Team focus");
+    expect(container.textContent).toContain("Teammate focus");
     expect(container.textContent).toContain("Open next decision");
     expect(buttonByText(container, "Start with one sentence")?.getAttribute("data-variant")).toBe("default");
     expect(buttonByText(container, "View private proof")?.getAttribute("data-variant")).toBe("outline");
@@ -2012,7 +2012,7 @@ describe("DearMeOnboarding", () => {
     expect(container.querySelector("#dearme-display-name")).toBeNull();
     expect(buttonByText(container, "Preview profile")).toBeUndefined();
     expect(buttonByText(container, "Start private team")).toBeUndefined();
-    expect(container.textContent).toContain("The first proof pack can run from the sentence above.");
+    expect(container.textContent).toContain("The first brand cycle can run from the sentence above.");
     await openFullProfileControls(container);
     expect(buttonByText(container, "Hide full profile controls")?.getAttribute("aria-expanded")).toBe("true");
     expect(container.querySelector('[data-dearme-profile-controls="open"]')).not.toBeNull();
@@ -2022,10 +2022,10 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).not.toContain("Preview Brand OS");
     expect(container.textContent).not.toContain("Start Brand OS");
     const topFocus = surfaceByLabel(container, "Today's brand team focus");
-    expect(topFocus.textContent).toContain("While you were away");
+    expect(topFocus.textContent).toContain("Today's brand cycle");
     const reviewPath = surfaceByLabel(topFocus, "Today's review path");
-    expect(topFocus.textContent).toContain("Review first");
-    expect(topFocus.textContent).toContain("Your launch call");
+    expect(topFocus.textContent).toContain("Ready from the cycle");
+    expect(topFocus.textContent).toContain("Launch call");
     expect(topFocus.textContent).toContain("Autonomous lane");
     expect(reviewPath.textContent).toContain("4 calls");
     expect(reviewPath.textContent).toContain("Private work moving");
@@ -2037,8 +2037,8 @@ describe("DearMeOnboarding", () => {
     const firstPayoff = surfaceByLabel(container, "First payoff");
     expect(firstPayoff.getAttribute("data-dearme-surface")).toBe("focus-surface");
     expect(firstPayoff.querySelectorAll('[data-dearme-surface="workbench-card"]').length).toBe(3);
-    expect(firstPayoff.textContent).toContain("One sentence becomes a private proof pack.");
-    expect(firstPayoff.textContent).toContain("No setup tour. No public action. One focused answer.");
+    expect(firstPayoff.textContent).toContain("One sentence starts your private brand cycle.");
+    expect(firstPayoff.textContent).toContain("No setup tour. One sentence starts the private cycle.");
     expect(firstPayoff.textContent).toContain(
       "Voice Profile, starter posts, one opportunity, proof card, first plan",
     );
@@ -2057,8 +2057,8 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Team operating policy");
     expect(container.textContent).toContain("Private work can continue, but external moves wait for you.");
     const launchReadiness = surfaceByLabel(container, "Launch readiness");
-    expect(launchReadiness.textContent).toContain("Private proof is usable; public launch is still gated.");
-    expect(launchReadiness.textContent).toContain("Private proof");
+    expect(launchReadiness.textContent).toContain("Private cycle runs; public launch follows your rules.");
+    expect(launchReadiness.textContent).toContain("Private cycle");
     expect(launchReadiness.textContent).toContain("Usable now");
     expect(launchReadiness.textContent).toContain("Public launch");
     expect(launchReadiness.textContent).toContain("Not ready yet");
@@ -2163,7 +2163,7 @@ describe("DearMeOnboarding", () => {
     expectSurfacesInOrder(container, [
       "First payoff",
       "90-second first cycle",
-      "DearMe team board",
+      "DearMe brand workroom",
       "Private work ready",
     ]);
     await act(async () => {
@@ -2570,14 +2570,14 @@ describe("DearMeOnboarding", () => {
     expect(letter.textContent).not.toContain("cycle packet");
     expect(letter.textContent).not.toContain("shared packet");
 
-    const continuity = surfaceByLabel(container, "Proof pack continuity");
-    expect(continuity.textContent).toContain("Proof pack continuity");
-    expect(continuity.textContent).toContain("Voice & Memory");
+    const continuity = surfaceByLabel(container, "Daily brand cycle");
+    expect(continuity.textContent).toContain("Daily brand cycle");
+    expect(continuity.textContent).toContain("today's briefing");
     expect(continuity.textContent).toContain("Launch call");
     expect(continuity.textContent).toContain("Current proof pack");
     expect(continuity.textContent).toContain("Next move");
-    expect(continuity.textContent).toContain("Voice to review");
-    expect(continuity.textContent).toContain("Private until approved");
+    expect(continuity.textContent).toContain("Briefing updated");
+    expect(continuity.textContent).toContain("Launch rules active");
     expect(continuity.textContent).toContain("Ready for review weekly letter");
     expect(continuity.textContent).not.toMatch(/cycle packet|shared packet/i);
     expectNoHiddenProductTerms(continuity.textContent, [
@@ -2619,7 +2619,7 @@ describe("DearMeOnboarding", () => {
     [
       "Your brand team today",
       "Today's brand team focus",
-      "Proof pack continuity",
+      "Daily brand cycle",
       "Brand team run ledger",
       "Growth cycle plan",
       "Work ready",
@@ -3199,7 +3199,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("90-second first cycle");
     expect(container.textContent).toContain("Preview first cycle");
     expect(container.textContent).toContain("Sample team package");
-    expect(surfaceByLabel(container, "First payoff").textContent).toContain("Preview the first proof pack");
+    expect(surfaceByLabel(container, "First payoff").textContent).toContain("Preview the first brand cycle");
 
     await act(async () => {
       setTextareaValue(
@@ -4013,7 +4013,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("The private cycle pulled in new execution progress for review.");
     const topFocus = surfaceByLabel(container, "Today's brand team focus");
     expect(topFocus.textContent).toContain("Private work moving");
-    expect(topFocus.textContent).toContain("Happening now");
+    expect(topFocus.textContent).toContain("Working now");
     expect(topFocus.textContent).toContain("Team started a private pass");
     expect(topFocus.textContent).not.toContain("Live team pulse");
     expectNoHiddenProductTerms(topFocus.textContent, [

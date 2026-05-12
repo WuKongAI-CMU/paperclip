@@ -190,6 +190,10 @@ test("DearMe proof readiness can scope to one lane", () => {
     true,
   );
   assert.equal(
+    providerCommands.includes("pnpm --silent dearme:linkedin-dm-rehearsal -- --json"),
+    true,
+  );
+  assert.equal(
     providerCommands.some((command) =>
       command.includes("pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check")
     ),
@@ -221,6 +225,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.deepEqual(aha?.targets, [
     "one_sentence_start",
     "five_minute_sequence",
+    "live_work_receipts",
     "private_outputs",
     "recurring_private_work",
     "phone_ready_private_site",
@@ -253,6 +258,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     "pnpm --silent dearme:next-proof -- --target openclaw_messages",
     "pnpm --silent dearme:next-proof -- --target meta_campaign",
     "pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof",
+    "pnpm --silent dearme:linkedin-dm-rehearsal -- --json",
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target deploy_site_production",
     "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target linkedin_dm --live",
@@ -385,6 +391,7 @@ test("DearMe proof status carries current integration absorption evidence", () =
   assert.match(integration?.description ?? "", /latest Symphony handoffs 2\/2 committed/);
   assert.equal(status.commands.integrationAudit, "pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs");
   assert.equal(status.commands.openClawMessageRehearsal, "pnpm --silent dearme:openclaw-message-rehearsal -- --json");
+  assert.equal(status.commands.linkedInDmRehearsal, "pnpm --silent dearme:linkedin-dm-rehearsal -- --json");
   assert.match(formatted, /Product verdict: Naive\/Paperclip\/OpenClaw substrate proof is strong, integration absorption is clean/);
   assert.match(formatted, /Integration absorption proof: ready/);
   assert.match(formatted, /OpenClaw message contract proof: ready/);
@@ -392,6 +399,7 @@ test("DearMe proof status carries current integration absorption evidence", () =
   assert.match(formatted, /Captured tools: send_telegram_message, send_imessage/);
   assert.match(formatted, /pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs/);
   assert.match(formatted, /pnpm --silent dearme:openclaw-message-rehearsal -- --json/);
+  assert.match(formatted, /pnpm --silent dearme:linkedin-dm-rehearsal -- --json/);
   assert.match(formatted, /pnpm --silent dearme:next-proof -- --target openclaw_messages/);
   assert.doesNotMatch(formatted, /pnpm --silent dearme:proof -- --print-env-template > \.dearme-proof\.env/);
   assert.equal(formatted.includes("integration audit could not run"), false);

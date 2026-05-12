@@ -2,6 +2,54 @@
 
 Date: 2026-05-12
 
+## Public First-Run Gate Restored - 2026-05-12
+
+Product slice:
+
+- Restored the public first-run landing copy to the release-gate contract:
+  `Your AI team builds your personal brand every week.`, `Start my first
+  private proof pack`, `Watch DearMe prepare real private brand work live`, and
+  `No public posts. No outreach. Nothing launches without approval.`
+- This keeps the Polsia acquisition structure on the existing DearMe content
+  route rather than adding a second marketing shell.
+- `dearme:release-gate` now returns `overall: private-proof-ready`,
+  `canUse: true`, and `canPublish: false`. The product is usable for private
+  proof; public launch still waits on real external LinkedIn and iMessage/SMS
+  proof receipts.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "public first-run landing"`
+- `pnpm test:dearme-goal-audit`
+- `pnpm test:dearme-release-gate`
+- `pnpm --silent dearme:goal-audit -- --json`
+- `pnpm --silent dearme:release-gate -- --json`
+
+## LinkedIn DM Contract Rehearsal - 2026-05-12
+
+Product/architecture slice:
+
+- Added `pnpm dearme:linkedin-dm-rehearsal` as the no-network LinkedIn DM
+  partner-contract rehearsal before owner-supplied live proof.
+- The rehearsal reuses the existing provider-smoke spine and the real
+  `send_linkedin_dm` dispatcher with an injected partner endpoint, so it proves
+  POST method, headers, idempotency, payload keys, and dispatch context without
+  touching LinkedIn, printing tokens, exposing recipients, sending messages,
+  deploying, or spending.
+- `pnpm dearme:proof` now includes the LinkedIn rehearsal in live-provider setup
+  commands whenever `linkedin_dm` is blocked. This gives Symphony workers one
+  safe local step before the owner provides the approved route and recipient.
+- Public release state is unchanged: this is contract proof only. Real external
+  LinkedIn proof still requires owner-provided endpoint/credential/recipient
+  facts plus `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1` and a guarded live
+  provider-smoke receipt.
+
+Verification:
+
+- `pnpm test:dearme-linkedin-dm-rehearsal`
+- `pnpm test:dearme-proof`
+- `pnpm --silent dearme:linkedin-dm-rehearsal -- --check --json`
+
 ## Stale Branch No-Replay Review - 2026-05-12
 
 Coordination slice:

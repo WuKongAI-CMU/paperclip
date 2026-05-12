@@ -1755,7 +1755,7 @@ const FIRST_PAYOFF_STEPS = [
   {
     label: "DearMe returns",
     title: "Voice Profile, starter posts, one opportunity, proof card, first plan",
-    description: "A private proof pack appears before settings or public launch.",
+    description: "A private brand cycle starts before settings or public launch.",
   },
   {
     label: "You decide",
@@ -2054,11 +2054,11 @@ function TeamWorkstreamPanel({
 
   return (
     <section className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]">
-      <DearMePanel aria-label="Personal brand growth team">
+      <DearMePanel aria-label="Brand workroom">
         <DearMeWorkbenchSectionHeader
           icon={Users}
-          eyebrow="Your personal brand growth team"
-          description="Dear me, your team is working: planning the week, drafting in your voice, scouting opportunities, and packaging proof before you manage settings."
+          eyebrow="Your autonomous brand workroom"
+          description="Dear me, your team is running the private brand cycle: planning the week, drafting in your voice, scouting opportunities, and packaging proof before a launch call is needed."
           trailing={<Badge variant={paidBetaActive ? "default" : "secondary"}>{statusLabel}</Badge>}
         />
 
@@ -2078,7 +2078,7 @@ function TeamWorkstreamPanel({
         <DearMeWorkbenchSectionHeader
           icon={Sparkles}
           eyebrow="Launch boundary"
-          description="The team keeps preparing private work. Public posts, outbound messages, spend, and page changes return as one launch call."
+          description="DearMe keeps the private brand cycle moving. Public posts, outbound messages, spend, and page changes become launch calls under your rules."
         />
         <DearMeChecklist
           className="mt-4"
@@ -2422,7 +2422,7 @@ function FirstCyclePayoffStrip({
   canStartPrivateWork: boolean;
   onFocusFirstCycle: () => void;
 }) {
-  const actionLabel = canStartPrivateWork ? "Start with one sentence" : "Preview the first proof pack";
+  const actionLabel = canStartPrivateWork ? "Start with one sentence" : "Preview the first brand cycle";
 
   return (
     <DearMeFocusSurface
@@ -2434,8 +2434,8 @@ function FirstCyclePayoffStrip({
           <DearMeWorkbenchSectionHeader
             icon={Sparkles}
             eyebrow="First payoff"
-            title="One sentence becomes a private proof pack."
-            description="DearMe returns useful work first, then brings back only the call that needs you."
+            title="One sentence starts your private brand cycle."
+            description="DearMe runs the first private brand cycle, returns useful work, then brings back only the call that needs you."
           />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button type="button" className="w-full sm:w-auto" onClick={onFocusFirstCycle}>
@@ -2444,7 +2444,7 @@ function FirstCyclePayoffStrip({
               <ArrowRight className="h-4 w-4" />
             </Button>
             <p className="text-xs font-medium text-muted-foreground">
-              No setup tour. No public action. One focused answer.
+              No setup tour. One sentence starts the private cycle.
             </p>
           </div>
         </div>
@@ -2494,13 +2494,13 @@ function DearMePublicFirstRunLanding({
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-md border border-border bg-muted/25 px-3 py-1 text-sm text-muted-foreground">
               <Sparkles className="h-4 w-4" />
-              AI personal brand team
+              Autonomous personal brand team
             </div>
             <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-tight tracking-normal sm:text-5xl">
-              Your AI team builds your personal brand every week.
+              DearMe grows your personal brand while you work.
             </h1>
             <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
-              AI personal brand team that grows your reputation while you work.
+              It runs private research, drafts, opportunities, proof, and weekly direction, then brings you the launch calls that need your judgment.
             </p>
           </div>
 
@@ -2520,7 +2520,7 @@ function DearMePublicFirstRunLanding({
                 disabled={isPending}
               >
                 {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Start my first private proof pack
+                Start my first brand cycle
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
@@ -2534,12 +2534,12 @@ function DearMePublicFirstRunLanding({
               onClick={onWatchLive}
             >
               <Telescope className="h-4 w-4" />
-              Watch DearMe prepare real private brand work live
+              Watch the brand team work live
               <ArrowRight className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <ShieldCheck className="h-4 w-4 text-primary" />
-              No public posts. No outreach. Nothing launches without approval.
+              It works autonomously in private. Your launch rules decide what can represent you publicly.
             </div>
           </div>
         </div>
@@ -2550,12 +2550,12 @@ function DearMePublicFirstRunLanding({
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Sparkles className="h-4 w-4" />
-                  Private work live
+                  Brand work live
                 </div>
-                <Badge variant="secondary">Private by default</Badge>
+                <Badge variant="secondary">Working privately</Badge>
               </div>
               <p className="mt-3 text-sm text-muted-foreground">
-                Watch DearMe prepare real private brand work live, then decide what can represent you.
+                Watch the team research, draft, package proof, and prepare the next launch call before anything represents you publicly.
               </p>
               <div className="mt-5 space-y-3">
                 {liveMoments.map((moment, index) => (
@@ -3807,10 +3807,10 @@ function TeamSummaryPanel({
       />
 
       <DearMeMetricStrip className="mt-5">
-        <Metric icon={FileText} label="Work ready" value={workbench.workReady.length} />
-        <Metric icon={ShieldCheck} label="Decisions" value={decisionCount} />
+        <Metric icon={FileText} label="Ready now" value={workbench.workReady.length} />
+        <Metric icon={ShieldCheck} label="Launch calls" value={decisionCount} />
         <Metric icon={Workflow} label="In motion" value={workbench.activeWork.length} />
-        <Metric icon={Users} label="Team" value={workbench.team.length} />
+        <Metric icon={Users} label="Teammates" value={workbench.team.length} />
       </DearMeMetricStrip>
     </DearMePanel>
   );
@@ -3828,8 +3828,8 @@ function TeamProofPackContinuityRibbon({ workbench }: { workbench: DearMeWorkben
   const report = workbench.report;
   const reportIsPacketBacked = report ? isPacketBackedReport(report) : false;
   const continuitySummary = reportIsPacketBacked
-    ? "One private proof pack is feeding Voice & Memory, prepared work, and your launch call."
-    : "Voice & Memory and prepared work stay connected before anything public moves.";
+    ? "One private proof pack is feeding today's briefing, ready work, and your launch call."
+    : "Voice & Memory, prepared work, and launch calls stay connected while the team keeps moving.";
   const decisionTitle =
     nextBatchDecision?.title ??
     nextApprovalDecision?.title ??
@@ -3851,14 +3851,14 @@ function TeamProofPackContinuityRibbon({ workbench }: { workbench: DearMeWorkben
 
   return (
     <section
-      aria-label="Proof pack continuity"
+      aria-label="Daily brand cycle"
       className="rounded-md border border-primary/25 bg-background/80 p-4 shadow-sm"
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm font-medium">
             <Sparkles className="h-4 w-4 text-primary" />
-            Proof pack continuity
+            Daily brand cycle
           </div>
           <p className="mt-1 max-w-3xl text-sm text-foreground/85">
             {continuitySummary}
@@ -3881,8 +3881,8 @@ function TeamProofPackContinuityRibbon({ workbench }: { workbench: DearMeWorkben
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline">Voice to review</Badge>
-          <Badge variant="outline">Private until approved</Badge>
+          <Badge variant="outline">Briefing updated</Badge>
+          <Badge variant="outline">Launch rules active</Badge>
         </div>
       </div>
     </section>
@@ -3932,19 +3932,19 @@ function TeamFocusWorkbenchPanel({
     workbench.memory.sourceReviewQueue.length;
   const firstCycleActionLabel = canStartPrivateWork
     ? "Start with one sentence"
-    : "Preview the first proof pack";
+    : "Preview the first brand cycle";
   const reviewPath = [
     {
       icon: FileText,
-      label: "Review first",
-      title: nextMove ? customerProofPackSummary(nextMove.title) : "Start the first proof pack",
+      label: "Ready from the cycle",
+      title: nextMove ? customerProofPackSummary(nextMove.title) : "Start the first brand cycle",
       detail: nextMove
         ? customerProofPackSummary(nextMove.summary)
         : "One sentence gives the team enough to prepare the first reviewable work.",
     },
     {
       icon: ShieldCheck,
-      label: "Your launch call",
+      label: "Launch call",
       title: decisionCount > 0 ? pluralizeCount(decisionCount, "call") : "No call waiting",
       detail: decisionCount > 0
         ? nextDecisionSummary
@@ -3966,8 +3966,8 @@ function TeamFocusWorkbenchPanel({
       <DearMeWorkbenchSectionHeader
         icon={Sparkles}
         eyebrow="Today's operating focus"
-        title="Dear me, your team is working."
-        description="The team keeps preparing private work: drafts, reports, opportunities, and proof it already moved forward. Public posts, outbound messages, spend, and page changes return as one launch call."
+        title="Dear me, your brand team worked while you were away."
+        description="DearMe keeps the private brand cycle moving: drafts, reports, opportunities, proof, and weekly direction. Public posts, outbound messages, spend, and page changes become launch calls under your rules."
         trailing={
           <div className="flex flex-col gap-2 sm:items-end">
             <Badge variant={paidBetaActive ? "default" : "secondary"}>
@@ -4007,7 +4007,7 @@ function TeamFocusWorkbenchPanel({
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
         <DearMeWorkbenchCard
-          eyebrow="While you were away"
+          eyebrow="Today's brand cycle"
           title={latestProof ? customerProofPackSummary(latestProof.title) : "Your team is ready to start"}
           description={
             latestProof
@@ -4019,13 +4019,13 @@ function TeamFocusWorkbenchPanel({
             <div className={cn("grid gap-3", livePulse ? "sm:grid-cols-2 xl:grid-cols-3" : "sm:grid-cols-2")}>
               {livePulse ? (
                 <div className="rounded-md border border-primary/25 bg-primary/5 p-3 sm:col-span-2 xl:col-span-1">
-                  <p className="text-xs font-medium text-muted-foreground">Happening now</p>
+                  <p className="text-xs font-medium text-muted-foreground">Working now</p>
                   <p className="mt-1 text-sm font-medium">{livePulse.title}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{livePulse.description}</p>
                 </div>
               ) : null}
               <div className="rounded-md border border-border bg-background/70 p-3">
-                <p className="text-xs font-medium text-muted-foreground">Next move</p>
+                <p className="text-xs font-medium text-muted-foreground">Next prepared move</p>
                 <p className="mt-1 text-sm font-medium">
                   {nextMove ? customerProofPackSummary(nextMove.title) : "Private growth cycle"}
                 </p>
@@ -4036,7 +4036,7 @@ function TeamFocusWorkbenchPanel({
                 </p>
               </div>
               <div className="rounded-md border border-border bg-background/70 p-3">
-                <p className="text-xs font-medium text-muted-foreground">Team focus</p>
+                <p className="text-xs font-medium text-muted-foreground">Teammate focus</p>
                 <p className="mt-1 text-sm font-medium">{primaryMember?.name ?? "Chief of Staff"}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {primaryMember?.currentFocus ?? "Keeping the next brand cycle narrow and reviewable."}
@@ -4260,10 +4260,10 @@ function TeamOperatingPolicyPanel({
     {
       key: "private-proof",
       icon: CheckCircle2,
-      label: "Private proof",
+      label: "Private cycle",
       signal: paidBetaActive ? "Usable now" : "Paid beta needed",
       summary: paidBetaActive
-        ? "DearMe can keep drafting, scouting, reporting, and packaging proof without touching your public surface."
+        ? "DearMe can keep drafting, scouting, reporting, and packaging proof while you work."
         : "Activate paid beta before the private team starts moving.",
       variant: paidBetaActive ? "default" : "secondary",
     },
@@ -4341,7 +4341,7 @@ function TeamOperatingPolicyPanel({
         icon={ShieldCheck}
         eyebrow="Team operating policy"
         title={policyTitle}
-        description="DearMe keeps useful private work moving, asks before anything that represents or spends for you, and stops work that needs a clearer call."
+        description="DearMe is meant to run, not wait: private brand work keeps moving, while external moves become clear launch calls."
         trailing={<Badge variant={paidBetaActive ? "default" : "secondary"}>{policyLabel}</Badge>}
       />
 
@@ -4353,11 +4353,10 @@ function TeamOperatingPolicyPanel({
           <div>
             <p className="text-xs font-medium uppercase text-muted-foreground">Readiness</p>
             <h3 className="mt-1 text-base font-semibold text-foreground">
-              Private proof is usable; public launch is still gated.
+              Private cycle runs; public launch follows your rules.
             </h3>
             <p className="mt-1 max-w-3xl text-sm text-foreground/80">
-              DearMe keeps work moving privately, then turns any public, outbound, spend, or page-changing move into
-              one reviewable call.
+              DearMe keeps work moving privately, then turns any public, outbound, spend, or page-changing move into one reviewable call.
             </p>
           </div>
           <Badge variant={paidBetaActive ? "default" : "secondary"}>
@@ -6547,7 +6546,7 @@ function TeamWorkbenchPanel({
 
   if (workbenchQuery.isLoading) {
     return (
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]" aria-label="DearMe team board">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]" aria-label="DearMe brand workroom">
         <div className="h-72 animate-pulse rounded-lg border border-border bg-muted/40" />
         <div className="h-72 animate-pulse rounded-lg border border-border bg-muted/40" />
       </section>
@@ -6636,7 +6635,7 @@ function TeamWorkbenchPanel({
   }
 
   return (
-    <section className="space-y-4" aria-label="DearMe team board">
+    <section className="space-y-4" aria-label="DearMe brand workroom">
       {decisionFocus ? (
         <FocusedDecisionPanel
           decision={focusedDecision}
@@ -7754,14 +7753,14 @@ export function DearMeOnboarding() {
         eyebrow={
           <>
             <Sparkles className="h-4 w-4" />
-            DearMe / Team board
+            DearMe / Brand workroom
           </>
         }
-        title="Your personal brand growth team"
+        title="DearMe grows your personal brand while you work."
         description={
           <>
-            Dear me, your team is already working: planning, drafting, scouting, and packaging proof into posts,
-            opportunities, portfolio updates, and weekly direction. It starts with usable work and brings you the few decisions that matter.
+            Dear me, your team is already running the private brand cycle: planning, drafting, scouting,
+            packaging proof, and preparing weekly direction. It shows the work it did and brings you only the launch calls that matter.
           </>
         }
         actions={
@@ -8046,7 +8045,7 @@ export function DearMeOnboarding() {
             >
               <p className="text-sm font-medium">Full profile controls are parked until you need them.</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                The first proof pack can run from the sentence above. Open this only when you want
+                The first brand cycle can run from the sentence above. Open this only when you want
                 to tune the private team profile before starting a richer cycle.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">

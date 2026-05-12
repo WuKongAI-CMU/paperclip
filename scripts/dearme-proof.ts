@@ -137,6 +137,7 @@ export interface DearMeProofStatus {
     ahaProof: string;
     integrationAudit: string;
     openClawMessageRehearsal: string;
+    linkedInDmRehearsal: string;
     printEnvTemplate: string;
     runSafe: string;
     check: string;
@@ -219,6 +220,8 @@ const INTEGRATION_AUDIT_COMMAND =
   "pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs";
 const OPENCLAW_MESSAGE_REHEARSAL_COMMAND =
   "pnpm --silent dearme:openclaw-message-rehearsal -- --json";
+const LINKEDIN_DM_REHEARSAL_COMMAND =
+  "pnpm --silent dearme:linkedin-dm-rehearsal -- --json";
 const OPENCLAW_MESSAGE_CONTRACT_TARGETS = [
   "telegram_message",
   "imessage_message",
@@ -799,6 +802,9 @@ function liveProviderSetupCommands(
   if (needsPrivateSiteExport(blockedTargets)) {
     commands.push(PRIVATE_SITE_EXPORT_COMMAND);
   }
+  if (blockedTargets.includes("linkedin_dm")) {
+    commands.push(LINKEDIN_DM_REHEARSAL_COMMAND);
+  }
   commands.push(
     `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --check`,
     ...setupTargets.map(providerSmokeRunCommandForNextProofTarget),
@@ -1068,6 +1074,7 @@ export function summarizeDearMeProofStatus(
       ahaProof: "pnpm --silent dearme:aha-proof -- --check",
       integrationAudit: INTEGRATION_AUDIT_COMMAND,
       openClawMessageRehearsal: OPENCLAW_MESSAGE_REHEARSAL_COMMAND,
+      linkedInDmRehearsal: LINKEDIN_DM_REHEARSAL_COMMAND,
       printEnvTemplate: `pnpm --silent dearme:proof -- --print-env-template${laneFlag(lane)} > ${PROOF_ENV_FILE}`,
       runSafe: proofCommand("--run-safe", lane),
       check: proofCommand("--check", lane),
@@ -1184,6 +1191,7 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
     lines.push(`- ${status.commands.ahaProof}`);
     lines.push(`- ${status.commands.integrationAudit}`);
     lines.push(`- ${status.commands.openClawMessageRehearsal}`);
+    lines.push(`- ${status.commands.linkedInDmRehearsal}`);
   }
   if (shouldShowProofEnvTemplateCommand(status)) {
     lines.push(`- ${status.commands.printEnvTemplate}`);

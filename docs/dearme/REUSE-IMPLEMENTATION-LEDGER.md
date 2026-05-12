@@ -13,6 +13,33 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Public First-Run Gate Restore - 2026-05-12
+
+- The content-view first-run landing now matches the release-gate copy contract:
+  one-sentence AI-team positioning, private proof-pack CTA, live private-work
+  hook, and approval-boundary promise.
+- This restores `dearme:release-gate` to `private-proof-ready` while preserving
+  the public-launch block on real external proof.
+- Future acquisition-copy changes should update the release-gate markers,
+  source copy, and `DearMeOnboarding` regression test together. Do not let the
+  gate silently drift away from what a cold user actually sees.
+
+## Latest LinkedIn DM Contract Rehearsal - 2026-05-12
+
+- `pnpm dearme:linkedin-dm-rehearsal` now gives the LinkedIn live-proof lane a
+  no-network contract rehearsal before Peter supplies real external proof
+  facts.
+- The rehearsal reuses the existing provider-smoke + approved outbound wrapper
+  path instead of adding another setup surface: it drives the real
+  `send_linkedin_dm` dispatcher with a local injected partner endpoint and
+  records only method/header/payload/context keys.
+- It deliberately does not serialize access tokens, recipient URNs, or message
+  bodies. It also does not contact LinkedIn, send, deploy, spend, or satisfy the
+  public-release gate.
+- Future Symphony workers should run this rehearsal before guarded live
+  `linkedin_dm` provider smoke. If it passes, the next blocker is still the
+  real approved endpoint, credential, recipient, and live receipt.
+
 ## Latest Stale Branch Absorption Review - 2026-05-12
 
 - `codex/dearme-dm-136-sample-demo-proof-handoff` and
