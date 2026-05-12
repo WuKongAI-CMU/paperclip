@@ -2,6 +2,35 @@
 
 Date: 2026-05-12
 
+## Coordinator Proof Handoff Recheck - 2026-05-12
+
+Product/architecture slice:
+
+- Absorbed and verified commit `49b0e5eb` so the DearMe sidebar now describes
+  the product shell as a `Workroom` with `Launch calls`, not a generic home
+  dashboard or an internal proof-status panel.
+- Re-checked Symphony/worktree convergence: Symphony is running at
+  `http://127.0.0.1:4100/`, the coordinator branch is the only tracked
+  worktree, and there are no pending Symphony handoffs or replay candidates.
+- `dearme:next-proof -- --target all --no-write --json` now gives the owner
+  handoff for public launch proof. The only owner facts still needed are
+  `DEARME_LINKEDIN_DM_MESSAGES_URL`,
+  `DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN`, and
+  `DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT`.
+- Release state is unchanged and intentionally conservative: DearMe is
+  `private-proof-ready` and usable for private proof; public launch is blocked
+  until real external LinkedIn DM and iMessage/SMS receipts exist.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/DearMeSidebar.test.tsx --maxWorkers=1`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "public first-run landing"`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
+- `.symphony/bin/dearme-symphony status`
+- `pnpm dearme:worktrees -- --handoffs`
+
 ## Public First-Run Gate Restored - 2026-05-12
 
 Product slice:
@@ -327,9 +356,9 @@ Verification:
 
 Product/architecture slice:
 
-- Recorded and verified commit `5faeb478` so the customer shell now shows the
-  current readiness split directly: private proof is ready, while launch proof
-  is still pending.
+- Recorded and verified commit `49b0e5eb` so the customer shell now shows the
+  current readiness split directly: private proof is ready, while launch calls
+  wait on the user's rules.
 - The readiness cards route to the existing Work Ready and Decisions views
   instead of creating another dashboard or setup surface.
 - Copy stays customer-safe: it does not expose OpenClaw, Symphony, provider,
