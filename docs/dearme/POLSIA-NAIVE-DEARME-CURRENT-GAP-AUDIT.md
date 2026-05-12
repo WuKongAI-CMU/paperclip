@@ -9,6 +9,22 @@ This audit is not a new strategy. It is the current product-readiness judgment
 after checking the live DearMe branch, Symphony state, proof commands, existing
 DearMe architecture docs, and the local Polsia / Naive research artifacts.
 
+## Latest Coordinator Update
+
+As of the latest coordinator proof run on 2026-05-11, the live-provider gap is
+narrower than the original audit text: production host proof, Telegram
+readiness through local OpenClaw config, and Meta campaign smoke setup are
+ready on the coordinator machine. The remaining public-launch blockers are:
+
+- an explicit owned iMessage smoke recipient for the shared OpenClaw message
+  lane
+- the LinkedIn partner endpoint and smoke recipient
+
+This does not change the launch verdict. It changes the next action: stop
+treating Meta as a current setup blocker, and stop routing more UI/setup work.
+The next product-validating work is real recipient/endpoint collection followed
+by no-send readiness checks and guarded live smokes.
+
 ## Current Coordinator Verdict
 
 DearMe is now **internal-demo ready** for the private first-five-minute loop:
@@ -33,7 +49,8 @@ GitHub Pages. It is still short of Polsia's full live first-wow bar because no
 real external channel has delivered yet.
 The unified product status now encodes that judgment as an execution order:
 production host smoke is ready, shared OpenClaw message smoke is next, LinkedIn
-DM follows, and Meta campaign stays last.
+DM follows, and Meta campaign is structurally ready but stays last if a
+spend-bearing distribution proof is needed.
 That status now also names the remaining blocker class in safe
 product/coordination language instead of leaking provider env names: the shared
 message gap is now explicit iMessage recipient proof when local OpenClaw config
@@ -52,8 +69,8 @@ Telegram can now also reuse the host-local OpenClaw allow-list as an explicit
 self-smoke default. That removes another manual setup step without making
 readiness send anything. iMessage now has a safe default smoke body too, so the
 remaining shared-message proof is explicit recipient/provider intent plus
-`--live` and `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`; LinkedIn/Meta remain
-separate live-provider gaps.
+`--live` and `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`; LinkedIn remains the other
+current live-provider gap.
 
 ## Evidence Checked
 

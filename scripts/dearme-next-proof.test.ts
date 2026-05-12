@@ -66,7 +66,21 @@ test("DearMe next proof creates the local proof env and prints no-send readiness
     assert.match(output, /pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check --target openclaw_messages/);
     assert.match(output, /DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --target openclaw_messages --live/);
     assert.match(output, /imessage_message: blocked/);
+    assert.match(output, /Facts needed before any live run:/);
+    assert.match(output, /OpenClaw gateway URL: provide OPENCLAW_GATEWAY_URL or DEARME_USE_LOCAL_OPENCLAW_CONFIG=1 for telegram_message, imessage_message/);
+    assert.match(output, /OpenClaw gateway auth: provide OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH for telegram_message, imessage_message \(keep value local; do not paste secrets\)/);
+    assert.match(output, /iMessage\/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT for imessage_message/);
+    assert.deepEqual(
+      setup.factsNeeded.find((fact) => fact.provideAs === "OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH"),
+      {
+        label: "OpenClaw gateway auth",
+        provideAs: "OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH",
+        targets: ["telegram_message", "imessage_message"],
+        sensitive: true,
+      },
+    );
     assert.doesNotMatch(output, /secret-token/);
+    assert.doesNotMatch(JSON.stringify(setup.factsNeeded), /secret-token/);
     assert.doesNotMatch(contents, /\.dearme-provider-smoke\.env/);
     assert.doesNotMatch(output, /\.dearme-provider-smoke\.env/);
   } finally {

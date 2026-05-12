@@ -13,6 +13,32 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest Coordinator Live-Proof Readiness - 2026-05-11
+
+- The coordinator proof env has been safely augmented through
+  `pnpm dearme:next-proof -- --target all` without overwriting existing
+  host-local values. Treat this as local coordinator evidence, not a portable
+  worker credential bundle.
+- Current product state: DearMe is usable for private/internal proof. The
+  Naive/Paperclip/OpenClaw substrate is strong, Symphony/worktree absorption is
+  clean, and the private first-wow is phone-reachable. This is enough for
+  product review and design-partner proof.
+- Current public-launch blockers are now only real external live proof:
+  iMessage recipient proof through the shared OpenClaw message lane, plus
+  LinkedIn partner endpoint and smoke-recipient proof. Production host,
+  Telegram readiness, and Meta campaign smoke setup are ready on the
+  coordinator machine.
+- Routing rule for Symphony/Linear: do not open more setup-form, dashboard, or
+  substrate-explanation tickets for this gap. The bounded next work is live
+  proof handoff: collect the missing recipient/endpoint facts, run no-send
+  readiness checks, and only then run guarded live smokes with
+  `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1`.
+- Polsia comparison: DearMe now matches the private first-wow and visible-team
+  choreography, but not the full live-delivery proof bar. Naive comparison:
+  DearMe has already reused the durable state, approvals, routines, worktree
+  absorption, OpenClaw gateway contract, and provider-smoke harness instead of
+  rebuilding a separate runtime.
+
 ## Latest Public-Readiness Handoff Boundary - 2026-05-11
 
 - `pnpm dearme:next-proof` is now the coordinator-facing setup command for the
@@ -84,8 +110,9 @@ It answers three questions before another worker starts building:
 - Current product read: DearMe is strong on Naive/Paperclip/OpenClaw substrate
   absorption and has a phone-reachable sample proof packet, but it is not fully
   Polsia-equivalent until live OpenClaw messages plus the remaining
-  LinkedIn/iMessage/Meta provider evidence are proven with explicit recipient
-  and credential facts.
+  LinkedIn/iMessage provider evidence are proven with explicit recipient and
+  endpoint facts. Meta setup is ready on the coordinator machine, while
+  spend-bearing proof stays last.
 
 ## Latest OpenClaw iMessage Boundary - 2026-05-11
 
@@ -104,7 +131,8 @@ It answers three questions before another worker starts building:
 - Product comparison: Telegram is closest to a Polsia-style live self-smoke
   because it can reuse the host-local OpenClaw allow-list. iMessage is now
   structurally prepared but intentionally cannot guess who to text. LinkedIn
-  and Meta remain separate credential-backed provider smokes.
+  remains a separate endpoint-backed provider smoke; Meta setup is ready on the
+  coordinator machine but should remain behind guarded spend-proof policy.
 
 ## Latest Proof-First Product Boundary - 2026-05-11
 

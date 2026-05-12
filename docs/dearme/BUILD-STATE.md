@@ -2,6 +2,33 @@
 
 Date: 2026-05-11
 
+## Coordinator Proof Env Narrows Live Blockers - 2026-05-11
+
+Product/architecture slice:
+
+- Re-ran the coordinator proof/status path after `dearme:next-proof -- --target
+  all` augmented the ignored host-local `.dearme-proof.env` without overwriting
+  existing values. This is coordinator evidence only; do not copy secrets or
+  local proof env into Symphony workspaces.
+- Current no-send readiness is narrower than the previous public-readiness
+  handoff: production host proof, Telegram through the local OpenClaw config,
+  and Meta campaign smoke setup are ready on this coordinator machine.
+- Public launch remains blocked because the product still lacks live external
+  delivery proof for the shared message and LinkedIn lanes. The remaining
+  external facts are an explicit owned iMessage smoke recipient plus the
+  LinkedIn partner endpoint and smoke recipient.
+- This answers the Polsia/Naive comparison in product terms: DearMe has the
+  Naive/Paperclip/OpenClaw substrate, absorbed Symphony/worktree reuse, and a
+  phone-reachable private first-wow packet; the only remaining Polsia-equivalent
+  gap is real live channel/provider delivery.
+
+Verification:
+
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:goal-audit -- --json`
+- `pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target all --json`
+
 ## Public-Readiness Handoff Is No-Send First - 2026-05-11
 
 Product/architecture slice:
