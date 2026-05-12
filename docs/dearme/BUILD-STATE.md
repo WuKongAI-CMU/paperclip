@@ -2,6 +2,35 @@
 
 Date: 2026-05-11
 
+## Symphony Public-Readiness Handoff Uses FactsNeeded - 2026-05-11
+
+Product/architecture slice:
+
+- Updated the Symphony worker contract so public-readiness handoffs read
+  `pnpm dearme:next-proof -- --target all --no-write --json` and copy the
+  generated `factsNeeded` labels instead of relying on a stale hardcoded
+  provider checklist.
+- Extended `dearme:next-proof` with local non-secret fact capture flags for the
+  remaining iMessage and LinkedIn facts. Captured values are written only to
+  the local proof env and are not printed in text or JSON output.
+- This keeps the Polsia/Naive/OpenClaw comparison grounded in current
+  coordinator proof: worktree/Symphony absorption is clean, private proof is
+  usable, and public launch remains blocked only by the current live-provider
+  facts reported by the command.
+- Workers should still avoid `--live` provider smokes unless exact recipients
+  and provider facts are present and the live guard is explicit.
+
+Verification:
+
+- `pnpm test:dearme-next-proof`
+- `pnpm test:dearme-symphony-workflow`
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
+- `pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target all --json`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
+- `pnpm typecheck`
+- `git diff --check`
+
 ## Coordinator Proof Env Narrows Live Blockers - 2026-05-11
 
 Product/architecture slice:

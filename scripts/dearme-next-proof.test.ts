@@ -28,7 +28,56 @@ test("DearMe next proof args parse provider target aliases and env controls", ()
     noWrite: false,
     target: "openclaw_messages",
     envFile: "local-proof.env",
+    factCaptures: [],
   });
+});
+
+test("DearMe next proof args parse non-secret fact capture flags", () => {
+  const args = parseDearMeNextProofArgs([
+    "--target=linkedin",
+    "--imessage-recipient",
+    "+15551234567",
+    "--linkedin-messages-url=https://partner.example.test/messages",
+    "--linkedin-recipient-urn",
+    "urn:li:person:lead-1",
+  ]);
+
+  assert.deepEqual(args.factCaptures, [
+    {
+      key: "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+      value: "+15551234567",
+    },
+    {
+      key: "DEARME_LINKEDIN_DM_MESSAGES_URL",
+      value: "https://partner.example.test/messages",
+    },
+    {
+      key: "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
+      value: "urn:li:person:lead-1",
+    },
+  ]);
+});
+
+test("DearMe next proof rejects fact capture in no-write mode", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-next-proof-no-write-facts-"));
+  try {
+    await assert.rejects(
+      prepareDearMeNextProofSetup({
+        cwd: dir,
+        target: "openclaw_messages",
+        envFile: ".dearme-proof.env",
+        noWrite: true,
+        baseEnv: { HOME: dir },
+        factCaptures: [{
+          key: "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+          value: "+15551234567",
+        }],
+      }),
+      /--no-write cannot be used with fact capture flags/,
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 test("DearMe next proof target follows the release gate next action", () => {
@@ -108,6 +157,51 @@ test("DearMe next proof augments an existing env with missing target keys", asyn
     assert.match(contents, /OPENCLAW_GATEWAY_TOKEN=/);
     assert.match(contents, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=/);
     assert.doesNotMatch(contents, /\.dearme-provider-smoke\.env/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("DearMe next proof captures local facts without printing captured values", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-next-proof-facts-"));
+  const envPath = join(dir, ".dearme-proof.env");
+  try {
+    await writeFile(envPath, [
+      "OPENCLAW_GATEWAY_URL=ws://127.0.0.1:3001",
+      "OPENCLAW_GATEWAY_TOKEN=secret-token",
+      "DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT=local-chat",
+      "DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY=Private proof is ready.",
+      "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=",
+      "",
+    ].join("\n"));
+
+    const setup = await prepareDearMeNextProofSetup({
+      cwd: dir,
+      target: "openclaw_messages",
+      envFile: ".dearme-proof.env",
+      baseEnv: { HOME: dir },
+      factCaptures: [{
+        key: "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+        value: "+15551234567",
+      }],
+    });
+    const contents = await readFile(envPath, "utf8");
+    const output = formatDearMeNextProofSetup(setup).join("\n");
+
+    assert.equal(setup.envStatus, "augmented");
+    assert.equal(setup.readiness.every((item) => item.ready), true);
+    assert.deepEqual(setup.factsNeeded, []);
+    assert.deepEqual(setup.capturedFacts, [{
+      key: "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+      label: "iMessage/SMS approved smoke recipient",
+      sensitive: false,
+    }]);
+    assert.match(contents, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT="\+15551234567"/);
+    assert.match(output, /Captured local facts:/);
+    assert.match(output, /iMessage\/SMS approved smoke recipient: DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT \(value hidden\)/);
+    assert.doesNotMatch(output, /\+15551234567/);
+    assert.doesNotMatch(JSON.stringify(setup.capturedFacts), /\+15551234567/);
+    assert.doesNotMatch(output, /secret-token/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

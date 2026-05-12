@@ -65,6 +65,7 @@ codex:
     - pnpm --silent dearme:proof -- --status --lane provider
     - pnpm --silent dearme:host-rehearsal -- --port 0 --json
     - pnpm --silent dearme:openclaw-message-rehearsal -- --json
+    - pnpm --silent dearme:next-proof -- --target all --no-write --json
     - |
       if pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs; then
         true
@@ -143,6 +144,7 @@ no-send evidence first:
 - `pnpm --silent dearme:release-gate -- --json`
 - `pnpm --silent dearme:proof -- --check --lane provider`
 - `pnpm --silent dearme:goal-audit -- --check`
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
 - `pnpm --silent dearme:next-proof -- --target openclaw_messages`
 - `pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages`
 
@@ -155,15 +157,13 @@ If `dearme:goal-audit -- --check` exits non-zero only because the live
 provider proof is still blocked, record that as the expected public-readiness
 blocker evidence rather than treating the workflow itself as failed.
 
-The handoff artifact or Linear note should name the exact missing external
-facts before any live command is considered:
-
-- iMessage: set an explicit, owned smoke recipient in
-  `DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT`.
-- LinkedIn: provide the partner endpoint, credential JSON file, smoke
-  recipient, subject, and body.
-- Meta: provide the campaign credential JSON file and approved smoke budget
-  scope.
+The handoff artifact or Linear note should copy the `factsNeeded` labels from
+`dearme:next-proof -- --target all --no-write --json` before any live command is
+considered. Do not hardcode an older blocker list; the coordinator may already
+have host, Telegram, or Meta proof facts in its local ignored `.dearme-proof.env`.
+Current coordinator evidence has narrowed public launch to the explicit
+iMessage smoke recipient plus LinkedIn endpoint/recipient facts, but workers
+must treat the command output as the source of truth.
 
 Do not run a `--live` provider smoke from this lane unless the concrete
 recipient/credential facts are present and the command is explicitly guarded

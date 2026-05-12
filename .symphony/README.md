@@ -137,6 +137,7 @@ pnpm --silent dearme:proof -- --check
 pnpm --silent dearme:proof -- --status --lane provider
 pnpm --silent dearme:host-rehearsal -- --port 0 --json
 pnpm --silent dearme:openclaw-message-rehearsal -- --json
+pnpm --silent dearme:next-proof -- --target all --no-write --json
 ```
 
 Use that output as the first proof triage surface. It composes provider dispatch
@@ -151,6 +152,9 @@ remaining public HTTPS production host blocker. The OpenClaw message rehearsal
 runs the shared Telegram/iMessage provider-smoke path through an injected local
 gateway executor, so workers have a no-secret proof that both sends use one
 OpenClaw contract before the remaining live gateway/auth/recipient blocker.
+The next-proof JSON is the operator handoff source for exact `factsNeeded`; do
+not copy stale setup lists when the coordinator env has already made a provider
+lane ready.
 Drop to
 `pnpm dearme:provider-smoke` only for live provider credential work, or
 `pnpm dearme:voice-smoke` only for scorer-specific calibration work.
