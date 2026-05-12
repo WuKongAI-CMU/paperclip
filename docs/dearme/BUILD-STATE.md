@@ -14719,7 +14719,7 @@ Verification:
   passed: 76 tests.
 - `pnpm -r typecheck` passed.
 - Browser verification on
-  `http://127.0.0.1:3100/DEAA/dearme?view=decisions`
+  `http://localhost:5174/DEAA/dearme?view=decisions`
   confirmed no restart banner, no framework overlay, no donor/substrate terms,
   no customer-visible `queue` term, and the four choices: approve inside the
   boundary, request changes, pause the lane, and another private pass.
@@ -14744,3 +14744,29 @@ Verification:
 - `pnpm --silent dearme:next-proof -- --target openclaw_messages --no-write`
   prints Telegram as ready and iMessage/SMS as waiting on the approved
   iMessage/SMS proof recipient, without printing secrets.
+
+## DM-WOW-3F Before-Approve Quality Checks - 2026-05-12
+
+Forty-seventh verified DearMe slice:
+
+- Added a `Before approve` quality strip inside Decisions so each launch call
+  reminds the user to check voice fit, proof attached, and boundary clear before
+  anything represents them.
+- Reused the existing Decisions surface and review controls; no new backend,
+  route, provider, setting, or customer-facing workflow surface was added.
+- Product rationale: this keeps Polsia-style autonomy while borrowing Lindy's
+  compact review grammar, so approval feels safe without turning the user into
+  a project manager.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed: 76 tests.
+- `pnpm -r typecheck` passed.
+- Browser verification on
+  `http://localhost:5174/DEAA/dearme?codexProductQa=20260512f&qa=before-approve`
+  confirmed `Launch call choices`, `Before approve`, `Voice fit`,
+  `Proof attached`, `Boundary clear`, and `Quality gate` render without a
+  restart banner, framework overlay, customer-visible `queue`, or
+  Polsia/Paperclip/OpenClaw terms.
+- `git diff --check` passed.

@@ -2210,6 +2210,15 @@ describe("DearMeOnboarding", () => {
     expect(launchCallChoices.textContent).toContain("Another private pass");
     expect(launchCallChoices.textContent).toContain("4 waiting calls");
     expectNoHiddenProductTerms(launchCallChoices.textContent, Object.values(HIDDEN_PRODUCT_TERMS));
+    const beforeApproveChecks = surfaceByLabel(container, "Before approve checks");
+    expect(beforeApproveChecks.textContent).toContain(
+      "Check voice, proof, and boundary before anything represents you.",
+    );
+    expect(beforeApproveChecks.textContent).toContain("Voice fit");
+    expect(beforeApproveChecks.textContent).toContain("Proof attached");
+    expect(beforeApproveChecks.textContent).toContain("Boundary clear");
+    expect(beforeApproveChecks.textContent).toContain("Quality gate");
+    expectNoHiddenProductTerms(beforeApproveChecks.textContent, Object.values(HIDDEN_PRODUCT_TERMS));
     expect(container.textContent).toContain("After your call");
     expect(container.textContent).toContain("Launched work moves forward inside the boundary");
     expect(

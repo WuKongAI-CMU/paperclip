@@ -4760,6 +4760,31 @@ function DecisionsNeededPanel({
   onOpenSourceReview: (sourceReview: DearMeSourceReviewItem) => void;
 }) {
   const waitingCount = batches.length + decisions.length + sourceReviews.length;
+  const launchQualityChecks: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    summary: string;
+  }> = [
+    {
+      key: "voice-fit",
+      icon: Gauge,
+      label: "Voice fit",
+      summary: "If it does not sound like you, request changes or another private pass.",
+    },
+    {
+      key: "proof-attached",
+      icon: FileText,
+      label: "Proof attached",
+      summary: "Every public claim should point back to a saved source, result, or recent receipt.",
+    },
+    {
+      key: "boundary-clear",
+      icon: ShieldCheck,
+      label: "Boundary clear",
+      summary: "Posts, outbound, spend, and page changes wait for your call before they represent you.",
+    },
+  ];
   const launchCallChoices: Array<{
     key: string;
     icon: LucideIcon;
@@ -4841,6 +4866,38 @@ function DecisionsNeededPanel({
                 </div>
                 <p className="mt-2 text-sm font-medium text-foreground">{choice.title}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{choice.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+      <section
+        aria-label="Before approve checks"
+        className="mt-4 rounded-md border border-border bg-muted/20 p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Before approve</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              Check voice, proof, and boundary before anything represents you.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              Approve only when the work sounds right, cites real proof, and stays inside the launch rule.
+            </p>
+          </div>
+          <Badge variant="outline">Quality gate</Badge>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {launchQualityChecks.map((check) => {
+            const CheckIcon = check.icon;
+
+            return (
+              <div key={check.key} className="rounded-md border border-border bg-background/85 p-3">
+                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                  <CheckIcon className="h-4 w-4 text-primary" aria-hidden="true" />
+                  {check.label}
+                </div>
+                <p className="mt-2 text-sm text-foreground/85">{check.summary}</p>
               </div>
             );
           })}
