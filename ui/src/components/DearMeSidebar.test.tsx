@@ -50,6 +50,10 @@ describe("DearMeSidebar", () => {
     });
 
     expect(container.textContent).toContain("Personal brand team");
+    expect(container.textContent).toContain("Private proof ready");
+    expect(container.textContent).toContain("Work is usable for private review.");
+    expect(container.textContent).toContain("Launch proof pending");
+    expect(container.textContent).toContain("Public moves wait for live receipts.");
     expect(container.textContent).toContain("Work Ready");
     expect(container.textContent).toContain("Voice & Memory");
     expect(container.textContent).toContain("Opportunities");
@@ -61,6 +65,14 @@ describe("DearMeSidebar", () => {
     expect(container.textContent).not.toContain("Workspaces");
     expect(container.textContent).not.toContain("Plugins");
     expect(container.textContent).not.toContain("Costs");
+
+    const readiness = container.querySelector('[aria-label="DearMe readiness status"]');
+    expect(readiness?.querySelector('a[href="/dearme?view=work-ready"]')?.textContent).toContain(
+      "Private proof ready",
+    );
+    expect(readiness?.querySelector('a[href="/dearme?view=decisions"]')?.textContent).toContain(
+      "Launch proof pending",
+    );
 
     await act(async () => {
       root.unmount();

@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   BriefcaseBusiness,
+  CheckCircle2,
   ClipboardCheck,
   Home,
   Menu,
@@ -178,6 +179,32 @@ export function DearMeSidebar() {
             <span>Personal brand team</span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">Team is working. Decisions stay with you.</p>
+          <div className="mt-3 grid gap-2" aria-label="DearMe readiness status">
+            <Link
+              to="/dearme?view=work-ready"
+              className="flex items-start gap-2 rounded-md border border-primary/25 bg-primary/5 p-2 text-left transition-colors hover:bg-primary/10"
+            >
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <span className="min-w-0">
+                <span className="block text-xs font-medium text-foreground">Private proof ready</span>
+                <span className="block text-[11px] leading-4 text-muted-foreground">
+                  Work is usable for private review.
+                </span>
+              </span>
+            </Link>
+            <Link
+              to="/dearme?view=decisions"
+              className="flex items-start gap-2 rounded-md border border-border bg-background/70 p-2 text-left transition-colors hover:bg-accent/50"
+            >
+              <ClipboardCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="min-w-0">
+                <span className="block text-xs font-medium text-foreground">Launch proof pending</span>
+                <span className="block text-[11px] leading-4 text-muted-foreground">
+                  Public moves wait for live receipts.
+                </span>
+              </span>
+            </Link>
+          </div>
         </div>
         <DearMeNavSection label="Today" items={primaryItems} />
         <DearMeNavSection label="Team profile" items={growthItems} />
