@@ -2189,8 +2189,8 @@ function privateExecutionHandoffChecklist({
 
   if (deliveryStatus === "needs_channel_connection") {
     return [
-      "Approved move is ready, but the channel is not connected.",
-      "Connect the channel before DearMe can continue this move.",
+      "Approved move is ready, but DearMe is missing the approved account or recipient.",
+      "Add the approved account or recipient before DearMe can continue this move.",
       "No external action ran without the connection.",
     ];
   }
@@ -2288,11 +2288,11 @@ function privateExecutionReturnCue({
       },
       {
         label: "What waits",
-        body: "DearMe needs the approved connection before this move can continue.",
+        body: "DearMe needs the approved account or recipient before this move can continue.",
       },
       {
         label: "Your next step",
-        body: "Connect the channel or keep reviewing the private brief.",
+        body: "Add the account or recipient, or keep reviewing the private brief.",
       },
     ];
   }
@@ -2344,6 +2344,18 @@ function privateExecutionReturnCue({
       label: "Your next step",
       body: "Open the brief, inspect the prepared move, and choose a new direction.",
     },
+  ];
+}
+
+function privateExecutionConnectionReadiness(
+  deliveryStatus?: DearMeWorkbenchProgressItem["deliveryStatus"],
+) {
+  if (deliveryStatus !== "needs_channel_connection") return [];
+
+  return [
+    "Choose the exact account or recipient DearMe is allowed to use for this move.",
+    "Let DearMe check the connection before any live attempt.",
+    "Keep the final send, post, page change, or spend behind your launch call.",
   ];
 }
 
@@ -2420,6 +2432,7 @@ function PrivateExecutionHandoffPanel({
     deliveryStatus: deliveryStatus ?? undefined,
     isPaused,
   });
+  const connectionReadinessItems = privateExecutionConnectionReadiness(deliveryStatus ?? undefined);
 
   return (
     <DearMeFocusSurface aria-label={surfaceLabel} className="space-y-4">
@@ -2469,6 +2482,17 @@ function PrivateExecutionHandoffPanel({
           </div>
         ))}
       </div>
+      {connectionReadinessItems.length > 0 ? (
+        <div aria-label="Before DearMe continues" className="rounded-md border border-border bg-background/80 p-3">
+          <p className="text-xs font-medium uppercase text-muted-foreground">Before DearMe continues</p>
+          <DearMeChecklist
+            className="mt-2 grid gap-2 md:grid-cols-3"
+            icon={ShieldCheck}
+            itemClassName="items-start bg-muted/20"
+            items={connectionReadinessItems}
+          />
+        </div>
+      ) : null}
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div className="rounded-md border border-primary/20 bg-background/80 p-3">
           <p className="text-xs font-medium uppercase text-muted-foreground">Next</p>

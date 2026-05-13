@@ -15310,3 +15310,35 @@ Verification:
   dense workroom. Browser QA on
   `http://127.0.0.1:3100/DEAA/dearme?view=brand-os` confirmed the explicit
   brand workroom without the public first-run CTA.
+
+## Approved Connection Readiness - 2026-05-13
+
+Sixtieth DearMe product slice:
+
+- Tightened delivery-receipt language for the common blocked state where an
+  approved move exists but the approved account or recipient is not ready yet.
+- Added a small "Before DearMe continues" checklist to the private execution
+  handoff so the owner sees the next three steps: choose the exact approved
+  account or recipient, let DearMe check it before a live attempt, and keep the
+  final send, post, page change, or spend behind the launch call.
+- Reused the existing proof-handoff surface instead of adding a setup page,
+  provider selector, or raw channel dashboard.
+- Preserved the customer-facing boundary: no backstage donor names, provider
+  terms, setup records, model language, workspace/workbench terminology, or
+  external-send claim appears in the blocked handoff.
+- Product posture is unchanged: private proof is usable; public launch still
+  waits on approved external professional-network and phone-message proof facts
+  plus guarded live receipts.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed, 81 tests.
+- `pnpm --silent test:dearme-goal-audit`
+  passed, 8 tests.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- `pnpm --silent dearme:release-gate -- --json` confirmed
+  `overall=private-proof-ready`, `canUse=true`, and `canPublish=false`.
+- `git diff --check`
+  passed.

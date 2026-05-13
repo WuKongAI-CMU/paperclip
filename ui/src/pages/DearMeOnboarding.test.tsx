@@ -6503,7 +6503,7 @@ describe("DearMeOnboarding", () => {
     });
   });
 
-  it("surfaces a delivery receipt that still needs channel connection", async () => {
+  it("surfaces a delivery receipt that still needs an approved account or recipient", async () => {
     mockDearmeApi.getWorkbench.mockResolvedValue(
       workbenchResponseWithDeliveryReceipt(
         "needs_channel_connection",
@@ -6530,15 +6530,26 @@ describe("DearMeOnboarding", () => {
     expect(handoffPanel.textContent).toContain("Approved next step needs connection");
     expect(handoffPanel.textContent).toContain("Needs connection");
     expect(handoffPanel.textContent).toContain("Connection needed");
-    expect(handoffPanel.textContent).toContain("Approved move is ready, but the channel is not connected.");
-    expect(handoffPanel.textContent).toContain("Connect the channel before DearMe can continue this move.");
+    expect(handoffPanel.textContent).toContain(
+      "Approved move is ready, but DearMe is missing the approved account or recipient.",
+    );
+    expect(handoffPanel.textContent).toContain(
+      "Add the approved account or recipient before DearMe can continue this move.",
+    );
     expect(handoffPanel.textContent).toContain("No external action ran without the connection.");
     expect(handoffPanel.querySelector('[aria-label="Return cue"]')).not.toBeNull();
     expect(handoffPanel.textContent).toContain(
       "The approved move stayed private instead of using a missing connection.",
     );
     expect(handoffPanel.textContent).toContain(
-      "DearMe needs the approved connection before this move can continue.",
+      "DearMe needs the approved account or recipient before this move can continue.",
+    );
+    expect(handoffPanel.querySelector('[aria-label="Before DearMe continues"]')).not.toBeNull();
+    expect(handoffPanel.textContent).toContain(
+      "Choose the exact account or recipient DearMe is allowed to use for this move.",
+    );
+    expect(handoffPanel.textContent).toContain(
+      "Keep the final send, post, page change, or spend behind your launch call.",
     );
     expect(handoffPanel.textContent).not.toContain("External action not run");
     expectNoHiddenProductTerms(handoffPanel.textContent, [
