@@ -13,6 +13,35 @@ forward.
 - Keep customer-facing DearMe UI/copy free of Symphony, Paperclip, OpenClaw,
   provider, adapter, model, setup payload, and raw runtime language.
 
+## Codex Goal / OMX / Symphony Split
+
+Codex Goal is the long-lived product coordinator for DearMe. It owns product
+direction, PM/design judgment, thread continuity, and integration calls. It is
+not a background worker queue and should not create multiple unsupervised file
+writers by itself.
+
+OMX is the local execution and research toolkit under coordinator control. Use
+it for repo search, analysis, QA, focused implementation, or a planned
+single-owner loop. Do not let an OMX mode become a second product owner; every
+active OMX loop needs a known scope, owner, and stop condition.
+
+Symphony is the bounded background worker system for Linear tickets and
+isolated workspaces. It owns ticket-level execution and durable handoffs, not
+overall product strategy.
+
+Conflict prevention rules:
+
+- Keep one coordinator, one integration checkout/branch, and one active
+  `In Progress` Symphony writer during first-proof and launch-proof work unless
+  the coordinator explicitly widens scope.
+- Do not let Codex Goal, OMX, and Symphony write the same files from separate
+  workspaces. Split by issue or keep secondary lanes read-only.
+- Use durable handoffs before absorbing worker output. The live repo,
+  `docs/dearme/BUILD-STATE.md`, and `pnpm dearme:worktrees -- --summary-only
+  --skip-dirty --handoffs` beat old chats, logs, and stale worker status.
+- Public send, deploy, spend, or customer-visible launch actions stay
+  owner-approval-gated regardless of which layer requests them.
+
 Local Symphony source:
 
 - `/Users/peter/symphony`
