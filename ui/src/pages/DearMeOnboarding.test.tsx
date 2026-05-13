@@ -2103,11 +2103,13 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Brand team run ledger");
     expect(container.textContent).toContain("What your team moved while you were away.");
     expect(container.textContent).toContain(
-      "A compact record of what the brand team tried, prepared, learned, and now needs from you.",
+      "A compact record of what the brand team moved, prepared, learned, held safely, skipped, and now needs from you.",
     );
-    expect(container.textContent).toContain("Tried");
+    expect(container.textContent).toContain("Moved");
     expect(container.textContent).toContain("Prepared");
     expect(container.textContent).toContain("Learned");
+    expect(container.textContent).toContain("Held safely");
+    expect(container.textContent).toContain("Skipped");
     expect(container.textContent).toContain("Needs your call");
     expect(container.textContent).toContain("Evidence");
     expect(container.textContent).toContain("Next");
@@ -2118,6 +2120,8 @@ describe("DearMeOnboarding", () => {
     expect(container.querySelector('[data-dearme-run-ledger-bucket="tried"]')).not.toBeNull();
     expect(container.querySelector('[data-dearme-run-ledger-bucket="prepared"]')).not.toBeNull();
     expect(container.querySelector('[data-dearme-run-ledger-bucket="learned"]')).not.toBeNull();
+    expect(container.querySelector('[data-dearme-run-ledger-bucket="blocked"]')).not.toBeNull();
+    expect(container.querySelector('[data-dearme-run-ledger-bucket="skipped"]')).not.toBeNull();
     expect(container.querySelector('[data-dearme-run-ledger-bucket="needs_call"]')).not.toBeNull();
     expect(container.querySelector('[data-dearme-run-ledger-entry="tried"]')).not.toBeNull();
     expect(container.querySelector('[data-dearme-run-ledger-entry="prepared"]')).not.toBeNull();
@@ -6105,8 +6109,16 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     const packetSurface = surfaceByLabel(container, "First proof pack");
+    const liveFeed = surfaceByLabel(container, "Live proof feed");
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(liveFeed, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
     expect(packetSurface.textContent).toContain("First proof pack ready");
-    expect(packetSurface.textContent).toContain("One review path: check the proof pack in Work Ready");
+    expect(packetSurface.textContent).toContain(
+      "One review path: check the proof pack in Work Ready, make the launch call in Decisions, then keep the live proof feed in view",
+    );
     expect(packetSurface.textContent).toContain("2 ready");
     expect(packetSurface.textContent).toContain("Review first");
     expect(packetSurface.textContent).toContain("Work Ready");
@@ -6124,6 +6136,14 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).not.toContain("dearme-cycle-output");
     expect(container.querySelector('button[aria-label="Review Dear me report"]')).not.toBeNull();
     expect(container.querySelector('button[aria-label="Review Starter post batch"]')).not.toBeNull();
+    expect(packetSurface.textContent).toContain("See live proof feed");
+    expect(liveFeed.id).toBe("dearme-live-proof-feed");
+
+    await act(async () => {
+      buttonByText(packetSurface, "See live proof feed")?.click();
+    });
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
 
     await act(async () => {
       buttonByText(packetSurface, "Review proof pack")?.click();

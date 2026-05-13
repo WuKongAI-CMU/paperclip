@@ -1,6 +1,7 @@
 import {
   Component,
   Suspense,
+  type ComponentPropsWithoutRef,
   type ComponentType,
   type ErrorInfo,
   type ReactNode,
@@ -55,7 +56,7 @@ export function DearMeHero({
   );
 }
 
-type DearMePanelProps = {
+type DearMePanelProps = ComponentPropsWithoutRef<"section"> & {
   children: ReactNode;
   className?: string;
   "aria-label"?: string;
@@ -65,9 +66,11 @@ export function DearMePanel({
   children,
   className,
   "aria-label": ariaLabel,
+  ...sectionProps
 }: DearMePanelProps) {
   return (
     <section
+      {...sectionProps}
       className={cn("rounded-lg border border-border p-5", className)}
       aria-label={ariaLabel}
       data-dearme-surface="panel"

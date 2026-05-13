@@ -139,6 +139,17 @@ const CHANNEL_LABELS: Record<DearMeBrandChannel, string> = {
   website: "Website",
 };
 
+const DEARME_LIVE_PROOF_FEED_ID = "dearme-live-proof-feed";
+
+function scrollToDearMeLiveProofFeed() {
+  if (typeof document === "undefined") return;
+
+  document.getElementById(DEARME_LIVE_PROOF_FEED_ID)?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+}
+
 const CADENCE_LABELS: Record<DearMeBrandCadence, string> = {
   daily: "Daily",
   weekly: "Weekly",
@@ -1281,20 +1292,26 @@ const RUN_LEDGER_KIND_ORDER: DearMeWorkbenchRunLedgerEntry["kind"][] = [
   "tried",
   "prepared",
   "learned",
+  "blocked",
+  "skipped",
   "needs_decision",
 ];
 
 const RUN_LEDGER_KIND_LABELS: Record<DearMeWorkbenchRunLedgerEntry["kind"], string> = {
-  tried: "Tried",
+  tried: "Moved",
   prepared: "Prepared",
   learned: "Learned",
+  blocked: "Held safely",
+  skipped: "Skipped",
   needs_decision: "Needs your call",
 };
 
 const RUN_LEDGER_KIND_DESCRIPTIONS: Record<DearMeWorkbenchRunLedgerEntry["kind"], string> = {
-  tried: "Private moves the team attempted or advanced in this cycle.",
+  tried: "Private moves the team completed or advanced in this cycle.",
   prepared: "Drafts, letters, proof, or reports ready enough to explain.",
   learned: "Voice, proof, and memory signals the next pass can use.",
+  blocked: "Work that stopped safely before it could affect anything public.",
+  skipped: "Duplicate or unnecessary moves DearMe avoided for you.",
   needs_decision: "Important calls waiting before anything represents you.",
 };
 
@@ -1302,11 +1319,13 @@ const RUN_LEDGER_KIND_ICONS: Record<DearMeWorkbenchRunLedgerEntry["kind"], Lucid
   tried: Workflow,
   prepared: FileText,
   learned: Sparkles,
+  blocked: ShieldCheck,
+  skipped: RefreshCw,
   needs_decision: ShieldCheck,
 };
 
 function runLedgerKindVariant(kind: DearMeWorkbenchRunLedgerEntry["kind"]) {
-  if (kind === "needs_decision") return "secondary" as const;
+  if (kind === "needs_decision" || kind === "blocked") return "secondary" as const;
   if (kind === "prepared") return "default" as const;
   return "outline" as const;
 }
@@ -5593,7 +5612,7 @@ function BrandTeamRunLedgerPanel({ entries }: { entries: DearMeWorkbenchRunLedge
         icon={Gauge}
         eyebrow="Brand team run ledger"
         title="What your team moved while you were away."
-        description="A compact record of what the brand team tried, prepared, learned, and now needs from you."
+        description="A compact record of what the brand team moved, prepared, learned, held safely, skipped, and now needs from you."
         trailing={<Badge variant="outline">{pluralizeCount(entries.length, "entry")}</Badge>}
       />
 
@@ -5673,7 +5692,7 @@ function BrandTeamRunLedgerPanel({ entries }: { entries: DearMeWorkbenchRunLedge
           className="mt-4"
           icon={Workflow}
           title="The run ledger starts after private work begins"
-          description="Start the first cycle to see what the team tried, prepared, learned, and needs from you."
+          description="Start the first cycle to see what the team moved, prepared, learned, held safely, skipped, and needs from you."
         />
       )}
     </DearMePanel>
@@ -5837,7 +5856,7 @@ function LiveTeamFeedPanel({
   const movingCount = liveFeedSections.find((section) => section.id === "in_motion")?.items.length ?? 0;
 
   return (
-    <DearMePanel aria-label="Live proof feed">
+    <DearMePanel id={DEARME_LIVE_PROOF_FEED_ID} aria-label="Live proof feed">
       <DearMeWorkbenchSectionHeader
         icon={Workflow}
         eyebrow="Live proof feed"
@@ -7643,8 +7662,8 @@ function FirstCyclePacketSpotlight({
             First proof pack ready
           </div>
           <p className="mt-1 text-sm text-foreground/85">
-            One review path: check the proof pack in Work Ready, make the launch call in Decisions, then let the
-            private lane keep moving until approval.
+            One review path: check the proof pack in Work Ready, make the launch call in Decisions, then keep the
+            live proof feed in view while the private lane keeps moving.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -7683,14 +7702,25 @@ function FirstCyclePacketSpotlight({
         <p className="text-xs text-muted-foreground">
           Review first in Work Ready; Decisions holds the launch call.
         </p>
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => onOpenOutput(primaryOutput, reviewLoopRouteIntent(primaryOutput.reviewLoop))}
-        >
-          Review proof pack
-          <ArrowRight className="h-4 w-4" />
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={scrollToDearMeLiveProofFeed}
+          >
+            <Workflow className="h-4 w-4" />
+            See live proof feed
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => onOpenOutput(primaryOutput, reviewLoopRouteIntent(primaryOutput.reviewLoop))}
+          >
+            Review proof pack
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

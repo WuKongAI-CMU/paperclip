@@ -191,6 +191,8 @@ export const DEARME_WORKBENCH_RUN_LEDGER_KINDS = [
   "tried",
   "prepared",
   "learned",
+  "blocked",
+  "skipped",
   "needs_decision",
 ] as const;
 export const DEARME_WORKBENCH_STREAM_KINDS = [

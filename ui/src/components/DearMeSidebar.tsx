@@ -69,14 +69,28 @@ function isItemActive(pathname: string, search: string, to: string): boolean {
   );
 }
 
+function dearMeNavTarget(currentSearch: string, to: string): string {
+  const [path = "/dearme", query = ""] = to.split("?");
+  const targetParams = new URLSearchParams(query);
+  const currentParams = new URLSearchParams(currentSearch);
+  const productQa = currentParams.get("codexProductQa");
+  if (productQa && !targetParams.has("codexProductQa")) {
+    targetParams.set("codexProductQa", productQa);
+  }
+
+  const targetSearch = targetParams.toString();
+  return targetSearch ? `${path}?${targetSearch}` : path;
+}
+
 function DearMeNavLink({ item }: { item: DearMeNavItem }) {
   const location = useLocation();
   const Icon = item.icon;
   const active = isItemActive(location.pathname, location.search, item.to);
+  const to = dearMeNavTarget(location.search, item.to);
 
   return (
     <Link
-      to={item.to}
+      to={to}
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors",
@@ -128,11 +142,12 @@ export function DearMeMobileNav({
         {mobileNavItems.map((item) => {
           const Icon = item.icon;
           const active = isItemActive(location.pathname, location.search, item.to);
+          const to = dearMeNavTarget(location.search, item.to);
 
           return (
             <Link
               key={item.to}
-              to={item.to}
+              to={to}
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] font-medium transition-colors",
@@ -161,6 +176,8 @@ export function DearMeMobileNav({
 }
 
 export function DearMeSidebar() {
+  const location = useLocation();
+
   return (
     <aside className="flex h-full min-h-0 w-full flex-col border-r border-border bg-background">
       <div className="flex h-12 shrink-0 items-center gap-1 px-3">
@@ -186,7 +203,7 @@ export function DearMeSidebar() {
           <p className="mt-1 text-xs text-muted-foreground">Team works while you do. Launch rules stay with you.</p>
           <div className="mt-3 grid gap-2" aria-label="DearMe readiness status">
             <Link
-              to="/dearme?view=work-ready"
+              to={dearMeNavTarget(location.search, "/dearme?view=work-ready")}
               className="flex items-start gap-2 rounded-md border border-primary/25 bg-primary/5 p-2 text-left transition-colors hover:bg-primary/10"
             >
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -198,7 +215,7 @@ export function DearMeSidebar() {
               </span>
             </Link>
             <Link
-              to="/dearme?view=decisions"
+              to={dearMeNavTarget(location.search, "/dearme?view=decisions")}
               className="flex items-start gap-2 rounded-md border border-border bg-background/70 p-2 text-left transition-colors hover:bg-accent/50"
             >
               <ClipboardCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />

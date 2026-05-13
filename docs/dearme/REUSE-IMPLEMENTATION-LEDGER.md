@@ -13,6 +13,21 @@ It answers three questions before another worker starts building:
 3. What is the next bounded ticket that increases reuse without restarting the
    product?
 
+## Latest First Proof Pack Live Feed Handoff - 2026-05-12
+
+- DearMe now sends the first proof pack into the existing `Live proof feed`
+  rather than creating a new proof dashboard. This keeps the Polsia-style
+  receipt surface concentrated in one place.
+- The workbench ledger distinguishes completed/prepared work from blocked
+  stops and skipped duplicate cycles, reusing the current workstream data
+  instead of inventing a second status model.
+- The proof QA context is preserved across DearMe sidebar view changes, so
+  focused proof-review URLs continue to carry their receipt context while the
+  user moves between Content, Work Ready, and Decisions.
+- Future workers should keep this path intact: first proof pack for review,
+  live proof feed for motion receipts, Decisions for launch calls. Do not add a
+  parallel provider/setup surface for the same public-launch blocker.
+
 ## Latest Private Proof Carries Public Launch Needs - 2026-05-12
 
 - DearMe now reuses the shared owner-proof fact spec beyond the workbench and

@@ -669,7 +669,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
           needsApproval: false,
           sourceLabel: "Cycle cadence",
           costImpact: null,
-          nextAction: expect.stringContaining("prepared work"),
+          nextAction: expect.stringContaining("prepared receipts"),
         }),
         expect.objectContaining({
           kind: "progress_recorded",
@@ -761,6 +761,95 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     expect(customerPathJson).not.toContain("anthropic");
     expect(customerPathJson).not.toContain("claude-sonnet");
     expect(customerPathJson).not.toContain(DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND);
+  });
+
+  it("projects blocked and skipped cycle check-ins into the run ledger", async () => {
+    const companyId = await seedCompany();
+    const chiefOfStaffId = await seedDearMeAgent({
+      companyId,
+      name: "DearMe Chief of Staff",
+      role: "chief_of_staff",
+      updatedAt: new Date("2026-05-08T10:00:00.000Z"),
+    });
+    const parentIssueId = await seedIssue({
+      companyId,
+      title: "DearMe: Weekly growth loop",
+      identifier: "WB-60",
+      originFingerprint: "weekly-growth-loop",
+      status: "todo",
+      updatedAt: new Date("2026-05-08T10:05:00.000Z"),
+      assigneeAgentId: chiefOfStaffId,
+    });
+    const routineId = randomUUID();
+
+    await db.insert(routines).values({
+      id: routineId,
+      companyId,
+      parentIssueId,
+      title: "DearMe: Weekly growth loop",
+      description: "Keep the private brand growth cycle moving.",
+      assigneeAgentId: chiefOfStaffId,
+      status: "active",
+      createdAt: new Date("2026-05-08T10:00:00.000Z"),
+      updatedAt: new Date("2026-05-08T10:00:00.000Z"),
+    });
+    await db.insert(routineRuns).values([
+      {
+        id: randomUUID(),
+        companyId,
+        routineId,
+        source: "scheduler",
+        status: "failed",
+        triggeredAt: new Date("2026-05-08T10:10:00.000Z"),
+        completedAt: new Date("2026-05-08T10:11:00.000Z"),
+        createdAt: new Date("2026-05-08T10:10:00.000Z"),
+        updatedAt: new Date("2026-05-08T10:11:00.000Z"),
+      },
+      {
+        id: randomUUID(),
+        companyId,
+        routineId,
+        source: "scheduler",
+        status: "skipped",
+        triggeredAt: new Date("2026-05-08T10:12:00.000Z"),
+        completedAt: new Date("2026-05-08T10:13:00.000Z"),
+        createdAt: new Date("2026-05-08T10:12:00.000Z"),
+        updatedAt: new Date("2026-05-08T10:13:00.000Z"),
+      },
+    ]);
+
+    const result = await dearmeWorkbenchService(db).getWorkbench(companyId);
+
+    expect(result.workStream).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Cycle check-in needs attention",
+          status: "blocked",
+          sourceLabel: "Cycle cadence",
+          nextAction: expect.stringContaining("Retry or redirect"),
+        }),
+        expect.objectContaining({
+          title: "Cycle check-in consolidated",
+          status: "recorded",
+          sourceLabel: "Cycle cadence",
+          nextAction: expect.stringContaining("No action needed"),
+        }),
+      ]),
+    );
+    expect(result.runLedger).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "blocked",
+          title: "Cycle check-in needs attention",
+          status: "blocked",
+        }),
+        expect.objectContaining({
+          kind: "skipped",
+          title: "Cycle check-in consolidated",
+          status: "recorded",
+        }),
+      ]),
+    );
   });
 
   it("projects shared cycle packets as one private review surface", async () => {

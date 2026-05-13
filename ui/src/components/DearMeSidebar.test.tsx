@@ -136,6 +136,36 @@ describe("DearMeSidebar", () => {
     });
   });
 
+  it("preserves the current DearMe proof context while switching views", async () => {
+    mockLocation.search = "?view=content&codexProductQa=20260512n-owner-proof-details";
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<DearMeSidebar />);
+    });
+
+    const links = Array.from(container.querySelectorAll("a")).map((link) => ({
+      href: link.getAttribute("href"),
+      text: link.textContent,
+    }));
+    expect(links).toContainEqual(
+      expect.objectContaining({
+        href: "/dearme?view=decisions&codexProductQa=20260512n-owner-proof-details",
+        text: expect.stringContaining("Decisions"),
+      }),
+    );
+    expect(links).toContainEqual(
+      expect.objectContaining({
+        href: "/dearme?view=work-ready&codexProductQa=20260512n-owner-proof-details",
+        text: expect.stringContaining("Private proof ready"),
+      }),
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("shows a compact DearMe mobile navigation without generic workspace links", async () => {
     const root = createRoot(container);
 

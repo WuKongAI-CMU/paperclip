@@ -2,6 +2,31 @@
 
 Date: 2026-05-12
 
+## First Proof Pack Live Feed Handoff - 2026-05-12
+
+Product/architecture slice:
+
+- Reused the existing `Live proof feed` as the next proof surface from the
+  first proof pack instead of adding another dashboard or setup page.
+- The first proof pack keeps `Review proof pack` as the primary action and adds
+  a secondary `See live proof feed` jump, so users can connect the ready packet
+  to the ongoing autonomous work trail.
+- The live feed now separates completed, prepared, blocked, skipped, learned,
+  and decision-needed ledger states, making safe stops and avoided duplicate
+  work visible without exposing substrate/provider mechanics.
+- DearMe sidebar navigation now preserves the current proof QA context while
+  switching views, so focused proof reviews do not lose their receipt context.
+- Product posture remains unchanged: private proof is usable; public launch is
+  still blocked until approved external-channel facts and guarded live receipts
+  exist.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts server/src/__tests__/dearme-workbench.test.ts --maxWorkers=1`
+- `pnpm exec vitest run ui/src/components/DearMeSidebar.test.tsx ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "preserves the current DearMe proof context|spotlights the first proof pack"`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --json`
+
 ## Private Proof Carries Public Launch Needs - 2026-05-12
 
 Product/architecture slice:

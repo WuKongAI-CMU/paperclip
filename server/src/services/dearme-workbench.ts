@@ -903,12 +903,19 @@ function nextActionForProgress(item: DearMeWorkbenchProgressItem) {
     return "Use the paid-beta guardrail before starting private work.";
   }
   if (item.kind === "cycle_check_in") {
-    return "Open prepared work only when a teammate asks for the launch call.";
+    return item.nextStep ?? "Open prepared work only when a teammate asks for the launch call.";
   }
   if (item.kind === "spend_checkpoint") {
     return "No action needed unless a future move asks to spend money.";
   }
   return "Use this signal to decide what the team should prepare next.";
+}
+
+function statusForProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbenchStreamItem["status"] {
+  if (item.kind === "cycle_check_in" && item.title === "Cycle check-in needs attention") {
+    return "blocked";
+  }
+  return "recorded";
 }
 
 function streamItemFromWork(item: DearMeWorkbenchWorkItem): DearMeWorkbenchStreamItem {
@@ -1017,7 +1024,7 @@ function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbe
       customerSummary: item.summary,
       artifact: "Voice & Memory",
       artifactTarget: "Voice & Memory",
-      status: "recorded",
+      status: statusForProgress(item),
       needsApproval: false,
       decisionNeed: noDecisionNeed(),
       sourceLabel: sourceLabelForProgress(item),
@@ -1048,7 +1055,7 @@ function streamItemFromProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbe
     customerSummary: item.summary,
     artifact,
     artifactTarget: artifact,
-    status: "recorded",
+    status: statusForProgress(item),
     needsApproval: false,
     decisionNeed: noDecisionNeed(),
     sourceLabel: sourceLabelForProgress(item),
@@ -1437,6 +1444,8 @@ function buildWorkStream(input: {
 
 function runLedgerKindForStreamItem(item: DearMeWorkbenchStreamItem): DearMeRunLedgerKind {
   if (item.kind === "memory_recorded" || item.cycleStage === "learn") return "learned";
+  if (item.status === "blocked" || item.status === "cancelled") return "blocked";
+  if (item.kind === "progress_recorded" && item.title === "Cycle check-in consolidated") return "skipped";
   if (item.kind === "report_ready" || item.status === "ready_for_review" || item.status === "complete") {
     return "prepared";
   }
@@ -2055,7 +2064,8 @@ function progressFromRoutineRun(input: DearMeRoutineRunRow): DearMeWorkbenchProg
       id: `cycle:${input.id}`,
       kind: "cycle_check_in",
       title: "Cycle check-in completed",
-      summary: `${title} checked in and kept the private growth cycle moving. DearMe will surface only prepared work or decisions that need your call.`,
+      summary: `${title} completed a private check-in and moved the growth cycle forward. Ready work and decisions will surface here; everything else stays private.`,
+      nextStep: "Review prepared receipts if you want to steer; otherwise DearMe keeps the next private pass moving.",
       createdAt: toIso(createdAt),
     };
   }
@@ -2065,7 +2075,8 @@ function progressFromRoutineRun(input: DearMeRoutineRunRow): DearMeWorkbenchProg
       id: `cycle:${input.id}`,
       kind: "cycle_check_in",
       title: "Cycle check-in needs attention",
-      summary: `${title} hit a private execution snag. DearMe will keep public moves gated until the next usable decision is ready.`,
+      summary: `${title} stopped safely before anything public changed. DearMe will keep external moves gated until the next usable decision is ready.`,
+      nextStep: "Retry or redirect the private lane before asking for any public launch call.",
       createdAt: toIso(createdAt),
     };
   }
@@ -2075,7 +2086,8 @@ function progressFromRoutineRun(input: DearMeRoutineRunRow): DearMeWorkbenchProg
       id: `cycle:${input.id}`,
       kind: "cycle_check_in",
       title: "Cycle check-in consolidated",
-      summary: `${title} was folded into existing private work so the team does not create duplicate decisions.`,
+      summary: `${title} was skipped because the same private work is already covered. DearMe kept one active copy instead of creating duplicate decisions.`,
+      nextStep: "No action needed; review the active private lane when it produces a prepared receipt.",
       createdAt: toIso(createdAt),
     };
   }
@@ -2085,7 +2097,8 @@ function progressFromRoutineRun(input: DearMeRoutineRunRow): DearMeWorkbenchProg
       id: `cycle:${input.id}`,
       kind: "cycle_check_in",
       title: "Cycle check-in opened work",
-      summary: `${title} opened the next private work lane. It will ask for your approval only when a public, send, deploy, or spend move is ready.`,
+      summary: `${title} prepared the next private work lane. It will ask for your approval only when a public, send, deploy, or spend move is ready.`,
+      nextStep: "Let the private lane work until a prepared asset or launch call is ready.",
       createdAt: toIso(createdAt),
     };
   }
@@ -2094,7 +2107,8 @@ function progressFromRoutineRun(input: DearMeRoutineRunRow): DearMeWorkbenchProg
     id: `cycle:${input.id}`,
     kind: "cycle_check_in",
     title: "Cycle check-in received",
-    summary: `${title} is prepared for private team work. No public move happens without approval.`,
+    summary: `${title} is queued for private team work. No public move happens without approval.`,
+    nextStep: "No action needed until the cycle produces prepared work or asks for your call.",
     createdAt: toIso(createdAt),
   };
 }
