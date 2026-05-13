@@ -4340,3 +4340,40 @@ Reuse note:
 - Public launch remains blocked until the approved professional-network route,
   professional-network recipient, and phone-message recipient are supplied and
   verified.
+
+## Polsia First-Run and Return Cue - 2026-05-13
+
+| Slice | Donor mechanism | Path |
+|---|---|---|
+| First-input preparation cue | Polsia's pre-typing/active-work cue translated into a DearMe-safe private preparation signal on the existing public first-run landing | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+| Manager-style return cue | Polsia's concise return-to-owner report translated into private handoff and delivery receipt states with "what changed", "what waits", and "your next step" | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+
+Reuse note:
+
+- Reuses Polsia's momentum pattern without copying raw thinking streams,
+  generated fake work claims, setup screens, donor identity, or shared outbound
+  behavior.
+- The cue is intentionally tied to the first known-for sentence and keeps the
+  no-public-action boundary visible in the same screen.
+- The return cue covers prepared, paused, delivered, pending, blocked, rejected,
+  and failed-safe states without exposing provider/setup/runtime language.
+- This continues the DearMe rule: improve the first proof path before adding
+  more management surface.
+
+## Default First-Run Landing - 2026-05-13
+
+| Slice | Donor mechanism | Path |
+|---|---|---|
+| Default cold-start entry | Polsia's acquisition pattern translated into DearMe's default `/dearme` route: one positioning promise, one known-for input, one private proof-pack CTA, visible private-work receipts, and an approval boundary before the workroom | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx`, `scripts/dearme-goal-audit.ts` |
+| Compatibility workroom split | Naive/Paperclip route discipline preserved by keeping `?view=content` compatible with first-run while moving returning workbench coverage to the explicit `?view=brand-os` route | `ui/src/pages/DearMeOnboarding.test.tsx`, `scripts/dearme-goal-audit.ts` |
+
+Reuse note:
+
+- Reuses Polsia's first-screen structure without copying the product claim or
+  exposing setup, donor, provider, control-plane, or outbound-send mechanics.
+- Reuses DearMe's existing public first-run surface instead of creating another
+  landing page, keeping the route change small and reversible.
+- Keeps the dense Brand OS workroom available for returning users and tests, but
+  no longer makes it the cold-start default.
+- Release posture does not change: this closes the acquisition/first-run
+  experience gap, not the live external proof gap.

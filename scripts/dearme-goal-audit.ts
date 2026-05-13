@@ -247,7 +247,12 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
   {
     key: "test_public_first_run_landing",
     file: PUBLIC_FIRST_RUN_LANDING_TEST,
-    snippet: "uses the content view as a public first-run landing before the dense team surface",
+    snippet: "uses the default route as a public first-run landing before the dense team surface",
+  },
+  {
+    key: "test_content_view_public_first_run_landing",
+    file: PUBLIC_FIRST_RUN_LANDING_TEST,
+    snippet: "keeps the content view on the public first-run landing path",
   },
   {
     key: "test_live_work_receipts",
@@ -617,7 +622,7 @@ export async function inspectDearMePublicFirstRunLandingEvidence(): Promise<
     return {
       ready: missing.length === 0,
       evidence: missing.length === 0
-        ? "Content view starts with one positioning sentence, a known-for input, private proof-pack CTA, live private-work receipts, a generated first-cycle report, and an approval-boundary promise; the regression test keeps dense workbench fetches behind user intent."
+        ? "Default and content routes start with one positioning sentence, a known-for input, private proof-pack CTA, live private-work receipts, a generated first-cycle report, and an approval-boundary promise; the regression test keeps dense workbench fetches behind user intent."
         : `Public first-run landing proof is missing ${missing.length} required source/test marker(s): ${missing.join(", ")}.`,
       missing,
     };
@@ -640,7 +645,7 @@ function publicFirstRunLandingItem(
       label: "Polsia-style public first-run landing",
       status: "unverified",
       requiredForGoal: true,
-      evidence: "The content route has not been checked for the cold-start landing before the dense workbench.",
+      evidence: "The default route has not been checked for the cold-start landing before the dense workbench.",
       blockers: ["public_first_run_landing_not_checked"],
       commands: [PUBLIC_FIRST_RUN_LANDING_TEST_COMMAND],
     };

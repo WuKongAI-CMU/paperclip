@@ -15240,3 +15240,73 @@ Verification:
   confirmed the owner handoff still emits the three capture flags and no-send
   capture command without writing setup.
 - `git diff --check` passed.
+
+## Polsia First-Run and Return Cue - 2026-05-13
+
+Fifty-eighth DearMe product slice:
+
+- Re-read the local Polsia onboarding evidence, especially the first-input
+  "already working" cue, 90-second proof rhythm, and no-wizard first action.
+- Added a customer-safe preparation cue to the public first-run landing so the
+  input area feels active before the dense team surface appears.
+- The cue switches from "Ready when you are" to "Preparing from your sentence"
+  as soon as the owner types, preserving Polsia's momentum without exposing raw
+  thinking streams, donor names, provider/setup terms, or external-send claims.
+- Added a manager-style return cue to private execution handoffs and delivery
+  receipts so every prepared, paused, delivered, pending, blocked, rejected, or
+  failed-safe move comes back as "what changed", "what waits", and "your next
+  step".
+- Kept the public-action boundary in the same first-screen context: posts,
+  outreach, page changes, and spend stay held for the owner's call.
+- Product posture is unchanged: private proof is usable; public launch still
+  waits on approved external proof facts and guarded live receipts.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- `pnpm --silent dearme:release-gate -- --json` confirmed
+  `overall=private-proof-ready`, `canUse=true`, and `canPublish=false`.
+- `git diff --check`
+  passed.
+
+## Default First-Run Landing - 2026-05-13
+
+Fifty-ninth DearMe product slice:
+
+- Promoted the Polsia-style first-run landing from a hidden content route to
+  the default `/dearme` entry, so a cold user first sees the promise, known-for
+  input, private proof-pack CTA, live private receipts, and approval boundary
+  before the dense workroom.
+- Kept `?view=content` on the same public first-run path for compatibility,
+  while making `?view=brand-os` the explicit workroom route for returning users,
+  deep links, and existing workbench regression coverage.
+- Synchronized the goal-audit public-first-run markers so the release gate now
+  checks both the default route and the compatibility content route.
+- Preserved the product boundary: no public posts, outreach, page changes,
+  spend, provider setup, donor names, or raw control-plane language are exposed
+  on the first screen.
+- Product posture is unchanged: private proof is usable; public launch still
+  waits on approved external professional-network and phone-message proof facts
+  plus guarded live receipts.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed, 81 tests.
+- `pnpm --silent test:dearme-goal-audit`
+  passed, 8 tests.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- `pnpm --silent dearme:release-gate -- --json` confirmed
+  `overall=private-proof-ready`, `canUse=true`, and `canPublish=false`.
+- `pnpm --silent dearme:goal-audit -- --check` returned the expected blocked
+  completion verdict because OpenClaw iMessage/SMS and live provider proof are
+  still missing.
+- Browser QA on `http://127.0.0.1:3100/DEAA/dearme` confirmed the default
+  first-run landing, known-for input, CTA, active preparation cue, and hidden
+  dense workroom. Browser QA on
+  `http://127.0.0.1:3100/DEAA/dearme?view=brand-os` confirmed the explicit
+  brand workroom without the public first-run CTA.

@@ -51,7 +51,7 @@ const mockNavigate = vi.hoisted(() => vi.fn());
 const mockSetBreadcrumbs = vi.hoisted(() => vi.fn());
 const mockLocation = vi.hoisted(() => ({
   pathname: "/PET/dearme",
-  search: "",
+  search: "?view=brand-os",
 }));
 const mockCompanyContext = vi.hoisted(() => ({
   selectedCompanyId: "company-1" as string | null,
@@ -1864,7 +1864,7 @@ describe("DearMeOnboarding", () => {
       status: "revision_requested",
     });
     mockLocation.pathname = "/PET/dearme";
-    mockLocation.search = "";
+    mockLocation.search = "?view=brand-os";
   });
 
   afterEach(() => {
@@ -1902,9 +1902,9 @@ describe("DearMeOnboarding", () => {
     });
   });
 
-  it("uses the content view as a public first-run landing before the dense team surface", async () => {
+  it("uses the default route as a public first-run landing before the dense team surface", async () => {
     mockLocation.pathname = "/DEAA/dearme";
-    mockLocation.search = "?view=content";
+    mockLocation.search = "";
     mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
     const root = createRoot(container);
     const queryClient = new QueryClient({
@@ -1927,6 +1927,8 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("What do you want to be known for?");
     expect(container.textContent).toContain("Start my first private proof pack");
     expect(container.textContent).toContain("One sentence starts the private cycle without a tour.");
+    expect(container.textContent).toContain("Ready when you are");
+    expect(container.textContent).toContain("Studying the outcome you want people to remember.");
     expect(container.textContent).toContain("Watch the team work live");
     expect(container.textContent).toContain("Studying your voice");
     expect(container.textContent).toContain("Voice Editor");
@@ -1964,6 +1966,9 @@ describe("DearMeOnboarding", () => {
       );
     });
 
+    expect(container.textContent).toContain("Preparing from your sentence");
+    expect(container.textContent).toContain("Studying the outcome you want people to remember.");
+
     await act(async () => {
       buttonByText(container, "Start my first private proof pack")?.click();
     });
@@ -1986,7 +1991,37 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("keeps the content view on the public first-run landing path", async () => {
+    mockLocation.pathname = "/DEAA/dearme";
+    mockLocation.search = "?view=content";
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.querySelector('[aria-label="DearMe public first run"]')).not.toBeNull();
+    expect(container.textContent).toContain("What do you want to be known for?");
+    expect(container.textContent).toContain("Start my first private proof pack");
+    expect(mockDearmeApi.getWorkbench).not.toHaveBeenCalled();
+    expect(mockDearmeApi.getOutputs).not.toHaveBeenCalled();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("previews a full profile and creates an approval request", async () => {
+    mockLocation.search = "?view=brand-os";
     mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
     const root = createRoot(container);
     const queryClient = new QueryClient({
@@ -4695,6 +4730,12 @@ describe("DearMeOnboarding", () => {
     expect(handoffPanel.textContent).toContain("Ready to review: Content drafts.");
     expect(handoffPanel.textContent).toContain("Open the brief to check voice, proof, and boundary before launch.");
     expect(handoffPanel.textContent).toContain("Nothing public or external runs until you make the next call.");
+    expect(handoffPanel.querySelector('[aria-label="Return cue"]')).not.toBeNull();
+    expect(handoffPanel.textContent).toContain("What changed");
+    expect(handoffPanel.textContent).toContain("What waits");
+    expect(handoffPanel.textContent).toContain("Your next step");
+    expect(handoffPanel.textContent).toContain("DearMe prepared Content drafts for your review.");
+    expect(handoffPanel.textContent).toContain("Open the brief to check voice, proof, and boundary.");
     expect(handoffPanel.textContent).not.toMatch(/execution handoff|launch queue/i);
     expectNoHiddenProductTerms(handoffPanel.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
@@ -4763,6 +4804,11 @@ describe("DearMeOnboarding", () => {
     expect(handoffPanel.textContent).toContain("External action not run");
     expect(handoffPanel.textContent).toContain("Saved for later: Content drafts.");
     expect(handoffPanel.textContent).toContain("Nothing public or external runs while paused.");
+    expect(handoffPanel.querySelector('[aria-label="Return cue"]')).not.toBeNull();
+    expect(handoffPanel.textContent).toContain("DearMe saved Content drafts instead of pushing it forward.");
+    expect(handoffPanel.textContent).toContain(
+      "Your brand team stays paused until you resume or approve a new direction.",
+    );
     expectNoHiddenProductTerms(handoffPanel.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
       HIDDEN_PRODUCT_TERMS.orchestrationName,
@@ -5084,7 +5130,7 @@ describe("DearMeOnboarding", () => {
   });
 
   it("opens a team workbench batch decision", async () => {
-    mockLocation.search = "?codexProductQa=20260512n-owner-proof-details";
+    mockLocation.search = "?codexProductQa=20260512n-owner-proof-details&view=brand-os";
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -6280,6 +6326,11 @@ describe("DearMeOnboarding", () => {
     expect(handoffPanel.textContent).toContain("Result is recorded for the approved move.");
     expect(handoffPanel.textContent).toContain("Open the result or brief to review what changed.");
     expect(handoffPanel.textContent).toContain("The next private cycle can keep moving under your launch boundary.");
+    expect(handoffPanel.querySelector('[aria-label="Return cue"]')).not.toBeNull();
+    expect(handoffPanel.textContent).toContain("The approved move has a recorded result.");
+    expect(handoffPanel.textContent).toContain(
+      "Open the result or brief, then let DearMe prepare the next proof-backed move.",
+    );
     expect(handoffPanel.textContent).not.toContain("External action not run");
     expectNoHiddenProductTerms(handoffPanel.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
@@ -6382,6 +6433,9 @@ describe("DearMeOnboarding", () => {
     expect(handoffPanel.textContent).toContain("Approved move is waiting on its result.");
     expect(handoffPanel.textContent).toContain("Keep the brief open until DearMe records the receipt.");
     expect(handoffPanel.textContent).toContain("The boundary stays visible while the result is pending.");
+    expect(handoffPanel.querySelector('[aria-label="Return cue"]')).not.toBeNull();
+    expect(handoffPanel.textContent).toContain("The approved move is held with its boundary still visible.");
+    expect(handoffPanel.textContent).toContain("DearMe is waiting for the receipt before continuing this move.");
     expect(handoffPanel.textContent).not.toContain("External action not run");
     expectNoHiddenProductTerms(handoffPanel.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
@@ -6429,6 +6483,9 @@ describe("DearMeOnboarding", () => {
     expect(handoffPanel.textContent).toContain("The approved move needs a new decision.");
     expect(handoffPanel.textContent).toContain("Open the brief to choose a safer direction.");
     expect(handoffPanel.textContent).toContain("No new external action runs until you approve again.");
+    expect(handoffPanel.querySelector('[aria-label="Return cue"]')).not.toBeNull();
+    expect(handoffPanel.textContent).toContain("DearMe brought the move back instead of forcing it through.");
+    expect(handoffPanel.textContent).toContain("Open the brief and choose the safer next step.");
     expect(handoffPanel.textContent).not.toContain("External action not run");
     expectNoHiddenProductTerms(handoffPanel.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
@@ -6476,6 +6533,13 @@ describe("DearMeOnboarding", () => {
     expect(handoffPanel.textContent).toContain("Approved move is ready, but the channel is not connected.");
     expect(handoffPanel.textContent).toContain("Connect the channel before DearMe can continue this move.");
     expect(handoffPanel.textContent).toContain("No external action ran without the connection.");
+    expect(handoffPanel.querySelector('[aria-label="Return cue"]')).not.toBeNull();
+    expect(handoffPanel.textContent).toContain(
+      "The approved move stayed private instead of using a missing connection.",
+    );
+    expect(handoffPanel.textContent).toContain(
+      "DearMe needs the approved connection before this move can continue.",
+    );
     expect(handoffPanel.textContent).not.toContain("External action not run");
     expectNoHiddenProductTerms(handoffPanel.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
@@ -6522,6 +6586,11 @@ describe("DearMeOnboarding", () => {
     expect(handoffPanel.textContent).toContain("DearMe failed safely before representing you again.");
     expect(handoffPanel.textContent).toContain("Open the brief to inspect the prepared move.");
     expect(handoffPanel.textContent).toContain("Choose a new direction before any public move continues.");
+    expect(handoffPanel.querySelector('[aria-label="Return cue"]')).not.toBeNull();
+    expect(handoffPanel.textContent).toContain("DearMe stopped the move safely before representing you again.");
+    expect(handoffPanel.textContent).toContain(
+      "Open the brief, inspect the prepared move, and choose a new direction.",
+    );
     expect(handoffPanel.textContent).not.toContain("External action not run");
     expectNoHiddenProductTerms(handoffPanel.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,

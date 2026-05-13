@@ -1798,6 +1798,13 @@ const FIRST_CYCLE_LIVE_PROGRESS_LABELS = [
   "Ready for your launch call",
 ] as const;
 
+const FIRST_RUN_PREPARATION_CUES = [
+  "Studying the outcome you want people to remember.",
+  "Looking for the first proof, audience, and draft angles.",
+  "Preparing the private review queue before any public move.",
+  "Holding posts, outreach, page changes, and spend for your call.",
+] as const;
+
 const FIRST_CYCLE_LIVE_WORK_STATUS_LABELS: Record<DearMeFirstCyclePreviewResponse["liveWorkTrail"][number]["status"], string> = {
   ready: "Ready",
   working: "Working",
@@ -2211,6 +2218,135 @@ function privateExecutionHandoffChecklist({
   ];
 }
 
+function privateExecutionReturnCue({
+  artifact,
+  isDeliveryReceipt,
+  deliveryStatus,
+  isPaused,
+}: {
+  artifact: string;
+  isDeliveryReceipt: boolean;
+  deliveryStatus?: DearMeWorkbenchProgressItem["deliveryStatus"];
+  isPaused: boolean;
+}) {
+  if (!isDeliveryReceipt) {
+    if (isPaused) {
+      return [
+        {
+          label: "What changed",
+          body: `DearMe saved ${artifact} instead of pushing it forward.`,
+        },
+        {
+          label: "What waits",
+          body: "Your brand team stays paused until you resume or approve a new direction.",
+        },
+        {
+          label: "Your next step",
+          body: "Open the brief when you are ready to restart the private cycle.",
+        },
+      ];
+    }
+
+    return [
+      {
+        label: "What changed",
+        body: `DearMe prepared ${artifact} for your review.`,
+      },
+      {
+        label: "What waits",
+        body: "Nothing public or external runs until you make the next governed call.",
+      },
+      {
+        label: "Your next step",
+        body: "Open the brief to check voice, proof, and boundary.",
+      },
+    ];
+  }
+
+  if (deliveryStatus === "delivered") {
+    return [
+      {
+        label: "What changed",
+        body: "The approved move has a recorded result.",
+      },
+      {
+        label: "What waits",
+        body: "The next private pass can continue inside your launch boundary.",
+      },
+      {
+        label: "Your next step",
+        body: "Open the result or brief, then let DearMe prepare the next proof-backed move.",
+      },
+    ];
+  }
+
+  if (deliveryStatus === "needs_channel_connection") {
+    return [
+      {
+        label: "What changed",
+        body: "The approved move stayed private instead of using a missing connection.",
+      },
+      {
+        label: "What waits",
+        body: "DearMe needs the approved connection before this move can continue.",
+      },
+      {
+        label: "Your next step",
+        body: "Connect the channel or keep reviewing the private brief.",
+      },
+    ];
+  }
+
+  if (deliveryStatus === "pending") {
+    return [
+      {
+        label: "What changed",
+        body: "The approved move is held with its boundary still visible.",
+      },
+      {
+        label: "What waits",
+        body: "DearMe is waiting for the receipt before continuing this move.",
+      },
+      {
+        label: "Your next step",
+        body: "Keep the brief open and review the receipt when it returns.",
+      },
+    ];
+  }
+
+  if (deliveryStatus === "rejected") {
+    return [
+      {
+        label: "What changed",
+        body: "DearMe brought the move back instead of forcing it through.",
+      },
+      {
+        label: "What waits",
+        body: "A safer direction needs your decision before anything new runs.",
+      },
+      {
+        label: "Your next step",
+        body: "Open the brief and choose the safer next step.",
+      },
+    ];
+  }
+
+  return [
+    {
+      label: "What changed",
+      body: "DearMe stopped the move safely before representing you again.",
+    },
+    {
+      label: "What waits",
+      body: "A safer direction needs your decision before anything public continues.",
+    },
+    {
+      label: "Your next step",
+      body: "Open the brief, inspect the prepared move, and choose a new direction.",
+    },
+  ];
+}
+
 function PrivateExecutionHandoffPanel({
   handoff,
   onOpenIssue,
@@ -2278,6 +2414,12 @@ function PrivateExecutionHandoffPanel({
     deliveryStatus: deliveryStatus ?? undefined,
     isPaused,
   });
+  const returnCueItems = privateExecutionReturnCue({
+    artifact,
+    isDeliveryReceipt,
+    deliveryStatus: deliveryStatus ?? undefined,
+    isPaused,
+  });
 
   return (
     <DearMeFocusSurface aria-label={surfaceLabel} className="space-y-4">
@@ -2319,6 +2461,14 @@ function PrivateExecutionHandoffPanel({
         items={handoffChecklistItems}
         aria-label="Launch handoff checklist"
       />
+      <div aria-label="Return cue" className="grid gap-2 md:grid-cols-3">
+        {returnCueItems.map((item) => (
+          <div key={item.label} className="rounded-md border border-border bg-muted/30 p-3">
+            <p className="text-xs font-medium uppercase text-muted-foreground">{item.label}</p>
+            <p className="mt-1 text-sm text-foreground">{item.body}</p>
+          </div>
+        ))}
+      </div>
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div className="rounded-md border border-primary/20 bg-background/80 p-3">
           <p className="text-xs font-medium uppercase text-muted-foreground">Next</p>
@@ -2602,6 +2752,20 @@ function DearMePublicFirstRunLanding({
     onStart();
   }
 
+  const [preparationCueIndex, setPreparationCueIndex] = useState(0);
+  const preparationCue = FIRST_RUN_PREPARATION_CUES[preparationCueIndex] ?? FIRST_RUN_PREPARATION_CUES[0];
+  const hasIntent = intent.trim().length > 0;
+
+  useEffect(() => {
+    if (import.meta.env.MODE === "test") return undefined;
+
+    const timer = window.setInterval(() => {
+      setPreparationCueIndex((index) => (index + 1) % FIRST_RUN_PREPARATION_CUES.length);
+    }, 1800);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   const liveMoments = SAMPLE_FIRST_CYCLE_PREVIEW.liveWorkTrail;
   const cycleReport = SAMPLE_FIRST_CYCLE_PREVIEW.cycleReport;
   const proofReceiptStats = [
@@ -2666,6 +2830,18 @@ function DearMePublicFirstRunLanding({
             <p className="text-xs font-medium text-muted-foreground">
               One sentence starts the private cycle without a tour.
             </p>
+            <div
+              aria-label="First-run preparation cue"
+              className="flex min-h-12 items-start gap-3 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-sm"
+            >
+              <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden="true" />
+              <div>
+                <p className="font-medium">
+                  {hasIntent ? "Preparing from your sentence" : "Ready when you are"}
+                </p>
+                <p className="text-muted-foreground">{preparationCue}</p>
+              </div>
+            </div>
           </form>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -7966,7 +8142,7 @@ export function DearMeOnboarding() {
   const [previewSignature, setPreviewSignature] = useState<string | null>(null);
   const [firstCycleIntent, setFirstCycleIntent] = useState("");
   const [firstCyclePreview, setFirstCyclePreview] = useState<DearMeFirstCyclePreviewResponse | null>(null);
-  const [contentFirstRunStarted, setContentFirstRunStarted] = useState(false);
+  const [publicFirstRunStarted, setPublicFirstRunStarted] = useState(false);
   const [fullProfileControlsOpen, setFullProfileControlsOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingApprovalReview, setPendingApprovalReview] = useState<{
@@ -8231,12 +8407,12 @@ export function DearMeOnboarding() {
 
   function handleContentFirstRunStart() {
     const positioning = firstCycleIntent.trim() || form.positioning.trim();
-    if (positioning) setContentFirstRunStarted(true);
+    if (positioning) setPublicFirstRunStarted(true);
     handleFirstCyclePreview();
   }
 
   function handleContentFirstRunWatch() {
-    setContentFirstRunStarted(true);
+    setPublicFirstRunStarted(true);
     window.setTimeout(() => {
       const target = document.querySelector('[aria-label="90-second first cycle"]');
       target?.scrollIntoView?.({ behavior: "smooth", block: "start" });
@@ -8338,13 +8514,13 @@ export function DearMeOnboarding() {
     !canRequestPaidBetaWork ||
     previewMutation.isPending ||
     applyRequestMutation.isPending;
-  const showContentFirstRunLanding =
-    selectedView === "content" &&
+  const showPublicFirstRunLanding =
+    (selectedView === "home" || selectedView === "content") &&
     !decisionFocus &&
-    !contentFirstRunStarted &&
+    !publicFirstRunStarted &&
     !firstCyclePreview;
 
-  if (showContentFirstRunLanding) {
+  if (showPublicFirstRunLanding) {
     return (
       <DearMePageShell>
         <DearMePublicFirstRunLanding
