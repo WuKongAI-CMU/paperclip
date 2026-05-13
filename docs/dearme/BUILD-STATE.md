@@ -15179,3 +15179,27 @@ Verification:
 - Documentation-only update.
 - `git diff --check -- docs/dearme/POLSIA-DEEP-STUDY-2026-05-12.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md docs/dearme/BUILD-STATE.md`
   passed.
+
+## Future Product Launch Video Brief - 2026-05-13
+
+Fifty-sixth DearMe product asset slice:
+
+- Added a future-concept launch video brief for DearMe as a private brand team,
+  not a generic writing tool or visible chatbot.
+- The brief includes a master video-generation prompt, 90-second launch film,
+  30-second cutdown, 10-second social cutdown, scene-by-scene generation
+  prompts, negative prompt, launch-page hook, and customer-facing guardrails.
+- The product narrative is intentionally bold: DearMe turns one known-for
+  sentence into voice, proof, opportunities, personal-site readiness, daily
+  letters, and a public launch call.
+- The public-action boundary is preserved in the film: private work can keep
+  moving, while public posts, messages, site changes, and spend wait for user
+  approval.
+
+Verification:
+
+- Documentation-only update.
+- `git diff --check -- docs/dearme/BUILD-STATE.md docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+  passed.
+- `git diff --no-index --check -- /dev/null docs/dearme/PRODUCT-LAUNCH-VIDEO-BRIEF.md`
+  reported no whitespace warnings for the new brief.

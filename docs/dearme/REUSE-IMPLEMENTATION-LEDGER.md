@@ -4302,3 +4302,19 @@ Reuse note:
 - Do not add a customer-facing provider selector, setup dashboard, agent roster,
   raw tool stream, or shared outbound identity to chase Polsia parity. Those are
   either backstage concerns or product risks.
+
+## Future Product Launch Video Brief - 2026-05-13
+
+| Slice | Donor mechanism | Path |
+|---|---|---|
+| Future launch video narrative | Polsia's one-input manager choreography, Lindy's compact action-card boundary, and Littlebird-style proof/task rows translated into a customer-facing DearMe-only concept film | `docs/dearme/PRODUCT-LAUNCH-VIDEO-BRIEF.md` |
+
+Reuse note:
+
+- The video brief keeps the useful autonomy story: one sentence starts private
+  work, receipts become visible, and the owner gets a clear launch call.
+- The customer-facing copy does not expose donor names, substrate names,
+  provider/model/runtime/setup language, or raw proof-gate mechanics.
+- The film is allowed to be future-facing and aspirational, but it preserves the
+  product trust boundary: public posts, messages, site changes, and spend still
+  require explicit approval.

@@ -1241,7 +1241,7 @@ const LIVE_FEED_SECTIONS: LiveFeedSection[] = [
   {
     id: "recent",
     title: "Recent updates",
-    summary: "Completed setup, spend checkpoints, and cycle notes from the team.",
+    summary: "Completed cycle checkpoints, spend pauses, and team notes.",
     items: [],
   },
 ];
@@ -2560,7 +2560,7 @@ function FirstCyclePayoffStrip({
               <ArrowRight className="h-4 w-4" />
             </Button>
             <p className="text-xs font-medium text-muted-foreground">
-              No setup tour. One sentence starts the private cycle.
+              One sentence starts the private cycle without a tour.
             </p>
           </div>
         </div>
@@ -2607,7 +2607,7 @@ function DearMePublicFirstRunLanding({
     },
     {
       label: `${DEARME_FIRST_CYCLE_STARTER_POST_COUNT} starter drafts`,
-      summary: "The first packet opens with reviewable content instead of setup steps.",
+      summary: "The first packet opens with reviewable content instead of a tour.",
     },
     {
       label: `${SAMPLE_FIRST_CYCLE_PREVIEW.opportunityShortlist.length} opportunity leads`,
@@ -2655,7 +2655,7 @@ function DearMePublicFirstRunLanding({
                 disabled={isPending}
               >
                 {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Start my first brand cycle
+                Start my first private proof pack
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
@@ -2669,12 +2669,12 @@ function DearMePublicFirstRunLanding({
               onClick={onWatchLive}
             >
               <Telescope className="h-4 w-4" />
-              See the first proof pack
+              Watch the team work live
               <ArrowRight className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <ShieldCheck className="h-4 w-4 text-primary" />
-              Private. Public only with approval.
+              No public posts. No outreach. Nothing launches without approval.
             </div>
           </div>
 
@@ -4245,7 +4245,7 @@ function TeamFocusWorkbenchPanel({
       detail: livePulse?.description ??
         (workCount > 0
           ? "Prepared assets stay in motion while public moves remain gated."
-          : "The first private cycle starts without a setup tour."),
+          : "The first private cycle starts from one sentence."),
     },
   ];
   const returnHandoff: Array<{
@@ -4287,7 +4287,7 @@ function TeamFocusWorkbenchPanel({
       detail: livePulse?.description ??
         (workCount > 0
           ? "Drafts, scouting, proof, and reporting stay private until a launch call is ready."
-          : "No setup tour is needed before the first private cycle."),
+          : "One sentence is enough to start the first private cycle."),
     },
     {
       icon: FileText,

@@ -1925,14 +1925,14 @@ describe("DearMeOnboarding", () => {
       "It runs private research, drafts, opportunities, proof, and weekly direction, then brings you the launch calls that need your judgment.",
     );
     expect(container.textContent).toContain("What do you want to be known for?");
-    expect(container.textContent).toContain("Start my first brand cycle");
-    expect(container.textContent).toContain("See the first proof pack");
+    expect(container.textContent).toContain("Start my first private proof pack");
+    expect(container.textContent).toContain("Watch the team work live");
     expect(container.textContent).toContain("Studying your voice");
     expect(container.textContent).toContain("Voice Editor");
     expect(container.textContent).toContain("5 starter drafts");
     expect(container.textContent).toContain("Launch boundary");
     expect(container.textContent).toContain(
-      "Private. Public only with approval.",
+      "No public posts. No outreach. Nothing launches without approval.",
     );
     expect(container.textContent).toContain("Watch DearMe prepare private brand work live");
     expect(container.textContent).toContain("5 private work receipts");
@@ -1964,7 +1964,7 @@ describe("DearMeOnboarding", () => {
     });
 
     await act(async () => {
-      buttonByText(container, "Start my first brand cycle")?.click();
+      buttonByText(container, "Start my first private proof pack")?.click();
     });
     await flushReact();
 
@@ -2066,7 +2066,7 @@ describe("DearMeOnboarding", () => {
     expect(firstPayoff.getAttribute("data-dearme-surface")).toBe("focus-surface");
     expect(firstPayoff.querySelectorAll('[data-dearme-surface="workbench-card"]').length).toBe(3);
     expect(firstPayoff.textContent).toContain("One sentence starts your private brand cycle.");
-    expect(firstPayoff.textContent).toContain("No setup tour. One sentence starts the private cycle.");
+    expect(firstPayoff.textContent).toContain("One sentence starts the private cycle without a tour.");
     expect(firstPayoff.textContent).toContain(
       "Voice Profile, starter posts, one opportunity, proof card, first plan",
     );
@@ -2245,7 +2245,7 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Reviewable work and launch calls stay first.");
     expect(container.textContent).toContain("Private work the team is preparing before it asks for a decision.");
     expect(container.textContent).toContain("Recent updates");
-    expect(container.textContent).toContain("Completed setup, spend checkpoints, and cycle notes from the team.");
+    expect(container.textContent).toContain("Completed cycle checkpoints, spend pauses, and team notes.");
     expect(container.textContent).toContain("Latest");
     expect(container.textContent).toContain("Your call: Review Starter posts");
     expect(container.textContent).toContain("Cycle check-in completed");
