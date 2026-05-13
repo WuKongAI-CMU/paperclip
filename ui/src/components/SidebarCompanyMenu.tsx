@@ -101,10 +101,10 @@ export function SidebarCompanyMenu({
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="h-9 flex-1 justify-start gap-2 px-2 text-left"
+          className="h-9 min-w-0 flex-1 justify-start gap-2 px-2 text-left"
           aria-label={selectedCompanyName ? `Open ${selectedCompanyName} workspace switcher` : "Open workspace switcher"}
         >
-          <span className="flex min-w-0 flex-1 items-center gap-2">
+          <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
             {selectedCompany && selectedCompanyName ? (
               <WorkspaceIcon company={selectedCompany} companyName={selectedCompanyName} />
             ) : null}

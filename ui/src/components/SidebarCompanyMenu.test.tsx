@@ -275,4 +275,47 @@ describe("SidebarCompanyMenu", () => {
       root.unmount();
     });
   });
+
+  it("keeps long customer-safe workspace names truncated inside the sidebar trigger", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const longWorkspaceName = "DearMe Private Proof Check With A Very Long Workspace Name";
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <SidebarCompanyMenu
+            formatCompanyName={(company) => (
+              company.name === "Acme Labs" ? longWorkspaceName : company.name
+            )}
+          />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    const trigger = container.querySelector(
+      `button[aria-label="Open ${longWorkspaceName} workspace switcher"]`,
+    );
+    expect(trigger).not.toBeNull();
+    expect(trigger?.getAttribute("class")).toContain("min-w-0");
+
+    const content = Array.from(trigger?.querySelectorAll("span") ?? [])
+      .find((element) => element.getAttribute("class")?.includes("overflow-hidden"));
+    const label = Array.from(trigger?.querySelectorAll("span") ?? [])
+      .find((element) => (
+        element.textContent === longWorkspaceName
+        && element.getAttribute("class")?.includes("truncate")
+      ));
+
+    expect(content).toBeTruthy();
+    expect(label?.getAttribute("class")).toContain("truncate");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
 });

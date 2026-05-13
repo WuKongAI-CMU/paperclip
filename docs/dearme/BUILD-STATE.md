@@ -2,6 +2,45 @@
 
 Date: 2026-05-12
 
+## Goal / OMX / Symphony Coordination Contract - 2026-05-13
+
+Product/coordination slice:
+
+- Clarified the DearMe cooperation contract so Codex Goal, OMX, and Symphony
+  can run together without becoming competing managers.
+- Set Codex Goal as the long-lived product coordinator, OMX as the local
+  execution/research toolkit, and Symphony as the bounded Linear/workspace
+  worker queue.
+- Added conflict-prevention rules for one coordinator, one integration surface,
+  isolated worker writes, durable handoffs, and owner approval before public
+  send/deploy/spend actions.
+
+Verification:
+
+- `git diff --check`
+
+## Workspace Switcher Button QA - 2026-05-13
+
+Product/UI slice:
+
+- Ran a real-user button sweep across the DearMe voice/work-ready surfaces:
+  first-cycle entry, private proof, primary navigation, proof-pack review,
+  internal request-changes, and the mobile More menu all responded without
+  blocking errors.
+- Left `Launch this work` unclicked because public launch remains an
+  approval-gated boundary.
+- Fixed the desktop sidebar workspace switcher so long customer-safe workspace
+  names shrink inside the first-screen chrome and show the intended truncation
+  instead of hard clipping.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/components/SidebarCompanyMenu.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser QA on `http://127.0.0.1:3100/DEAA/dearme?view=voice&codexProductQa=20260512n-owner-proof-details`:
+  no page errors or console errors; screenshot saved at
+  `/tmp/dearme-qa-voice-after-sidebar-fix.png`.
+
 ## First Proof Pack Live Feed Handoff - 2026-05-12
 
 Product/architecture slice:
