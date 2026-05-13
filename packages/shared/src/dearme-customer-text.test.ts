@@ -5,6 +5,7 @@ import {
   DEARME_LAUNCH_PROOF_HANDOFF_STEPS,
   DEARME_OWNER_PROOF_CHECKLIST_ITEMS,
   DEARME_OWNER_PROOF_FACT_SPECS,
+  DEARME_OWNER_PROOF_REPLY_TEMPLATE,
   compactDearMeCustomerText,
   dearMeOwnerProofFactSpec,
   dearMeCustomerSafeLaunchNeed,
@@ -156,6 +157,27 @@ describe("DearMe customer text", () => {
 
     for (const item of DEARME_OWNER_PROOF_CHECKLIST_ITEMS) {
       expect(`${item.label} ${item.summary}`).not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
+    }
+  });
+
+  it("keeps the owner proof reply template customer-safe", () => {
+    expect(DEARME_OWNER_PROOF_REPLY_TEMPLATE).toEqual([
+      {
+        label: "Delivery route",
+        value: "approved delivery-route link",
+      },
+      {
+        label: "Professional-network recipient",
+        value: "approved recipient",
+      },
+      {
+        label: "Phone-message recipient",
+        value: "approved phone number or contact",
+      },
+    ]);
+
+    for (const line of DEARME_OWNER_PROOF_REPLY_TEMPLATE) {
+      expect(`${line.label} ${line.value}`).not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
     }
   });
 });

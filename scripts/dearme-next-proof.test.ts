@@ -10,6 +10,20 @@ import {
   targetFromDearMeReleaseGate,
 } from "./dearme-next-proof.ts";
 import type { DearMeReleaseGate } from "./dearme-release-gate.ts";
+import { DEARME_OWNER_PROOF_FACT_SPECS } from "../packages/shared/src/dearme-customer-text.ts";
+
+function sampleValueForOwnerProofFact(provideAs: string) {
+  if (provideAs === "DEARME_LINKEDIN_DM_MESSAGES_URL") {
+    return "https://partner.example.test/messages";
+  }
+  if (provideAs === "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN") {
+    return "urn:li:person:lead-1";
+  }
+  if (provideAs === "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT") {
+    return "+15551234567";
+  }
+  throw new Error(`Missing sample value for owner proof fact: ${provideAs}`);
+}
 
 test("DearMe next proof args parse provider target aliases and env controls", () => {
   const args = parseDearMeNextProofArgs([
@@ -42,29 +56,22 @@ test("DearMe next proof args parse provider target aliases and env controls", ()
 });
 
 test("DearMe next proof args parse non-secret fact capture flags", () => {
+  const factCaptureArgs = DEARME_OWNER_PROOF_FACT_SPECS.flatMap((spec, index) => {
+    const value = sampleValueForOwnerProofFact(spec.provideAs);
+    return index % 2 === 0 ? [spec.captureFlag, value] : [`${spec.captureFlag}=${value}`];
+  });
   const args = parseDearMeNextProofArgs([
     "--target=linkedin",
-    "--imessage-recipient",
-    "+15551234567",
-    "--linkedin-messages-url=https://partner.example.test/messages",
-    "--linkedin-recipient-urn",
-    "urn:li:person:lead-1",
+    ...factCaptureArgs,
   ]);
 
-  assert.deepEqual(args.factCaptures, [
-    {
-      key: "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
-      value: "+15551234567",
-    },
-    {
-      key: "DEARME_LINKEDIN_DM_MESSAGES_URL",
-      value: "https://partner.example.test/messages",
-    },
-    {
-      key: "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
-      value: "urn:li:person:lead-1",
-    },
-  ]);
+  assert.deepEqual(
+    args.factCaptures,
+    DEARME_OWNER_PROOF_FACT_SPECS.map((spec) => ({
+      key: spec.provideAs,
+      value: sampleValueForOwnerProofFact(spec.provideAs),
+    })),
+  );
 });
 
 test("DearMe next proof rejects fact capture in no-write mode", async () => {

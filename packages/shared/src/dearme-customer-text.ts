@@ -65,6 +65,11 @@ export interface DearMeOwnerProofChecklistItem {
   summary: string;
 }
 
+export interface DearMeOwnerProofReplyTemplateLine {
+  label: string;
+  value: string;
+}
+
 export interface DearMeOwnerProofFactSpec {
   provideAs: string;
   label: string;
@@ -157,6 +162,21 @@ export const DEARME_OWNER_PROOF_CHECKLIST_ITEMS = [
     summary: "The guarded receipt pass stays held until the owner approves the exact details.",
   },
 ] as const satisfies readonly DearMeOwnerProofChecklistItem[];
+
+export const DEARME_OWNER_PROOF_REPLY_TEMPLATE = [
+  {
+    label: "Delivery route",
+    value: "approved delivery-route link",
+  },
+  {
+    label: "Professional-network recipient",
+    value: "approved recipient",
+  },
+  {
+    label: "Phone-message recipient",
+    value: "approved phone number or contact",
+  },
+] as const satisfies readonly DearMeOwnerProofReplyTemplateLine[];
 
 export function dearMeOwnerProofFactSpec(provideAs: string) {
   return DEARME_OWNER_PROOF_FACT_SPECS.find((fact) => fact.provideAs === provideAs) ?? null;

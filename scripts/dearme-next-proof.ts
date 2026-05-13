@@ -117,6 +117,9 @@ interface PrepareDearMeNextProofSetupOptions {
 
 const DEFAULT_PROOF_ENV_FILE = ".dearme-proof.env";
 type FactCaptureKey = typeof DEARME_OWNER_PROOF_FACT_SPECS[number]["provideAs"];
+const FACT_CAPTURE_KEY_BY_FLAG = new Map(
+  DEARME_OWNER_PROOF_FACT_SPECS.map((spec) => [spec.captureFlag, spec.provideAs] as const),
+);
 
 function envFileExists(path: string) {
   return access(path).then(
@@ -168,6 +171,13 @@ function assertFactCaptureValue(key: FactCaptureKey, value: string): DearMeNextP
   const trimmed = value.trim();
   if (!trimmed) throw new Error(`${key} requires a non-empty value`);
   return { key, value: trimmed };
+}
+
+function factCaptureFlagParts(arg: string) {
+  const separatorIndex = arg.indexOf("=");
+  return separatorIndex === -1
+    ? { flag: arg, value: null }
+    : { flag: arg.slice(0, separatorIndex), value: arg.slice(separatorIndex + 1) };
 }
 
 function capturedFactMetadata(capture: DearMeNextProofFactCapture): DearMeNextProofCapturedFact {
@@ -354,46 +364,19 @@ export function parseDearMeNextProofArgs(argv: readonly string[]): DearMeNextPro
       const envFile = arg.slice("--env-file=".length);
       if (!envFile) throw new Error("--env-file requires a value");
       args.envFile = envFile;
-    } else if (arg === "--imessage-recipient") {
-      const next = normalizedArgv[index + 1];
-      if (!next) throw new Error("--imessage-recipient requires a value");
-      args.factCaptures.push(assertFactCaptureValue(
-        "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
-        next,
-      ));
-      index += 1;
-    } else if (arg.startsWith("--imessage-recipient=")) {
-      args.factCaptures.push(assertFactCaptureValue(
-        "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
-        arg.slice("--imessage-recipient=".length),
-      ));
-    } else if (arg === "--linkedin-messages-url") {
-      const next = normalizedArgv[index + 1];
-      if (!next) throw new Error("--linkedin-messages-url requires a value");
-      args.factCaptures.push(assertFactCaptureValue("DEARME_LINKEDIN_DM_MESSAGES_URL", next));
-      index += 1;
-    } else if (arg.startsWith("--linkedin-messages-url=")) {
-      args.factCaptures.push(assertFactCaptureValue(
-        "DEARME_LINKEDIN_DM_MESSAGES_URL",
-        arg.slice("--linkedin-messages-url=".length),
-      ));
-    } else if (arg === "--linkedin-recipient-urn") {
-      const next = normalizedArgv[index + 1];
-      if (!next) throw new Error("--linkedin-recipient-urn requires a value");
-      args.factCaptures.push(assertFactCaptureValue(
-        "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
-        next,
-      ));
-      index += 1;
-    } else if (arg.startsWith("--linkedin-recipient-urn=")) {
-      args.factCaptures.push(assertFactCaptureValue(
-        "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
-        arg.slice("--linkedin-recipient-urn=".length),
-      ));
-    } else if (!arg.startsWith("--") && !args.target) {
-      args.target = parseProviderTarget(arg);
     } else {
-      throw new Error(`unknown argument: ${arg}`);
+      const { flag, value } = factCaptureFlagParts(arg);
+      const captureKey = FACT_CAPTURE_KEY_BY_FLAG.get(flag);
+      if (captureKey) {
+        const captureValue = value ?? normalizedArgv[index + 1];
+        if (!captureValue) throw new Error(`${flag} requires a value`);
+        args.factCaptures.push(assertFactCaptureValue(captureKey, captureValue));
+        if (value === null) index += 1;
+      } else if (!arg.startsWith("--") && !args.target) {
+        args.target = parseProviderTarget(arg);
+      } else {
+        throw new Error(`unknown argument: ${arg}`);
+      }
     }
   }
 

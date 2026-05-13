@@ -1926,6 +1926,7 @@ describe("DearMeOnboarding", () => {
     );
     expect(container.textContent).toContain("What do you want to be known for?");
     expect(container.textContent).toContain("Start my first private proof pack");
+    expect(container.textContent).toContain("One sentence starts the private cycle without a tour.");
     expect(container.textContent).toContain("Watch the team work live");
     expect(container.textContent).toContain("Studying your voice");
     expect(container.textContent).toContain("Voice Editor");
@@ -3520,6 +3521,7 @@ describe("DearMeOnboarding", () => {
 
     const workbenchFetchesBeforeSave = mockDearmeApi.getWorkbench.mock.calls.length;
     const outputFetchesBeforeSave = mockDearmeApi.getOutputs.mock.calls.length;
+    expect(buttonByText(container, "Add to Voice & Memory")?.disabled).toBe(true);
 
     await act(async () => {
       buttonByText(container, "Boundaries")?.click();
@@ -3546,6 +3548,7 @@ describe("DearMeOnboarding", () => {
         "Never describe the product as effortless magic.",
       );
     });
+    expect(buttonByText(container, "Add to Voice & Memory")?.disabled).toBe(false);
 
     await act(async () => {
       buttonByText(container, "Add to Voice & Memory")?.click();
@@ -4260,6 +4263,14 @@ describe("DearMeOnboarding", () => {
     expect(decisionsSurface.textContent).toContain("DearMe checks this in no-send mode");
     expect(decisionsSurface.textContent).toContain("Only this selected recipient is used");
     expect(decisionsSurface.textContent).toContain("The receipt still waits for owner approval");
+    expect(decisionsSurface.querySelector('[aria-label="Owner proof reply template"]')).not.toBeNull();
+    expect(decisionsSurface.textContent).toContain("Send these approved details to unlock the proof pass.");
+    expect(decisionsSurface.textContent).toContain("Delivery route: approved delivery-route link");
+    expect(decisionsSurface.textContent).toContain("Professional-network recipient: approved recipient");
+    expect(decisionsSurface.textContent).toContain("Phone-message recipient: approved phone number or contact");
+    expect(decisionsSurface.textContent).toContain(
+      "This reply still starts with a no-send check; the live receipt remains held for approval.",
+    );
     expect(decisionsSurface.querySelector('[aria-label="Owner proof checklist"]')).not.toBeNull();
     expect(decisionsSurface.textContent).toContain("Only three facts are missing");
     expect(decisionsSurface.textContent).toContain("No-send check comes first");
@@ -5073,6 +5084,7 @@ describe("DearMeOnboarding", () => {
   });
 
   it("opens a team workbench batch decision", async () => {
+    mockLocation.search = "?codexProductQa=20260512n-owner-proof-details";
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -5092,7 +5104,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&work=issue-2&artifact=issue-2%3Acontent_drafts",
+      "/dearme?codexProductQa=20260512n-owner-proof-details&view=decisions&work=issue-2&artifact=issue-2%3Acontent_drafts",
     );
 
     await act(async () => {
@@ -6093,6 +6105,7 @@ describe("DearMeOnboarding", () => {
   });
 
   it("spotlights the first proof pack when generated draft and report artifacts are ready", async () => {
+    mockLocation.search = "?view=work-ready&codexProductQa=20260512n-owner-proof-details";
     mockDearmeApi.getOutputs.mockResolvedValue(outputsWithFirstCyclePacket());
     const root = createRoot(container);
     const queryClient = new QueryClient({
@@ -6150,7 +6163,7 @@ describe("DearMeOnboarding", () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      "/dearme?view=decisions&work=PET-8&artifact=issue-2%3Acontent_drafts",
+      "/dearme?view=decisions&codexProductQa=20260512n-owner-proof-details&work=PET-8&artifact=issue-2%3Acontent_drafts",
     );
 
     await act(async () => {

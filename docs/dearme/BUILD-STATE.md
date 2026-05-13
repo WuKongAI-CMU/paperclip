@@ -15203,3 +15203,40 @@ Verification:
   passed.
 - `git diff --no-index --check -- /dev/null docs/dearme/PRODUCT-LAUNCH-VIDEO-BRIEF.md`
   reported no whitespace warnings for the new brief.
+
+## Owner Proof Reply Handoff - 2026-05-13
+
+Fifty-seventh DearMe product slice:
+
+- Added a customer-safe "One reply" handoff inside the launch-proof gap so the
+  owner can see the exact approved delivery route, professional-network
+  recipient, and phone-message recipient needed before the guarded live proof.
+- Reused the shared DearMe customer-text contract instead of adding a second
+  release checklist, keeping the Decisions panel, hidden-language tests, and
+  release posture aligned.
+- Derived `dearme:next-proof` capture flags from the shared owner proof fact
+  specs so the handoff command and accepted CLI flags cannot drift.
+- Added the first-run helper line "One sentence starts the private cycle
+  without a tour." so the public landing teaches the Polsia-style one-input path
+  before the dense team surface.
+- Preserved current review context when opening Decisions from prepared work and
+  disabled incomplete Voice & Memory submissions until the required source text
+  is present.
+- Product posture is unchanged: private proof is usable; public launch still
+  waits on real owner-approved external proof facts and guarded receipts.
+
+Verification:
+
+- `pnpm --silent test:dearme-next-proof` passed.
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm exec vitest run packages/shared/src/dearme-customer-text.test.ts --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/shared typecheck` passed.
+- `pnpm --filter @paperclipai/ui typecheck` passed.
+- `pnpm --silent dearme:release-gate -- --json` confirmed
+  `overall=private-proof-ready`, `canUse=true`, and `canPublish=false`.
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
+  confirmed the owner handoff still emits the three capture flags and no-send
+  capture command without writing setup.
+- `git diff --check` passed.

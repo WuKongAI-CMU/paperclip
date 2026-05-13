@@ -4318,3 +4318,25 @@ Reuse note:
 - The film is allowed to be future-facing and aspirational, but it preserves the
   product trust boundary: public posts, messages, site changes, and spend still
   require explicit approval.
+
+## Owner Proof Reply Handoff - 2026-05-13
+
+| Slice | Donor mechanism | Path |
+|---|---|---|
+| Owner-facing launch-proof handoff | Polsia's low-friction first action translated into a DearMe-safe proof handoff: one reply supplies the exact approved live details, while no-send and guarded live proof stay backstage | `packages/shared/src/dearme-customer-text.ts`, `scripts/dearme-next-proof.ts`, `ui/src/pages/DearMeOnboarding.tsx` |
+| Review-context continuity | Littlebird-style task continuity applied to DearMe review routes so prepared work opens in Decisions without losing current QA/review context | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+
+Reuse note:
+
+- Reuses the shared DearMe customer-text contract as the source of truth for
+  proof facts instead of adding another setup dashboard.
+- Keeps donor names, provider terms, environment keys, and raw proof mechanics
+  out of the customer surface.
+- The setup command now derives accepted capture flags from the same shared
+  specs that drive the release gate and owner-facing UI.
+- Review actions preserve the current context instead of resetting the user into
+  a fresh Decisions URL, and incomplete Voice & Memory submissions stay disabled
+  until they have the required source detail.
+- Public launch remains blocked until the approved professional-network route,
+  professional-network recipient, and phone-message recipient are supplied and
+  verified.

@@ -12,6 +12,7 @@ import {
   DEARME_LAUNCH_PROOF_HANDOFF_STEPS,
   DEARME_OWNER_PROOF_CHECKLIST_ITEMS,
   DEARME_OWNER_PROOF_FACT_SPECS,
+  DEARME_OWNER_PROOF_REPLY_TEMPLATE,
   createDearMeFirstCyclePreview,
   dearMeCustomerSafeText,
   dearMeWorkbenchResponseSchema,
@@ -325,8 +326,11 @@ function buildDearMeDecisionRoute(params: {
   issueReference?: string;
   outputId?: string;
   intent?: DearMeReviewEntryIntent | null;
+  preserveSearch?: string;
 }): string {
-  const search = new URLSearchParams({ view: "decisions" });
+  const search = new URLSearchParams(params.preserveSearch ?? "");
+  search.set("view", "decisions");
+  ["approval", "work", "artifact", "issue", "output", "intent"].forEach((key) => search.delete(key));
   if (params.approvalId) search.set("approval", params.approvalId);
   if (params.issueReference) search.set("work", params.issueReference);
   if (params.outputId) search.set("artifact", params.outputId);
@@ -2659,6 +2663,9 @@ function DearMePublicFirstRunLanding({
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
+            <p className="text-xs font-medium text-muted-foreground">
+              One sentence starts the private cycle without a tour.
+            </p>
           </form>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -4971,6 +4978,27 @@ function LaunchProofGapPanel() {
         </div>
       </div>
 
+      <div
+        className="mt-4 rounded-md border border-amber-500/25 bg-background/85 p-3"
+        aria-label="Owner proof reply template"
+      >
+        <p className="text-xs font-medium uppercase text-muted-foreground">One reply</p>
+        <h4 className="mt-1 text-sm font-semibold text-foreground">
+          Send these approved details to unlock the proof pass.
+        </h4>
+        <div className="mt-3 grid gap-2">
+          {DEARME_OWNER_PROOF_REPLY_TEMPLATE.map((line) => (
+            <p key={line.label} className="rounded-md border border-border bg-background/70 p-2 text-sm text-foreground/85">
+              <span className="font-medium text-foreground">{line.label}: </span>
+              {line.value}
+            </p>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          This reply still starts with a no-send check; the live receipt remains held for approval.
+        </p>
+      </div>
+
       <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)]">
         <div className="rounded-md border border-amber-500/25 bg-background/85 p-3">
           <p className="text-xs font-medium uppercase text-muted-foreground">Owner proof checklist</p>
@@ -6042,6 +6070,8 @@ function VoiceMemoryPanel({
         ? "Resume, transcript, portfolio, call notes, or backlog item"
         : selectedGuide.sourcePlaceholder;
   const feedback = memoryUpdateFeedback(result);
+  const canSubmitMemorySource =
+    body.trim().length > 0 && (sourceInputMode !== "link" || sourceLabel.trim().length > 0);
   const recordedMemory = result?.memory ?? null;
   const recordedMemoryAlreadyLoaded = recordedMemory
     ? memory.latest.some((item) => item.id === recordedMemory.id)
@@ -6614,7 +6644,7 @@ function VoiceMemoryPanel({
               </div>
             ) : null}
             <div className="mt-3 flex justify-end">
-              <Button type="submit" disabled={isPending}>
+              <Button type="submit" disabled={isPending || !canSubmitMemorySource}>
                 {isPending
                   ? editingMemoryId ? "Saving..." : "Adding..."
                   : editingMemoryId ? "Save source" : "Add to Voice & Memory"}
@@ -8065,7 +8095,7 @@ export function DearMeOnboarding() {
         queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(selectedCompanyId) });
         queryClient.invalidateQueries({ queryKey: queryKeys.activity(selectedCompanyId) });
       }
-      navigate(buildDearMeDecisionRoute({ approvalId: result.approval.id }));
+      navigate(buildDearMeDecisionRoute({ approvalId: result.approval.id, preserveSearch: location.search }));
     },
     onError: (err) => {
       setActionError(
@@ -8234,12 +8264,19 @@ export function DearMeOnboarding() {
         issueReference: output.issueIdentifier ?? output.issueId,
         outputId: output.id,
         intent,
+        preserveSearch: location.search,
       }),
     );
   }
 
   function handleOpenIssue(issueReference: string, outputId?: string | null) {
-    navigate(buildDearMeDecisionRoute({ issueReference, outputId: outputId ?? undefined }));
+    navigate(
+      buildDearMeDecisionRoute({
+        issueReference,
+        outputId: outputId ?? undefined,
+        preserveSearch: location.search,
+      }),
+    );
   }
 
   function handleOpenWorkbenchWorkItem(
@@ -8247,11 +8284,11 @@ export function DearMeOnboarding() {
     outputId: string,
     intent?: DearMeReviewEntryIntent | null,
   ) {
-    navigate(buildDearMeDecisionRoute({ issueReference, outputId, intent }));
+    navigate(buildDearMeDecisionRoute({ issueReference, outputId, intent, preserveSearch: location.search }));
   }
 
   function handleOpenApproval(approvalId: string) {
-    navigate(buildDearMeDecisionRoute({ approvalId }));
+    navigate(buildDearMeDecisionRoute({ approvalId, preserveSearch: location.search }));
   }
 
   function handleOpenFirstCyclePreview(handle: string) {

@@ -240,6 +240,7 @@ export {
   DEARME_LAUNCH_PROOF_HANDOFF_STEPS,
   DEARME_OWNER_PROOF_FACT_SPECS,
   DEARME_OWNER_PROOF_CHECKLIST_ITEMS,
+  DEARME_OWNER_PROOF_REPLY_TEMPLATE,
   compactDearMeCustomerText,
   dearMeOwnerProofFactSpec,
   dearMeCustomerSafeLaunchNeed,
@@ -249,6 +250,7 @@ export {
   type DearMeLaunchProofHandoffStep,
   type DearMeOwnerProofChecklistItem,
   type DearMeOwnerProofFactSpec,
+  type DearMeOwnerProofReplyTemplateLine,
 } from "./dearme-customer-text.js";
 
 export type {
