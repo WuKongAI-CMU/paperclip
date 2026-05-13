@@ -4377,3 +4377,23 @@ Reuse note:
   no longer makes it the cold-start default.
 - Release posture does not change: this closes the acquisition/first-run
   experience gap, not the live external proof gap.
+
+## Approved Connection Readiness - 2026-05-13
+
+| Slice | Donor mechanism | Path |
+|---|---|---|
+| First-screen launch-proof summary | Polsia's first-screen clarity translated into a short DearMe launch-held proof summary that reuses the existing owner proof facts instead of adding another flow | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+| Blocked delivery connection readiness | Naive/Paperclip-style boundary reuse applied to delivery receipts that need an approved account or recipient before continuing | `ui/src/pages/DearMeOnboarding.tsx`, `ui/src/pages/DearMeOnboarding.test.tsx` |
+
+Reuse note:
+
+- Reuses `DEARME_OWNER_PROOF_FACT_SPECS` as the source of count/order for the
+  first-screen launch hold, with shorter customer-facing labels there and the
+  fuller labels retained in the deeper Decisions handoff.
+- Adds no new setup dashboard, provider selector, owner reply template, or raw
+  proof mechanics.
+- Keeps the blocked delivery state product-facing: choose the exact approved
+  account or recipient, check before a live attempt, and keep the final action
+  behind the launch call.
+- Release posture does not change: this improves visibility of the live-proof
+  blocker, not the underlying external proof itself.

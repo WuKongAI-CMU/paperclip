@@ -1805,6 +1805,19 @@ const FIRST_RUN_PREPARATION_CUES = [
   "Holding posts, outreach, page changes, and spend for your call.",
 ] as const;
 
+const FIRST_RUN_PUBLIC_HOLD_LABELS: Record<
+  (typeof DEARME_OWNER_PROOF_FACT_SPECS)[number]["provideAs"],
+  string
+> = {
+  DEARME_LINKEDIN_DM_MESSAGES_URL: "Professional route",
+  DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN: "Approved recipient",
+  DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT: "Phone-message proof",
+};
+
+const FIRST_RUN_PUBLIC_HOLD_CUES = DEARME_OWNER_PROOF_FACT_SPECS.map(
+  (fact) => FIRST_RUN_PUBLIC_HOLD_LABELS[fact.provideAs],
+);
+
 const FIRST_CYCLE_LIVE_WORK_STATUS_LABELS: Record<DearMeFirstCyclePreviewResponse["liveWorkTrail"][number]["status"], string> = {
   ready: "Ready",
   working: "Working",
@@ -2762,12 +2775,14 @@ function DearMePublicFirstRunLanding({
   intent,
   isPending,
   onIntentChange,
+  onOpenLaunchProof,
   onStart,
   onWatchLive,
 }: {
   intent: string;
   isPending: boolean;
   onIntentChange: (value: string) => void;
+  onOpenLaunchProof: () => void;
   onStart: () => void;
   onWatchLive: () => void;
 }) {
@@ -2884,6 +2899,42 @@ function DearMePublicFirstRunLanding({
               No public posts. No outreach. Nothing launches without approval.
             </div>
           </div>
+
+          <section
+            aria-label="Public launch proof summary"
+            className="max-w-3xl rounded-md border border-amber-500/25 bg-amber-50/70 p-3 text-amber-950 dark:bg-amber-950/20 dark:text-amber-100"
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ShieldCheck className="h-4 w-4" />
+                  <p className="text-sm font-medium">
+                    Public launch stays held until you approve the route, recipient, and final move.
+                  </p>
+                </div>
+                <p className="mt-1 text-xs leading-relaxed opacity-85">
+                  DearMe can prepare the private proof now. Anything public waits for your launch call.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {FIRST_RUN_PUBLIC_HOLD_CUES.map((label) => (
+                    <Badge key={label} variant="outline" className="bg-background/80">
+                      {label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-auto min-h-9 w-full min-w-0 whitespace-normal bg-background/80 sm:w-auto"
+                onClick={onOpenLaunchProof}
+              >
+                Review launch hold
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </section>
 
           <section
             aria-label="Live private proof receipts"
@@ -8554,6 +8605,7 @@ export function DearMeOnboarding() {
             setActionError(null);
             setFirstCycleIntent(value);
           }}
+          onOpenLaunchProof={() => navigate(buildDearMeDecisionRoute({ preserveSearch: location.search }))}
           onStart={handleContentFirstRunStart}
           onWatchLive={handleContentFirstRunWatch}
         />

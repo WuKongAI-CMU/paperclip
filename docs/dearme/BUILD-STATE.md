@@ -15317,6 +15317,9 @@ Sixtieth DearMe product slice:
 
 - Tightened delivery-receipt language for the common blocked state where an
   approved move exists but the approved account or recipient is not ready yet.
+- Added a short first-screen public-launch proof summary so a cold user can see
+  that public launch is held by three owner-approved facts before entering the
+  deeper Decisions handoff.
 - Added a small "Before DearMe continues" checklist to the private execution
   handoff so the owner sees the next three steps: choose the exact approved
   account or recipient, let DearMe check it before a live attempt, and keep the

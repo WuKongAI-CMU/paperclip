@@ -1937,6 +1937,18 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain(
       "No public posts. No outreach. Nothing launches without approval.",
     );
+    expect(container.querySelector('[aria-label="Public launch proof summary"]')).not.toBeNull();
+    expect(container.textContent).toContain(
+      "Public launch stays held until you approve the route, recipient, and final move.",
+    );
+    expect(container.textContent).toContain(
+      "DearMe can prepare the private proof now. Anything public waits for your launch call.",
+    );
+    expect(container.textContent).toContain("Professional route");
+    expect(container.textContent).toContain("Approved recipient");
+    expect(container.textContent).toContain("Phone-message proof");
+    expect(container.textContent).toContain("Review launch hold");
+    expect(container.textContent).not.toContain("LinkedIn partner messages endpoint");
     expect(container.textContent).toContain("Watch DearMe prepare private brand work live");
     expect(container.textContent).toContain("5 private work receipts");
     expect(container.textContent).toContain("5 opportunity leads");
@@ -1958,6 +1970,12 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).not.toContain("90-second first cycle");
     expect(mockDearmeApi.getWorkbench).not.toHaveBeenCalled();
     expect(mockDearmeApi.getOutputs).not.toHaveBeenCalled();
+
+    await act(async () => {
+      buttonByText(container, "Review launch hold")?.click();
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=decisions");
 
     await act(async () => {
       setInputValue(
