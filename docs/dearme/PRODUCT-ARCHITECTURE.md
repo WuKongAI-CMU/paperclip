@@ -217,6 +217,13 @@ receipt, a private draft, or a batch decision surface. Do not add new
 confirmation steps for internal planning, research, drafting, staging, queue
 refills, memory updates, or report writing.
 
+Concern diet / autonomy-first copy: reserve approval language for the final
+publish/send/deploy/spend launch call. First-run and customer-facing copy should
+default to the team already working, proof already prepared, and the user's next
+launch call; do not make `approval`, `private`, `privacy`, `waits`, or `held`
+the headline, CTA, empty state, or repeated status unless the surface is the
+actual launch decision.
+
 Automatic by default:
 
 - research

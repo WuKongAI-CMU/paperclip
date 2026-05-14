@@ -1,6 +1,218 @@
 {
-  "updatedAt": "2026-05-12",
+  "updatedAt": "2026-05-14",
   "reviewedAbsorptions": [
+    {
+      "ticket": null,
+      "branch": "architect-r2/apply-doc-audit",
+      "head": "be230b8e5c466436af03ee92af6b6024a67d2864",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed against the current DearMe product head. The branch performs broad doc deletion and relocation that would destabilize current build-state, proof, and reuse references without adding customer-visible value. The useful outcome is captured in the architect absorption audit; do not replay this branch wholesale.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md",
+        "scripts/dearme-worktree-status.mjs"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect-r3/approval-architecture",
+      "head": "90d778776eb4225c928e78a516e307e9c0e76d7c",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed and absorbed as current launch-boundary contract. DearMe already lets internal work proceed autonomously while publishing, sending, deploying, spending, sensitive claims, and public claims stay behind the launch call. Replaying the architecture doc would duplicate current validators, receipts, workbench behavior, and first-wow proof language.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/services/dearme-approval-receipts.ts",
+        "server/src/services/dearme-workbench.ts",
+        "ui/src/pages/DearMeOnboarding.tsx"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect-r3/brand-os-data-mapping",
+      "head": "ff55fc04f1893ff93652084a7675ce4a64cad366",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed and captured as future schema context only. The Brand OS mapping is useful, but current P0 value is first-wow proof, live provider proof, and operational closure. Replaying a schema-first branch now would add internal surface before visible product proof.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "packages/shared/src/validators/dearme.ts",
+        "scripts/dearme-aha-proof.ts",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect/consultant-wedge-pack",
+      "head": "bdbb215c9e9cbf9de772a15ac12f9ba8e204cc9a",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed and partially absorbed into the current commercial wedge: a concrete personal-brand growth team with a 5-minute proof moment. The 7-day consultant demo and pricing ideas remain packaging context, but the current first-wow proof is the accepted integration truth.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "scripts/dearme-aha-proof.ts",
+        "scripts/dearme-aha-proof.test.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect-r4/cycle-engine",
+      "head": "a816f78812a2381c58bff4b883907898835e0959",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed and captured as future engine context. Current DearMe already exposes proof cycles, next-pass readouts, status proof, and workbench continuity. A future engine should build from current workbench/proof data instead of replaying this standalone architecture branch.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/services/dearme-workbench.ts",
+        "scripts/dearme-aha-proof.ts"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect-r2/engagement-inbox-stub",
+      "head": "b288df7f707359f19d7f6baddb0658f84e081375",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed with no replay. The branch adds an empty engagement inbox route; DearMe needs real feedback learning and live receipts, not another placeholder endpoint. Current review actions, Voice & Memory, output handoff, and proof receipts are the accepted feedback surface until a real provider is connected.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/services/dearme-output-handoff.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "scripts/dearme-aha-proof.ts"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect-r4/memory-provenance",
+      "head": "b0f14139e69f464b81c309d0226d5beb259722bb",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed and absorbed as current Voice & Memory contract. The shared first-cycle preview now names durable memory signals, rejected raw-source categories, and how remembered facts feed future work. Replaying the doc branch would duplicate the current implemented contract.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "packages/shared/src/validators/dearme.ts",
+        "packages/shared/src/validators/dearme.test.ts",
+        "docs/dearme/CLAUDE-CODE-SOURCE-REUSE-AUDIT.md",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect-r4/multi-tenant-flow",
+      "head": "467cd39d7b011ff57e622add7fa69b38e70bab6f",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed and captured as future paid-operation context. The branch is doc-only and pins bootstrap, typed companyId propagation, cost caps, tenant isolation, suspension, deletion/export, and tenant health. Those are valuable, but implementation should start from the current authz, company, budget, proxy, and proof code when multi-tenant activation becomes the active product slice.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "packages/shared/src/validators/dearme.ts",
+        "server/src/routes/authz.ts",
+        "packages/dearme-ai-proxy/src/contract.ts",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect/onboarding-split-plan",
+      "head": "a11a66d7f1c8b9c2edb34a5cb3ecb06c9ff71516",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed and captured as maintenance context. Splitting the large onboarding file is useful only when attached to a live product slice. It should not be replayed now because it would create refactor churn while integration and live-provider proof remain higher-value blockers.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect-r2/opportunities-roi",
+      "head": "f1db3fbec0bc1d5891d72566f3eea4bb56343c34",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed and captured as the next commercial reporting candidate, but not replayed. ROI columns and weekly read paths are useful, yet the branch carries migration/snapshot churn and a stale service slice. Build ROI reporting from the current schema, first-cycle opportunity shortlist, and current receipts instead.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "packages/shared/src/validators/dearme.ts",
+        "scripts/dearme-aha-proof.ts",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect-r2/role-archetype-activation",
+      "head": "c1617b6618ec6d98e1286c24c53066b2ffb79d7c",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed and captured as future role-personalization context. Current first-wow proof already activates a concrete team and deliverables. Replaying registry changes now would not improve the immediate paid-user proof loop.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "packages/shared/src/validators/dearme.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect-r3/role-canonicalization",
+      "head": "93171db8e6ff75dc8d735b8de570a5ee30f5e570",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed and captured as taxonomy cleanup context. The current customer value is proof, drafts, opportunities, portfolio, memory, and launch decisions; role canonicalization should not be replayed as a standalone product slice.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "packages/shared/src/validators/dearme.ts",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect/schema-inheritance-markers",
+      "head": "9f34cd04cee05f42c417f969c6e72470e7fea739",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed with no replay. The branch annotates many schema files with inherited-status markers, creating broad internal churn with little direct product value. Current build-state, reuse ledger, and this absorption audit provide the needed status trail.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "docs/dearme/BUILD-STATE.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md",
+        "scripts/dearme-worktree-status.mjs"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect/scope-cut-proposal",
+      "head": "2bf0f3de650d33a97218a3b29f730ae72ecfe432",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed and selectively rejected. The branch proposes deferring OpenClaw and AI-proxy runtime work, but current product direction already treats OpenClaw message-contract proof and local no-send proof as active launch blockers. Only the warning against exposing raw substrate complexity is retained.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "docs/dearme/BUILD-STATE.md",
+        "scripts/dearme-provider-smoke.ts",
+        "scripts/dearme-proof.ts"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect-r4/upstream-fork-policy",
+      "head": "5543b3ef9e3b643107528ae17e22d9b076ef7247",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed and absorbed as current reuse policy. DearMe should reuse external platforms and open-source mechanisms when they fit, adapt them into DearMe-native UX, and keep donor/provider identity backstage. Current Claude Code source reuse and Polsia/OpenClaw proof work follow this policy.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "docs/dearme/CLAUDE-CODE-SOURCE-REUSE-AUDIT.md",
+        "docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
+    {
+      "ticket": null,
+      "branch": "architect-r3/voice-gate-architecture",
+      "head": "1952fb7cbaf18b097d2eebc2df91af92cef8071e",
+      "reviewedAt": "2026-05-14",
+      "reason": "Reviewed and partially absorbed. Current DearMe already has voice-gate checks, review-loop language, first-cycle Voice & Memory, and launch-boundary protection. A future semantic scorer should extend those contracts instead of replaying this architecture branch.",
+      "evidence": [
+        "docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md",
+        "packages/shared/src/validators/dearme.ts",
+        "packages/shared/src/validators/dearme.test.ts",
+        "ui/src/pages/DearMeOnboarding.tsx",
+        "docs/dearme/BUILD-STATE.md"
+      ]
+    },
     {
       "ticket": "DEA-27",
       "branch": "codex/dearme-dm-136-sample-demo-proof-handoff",

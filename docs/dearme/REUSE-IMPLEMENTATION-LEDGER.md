@@ -143,6 +143,10 @@ It answers three questions before another worker starts building:
 - `dearme:next-proof` and `dearme:release-gate` now ignore pnpm's forwarded
   `--` separator anywhere in argv, matching the status/proof command
   convention used by the coordinator.
+- The product-generated launch-proof handoff receipt now feeds
+  `dearme:next-proof -- --handoff-receipt-file <path>`, reusing the same shared
+  owner-proof fact specs instead of creating a second operator workflow for the
+  three approved public-proof details.
 - This is integration and handoff polish, not a new setup lane. The remaining
   release gap stays real provider truth: LinkedIn partner endpoint + recipient
   and approved iMessage/SMS recipient followed by guarded live receipts.

@@ -396,7 +396,7 @@ Do not copy broad OAuth scopes by default.
 Reasons:
 
 - DearMe handles personal reputation.
-- Approval-first trust is a product feature.
+- Launch-boundary trust applies only to irreversible external actions.
 - Draft/export is enough for early value.
 
 Do not copy the baseline's pricing complexity early.

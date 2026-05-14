@@ -1,23 +1,2705 @@
 # DearMe Build State
 
-Date: 2026-05-12
+Date: 2026-05-14
 
-## Goal / OMX / Symphony Coordination Contract - 2026-05-13
+## Chief of Staff Recent Briefs - 2026-05-14
 
-Product/coordination slice:
+Product/reuse slice:
 
-- Clarified the DearMe cooperation contract so Codex Goal, OMX, and Symphony
-  can run together without becoming competing managers.
-- Set Codex Goal as the long-lived product coordinator, OMX as the local
-  execution/research toolkit, and Symphony as the bounded Linear/workspace
-  worker queue.
-- Added conflict-prevention rules for one coordinator, one integration surface,
-  isolated worker writes, durable handoffs, and owner approval before public
-  send/deploy/spend actions.
+- Reused the command-registry/recent-command pattern from
+  `/Users/peter/claude-code-source` as a DearMe-native "recent briefs" surface
+  for the Chief of Staff composer.
+- Users can now replay their most recent brand-team cycle briefs with one click,
+  making repeat work like opportunity scouting, feedback handling, and weekly
+  planning feel autonomous instead of manually retyped.
+- Recent briefs now store the actual intent, label, and message, so custom
+  user-written Chief of Staff asks can also be replayed instead of only the
+  built-in cycle controls.
+- Recent briefs are now scoped to the current account, so multi-customer
+  operators do not see one account's Chief of Staff rhythm inside another
+  account.
+- Submitted Chief of Staff briefs now expose a downloadable receipt that
+  captures accepted/saved status, prepared work, next step, and the boundary
+  that public actions still come back as launch calls.
+- Added regression coverage for selecting cycle controls, saving recent brief
+  shortcuts locally, saving a custom brief after submit, replaying both kinds
+  of brief, keeping account-specific history isolated, downloading the brief
+  receipt, and still sending the correct Chief of Staff work request.
 
 Verification:
 
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## After-Call Outcome Receipt Download - 2026-05-14
+
+Product/decision slice:
+
+- Launch call choices now have a downloadable after-call outcome receipt that
+  explains what DearMe does after launch, request changes, pause, or another
+  pass.
+- Users and operators can preserve the decision handoff before or after a call:
+  what can continue privately, what must still wait, and which path DearMe will
+  take next.
+- Added regression coverage for the visible receipt note and generated
+  `after-call-outcome-receipt.txt` file alongside the launch-proof and
+  before-launch receipts.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Before Launch Checks Receipt Download - 2026-05-14
+
+Product/decision slice:
+
+- Before-launch checks now have a downloadable receipt that captures waiting
+  launch calls, available call choices, voice/proof/boundary checks, and the
+  line between private follow-up work and public external action.
+- Users can preserve the exact quality gate before choosing launch, request
+  changes, pause the lane, or ask for another pass.
+- Added regression coverage for the visible receipt note and generated
+  `before-launch-checks-receipt.txt` file alongside the launch-proof handoff
+  receipt.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Launch Readiness Receipt Download - 2026-05-14
+
+Product/decision slice:
+
+- Launch readiness now has a downloadable receipt that captures whether private
+  brand work can run, why public launch is still gated, how many launch calls
+  are waiting, what can keep moving privately, and what must wait for the final
+  launch call.
+- Users and operations can preserve one clear launch-boundary note instead of
+  reconstructing the difference between private preparation, paid access, and
+  public external action.
+- Added regression coverage for paid and unpaid states plus the generated
+  `launch-readiness-receipt.txt` file in the paid-operations receipt download
+  bundle.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Commercial Readiness Receipt Download - 2026-05-14
+
+Product/commercial slice:
+
+- Commercial readiness now has a downloadable receipt that captures whether the
+  account is ready to sell or already operating, what paid support can do, what
+  public launch still cannot claim, and the next support step.
+- Sales and operations can preserve a single customer-safe readiness note:
+  private beta can be sold and operated now, while broad public launch still
+  waits for approved live delivery receipts.
+- Added regression coverage for paid and unpaid states plus the generated
+  `commercial-readiness-receipt.txt` file in the paid-operations receipt
+  download bundle.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Paid Beta Operating Receipt Download - 2026-05-14
+
+Product/commercial slice:
+
+- Paid beta operating now has a downloadable receipt that captures access
+  status, brand-work unlock state, support boundary, public-launch proof
+  boundary, paid amount, remaining credit, payment reference, and the next
+  support step.
+- Sales and operations can preserve the account-level paid-beta handoff as one
+  portable proof before moving into the customer receipt, welcome plan, close
+  kit, or payment-path details.
+- Added regression coverage for active and unpaid states plus the generated
+  `paid-beta-operating-receipt.txt` file in the paid-beta receipt download
+  bundle.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Paid User Operations Receipt Download - 2026-05-14
+
+Product/operations slice:
+
+- Paid user operations now has a downloadable receipt that captures account
+  status, operating log, recovery path, cost guardrail, human support boundary,
+  next support step, and the line between autonomous internal work and final
+  external decisions.
+- Support and operations can preserve the full paid-account operating state as
+  one portable handoff instead of reconstructing it from separate recovery,
+  cost, and support cards.
+- Added regression coverage for healthy paid, empty-week recovery, repeated
+  path support, and the generated `paid-user-operations-receipt.txt` file in
+  the paid operations download bundle.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Next Cycle Retention Receipt Download - 2026-05-14
+
+Product/retention slice:
+
+- Next cycle retention now has a downloadable receipt that captures account
+  state, next briefing, continuing work, launch-call rhythm, reusable memory,
+  latest signal, support step, and the boundary for private work versus final
+  public decisions.
+- A paid user can leave the product with a saved note of what DearMe will keep
+  doing next, which makes the autonomous retention loop feel tangible instead
+  of only visible on the current screen.
+- Added regression coverage for active and unpaid states plus the generated
+  `next-cycle-retention-receipt.txt` file in the paid operations receipt
+  download bundle.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Paid Retention Pulse Receipt Download - 2026-05-14
+
+Product/operations slice:
+
+- Paid retention pulse now has a downloadable receipt that captures status,
+  customer value, voice risk, review risk, retention owner, risk reason, next
+  support step, and the required action for healthy, unpaid, empty-week, or
+  stuck-path accounts.
+- Support can preserve the weekly renewal signal as a portable operating note
+  instead of reading it only from the live onboarding surface.
+- Added regression coverage for healthy paid, unpaid, empty-week recovery,
+  stuck-path support, and the generated `paid-retention-pulse-receipt.txt` file.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## First Cycle Start Receipt Download - 2026-05-14
+
+Product/aha slice:
+
+- The 5-minute first cycle start receipt now has a downloadable customer-facing
+  file that captures the known-for sentence, draft count, opportunity
+  shortlist, value report, ROI-ranked opportunities, proof page, Voice Profile,
+  and launch boundary.
+- A paid user can now keep or share the first aha moment as a concrete receipt
+  instead of relying on the screen state after the first brand cycle starts.
+- Added regression coverage for the first-cycle receipt text and the downloaded
+  `first-cycle-start-receipt.txt` file.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Paid Beta Customer Receipt Download - 2026-05-14
+
+Product/commercial slice:
+
+- Paid beta customer receipt now has a downloadable customer-facing receipt
+  that carries account status, paid amount, remaining credit, payment date,
+  receipt note, reference, next steps, first-cycle state, and launch boundary.
+- Manual private-beta sales and hosted checkout accounts now share one portable
+  confirmation note, so support can confirm access without asking the customer
+  to interpret the internal paid access panel.
+- Added regression coverage for active paid access, unpaid manual access,
+  hosted checkout mode, and the paid-beta receipt download bundle.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Weekly Value Receipt Download - 2026-05-14
+
+Product/operations slice:
+
+- Weekly value now has a downloadable customer receipt for paid users that
+  packages visible useful outputs, report status, ready work, active work,
+  Voice & Memory, decisions, recovery state, and the support next step.
+- A quiet paid week now has a portable proof surface instead of only an
+  on-screen panel, so support can explain what was delivered or recover the
+  week before the customer feels nothing happened.
+- Added regression coverage that downloads the weekly value receipt alongside
+  paid cohort, account health, recovery, autonomy, and support handoff receipts.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Voice & Memory Receipt Download - 2026-05-14
+
+Product/operations slice:
+
+- Voice & Memory now has a downloadable account receipt that packages source
+  coverage, voice profile, tone signals, review preferences, latest memory,
+  source review list, and the launch boundary.
+- Support and operators can preserve what DearMe should remember before the
+  next brand cycle without exposing internal task systems or sending anything
+  externally.
+- Added regression coverage that downloads the receipt and verifies the file
+  carries the saved voice profile, review learning, and latest memory proof.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Inline Decision Outcome Strip - 2026-05-14
+
+Product/experience slice:
+
+- Work Ready and Live proof feed inline review cards now show what happens
+  after launch, revision, another-pass, or new-direction calls.
+- Users can make the call in-place and still see DearMe's autonomous follow-up:
+  record approval, convert notes into the next brief, reuse proof for another
+  version, or stop a bad angle without asking them to manage tasks.
+- Added regression coverage so compact review cards keep the same decision
+  clarity as focused review surfaces.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Decision Outcome Map - 2026-05-14
+
+Product/experience slice:
+
+- Focused DearMe decision surfaces now show what happens after each launch,
+  revision, another-pass, new-direction, or reject call.
+- Prepared-work and approval decisions make DearMe's autonomous follow-through
+  explicit: record the call, preserve proof and boundary, hand work back to the
+  team, or stop the bad path without exposing internal task systems.
+- Added regression coverage for focused work, batch decisions, and approval
+  decisions so the review/launch surface stays customer-safe and action-clear.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Paid Health Receipt Downloads - 2026-05-14
+
+Product/operations slice:
+
+- Paid cohort health and paid account renewal health are now downloadable
+  receipts from the operating surface.
+- Support can save the current account status, credit/cost guardrails, attention
+  accounts, retention owner, and next support step without making an external
+  move.
+- Extended receipt-download regression coverage to verify the generated cohort
+  and account health files alongside the existing recovery, autonomy, and
+  support receipts.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Feedback Learning Receipt Download - 2026-05-14
+
+Product/operations slice:
+
+- Feedback learning now has a downloadable receipt that packages active feedback
+  work, saved review direction, applied-change status, source learning, and next
+  cycle memory.
+- Support can preserve a user's corrections as an operational handoff without
+  publishing, sending, spending, or changing the account.
+- Added regression coverage that downloads the feedback learning receipt and
+  verifies the generated file carries the saved direction and next-memory proof.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Paid Operations Receipt Downloads - 2026-05-14
+
+Product/operations slice:
+
+- Paid-user support handoff, autonomy contract, and empty-week recovery notes
+  are now downloadable receipts from the operations surface.
+- Support can save or forward the exact account context without triggering a
+  send, launch, spend, or public action from the product UI.
+- Added regression coverage that opens an empty paid week, downloads the three
+  operations receipts, and verifies the generated files carry the expected
+  handoff text.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Paid Beta Receipt Downloads - 2026-05-14
+
+Product/operations slice:
+
+- Paid beta welcome plan, close kit, and payment-path notes are now downloadable
+  receipts from the product surface instead of textarea-only handoffs.
+- The receipt downloads keep the manual private-beta sales path operable today
+  and also cover the hosted-checkout path when that configuration is ready.
+- Added regression coverage that clicks the three receipt downloads and verifies
+  the generated files carry the expected customer/operator handoff text.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Launch Proof Operational Handoff Receipt - 2026-05-14
+
+Product/operations slice:
+
+- The owner launch-proof receipt now turns the three required live-proof details
+  into a concrete local capture command once all details are present.
+- Missing-detail receipts still stay useful: they name the incomplete state and
+  tell the operator exactly what to fill before the no-send setup check.
+- The receipt remains customer-safe and avoids exposing provider/runtime
+  language while still giving the product owner an executable handoff.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/dearme-customer-text.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/shared typecheck`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- packages/shared/src/dearme-customer-text.ts packages/shared/src/dearme-customer-text.test.ts ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## First Five-Minute Work Ready Receipt - 2026-05-14
+
+Product/operations slice:
+
+- First-cycle start now writes a measurable 5-minute aha receipt into the
+  private activity stream: draft count, opportunity count, value-report count,
+  ROI-ranked opportunity count, first target, launch boundary, and the next
+  review step.
+- Work Ready projects that activity as "First 5-minute proof ready" with a
+  customer-safe progress record and no provider/runtime language, so operators
+  can see the first paid outcome without digging through internal logs.
+- The onboarding start receipt now shows the concrete first-cycle package:
+  drafts, opportunities, value receipts, ROI-ranked opportunities, 5-minute
+  target, and the launch-call boundary before the user opens Work Ready.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/server exec vitest run src/__tests__/dearme-brand-blueprint-routes.test.ts src/__tests__/dearme-workbench.test.ts --maxWorkers=1`
+- `pnpm --filter @paperclipai/shared typecheck`
+- `pnpm --filter @paperclipai/server typecheck`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- packages/shared/src/validators/dearme.ts server/src/routes/dearme.ts server/src/services/dearme-workbench.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts server/src/__tests__/dearme-workbench.test.ts ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Opportunity ROI Report - 2026-05-14
+
+Product/operations slice:
+
+- Added an opportunity ROI report to the first-cycle preview contract, turning
+  the five prepared leads into ranked launch-call candidates with expected
+  return, effort, confidence, next action, and source signal.
+- Rendered the report in both the onboarding first proof package and the
+  shareable proof page, so paid users see which opportunity is worth acting on
+  before any outreach is sent.
+- Preserved legacy first-cycle preview recovery by filling the ROI report from
+  current opportunity shortlist data when older stored previews do not have it.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts ui/src/pages/DearMeSitePreview.test.tsx ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --silent test:dearme-aha-proof`
+- `pnpm --silent dearme:aha-proof -- --check`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --filter @paperclipai/shared typecheck`
+- `git diff --check -- packages/shared/src/validators/dearme.ts packages/shared/src/validators/dearme.test.ts ui/src/lib/dearme-site-preview.ts ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx ui/src/pages/DearMeSitePreview.tsx ui/src/pages/DearMeSitePreview.test.tsx scripts/dearme-aha-proof.ts scripts/dearme-aha-proof.test.ts docs/dearme/BUILD-STATE.md`
+
+## Private Proof Paid-Week Promise - 2026-05-14
+
+Product/operations slice:
+
+- Added a customer-safe first paid week promise to the shareable proof page,
+  so the private beta sales surface now shows the first 5-minute result, first
+  week value, support follow-up, and launch boundary before any public release.
+- Kept the page sellable without claiming public launch: the paid account can
+  start from the proof package while posts, outreach, page changes, and spend
+  remain behind the launch call.
+- Added regression coverage so the proof page cannot drift back to a generic
+  sales receipt without the concrete paid-week delivery promise.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeSitePreview.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeSitePreview.tsx ui/src/pages/DearMeSitePreview.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Paid Beta Welcome Plan - 2026-05-14
+
+Product/operations slice:
+
+- Added a paid-beta welcome plan to the real paid-access surface, so an account
+  that has paid sees the first 5-minute promise, first-week value, support
+  follow-up, and launch boundary in one customer-safe receipt.
+- The welcome note ties the paid receipt to the first brand cycle, Voice &
+  Memory, useful weekly work, make-good support, and the public-launch call
+  without adding another setup lane.
+- Added regression coverage for both already-active paid accounts and the
+  manual payment-recording path so the first-week promise appears immediately
+  after paid access opens.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid beta" --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Paid Support Follow-up Receipt - 2026-05-14
+
+Product/operations slice:
+
+- Added an explicit follow-up promise to the paid-user support handoff, so an
+  empty week, stuck repeated path, or waiting launch call carries the next
+  customer check-in timing instead of stopping at an internal note.
+- The support handoff note sent to Chief of Staff now includes follow-up timing
+  alongside account state, latest work, decisions, recovery state, cost context,
+  stuck path, and launch boundaries.
+- Updated the local support-recovery proof to require an explicit support
+  follow-up before the support loop can be treated as ready.
+
+Verification:
+
+- `pnpm --silent test:dearme-support-recovery-proof`
+- `pnpm --silent dearme:support-recovery-proof -- --check`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `git diff --check -- scripts/dearme-support-recovery-proof.ts scripts/dearme-support-recovery-proof.test.ts ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Checkout Setup UI Boundary - 2026-05-14
+
+Product/operations slice:
+
+- Updated the real paid-beta access surface so the support boundary visible to
+  operators now names hosted checkout setup alongside account access, live
+  proof, public launch, and spend-sensitive moves.
+- Updated the payment-path handoff note so manual receipt selling stays the
+  active fallback while hosted checkout setup remains a clear Human Support
+  step until the payment link and signed receipt sync are configured.
+- Added UI regression coverage for both active paid users and trial/private-beta
+  sellers so this commercial boundary is not only documented in internal status
+  commands.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid beta" --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Checkout Setup Support Status - 2026-05-14
+
+Product/operations slice:
+
+- Updated DearMe status and release-gate human-support copy so Peter-only
+  intervention explicitly includes hosted checkout setup, not only live proof,
+  public launch, credentials, spend, and irreversible actions.
+- This keeps the product operating posture aligned with the new payment
+  readiness handoff: private beta remains sellable through recorded receipts,
+  while real self-serve checkout configuration stays a human-supported step
+  before any public checkout claim.
+- Added regression coverage in both status and release-gate tests so the
+  commercial support boundary does not drift back to live-proof-only language.
+
+Verification:
+
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check -- scripts/dearme-proof.ts scripts/dearme-proof.test.ts scripts/dearme-release-gate.ts scripts/dearme-release-gate.test.ts docs/dearme/BUILD-STATE.md`
+
+## Hosted Checkout Human Support Handoff - 2026-05-14
+
+Product/operations slice:
+
+- Added `--human-help-markdown` to `dearme:payment-readiness`, so the
+  self-serve checkout blocker can be turned into a Peter-facing support request
+  from the same readiness check that gates hosted checkout claims.
+- Added the hosted checkout setup request to `docs/NEEDS_HUMAN_HELP.md`: DearMe
+  stays sellable through recorded private-beta receipts, while public
+  self-serve checkout waits for a real HTTPS payment link and signed
+  receipt/webhook configuration.
+- Added a drift guard in the payment-readiness tests so the human-support queue
+  keeps naming the same setup variables, local checks, no-spend boundary, and
+  secret-handling rules as the product readiness command.
+- No external action changed: this slice does not create checkout sessions,
+  charge cards, call payment APIs, publish, deploy, send messages, or spend.
+
+Verification:
+
+- `pnpm --silent test:dearme-payment-readiness`
+- `pnpm --silent dearme:payment-readiness -- --human-help-markdown`
+- `pnpm --silent dearme:payment-readiness`
+- `git diff --check -- scripts/dearme-payment-readiness.ts scripts/dearme-payment-readiness.test.ts docs/NEEDS_HUMAN_HELP.md docs/dearme/README.md docs/dearme/BUILD-STATE.md`
+
+## Hosted Checkout Product Entry - 2026-05-14
+
+Product/operations slice:
+
+- Added a customer-safe hosted checkout readiness object to DearMe paid-beta
+  access state. The product now knows whether the payment link and signed
+  receipt sync are both configured before presenting a self-serve checkout path.
+- The paid-beta access service appends an account-specific checkout URL with the
+  DearMe company reference only when the hosted link is HTTPS and signed receipt
+  sync is configured. Missing or unsafe config keeps the product on the manual
+  private-beta close path.
+- The onboarding paid-beta panel now shows "Open checkout" only when checkout is
+  actually ready for that account; otherwise the manual receipt-backed close
+  path remains the visible commercial fallback.
+- Tightened customer-facing copy so internal queue language stays out of the
+  first-cycle and work-feed surfaces.
+- No external action changed: this slice does not create checkout sessions,
+  charge cards, call payment APIs, send messages, publish, deploy, or spend.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts --maxWorkers=1`
+- `pnpm --filter @paperclipai/server exec vitest run src/__tests__/dearme-paid-beta-access.test.ts --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui exec vitest run src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/shared typecheck`
+- `pnpm --filter @paperclipai/server typecheck`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent test:dearme-payment-readiness`
+- `pnpm --silent dearme:payment-readiness`
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `pnpm --silent test:dearme-goal-audit`
+- `pnpm --silent dearme:goal-audit -- --check` (expected blocked on live
+  LinkedIn/iMessage proof facts, not this checkout-entry slice)
+
+## Stripe Webhook Ingestion Path - 2026-05-14
+
+Product/operations slice:
+
+- Added a signed `POST /api/dearme/payments/stripe/webhook` ingestion path for
+  `checkout.session.completed` events, so hosted checkout can move from local
+  provider-contract proof toward a real Stripe webhook.
+- The route verifies the raw request body with `Stripe-Signature` and
+  `STRIPE_WEBHOOK_SECRET` before mapping any checkout event into a DearMe
+  hosted checkout receipt.
+- Signed paid checkouts now flow through the paid-beta access service and
+  finance ledger; signed unpaid/unmapped events are acknowledged but do not
+  unlock access; unsigned or tampered events are rejected before any paid-access
+  write.
+- Recorded webhook events create a system activity receipt without exposing the
+  webhook secret or raw provider payload.
+- No external action changed: this slice does not create checkout sessions,
+  charge cards, call payment APIs, send messages, publish, deploy, or spend.
+
+Verification:
+
+- `pnpm --filter @paperclipai/server exec vitest run src/__tests__/dearme-paid-beta-access.test.ts src/__tests__/dearme-brand-blueprint-routes.test.ts --maxWorkers=1`
+- `pnpm --filter @paperclipai/server typecheck`
+- `pnpm --silent test:dearme-payment-provider-contract-proof`
+- `pnpm --silent dearme:payment-provider-contract-proof -- --check`
+- `pnpm --silent test:dearme-payment-readiness`
+- `pnpm --silent dearme:payment-readiness`
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `pnpm --silent test:dearme-goal-audit`
+- `pnpm --silent dearme:goal-audit -- --check` (expected blocked on live
+  LinkedIn/iMessage proof facts, not this payment slice)
+
+## Payment Receipt Service Projection - 2026-05-14
+
+Product/operations slice:
+
+- Moved the hosted checkout receipt projection into the DearMe paid-beta access
+  service, so signed paid receipts, rejected unpaid/unverified receipts,
+  idempotent duplicate suppression, and refund debits now live on the same
+  product path that summarizes paid access.
+- Added a ledger-aware `recordHostedPaymentReceipts` service entry that reads
+  existing paid-beta finance events first, suppresses already-recorded checkout
+  receipts before inserting, and returns the refreshed paid access state.
+- Moved the Stripe Payment Link/Checkout completed-event mapping into the same
+  paid-beta access service, including client-reference and metadata account
+  references, so future webhook code can reuse product logic instead of script
+  proof logic.
+- Updated the local receipt-sync and Stripe Payment Link/Checkout contract
+  proofs to reuse the service projection instead of carrying duplicate script
+  logic.
+- Added service-level coverage for verified receipt activation, protected
+  receipt rejection, zero-value rejection, in-batch duplicate suppression,
+  existing-ledger replay suppression, refund credit reduction, Stripe paid
+  checkout mapping, metadata account mapping, and unpaid/unmapped checkout
+  rejection.
+- No external action changed: this slice does not create checkout sessions,
+  charge cards, call payment APIs, send messages, publish, deploy, or spend.
+
+Verification:
+
+- `pnpm --filter @paperclipai/server exec vitest run src/__tests__/dearme-paid-beta-access.test.ts --maxWorkers=1`
+- `pnpm --silent test:dearme-payment-receipt-sync-proof`
+- `pnpm --silent test:dearme-payment-provider-contract-proof`
+- `pnpm --filter @paperclipai/server typecheck`
+- `pnpm --silent dearme:payment-receipt-sync-proof -- --check`
+- `pnpm --silent dearme:payment-provider-contract-proof -- --check`
+- `pnpm --silent test:dearme-payment-readiness`
+- `pnpm --silent dearme:payment-readiness`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+
+## Payment Provider Contract Proof - 2026-05-14
+
+Product/operations slice:
+
+- Added `dearme:payment-provider-contract-proof`, a local no-network/no-spend
+  proof that maps Stripe Payment Link/Checkout-shaped completed events into
+  DearMe hosted checkout receipts.
+- The proof verifies that a completed paid checkout with a DearMe account
+  reference activates paid beta access, unpaid or unmapped sessions do not
+  unlock access, duplicate checkout sessions stay idempotent, and the result
+  reuses the existing receipt-sync and paid beta cohort projection.
+- Wired payment readiness and commercial gate evidence to keep the provider
+  contract green before self-serve checkout is claimed.
+
+Verification:
+
+- `pnpm --silent test:dearme-payment-provider-contract-proof`
+- `pnpm --silent dearme:payment-provider-contract-proof -- --check`
+- `pnpm --silent test:dearme-payment-readiness`
+- `pnpm --silent dearme:payment-readiness`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent test:dearme-release-gate`
+
+## Payment Receipt Sync Proof - 2026-05-14
+
+Product/operations slice:
+
+- Added `dearme:payment-receipt-sync-proof`, a local no-network/no-spend proof
+  for hosted checkout receipt sync.
+- The proof verifies that signed paid receipts create paid beta credit,
+  unsigned or unpaid receipts do not unlock access, duplicate checkout events
+  are idempotent, refunds reduce paid credit, and the result reuses the
+  existing paid beta access/cohort model.
+- Wired payment readiness and commercial gate copy to keep the receipt-sync
+  contract visible before any future self-serve checkout claim.
+
+Verification:
+
+- `pnpm --silent test:dearme-payment-receipt-sync-proof`
+- `pnpm --silent dearme:payment-receipt-sync-proof -- --check`
+- `pnpm --silent test:dearme-payment-readiness`
+- `pnpm --silent dearme:payment-readiness`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent test:dearme-release-gate`
+
+## Paid Event Source Proof - 2026-05-14
+
+Product/operations slice:
+
+- Added `dearme:paid-event-source-proof`, a local no-network/no-send/no-spend
+  proof that maps paid access, weekly value, feedback, recovery, support
+  handoff, and launch-decision events into retention analytics.
+- The proof connects the paid retention pulse to DearMe finance-ledger,
+  workbench, Voice & Memory, decision queue, and support recovery receipt
+  contracts, so the path from real paid-user events is explicit before live
+  cohorts replace local receipts.
+- Wired cohort retention proof to require the paid event-source contract, so
+  weekly value and retention readiness cannot stay green on isolated fixtures.
+
+Verification:
+
+- `pnpm --silent test:dearme-paid-event-source-proof`
+- `pnpm --silent dearme:paid-event-source-proof -- --check`
+- `pnpm --silent test:dearme-cohort-retention-proof`
+- `pnpm --silent dearme:cohort-retention-proof -- --check`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+
+## Commercial Goal Audit Integration - 2026-05-14
+
+Product/operations slice:
+
+- Wired the active `dearme:goal-audit` to the same commercial readiness spine
+  used by DearMe status and release-gate.
+- Goal completion now requires sellable private-beta paid access, payment path,
+  paid account health, autonomy/launch/cost guardrails, weekly value,
+  paid-retention recovery, feedback learning, and support handoff.
+- Added a regression test that blocks goal completion when the paid-retention
+  loop is broken, so live provider proof cannot mask a missing paid-user
+  operations loop.
+
+Verification:
+
+- `pnpm --silent test:dearme-goal-audit`
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:goal-audit -- --json`
+
+## Feedback Learning Gate Integration - 2026-05-14
+
+Product/operations slice:
+
+- Added a synchronous feedback-learning contract inspection to
+  `dearme:feedback-learning-proof`, so commercial gates can depend on the same
+  private review-to-Voice & Memory receipt used by the runnable proof.
+- Wired DearMe status and release-gate commercial readiness so feedback and
+  memory learning requires the feedback-learning contract plus cohort-retention
+  analytics, instead of only pointing at a follow-up command.
+- Kept the full proof command as the deeper async validation path for the local
+  profile-token review loop.
+
+Verification:
+
+- `pnpm --silent test:dearme-feedback-learning-proof`
+- `pnpm --silent dearme:feedback-learning-proof -- --check`
+- `pnpm --silent test:dearme-cohort-retention-proof`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+
+## Cohort Retention Proof - 2026-05-14
+
+Product/operations slice:
+
+- Added `dearme:cohort-retention-proof`, a no-network/no-send/no-spend proof
+  that turns paid cohort weeks into retention analytics.
+- The proof verifies weekly visible value, core output coverage, renewal-ready
+  accounts, recovered empty weeks, support-owned risk accounts, feedback
+  learning, and launch boundaries.
+- Wired DearMe status and release-gate commercial readiness so weekly value and
+  paid retention pulse depend on the retention proof instead of only saying
+  analytics will arrive later.
+
+Verification:
+
+- `pnpm --silent test:dearme-cohort-retention-proof`
+- `pnpm --silent dearme:cohort-retention-proof -- --check`
+- `pnpm --silent test:dearme-paid-ops-proof`
+- `pnpm --silent test:dearme-support-recovery-proof`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+
+## Support Recovery Proof Gate Integration - 2026-05-14
+
+Product/operations slice:
+
+- Wired DearMe status and release-gate commercial readiness directly to
+  `dearme:support-recovery-proof`.
+- "Operate paid users" now depends on the paid-ops proof and the
+  support-recovery proof, so empty-week recovery and paid-user support handoff
+  cannot stay ready if the runnable recovery/support contract fails.
+- Release-gate evidence now names the support-recovery proof for empty-week
+  recovery and human support handoff, keeping private-beta operability tied to
+  a real local proof instead of copy-only claims.
+
+Verification:
+
+- `pnpm --silent test:dearme-support-recovery-proof`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+
+## Support Recovery Proof - 2026-05-14
+
+Product/operations slice:
+
+- Added `dearme:support-recovery-proof`, a no-network/no-send/no-spend proof
+  for the paid-user recovery and support loop.
+- The proof reuses the existing paid-ops proof and the current DearMe workbench
+  contract: empty paid weeks route to a private make-good, retry-limited work
+  routes to support with the stuck work attached, and support notes become
+  private feedback/Voice & Memory work.
+- Updated status/release-gate copy so empty-week recovery and human support
+  handoff point at the runnable proof instead of living only as UI behavior.
+
+Verification:
+
+- `pnpm --silent test:dearme-support-recovery-proof`
+- `pnpm --silent dearme:support-recovery-proof -- --check`
+- `pnpm --silent test:dearme-paid-ops-proof`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+
+## Feedback Learning Proof - 2026-05-14
+
+Product/operations slice:
+
+- Added `dearme:feedback-learning-proof`, a no-network/no-send/no-spend proof
+  that review feedback becomes private Voice & Memory work for the next cycle.
+- The proof reuses the existing profile-token Voice & Memory review-loop smoke:
+  drift is blocked, a safe rewrite is suggested and accepted, and the customer
+  receipt keeps public posts, outbound messages, page changes, and spend behind
+  the launch call.
+- Updated status/release-gate copy to point the feedback-learning lane at the
+  runnable proof while real paid-user feedback remains the next cohort-learning
+  step.
+
+Verification:
+
+- `pnpm --silent test:dearme-feedback-learning-proof`
+- `pnpm --silent dearme:feedback-learning-proof -- --check`
+- `pnpm --silent test:dearme-voice-smoke`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+
+## Paid Operations Proof - 2026-05-14
+
+Product/operations slice:
+
+- Added `dearme:paid-ops-proof`, a no-network/no-send/no-spend proof over the
+  existing paid beta access, cohort health, and cycle-guardrail logic.
+- The proof verifies that DearMe does not overclaim an empty cohort, keeps
+  healthy paid accounts operable, prioritizes trial/near-guardrail/paused
+  accounts, preserves paid-credit totals, and enforces private-cycle blockers.
+- Wired status and release-gate commercial readiness so "Operate paid users"
+  depends on the paid operations proof, not only on the paid-loop receipt proof.
+
+Verification:
+
+- `pnpm --silent test:dearme-paid-ops-proof`
+- `pnpm --silent dearme:paid-ops-proof -- --check`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+
+## Commercial Gate Payment Proof Integration - 2026-05-14
+
+Product/operations slice:
+
+- Wired the DearMe status and release-gate commercial readiness checks directly
+  to `dearme:paid-loop-proof` and `dearme:payment-readiness`.
+- "Sell private beta" and "Operate paid users" now depend on the local
+  receipt-backed paid-loop proof plus the private-beta payment-path readiness
+  result, rather than only linking to those proof commands as follow-up work.
+- The public self-serve checkout claim still stays blocked until hosted payment
+  link, receipt sync, and provider receipt smoke are proven.
+
+Verification:
+
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent test:dearme-payment-readiness`
+- `pnpm --silent test:dearme-paid-loop-proof`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+
+## Paid Loop Proof - 2026-05-14
+
+Product/operations slice:
+
+- Added `dearme:paid-loop-proof`, a no-network proof over the existing paid
+  beta entitlement and first-cycle blocker logic.
+- The proof shows the full local paid loop: trial access blocks first-cycle
+  work, a recorded receipt creates active paid access, the receipt reference is
+  preserved, and the first-cycle blocker disappears after paid access is active.
+- Connected the payment readiness next action and commercial readiness copy to
+  the paid-loop proof, so the product can verify "payment unlocks work" before
+  claiming any hosted checkout or public self-serve payment readiness.
+
+Verification:
+
+- `pnpm --silent test:dearme-paid-loop-proof`
+- `pnpm --silent dearme:paid-loop-proof -- --check`
+
+## Payment Path Readiness Proof - 2026-05-14
+
+Product/operations slice:
+
+- Added `dearme:payment-readiness`, a no-network proof that separates the
+  currently sellable private-beta payment path from the future hosted checkout
+  claim.
+- The proof keeps manual receipt recording as the ready commercial path and
+  blocks self-serve checkout claims until both a customer-facing payment link
+  and receipt sync are configured.
+- Synced the commercial readiness surfaces in `dearme:status` and
+  `dearme:release-gate`, so paid beta can be sold without pretending that
+  hosted checkout is already live.
+
+Verification:
+
+- `pnpm --silent test:dearme-payment-readiness`
+- `pnpm --silent dearme:payment-readiness`
+
+## Generated Human Help Handoff - 2026-05-14
+
+Product/operations slice:
+
+- Added `--human-help-markdown` to `dearme:next-proof`, so the Peter-facing
+  external-proof request can be generated from the same owner proof handoff as
+  the local setup, no-send check, receipt import, and guarded live command.
+- The generated request uses product-safe labels for the three details Peter
+  needs to choose: professional-network delivery route, approved
+  professional-network recipient, and approved phone-message proof recipient.
+- Documented the regeneration command in `docs/NEEDS_HUMAN_HELP.md` and the
+  DearMe README, reducing the chance that the human queue becomes stale while
+  provider proof logic keeps moving.
+
+Verification:
+
+- `pnpm --silent test:dearme-next-proof`
+- `pnpm --silent dearme:next-proof -- --target all --no-write --human-help-markdown`
+
+## Human Support Queue Drift Guard - 2026-05-14
+
+Product/operations slice:
+
+- Added an automated drift guard that reads `docs/NEEDS_HUMAN_HELP.md` and
+  checks it against the generated DearMe owner proof handoff.
+- The guard verifies the same three proof facts, Peter reply template, capture
+  command, receipt preview/import commands, no-send check, guarded live command,
+  and no leaked provider tokens.
+- This makes the public-launch human-support blocker durable: if future product
+  or provider-proof work changes the launch proof contract, the Peter-facing
+  queue must stay aligned before `dearme:next-proof` passes.
+
+Verification:
+
+- `pnpm --silent test:dearme-next-proof`
+- `pnpm --silent --filter @paperclipai/shared test -- dearme-customer-text.test.ts`
+
+## Human Proof Reply Template - 2026-05-14
+
+Product/operations slice:
+
+- Added a Peter-ready reply template to the human support queue for the
+  public-launch proof blocker.
+- Synced the queue with the current generated proof handoff status: blocked
+  until the delivery route, professional-network recipient, and phone-message
+  recipient are provided; no details are currently captured locally.
+- Kept the handoff customer-safe and no-send by default, so agents can resume
+  from the three approved details without turning the blocker into a product
+  management discussion.
+
+Verification:
+
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
+- `pnpm --silent dearme:status`
+- `git diff --check -- docs/NEEDS_HUMAN_HELP.md docs/dearme/BUILD-STATE.md`
+
+## Customer-Safe Brand Work Language - 2026-05-14
+
+Product/operations slice:
+
+- Replaced the remaining customer-visible "private work", "private output",
+  "private preparation", "private feedback work", and "private brand work"
+  wording in the DearMe onboarding and paid beta surfaces with product-native
+  language: brand work, useful output, feedback work, and team preparation.
+- Preserved "private beta" as the commercial stage while making the day-to-day
+  product promise feel like a visible personal-brand team, not an internal
+  process.
+- Extended the DearMe page sanitizer and shared customer text sanitizer so
+  provider/workbench copy that still says private work, private output, private
+  preparation, private feedback work, private brand work, or private cycles
+  renders as the same customer-safe brand-work language.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "previews a full profile"`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid cohort|paid support|paid beta"`
+- `pnpm exec vitest run packages/shared/src/dearme-customer-text.test.ts`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `pnpm --silent --filter @paperclipai/shared typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx packages/shared/src/dearme-customer-text.ts packages/shared/src/dearme-customer-text.test.ts docs/dearme/BUILD-STATE.md`
+
+## Autonomous Next Move Queue - 2026-05-14
+
+Product/operations slice:
+
+- Added an autonomous next move queue to the DearMe Growth cycle surface.
+- The queue keeps the next launch calls, Voice & Memory strengthening, and
+  ready work in one explicit action path before DearMe asks the user again.
+- The actions reuse existing DearMe destinations: Decisions, Voice & Memory,
+  and Work Ready, so the queue adds clarity without creating a parallel
+  workflow.
+- This makes return visits and operator passes more actionable: the user can see
+  what DearMe needs next, while the agent-run loop can keep private beta
+  accounts moving without hunting through the workroom.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "previews a full profile"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- Browser smoke: the local Brand OS page renders the Autonomous next move queue
+  and the three actions open Voice & Memory, Work Ready, and the next Decisions
+  call with a concrete work/artifact target.
+
+## Launch Proof Action From Commercial Readiness - 2026-05-14
+
+Product/operations slice:
+
+- Added a direct public-launch proof action to the DearMe commercial readiness
+  surface.
+- Operators can now move from "private beta can be sold; public launch still
+  needs proof" straight to the launch-proof handoff in Decisions instead of
+  hunting through the workroom.
+- The copy keeps the business posture clear: private beta can keep selling and
+  operating, while approved live receipt details remain the next public-launch
+  blocker.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "previews a full profile"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- Browser smoke: the local Brand OS page shows "Open launch proof" in
+  Commercial readiness, and clicking it lands on
+  `view=decisions#dearme-decisions-needed` with the launch-proof detail
+  readiness panel visible.
+
+## Human Support Proof Handoff - 2026-05-14
+
+Product/operations slice:
+
+- Tightened the agent-run-company human support queue for the public-launch
+  live-proof blocker.
+- The request now names the exact three values DearMe needs for external proof:
+  LinkedIn partner messages endpoint, LinkedIn smoke recipient, and iMessage/SMS
+  smoke recipient.
+- Added the capture command, optional handoff receipt commands, required
+  no-send provider check, and guarded live proof command so agents can resume
+  immediately after Peter provides the approved targets.
+- Kept the blocker scoped correctly: private-beta product and operations work
+  continue autonomously, while public-launch live receipt proof waits for human
+  approval of real external recipients.
+
+Verification:
+
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
+
+## Paid Cohort Health UI - 2026-05-14
+
+Product/operations slice:
+
+- Added a Paid cohort health receipt to the DearMe team operating policy
+  surface, directly after commercial readiness.
+- The UI now pulls the paid cohort summary for every visible, non-archived
+  account in the workspace, deduplicates the account list, and shows account
+  activation, remaining credit, guardrail state, and attention accounts in one
+  operator-readable view.
+- Added a customer-safe paid operations attention list that names the account
+  needing activation, budget review, or support, plus the next action and
+  guardrail label.
+- Each attention account now has a direct "Open account" action that switches
+  DearMe to that account and lands on paid beta access, so support can resolve
+  activation or spend blockers without hunting through workspace navigation.
+- Trial accounts do not call the cohort health API; the receipt clearly waits
+  for paid access. Active accounts refresh all paid cohort views after a paid
+  access payment is recorded.
+- Added test coverage for healthy paid accounts, trial accounts, spend
+  attention accounts, and multi-account operations so paid-user operations can
+  scale beyond one-account manual inspection.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid"`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid|operations list"`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "operations list|paid cohort"`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- Browser smoke: the local Brand OS page renders Paid cohort health, shows the
+  paid operations attention list, and "Open account" lands on that account's
+  paid beta access section instead of falling back to the dashboard.
+
+## Paid Cohort Health Endpoint - 2026-05-14
+
+Product/operations slice:
+
+- Exposed the paid beta cohort health model through a DearMe operations API:
+  callers submit the company IDs they are operating, and the route checks
+  access to every requested company before returning a cohort summary.
+- Added shared request/response schemas for the cohort contract so server,
+  route tests, and the UI API client use one typed shape.
+- Added a UI API client method for the cohort endpoint, giving the future
+  paid-operations surface a ready integration path instead of a service-only
+  helper.
+- The endpoint deduplicates requested company IDs and refuses mixed authorized
+  and unauthorized cohorts, keeping multi-account operations explicit.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-paid-beta-access.test.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/api/dearme.test.ts`
+- `pnpm --silent --filter @paperclipai/shared typecheck`
+- `pnpm --silent --filter @paperclipai/server typecheck`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+
+## Paid Cohort Health Model - 2026-05-14
+
+Product/operations slice:
+
+- Added a paid beta cohort health summary model on top of the existing paid
+  access and spend guardrail status.
+- DearMe can now combine multiple account statuses into an operator-readable
+  cohort state: no paid accounts, operable, guardrail watch, or spend-review
+  attention.
+- The model totals paid access, refunds, remaining credit, cycle spend, cycle
+  budget, and prioritizes attention accounts so future paid-operations UI can
+  show which customer needs activation, budget review, or support first.
+- Kept this as a reusable service foundation instead of exposing a broad
+  cross-company route before the product has a confirmed account-list access
+  boundary.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-paid-beta-access.test.ts`
+- `pnpm --silent --filter @paperclipai/server typecheck`
+- `pnpm --silent dearme:status`
+- `git diff --check -- server/src/services/dearme-paid-beta-access.ts server/src/__tests__/dearme-paid-beta-access.test.ts docs/dearme/BUILD-STATE.md`
+
+## Paid Retention Status Gate - 2026-05-14
+
+Product/status slice:
+
+- Added Paid retention pulse to the commercial readiness model used by
+  `dearme:status` and `dearme:release-gate`.
+- The status output now recognizes the weekly renewal signal alongside paid
+  access, five-minute wow, weekly value, account health, empty-week recovery,
+  cost guardrails, feedback learning, and support handoff.
+- This keeps the new product surface connected to DearMe's operating proof
+  chain instead of leaving it as an untracked UI-only receipt.
+
+Verification:
+
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+
+## Paid Retention Pulse - 2026-05-14
+
+Product/status slice:
+
+- Added a paid retention pulse that combines visible value, voice risk, review
+  risk, and current risk owner into one weekly renewal signal.
+- Empty paid weeks now route from the pulse to recovery and support handoff;
+  repeated capped paths route to stuck work and support handoff.
+- This strengthens paid-user operations by making renewal health visible from
+  current account state instead of waiting for a separate account review.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: the local Brand OS page renders the Paid retention pulse with
+  Customer value, Voice risk, Review risk, and Risk owner.
+- `pnpm --silent dearme:status`
+
+## Batch Decision List Stuck State - 2026-05-14
+
+Product/status slice:
+
+- Connected batch decision list cards to the prepared output review loop.
+- A capped batched path now shows "Direction needed" before the user opens the
+  focused decision, with the same Voice & Memory or support-handoff guidance as
+  the detail view.
+- The list action still opens the focused batch decision, where the locked
+  review controls and recovery path are available.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "batch"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- Browser smoke: a capped batch decision list card shows Direction needed,
+  the capped-path reason, and an enabled "Review posts" entry action.
+
+## Focused Batch Stuck Review Lock - 2026-05-14
+
+Product/status slice:
+
+- Connected focused batch decisions back to the review loop for the prepared
+  output inside the batch.
+- A capped batched path now uses the same stuck-work guidance as focused Work
+  Ready: no launch, changes request, regenerate, or new direction from the
+  batch surface until direction improves.
+- This removes a retry-limit bypass in the high-leverage batch decision path
+  while keeping Voice & Memory and the paid support handoff available.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "focused batch"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- Browser smoke: a capped focused batch decision locks Launch, Request
+  changes, Prepare another pass, and Choose new direction while showing the
+  stuck-work recovery path.
+
+## Inline Stuck Review Lock - 2026-05-14
+
+Product/status slice:
+
+- Extended retry-limit locking to inline Work Ready and Live proof feed review
+  controls.
+- A capped path can no longer be blindly launched, revised, regenerated, or
+  stopped from list cards while the focused detail page correctly asks for
+  better direction.
+- This keeps the repeated-path policy consistent across overview boards and
+  focused work: add Voice & Memory context or use support before spending
+  another pass.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "inline"`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "capped"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- Browser smoke: capped Work Ready and Live proof feed cards lock Launch,
+  Request changes, Prepare another pass, and Choose new direction.
+
+## Focused Stuck Review Lock - 2026-05-14
+
+Product/status slice:
+
+- Locked the ordinary review controls when focused work has reached its retry
+  limit.
+- The focused stuck-work view now matches its own guidance: users cannot keep
+  launching, requesting changes, or preparing another blind pass from the same
+  capped path.
+- The available next steps are Voice & Memory and the paid support handoff, so
+  the loop shifts from repeated generation to better direction before spending
+  another pass.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "focused stuck"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- Browser smoke: focused retry-limited work locks Launch, Request changes,
+  Prepare another pass, and Choose new direction while keeping Voice & Memory
+  available.
+
+## Focused Stuck Work Recovery - 2026-05-14
+
+Product/status slice:
+
+- Added a focused stuck-work recovery card to review-limit work views.
+- When a retry-limited path is opened directly, DearMe now tells the user not
+  to spend another blind pass and offers direct actions into Voice & Memory or
+  the paid support handoff.
+- Covered both focused team work and focused private prepared work, so the
+  repeated-path loop stays actionable after users click through from operations
+  or support receipts.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "focused stuck"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- `pnpm --silent dearme:status`
+- Browser smoke: focused retry-limited work at `view=decisions&work=PET-8`
+  shows recovery guidance, opens Voice & Memory, and opens the paid support
+  handoff.
+
+## Autonomy Contract Action Handoff - 2026-05-14
+
+Product/status slice:
+
+- Added a direct action strip to the Autonomy contract receipt when a paid
+  account has an empty week or a repeated path has reached its retry limit.
+- The autonomy boundary now moves the user into the next concrete action:
+  empty-week recovery, stuck work, or the paid support handoff.
+- This turns "DearMe can keep working until a move would represent you" into an
+  operable loop instead of a passive policy note.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid week has no useful deliverables"`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "repeated-path context"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: Autonomy contract "Open stuck work" navigates to
+  `view=decisions&work=PET-8`, and "Open support handoff" lands on
+  `#dearme-support-handoff`.
+
+## Support Receipt Stuck Work Jump - 2026-05-14
+
+Product/status slice:
+
+- Added an "Open stuck work" action to the support handoff feedback receipt
+  when a repeated path has a work reference.
+- After support is sent to Chief of Staff, the paid user or operator can still
+  jump back to the original stuck work item instead of only opening the new
+  feedback issue.
+- This keeps the repeated-path loop concrete after escalation: stuck work,
+  support brief, Voice & Memory learning, and feedback work stay one click
+  apart.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "repeated-path context"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: support handoff feedback receipt keeps "Open stuck work" and
+  navigates to `view=decisions&work=PET-8` after the support brief is queued.
+
+## Operations Stuck Work Jump - 2026-05-14
+
+Product/status slice:
+
+- Added an "Open stuck work" action directly to the paid operations risk strip
+  when a repeated path has a work reference.
+- A paid user or support operator can now move from operations risk diagnosis
+  straight into the focused stuck work item, while still keeping the support
+  handoff available from the same strip.
+- Empty-week recovery remains recovery-first; retry-limited work is now
+  work-first with support one click away.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "repeated-path context"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: operations risk "Open stuck work" navigates directly to
+  `view=decisions&work=PET-8`.
+
+## Stuck Work Support Link - 2026-05-14
+
+Product/status slice:
+
+- Added an "Open stuck work" action to the paid support handoff when a repeated
+  path has a work reference.
+- The retry-limited path now carries its issue reference through the operations
+  risk context and into the support panel, so support can jump from account
+  handoff to the exact stuck work item.
+- This closes the repeated-path loop from diagnosis to context to work item
+  without asking the user or support operator to search the workbench.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "repeated-path context"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: support handoff "Open stuck work" navigates to the focused
+  decision route for the retry-limited work item.
+
+## Stuck Path Support Context - 2026-05-14
+
+Product/status slice:
+
+- Added the specific stuck path to the paid support handoff when a review loop
+  hits its retry limit.
+- The paid operations risk action now tells the user which repeated path needs
+  support before another pass spends more effort.
+- This makes support handoff operational instead of generic: support gets the
+  account state, latest work, decisions, cost context, boundary, and the exact
+  stuck work path in one private note.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "repeated-path context"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: a paid account with a retry-limited work item shows the stuck
+  path in operations risk and support handoff, and "Open support handoff" lands
+  on `#dearme-support-handoff`.
+
+## Operations Risk Action - 2026-05-14
+
+Product/status slice:
+
+- Added a direct action strip to the paid user operations receipt when an
+  operating account has an empty paid week or a repeated path has reached its
+  retry limit.
+- The operations surface now opens the empty-week recovery pass and the paid
+  support handoff from the same receipt, so risk does not stay as passive
+  account status.
+- This keeps the paid account loop concrete: operations risk -> recovery
+  make-good -> support handoff if the team cannot produce a useful private
+  item before the next customer check-in.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid week has no useful deliverables"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: operations receipt "Open recovery" lands on
+  `/DEAA/dearme?view=brand-os&codexProductQa=20260514-operations-risk-action#dearme-empty-week-recovery`;
+  "Open support handoff" lands on the same page at
+  `#dearme-support-handoff`.
+
+## Recovery Support Handoff Jump - 2026-05-14
+
+Product/status slice:
+
+- Added an "Open support handoff" action to the empty-week recovery panel.
+- When recovery is needed but may stall, the user can jump directly from the
+  recovery receipt to the paid support handoff instead of hunting through the
+  operating policy surface.
+- This keeps the escalation path concrete: weekly/account risk -> recovery
+  make-good -> support handoff, while still keeping public sends, spend, and
+  irreversible moves behind the final call.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid week has no useful deliverables"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: empty-week recovery "Open support handoff" lands on
+  `/DEAA/dearme?view=brand-os&codexProductQa=20260514-recovery-support-handoff#dearme-support-handoff`
+  with one support handoff anchor, and "Start recovery" still creates the
+  recovery receipt.
+
+## Weekly Value Recovery Handoff - 2026-05-14
+
+Product/status slice:
+
+- Added a direct "Open recovery" action to the weekly value receipt when a
+  paid week has no visible useful output.
+- The seven-day value diagnosis now flows into the same empty-week recovery
+  panel as paid account health, so the user can move from "Needs recovery" to
+  a make-good brief without scanning the whole workbench.
+- This keeps retention recovery on the existing DearMe-native loop: weekly
+  value -> recovery receipt -> Chief of Staff recovery work -> Voice & Memory
+  and refreshed private outputs.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid week has no useful deliverables"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: weekly value "Open recovery" lands on
+  `/DEAA/dearme?view=brand-os&codexProductQa=20260514-weekly-value-recovery-handoff#dearme-empty-week-recovery`
+  with one empty-week recovery anchor, then "Start recovery" still creates the
+  recovery receipt.
+
+## Paid Health Recovery Handoff - 2026-05-14
+
+Product/status slice:
+
+- Added a direct "Open recovery" action to the paid account health receipt when
+  a paid account has no visible useful output.
+- Account health now hands the user to the empty-week recovery action instead
+  of only diagnosing "Needs recovery".
+- The handoff anchors the same page at the recovery receipt, so retention risk
+  flows into the existing make-good brief and Chief of Staff recovery path
+  without adding another queue or support system.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid week has no useful deliverables"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: paid account health "Open recovery" lands on
+  `/DEAA/dearme?view=brand-os&codexProductQa=20260514-paid-health-recovery-handoff#dearme-empty-week-recovery`
+  with one empty-week recovery anchor, then "Start recovery" still creates the
+  recovery receipt.
+
+## Empty Week Recovery Start Action - 2026-05-14
+
+Product/status slice:
+
+- Added a real "Start recovery" action to the empty-week recovery receipt.
+- When a paid account has no useful visible output, DearMe now prepares a
+  private make-good brief for the Chief of Staff instead of only displaying a
+  recovery status.
+- The recovery receipt can open the recovery work or jump to Voice & Memory, so
+  retention recovery connects to private work, learning, and refreshed outputs
+  without public sends, spend, or irreversible moves.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid week has no useful deliverables"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: empty-week recovery "Start recovery" creates a recovery
+  receipt, "Open Voice & Memory" lands on
+  `/DEAA/dearme?view=voice&codexProductQa=20260514-empty-week-recovery-start#dearme-voice-memory`
+  with one Voice & Memory anchor.
+
+## Chief Feedback Voice Memory Jump - 2026-05-14
+
+Product/status slice:
+
+- Added an "Open Voice & Memory" action to feedback briefs sent from the main
+  Chief of Staff composer.
+- A user who asks DearMe to handle feedback can now go straight from the
+  feedback receipt into saved memory, so corrections, support notes, proof,
+  audience context, offer context, and launch boundaries can become durable
+  source material for the next pass.
+- This keeps composer feedback, support handoffs, and growth-cycle feedback on
+  the same learning loop instead of splitting them across separate surfaces.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "cycle controls"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: Chief of Staff "Handle feedback" receipt "Open Voice &
+  Memory" lands on
+  `/DEAA/dearme?view=voice&codexProductQa=20260514-chief-feedback-voice-memory-jump#dearme-voice-memory`
+  with one Voice & Memory anchor.
+
+## Support Handoff Voice Memory Jump - 2026-05-14
+
+Product/status slice:
+
+- Added an "Open Voice & Memory" action to the paid support handoff feedback
+  receipt.
+- After support sends an account context note to the Chief of Staff, the user
+  can jump directly to the memory surface to inspect or add the voice, proof,
+  source, correction, audience, offer, or boundary context that should shape
+  the next pass.
+- This turns paid support into the same learning loop as customer feedback:
+  support note -> private feedback work -> Voice & Memory -> refreshed work.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid support handoff"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: support handoff receipt "Open Voice & Memory" lands on
+  `/DEAA/dearme?view=voice&codexProductQa=20260514-support-voice-memory-jump#dearme-voice-memory`
+  with one Voice & Memory anchor.
+
+## Work Ready Voice Memory Jump - 2026-05-14
+
+Product/status slice:
+
+- Added an "Open Voice & Memory" action to the Work Ready and Opportunities
+  Ready headers.
+- A user reviewing prepared work can now jump directly to the memory surface
+  when the draft needs more voice, proof, source, correction, audience, offer,
+  or boundary material.
+- This pairs with the Voice & Memory return path so reviewable work and saved
+  memory form a two-way customer loop instead of two separate product areas.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "generated brand work"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: Work Ready "Open Voice & Memory" lands on
+  `/DEAA/dearme?view=voice&codexProductQa=20260514-work-ready-voice-jump#dearme-voice-memory`
+  with one Voice & Memory anchor.
+
+## Voice Memory Work Ready Return - 2026-05-14
+
+Product/status slice:
+
+- Added "Review Work Ready" to the Voice & Memory header and "Review refreshed
+  work" to the Voice & Memory save receipt.
+- Users can now return directly to Work Ready from the memory surface, and after
+  saving or updating source material they get a more specific refreshed-work
+  return action.
+- This closes the loop from feedback learning to memory capture to reviewable
+  work without adding another internal queue or approval step.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "previews a full profile"`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "Voice & Memory"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:status`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: Voice & Memory "Review Work Ready" lands on
+  `/DEAA/dearme?view=brand-os&codexProductQa=20260514-voice-work-ready-return-header#dearme-work-ready`
+  with one Work Ready anchor.
+
+## Feedback Learning Voice Memory Jump - 2026-05-14
+
+Product/status slice:
+
+- Added an "Open Voice & Memory" action to the Feedback learning receipt in
+  the growth cycle panel.
+- When users see that corrections, support notes, and saved sources will shape
+  the next pass, they can now jump directly into Voice & Memory to inspect or
+  add the underlying material.
+- This strengthens the paid-user learning loop without adding another approval
+  step or exposing internal work queues.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "previews a full profile"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: Feedback learning receipt "Open Voice & Memory" lands on
+  `/DEAA/dearme?view=voice&codexProductQa=20260514-feedback-voice-memory-jump#dearme-voice-memory`
+  with one Voice & Memory anchor.
+
+## Decisions Work Ready Return - 2026-05-14
+
+Product/status slice:
+
+- Added a "Review Work Ready" action to the Decisions panel header.
+- A user who lands on launch calls can now jump back to the prepared Work Ready
+  board before approving, revising, pausing, or asking for another pass.
+- This completes the local review loop across proof page, Work Ready, and
+  Decisions without requiring internal issue routes.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "previews a full profile"`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "launch-proof gap"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: Decisions "Review Work Ready" lands on
+  `/DEAA/dearme?view=brand-os&codexProductQa=20260514-decisions-work-ready-return#dearme-work-ready`
+  with one Work Ready anchor.
+
+## Work Ready Decisions Jump - 2026-05-14
+
+Product/status slice:
+
+- Added an "Open Decisions" action to the Work Ready and Opportunities Ready
+  panels.
+- A user reviewing prepared work can now jump directly to the launch-call
+  surface from the board header, instead of relying on inline cards or the
+  proof-page handoff to find Decisions.
+- The route lands on `#dearme-decisions-needed`, matching the proof-page
+  Decisions handoff.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "generated brand work"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: Work Ready "Open Decisions" lands on
+  `/DEAA/dearme?view=decisions&codexProductQa=20260514-work-ready-decisions-jump#dearme-decisions-needed`
+  with one Decisions anchor.
+
+## First Cycle Work Ready Receipt Action - 2026-05-14
+
+Product/status slice:
+
+- Added a direct "Review Work Ready" action to the paid first-cycle start
+  receipt.
+- After a user starts private work, they can now jump straight to the
+  reviewable Work Ready board instead of opening the proof page first and then
+  finding the return handoff.
+- The proof page action stays available, so the receipt now supports both aha
+  proof and immediate review in one place.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "first cycle"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- Browser smoke: start first cycle, click "Review Work Ready", and land on
+  `/DEAA/dearme?view=brand-os&codexProductQa=20260514-work-ready-receipt-action#dearme-work-ready`
+  with one Work Ready anchor.
+
+## Decisions Deep Link Handoff - 2026-05-14
+
+Product/status slice:
+
+- Made the proof-page "Open Decisions" handoff land on a stable Decisions
+  anchor instead of only opening the generic Decisions view.
+- The Decisions panel now exposes `#dearme-decisions-needed`, matching the
+  Work Ready proof-page return path and reducing ambiguity after a customer
+  reviews first-cycle proof.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeSitePreview.test.tsx`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "decisions"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeSitePreview.tsx ui/src/pages/DearMeSitePreview.test.tsx docs/dearme/BUILD-STATE.md`
+- `pnpm --silent dearme:status`
+- Browser smoke: proof page "Open Decisions" lands on
+  `/DEAA/dearme?view=decisions#dearme-decisions-needed` with one Decisions
+  anchor.
+
+## Proof Page Review Handoff - 2026-05-14
+
+Product/status slice:
+
+- Closed the proof-page return path after the first-cycle aha moment.
+- The first-cycle proof page now includes a "Review handoff" that sends the
+  user back to Work Ready for proof-pack review or to Decisions for the launch
+  call, instead of leaving the proof page as a standalone artifact.
+- The Brand work ready panel now has a stable `#dearme-work-ready` anchor so
+  proof-page and receipt links can return to the customer-operable review path.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeSitePreview.test.tsx`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeSitePreview.tsx ui/src/pages/DearMeSitePreview.test.tsx`
+
+## First Cycle Start Receipt - 2026-05-14
+
+Product/status slice:
+
+- Added a customer-visible receipt after a paid account starts the first
+  private brand cycle from one sentence.
+- The receipt now says private work has started, tells the user Work Ready will
+  update with reviewable drafts, proof page, opportunity work, and first report,
+  and keeps public posts, outreach, page changes, and spend behind the launch
+  call.
+- Trial previews do not show the started receipt, so the product does not imply
+  paid private work began before access is active.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "first cycle"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+
+## Paid Beta Start-After-Payment Action - 2026-05-14
+
+Product/status slice:
+
+- Closed the paid beta activation handoff from "payment recorded" to a direct
+  first-cycle action.
+- Active paid beta customer receipts now include "Start first cycle now", which
+  focuses the existing one-sentence first-cycle input instead of leaving the
+  user to find the next step elsewhere.
+- The payment-recorded confirmation carries the same action, so a newly paid
+  account can move from receipt to first private brand work in one click while
+  public posts, outreach, page changes, and spend still stay behind the launch
+  call.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid beta"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+
+## Composer Feedback Receipt - 2026-05-14
+
+Product/status slice:
+
+- Made the main Chief of Staff composer show feedback-specific completion when
+  the selected cycle is `Handle feedback`.
+- A feedback brief submitted from the composer now reads "Feedback brief sent",
+  carries the Voice & Memory learning/recovery/next-cycle next step, and opens
+  as "Open feedback work" instead of generic brand work.
+- This keeps support handoffs and direct customer feedback asks aligned: both
+  paths make the feedback learning loop visible immediately after send.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "cycle controls"`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- `pnpm --silent dearme:status`
+
+## Feedback Brief Next-Step Receipt - 2026-05-14
+
+Product/status slice:
+
+- Made the Chief of Staff feedback/support handoff receipt intent-specific.
+- `handle_feedback` briefs now come back with a customer-visible next step that
+  names Voice & Memory learning, recovery work, next-cycle changes, and the
+  public-move boundary instead of using the generic brand-work receipt.
+- This keeps paid support feedback from feeling like it disappeared into a
+  queue and makes the learning loop visible at the moment the user sends it.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts -t "feedback handling"`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx -t "paid support handoff"`
+- `pnpm --silent --filter @paperclipai/server typecheck`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- server/src/routes/dearme.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- `pnpm --silent dearme:status`
+
+## Support Feedback Action Receipt - 2026-05-14
+
+Product/status slice:
+
+- Closed the paid support handoff action loop with an in-place feedback receipt.
+- After support sends the account handoff to Chief of Staff, the support panel
+  now shows the feedback brief status, the next private work step, and a direct
+  "Open feedback work" action instead of leaving the result down in the generic
+  composer area.
+- Chief of Staff composer results remain scoped to composer-submitted briefs, so
+  support and general planning actions do not blur together.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- `pnpm --silent dearme:status`
+
+## Paid Support Handoff Feedback Action - 2026-05-14
+
+Product/status slice:
+
+- Turned the paid support handoff from a read-only account note into an
+  executable feedback path.
+- Paid beta support can now send the current account handoff directly to Chief
+  of Staff as private feedback handling work, preserving account state, latest
+  work, waiting decisions, recovery state, cost context, and launch boundaries.
+- Trial accounts still see the support context, but the action stays locked
+  until paid access is active.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- `pnpm --silent dearme:status`
+
+## Feedback Brief Learning Receipt UI - 2026-05-14
+
+Product/status slice:
+
+- Connected active feedback-handling briefs from the work stream into the
+  customer-visible Learning receipt.
+- The Growth cycle panel now shows "Feedback in progress" with the active brief
+  count and the recovery/Voice & Memory/next-cycle summary, instead of only
+  showing saved review notes after feedback has already become memory.
+- Learning signal counts now include active feedback briefs, so the product
+  makes the feedback-to-next-pass loop visible while work is still moving.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+- `pnpm --silent dearme:status`
+
+## Feedback Learning Workbench Receipt - 2026-05-14
+
+Product/status slice:
+
+- Promoted `handle_feedback` Chief of Staff briefs from a generic planning
+  item into a first-class feedback learning receipt in the workbench.
+- Feedback briefs now show as learn-stage work, use a "Feedback brief" source
+  and artifact label, and tell the user that the team is turning feedback into
+  Voice & Memory learning, recovery work, and next-cycle changes before any
+  public move.
+- The run ledger records this as learned work, so "this was not useful" or
+  support-note inputs become visible product progress instead of disappearing
+  into an internal queue.
+
+Verification:
+
+- `pnpm exec vitest run server/src/__tests__/dearme-workbench.test.ts`
+- `pnpm --silent --filter @paperclipai/server typecheck`
+- `git diff --check -- server/src/services/dearme-workbench.ts server/src/__tests__/dearme-workbench.test.ts docs/dearme/BUILD-STATE.md`
+- `pnpm --silent dearme:status`
+
+## Chief-of-Staff Feedback Handling Intent - 2026-05-14
+
+Product/status slice:
+
+- Added a first-class `handle_feedback` Chief of Staff intent so paid users can
+  turn support notes, customer feedback, or "this was not useful" signals into
+  private triage work instead of manually translating them into a generic plan.
+- The front-end composer now has a "Handle feedback" cycle control and select
+  option; the backend records it as high-priority private brand-team work for
+  the Chief of Staff and adds a feedback-learning instruction to the issue
+  description.
+- This strengthens the paid-user operating loop: feedback can become Voice &
+  Memory learning, recovery/follow-up work, and next-cycle changes while public
+  sends, publishing, claims, spend, and site changes remain behind the normal
+  launch boundary.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/validators/dearme.test.ts`
+- `pnpm exec vitest run server/src/__tests__/dearme-brand-blueprint-routes.test.ts`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx`
+- `pnpm --silent --filter @paperclipai/shared typecheck`
+- `pnpm --silent --filter @paperclipai/server typecheck`
+- `pnpm --silent --filter @paperclipai/ui typecheck`
+- `git diff --check -- packages/shared/src/validators/dearme.ts packages/shared/src/validators/dearme.test.ts server/src/routes/dearme.ts server/src/__tests__/dearme-brand-blueprint-routes.test.ts ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx`
+
+## Next-Proof Receipt Commands In Handoff - 2026-05-14
+
+Product/status slice:
+
+- Brought the receipt preview/import sequence into `dearme:next-proof` itself,
+  not just the release/status summaries.
+- The owner handoff now carries structured `handoffReceiptPreviewCommand` and
+  `handoffReceiptCommand` fields, and the human output says to preview the
+  downloaded receipt without writing before importing it into `.dearme-proof.env`.
+- This keeps the direct operator entrypoint aligned with the product Decisions
+  receipt, release gate, and status output while preserving the no-send/live
+  guard boundary.
+
+Verification:
+
+- `pnpm run test:dearme-next-proof`
+- `pnpm --silent dearme:next-proof -- --target linkedin_dm --no-write`
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
+- `git diff --check -- scripts/dearme-next-proof.ts scripts/dearme-next-proof.test.ts docs/dearme/README.md docs/dearme/BUILD-STATE.md`
+
+## Receipt Preview Status Handoff - 2026-05-14
+
+Product/status slice:
+
+- Connected the no-write handoff receipt preview into `dearme:release-gate` and
+  `dearme:status`, so operator output now says to preview the downloaded
+  product receipt before importing it into `.dearme-proof.env`.
+- Added structured preview commands beside the existing import commands in the
+  release/status payloads, keeping JSON consumers aligned with the human
+  handoff.
+- The flow stays local-only: preview checks receipt facts in memory, import only
+  writes the ignored local proof env, and guarded live proof still requires the
+  explicit live confirmation.
+
+Verification:
+
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `pnpm --silent dearme:status`
+- `git diff --check -- scripts/dearme-release-gate.ts scripts/dearme-release-gate.test.ts scripts/dearme-proof.ts scripts/dearme-proof.test.ts docs/dearme/README.md docs/dearme/BUILD-STATE.md`
+
+## Next-Proof No-Write Receipt Preview - 2026-05-14
+
+Product/status slice:
+
+- Tightened the launch-proof receipt handoff so `dearme:next-proof --no-write`
+  can use capture flags or `--handoff-receipt-file` as an in-memory preview.
+- This lets the operator verify the downloaded product receipt against the
+  current proof env before changing `.dearme-proof.env`, while still hiding
+  captured values and keeping all live sends/publishes/deploys/spend behind the
+  guarded live command.
+- Normal mode still writes non-secret launch facts into the local ignored env
+  file for the eventual guarded proof run.
+
+Verification:
+
+- `pnpm run test:dearme-next-proof`
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
+- `pnpm --silent dearme:status`
+- `git diff --check -- scripts/dearme-next-proof.ts scripts/dearme-next-proof.test.ts docs/dearme/README.md docs/dearme/BUILD-STATE.md`
+
+## Next-Proof No-Send Check Receipt - 2026-05-14
+
+Product/status slice:
+
+- Promoted `dearme:next-proof` from "setup plus next command" into a local
+  no-send check receipt: after it creates or augments `.dearme-proof.env`, it
+  now reports a structured `noSendCheck` with ready/blocked status, checked
+  targets, blocked targets, and a no-send guarantee.
+- This makes the product handoff receipt path more autonomous. The operator can
+  download `launch-proof-handoff-receipt.txt`, import it with
+  `--handoff-receipt-file`, and immediately see whether the no-send proof setup
+  is ready without interpreting a separate command first.
+- The receipt remains local-only. It does not send messages, publish, deploy,
+  spend, call a live provider, or remove the guarded live-proof launch call.
+
+Verification:
+
+- `pnpm run test:dearme-next-proof`
+- `pnpm --silent dearme:next-proof -- --target all --no-write --json`
+- `pnpm --silent dearme:status`
+- `git diff --check -- scripts/dearme-next-proof.ts scripts/dearme-next-proof.test.ts docs/dearme/README.md docs/dearme/BUILD-STATE.md`
+
+## Launch Proof Receipt Download - 2026-05-14
+
+Product/status slice:
+
+- Added a direct download action to the Decisions launch-proof handoff receipt,
+  exporting the customer-safe receipt as `launch-proof-handoff-receipt.txt`.
+- This closes the product-to-operator bridge introduced by
+  `--handoff-receipt-file`: Peter can capture the three launch details in the
+  product, download one private receipt, and feed that file into the local
+  no-send proof setup without retyping the individual facts.
+- The action remains local preparation only. It does not send messages,
+  publish, deploy, spend, or remove the guarded live-proof launch call.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "launch-proof gap"`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:status`
+- Browser smoke:
+  `http://127.0.0.1:3100/DEAA/dearme?view=decisions&codexProductQa=20260514-launch-proof-receipt-download-fresh`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Launch Proof Receipt Status Handoff - 2026-05-14
+
+Product/status slice:
+
+- Promoted the launch-proof receipt import path into the product status spine,
+  so `dearme:status` and `dearme:release-gate` now tell operators to import
+  the product-generated handoff receipt instead of only showing three manual
+  capture flags.
+- Added structured `handoffReceiptCommand` fields to the release-gate operator
+  handoff and proof live-handoff payloads, keeping JSON consumers aligned with
+  the human-readable status output.
+- The command remains local-only:
+  `pnpm --silent dearme:next-proof -- --target all --handoff-receipt-file <launch-proof-handoff-receipt.txt>`.
+  It prepares no-send proof setup; it does not send, publish, deploy, spend, or
+  remove the guarded-live-proof requirement.
+
+Verification:
+
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `pnpm --silent dearme:release-gate -- --target private-proof --json | rg -n "handoffReceiptCommand|handoff-receipt-file|captureCommand|operatorHandoff"`
+
+## Launch Proof Receipt Import - 2026-05-14
+
+Product/status slice:
+
+- Connected the product-generated launch-proof handoff receipt to
+  `dearme:next-proof`, so the captured route/recipient details can move from
+  the Decisions surface into the local no-send proof setup without retyping
+  three separate flags.
+- Added `--handoff-receipt-file <path>` to `pnpm dearme:next-proof`; it parses
+  the customer-safe receipt lines, writes only the non-secret proof facts into
+  `.dearme-proof.env`, and still hides captured values from command output.
+- Kept the same shared owner-proof fact specs as the source of truth, so the
+  UI receipt, local capture flags, proof env keys, and owner handoff stay
+  aligned.
+- This is a preparation bridge only: it does not send messages, publish,
+  deploy, spend, or remove the need for a guarded live proof after Peter
+  provides the real external facts.
+
+Verification:
+
+- `pnpm run test:dearme-next-proof`
+
+## Launch Proof Handoff Receipt - 2026-05-14
+
+Product/status slice:
+
+- Turned the public-launch blocker panel into a clearer handoff loop: the
+  product now captures the three live-proof details and generates one
+  customer-safe private receipt for the no-send setup check.
+- Added a shared `buildDearMeOwnerProofHandoffReceipt` helper so launch-proof
+  status text is generated from the same facts used by the product surface,
+  without exposing env names, donor systems, or engineering terms.
+- The decisions surface now shows a read-only handoff receipt that moves from
+  `0/3 details captured` to `3/3 details captured`, carries the captured
+  route/recipient details, and keeps the boundary clear: no public message,
+  page change, spend, or broad launch moves from the panel.
+- This does not remove the real external-proof blocker; it makes the remaining
+  Human Support handoff operational instead of leaving it as command-line
+  context.
+
+Verification:
+
+- `pnpm exec vitest run packages/shared/src/dearme-customer-text.test.ts --maxWorkers=1`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/shared typecheck`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm --silent dearme:status`
+- Browser smoke:
+  `http://127.0.0.1:3100/DEAA/dearme?view=decisions&codexProductQa=20260514-launch-proof-handoff-receipt`
+- `git diff --check -- packages/shared/src/dearme-customer-text.ts packages/shared/src/dearme-customer-text.test.ts packages/shared/src/index.ts ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Autonomy Contract Status Gate - 2026-05-14
+
+Product/status slice:
+
+- Connected the DearMe autonomy contract receipt to the commercial readiness
+  status spine, so the product no longer treats autonomy as UI-only proof.
+- `dearme:release-gate` now reports an `Autonomy contract receipt` readiness
+  item with evidence for private research, parallel preparation, launch-call
+  boundaries, and donor-term-free operation.
+- `dearme:status` now mirrors the same readiness item in the compact product
+  proof output that future workers and operators use before choosing the next
+  slice.
+- Kept the public-launch gate unchanged: private beta remains sellable and
+  operable, while live external proof still waits for owner-approved channel
+  details.
+
+Verification:
+
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `pnpm --silent dearme:status`
+- `git diff --check -- scripts/dearme-release-gate.ts scripts/dearme-release-gate.test.ts scripts/dearme-proof.ts scripts/dearme-proof.test.ts docs/dearme/BUILD-STATE.md docs/dearme/CLAUDE-CODE-SOURCE-REUSE-AUDIT.md`
+
+## Autonomy Contract Receipt - 2026-05-14
+
+Product/status slice:
+
+- Adapted the useful tool-contract idea from the reviewed Unlicense
+  `claude-code-source` project into a DearMe-native autonomy contract receipt.
+- Added a customer-safe operating boundary to Brand OS: read-only research can
+  run freely, private preparation can move in parallel, launch actions wait for
+  the customer's call, and recovery/support escalates only for hard external
+  decisions.
+- Added a read-only autonomy note that support and operators can use to explain
+  what DearMe can keep doing without asking, and what still requires the launch
+  call.
+- Kept donor/source/platform terms out of the product surface.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser smoke:
+  `http://127.0.0.1:3100/DEAA/dearme?view=brand-os&codexProductQa=20260514-autonomy-contract-receipt`
+- `pnpm --silent dearme:status`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md docs/dearme/CLAUDE-CODE-SOURCE-REUSE-AUDIT.md`
+
+## Paid Beta Payment Path Receipt - 2026-05-14
+
+Product/status slice:
+
+- Added a paid beta payment-path receipt to the DearMe workbench so the current
+  private-beta payment mode is visible, sellable, and tied to account
+  activation instead of living as operator knowledge.
+- Trial accounts now show the manual private-beta path: collect payment, save
+  amount/note/reference, open access, then start the first private brand cycle.
+- Paid accounts show receipt-backed access: saved reference, paid amount,
+  receipt note, open activation, and the next cycle start.
+- Kept hosted checkout as a clear upgrade path that can replace manual
+  recording once the payment link and receipt sync are configured, without
+  claiming an unconfigured payment provider is live.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser smoke:
+  `http://127.0.0.1:3100/DEAA/dearme?view=brand-os&codexProductQa=20260514-paid-beta-payment-path-receipt`
+- `pnpm --silent dearme:status`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Paid Beta Close Kit - 2026-05-14
+
+Product/status slice:
+
+- Added a customer-safe paid beta close/start kit to the DearMe workbench so
+  the private-beta sale can move from payment to account opening to first brand
+  cycle without a separate handoff document.
+- The kit changes state between trial preview and paid access: trial accounts
+  show the close note, price, receipt-reference path, and public-launch proof
+  boundary; paid accounts show the start note, receipt reference, paid amount,
+  remaining credit, and launch-call boundary.
+- Kept the surface free of internal platform/provider terms and tied it to the
+  existing paid beta access, customer receipt, guardrail, and support boundary
+  instead of adding another sales subsystem.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser smoke:
+  `http://127.0.0.1:3100/DEAA/dearme?view=brand-os&codexProductQa=20260514-paid-beta-close-kit`
+- `git diff --check -- ui/src/pages/DearMeOnboarding.tsx ui/src/pages/DearMeOnboarding.test.tsx docs/dearme/BUILD-STATE.md`
+
+## Product Status Commercial Readiness - 2026-05-14
+
+Product/status slice:
+
+- Connected the common `dearme:status` view to DearMe's commercial operating
+  claim, so the status check now says whether private beta can be sold and
+  whether paid users can be operated.
+- Added the paid beta access, five-minute first wow, weekly value receipt, paid
+  account health receipt, empty-week recovery, launch boundary, cost guardrail,
+  feedback learning, and human support handoff receipts to the status output.
+- Kept public launch blocked on live external proof facts while making the
+  private-beta sell/operate path visible from the default operator command.
+- Linked the status output back to the detailed release gate for the deeper
+  commercial audit.
+
+Verification:
+
+- `pnpm --silent test:dearme-proof`
+- `pnpm --silent dearme:status`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
 - `git diff --check`
+
+## Commercial Release Gate Operating Receipts - 2026-05-14
+
+Product/status slice:
+
+- Extended the DearMe release gate commercial-readiness model so paid-user
+  operability includes weekly value, paid account health, and empty-week
+  recovery, not only access, first wow, launch boundary, cost, feedback, and
+  support.
+- The command-line release gate now reports these product receipts as separate
+  commercial readiness items, making the private-beta sell/operate claim match
+  the actual paid-user workbench.
+- Public launch remains blocked by real external proof facts; the commercial
+  gate now says DearMe can sell and operate private beta while still refusing
+  broad launch claims until live receipts exist.
+
+Verification:
+
+- `pnpm --silent test:dearme-release-gate`
+- `pnpm --silent dearme:release-gate -- --target private-proof`
+- `git diff --check`
+
+## Empty Week Recovery Receipt - 2026-05-14
+
+Product/status slice:
+
+- Added a customer-visible empty-week recovery receipt to the DearMe workbench
+  so a paid account with zero useful deliverables gets a concrete make-good path
+  instead of just a weak status label.
+- The recovery receipt turns the retention rule into product behavior: one
+  useful voice-matched content, opportunity, portfolio, or report item must be
+  created or refreshed before the week is treated as healthy.
+- Paid accounts with visible work show recovery as standing by; at-risk paid
+  accounts show the fastest current work path, the customer update, and the
+  support escalation boundary.
+- Reused the current workbench work stream, Voice & Memory plan, weekly value
+  count, and support handoff instead of adding a separate retention subsystem.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser smoke:
+  `http://127.0.0.1:3100/DEAA/dearme?view=brand-os&codexProductQa=20260514-empty-week-recovery-receipt`
+- `git diff --check`
+
+## Paid Account Health Receipt - 2026-05-14
+
+Product/status slice:
+
+- Added a customer-visible account health receipt to the DearMe workbench so
+  paid beta users can see whether the account is healthy enough to retain based
+  on outcomes rather than internal activity.
+- The receipt combines useful weekly outputs, Voice & Memory confidence,
+  waiting launch calls, and spend checkpoints into one operational signal.
+- Trial accounts see the same health model as ready after access, so the paid
+  loop can be sold without pretending unpaid preview work is already operating.
+- Reused existing workbench work, report, memory, decision, and spend state
+  instead of creating a separate account-health subsystem.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser smoke:
+  `http://127.0.0.1:3100/DEAA/dearme?view=brand-os&codexProductQa=20260514-paid-account-health-receipt`
+- `git diff --check`
+
+## Weekly Value Receipt - 2026-05-14
+
+Product/status slice:
+
+- Added a customer-visible seven-day value receipt to the DearMe workbench so a
+  paid beta user can see whether the week has useful outputs, a weekly report,
+  opportunity/proof coverage, and an empty-week recovery trigger.
+- Trial accounts see the same mechanism as ready after access, so DearMe can
+  sell the paid loop without pretending unpaid preview work is already running.
+- Reused the existing work-ready items, active work, weekly report, opportunity
+  lanes, proof/memory source count, and paid beta state instead of adding a new
+  SLA tracker or retention subsystem.
+- Makes the architecture rule operational: a paid week should show useful
+  deliverables, not vague activity, and an empty week should become a visible
+  recovery case.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser smoke:
+  `http://127.0.0.1:3100/DEAA/dearme?view=brand-os&codexProductQa=20260514-weekly-value-receipt`
+- `git diff --check`
+
+## Next Cycle Retention Receipt - 2026-05-14
+
+Product/status slice:
+
+- Added a customer-visible next check-in receipt to the DearMe workbench so paid
+  beta users can see the next briefing, continuing work queue, waiting launch
+  calls, and memory signals before they leave.
+- Trial accounts see the same receipt as ready after access, so the preview does
+  not imply DearMe is already operating a paid growth loop.
+- Reused the current report next bets, work queues, decision queues, action
+  graph memory signals, and paid beta state instead of adding a separate
+  retention subsystem.
+- Supports the autonomy promise: DearMe keeps internal prep moving and brings
+  back only launch, spend, page-change, or outbound decisions.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser smoke:
+  `http://127.0.0.1:3100/DEAA/dearme?view=brand-os&codexProductQa=20260514-next-cycle-retention-receipt`
+- `git diff --check`
+
+## Paid User Support Handoff - 2026-05-14
+
+Product/status slice:
+
+- Added a customer-visible support handoff to the DearMe workbench so paid beta
+  users and operators can bring account state, latest work, waiting decisions,
+  recovery state, cost context, and hard launch/spend boundaries into one plain
+  note.
+- The handoff keeps DearMe autonomous: private work keeps preparing, while only
+  account access, live launch, spend, and irreversible support calls come back
+  to human support.
+- Trial accounts see the same surface as an access-first checklist, preventing
+  unpaid trial previews from looking like operating paid support cases.
+- Reused the existing workbench run ledger, decision queues, spend checkpoints,
+  retry limits, and paid beta state instead of adding a separate support-ticket
+  subsystem.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser smoke:
+  `http://127.0.0.1:3100/DEAA/dearme?view=brand-os&codexProductQa=20260514-paid-user-support-handoff`
+- `git diff --check`
+
+## Paid Beta Customer Receipt - 2026-05-14
+
+Product/status slice:
+
+- Added a customer-readable paid beta receipt to the DearMe workbench so a
+  private-beta buyer can see whether access is open, what was paid, remaining
+  credit, latest payment date, receipt note, and support reference.
+- The receipt gives the next operating steps after access opens: start the
+  brand team, keep credit visible, and hold public moves behind the launch
+  call.
+- Trial accounts now show the same surface as a clear pre-payment checklist:
+  take payment first, save a reference, then start work.
+- Recording a paid beta payment now immediately updates the access receipt in
+  the workbench and shows a success state, so operators do not need to refresh
+  before starting the paid account.
+- Reused the existing paid beta finance ledger and entitlement status rather
+  than adding checkout, payment-provider claims, or another billing subsystem.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser smoke:
+  `http://127.0.0.1:3100/DEAA/dearme?view=brand-os&codexProductQa=20260514-paid-beta-customer-receipt`
+- Browser smoke with intercepted payment success:
+  `http://127.0.0.1:3100/DEAA/dearme?view=brand-os&codexProductQa=20260514-paid-beta-instant-open`
+- `git diff --check`
+
+## Proof Page Paid Beta Start Handoff - 2026-05-14
+
+Product/status slice:
+
+- Added a buyer/operator start handoff to the DearMe proof page so the private
+  beta sales proof can open the existing paid beta access panel directly.
+- Reused the current manual paid-access and first brand-cycle path instead of
+  adding a fake checkout, duplicate billing surface, or parallel sales flow.
+- DearMe onboarding now supports the `#dearme-paid-beta-access` deep link and
+  lands operators on the paid beta panel from the proof page handoff.
+- Kept the boundary clear: the proof page does not send, publish, or spend, and
+  broad public launch still waits for owner-approved live receipt details.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeSitePreview.test.tsx ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser smoke:
+  `http://127.0.0.1:3100/DEAA/dearme/site-preview/peter-studio?codexProductQa=20260514-proof-page-paid-beta-handoff`
+- `git diff --check`
+
+## Proof Page Private Beta Sales Receipt - 2026-05-14
+
+Product/status slice:
+
+- Added a customer-visible private beta sales receipt to the DearMe proof page
+  so a buyer or operator can see that the first proof page is enough to sell
+  and start a manual paid beta account now.
+- The proof page now connects the first-session aha moment to the commercial
+  promise: proof page, starter drafts, opportunity leads, next-cycle plan,
+  reports, Voice & Memory, and launch-call boundaries are visible before broad
+  launch.
+- Kept the public-launch posture honest: broad launch still waits for the three
+  owner-approved live receipt details and one guarded live receipt.
+- Reused the existing first-cycle preview and owner-proof fact contracts rather
+  than adding a parallel sales page, payment claim, or launch checklist.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeSitePreview.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser smoke:
+  `http://127.0.0.1:3100/DEAA/dearme/site-preview/peter-studio?codexProductQa=20260514-proof-page-sales-receipt`
+- `git diff --check`
+
+## Paid User Operations Receipt - 2026-05-14
+
+Product/status slice:
+
+- Added a customer-visible operations receipt to the DearMe workbench so paid
+  beta users can see the operating log, recovery path, spend checkpoints, and
+  human-support boundary in one place.
+- Kept the receipt inside the existing Team operating policy surface and reused
+  the run ledger, review-loop retry limits, recent spend checkpoints, and paid
+  access state instead of adding another operations subsystem.
+- Clarified the support model: DearMe keeps preparing and self-correcting
+  internally, while real sends, public launches, account authorization, new
+  spend, legal/privacy calls, brand judgment, and irreversible moves escalate
+  to human support.
+- Current product posture remains unchanged: private beta can be sold and
+  operated manually; public launch still needs live external proof receipts.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser smoke: `http://127.0.0.1:3100/DEAA/dearme?view=brand-os&codexProductQa=20260514-paid-user-operations-receipt-headless`
+- `git diff --check`
+
+## Feedback Learning Receipt - 2026-05-14
+
+Product/status slice:
+
+- Added a customer-visible learning receipt to the DearMe growth cycle so users
+  can see how review feedback, applied changes, saved sources, and report
+  learnings shape the next brand cycle.
+- Kept the learning loop inside the existing workbench instead of creating
+  another process page: users see the receipt directly under Plan / Work /
+  Review / Learn.
+- Paid users see DearMe learning while operating; trial users see that the loop
+  is ready after the first review. Public launch and live external delivery
+  boundaries are unchanged.
+- Reused existing review-loop feedback traces, Voice & Memory sources, source
+  reviews, and Dear me report learnings rather than adding a new feedback
+  subsystem.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser smoke: `http://127.0.0.1:3100/DEAA/dearme?view=brand-os&codexProductQa=20260514-feedback-learning-receipt-headless`
+
+## Paid Beta Operating Receipt - 2026-05-14
+
+Product/status slice:
+
+- Added a customer-visible paid beta operating receipt to the DearMe workbench
+  so active private-beta accounts can see recorded access, unlocked private
+  work, support boundaries, and the remaining public-launch proof gap in one
+  place.
+- Trial users now see that private beta is ready only after real paid access is
+  recorded, keeping the free preview clear without implying unpaid work cycles
+  are already running.
+- Kept the payment posture honest: this is the current manual private-beta
+  access path, not a fake self-serve checkout claim. Public launch and external
+  delivery still wait for approved live receipts.
+- Reused the existing paid beta status, credit guardrail, and customer-safe
+  copy contracts rather than creating another billing subsystem.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- Browser smoke: `http://127.0.0.1:3100/DEAA/dearme?view=brand-os&codexProductQa=20260514-paid-beta-receipt-headless`
+- `git diff --check`
+
+## Commercial Readiness Workbench Surface - 2026-05-14
+
+Product/status slice:
+
+- Surfaced commercial readiness inside the DearMe workbench so the product
+  itself now says the private beta can be sold and operated while public launch
+  still needs verified live receipts.
+- Active paid users see the operating state; trial users see the sellable
+  private-beta state without implying broad public-launch readiness.
+- Added runtime defaults for first-cycle proof packages so older saved previews
+  or provider responses missing newer report/Voice/continuation fields do not
+  crash the live page.
+- Aligned the workbench, proof page, and aha proof copy around approved
+  professional-network and phone-message recipients.
+- Current product posture is unchanged: private beta is sellable and operable;
+  public launch remains blocked on live provider/recipient proof.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx ui/src/pages/DearMeSitePreview.test.tsx --maxWorkers=1`
+- `pnpm --filter @paperclipai/ui typecheck`
+- `pnpm test:dearme-aha-proof`
+- Browser smoke: `http://127.0.0.1:3100/DEAA/dearme?view=brand-os&codexProductQa=20260514-commercial-readiness-headless`
+
+## Commercial Readiness Gate - 2026-05-14
+
+Product/status slice:
+
+- Extended `dearme:release-gate` with a machine-readable commercial readiness
+  layer that separates "sellable private beta" from "public launch ready".
+- The gate now reports whether DearMe can sell private beta access, operate
+  paid users, and which customer-safe proof facts still block a public launch.
+- Reused the existing paid access, cost guardrail, first-wow, Voice & Memory,
+  launch-boundary, and owner handoff contracts instead of adding a new payment
+  or operations subsystem.
+- Tightened owner proof placeholders and labels to make the remaining live
+  proof details explicitly approval-based: approved professional-network
+  recipient and approved phone-message proof recipient.
+- Current product posture: private beta is sellable and operable with manual
+  paid access; public launch remains blocked until live external proof details
+  and guarded receipts are verified.
+
+Verification:
+
+- `pnpm test:dearme-release-gate`
+- `pnpm test:dearme-next-proof`
+- `pnpm --filter @paperclipai/shared test -- dearme-customer-text.test.ts`
+- `pnpm --silent dearme:release-gate -- --json`
+- `pnpm --silent dearme:status`
+
+## Public First-Run Goal Audit Realigned - 2026-05-14
+
+Product/status slice:
+
+- Realigned `dearme:goal-audit` with the current customer-facing public
+  first-run landing instead of stale private-only copy markers.
+- The audit now checks the actual first-run proof-pack CTA, live proof receipt
+  surface, and launch-call boundary shown in
+  `ui/src/pages/DearMeOnboarding.tsx`.
+- Product posture improved: the Polsia-style aha checklist now recognizes the
+  public first-run landing as met, so the remaining goal blockers are the real
+  external message/provider proof items rather than an obsolete status marker.
+
+Verification:
+
+- `pnpm test:dearme-goal-audit`
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1 -t "public first-run landing"`
+- `pnpm --silent dearme:goal-audit -- --json`
+
+## Architect Worktree Absorption - 2026-05-14
+
+Product/coordination slice:
+
+- Reviewed the 16 remaining `architect-*` DearMe worktrees against the current
+  product head and recorded a no-wholesale-replay decision for each branch.
+- Captured the reusable direction in
+  `docs/dearme/ARCHITECT-WORKTREE-ABSORPTION-AUDIT-2026-05-14.md`: approval
+  gates are already the launch-boundary contract, memory/provenance is now the
+  Voice & Memory plan, upstream reuse is current policy, multi-tenant
+  activation is future paid-operation context, and ROI/cycle/role ideas are
+  future current-head implementation candidates rather than branches to merge.
+- Updated `docs/dearme/WORKTREE-ABSORPTION-LEDGER.json` with the exact
+  architect branch/head reviews so `dearme:worktrees` can stop treating those
+  old worktrees as replay blockers.
+- Removed the 15 clean reviewed architect worktrees and their local branch
+  refs after recording exact heads in the ledger. Preserved
+  `/Users/peter/.dearme-architect-worktrees/scope-cut` because it contains
+  uncommitted schema-marker edits that were not made in this pass.
+- Product posture remains focused on the main line: keep building from
+  `/Users/peter/dearme`, not from isolated architect worktrees.
+
+Verification:
+
+- `pnpm test:dearme-worktrees`
+- `pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs`
+- `pnpm --silent dearme:worktrees -- --summary-only --handoffs`
+- `pnpm --silent dearme:status`
+- `git diff --check`
+
+## First-Wow Aha Proof Ready - 2026-05-14
+
+Product slice:
+
+- Resynced the local five-minute aha proof with the current DearMe product
+  contract: proof page preparation, launch-ready review, recurring proof cycles,
+  and one launch decision instead of stale private-only wording.
+- Added the Voice & Memory plan to the phone-ready first proof artifact so users
+  can see what DearMe learned, how it will use those signals next, and that
+  public/costly moves still wait for the launch call.
+- Extended the host-smoke manifest to include memory-plan counts and labels,
+  keeping the static proof artifact testable without exposing substrate terms.
+- `pnpm --silent dearme:status` now reports `First-wow aha proof: ready`; the
+  remaining product blockers are integration absorption and external live proof.
+
+Verification:
+
+- `pnpm test:dearme-aha-proof`
+- `pnpm --silent dearme:aha-proof -- --check`
+- `pnpm --silent dearme:status`
+- `pnpm --filter @paperclipai/shared test -- dearme.test.ts`
+- `pnpm --filter @paperclipai/shared typecheck`
+- `git diff --check`
+
+## Claude Code Source Reuse - 2026-05-14
+
+Product slice:
+
+- Reviewed `git@github.com:WuKongAI-CMU/claude-code-source.git`; its
+  Unlicense/public-domain license permits direct reuse.
+- Reused the strongest DearMe-fit mechanism: durable memory discipline. DearMe
+  now distinguishes stable profile, voice, proof, audience, relationship,
+  feedback, and reference signals from raw logs, file-path snapshots, task
+  transcripts, runtime config, and git history.
+- Added a first-cycle Voice & Memory plan to the shared preview contract so the
+  product can explain what gets remembered and what is filtered out before
+  future drafts rely on it.
+- Captured the audit in `docs/dearme/CLAUDE-CODE-SOURCE-REUSE-AUDIT.md`.
+
+Verification:
+
+- `pnpm --filter @paperclipai/shared test -- dearme.test.ts`
+- `pnpm --filter @paperclipai/shared typecheck`
+
+## OMX / Symphony Runtime Cleared - 2026-05-13
+
+Product/coordination slice:
+
+- Removed the active DearMe Symphony runtime path from the repo and disabled the
+  host LaunchAgent so product work no longer routes through Linear-backed
+  background workers by default.
+- Replaced the global generated Codex contract with a small local contract that
+  keeps normal work inside direct Codex execution unless Peter explicitly asks
+  for an external runtime.
+- Updated the DearMe product contract from approval-first/private-first wording
+  to autonomy-first internal work with one final launch decision only for
+  irreversible external actions.
+
+Verification:
+
+- `launchctl print-disabled gui/$(id -u)` shows
+  `ai.wukong.dearme-symphony` disabled.
+- `pgrep -fl 'symphony|dearme-symphony'` shows no Symphony worker process.
+- `node -e "JSON.parse(require('fs').readFileSync('/Users/peter/dearme/package.json','utf8'))"`
 
 ## Workspace Switcher Button QA - 2026-05-13
 
@@ -2956,6 +5638,99 @@ Verification:
   passed.
 - `git diff --check`
   passed.
+
+## Live-Proof Detail Recovery - 2026-05-14
+
+Sixty-fourth DearMe product slice:
+
+- Made the owner-approved live-proof detail capture recoverable within the same
+  browser tab. The three delivery details now survive refresh or panel remount
+  without becoming long-lived local browser state.
+- The restored state keeps the same 3/3 readiness, captured inputs, and
+  no-send boundary copy, so a user can leave and return to the Decisions panel
+  without losing the prepared launch-proof setup.
+- The storage is scoped by company and stored in session storage, not permanent
+  local storage. It keeps the preparation operational while avoiding a durable
+  cache of real recipient details.
+- Product posture improved: the human-support blocker is now easier to resume
+  inside the product UI; actual sends, posts, page changes, spend, and guarded
+  live provider proof remain blocked until explicit approval and real external
+  proof facts are supplied.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed, 81 tests, including fill -> remount -> recovered 3/3 readiness.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- Browser smoke on `http://127.0.0.1:3100/DEAA/dearme?view=decisions` filled
+  all three live-proof details, refreshed the page, confirmed `Ready for
+  no-send check`, confirmed `Captured here: 3/3 details`, confirmed the route
+  input was restored, and found no page errors, provider/credential copy,
+  `private route`, or `approval boundaries` leakage.
+
+## Live-Proof Detail Capture - 2026-05-14
+
+Sixty-third DearMe product slice:
+
+- Turned the Decisions launch-proof blocker from a read-only handoff into a
+  local capture surface for the three owner-approved details needed before a
+  guarded receipt: delivery route, professional-network recipient, and
+  phone-message recipient.
+- Each detail now has an input, Needed/Captured state, and a live readiness
+  panel that changes from "3 details left before no-send check" to "Ready for
+  no-send check" once all three are supplied.
+- The capture remains non-external: it prepares the next check in the browser
+  and explicitly does not send, post, change the page, spend, or broadly launch.
+- Reused the existing Decisions launch-proof panel and shared owner-proof fact
+  specs instead of adding a new setup dashboard or exposing operator commands.
+- Product posture improved: the remaining human-support blocker is now
+  actionable inside the product UI, while live provider proof still requires
+  approved real recipients and the guarded live smoke.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed, 81 tests.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- Browser smoke on `http://127.0.0.1:3100/DEAA/dearme?view=decisions` filled
+  all three live-proof details, confirmed `Ready for no-send check`, confirmed
+  `Captured here: 3/3 details`, and found no page errors, provider/credential
+  copy, `private route`, or `approval boundaries` leakage.
+
+## First Value Report UI Surface - 2026-05-14
+
+Sixty-second DearMe product slice:
+
+- Surfaced the first value report on the public first-run landing, the full
+  first-cycle proof package, and the proof-page preview so the five-minute aha
+  moment is visible in the real product UI, not only in the shared contract.
+- Added UI-side compatibility for older first-cycle preview payloads without a
+  value report, preventing the proof package from blanking while still producing
+  the same reviewable-assets, opportunity, proof-loop, and launch-boundary
+  report.
+- Customer-facing report copy now rewrites internal terms such as private
+  routes, approval boundaries, held-back launch risk, and queued work into
+  proof-page and launch-call language.
+- Reused the existing first-cycle proof surfaces and session preview storage
+  instead of adding a new dashboard or report system.
+- Product posture improved: the first proof path now shows created value,
+  keeps the next work moving, and remains clear that public posts, sends, page
+  changes, and spend wait for the launch call.
+
+Verification:
+
+- `pnpm exec vitest run ui/src/pages/DearMeOnboarding.test.tsx --maxWorkers=1`
+  passed, 81 tests.
+- `pnpm exec vitest run ui/src/pages/DearMeSitePreview.test.tsx --maxWorkers=1`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- Browser smoke on `http://127.0.0.1:3100/DEAA/dearme` started a first proof
+  pack from one sentence, opened the proof page, showed `First value report`,
+  and confirmed no blank page, no page errors, no `private route`, and no
+  `approval boundaries` copy.
 
 ## DM-177C Configured `deploy_site` Production Host Gate - 2026-05-11
 
@@ -15382,5 +18157,47 @@ Verification:
   passed.
 - `pnpm --silent dearme:release-gate -- --json` confirmed
   `overall=private-proof-ready`, `canUse=true`, and `canPublish=false`.
+- `git diff --check`
+  passed.
+
+## First Value Report Proof - 2026-05-14
+
+Sixty-first DearMe product slice:
+
+- Added a structured first value report to the first-cycle preview contract so
+  the five-minute aha moment now quantifies reviewable assets, opportunity
+  coverage, the private proof loop, and protected launch decisions.
+- Rendered the value report into the phone-ready private proof page and host
+  smoke manifest, making it part of the customer-visible proof artifact instead
+  of a console-only status.
+- Added the `value_report_contract` aha check so DearMe proves the value report
+  has the expected labels, metrics, sources, counts, and customer-safe language
+  before claiming the first wow is ready.
+- Kept the report conservative: it shows concrete created value and launch
+  protection without inventing revenue ROI, sending outreach, deploying a public
+  site, spending money, or exposing backstage provider terms.
+- The customer-language guard caught an internal "queued" word during
+  verification; it was replaced with customer-facing language before this slice
+  was marked ready.
+- Product posture is unchanged: private proof and first-wow value reporting are
+  usable; public launch still waits on approved external professional-network
+  and phone-message proof facts plus guarded live receipts.
+
+Verification:
+
+- `pnpm test:dearme-aha-proof`
+  passed, 7 tests.
+- `pnpm --filter @paperclipai/shared test -- dearme.test.ts`
+  passed.
+- `pnpm --filter @paperclipai/shared typecheck`
+  passed.
+- `pnpm --filter @paperclipai/ui typecheck`
+  passed.
+- `pnpm --silent dearme:aha-proof -- --check`
+  returned `Status: ready` and includes `Value report contract: ready`.
+- `pnpm --silent dearme:status`
+  kept first-wow, integration absorption, message contract, local no-send, and
+  review-loop proof ready; live provider proof remains blocked on LinkedIn and
+  iMessage/SMS recipient/provider facts.
 - `git diff --check`
   passed.

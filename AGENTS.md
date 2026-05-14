@@ -15,24 +15,28 @@ OS, voice profile, Voice Gate, personal-brand outputs, Work Ready, batch
 decisions, paid-beta access, and weekly Dear me reports.
 
 For Paperclip-kernel work, the V1 implementation target is still defined in
-`doc/SPEC-implementation.md`. For DearMe product work, the current execution
-source of truth is `docs/dearme/README.md`; active multi-agent coordination
-runs through Symphony and `.symphony/WORKFLOW.md`.
+`doc/SPEC-implementation.md`. For DearMe product work, the current operating
+contract is `docs/AGENT_RUN_COMPANY_OPERATING_CONTRACT.md`, and the current
+default instruction mode is agent-run company. The current execution source of
+truth is `docs/dearme/README.md`. No Symphony runtime is active in this
+checkout; use ordinary repo evidence and explicit owner direction instead of
+background coordination loops.
 
 ## 2. Read This First
 
 For DearMe product or rebrand work, read in this order:
 
-1. `docs/dearme/README.md`
-2. `docs/dearme/INDEX.md`
-3. `.symphony/WORKFLOW.md`
-4. `docs/dearme/TRI-SUBSTRATE-ARCHITECTURE.md`
-5. `docs/dearme/OPENCLAW-INTEGRATION-ARCHITECTURE.md`
-6. `docs/dearme/PRODUCT-ARCHITECTURE.md`
-7. `docs/dearme/POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`
-8. `docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
-9. `docs/dearme/REBRAND-AND-PROVENANCE.md`
-10. `docs/dearme/BUILD-STATE.md`
+1. `docs/AGENT_RUN_COMPANY_OPERATING_CONTRACT.md`
+2. `docs/NEEDS_HUMAN_HELP.md`
+3. `docs/dearme/README.md`
+4. `docs/dearme/INDEX.md`
+5. `docs/dearme/TRI-SUBSTRATE-ARCHITECTURE.md`
+6. `docs/dearme/OPENCLAW-INTEGRATION-ARCHITECTURE.md`
+7. `docs/dearme/PRODUCT-ARCHITECTURE.md`
+8. `docs/dearme/POLSIA-NAIVE-CODE-REUSE-MASTER-PLAN.md`
+9. `docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md`
+10. `docs/dearme/REBRAND-AND-PROVENANCE.md`
+11. `docs/dearme/BUILD-STATE.md`
 
 `docs/dearme/BUILD-STATE.md` and
 `docs/dearme/REUSE-IMPLEMENTATION-LEDGER.md` are append-only coordination logs:
@@ -112,14 +116,24 @@ If you change schema/API behavior, update all impacted layers:
 3. Preserve control-plane invariants.
 - Single-assignee task model
 - Atomic issue checkout semantics
-- Approval gates for governed actions
+- Launch gates for irreversible external actions
 - Budget hard-stop auto-pause behavior
 - Activity logging for mutating actions
 
 4. Preserve DearMe product invariants on customer-facing paths.
+- Follow `docs/AGENT_RUN_COMPANY_OPERATING_CONTRACT.md` as the default
+  operating contract
+- Treat agents as the company's product-development and product-operations
+  owners
+- Treat Peter as Human Support, not as the day-to-day product manager
 - Team visible, machinery hidden
-- Private work by default
-- Public/send/deploy/spend/sensitive actions require approval
+- Internal team work is autonomous by default
+- Public/send/deploy/spend/sensitive actions require one final launch decision
+- Do not turn drafts, private proof, reports, profile work, or internal team
+  progress into approval, privacy, or review ceremonies
+- Customer-facing copy should lead with work, proof, launch calls, and autonomous
+  momentum; avoid making `approval`, `privacy`, `care`, or `safety` the product
+  promise unless the surface is the actual final external-action decision.
 - Do not expose adapter IDs, provider names, model-provider setup, Paperclip,
   OK Partner, setup-payload, or raw control-plane language to paid-beta users
 
