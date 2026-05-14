@@ -76,6 +76,11 @@ import {
 } from "../components/dearme/DearMeActionCard";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import {
+  DEARME_OWNER_PROOF_HANDOFF_RECEIPT_FILENAME,
+  downloadDearMeOwnerProofHandoffReceipt,
+  downloadDearMeReceipt,
+} from "../lib/dearme-receipt-download";
 import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
 import {
@@ -152,7 +157,6 @@ const DEARME_PAID_BETA_ACCESS_ID = "dearme-paid-beta-access";
 const DEARME_CHIEF_OF_STAFF_RECENT_CONTROLS_STORAGE_PREFIX = "dearme:chief-of-staff-recent-controls";
 const DEARME_CHIEF_OF_STAFF_RECENT_CONTROLS_MAX = 3;
 const DEARME_LAUNCH_PROOF_DETAIL_STORAGE_PREFIX = "dearme:launch-proof-details";
-const DEARME_OWNER_PROOF_HANDOFF_RECEIPT_FILENAME = "launch-proof-handoff-receipt.txt";
 const DEARME_CHIEF_OF_STAFF_BRIEF_RECEIPT_FILENAME = "chief-of-staff-brief-receipt.txt";
 const DEARME_BEFORE_LAUNCH_CHECKS_RECEIPT_FILENAME = "before-launch-checks-receipt.txt";
 const DEARME_AFTER_CALL_OUTCOME_RECEIPT_FILENAME = "after-call-outcome-receipt.txt";
@@ -327,35 +331,6 @@ function canUseDearMeSessionStorage() {
 
 function buildDearMeLaunchProofDetailStorageKey(companyId: string) {
   return `${DEARME_LAUNCH_PROOF_DETAIL_STORAGE_PREFIX}:${companyId}`;
-}
-
-function downloadDearMeReceipt(receipt: string, filename: string) {
-  if (
-    typeof document === "undefined" ||
-    typeof URL === "undefined" ||
-    typeof URL.createObjectURL !== "function"
-  ) {
-    return;
-  }
-
-  const blob = new Blob([receipt], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.rel = "noopener";
-  document.body.appendChild(anchor);
-
-  try {
-    anchor.click();
-  } finally {
-    anchor.remove();
-    URL.revokeObjectURL(url);
-  }
-}
-
-function downloadDearMeOwnerProofHandoffReceipt(receipt: string) {
-  downloadDearMeReceipt(receipt, DEARME_OWNER_PROOF_HANDOFF_RECEIPT_FILENAME);
 }
 
 function chiefOfStaffBriefReceiptText(result: DearMeChiefOfStaffMessageResult) {
