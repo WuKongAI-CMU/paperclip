@@ -18,6 +18,7 @@ import type {
   DearMeOutputReviewRequest,
   DearMeOutputReviewResult,
   DearMeOutputWorkProduct,
+  DearMePaidBetaCohortSummary,
   DearMePaidBetaRecord,
   DearMePaidBetaStatus,
   DearMeVoiceGateResult,
@@ -114,6 +115,8 @@ export const dearmeApi = {
     ),
   getPaidBetaAccess: (companyId: string) =>
     api.get<DearMePaidBetaStatus>(`/dearme/companies/${companyId}/paid-beta/access`),
+  getPaidBetaCohort: (companyIds: string[]) =>
+    api.post<DearMePaidBetaCohortSummary>("/dearme/paid-beta/cohort", { companyIds }),
   previewFirstCycle: (companyId: string, data: DearMeFirstCyclePreview) =>
     api.post<DearMeFirstCyclePreviewResponse>(
       `/dearme/companies/${companyId}/first-cycle/preview`,

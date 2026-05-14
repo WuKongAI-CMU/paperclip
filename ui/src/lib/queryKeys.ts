@@ -108,6 +108,15 @@ export const queryKeys = {
     workbench: (companyId: string) => ["dearme", companyId, "workbench"] as const,
     outputs: (companyId: string) => ["dearme", companyId, "outputs"] as const,
     paidBetaAccess: (companyId: string) => ["dearme", companyId, "paid-beta-access"] as const,
+    paidBetaCohorts: ["dearme", "paid-beta-cohort"] as const,
+    paidBetaCohort: (companyIds: string | string[]) => [
+      "dearme",
+      "paid-beta-cohort",
+      Array.from(new Set((Array.isArray(companyIds) ? companyIds : [companyIds])
+        .map((companyId) => companyId.trim())
+        .filter(Boolean)))
+        .sort(),
+    ] as const,
   },
   access: {
     invites: (companyId: string, state: string = "all", limit: number = 20) =>

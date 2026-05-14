@@ -46,6 +46,15 @@ describe("dearmeApi", () => {
     );
   });
 
+  it("posts paid beta cohort requests through the DearMe operations endpoint", async () => {
+    await dearmeApi.getPaidBetaCohort(["company-1", "company-2"]);
+
+    expect(mockApi.post).toHaveBeenCalledWith(
+      "/dearme/paid-beta/cohort",
+      { companyIds: ["company-1", "company-2"] },
+    );
+  });
+
   it("gets generated outputs through the DearMe company endpoint", async () => {
     await dearmeApi.getOutputs("company-1");
 

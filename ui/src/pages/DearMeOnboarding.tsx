@@ -13,6 +13,7 @@ import {
   DEARME_OWNER_PROOF_CHECKLIST_ITEMS,
   DEARME_OWNER_PROOF_FACT_SPECS,
   DEARME_OWNER_PROOF_REPLY_TEMPLATE,
+  buildDearMeOwnerProofHandoffReceipt,
   createDearMeFirstCyclePreview,
   dearMeCustomerSafeText,
   dearMeWorkbenchResponseSchema,
@@ -35,6 +36,7 @@ import {
   type DearMeOutputReviewAction,
   type DearMeOutputReviewLoop,
   type DearMeOutputStatus,
+  type DearMePaidBetaCohortSummary,
   type DearMePaidBetaStatus,
   type DearMeVoiceGateResult,
   type DearMeWorkbenchBatchDecision,
@@ -78,6 +80,7 @@ import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
 import {
   buildDearMeSitePreviewPath,
+  withDearMeFirstCycleRuntimeDefaults,
   writeDearMeFirstCyclePreview,
 } from "../lib/dearme-site-preview";
 import {
@@ -114,9 +117,11 @@ import {
   CheckCircle2,
   CircleDollarSign,
   CreditCard,
+  Download,
   ExternalLink,
   FileText,
   Gauge,
+  LifeBuoy,
   MessageSquare,
   RefreshCw,
   Send,
@@ -141,6 +146,131 @@ const CHANNEL_LABELS: Record<DearMeBrandChannel, string> = {
 };
 
 const DEARME_LIVE_PROOF_FEED_ID = "dearme-live-proof-feed";
+const DEARME_EMPTY_WEEK_RECOVERY_ID = "dearme-empty-week-recovery";
+const DEARME_SUPPORT_HANDOFF_ID = "dearme-support-handoff";
+const DEARME_PAID_BETA_ACCESS_ID = "dearme-paid-beta-access";
+const DEARME_CHIEF_OF_STAFF_RECENT_CONTROLS_STORAGE_PREFIX = "dearme:chief-of-staff-recent-controls";
+const DEARME_CHIEF_OF_STAFF_RECENT_CONTROLS_MAX = 3;
+const DEARME_LAUNCH_PROOF_DETAIL_STORAGE_PREFIX = "dearme:launch-proof-details";
+const DEARME_OWNER_PROOF_HANDOFF_RECEIPT_FILENAME = "launch-proof-handoff-receipt.txt";
+const DEARME_CHIEF_OF_STAFF_BRIEF_RECEIPT_FILENAME = "chief-of-staff-brief-receipt.txt";
+const DEARME_BEFORE_LAUNCH_CHECKS_RECEIPT_FILENAME = "before-launch-checks-receipt.txt";
+const DEARME_AFTER_CALL_OUTCOME_RECEIPT_FILENAME = "after-call-outcome-receipt.txt";
+const DEARME_LAUNCH_READINESS_RECEIPT_FILENAME = "launch-readiness-receipt.txt";
+const DEARME_COMMERCIAL_READINESS_RECEIPT_FILENAME = "commercial-readiness-receipt.txt";
+const DEARME_PAID_BETA_OPERATING_RECEIPT_FILENAME = "paid-beta-operating-receipt.txt";
+const DEARME_PAID_BETA_CUSTOMER_RECEIPT_FILENAME = "paid-beta-customer-receipt.txt";
+const DEARME_PAID_BETA_WELCOME_PLAN_RECEIPT_FILENAME = "paid-beta-welcome-plan-receipt.txt";
+const DEARME_PAID_BETA_CLOSE_KIT_RECEIPT_FILENAME = "paid-beta-close-kit-receipt.txt";
+const DEARME_PAID_BETA_PAYMENT_PATH_RECEIPT_FILENAME = "paid-beta-payment-path-receipt.txt";
+const DEARME_EMPTY_WEEK_RECOVERY_RECEIPT_FILENAME = "empty-week-recovery-receipt.txt";
+const DEARME_AUTONOMY_CONTRACT_RECEIPT_FILENAME = "autonomy-contract-receipt.txt";
+const DEARME_PAID_USER_OPERATIONS_RECEIPT_FILENAME = "paid-user-operations-receipt.txt";
+const DEARME_SUPPORT_HANDOFF_RECEIPT_FILENAME = "paid-user-support-handoff-receipt.txt";
+const DEARME_FEEDBACK_LEARNING_RECEIPT_FILENAME = "feedback-learning-receipt.txt";
+const DEARME_PAID_COHORT_HEALTH_RECEIPT_FILENAME = "paid-cohort-health-receipt.txt";
+const DEARME_PAID_ACCOUNT_HEALTH_RECEIPT_FILENAME = "paid-account-health-receipt.txt";
+const DEARME_PAID_RETENTION_PULSE_RECEIPT_FILENAME = "paid-retention-pulse-receipt.txt";
+const DEARME_NEXT_CYCLE_RETENTION_RECEIPT_FILENAME = "next-cycle-retention-receipt.txt";
+const DEARME_WEEKLY_VALUE_RECEIPT_FILENAME = "weekly-value-receipt.txt";
+const DEARME_VOICE_MEMORY_RECEIPT_FILENAME = "voice-memory-receipt.txt";
+const DEARME_FIRST_CYCLE_START_RECEIPT_FILENAME = "first-cycle-start-receipt.txt";
+
+type DearMeChiefOfStaffRecentBrief = {
+  id: string;
+  intent: DearMeChiefOfStaffMessageIntent;
+  label: string;
+  message: string;
+};
+
+function chiefOfStaffBriefPreview(message: string) {
+  const normalized = message.replace(/\s+/g, " ").trim();
+  if (normalized.length <= 48) return normalized;
+  return `${normalized.slice(0, 45).trim()}...`;
+}
+
+function chiefOfStaffRecentBriefFromControl(
+  control: (typeof CHIEF_OF_STAFF_CYCLE_CONTROLS)[number],
+): DearMeChiefOfStaffRecentBrief {
+  return {
+    id: control.id,
+    intent: control.intent,
+    label: control.label,
+    message: control.message,
+  };
+}
+
+function chiefOfStaffRecentBriefFromMessage(
+  intent: DearMeChiefOfStaffMessageIntent,
+  message: string,
+): DearMeChiefOfStaffRecentBrief {
+  const intentLabel =
+    CHIEF_OF_STAFF_INTENT_OPTIONS.find((option) => option.value === intent)?.label ?? "Brief";
+
+  return {
+    id: `${intent}:${message}`,
+    intent,
+    label: `${intentLabel}: ${chiefOfStaffBriefPreview(message)}`,
+    message,
+  };
+}
+
+function isDearMeChiefOfStaffRecentBrief(value: unknown): value is DearMeChiefOfStaffRecentBrief {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<DearMeChiefOfStaffRecentBrief>;
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.label === "string" &&
+    typeof candidate.message === "string" &&
+    CHIEF_OF_STAFF_INTENT_OPTIONS.some((option) => option.value === candidate.intent)
+  );
+}
+
+function dearMeChiefOfStaffRecentControlsKey(companyId: string) {
+  return `${DEARME_CHIEF_OF_STAFF_RECENT_CONTROLS_STORAGE_PREFIX}:${companyId}`;
+}
+
+function readDearMeChiefOfStaffRecentControls(companyId: string) {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = window.localStorage.getItem(dearMeChiefOfStaffRecentControlsKey(companyId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    const validIds = new Set(CHIEF_OF_STAFF_CYCLE_CONTROLS.map((control) => control.id));
+    return parsed
+      .map((item): DearMeChiefOfStaffRecentBrief | null => {
+        if (typeof item === "string" && validIds.has(item)) {
+          const control = CHIEF_OF_STAFF_CYCLE_CONTROLS.find((option) => option.id === item);
+          return control ? chiefOfStaffRecentBriefFromControl(control) : null;
+        }
+        if (isDearMeChiefOfStaffRecentBrief(item)) {
+          return {
+            id: item.id,
+            intent: item.intent,
+            label: item.label,
+            message: item.message,
+          };
+        }
+        return null;
+      })
+      .filter((item): item is DearMeChiefOfStaffRecentBrief => Boolean(item))
+      .slice(0, DEARME_CHIEF_OF_STAFF_RECENT_CONTROLS_MAX);
+  } catch {
+    return [];
+  }
+}
+
+function writeDearMeChiefOfStaffRecentControls(companyId: string, items: DearMeChiefOfStaffRecentBrief[]) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(dearMeChiefOfStaffRecentControlsKey(companyId), JSON.stringify(items));
+  } catch {
+    // Recent shortcuts are a convenience only; the core brief still works.
+  }
+}
 
 function scrollToDearMeLiveProofFeed() {
   if (typeof document === "undefined") return;
@@ -149,6 +279,94 @@ function scrollToDearMeLiveProofFeed() {
     behavior: "smooth",
     block: "start",
   });
+}
+
+function scrollToDearMeEmptyWeekRecovery() {
+  if (typeof document === "undefined") return;
+
+  const target = document.getElementById(DEARME_EMPTY_WEEK_RECOVERY_ID);
+  if (!target) return;
+
+  if (typeof window !== "undefined" && typeof window.history?.replaceState === "function") {
+    const url = new URL(window.location.href);
+    url.hash = DEARME_EMPTY_WEEK_RECOVERY_ID;
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+
+  if (typeof target.scrollIntoView === "function") {
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+}
+
+function scrollToDearMeSupportHandoff() {
+  if (typeof document === "undefined") return;
+
+  const target = document.getElementById(DEARME_SUPPORT_HANDOFF_ID);
+  if (!target) return;
+
+  if (typeof window !== "undefined" && typeof window.history?.replaceState === "function") {
+    const url = new URL(window.location.href);
+    url.hash = DEARME_SUPPORT_HANDOFF_ID;
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+
+  if (typeof target.scrollIntoView === "function") {
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+}
+
+function canUseDearMeSessionStorage() {
+  return typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+}
+
+function buildDearMeLaunchProofDetailStorageKey(companyId: string) {
+  return `${DEARME_LAUNCH_PROOF_DETAIL_STORAGE_PREFIX}:${companyId}`;
+}
+
+function downloadDearMeReceipt(receipt: string, filename: string) {
+  if (
+    typeof document === "undefined" ||
+    typeof URL === "undefined" ||
+    typeof URL.createObjectURL !== "function"
+  ) {
+    return;
+  }
+
+  const blob = new Blob([receipt], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.rel = "noopener";
+  document.body.appendChild(anchor);
+
+  try {
+    anchor.click();
+  } finally {
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
+}
+
+function downloadDearMeOwnerProofHandoffReceipt(receipt: string) {
+  downloadDearMeReceipt(receipt, DEARME_OWNER_PROOF_HANDOFF_RECEIPT_FILENAME);
+}
+
+function chiefOfStaffBriefReceiptText(result: DearMeChiefOfStaffMessageResult) {
+  return [
+    "DearMe Chief of Staff brief receipt",
+    "",
+    `Status: ${result.status === "queued" ? "Brief accepted" : "Brief saved"}`,
+    `Work: ${result.title}`,
+    `Next: ${result.nextStep}`,
+    "Boundary: DearMe can keep preparing brand work privately; publishing, sending, spending, and public claims still come back for a launch call.",
+  ].join("\n");
 }
 
 const CADENCE_LABELS: Record<DearMeBrandCadence, string> = {
@@ -206,7 +424,7 @@ const CHIEF_OF_STAFF_INTENT_OPTIONS: Array<{
   {
     value: "draft_content",
     label: "Draft content",
-    helper: "Turn proof and point of view into private drafts.",
+    helper: "Turn proof and point of view into launch-ready drafts.",
   },
   {
     value: "find_opportunities",
@@ -222,6 +440,11 @@ const CHIEF_OF_STAFF_INTENT_OPTIONS: Array<{
     value: "prepare_report",
     label: "Prepare report",
     helper: "Summarize progress, decisions, and next bets.",
+  },
+  {
+    value: "handle_feedback",
+    label: "Handle feedback",
+    helper: "Turn feedback or support notes into learning and the next move.",
   },
 ];
 
@@ -264,7 +487,7 @@ const CHIEF_OF_STAFF_CYCLE_CONTROLS: Array<{
     id: "refresh_public_proof",
     intent: "refresh_portfolio",
     label: "Refresh public proof",
-    helper: "Package recent work privately.",
+    helper: "Package recent work for launch.",
     message:
       "Turn recent work into a portfolio or bio update and a proof card. Make it launch-ready and call out the public wording boundary.",
     icon: ShieldCheck,
@@ -277,6 +500,15 @@ const CHIEF_OF_STAFF_CYCLE_CONTROLS: Array<{
     message:
       "Write this week's Dear me report: what changed, what is ready, which decisions matter, and what the team should do next.",
     icon: MessageSquare,
+  },
+  {
+    id: "handle_feedback",
+    intent: "handle_feedback",
+    label: "Handle feedback",
+    helper: "Triage support notes and learn.",
+    message:
+      "Triage this feedback or support note. Decide what DearMe should learn, what should change in the next brand cycle, and what recovery or follow-up move should be prepared for review.",
+    icon: LifeBuoy,
   },
 ];
 
@@ -336,6 +568,32 @@ function buildDearMeDecisionRoute(params: {
   if (params.outputId) search.set("artifact", params.outputId);
   if (params.intent && params.intent !== "review") search.set("intent", params.intent);
   return `/dearme?${search.toString()}`;
+}
+
+function buildDearMeWorkReadyRoute(preserveSearch?: string): string {
+  const search = new URLSearchParams(preserveSearch ?? "");
+  search.set("view", "brand-os");
+  ["approval", "work", "artifact", "issue", "output", "intent"].forEach((key) => search.delete(key));
+  return `/dearme?${search.toString()}#dearme-work-ready`;
+}
+
+function buildDearMeDecisionsReadyRoute(preserveSearch?: string): string {
+  return `${buildDearMeDecisionRoute({ preserveSearch })}#dearme-decisions-needed`;
+}
+
+function buildDearMeVoiceMemoryRoute(preserveSearch?: string): string {
+  const search = new URLSearchParams(preserveSearch ?? "");
+  search.set("view", "voice");
+  ["approval", "work", "artifact", "issue", "output", "intent"].forEach((key) => search.delete(key));
+  return `/dearme?${search.toString()}#dearme-voice-memory`;
+}
+
+function buildDearMePaidBetaAccessRoute(preserveSearch?: string, companyPrefix?: string | null): string {
+  const search = new URLSearchParams(preserveSearch ?? "");
+  search.set("view", "brand-os");
+  ["approval", "work", "artifact", "issue", "output", "intent"].forEach((key) => search.delete(key));
+  const basePath = companyPrefix ? `/${companyPrefix}/dearme` : "/dearme";
+  return `${basePath}?${search.toString()}#${DEARME_PAID_BETA_ACCESS_ID}`;
 }
 
 interface DearMeDecisionFocus {
@@ -424,31 +682,31 @@ function parseDearMeLiveTeamPulseEvent(event: Event): DearMeLiveTeamPulse | null
     const emittedAt = recordString(parsed, "emittedAt");
     const description =
       firstPayloadText(payload, ["message", "summary", "reason", "description", "nextStep"]) ??
-      "Your team is moving private work forward.";
+      "Your team is moving brand work forward.";
 
     switch (parsed.type) {
       case "task_created":
         return {
-          title: "New private work started",
+          title: "New brand work started",
           description,
           emittedAt,
         };
       case "task_updated":
         return {
-          title: "Private work moved forward",
+          title: "Brand work moved forward",
           description,
           emittedAt,
         };
       case "agent_completed":
         return {
-          title: "A teammate finished a private pass",
+          title: "A teammate finished a proof pass",
           description,
           emittedAt,
         };
       case "work_loop_transition": {
         const to = recordString(payload, "to");
         return {
-          title: to ? `Private work moved to ${livePulseText(to)}` : "Private work moved forward",
+          title: to ? `Brand work moved to ${livePulseText(to)}` : "Brand work moved forward",
           description,
           emittedAt,
         };
@@ -476,7 +734,7 @@ function parseDearMeLiveTeamPulseEvent(event: Event): DearMeLiveTeamPulse | null
       }
       case "channel_action_fired":
         return {
-          title: "Approved launch action moved",
+          title: "Launched action moved",
           description,
           emittedAt,
         };
@@ -491,10 +749,10 @@ function parseDearMeLiveTeamPulseEvent(event: Event): DearMeLiveTeamPulse | null
         return {
           title:
             phase === "error"
-              ? "Private pass needs attention"
+              ? "Proof pass needs attention"
               : phase === "end" || phase === "completed"
-                ? "Private pass finished"
-                : "Team started a private pass",
+                ? "Proof pass finished"
+                : "Team started a proof pass",
           description,
           emittedAt,
         };
@@ -527,16 +785,16 @@ function parseDearMeReviewEntryIntent(value: string | null): DearMeReviewEntryIn
 }
 
 function defaultDearMeDecisionNote(action: DearMeApprovalReviewAction) {
-  if (action === "approve") return "Approved in DearMe. This represents me.";
+  if (action === "approve") return "Launched in DearMe. This represents me.";
   if (action === "reject") return "Rejected in DearMe. Do not move this forward.";
   return "Please revise this before moving forward.";
 }
 
 function defaultDearMeOutputReviewNote(action: DearMeOutputReviewAction) {
-  if (action === "approve") return "Approved in DearMe. This prepared work represents me.";
-  if (action === "request_changes") return "Please revise this private draft before review.";
+  if (action === "approve") return "Launched in DearMe. This prepared work represents me.";
+  if (action === "request_changes") return "Please revise this draft before the launch call.";
   if (action === "not_useful") return "This prepared work is not useful for my brand goals.";
-  return "Please prepare a new private version for review.";
+  return "Please prepare a new version for review.";
 }
 
 function outputContinuationIntentForAction(
@@ -698,6 +956,33 @@ function paymentDate(value: string | null) {
   }).format(new Date(value));
 }
 
+function paidBetaReceiptLabel(status: DearMePaidBetaStatus | null) {
+  if (!status || status.status !== "active") return "Waiting for paid access";
+  if (status.latestExternalInvoiceId) return status.latestExternalInvoiceId;
+  if (status.latestPaymentDescription) return status.latestPaymentDescription;
+  return paymentDate(status.latestPaymentAt);
+}
+
+function normalizePaidBetaCohortCompanyIds(
+  selectedCompanyId: string | null,
+  companies: Array<{ id: string; status?: string | null }>,
+) {
+  const visibleCompanyIds = companies
+    .filter((company) => company.status !== "archived")
+    .map((company) => company.id);
+  return Array.from(new Set([
+    selectedCompanyId,
+    ...visibleCompanyIds,
+  ].filter((companyId): companyId is string => Boolean(companyId)))).sort();
+}
+
+function paidBetaCohortCompanyName(
+  companyNames: Record<string, string>,
+  companyId: string,
+) {
+  return companyNames[companyId] ?? "Current account";
+}
+
 function shortDate(value: string) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -713,7 +998,7 @@ function roleLabel(role: string) {
 }
 
 const OUTPUT_STATUS_LABELS: Record<DearMeOutputStatus, string> = {
-  queued: "Queued",
+  queued: "Staged",
   working: "Working",
   ready_for_review: "Ready for review",
   complete: "Complete",
@@ -728,7 +1013,7 @@ function outputStatusVariant(status: DearMeOutputStatus) {
 }
 
 const REVIEW_LOOP_STATE_LABELS: Record<DearMeOutputReviewLoop["state"], string> = {
-  fresh: "Preparing privately",
+  fresh: "Preparing work",
   needs_user_review: "Needs your review",
   revision_requested: "Changes requested",
   regeneration_requested: "Next pass in motion",
@@ -743,7 +1028,7 @@ function reviewLoopLabel(loop: DearMeOutputReviewLoop) {
 
 function reviewLoopStateLabel(loop: DearMeOutputReviewLoop) {
   const defaultScore = reviewLoopDefaultApprovalScore(loop);
-  if (defaultScore !== null) return `Private score ${defaultScore}/10`;
+  if (defaultScore !== null) return `Proof score ${defaultScore}/10`;
   return REVIEW_LOOP_STATE_LABELS[loop.state];
 }
 
@@ -755,7 +1040,7 @@ function reviewLoopDefaultApprovalScore(loop: DearMeOutputReviewLoop) {
 
 function reviewLoopDefaultBoundaryCopy(loop: DearMeOutputReviewLoop) {
   return reviewLoopDefaultApprovalScore(loop) !== null
-    ? "Public posts, sends, deploys, and spend still wait for your approval."
+    ? "Public posts, sends, deploys, and spend stay behind your launch call."
     : null;
 }
 
@@ -766,6 +1051,13 @@ function reviewLoopVariant(loop: DearMeOutputReviewLoop) {
   return "secondary" as const;
 }
 
+function isReviewLoopStuck(loop: DearMeOutputReviewLoop | null | undefined) {
+  return Boolean(loop && (loop.state === "retry_limit_reached" || loop.attemptCount >= loop.maxAttempts));
+}
+
+const REVIEW_LOOP_STUCK_DISABLED_REASON =
+  "This path is capped. Add Voice & Memory context or use the support handoff before another pass.";
+
 function reviewLoopAttention(loop: DearMeOutputReviewLoop | null | undefined): DearMeActionCardAttention | null {
   if (!loop) return null;
 
@@ -775,7 +1067,7 @@ function reviewLoopAttention(loop: DearMeOutputReviewLoop | null | undefined): D
     case "needs_user_review":
       return {
         kind: "decision_needed",
-        label: "Waiting on your decision",
+        label: "Launch call ready",
         detail: nextStep,
       };
     case "revision_requested":
@@ -872,7 +1164,7 @@ function reviewEntryGuidance(
       return {
         label: "Continue revision",
         title: "Your team is already revising",
-        body: "Your team already has your change request. Add one sharper note if needed, then let DearMe prepare the next private version.",
+        body: "Your team already has your change request. Add one sharper note if needed, then let DearMe prepare the next version.",
       };
     case "retry":
       return {
@@ -894,9 +1186,9 @@ function reviewEntryGuidance(
       };
     case "progress":
       return {
-        label: "Private work in motion",
+        label: "Brand work in motion",
         title: "Track the next prepared version",
-        body: "DearMe is still preparing this privately. Come back here when the team brings it to review.",
+        body: "DearMe is still preparing this work. Come back here when the team brings it to review.",
       };
   }
 }
@@ -940,7 +1232,7 @@ function outputActionAttention(
 function decisionActionAttention(decision: DearMeWorkbenchDecision): DearMeActionCardAttention {
   return reviewLoopAttention(decision.reviewLoop) ?? {
     kind: "decision_needed",
-    label: "Waiting on your decision",
+    label: "Launch call ready",
     detail: decision.reviewLoop?.nextStep
       ? customerProofPackSummary(decision.reviewLoop.nextStep)
       : decisionAfterCallLabel(decision.riskGate),
@@ -954,7 +1246,7 @@ function streamActionAttention(item: DearMeWorkbenchStreamItem): DearMeActionCar
   if (item.needsApproval) {
     return {
       kind: "decision_needed",
-      label: "Waiting on your decision",
+      label: "Launch call ready",
       detail: customerProofPackSummary(item.nextAction),
     };
   }
@@ -1022,7 +1314,7 @@ function ReviewHandoffCard({
     <div className={cn("rounded-md border border-border bg-background/80 p-3", className)}>
       <div className="flex items-center gap-2">
         <MessageSquare className="h-4 w-4 text-muted-foreground" />
-        <p className="text-xs font-medium text-muted-foreground">Private handoff</p>
+        <p className="text-xs font-medium text-muted-foreground">Review handoff</p>
       </div>
       <p className="mt-2 text-sm font-medium text-foreground">{customerProofPackSummary(handoff.title)}</p>
       <p className="mt-1 text-sm text-foreground/85">{customerProofPackSummary(handoff.summary)}</p>
@@ -1112,7 +1404,7 @@ function voiceGateCheckVariant(status: DearMeVoiceGateResult["checks"][number]["
 }
 
 const OUTPUT_KIND_LABELS: Record<DearMeOutputItem["kind"], string> = {
-  brand_os: "Private team profile",
+  brand_os: "Brand team profile",
   voice_profile: "Voice Profile",
   content_drafts: "Content drafts",
   opportunity_drafts: "Opportunity leads",
@@ -1186,7 +1478,7 @@ const OUTPUT_KIND_OWNER_ROLE: Record<
 
 const OUTPUT_KIND_VALUE_LABELS: Record<DearMeOutputItem["kind"], string> = {
   brand_os: "Keeps the team aligned on positioning, voice, proof, channels, and launch boundaries.",
-  voice_profile: "Protects the user's tone before private drafts become public-facing work.",
+  voice_profile: "Protects the user's tone before drafts become public-facing work.",
   content_drafts: "Turns proof and point of view into material the user can launch, revise, or send back for another pass.",
   opportunity_drafts: "Turns relationships and market openings into prepared next moves.",
   portfolio_update: "Converts shipped work into proof that can strengthen the user's public surface.",
@@ -1239,7 +1531,7 @@ const LIVE_FEED_SECTIONS: LiveFeedSection[] = [
   {
     id: "in_motion",
     title: "In motion",
-    summary: "Private work the team is preparing before it asks for a decision.",
+    summary: "Work the team keeps preparing before the next launch call.",
     items: [],
   },
   {
@@ -1305,7 +1597,7 @@ const RUN_LEDGER_KIND_LABELS: Record<DearMeWorkbenchRunLedgerEntry["kind"], stri
   tried: "Moved",
   prepared: "Prepared",
   learned: "Learned",
-  blocked: "Held safely",
+  blocked: "Queued at boundary",
   skipped: "Skipped",
   needs_decision: "Needs your call",
 };
@@ -1314,9 +1606,9 @@ const RUN_LEDGER_KIND_DESCRIPTIONS: Record<DearMeWorkbenchRunLedgerEntry["kind"]
   tried: "Private moves the team completed or advanced in this cycle.",
   prepared: "Drafts, letters, proof, or reports ready enough to explain.",
   learned: "Voice, proof, and memory signals the next pass can use.",
-  blocked: "Work that stopped safely before it could affect anything public.",
+  blocked: "Work paused at the launch boundary instead of interrupting the team.",
   skipped: "Duplicate or unnecessary moves DearMe avoided for you.",
-  needs_decision: "Important calls waiting before anything represents you.",
+  needs_decision: "Important calls ready before anything represents you.",
 };
 
 const RUN_LEDGER_KIND_ICONS: Record<DearMeWorkbenchRunLedgerEntry["kind"], LucideIcon> = {
@@ -1362,7 +1654,7 @@ function selectActionGraphCards(graph: DearMeActionGraph) {
 }
 
 function actionGraphStatusLabel(node: DearMeActionGraphNode) {
-  if (node.kind === "decision") return "Waiting on you";
+  if (node.kind === "decision") return "Launch call ready";
   if (node.kind === "guardrail") return "Boundary protected";
   if (node.kind === "memory_signal") return "Learning";
   if (node.kind === "report") return "Report ready";
@@ -1387,11 +1679,11 @@ function actionGraphNextMove(node: DearMeActionGraphNode) {
     case "role":
       return "This teammate owns a visible part of your personal-brand growth cycle.";
     case "work_item":
-      return "The team keeps preparing this privately until it becomes reviewable.";
+      return "The team keeps preparing this work until it becomes reviewable.";
     case "artifact":
       return "Open the prepared work, then launch it, request changes, ask for another pass, or choose a new direction.";
     case "decision":
-      return "This waits for your launch call before it can represent you publicly or externally.";
+      return "This is ready for your launch call before it represents you publicly or externally.";
     case "memory_signal":
       return "DearMe uses this signal to make future work more accurate to your voice and proof.";
     case "report":
@@ -1440,7 +1732,7 @@ const MEMORY_SOURCE_INPUT_MODE_LABELS: Record<DearMeMemorySourceInputMode, strin
 
 const MEMORY_SOURCE_INPUT_MODE_HELPERS: Record<DearMeMemorySourceInputMode, string> = {
   paste: "Paste the source text directly.",
-  link: "Save a private reference link and the useful memory from it.",
+  link: "Save a source link and the useful memory from it.",
   import_note: "Describe a file, transcript, profile, or backlog item DearMe should fold in next.",
 };
 
@@ -1557,18 +1849,18 @@ const MEMORY_SOURCE_TEAM_PREVIEWS: Record<
   },
   source_link: {
     role: "Growth Analyst",
-    action: "will extract the useful private fact before it shapes the next private pass.",
+    action: "will extract the useful fact before it shapes the next proof pass.",
     outcome: "Improves source review, report notes, and proof-backed recommendations.",
   },
   correction: {
     role: "Voice Editor",
-    action: "will apply this fix before the team prepares another private draft.",
+    action: "will apply this fix before the team prepares another draft.",
     outcome: "Improves revisions, next-draft guidance, and voice checks.",
   },
   forbidden_phrase: {
     role: "Chief of Staff",
     action: "will hold sensitive wording and claims for your decision.",
-    outcome: "Improves approval notes, review notes, and safe next actions.",
+    outcome: "Improves launch notes, review notes, and next actions.",
   },
   audience_note: {
     role: "Brand Strategist",
@@ -1588,7 +1880,7 @@ const MEMORY_SOURCE_WORK_PATHS: Record<
 > = {
   voice_sample: {
     owner: "Voice Editor",
-    destination: "Keeps drafts, outreach, and reports inside your approved voice.",
+    destination: "Keeps drafts, outreach, and reports inside your chosen voice.",
   },
   proof_point: {
     owner: "Portfolio Builder",
@@ -1596,7 +1888,7 @@ const MEMORY_SOURCE_WORK_PATHS: Record<
   },
   goal: {
     owner: "Chief of Staff",
-    destination: "Turns this into the next private plan and priority checks.",
+    destination: "Turns this into the next brand plan and priority checks.",
   },
   audience: {
     owner: "Brand Strategist",
@@ -1661,7 +1953,7 @@ function PrivateSourceLink({ href, className }: { href: string; className?: stri
       )}
     >
       <ExternalLink className="h-3 w-3" aria-hidden="true" />
-      Open private source
+      Open source
     </a>
   );
 }
@@ -1723,7 +2015,7 @@ function memoryUpdateFeedback(result: DearMeMemoryUpdateResult | null) {
   if (!result) return null;
   const cycles = result.growthCycles;
   if (cycles.checked === 0) {
-    return "Saved. Future growth cycles will use this after the private team starts.";
+    return "Saved. Future growth cycles will use this after the brand team starts.";
   }
   if (cycles.updated > 0) {
     return `Saved. ${pluralizeGrowthCycle(cycles.updated)} refreshed with your latest Voice & Memory.`;
@@ -1781,12 +2073,12 @@ const FIRST_PAYOFF_STEPS = [
   {
     label: "DearMe returns",
     title: "Voice Profile, starter posts, one opportunity, proof card, first plan",
-    description: "A private brand cycle starts before settings or public launch.",
+    description: "A brand cycle starts before settings or public launch.",
   },
   {
     label: "You decide",
     title: "One launch call before anything public or external",
-    description: "Approve, revise, or redirect the team from one place.",
+    description: "Launch, revise, or redirect the team from one place.",
   },
 ] as const;
 
@@ -1794,15 +2086,15 @@ const FIRST_CYCLE_LIVE_PROGRESS_LABELS = [
   "Studying your voice",
   "Finding likely audiences",
   "Drafting first moves",
-  "Preparing your private proof",
+  "Preparing your proof page",
   "Ready for your launch call",
 ] as const;
 
 const FIRST_RUN_PREPARATION_CUES = [
   "Studying the outcome you want people to remember.",
   "Looking for the first proof, audience, and draft angles.",
-  "Preparing the private review queue before any public move.",
-  "Holding posts, outreach, page changes, and spend for your call.",
+  "Preparing the review path before any public move.",
+  "Staging posts, outreach, page changes, and spend for your call.",
 ] as const;
 
 const FIRST_RUN_PUBLIC_HOLD_LABELS: Record<
@@ -1810,7 +2102,7 @@ const FIRST_RUN_PUBLIC_HOLD_LABELS: Record<
   string
 > = {
   DEARME_LINKEDIN_DM_MESSAGES_URL: "Professional route",
-  DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN: "Approved recipient",
+  DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN: "Selected recipient",
   DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT: "Phone-message proof",
 };
 
@@ -1858,8 +2150,8 @@ const SAMPLE_FIRST_CYCLE_DELIVERY_RECEIPTS: DearMeWorkbenchProgressItem[] = [
   {
     id: "sample-delivery-receipt-delivered",
     kind: "next_move_delivery_recorded",
-    title: "Approved X post delivered",
-    summary: "DearMe recorded the delivery receipt for the approved next step.",
+    title: "X post delivered",
+    summary: "DearMe recorded the delivery receipt for the launched next step.",
     outputKind: "content_drafts",
     outputId: "sample-content-drafts",
     riskGate: "publish_social",
@@ -1874,15 +2166,15 @@ const SAMPLE_FIRST_CYCLE_DELIVERY_RECEIPTS: DearMeWorkbenchProgressItem[] = [
   {
     id: "sample-delivery-receipt-connection",
     kind: "next_move_delivery_recorded",
-    title: "Approved X post needs connection",
-    summary: "DearMe kept the approved post private because X still needs to be connected.",
+    title: "X post needs connection",
+    summary: "DearMe kept the post staged because X still needs to be connected.",
     outputKind: "content_drafts",
     outputId: "sample-content-drafts",
     riskGate: "send_email",
     approvalId: "sample-approval-send",
     issueIdentifier: "MAYA-9",
     deliveryStatus: "needs_channel_connection",
-    nextStep: "Connect X before DearMe can continue this approved next step.",
+    nextStep: "Add the selected X account before DearMe can continue this next step.",
     createdAt: "2026-05-07T14:09:00.000Z",
   },
 ];
@@ -1959,17 +2251,86 @@ function isProofPackOutput(output: DearMeOutputItem) {
 
 function customerProofPackSummary(text: string) {
   return text
-    .replace(/\bdearme runtime smoke\b/g, "dearme private proof check")
-    .replace(/\bDearMe Runtime Smoke\b/g, "DearMe Private Proof Check")
-    .replace(/\bruntime smoke\b/gi, "private proof check")
-    .replace(/\bsend_email\b/gi, "Send approval required")
+    .replace(/\bPrivate site proof\b/g, "Proof page")
+    .replace(/\bprivate site proof\b/gi, "proof page")
+    .replace(/\bPrivate proof page move\b/g, "Proof page move")
+    .replace(/\bprivate proof page move\b/gi, "proof page move")
+    .replace(/\bUpdated private proof card\b/g, "Updated proof card")
+    .replace(/\bupdated private proof card\b/gi, "updated proof card")
+    .replace(/\bprivate proof page\b/gi, "proof page")
+    .replace(/\bprivate proof pack\b/gi, "proof pack")
+    .replace(/\bPrivate proof\b/g, "Proof")
+    .replace(/\bprivate proof\b/gi, "proof")
+    .replace(/\bPrivate starter content\b/g, "Starter content")
+    .replace(/\bprivate starter content\b/gi, "starter content")
+    .replace(/\bheld safely\b/gi, "staged at the boundary")
+    .replace(/\bheld for your call\b/gi, "ready for your call")
+    .replace(/\bheld back\b/gi, "kept behind the launch call")
+    .replace(/\bbefore asking for approval\b/gi, "before the next launch call")
+    .replace(/\bapproval notes\b/gi, "launch notes")
+    .replace(/\bapproval boundaries\b/gi, "launch boundaries")
+    .replace(/\bapproved voice\b/gi, "chosen voice")
+    .replace(/\bApproved next step\b/g, "Launch move")
+    .replace(/\bapproved next step\b/gi, "launched next step")
+    .replace(/\bnext approved step\b/gi, "next launched step")
+    .replace(/\bApproved move\b/g, "Launch move")
+    .replace(/\bapproved move\b/gi, "launch move")
+    .replace(/\bapproved step\b/gi, "launched step")
+    .replace(/\bapproved account or recipient\b/gi, "selected account or recipient")
+    .replace(/\bapproved account\b/gi, "selected account")
+    .replace(/\bapproved recipient\b/gi, "selected recipient")
+    .replace(/\bapproved X step\b/gi, "X step")
+    .replace(/\bapproved X post\b/gi, "X post")
+    .replace(/\bapproved Website preview\b/gi, "Website preview")
+    .replace(/\bapproved result\b/gi, "launch result")
+    .replace(/\bEvery public move still waits for your launch approval\./gi, "Every public move stays behind your launch call.")
+    .replace(/\bstill waits for your launch approval\b/gi, "stays behind your launch call")
+    .replace(/\bNo outbound message sends until you approve\./gi, "Outbound sends stay behind your launch call.")
+    .replace(/\bNo outbound message sends until ([A-Z][A-Za-z0-9_-]*) approves?([^.]*)\./g, "Outbound sends stay behind $1's launch call$2.")
+    .replace(/\bnothing public moves until you approve it\b/gi, "anything public stays behind your launch call")
+    .replace(/\bNext private review\b/g, "Next proof review")
+    .replace(/\bPrepare the next private pass\b/gi, "Prepare the next pass")
+    .replace(/\banother private pass\b/gi, "another pass")
+    .replace(/\bnext private pass\b/gi, "next pass")
+    .replace(/\bprivate pass\b/gi, "proof pass")
+    .replace(/\bprivate route\b/gi, "proof route")
+    .replace(/\bprivate review\b/gi, "proof review")
+    .replace(/\bprivate targets\b/gi, "launch-ready targets")
+    .replace(/\bprivate drafts\b/gi, "draft work")
+    .replace(/\bprivate brief\b/gi, "staged brief")
+    .replace(/\bprivate profile work\b/gi, "profile work")
+    .replace(/\bprivate preparation\b/gi, "team preparation")
+    .replace(/\bprivate feedback work\b/gi, "feedback work")
+    .replace(/\bprivate brand work\b/gi, "brand work")
+    .replace(/\bprivate DearMe cycles\b/gi, "DearMe brand cycles")
+    .replace(/\bprivate-cycle\b/gi, "brand-cycle")
+    .replace(/\bprivate cycles\b/gi, "brand cycles")
+    .replace(/\bprivate output\b/gi, "useful output")
+    .replace(/\bprivate work\b/gi, "brand work")
+    .replace(/\bprivate cycle\b/gi, "brand cycle")
+    .replace(/\bprivate brand cycle\b/gi, "brand cycle")
+    .replace(/\bprivate growth cycle\b/gi, "brand cycle")
+    .replace(/\bprivate team work\b/gi, "brand team work")
+    .replace(/\bprivate team\b/gi, "brand team")
+    .replace(/\bprivate lane\b/gi, "brand lane")
+    .replace(/\bprivate weekly report\b/gi, "weekly report")
+    .replace(/\bprivate source\b/gi, "saved source")
+    .replace(/\bprivate sources\b/gi, "saved sources")
+    .replace(/\bStart private team\b/g, "Start brand team")
+    .replace(/\bstart the private team\b/gi, "start the brand team")
+    .replace(/\bKeep it private\b/g, "Keep it staged")
+    .replace(/\bkeep it private\b/gi, "keep it staged")
+    .replace(/\bdearme runtime smoke\b/g, "dearme proof check")
+    .replace(/\bDearMe Runtime Smoke\b/g, "DearMe Proof Check")
+    .replace(/\bruntime smoke\b/gi, "proof check")
+    .replace(/\bsend_email\b/gi, "Send launch call required")
     .replace(/\blead packets\b/gi, "lead batches")
     .replace(/\bcurrent opportunity packet\b/gi, "current opportunity draft")
     .replace(/\bprepared opportunity packets\b/gi, "prepared opportunity drafts")
     .replace(/\bopportunity packets\b/gi, "opportunity drafts")
     .replace(/\bopportunity packet\b/gi, "opportunity draft")
-    .replace(/\bsame private (?:cycle output|cycle|evidence) packet\b/gi, "same private proof pack")
-    .replace(/\bprivate (?:cycle output|cycle|evidence) packet\b/gi, "private proof pack")
+    .replace(/\bsame private (?:cycle output|cycle|evidence) packet\b/gi, "same proof pack")
+    .replace(/\bprivate (?:cycle output|cycle|evidence) packet\b/gi, "proof pack")
     .replace(/\bshared (?:cycle output|cycle|evidence) packet\b/gi, "shared proof pack")
     .replace(/\bshared packet\b/gi, "shared proof pack")
     .replace(/\bcycle output packet\b/gi, "proof pack")
@@ -1980,6 +2341,88 @@ function customerProofPackSummary(text: string) {
     .replace(/\bwork queue\b/gi, "prepared work")
     .replace(/\blaunch queue\b/gi, "launch calls")
     .replace(/\bqueue\b/gi, "list");
+}
+
+type OwnerProofFact = (typeof DEARME_OWNER_PROOF_FACT_SPECS)[number];
+
+function ownerProofFactLabel(fact: OwnerProofFact) {
+  if (fact.provideAs === "DEARME_LINKEDIN_DM_MESSAGES_URL") return "Professional-network delivery route";
+  if (fact.provideAs === "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN") return "Approved professional-network recipient";
+  return "Approved phone-message proof recipient";
+}
+
+function ownerProofFactPrompt(fact: OwnerProofFact) {
+  if (fact.provideAs === "DEARME_LINKEDIN_DM_MESSAGES_URL") {
+    return "Paste the delivery-route link for the first receipt check.";
+  }
+  if (fact.provideAs === "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN") {
+    return "Choose one real professional-network recipient for the proof pass.";
+  }
+  return "Choose one phone-message recipient for the shared proof pass.";
+}
+
+function ownerProofFactBoundary(fact: OwnerProofFact) {
+  if (fact.provideAs === "DEARME_LINKEDIN_DM_MESSAGES_URL") {
+    return "DearMe checks this in no-send mode before any live receipt moves.";
+  }
+  if (fact.provideAs === "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN") {
+    return "Only this selected recipient is used for the first guarded receipt.";
+  }
+  return "The receipt stays behind the final launch call after the no-send check.";
+}
+
+function ownerProofFactExample(fact: OwnerProofFact) {
+  if (fact.provideAs === "DEARME_LINKEDIN_DM_MESSAGES_URL") {
+    return "A delivery-route link from your professional-network message page.";
+  }
+  if (fact.provideAs === "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN") {
+    return "One real professional-network recipient for the proof pass.";
+  }
+  return "One phone number or contact for the shared proof pass.";
+}
+
+function ownerProofFactInputType(fact: OwnerProofFact) {
+  if (fact.provideAs === "DEARME_LINKEDIN_DM_MESSAGES_URL") return "url";
+  if (fact.provideAs === "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT") return "tel";
+  return "text";
+}
+
+function readDearMeLaunchProofDetailValues(companyId: string): Record<string, string> {
+  if (!canUseDearMeSessionStorage()) return {};
+
+  try {
+    const raw = window.sessionStorage.getItem(buildDearMeLaunchProofDetailStorageKey(companyId));
+    if (!raw) return {};
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+
+    return DEARME_OWNER_PROOF_FACT_SPECS.reduce<Record<string, string>>((values, fact) => {
+      const value = (parsed as Record<string, unknown>)[fact.provideAs];
+      if (typeof value === "string" && value.trim()) values[fact.provideAs] = value;
+      return values;
+    }, {});
+  } catch {
+    return {};
+  }
+}
+
+function writeDearMeLaunchProofDetailValues(companyId: string, values: Record<string, string>) {
+  if (!canUseDearMeSessionStorage()) return;
+
+  try {
+    const filteredValues = DEARME_OWNER_PROOF_FACT_SPECS.reduce<Record<string, string>>((nextValues, fact) => {
+      const value = values[fact.provideAs]?.trim();
+      if (value) nextValues[fact.provideAs] = value;
+      return nextValues;
+    }, {});
+    window.sessionStorage.setItem(
+      buildDearMeLaunchProofDetailStorageKey(companyId),
+      JSON.stringify(filteredValues),
+    );
+  } catch {
+    // Ignore storage failures; the in-page capture state still protects the launch boundary.
+  }
 }
 
 function cyclePacketSummary(output: DearMeOutputItem) {
@@ -1999,7 +2442,8 @@ function reportEvidenceText(report: DearMeWorkbenchReport) {
 
 function isPacketBackedReport(report: DearMeWorkbenchReport) {
   const evidence = reportEvidenceText(report);
-  return /\bcycle packet\b/i.test(evidence) ||
+  return /\bproof pack\b/i.test(evidence) ||
+    /\bcycle packet\b/i.test(evidence) ||
     /\bsame private evidence packet\b/i.test(evidence) ||
     /\bshared packet\b/i.test(evidence);
 }
@@ -2098,7 +2542,7 @@ function VoiceCheckPanel({
       ) : null}
       {!compact ? (
         <p className="mt-3 text-xs text-muted-foreground">
-          Public moves still wait for your launch call.
+          Public moves stay behind your launch call.
         </p>
       ) : null}
     </section>
@@ -2120,7 +2564,7 @@ function TeamWorkstreamPanel({
         <DearMeWorkbenchSectionHeader
           icon={Users}
           eyebrow="Your autonomous brand workroom"
-          description="Dear me, your team is running the private brand cycle: planning the week, drafting in your voice, scouting opportunities, and packaging proof before a launch call is needed."
+          description="Dear me, your team is running the brand cycle: planning the week, drafting in your voice, scouting opportunities, and packaging proof before a launch call is needed."
           trailing={<Badge variant={paidBetaActive ? "default" : "secondary"}>{statusLabel}</Badge>}
         />
 
@@ -2140,7 +2584,7 @@ function TeamWorkstreamPanel({
         <DearMeWorkbenchSectionHeader
           icon={Sparkles}
           eyebrow="Launch boundary"
-          description="DearMe keeps the private brand cycle moving. Public posts, outbound messages, spend, and page changes become launch calls under your rules."
+          description="DearMe keeps the brand cycle moving. Public posts, outbound messages, spend, and page changes become launch calls under your rules."
         />
         <DearMeChecklist
           className="mt-4"
@@ -2181,7 +2625,7 @@ function privateExecutionHandoffChecklist({
     if (isPaused) {
       return [
         `Saved for later: ${artifact}.`,
-        "DearMe is paused until you resume or approve a new direction.",
+        "DearMe is paused until you resume or choose a new direction.",
         "Nothing public or external runs while paused.",
       ];
     }
@@ -2194,23 +2638,23 @@ function privateExecutionHandoffChecklist({
 
   if (deliveryStatus === "delivered") {
     return [
-      "Result is recorded for the approved move.",
+      "Result is recorded for the launched move.",
       "Open the result or brief to review what changed.",
-      "The next private cycle can keep moving under your launch boundary.",
+      "The next proof pass can keep moving under your launch boundary.",
     ];
   }
 
   if (deliveryStatus === "needs_channel_connection") {
     return [
-      "Approved move is ready, but DearMe is missing the approved account or recipient.",
-      "Add the approved account or recipient before DearMe can continue this move.",
+      "Move is ready, but DearMe is missing the selected account or recipient.",
+      "Add the selected account or recipient before DearMe can continue this move.",
       "No external action ran without the connection.",
     ];
   }
 
   if (deliveryStatus === "pending") {
     return [
-      "Approved move is waiting on its result.",
+      "Launch move is waiting on its result.",
       "Keep the brief open until DearMe records the receipt.",
       "The boundary stays visible while the result is pending.",
     ];
@@ -2218,9 +2662,9 @@ function privateExecutionHandoffChecklist({
 
   if (deliveryStatus === "rejected") {
     return [
-      "The approved move needs a new decision.",
+      "The move needs a new direction.",
       "Open the brief to choose a safer direction.",
-      "No new external action runs until you approve again.",
+      "No new external action runs until you choose the next direction.",
     ];
   }
 
@@ -2250,12 +2694,12 @@ function privateExecutionReturnCue({
           body: `DearMe saved ${artifact} instead of pushing it forward.`,
         },
         {
-          label: "What waits",
-          body: "Your brand team stays paused until you resume or approve a new direction.",
+          label: "Launch boundary",
+          body: "Your brand team stays paused until you resume or choose a new direction.",
         },
         {
           label: "Your next step",
-          body: "Open the brief when you are ready to restart the private cycle.",
+          body: "Open the brief when you are ready to restart the brand cycle.",
         },
       ];
     }
@@ -2266,7 +2710,7 @@ function privateExecutionReturnCue({
         body: `DearMe prepared ${artifact} for your review.`,
       },
       {
-        label: "What waits",
+        label: "Launch boundary",
         body: "Nothing public or external runs until you make the next governed call.",
       },
       {
@@ -2280,11 +2724,11 @@ function privateExecutionReturnCue({
     return [
       {
         label: "What changed",
-        body: "The approved move has a recorded result.",
+        body: "The launched move has a recorded result.",
       },
       {
-        label: "What waits",
-        body: "The next private pass can continue inside your launch boundary.",
+        label: "Next work",
+        body: "The next pass can continue inside your launch boundary.",
       },
       {
         label: "Your next step",
@@ -2297,15 +2741,15 @@ function privateExecutionReturnCue({
     return [
       {
         label: "What changed",
-        body: "The approved move stayed private instead of using a missing connection.",
+        body: "The move stayed staged instead of using a missing connection.",
       },
       {
-        label: "What waits",
-        body: "DearMe needs the approved account or recipient before this move can continue.",
+        label: "Launch boundary",
+        body: "DearMe needs the selected account or recipient before this move can continue.",
       },
       {
         label: "Your next step",
-        body: "Add the account or recipient, or keep reviewing the private brief.",
+        body: "Add the account or recipient, or keep reviewing the staged brief.",
       },
     ];
   }
@@ -2314,11 +2758,11 @@ function privateExecutionReturnCue({
     return [
       {
         label: "What changed",
-        body: "The approved move is held with its boundary still visible.",
+        body: "The launch move is staged with its boundary still visible.",
       },
       {
-        label: "What waits",
-        body: "DearMe is waiting for the receipt before continuing this move.",
+        label: "Receipt status",
+        body: "DearMe is watching for the receipt before continuing this move.",
       },
       {
         label: "Your next step",
@@ -2334,7 +2778,7 @@ function privateExecutionReturnCue({
         body: "DearMe brought the move back instead of forcing it through.",
       },
       {
-        label: "What waits",
+        label: "Launch boundary",
         body: "A safer direction needs your decision before anything new runs.",
       },
       {
@@ -2350,7 +2794,7 @@ function privateExecutionReturnCue({
       body: "DearMe stopped the move safely before representing you again.",
     },
     {
-      label: "What waits",
+      label: "Launch boundary",
       body: "A safer direction needs your decision before anything public continues.",
     },
     {
@@ -2409,7 +2853,7 @@ function PrivateExecutionHandoffPanel({
   const nextStep = handoff.nextStep
     ? customerProofPackSummary(handoff.nextStep)
     : isDeliveryReceipt
-      ? "DearMe recorded the delivery receipt for the approved next step."
+      ? "DearMe recorded the delivery receipt for the launched next step."
       : "DearMe prepared the launch-ready brief. Nothing public or external runs until the next governed move is ready.";
   const externalUrl = isDeliveryReceipt && handoff.deliveryStatus === "delivered" ? handoff.deliveryExternalUrl ?? null : null;
   const externalId = isDeliveryReceipt && handoff.deliveryStatus === "delivered" ? handoff.deliveryExternalId ?? null : null;
@@ -2567,7 +3011,7 @@ function FirstCycleLiveProgress({
           status: "ready" as const,
           ownerRole: "content_producer" as const,
           artifact: preview.portfolioProofCard.title,
-          receipt: `${preview.starterPosts.length} proof-backed private drafts are staged with proof and voice checks.`,
+          receipt: `${preview.starterPosts.length} proof-backed drafts are staged with proof and voice checks.`,
         },
         {
           id: "private-proof-page-ready",
@@ -2575,7 +3019,7 @@ function FirstCycleLiveProgress({
           window: proofMoment?.window ?? "3-5min",
           status: "ready" as const,
           ownerRole: "portfolio_builder" as const,
-          artifact: proofMoment?.preparedArtifact ?? "Private proof page move",
+          artifact: proofMoment?.preparedArtifact ?? "Proof page move",
           receipt: proofMoment?.summary ?? preview.sitePreview.approvalBoundary,
         },
         {
@@ -2594,9 +3038,9 @@ function FirstCycleLiveProgress({
       ? "See the first five minutes before you start."
       : "Your first five minutes are ready.";
   const description = isPending
-    ? "DearMe is turning your sentence into private progress now. Public moves still wait for your call."
+    ? "DearMe is turning your sentence into visible progress now. Public moves stay behind your call."
     : isSample
-      ? "This sample replay shows the visible path from one sentence to a private proof pack."
+      ? "This sample replay shows the visible path from one sentence to a proof pack."
       : "DearMe prepared the visible first pass: voice, audience, drafts, proof, and the launch call.";
   const badgeLabel = isPending ? "Preparing now" : isSample ? "Sample replay" : "Proof ready";
 
@@ -2648,6 +3092,8 @@ function FirstCyclePanel({
   preview,
   isPending,
   canStartPrivateWork,
+  privateWorkStarted,
+  onOpenWorkReady,
   onOpenPreview,
   onIntentChange,
   onPreview,
@@ -2656,10 +3102,40 @@ function FirstCyclePanel({
   preview: DearMeFirstCyclePreviewResponse | null;
   isPending: boolean;
   canStartPrivateWork: boolean;
+  privateWorkStarted: boolean;
+  onOpenWorkReady: () => void;
   onOpenPreview: (handle: string) => void;
   onIntentChange: (value: string) => void;
   onPreview: () => void;
 }) {
+  const firstCycleReceiptMetrics = preview
+    ? {
+        starterDrafts: preview.starterPosts.length,
+        opportunities: preview.opportunityShortlist.length,
+        valueReceipts: preview.valueReport.items.length,
+        roiRankedOpportunities: preview.opportunityRoiReport.items.length,
+      }
+    : null;
+  const firstCycleStartReceiptText = preview
+    ? [
+        "DearMe first cycle start receipt",
+        `Known-for sentence: ${customerProofPackSummary(intent).trim() || "Not provided"}`,
+        `Draft package: ${firstCycleReceiptMetrics?.starterDrafts ?? 0} drafts`,
+        `Opportunity shortlist: ${firstCycleReceiptMetrics?.opportunities ?? 0} opportunities`,
+        `Value report: ${firstCycleReceiptMetrics?.valueReceipts ?? 0} receipts`,
+        `ROI-ranked opportunities: ${firstCycleReceiptMetrics?.roiRankedOpportunities ?? 0} ranked`,
+        `Proof page: ${preview.sitePreview.route}`,
+        `Voice profile: ${preview.voiceProfile.title} - ${customerProofPackSummary(preview.voiceProfile.guidance)}`,
+        `Launch boundary: ${customerProofPackSummary(preview.approvalBoundary.summary)}`,
+        "Next: review Work Ready, open the proof page, and make the launch call before anything represents you publicly.",
+      ].join("\n")
+    : "";
+  const downloadFirstCycleStartReceipt = useCallback(() => {
+    if (!firstCycleStartReceiptText) return;
+
+    downloadDearMeReceipt(firstCycleStartReceiptText, DEARME_FIRST_CYCLE_START_RECEIPT_FILENAME);
+  }, [firstCycleStartReceiptText]);
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     onPreview();
@@ -2702,7 +3178,7 @@ function FirstCyclePanel({
             Already preparing
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            DearMe starts with useful private work: posts, opportunities, proof, and a plan. Public posts, outbound messages, spend, and page changes come back for your final call.
+            DearMe starts with useful brand work: posts, opportunities, proof, and a plan. Public posts, outbound messages, spend, and page changes come back for your final call.
           </p>
           <DearMeChecklist
             className="mt-4 sm:grid-cols-2"
@@ -2712,6 +3188,79 @@ function FirstCyclePanel({
           />
         </div>
       </div>
+
+      {privateWorkStarted && preview ? (
+        <section
+          aria-label="First cycle start receipt"
+          className="mt-5 rounded-md border border-primary/30 bg-primary/5 p-4"
+        >
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                First brand cycle started
+              </div>
+              <p className="mt-1 max-w-3xl text-sm text-foreground/85">
+                DearMe has started the first brand cycle from your sentence. Work Ready will update with
+                reviewable drafts, the proof page, opportunity work, and the first report; public posts, outreach,
+                page changes, and spend still wait for the launch call.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="default">Work started</Badge>
+              <Badge variant="outline">Launch call gated</Badge>
+              <Badge variant="outline">Target: 5 minutes</Badge>
+              <Button type="button" size="sm" variant="outline" onClick={onOpenWorkReady}>
+                <FileText className="h-4 w-4" />
+                Review Work Ready
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                aria-label={`Download ${DEARME_FIRST_CYCLE_START_RECEIPT_FILENAME}`}
+                onClick={downloadFirstCycleStartReceipt}
+              >
+                <Download className="h-4 w-4" />
+                Download receipt
+              </Button>
+              <Button type="button" size="sm" onClick={() => onOpenPreview(preview.sitePreview.handle)}>
+                <ExternalLink className="h-4 w-4" />
+                Open proof page
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          {firstCycleReceiptMetrics ? (
+            <DearMeMetricStrip className="mt-4 sm:grid-cols-2 lg:grid-cols-5">
+              <Metric icon={FileText} label="Draft package" value={`${firstCycleReceiptMetrics.starterDrafts} drafts`} />
+              <Metric
+                icon={Telescope}
+                label="Opportunity shortlist"
+                value={`${firstCycleReceiptMetrics.opportunities} opportunities`}
+              />
+              <Metric
+                icon={CheckCircle2}
+                label="Value report"
+                value={`${firstCycleReceiptMetrics.valueReceipts} receipts`}
+              />
+              <Metric
+                icon={Gauge}
+                label="ROI-ranked opportunities"
+                value={`${firstCycleReceiptMetrics.roiRankedOpportunities} ranked`}
+              />
+              <Metric icon={ShieldCheck} label="Launch boundary" value="Call gated" />
+            </DearMeMetricStrip>
+          ) : null}
+          <Textarea
+            aria-label="First cycle start receipt note"
+            className="mt-4 min-h-40 resize-none bg-background/85 font-mono text-xs leading-relaxed"
+            readOnly
+            value={firstCycleStartReceiptText}
+          />
+        </section>
+      ) : null}
 
       <FirstCycleLiveProgress
         preview={preview ?? SAMPLE_FIRST_CYCLE_PREVIEW}
@@ -2741,8 +3290,8 @@ function FirstCyclePayoffStrip({
           <DearMeWorkbenchSectionHeader
             icon={Sparkles}
             eyebrow="First payoff"
-            title="One sentence starts your private brand cycle."
-            description="DearMe runs the first private brand cycle, returns useful work, then brings back only the call that needs you."
+            title="One sentence starts your brand cycle."
+            description="DearMe runs the first brand cycle, returns useful work, then brings back only the call that needs you."
           />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button type="button" className="w-full sm:w-auto" onClick={onFocusFirstCycle}>
@@ -2751,7 +3300,7 @@ function FirstCyclePayoffStrip({
               <ArrowRight className="h-4 w-4" />
             </Button>
             <p className="text-xs font-medium text-muted-foreground">
-              One sentence starts the private cycle without a tour.
+              One sentence starts the cycle without a tour.
             </p>
           </div>
         </div>
@@ -2807,9 +3356,10 @@ function DearMePublicFirstRunLanding({
 
   const liveMoments = SAMPLE_FIRST_CYCLE_PREVIEW.liveWorkTrail;
   const cycleReport = SAMPLE_FIRST_CYCLE_PREVIEW.cycleReport;
+  const valueReport = SAMPLE_FIRST_CYCLE_PREVIEW.valueReport;
   const proofReceiptStats = [
     {
-      label: `${liveMoments.length} private work receipts`,
+      label: `${liveMoments.length} work receipts`,
       summary: "Voice, audience, drafts, proof, and the launch call are visible immediately.",
     },
     {
@@ -2821,8 +3371,8 @@ function DearMePublicFirstRunLanding({
       summary: "DearMe prepares concrete next relationships before asking to send anything.",
     },
     {
-      label: "0 public actions without approval",
-      summary: "Posts, outreach, page changes, and spend stay private until the launch call.",
+      label: "Autopilot until launch",
+      summary: "Posts, outreach, page changes, and spend wait for one final launch call.",
     },
   ];
 
@@ -2842,7 +3392,7 @@ function DearMePublicFirstRunLanding({
               DearMe grows your personal brand while you work.
             </h1>
             <p className="mt-3 max-w-2xl text-base text-muted-foreground sm:text-lg">
-              It runs private research, drafts, opportunities, proof, and weekly direction, then brings you the launch calls that need your judgment.
+              It runs research, drafts, opportunities, proof, and weekly direction, then brings you the launch calls that need your judgment.
             </p>
           </div>
 
@@ -2862,12 +3412,12 @@ function DearMePublicFirstRunLanding({
                 disabled={isPending}
               >
                 {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Start my first private proof pack
+                Start my first proof pack
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
             <p className="text-xs font-medium text-muted-foreground">
-              One sentence starts the private cycle without a tour.
+              One sentence starts the cycle without a tour.
             </p>
             <div
               aria-label="First-run preparation cue"
@@ -2896,7 +3446,7 @@ function DearMePublicFirstRunLanding({
             </Button>
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <ShieldCheck className="h-4 w-4 text-primary" />
-              No public posts. No outreach. Nothing launches without approval.
+              The team keeps preparing work; public moves stay behind your launch call.
             </div>
           </div>
 
@@ -2909,11 +3459,11 @@ function DearMePublicFirstRunLanding({
                 <div className="flex flex-wrap items-center gap-2">
                   <ShieldCheck className="h-4 w-4" />
                   <p className="text-sm font-medium">
-                    Public launch stays held until you approve the route, recipient, and final move.
+                    Public launch is one final call on route, recipient, and move.
                   </p>
                 </div>
                 <p className="mt-1 text-xs leading-relaxed opacity-85">
-                  DearMe can prepare the private proof now. Anything public waits for your launch call.
+                  DearMe can prepare the proof now. Anything public stays behind your launch call.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {FIRST_RUN_PUBLIC_HOLD_CUES.map((label) => (
@@ -2930,20 +3480,20 @@ function DearMePublicFirstRunLanding({
                 className="h-auto min-h-9 w-full min-w-0 whitespace-normal bg-background/80 sm:w-auto"
                 onClick={onOpenLaunchProof}
               >
-                Review launch hold
+                Review launch details
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
           </section>
 
           <section
-            aria-label="Live private proof receipts"
+            aria-label="Live proof receipts"
             className="grid max-w-3xl gap-3 rounded-md border border-border bg-muted/20 p-3 sm:grid-cols-2"
           >
             <div className="sm:col-span-2">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <RefreshCw className="h-4 w-4 text-primary" />
-                Watch DearMe prepare private brand work live
+                Watch DearMe prepare brand work live
               </div>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 The first run shows visible receipts before anything represents you publicly.
@@ -2966,7 +3516,7 @@ function DearMePublicFirstRunLanding({
                   <Sparkles className="h-4 w-4" />
                   First proof pack
                 </div>
-                <Badge variant="secondary">Working privately</Badge>
+                <Badge variant="secondary">Working now</Badge>
               </div>
               <p className="mt-3 text-sm text-muted-foreground">
                 Watch the team research, draft, package proof, and prepare the next launch call before anything represents you publicly.
@@ -2982,11 +3532,11 @@ function DearMePublicFirstRunLanding({
                     </div>
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-medium">{moment.action}</p>
+                        <p className="text-sm font-medium">{customerProofPackSummary(moment.action)}</p>
                         <Badge variant="outline">{roleLabel(moment.ownerRole)}</Badge>
                       </div>
-                      <p className="mt-1 text-sm text-muted-foreground">{moment.receipt}</p>
-                      <p className="mt-2 text-xs font-medium text-muted-foreground">{moment.artifact}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{customerProofPackSummary(moment.receipt)}</p>
+                      <p className="mt-2 text-xs font-medium text-muted-foreground">{customerProofPackSummary(moment.artifact)}</p>
                     </div>
                   </div>
                 ))}
@@ -2996,21 +3546,48 @@ function DearMePublicFirstRunLanding({
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Your workroom opens with
                   </p>
-                  <Badge variant="outline">{cycleReport.title}</Badge>
+                  <Badge variant="outline">{customerProofPackSummary(cycleReport.title)}</Badge>
                 </div>
                 <div className="mt-3 grid gap-2">
                   {cycleReport.items.map((item) => (
                     <div key={item.id} className="grid gap-1 rounded-md bg-muted/35 px-3 py-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-medium text-foreground">{item.label}</p>
+                        <p className="text-sm font-medium text-foreground">{customerProofPackSummary(item.label)}</p>
                         <Badge variant="outline">{FIRST_CYCLE_REPORT_STATUS_LABELS[item.status]}</Badge>
                       </div>
-                      <p className="text-xs leading-relaxed text-muted-foreground">{item.summary}</p>
-                      <p className="text-xs font-medium text-foreground/75">{item.source}</p>
+                      <p className="text-xs leading-relaxed text-muted-foreground">{customerProofPackSummary(item.summary)}</p>
+                      <p className="text-xs font-medium text-foreground/75">{customerProofPackSummary(item.source)}</p>
                     </div>
                   ))}
                 </div>
-                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{cycleReport.closingLine}</p>
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{customerProofPackSummary(cycleReport.closingLine)}</p>
+              </div>
+              <div className="mt-4 border-t border-border pt-4" aria-label="First-cycle value report">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Value visible in five minutes
+                  </p>
+                  <Badge variant="outline">{customerProofPackSummary(valueReport.title)}</Badge>
+                </div>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  {customerProofPackSummary(valueReport.summary)}
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary">{customerProofPackSummary(valueReport.period)}</Badge>
+                  <Badge variant="outline">{customerProofPackSummary(valueReport.closingLine)}</Badge>
+                </div>
+                <div className="mt-3 grid gap-2">
+                  {valueReport.items.map((item) => (
+                    <div key={item.id} className="grid gap-1 rounded-md bg-muted/35 px-3 py-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium text-foreground">{customerProofPackSummary(item.label)}</p>
+                        <Badge variant="secondary">{customerProofPackSummary(item.metric)}</Badge>
+                      </div>
+                      <p className="text-xs leading-relaxed text-muted-foreground">{customerProofPackSummary(item.summary)}</p>
+                      <p className="text-xs font-medium text-foreground/75">{customerProofPackSummary(item.source)}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -3029,38 +3606,41 @@ function FirstCycleProofPackage({
   isSample: boolean;
   onOpenPreview: (handle: string) => void;
 }) {
+  const previewWithValueReport = withDearMeFirstCycleRuntimeDefaults(preview);
+  const valueReport = previewWithValueReport.valueReport;
+
   return (
     <div className="space-y-4" aria-label={isSample ? "Sample first-cycle proof package" : "First-cycle proof package"}>
-      {isSample ? (
-        <div className="flex flex-col gap-2 rounded-md border border-border bg-background/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <Badge variant="secondary">Sample team package</Badge>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Maya's team prepared private posts, one opportunity, a proof card, and a first plan.
-            </p>
-          </div>
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Private preview</span>
-        </div>
-      ) : null}
+	      {isSample ? (
+	        <div className="flex flex-col gap-2 rounded-md border border-border bg-background/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+	          <div>
+	            <Badge variant="secondary">Sample team package</Badge>
+	            <p className="mt-1 text-sm text-muted-foreground">
+	              Maya's team prepared posts, one opportunity, a proof card, and a first plan.
+	            </p>
+	          </div>
+	          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Proof preview</span>
+	        </div>
+	      ) : null}
 
-      <DearMeWorkbenchCard
-        title="First-run proof sequence"
-        description="One sentence becomes an identity dossier, audience map, and private site proof before DearMe asks for the next call."
-        badge={<Sparkles className="h-4 w-4 text-muted-foreground" />}
-      >
+	      <DearMeWorkbenchCard
+	        title="First-run proof sequence"
+	        description="One sentence becomes an identity dossier, audience map, and proof page before DearMe asks for the next call."
+	        badge={<Sparkles className="h-4 w-4 text-muted-foreground" />}
+	      >
         <div className="grid gap-3 md:grid-cols-3">
-          {preview.proofSequence.map((moment) => (
+          {previewWithValueReport.proofSequence.map((moment) => (
             <div key={moment.window} className="rounded-md border border-border bg-muted/20 p-3">
               <Badge variant="outline">{moment.window}</Badge>
-              <p className="mt-3 text-sm font-medium">{moment.title}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{moment.summary}</p>
-              <div className="mt-3 space-y-2 text-xs text-muted-foreground">
-                <p><span className="font-medium text-foreground/80">Prepared:</span> {moment.preparedArtifact}</p>
-                {moment.sourceLabel ? (
-                  <p><span className="font-medium text-foreground/80">From:</span> {moment.sourceLabel}</p>
-                ) : null}
-                <p><span className="font-medium text-foreground/80">Waits:</span> {moment.approvalBoundary}</p>
-              </div>
+	              <p className="mt-3 text-sm font-medium">{customerProofPackSummary(moment.title)}</p>
+	              <p className="mt-1 text-sm text-muted-foreground">{customerProofPackSummary(moment.summary)}</p>
+	              <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+	                <p><span className="font-medium text-foreground/80">Prepared:</span> {customerProofPackSummary(moment.preparedArtifact)}</p>
+	                {moment.sourceLabel ? (
+	                  <p><span className="font-medium text-foreground/80">From:</span> {customerProofPackSummary(moment.sourceLabel)}</p>
+	                ) : null}
+	                <p><span className="font-medium text-foreground/80">Launch call:</span> {customerProofPackSummary(moment.approvalBoundary)}</p>
+	              </div>
             </div>
           ))}
         </div>
@@ -3068,11 +3648,11 @@ function FirstCycleProofPackage({
 
       <DearMeWorkbenchCard
         title="Live work receipts"
-        description="Each first-run step names who worked, what changed, and what private artifact is ready."
+        description="Each first-run step names who worked, what changed, and what artifact is ready."
         badge={<RefreshCw className="h-4 w-4 text-muted-foreground" />}
       >
         <div className="grid gap-3 lg:grid-cols-5" aria-label="First-run live work receipts">
-          {preview.liveWorkTrail.map((item) => (
+          {previewWithValueReport.liveWorkTrail.map((item) => (
             <div key={item.id} className="flex min-h-44 flex-col rounded-md border border-border bg-muted/20 p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline">{item.window}</Badge>
@@ -3080,22 +3660,22 @@ function FirstCycleProofPackage({
                   {FIRST_CYCLE_LIVE_WORK_STATUS_LABELS[item.status]}
                 </Badge>
               </div>
-              <p className="mt-3 text-sm font-medium">{item.action}</p>
+              <p className="mt-3 text-sm font-medium">{customerProofPackSummary(item.action)}</p>
               <p className="mt-1 text-xs font-medium text-muted-foreground">{roleLabel(item.ownerRole)}</p>
-              <p className="mt-2 line-clamp-4 text-xs text-muted-foreground">{item.receipt}</p>
-              <p className="mt-auto pt-3 text-xs font-medium text-foreground/80">{item.artifact}</p>
+	              <p className="mt-2 line-clamp-4 text-xs text-muted-foreground">{customerProofPackSummary(item.receipt)}</p>
+	              <p className="mt-auto pt-3 text-xs font-medium text-foreground/80">{customerProofPackSummary(item.artifact)}</p>
             </div>
           ))}
         </div>
       </DearMeWorkbenchCard>
 
       <DearMeWorkbenchCard
-        title={preview.cycleReport.title}
-        description={preview.cycleReport.summary}
+        title={customerProofPackSummary(previewWithValueReport.cycleReport.title)}
+        description={customerProofPackSummary(previewWithValueReport.cycleReport.summary)}
         badge={<FileText className="h-4 w-4 text-muted-foreground" />}
       >
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" aria-label="First-cycle report">
-          {preview.cycleReport.items.map((item) => (
+          {previewWithValueReport.cycleReport.items.map((item) => (
             <div key={item.id} className="flex min-h-44 flex-col rounded-md border border-border bg-muted/20 p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={item.status === "blocked" ? "secondary" : "outline"}>
@@ -3103,16 +3683,50 @@ function FirstCycleProofPackage({
                 </Badge>
                 <Badge variant="outline">{roleLabel(item.ownerRole)}</Badge>
               </div>
-              <p className="mt-3 text-sm font-medium">{item.label}</p>
-              <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
-              {item.nextCall ? (
-                <p className="mt-3 text-xs text-muted-foreground">{item.nextCall}</p>
-              ) : null}
-              <p className="mt-auto pt-3 text-xs font-medium text-foreground/80">{item.source}</p>
+	              <p className="mt-3 text-sm font-medium">{customerProofPackSummary(item.label)}</p>
+	              <p className="mt-2 text-xs text-muted-foreground">{customerProofPackSummary(item.summary)}</p>
+	              {item.nextCall ? (
+	                <p className="mt-3 text-xs text-muted-foreground">{customerProofPackSummary(item.nextCall)}</p>
+	              ) : null}
+	              <p className="mt-auto pt-3 text-xs font-medium text-foreground/80">{customerProofPackSummary(item.source)}</p>
             </div>
           ))}
         </div>
-        <p className="mt-3 text-sm text-muted-foreground">{preview.cycleReport.closingLine}</p>
+        <p className="mt-3 text-sm text-muted-foreground">{customerProofPackSummary(previewWithValueReport.cycleReport.closingLine)}</p>
+      </DearMeWorkbenchCard>
+
+      <DearMeWorkbenchCard
+        title={customerProofPackSummary(valueReport.title)}
+        description={customerProofPackSummary(valueReport.summary)}
+        badge={<Gauge className="h-4 w-4 text-muted-foreground" />}
+      >
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,0.35fr)_minmax(0,1fr)]">
+          <div className="rounded-md border border-border bg-muted/20 p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Measured window</p>
+            <p className="mt-2 text-sm font-medium text-foreground">
+              {customerProofPackSummary(valueReport.period)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {customerProofPackSummary(valueReport.closingLine)}
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" aria-label="First-cycle value report">
+            {valueReport.items.map((item) => (
+              <div key={item.id} className="flex min-h-44 flex-col rounded-md border border-border bg-background/60 p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary">{item.count} {customerProofPackSummary(item.unit)}</Badge>
+                  <Badge variant="outline">{roleLabel(item.ownerRole)}</Badge>
+                </div>
+                <p className="mt-3 text-sm font-medium text-foreground">{customerProofPackSummary(item.label)}</p>
+                <p className="mt-1 text-xs font-medium text-foreground/80">{customerProofPackSummary(item.metric)}</p>
+                <p className="mt-2 text-xs text-muted-foreground">{customerProofPackSummary(item.summary)}</p>
+                <p className="mt-auto pt-3 text-xs font-medium text-foreground/80">
+                  {customerProofPackSummary(item.source)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
       </DearMeWorkbenchCard>
 
       {isSample ? (
@@ -3120,15 +3734,15 @@ function FirstCycleProofPackage({
           <DearMeWorkbenchSectionHeader
             icon={ShieldCheck}
             eyebrow="Delivery receipts"
-            title="Approved work comes back with a result"
-            description="The sample first run shows one approved post delivered and one private send held safely until its channel is connected."
+	            title="Launched work comes back with a result"
+	            description="The sample first run shows one post delivered and one staged send held until its channel is connected."
           />
           <div className="grid gap-3 xl:grid-cols-2">
             {SAMPLE_FIRST_CYCLE_DELIVERY_RECEIPTS.map((receipt) => (
               <PrivateExecutionHandoffPanel
                 key={receipt.id}
                 handoff={receipt}
-                onOpenIssue={() => onOpenPreview(preview.sitePreview.handle)}
+                onOpenIssue={() => onOpenPreview(previewWithValueReport.sitePreview.handle)}
                 ariaLabelPrefix="Sample"
               />
             ))}
@@ -3137,40 +3751,40 @@ function FirstCycleProofPackage({
       ) : null}
 
       <DearMeWorkbenchCard
-        title={preview.voiceProfile.title}
-        description={preview.voiceProfile.guidance}
+        title={previewWithValueReport.voiceProfile.title}
+        description={previewWithValueReport.voiceProfile.guidance}
         badge={
-          <Badge variant={preview.voiceProfile.status === "ready_for_gate" ? "default" : "secondary"}>
-            {preview.voiceProfile.status === "ready_for_gate" ? "Voice ready" : "Needs samples"}
+          <Badge variant={previewWithValueReport.voiceProfile.status === "ready_for_gate" ? "default" : "secondary"}>
+            {previewWithValueReport.voiceProfile.status === "ready_for_gate" ? "Voice ready" : "Needs samples"}
           </Badge>
         }
       >
         <div className="flex flex-wrap gap-2">
-          {preview.voiceProfile.draftTone.map((tone) => (
+          {previewWithValueReport.voiceProfile.draftTone.map((tone) => (
             <Badge key={tone} variant="outline">{tone}</Badge>
           ))}
         </div>
       </DearMeWorkbenchCard>
 
-      <VoiceGatePanel gate={preview.voiceGate} />
+      <VoiceGatePanel gate={previewWithValueReport.voiceGate} />
 
       <DearMeWorkbenchCard
-        title={preview.autonomyPlan.label}
-        description={preview.autonomyPlan.summary}
+        title={customerProofPackSummary(previewWithValueReport.autonomyPlan.label)}
+        description={customerProofPackSummary(previewWithValueReport.autonomyPlan.summary)}
         badge={<Workflow className="h-4 w-4 text-muted-foreground" />}
       >
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.5fr)]">
           <DearMeChecklist
             className="sm:grid-cols-2"
             icon={CheckCircle2}
-            items={preview.autonomyPlan.autonomousSteps.map((step) => step.title)}
+            items={previewWithValueReport.autonomyPlan.autonomousSteps.map((step) => customerProofPackSummary(step.title))}
             itemClassName="bg-background/60"
             aria-label="Autonomous first-cycle steps"
           />
           <div className="rounded-md border border-border bg-muted/20 p-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Only waits here</p>
+	            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Launch calls only</p>
             <div className="mt-2 flex flex-wrap gap-2">
-              {preview.autonomyPlan.waitsFor.map((gate) => (
+              {previewWithValueReport.autonomyPlan.waitsFor.map((gate) => (
                 <Badge key={gate} variant="outline">{RISK_GATE_LABELS[gate]}</Badge>
               ))}
             </div>
@@ -3179,26 +3793,26 @@ function FirstCycleProofPackage({
       </DearMeWorkbenchCard>
 
       <DearMeWorkbenchCard
-        title={preview.continuationPlan.title}
-        description={preview.continuationPlan.summary}
-        badge={<Badge variant="outline">{CADENCE_LABELS[preview.continuationPlan.cadence]}</Badge>}
+        title={customerProofPackSummary(previewWithValueReport.continuationPlan.title)}
+        description={customerProofPackSummary(previewWithValueReport.continuationPlan.summary)}
+        badge={<Badge variant="outline">{CADENCE_LABELS[previewWithValueReport.continuationPlan.cadence]}</Badge>}
       >
         <div className="grid gap-3 lg:grid-cols-[minmax(0,0.45fr)_minmax(0,1fr)]">
           <div className="rounded-md border border-border bg-muted/20 p-3">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Next review</p>
-            <p className="mt-2 text-sm font-medium text-foreground">{preview.continuationPlan.nextReview}</p>
+            <p className="mt-2 text-sm font-medium text-foreground">{customerProofPackSummary(previewWithValueReport.continuationPlan.nextReview)}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              DearMe keeps the next private pass warm before it asks for another launch call.
+              DearMe keeps the next pass warm before it asks for another launch call.
             </p>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-            {preview.continuationPlan.items.map((item) => (
+            {previewWithValueReport.continuationPlan.items.map((item) => (
               <div key={item.id} className="rounded-md border border-border bg-background/60 p-3">
-                <p className="text-sm font-medium text-foreground">{item.title}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{item.summary}</p>
+                <p className="text-sm font-medium text-foreground">{customerProofPackSummary(item.title)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{customerProofPackSummary(item.summary)}</p>
                 <div className="mt-3 space-y-2 text-xs text-muted-foreground">
-                  <p><span className="font-medium text-foreground/80">Prepared:</span> {item.preparedArtifact}</p>
-                  <p><span className="font-medium text-foreground/80">Waits:</span> {item.approvalBoundary}</p>
+	                  <p><span className="font-medium text-foreground/80">Prepared:</span> {customerProofPackSummary(item.preparedArtifact)}</p>
+	                  <p><span className="font-medium text-foreground/80">Launch call:</span> {customerProofPackSummary(item.approvalBoundary)}</p>
                 </div>
               </div>
             ))}
@@ -3207,15 +3821,15 @@ function FirstCycleProofPackage({
       </DearMeWorkbenchCard>
 
       <section className="grid gap-3 lg:grid-cols-3">
-        {preview.starterPosts.map((post) => (
+        {previewWithValueReport.starterPosts.map((post) => (
           <DearMeWorkbenchCard
             key={post.id}
-            title={post.title}
-            description={post.body}
+            title={customerProofPackSummary(post.title)}
+            description={customerProofPackSummary(post.body)}
             badge={<Badge variant="outline">{CHANNEL_LABELS[post.channel]}</Badge>}
           >
             <div className="space-y-2">
-              <p className="text-sm font-medium text-foreground/80">{post.hook}</p>
+              <p className="text-sm font-medium text-foreground/80">{customerProofPackSummary(post.hook)}</p>
               <Badge variant="outline" className="h-auto max-w-full justify-start whitespace-normal text-left leading-snug">
                 Source proof: {post.proofUsed}
               </Badge>
@@ -3224,17 +3838,54 @@ function FirstCycleProofPackage({
         ))}
       </section>
 
+      <DearMeWorkbenchCard
+        eyebrow="Opportunity ROI"
+        title={customerProofPackSummary(previewWithValueReport.opportunityRoiReport.title)}
+        description={customerProofPackSummary(previewWithValueReport.opportunityRoiReport.summary)}
+        badge={<Gauge className="h-4 w-4 text-muted-foreground" />}
+        aria-label="Opportunity ROI report"
+      >
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          {previewWithValueReport.opportunityRoiReport.items.map((item) => (
+            <div key={item.id} className="flex min-h-52 flex-col rounded-md border border-border bg-muted/20 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">{item.score}/100</Badge>
+                <Badge variant="outline">
+                  {item.priority === "launch_first"
+                    ? "Launch-call candidate"
+                    : item.priority === "verify_contact"
+                      ? "Verify contact"
+                      : "Warm intro path"}
+                </Badge>
+              </div>
+              <p className="mt-3 text-sm font-medium text-foreground">{customerProofPackSummary(item.leadTitle)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{customerProofPackSummary(item.target)}</p>
+              <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+                <p><span className="font-medium text-foreground/80">Return:</span> {customerProofPackSummary(item.expectedReturn)}</p>
+                <p><span className="font-medium text-foreground/80">Effort:</span> {customerProofPackSummary(item.effort)}</p>
+                <p><span className="font-medium text-foreground/80">Confidence:</span> {customerProofPackSummary(item.confidence)}</p>
+                <p><span className="font-medium text-foreground/80">Next:</span> {customerProofPackSummary(item.nextAction)}</p>
+              </div>
+              <p className="mt-auto pt-3 text-xs font-medium text-foreground/75">{customerProofPackSummary(item.source)}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">
+          {customerProofPackSummary(previewWithValueReport.opportunityRoiReport.closingLine)}
+        </p>
+      </DearMeWorkbenchCard>
+
       <section className="grid gap-3 lg:grid-cols-3">
         <DearMeWorkbenchCard
           eyebrow="Opportunity shortlist"
-          title="Five private targets"
-          description="Contact evidence, fit reasons, outreach angles, and first messages stay private until send approval."
+	          title="Five launch-ready targets"
+	          description="Contact evidence, fit reasons, outreach angles, and first messages are staged until you choose the send path."
           badge={<Users className="h-4 w-4 text-muted-foreground" />}
           className="lg:col-span-2"
           aria-label="Opportunity shortlist"
         >
           <div className="grid gap-4 md:grid-cols-2">
-            {preview.opportunityShortlist.map((lead, index) => (
+            {previewWithValueReport.opportunityShortlist.map((lead, index) => (
               <div key={`${lead.title}-${lead.target}`} className="border-l border-border pl-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -3301,8 +3952,8 @@ function FirstCycleProofPackage({
         </DearMeWorkbenchCard>
         <DearMeWorkbenchCard
           eyebrow="Portfolio proof card"
-          title={preview.portfolioProofCard.placement}
-          description={preview.portfolioProofCard.proposedCopy}
+          title={previewWithValueReport.portfolioProofCard.placement}
+          description={customerProofPackSummary(previewWithValueReport.portfolioProofCard.proposedCopy)}
           badge={<FileText className="h-4 w-4 text-muted-foreground" />}
           action={
             !isSample ? (
@@ -3310,22 +3961,22 @@ function FirstCycleProofPackage({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => onOpenPreview(preview.sitePreview.handle)}
+                onClick={() => onOpenPreview(previewWithValueReport.sitePreview.handle)}
               >
-                Open private preview
+                Open proof preview
               </Button>
             ) : null
           }
         >
           <div className="space-y-2">
             <Badge variant="outline" className="h-auto max-w-full justify-start whitespace-normal text-left leading-snug">
-              Source proof: {preview.portfolioProofCard.proofSource}
+              Source proof: {previewWithValueReport.portfolioProofCard.proofSource}
             </Badge>
             <div className="rounded-md border border-border bg-background/60 px-3 py-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Private preview</p>
-              <p className="mt-1 text-sm text-foreground/80">{preview.sitePreview.route}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Proof preview</p>
+              <p className="mt-1 text-sm text-foreground/80">{previewWithValueReport.sitePreview.route}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Ready for approval. The site stays private until you approve it.
+                Ready when you choose to launch. The preview stays internal until then.
               </p>
             </div>
           </div>
@@ -3333,14 +3984,14 @@ function FirstCycleProofPackage({
         <DearMeWorkbenchCard
           eyebrow="First growth plan"
           title="First growth plan"
-          description={preview.growthPlan.summary}
+          description={customerProofPackSummary(previewWithValueReport.growthPlan.summary)}
           badge={<Gauge className="h-4 w-4 text-muted-foreground" />}
         />
       </section>
 
       <DearMeWorkbenchCard
-        title={preview.approvalBoundary.label}
-        description={preview.approvalBoundary.summary}
+        title={previewWithValueReport.approvalBoundary.label}
+        description={previewWithValueReport.approvalBoundary.summary}
         badge={<ShieldCheck className="h-4 w-4 text-muted-foreground" />}
       >
         <DearMeChecklist
@@ -3373,7 +4024,7 @@ function liveFeedActionLabel(item: DearMeWorkbenchStreamItem) {
   if (item.approvalId || item.needsApproval) return "Review now";
   if (item.relatedOutputId) return reviewLoopActionLabel(item.reviewLoop) ?? "Open prepared work";
   if (streamItemIssueTarget(item)) {
-    return item.kind === "cycle_brief" ? "Open private work" : "Open work";
+    return item.kind === "cycle_brief" ? "Open brand work" : "Open work";
   }
   return null;
 }
@@ -3383,24 +4034,24 @@ function liveFeedStateGuidance(item: DearMeWorkbenchStreamItem) {
     return "A launch call is ready before anything represents you.";
   }
   if (item.status === "working" || item.kind === "work_in_motion") {
-    return "The team is preparing this privately before it asks for your call.";
+    return "The team keeps preparing before the next launch call.";
   }
   if (item.kind === "memory_recorded") {
-    return "DearMe is saving what should guide future private work.";
+    return "DearMe is saving what should guide future brand work.";
   }
   if (item.kind === "report_ready") {
     return "A concise update is ready to read.";
   }
   if (item.status === "recorded" || item.kind === "progress_recorded") {
-    return "This update is recorded for the next private cycle.";
+    return "This update is recorded for the next brand cycle.";
   }
   if (item.status === "blocked") {
     return "The team needs a clearer path before this can continue.";
   }
   if (item.status === "cancelled") {
-    return "This private move has stopped and will not represent you.";
+    return "This move has stopped and will not represent you.";
   }
-  return "DearMe keeps this work private until a decision is needed.";
+  return "DearMe keeps working until a launch decision is needed.";
 }
 
 function liveFeedReviewableOutputId(item: DearMeWorkbenchStreamItem) {
@@ -3482,9 +4133,81 @@ function batchPreparedOutputId(batch: DearMeWorkbenchBatchDecision): string | nu
   return outputDecision ? outputDecision.slice("output:".length) : null;
 }
 
+function batchPreparedOutputReviewLoop(
+  batch: DearMeWorkbenchBatchDecision,
+  workbench: DearMeWorkbenchResponse,
+): DearMeOutputReviewLoop | null {
+  const outputId = batchPreparedOutputId(batch);
+  if (!outputId) return null;
+
+  return (
+    workbench.decisionsNeeded.find((decision) => decision.outputId === outputId)?.reviewLoop ??
+    workbench.workReady.find((item) => item.id === outputId)?.reviewLoop ??
+    workbench.activeWork.find((item) => item.id === outputId)?.reviewLoop ??
+    workbench.workStream.find((item) => item.relatedOutputId === outputId)?.reviewLoop ??
+    null
+  );
+}
+
 const FOCUSED_DECISION_SURFACE_CLASSNAME = "scroll-mt-4 pb-24 sm:pb-5";
 const FOCUSED_DECISION_ACTION_GROUP_CLASSNAME = "mt-4 grid grid-cols-1 gap-2";
 const FOCUSED_DECISION_ACTION_BUTTON_CLASSNAME = "h-auto min-h-9 w-full min-w-0 justify-start whitespace-normal text-left leading-snug";
+const PREPARED_WORK_DECISION_OUTCOMES: Array<{
+  key: string;
+  icon: LucideIcon;
+  label: string;
+  summary: string;
+}> = [
+  {
+    key: "launch",
+    icon: CheckCircle2,
+    label: "Launch",
+    summary: "DearMe records approval, prepares the handoff, and keeps public posts, sends, page changes, and spend behind the boundary.",
+  },
+  {
+    key: "changes",
+    icon: MessageSquare,
+    label: "Request changes",
+    summary: "Your note becomes the next brief; the team revises without asking you to manage a task.",
+  },
+  {
+    key: "pass",
+    icon: RefreshCw,
+    label: "Another pass",
+    summary: "DearMe keeps the goal, reuses the proof, and prepares a fresh version for review.",
+  },
+  {
+    key: "direction",
+    icon: XCircle,
+    label: "New direction",
+    summary: "DearMe stops spending cycles on this angle and resets the next useful move.",
+  },
+];
+const APPROVAL_DECISION_OUTCOMES: Array<{
+  key: string;
+  icon: LucideIcon;
+  label: string;
+  summary: string;
+}> = [
+  {
+    key: "launch",
+    icon: CheckCircle2,
+    label: "Launch",
+    summary: "DearMe records the launch call and prepares the private handoff; external action still waits for the approved channel or account.",
+  },
+  {
+    key: "changes",
+    icon: RefreshCw,
+    label: "Request changes",
+    summary: "The move goes back to the team with your note, proof, and launch boundary intact.",
+  },
+  {
+    key: "reject",
+    icon: XCircle,
+    label: "Reject",
+    summary: "DearMe stops this move and keeps the brand team pointed at a safer next option.",
+  },
+];
 const FOCUSED_DECISION_NOTE_STARTERS: Array<{
   key: string;
   icon: LucideIcon;
@@ -3506,8 +4229,8 @@ const FOCUSED_DECISION_NOTE_STARTERS: Array<{
   {
     key: "private",
     icon: ShieldCheck,
-    label: "Keep it private",
-    note: "Keep this private and prepare another pass before launch.",
+    label: "Keep it staged",
+    note: "Keep this staged and prepare another pass before launch.",
   },
 ];
 
@@ -3538,6 +4261,45 @@ function FocusedDecisionNoteStarters({
               <StarterIcon className="h-3.5 w-3.5" aria-hidden="true" />
               {starter.label}
             </Button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function DecisionOutcomeMap({
+  outcomes,
+  className,
+  compact = false,
+}: {
+  outcomes: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    summary: string;
+  }>;
+  className?: string;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      aria-label="Decision outcome map"
+      className={cn("rounded-md border border-border bg-muted/20", compact ? "p-2" : "p-3", className)}
+    >
+      <p className="text-xs font-medium text-muted-foreground">After your call</p>
+      <div className={cn("mt-2 grid sm:grid-cols-2", compact ? "gap-1.5" : "gap-2")}>
+        {outcomes.map((outcome) => {
+          const OutcomeIcon = outcome.icon;
+
+          return (
+            <div key={outcome.key} className="min-w-0 rounded-md border border-border bg-background/80 p-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+                <OutcomeIcon className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                {outcome.label}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{outcome.summary}</p>
+            </div>
           );
         })}
       </div>
@@ -3611,6 +4373,7 @@ function FocusedPreparedWorkReviewControls({
         className="mt-3"
       />
       <FocusedDecisionNoteStarters disabled={!canReview} onSelect={updateDecisionNote} />
+      <DecisionOutcomeMap outcomes={PREPARED_WORK_DECISION_OUTCOMES} compact={compact} className="mt-3" />
       <div
         className={FOCUSED_DECISION_ACTION_GROUP_CLASSNAME}
         data-dearme-mobile-action-group="prepared-work-review"
@@ -3675,13 +4438,51 @@ function FocusedPreparedWorkReviewControls({
   );
 }
 
+function StuckWorkRecoveryCard({
+  loop,
+  onOpenVoiceMemory,
+}: {
+  loop: DearMeOutputReviewLoop;
+  onOpenVoiceMemory: () => void;
+}) {
+  if (!isReviewLoopStuck(loop)) return null;
+
+  return (
+    <div
+      aria-label="Focused stuck work recovery"
+      className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3"
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground">This path is capped until direction improves.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Do not spend another blind pass. Add better Voice & Memory context, or hand support the account context before the next attempt.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <Button type="button" variant="outline" onClick={onOpenVoiceMemory}>
+            <Sparkles className="h-4 w-4" />
+            Open Voice & Memory
+          </Button>
+          <Button type="button" variant="outline" onClick={scrollToDearMeSupportHandoff}>
+            <LifeBuoy className="h-4 w-4" />
+            Open support handoff
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FocusedDecisionPanel({
   decision,
   batch,
+  batchReviewLoop,
   workItem,
   onOpenDecision,
   onOpenBatch,
   onOpenWorkItem,
+  onOpenVoiceMemory,
   onReviewApproval,
   onReviewOutput,
   reviewState,
@@ -3689,10 +4490,12 @@ function FocusedDecisionPanel({
 }: {
   decision: DearMeWorkbenchDecision | null;
   batch: DearMeWorkbenchBatchDecision | null;
+  batchReviewLoop: DearMeOutputReviewLoop | null;
   workItem: DearMeWorkbenchWorkItem | null;
   onOpenDecision: (decision: DearMeWorkbenchDecision) => void;
   onOpenBatch: (batch: DearMeWorkbenchBatchDecision) => void;
   onOpenWorkItem: (item: DearMeWorkbenchWorkItem, intent?: DearMeReviewEntryIntent | null) => void;
+  onOpenVoiceMemory: () => void;
   onReviewApproval: (
     approvalId: string,
     action: DearMeApprovalReviewAction,
@@ -3733,7 +4536,7 @@ function FocusedDecisionPanel({
           <div className="rounded-md border border-border bg-background/80 p-3">
             <p className="text-xs font-medium text-muted-foreground">Prepared work</p>
             <p className="mt-1 text-sm">
-              {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Private team decision"}
+              {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Brand team decision"}
             </p>
           </div>
           <div className="rounded-md border border-border bg-background/80 p-3">
@@ -3744,7 +4547,7 @@ function FocusedDecisionPanel({
           </div>
           <div className="rounded-md border border-border bg-background/80 p-3">
             <p className="text-xs font-medium text-muted-foreground">Launch boundary</p>
-            <p className="mt-1 text-sm">The team keeps preparing; public launch waits for your boundary.</p>
+            <p className="mt-1 text-sm">The team keeps preparing; public launch stays behind your boundary.</p>
           </div>
         </DearMeEvidenceGrid>
         {decision.approvalId ? (
@@ -3762,6 +4565,7 @@ function FocusedDecisionPanel({
               disabled={isReviewingDecision}
               onSelect={updateDecisionNote}
             />
+            <DecisionOutcomeMap outcomes={APPROVAL_DECISION_OUTCOMES} className="mt-3" />
             <div className="mt-4 grid gap-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
               <p className="text-xs text-muted-foreground">
                 Your team prepared the move. Your call sets the launch boundary.
@@ -3836,6 +4640,7 @@ function FocusedDecisionPanel({
 
   if (batch) {
     const outputId = batchPreparedOutputId(batch);
+    const isStuck = isReviewLoopStuck(batchReviewLoop);
     return (
       <DearMeFocusSurface aria-label="Focused decision" className={FOCUSED_DECISION_SURFACE_CLASSNAME}>
         <DearMeWorkbenchSectionHeader
@@ -3851,6 +4656,7 @@ function FocusedDecisionPanel({
               <Badge variant="outline">
                 {batch.itemCount} item{batch.itemCount === 1 ? "" : "s"}
               </Badge>
+              {batchReviewLoop ? <ReviewLoopBadges loop={batchReviewLoop} /> : null}
             </div>
           }
         />
@@ -3865,14 +4671,23 @@ function FocusedDecisionPanel({
           </div>
           <div className="rounded-md border border-border bg-background/80 p-3">
             <p className="text-xs font-medium text-muted-foreground">Launch boundary</p>
-            <p className="mt-1 text-sm">Prepared privately. You choose what ships.</p>
+            <p className="mt-1 text-sm">Prepared for your call. You choose what ships.</p>
           </div>
         </DearMeEvidenceGrid>
+        {batchReviewLoop ? (
+          <>
+            <ReviewLoopNextStep loop={batchReviewLoop} className="mt-4" />
+            <ReviewHandoffCard loop={batchReviewLoop} className="mt-4" />
+            <StuckWorkRecoveryCard loop={batchReviewLoop} onOpenVoiceMemory={onOpenVoiceMemory} />
+          </>
+        ) : null}
         {outputId ? (
           <FocusedPreparedWorkReviewControls
             outputId={outputId}
             noteId="dearme-focused-batch-output-note"
-            description="DearMe prepared the work privately. Launch what represents you, send changes back to the team, ask for another private pass, or choose a new direction."
+            description="DearMe prepared the work for your call. Launch what represents you, send changes back to the team, ask for another pass, or choose a new direction."
+            disabledReason={isStuck ? REVIEW_LOOP_STUCK_DISABLED_REASON : undefined}
+            isReviewable={!isStuck}
             reviewState={outputReviewState}
             onReviewOutput={onReviewOutput}
           />
@@ -3894,6 +4709,8 @@ function FocusedDecisionPanel({
   }
 
   if (workItem) {
+    const isStuck = isReviewLoopStuck(workItem.reviewLoop);
+
     return (
       <DearMeFocusSurface aria-label="Focused decision" className={FOCUSED_DECISION_SURFACE_CLASSNAME}>
         <DearMeWorkbenchSectionHeader
@@ -3912,6 +4729,7 @@ function FocusedDecisionPanel({
         />
         <ReviewLoopNextStep loop={workItem.reviewLoop} className="mt-4" />
         <ReviewHandoffCard loop={workItem.reviewLoop} className="mt-4" />
+        <StuckWorkRecoveryCard loop={workItem.reviewLoop} onOpenVoiceMemory={onOpenVoiceMemory} />
         <div className="mt-4 grid gap-3 sm:flex sm:items-center sm:justify-between">
           <span className="text-xs text-muted-foreground">Prepared by {roleLabel(workItem.ownerRole)}</span>
           <Button
@@ -3929,8 +4747,8 @@ function FocusedDecisionPanel({
           outputId={workItem.id}
           noteId="dearme-focused-work-output-note"
           description="Review this launch-ready item in place. Keep it moving, request changes, or choose the boundary for what represents you."
-          disabledReason="This lane is still in private work; DearMe will bring it back when it needs your call."
-          isReviewable={workItem.status === "ready_for_review" || workItem.reviewLoop.state === "needs_user_review"}
+          disabledReason={isStuck ? REVIEW_LOOP_STUCK_DISABLED_REASON : "This lane is still preparing; DearMe will bring it back when it needs your call."}
+          isReviewable={!isStuck && (workItem.status === "ready_for_review" || workItem.reviewLoop.state === "needs_user_review")}
           reviewState={outputReviewState}
           onReviewOutput={onReviewOutput}
         />
@@ -4022,11 +4840,13 @@ function FocusedOutputPanel({
   output,
   entryIntent,
   reviewState,
+  onOpenVoiceMemory,
   onReviewOutput,
 }: {
   output: DearMeOutputItem;
   entryIntent?: DearMeReviewEntryIntent | null;
   reviewState: DearMeOutputReviewState;
+  onOpenVoiceMemory: () => void;
   onReviewOutput: (outputId: string, action: DearMeOutputReviewAction, decisionNote: string) => void;
 }) {
   const preview = outputPreview(output);
@@ -4035,8 +4855,9 @@ function FocusedOutputPanel({
   const entryGuidance = reviewEntryGuidance(entryIntent, output.reviewLoop);
   const [decisionNote, setDecisionNote] = useState("");
   const decisionNoteRef = useRef("");
+  const isStuck = isReviewLoopStuck(output.reviewLoop);
   const isReviewingOutput = reviewState.isPending && reviewState.outputId === output.id;
-  const canReview = output.isReviewable && !isReviewingOutput;
+  const canReview = output.isReviewable && !isStuck && !isReviewingOutput;
   const pendingAction = isReviewingOutput ? reviewState.action : null;
 
   useEffect(() => {
@@ -4095,6 +4916,7 @@ function FocusedOutputPanel({
       <ReviewLoopNextStep loop={output.reviewLoop} className="mt-4" />
       <ReviewHandoffCard loop={output.reviewLoop} className="mt-4" />
       <ReviewAppliedFeedbackCard loop={output.reviewLoop} className="mt-4" />
+      <StuckWorkRecoveryCard loop={output.reviewLoop} onOpenVoiceMemory={onOpenVoiceMemory} />
 
       {entryGuidance ? (
         <div className="mt-4 rounded-md border border-border bg-background/80 p-3">
@@ -4110,10 +4932,10 @@ function FocusedOutputPanel({
         <FieldLabel
           htmlFor="dearme-focused-output-note"
           label="What should your team do next?"
-          hint={output.isReviewable ? "Launch boundary" : "Waiting"}
+          hint={isStuck ? "Direction needed" : output.isReviewable ? "Launch boundary" : "Waiting"}
         />
         <p className="text-xs text-muted-foreground">
-          Your team prepares the moves. You choose what represents you.
+          {isStuck ? REVIEW_LOOP_STUCK_DISABLED_REASON : "Your team prepares the moves. You choose what represents you."}
         </p>
         <Textarea
           id="dearme-focused-output-note"
@@ -4121,10 +4943,11 @@ function FocusedOutputPanel({
           value={decisionNote}
           onChange={(event) => updateDecisionNote(event.target.value)}
           placeholder="Optional note for the team"
-          disabled={isReviewingOutput || !output.isReviewable}
+          disabled={!canReview}
           className="mt-3"
         />
         <FocusedDecisionNoteStarters disabled={!canReview} onSelect={updateDecisionNote} />
+        <DecisionOutcomeMap outcomes={PREPARED_WORK_DECISION_OUTCOMES} className="mt-3" />
         <div className="mt-3 flex flex-wrap gap-2">
           <Button type="button" size="sm" onClick={() => review("approve")} disabled={!canReview}>
             {pendingAction === "approve" ? (
@@ -4178,7 +5001,7 @@ function FocusedOutputPanel({
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
         <span>Updated {shortDate(output.updatedAt)}</span>
         <span>
-          {output.documents.length} private reference{output.documents.length === 1 ? "" : "s"} prepared
+          {output.documents.length} proof reference{output.documents.length === 1 ? "" : "s"} prepared
         </span>
       </div>
     </DearMeFocusSurface>
@@ -4210,8 +5033,8 @@ function workReadyNextStepLabel(status: DearMeOutputStatus) {
   if (status === "ready_for_review") {
     return "Open it, then launch, request changes, ask for another pass, or choose a new direction.";
   }
-  if (status === "complete") return "Use it as proof or keep it in your private history.";
-  if (status === "blocked") return "Review what is blocking the team before more private work continues.";
+  if (status === "complete") return "Use it as proof or keep it in your history.";
+  if (status === "blocked") return "Review what is blocking the team before more brand work continues.";
   if (status === "working") return "Track the lane; DearMe will bring it back here when it is ready.";
   if (status === "queued") return "No action yet; the team will prepare this before asking for the launch call.";
   return "Open it to see what changed and decide whether DearMe should continue.";
@@ -4219,9 +5042,9 @@ function workReadyNextStepLabel(status: DearMeOutputStatus) {
 
 function decisionAfterCallLabel(riskGate?: DearMeWorkbenchDecision["riskGate"] | DearMeWorkbenchBatchDecision["riskGate"]) {
   if (riskGate) {
-    return "Launched work moves forward inside the boundary; changes go back to the private team.";
+    return "Launched work moves forward inside the boundary; changes go back to the brand team.";
   }
-  return "Your call updates the private review path so the team knows what to use, revise, or stop.";
+  return "Your call updates the review path so the team knows what to use, revise, or stop.";
 }
 
 type DearMeSourceReviewItem = DearMeWorkbenchMemory["sourceReviewQueue"][number];
@@ -4279,7 +5102,7 @@ function SourceReviewDetailPanel({
 
       {sourceHref ? (
         <div className="mt-3 rounded-md border border-border bg-muted/20 px-3 py-2">
-          <p className="text-xs font-medium text-muted-foreground">Private source</p>
+          <p className="text-xs font-medium text-muted-foreground">Source</p>
           <PrivateSourceLink href={sourceHref} className="mt-1" />
         </div>
       ) : null}
@@ -4347,7 +5170,7 @@ function TeamSummaryPanel({
         description={customerProofPackSummary(workbench.summary)}
         trailing={
           <Badge variant={paidBetaActive ? "default" : "secondary"}>
-            {paidBetaActive ? "Working now" : "Private work locked"}
+            {paidBetaActive ? "Working now" : "Brand work locked"}
           </Badge>
         }
       />
@@ -4374,7 +5197,7 @@ function TeamProofPackContinuityRibbon({ workbench }: { workbench: DearMeWorkben
   const report = workbench.report;
   const reportIsPacketBacked = report ? isPacketBackedReport(report) : false;
   const continuitySummary = reportIsPacketBacked
-    ? "One private proof pack is feeding today's briefing, ready work, and your launch call."
+    ? "One proof pack is feeding today's briefing, ready work, and your launch call."
     : "Voice & Memory, prepared work, and launch calls stay connected while the team keeps moving.";
   const decisionTitle =
     nextBatchDecision?.title ??
@@ -4385,12 +5208,12 @@ function TeamProofPackContinuityRibbon({ workbench }: { workbench: DearMeWorkben
     ? customerProofPackSummary(nextWork.title)
     : report
       ? customerProofPackSummary(report.title)
-      : "Private proof pack";
+      : "Proof pack";
   const packetNextMove = report
     ? `${OUTPUT_STATUS_LABELS[report.status]} weekly letter`
     : nextWork
       ? customerProofPackSummary(nextWork.summary)
-      : "private work";
+      : "brand work";
   const packetLaunchCall = decisionCount > 0
     ? customerProofPackSummary(decisionTitle)
     : "clear until the next public move";
@@ -4469,7 +5292,7 @@ function TeamFocusWorkbenchPanel({
       nextBatchDecision?.summary ??
         nextApprovalDecision?.summary ??
         nextSourceReview?.nextAction ??
-        "Your team can keep preparing private work.",
+        "Your team can keep preparing brand work.",
     );
   const workCount = workbench.workReady.length + workbench.activeWork.length;
   const decisionCount =
@@ -4494,16 +5317,16 @@ function TeamFocusWorkbenchPanel({
       title: decisionCount > 0 ? pluralizeCount(decisionCount, "call") : "No call waiting",
       detail: decisionCount > 0
         ? nextDecisionSummary
-        : "The team can keep moving privately until a public or external move needs you.",
+        : "The team can keep moving until a public or external move needs you.",
     },
     {
       icon: Workflow,
       label: "Autonomous lane",
-      title: livePulse ? "Working now" : workCount > 0 ? "Private work moving" : "Ready to begin",
+      title: livePulse ? "Working now" : workCount > 0 ? "Brand work moving" : "Ready to begin",
       detail: livePulse?.description ??
         (workCount > 0
           ? "Prepared assets stay in motion while public moves remain gated."
-          : "The first private cycle starts from one sentence."),
+          : "The first brand cycle starts from one sentence."),
     },
   ];
   const returnHandoff: Array<{
@@ -4519,12 +5342,12 @@ function TeamFocusWorkbenchPanel({
         ? customerProofPackSummary(latestProof.title)
         : workbench.report
           ? customerProofPackSummary(workbench.report.title)
-          : "No private move yet",
+          : "No proof move yet",
       detail: latestProof
         ? customerProofPackSummary(latestProof.summary)
         : workbench.report
-          ? "The latest letter is ready as your private receipt."
-          : "Start with one sentence and DearMe will create the first private receipts.",
+          ? "The latest letter is ready as your proof receipt."
+          : "Start with one sentence and DearMe will create the first proof receipts.",
     },
     {
       icon: ShieldCheck,
@@ -4532,7 +5355,7 @@ function TeamFocusWorkbenchPanel({
       title: decisionCount > 0 ? pluralizeCount(decisionCount, "launch call") : "Nothing public is waiting",
       detail: decisionCount > 0
         ? nextDecisionSummary
-        : "Private work can continue without asking you to approve a public move.",
+        : "Brand work can continue without asking you to launch a public move.",
     },
     {
       icon: Workflow,
@@ -4540,12 +5363,12 @@ function TeamFocusWorkbenchPanel({
       title: livePulse
         ? livePulse.title
         : workCount > 0
-          ? pluralizeCount(workCount, "private lane")
+          ? pluralizeCount(workCount, "brand lane")
           : "First cycle can start",
       detail: livePulse?.description ??
         (workCount > 0
-          ? "Drafts, scouting, proof, and reporting stay private until a launch call is ready."
-          : "One sentence is enough to start the first private cycle."),
+          ? "Drafts, scouting, proof, and reporting keep moving until a launch call is ready."
+          : "One sentence is enough to start the first brand cycle."),
     },
     {
       icon: FileText,
@@ -4553,13 +5376,13 @@ function TeamFocusWorkbenchPanel({
       title: workbench.report
         ? customerProofPackSummary(workbench.report.title)
         : latestProof
-          ? "Private proof is being gathered"
+          ? "Proof is being gathered"
           : "No proof pack yet",
       detail: workbench.report
         ? customerProofPackSummary(workbench.report.summary)
         : latestProof
-          ? "The current work trail is already visible in your private proof feed."
-          : "The first report appears after DearMe has a private cycle to summarize.",
+          ? "The current work trail is already visible in your proof feed."
+          : "The first report appears after DearMe has a brand cycle to summarize.",
     },
   ];
 
@@ -4569,15 +5392,15 @@ function TeamFocusWorkbenchPanel({
         icon={Sparkles}
         eyebrow="Today's operating focus"
         title="Dear me, your brand team worked while you were away."
-        description="DearMe keeps the private brand cycle moving: drafts, reports, opportunities, proof, and weekly direction. Public posts, outbound messages, spend, and page changes become launch calls under your rules."
+        description="DearMe keeps the brand cycle moving: drafts, reports, opportunities, proof, and weekly direction. Public posts, outbound messages, spend, and page changes become launch calls under your rules."
         trailing={
           <div className="flex flex-col gap-2 sm:items-end">
             <Badge variant={paidBetaActive ? "default" : "secondary"}>
               {livePulse
-                ? "Private work moving"
+                ? "Brand work moving"
                 : paidBetaActive
                   ? "Team working"
-                  : "Private work locked"}
+                  : "Brand work locked"}
             </Badge>
             <Button type="button" size="sm" onClick={onFocusFirstCycle}>
               <Sparkles className="h-4 w-4" />
@@ -4637,7 +5460,7 @@ function TeamFocusWorkbenchPanel({
           description={
             latestProof
               ? customerProofPackSummary(latestProof.summary)
-              : "Create the full profile and the first private cycle will begin here."
+              : "Create the full profile and the first brand cycle will begin here."
           }
           badge={<Workflow className="h-4 w-4 text-muted-foreground" />}
           footer={
@@ -4694,7 +5517,7 @@ function TeamFocusWorkbenchPanel({
               {workCount}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Prepared assets and active lanes your team can keep moving privately.
+              Prepared assets and active lanes your team can keep moving.
             </p>
           </div>
         </div>
@@ -4734,16 +5557,16 @@ function OpportunityWorkbenchPanel({
 
   return (
     <DearMeFocusSurface aria-label="Opportunity command center" className="space-y-5">
-      <DearMeWorkbenchSectionHeader
-        icon={Telescope}
-        eyebrow="Opportunity Scout"
-        title="Opportunities, ready before outreach."
-        description="DearMe turns memory, proof, and public signals into prepared targets, angles, and first messages. No outbound message sends until you approve."
-        trailing={
-          <Badge variant={paidBetaActive ? "default" : "secondary"}>
-            {paidBetaActive ? "Scouting now" : "Private work locked"}
-          </Badge>
-        }
+	    <DearMeWorkbenchSectionHeader
+	      icon={Telescope}
+	      eyebrow="Opportunity Scout"
+	      title="Opportunities, ready before outreach."
+	      description="DearMe turns memory, proof, and public signals into prepared targets, angles, and first messages. Outbound sends stay behind your launch call."
+	      trailing={
+	        <Badge variant={paidBetaActive ? "default" : "secondary"}>
+	          {paidBetaActive ? "Scouting now" : "Setup needed"}
+	        </Badge>
+	      }
       />
 
       <DearMeMetricStrip>
@@ -4790,12 +5613,12 @@ function OpportunityWorkbenchPanel({
                 Target, contact evidence, fit reason, outreach angle, first message, and follow-up plan.
               </p>
             </div>
-            <div className="rounded-md border border-border bg-background/80 p-3">
-              <p className="text-xs font-medium text-muted-foreground">Launch boundary</p>
-              <p className="mt-1 text-sm text-foreground/85">
-                No message sends until you approve the prepared target, angle, and draft.
-              </p>
-            </div>
+	      <div className="rounded-md border border-border bg-background/80 p-3">
+	        <p className="text-xs font-medium text-muted-foreground">Launch boundary</p>
+	        <p className="mt-1 text-sm text-foreground/85">
+	          Message sends stay behind the prepared target, angle, draft, and your launch call.
+	        </p>
+	      </div>
           </DearMeEvidenceGrid>
         </DearMeWorkbenchCard>
 
@@ -4839,41 +5662,318 @@ function OpportunityWorkbenchPanel({
 function TeamOperatingPolicyPanel({
   workbench,
   paidBetaActive,
+  paidBetaCohort,
+  paidBetaCohortCompanyNames,
+  paidBetaCohortLoading,
+  paidBetaCohortError,
+  supportHandoffPending,
+  supportHandoffResult,
+  supportHandoffError,
+  emptyWeekRecoveryPending,
+  emptyWeekRecoveryResult,
+  emptyWeekRecoveryError,
+  onStartEmptyWeekRecovery,
+  onHandleSupportHandoff,
+  onOpenEmptyWeekRecoveryIssue,
+  onOpenSupportHandoffIssue,
+  onOpenVoiceMemory,
+  onOpenLaunchProof,
+  onOpenPaidBetaAccount,
 }: {
   workbench: DearMeWorkbenchResponse;
   paidBetaActive: boolean;
+  paidBetaCohort: DearMePaidBetaCohortSummary | null;
+  paidBetaCohortCompanyNames: Record<string, string>;
+  paidBetaCohortLoading: boolean;
+  paidBetaCohortError: string | null;
+  supportHandoffPending: boolean;
+  supportHandoffResult: DearMeChiefOfStaffMessageResult | null;
+  supportHandoffError: string | null;
+  emptyWeekRecoveryPending: boolean;
+  emptyWeekRecoveryResult: DearMeChiefOfStaffMessageResult | null;
+  emptyWeekRecoveryError: string | null;
+  onStartEmptyWeekRecovery: (message: string) => void;
+  onHandleSupportHandoff: (message: string) => void;
+  onOpenEmptyWeekRecoveryIssue: (issueReference: string) => void;
+  onOpenSupportHandoffIssue: (issueReference: string) => void;
+  onOpenVoiceMemory: () => void;
+  onOpenLaunchProof: () => void;
+  onOpenPaidBetaAccount: (companyId: string) => void;
 }) {
   const decisionCount =
     workbench.decisionsNeeded.length +
     workbench.batchDecisions.length +
     workbench.memory.sourceReviewQueue.length;
-  const reviewLoops = [
-    ...workbench.workReady.map((item) => item.reviewLoop),
-    ...workbench.activeWork.map((item) => item.reviewLoop),
-    ...workbench.decisionsNeeded.map((item) => item.reviewLoop),
-    ...workbench.workStream.map((item) => item.reviewLoop),
-  ].filter((loop): loop is DearMeOutputReviewLoop => Boolean(loop));
+  const reviewLoopContexts: Array<{
+    title: string;
+    summary: string;
+    issueReference: string | null;
+    reviewLoop: DearMeOutputReviewLoop | null;
+  }> = [
+    ...workbench.workReady.map((item) => ({
+      title: item.title,
+      summary: item.summary,
+      issueReference: item.issueIdentifier ?? item.issueId,
+      reviewLoop: item.reviewLoop,
+    })),
+    ...workbench.activeWork.map((item) => ({
+      title: item.title,
+      summary: item.summary,
+      issueReference: item.issueIdentifier ?? item.issueId,
+      reviewLoop: item.reviewLoop,
+    })),
+    ...workbench.decisionsNeeded.map((item) => ({
+      title: item.title,
+      summary: item.summary,
+      issueReference: item.issueIdentifier ?? item.issueId,
+      reviewLoop: item.reviewLoop,
+    })),
+    ...workbench.workStream.map((item) => ({
+      title: item.title,
+      summary: item.summary,
+      issueReference: item.issueIdentifier ?? item.issueId,
+      reviewLoop: item.reviewLoop,
+    })),
+  ];
+  const activeReviewLoopContexts = reviewLoopContexts.filter(
+    (context): context is {
+      title: string;
+      summary: string;
+      issueReference: string | null;
+      reviewLoop: DearMeOutputReviewLoop;
+    } =>
+      Boolean(context.reviewLoop),
+  );
+  const reviewLoops = activeReviewLoopContexts.map((context) => context.reviewLoop);
+  const staleLoopContexts = activeReviewLoopContexts.filter(
+    (context) =>
+      context.reviewLoop.state === "retry_limit_reached" ||
+      context.reviewLoop.attemptCount >= context.reviewLoop.maxAttempts,
+  );
   const staleLoopCount = reviewLoops.filter(
     (loop) => loop.state === "retry_limit_reached" || loop.attemptCount >= loop.maxAttempts,
   ).length;
+  const staleLoopSignal = staleLoopContexts.length > 0
+    ? staleLoopContexts
+      .slice(0, 2)
+      .map((context) => {
+        const path = `${customerProofPackSummary(context.title)}: ${customerProofPackSummary(context.summary)}`;
+        return `${path} (${context.reviewLoop.attemptCount}/${context.reviewLoop.maxAttempts} attempts)`;
+      })
+      .join("; ")
+    : "No stopped path";
+  const staleLoopWorkReference = staleLoopContexts.find((context) => context.issueReference)?.issueReference ?? null;
   const maxAttempts = reviewLoops.reduce((largest, loop) => Math.max(largest, loop.maxAttempts), 3);
   const spendCheckpointCount = workbench.recentProgress.filter(
     (item) => item.kind === "spend_checkpoint",
   ).length;
+  const latestSpendCheckpoint =
+    workbench.recentProgress.find((item) => item.kind === "spend_checkpoint") ?? null;
+  const latestLedgerEntry = workbench.runLedger[0] ?? null;
+  const supportDecisionSignal = decisionCount > 0
+    ? pluralizeCount(decisionCount, "waiting decision")
+    : "No waiting decisions";
+  const supportLatestContextReady = paidBetaActive && Boolean(latestLedgerEntry);
+  const supportWorkSignal = supportLatestContextReady && latestLedgerEntry
+    ? customerProofPackSummary(latestLedgerEntry.title)
+    : paidBetaActive
+      ? "First paid cycle ready"
+      : "Trial preview only";
+  const supportCostSignal = latestSpendCheckpoint
+    ? customerProofPackSummary(latestSpendCheckpoint.summary)
+    : "No spend checkpoint yet";
+  const visibleOutputCount =
+    workbench.workReady.length +
+    workbench.activeWork.length +
+    (workbench.report ? 1 : 0);
+  const opportunityProofCount = [...workbench.workReady, ...workbench.activeWork]
+    .filter(isOpportunityWorkItem).length;
+  const weeklyValueStatus = !paidBetaActive
+    ? "Ready after access"
+    : visibleOutputCount > 0
+      ? "On track"
+      : "Needs recovery";
+  const weeklyValueVariant: "default" | "secondary" = paidBetaActive && visibleOutputCount > 0
+    ? "default"
+    : "secondary";
+  const voiceConfidence = Math.round(workbench.memory.voiceProfile.confidence);
+  const accountHealthStatus = !paidBetaActive
+    ? "Ready after access"
+    : visibleOutputCount > 0 && voiceConfidence >= 50
+      ? "Healthy enough to retain"
+      : "Needs recovery";
+  const accountHealthVariant: "default" | "secondary" = paidBetaActive && visibleOutputCount > 0 && voiceConfidence >= 50
+    ? "default"
+    : "secondary";
+  const emptyWeekRecoveryActive = paidBetaActive && visibleOutputCount === 0;
+  const recoveryCandidate =
+    workbench.activeWork[0] ??
+    workbench.workStream.find((item) => item.kind === "work_in_motion") ??
+    workbench.workStream.find((item) => item.kind === "progress_recorded") ??
+    null;
+  const emptyWeekRecoveryStatus = !paidBetaActive
+    ? "Ready after access"
+    : emptyWeekRecoveryActive
+      ? "Recovery needed"
+      : "No empty week";
+  const emptyWeekRecoveryVariant: "default" | "secondary" | "outline" = emptyWeekRecoveryActive
+    ? "secondary"
+    : paidBetaActive
+      ? "outline"
+      : "secondary";
+  const retentionPulseStatus = !paidBetaActive
+    ? "Ready after access"
+    : emptyWeekRecoveryActive
+      ? "At risk"
+      : staleLoopCount > 0
+        ? "Needs direction"
+        : visibleOutputCount > 0 && voiceConfidence >= 50
+          ? "Retainable this week"
+          : "Watch closely";
+  const retentionPulseVariant: "default" | "secondary" | "outline" =
+    paidBetaActive && visibleOutputCount > 0 && voiceConfidence >= 50 && staleLoopCount === 0
+      ? "default"
+      : paidBetaActive
+        ? "secondary"
+        : "outline";
+  const retentionRiskReason = !paidBetaActive
+    ? "Paid beta access is not active yet."
+    : emptyWeekRecoveryActive
+      ? "No useful customer-visible output is ready this week."
+      : staleLoopCount > 0
+        ? "A repeated path needs clearer direction before more effort is spent."
+        : voiceConfidence < 50
+          ? "Voice confidence is below the paid-account health threshold."
+          : decisionCount > 0
+            ? "Launch calls are waiting, so customer value depends on the next review."
+            : "Useful work, voice fit, and operating receipts are visible.";
+  const retentionOwnerSignal = !paidBetaActive
+    ? "Sales"
+    : emptyWeekRecoveryActive
+      ? "Recovery"
+      : staleLoopCount > 0
+        ? "Support"
+        : decisionCount > 0
+          ? "Customer call"
+          : "DearMe";
+  const supportFollowUpSignal = !paidBetaActive
+    ? "After access"
+    : emptyWeekRecoveryActive
+      ? "Same-day make-good"
+      : staleLoopCount > 0
+        ? "Before another pass"
+        : decisionCount > 0
+          ? "Before launch call"
+          : "Next check-in";
+  const supportFollowUpText = !paidBetaActive
+    ? "Follow up after paid beta access is recorded."
+    : emptyWeekRecoveryActive
+      ? "Same-day make-good before the next customer check-in."
+      : staleLoopCount > 0
+        ? "Before another pass, hand support the stuck path and clearer direction before more effort."
+        : decisionCount > 0
+          ? "Before the launch call, help the customer choose launch, revise, pause, or another pass."
+          : "Keep a customer-safe note ready for the next paid-account check-in.";
+  const retentionPulseItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "customer-value",
+      icon: CheckCircle2,
+      label: "Customer value",
+      signal: paidBetaActive
+        ? visibleOutputCount > 0
+          ? `${visibleOutputCount} visible`
+          : "No output yet"
+        : "Access first",
+      summary: visibleOutputCount > 0
+        ? "The account has customer-visible drafts, work, or report value for the next check-in."
+        : "Recovery should create one useful item before this account is treated as healthy.",
+      variant: paidBetaActive && visibleOutputCount > 0 ? "default" : "secondary",
+    },
+    {
+      key: "voice-risk",
+      icon: Sparkles,
+      label: "Voice risk",
+      signal: `Voice ${voiceConfidence}%`,
+      summary: voiceConfidence >= 50
+        ? "Voice & Memory is strong enough for paid-account review, and still keeps learning from corrections."
+        : "Add stronger Voice & Memory before this account relies on generated work.",
+      variant: voiceConfidence >= 50 ? "default" : "secondary",
+    },
+    {
+      key: "review-risk",
+      icon: ShieldCheck,
+      label: "Review risk",
+      signal: decisionCount > 0 ? pluralizeCount(decisionCount, "call") : "No call waiting",
+      summary: decisionCount > 0
+        ? "Customer value is prepared, but the launch boundary still needs a clear call."
+        : "No public, outbound, spend, or page-changing move is waiting on the customer right now.",
+      variant: decisionCount > 0 ? "secondary" : "outline",
+    },
+    {
+      key: "risk-owner",
+      icon: LifeBuoy,
+      label: "Risk owner",
+      signal: retentionOwnerSignal,
+      summary: retentionRiskReason,
+      variant: emptyWeekRecoveryActive || staleLoopCount > 0 ? "secondary" : "outline",
+    },
+  ];
+  const retentionPulseText = [
+    "DearMe paid retention pulse",
+    `Status: ${retentionPulseStatus}`,
+    `Customer value: ${retentionPulseItems[0]?.signal ?? "Access first"} - ${retentionPulseItems[0]?.summary ?? "Recovery should create one useful item before this account is treated as healthy."}`,
+    `Voice risk: ${retentionPulseItems[1]?.signal ?? `Voice ${voiceConfidence}%`} - ${retentionPulseItems[1]?.summary ?? "Add stronger Voice & Memory before this account relies on generated work."}`,
+    `Review risk: ${retentionPulseItems[2]?.signal ?? "No call waiting"} - ${retentionPulseItems[2]?.summary ?? "No public, outbound, spend, or page-changing move is waiting on the customer right now."}`,
+    `Retention owner: ${retentionOwnerSignal}`,
+    `Risk reason: ${retentionRiskReason}`,
+    `Next support step: ${supportFollowUpText}`,
+    emptyWeekRecoveryActive
+      ? "Action: open same-day recovery before the next customer check-in."
+      : staleLoopCount > 0
+        ? "Action: open the stuck work or support handoff before another repeated path spends more effort."
+        : "Action: keep the next paid-account check-in note ready.",
+    "Boundary: DearMe can keep preparing private work; public sends, launches, spend, account changes, and irreversible moves still wait for the final call.",
+  ].join("\n");
+  const downloadRetentionPulseReceipt = useCallback(() => {
+    downloadDearMeReceipt(retentionPulseText, DEARME_PAID_RETENTION_PULSE_RECEIPT_FILENAME);
+  }, [retentionPulseText]);
+  const supportHandoffLines = [
+    "DearMe support handoff",
+    `Account: ${paidBetaActive ? "Paid beta active" : "Waiting for paid beta access"}`,
+    `Latest work: ${supportWorkSignal}`,
+    `Decisions: ${supportDecisionSignal}`,
+    `Recovery: ${staleLoopCount > 0 ? "Needs clearer direction before another pass" : "Self-correcting paths are within limits"}`,
+    `Stuck path: ${staleLoopSignal}`,
+    `Cost: ${supportCostSignal}`,
+    `Follow-up: ${supportFollowUpText}`,
+    "Boundary: no public send, launch, spend, account change, or irreversible move without the final call.",
+  ];
+  const supportHandoffText = supportHandoffLines.join("\n");
+  const downloadSupportHandoffReceipt = useCallback(() => {
+    downloadDearMeReceipt(supportHandoffText, DEARME_SUPPORT_HANDOFF_RECEIPT_FILENAME);
+  }, [supportHandoffText]);
+  const supportHandoffActionDisabled = !paidBetaActive || supportHandoffPending;
   const policyLabel = !paidBetaActive
-    ? "Private work locked"
+    ? "Brand work locked"
     : decisionCount > 0
-      ? "Waiting on your call"
+      ? "Launch call ready"
       : staleLoopCount > 0
         ? "Needs clearer direction"
-        : "Private work can continue";
+        : "Team can continue";
   const policyTitle = !paidBetaActive
-    ? "Private work starts after paid beta access is active."
+    ? "Brand work starts after paid beta access is active."
     : decisionCount > 0
-      ? "Private work can continue, but external moves wait for you."
+      ? "The team can continue, and external moves stay behind your call."
       : staleLoopCount > 0
         ? "The team stops repeated paths and asks for better direction."
-        : "The team can keep preparing private work inside your guardrails.";
+        : "The team can keep preparing brand work inside your guardrails.";
   const readinessItems: Array<{
     key: string;
     icon: LucideIcon;
@@ -4885,11 +5985,11 @@ function TeamOperatingPolicyPanel({
     {
       key: "private-proof",
       icon: CheckCircle2,
-      label: "Private cycle",
+      label: "Brand cycle",
       signal: paidBetaActive ? "Usable now" : "Paid beta needed",
       summary: paidBetaActive
         ? "DearMe can keep drafting, scouting, reporting, and packaging proof while you work."
-        : "Activate paid beta before the private team starts moving.",
+        : "Activate paid beta before the brand team starts moving.",
       variant: paidBetaActive ? "default" : "secondary",
     },
     {
@@ -4907,9 +6007,620 @@ function TeamOperatingPolicyPanel({
       label: "Next best step",
       signal: decisionCount > 0 ? "Review call" : "Keep moving",
       summary: decisionCount > 0
-        ? "Open the waiting launch call; approve, revise, pause, or ask for another private pass from one place."
-        : "Let the team prepare the next private proof pack until a launch call is actually needed.",
+        ? "Open the waiting launch call; launch, revise, pause, or ask for another pass from one place."
+        : "Let the team prepare the next proof pack until a launch call is actually needed.",
       variant: decisionCount > 0 ? "default" : "outline",
+    },
+  ];
+  const launchReadinessNextStep = !paidBetaActive
+    ? "Open paid beta access before starting new brand-team cycles."
+    : decisionCount > 0
+      ? "Open the waiting launch call; choose launch, revise, pause, or another pass before anything represents the customer."
+      : "Keep the brand team preparing the next proof pack until a real launch call is needed.";
+  const launchReadinessText = [
+    "DearMe launch readiness receipt",
+    `Status: ${paidBetaActive ? "Private brand cycle can run" : "Paid beta access needed"}`,
+    `Brand cycle: ${readinessItems[0]?.signal ?? "Paid beta needed"} - ${
+      readinessItems[0]?.summary ?? "Activate paid beta before the brand team starts moving."
+    }`,
+    `Public launch: ${readinessItems[1]?.signal ?? "Not ready yet"} - ${
+      readinessItems[1]?.summary ??
+      "Public posts, outbound messages, page changes, and spend still need live channel receipts plus your launch call."
+    }`,
+    `Next best step: ${readinessItems[2]?.signal ?? "Keep moving"} - ${
+      readinessItems[2]?.summary ??
+      "Let the team prepare the next proof pack until a launch call is actually needed."
+    }`,
+    `Waiting launch calls: ${decisionCount}`,
+    `Next support step: ${launchReadinessNextStep}`,
+    "Can keep moving now: private drafts, opportunity research, proof packaging, reports, Voice & Memory, and review preparation.",
+    "Must wait: public posts, outbound messages, page changes, spend, live proof, account authorization, and irreversible moves.",
+    "Boundary: DearMe keeps private brand work moving; public launch remains a launch call backed by verified receipts.",
+  ].join("\n");
+  const downloadLaunchReadinessReceipt = useCallback(() => {
+    downloadDearMeReceipt(launchReadinessText, DEARME_LAUNCH_READINESS_RECEIPT_FILENAME);
+  }, [launchReadinessText]);
+  const commercialItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "private-beta-sale",
+      icon: CreditCard,
+      label: "Private beta sale",
+      signal: paidBetaActive ? "Paid user active" : "Ready to sell",
+      summary: paidBetaActive
+        ? "Paid access is recorded, so this user can receive brand-team work inside the current guardrails."
+        : "DearMe can be sold as a manual private beta: record paid access, then start the first brand cycle.",
+      variant: paidBetaActive ? "default" : "outline",
+    },
+    {
+      key: "paid-user-ops",
+      icon: Workflow,
+      label: "Paid user support",
+      signal: paidBetaActive ? "Operating" : "Access first",
+      summary: paidBetaActive
+        ? "Drafts, opportunities, reports, Voice & Memory, and launch calls can keep moving for this account."
+        : "The operating path is ready, but this account waits for paid beta access before new work cycles run.",
+      variant: paidBetaActive ? "default" : "secondary",
+    },
+    {
+      key: "public-launch-proof",
+      icon: ShieldCheck,
+      label: "Public launch proof",
+      signal: "Receipts needed",
+      summary:
+        "Do not claim broad launch readiness until approved delivery details and guarded live receipts are verified.",
+      variant: "secondary",
+    },
+  ];
+  const commercialReadinessNextStep = paidBetaActive
+    ? "Keep operating the paid beta account, then use the launch-proof handoff only after the route and recipients are approved."
+    : "Sell private beta, record paid access from the receipt, then start the first brand cycle.";
+  const commercialReadinessText = [
+    "DearMe commercial readiness receipt",
+    `Status: ${paidBetaActive ? "Paid private beta operating" : "Private beta ready to sell"}`,
+    `Private beta sale: ${commercialItems[0]?.signal ?? "Ready to sell"} - ${
+      commercialItems[0]?.summary ??
+      "DearMe can be sold as a manual private beta: record paid access, then start the first brand cycle."
+    }`,
+    `Paid user support: ${commercialItems[1]?.signal ?? "Access first"} - ${
+      commercialItems[1]?.summary ??
+      "The operating path is ready, but this account waits for paid beta access before new work cycles run."
+    }`,
+    `Public launch proof: ${commercialItems[2]?.signal ?? "Receipts needed"} - ${
+      commercialItems[2]?.summary ??
+      "Do not claim broad launch readiness until approved delivery details and guarded live receipts are verified."
+    }`,
+    "Can sell now: private beta with manual access, visible guardrails, support handoff, and launch-call boundaries.",
+    "Can operate now: paid-account work, weekly value, recovery, Voice & Memory, review calls, and private preparation after access opens.",
+    "Cannot claim yet: broad public launch until live delivery receipts and approved first recipients are verified.",
+    `Next support step: ${commercialReadinessNextStep}`,
+    "Boundary: paid beta work can keep moving privately; public posts, outbound messages, page changes, spend, live proof, and irreversible moves wait for the launch call.",
+  ].join("\n");
+  const downloadCommercialReadinessReceipt = useCallback(() => {
+    downloadDearMeReceipt(commercialReadinessText, DEARME_COMMERCIAL_READINESS_RECEIPT_FILENAME);
+  }, [commercialReadinessText]);
+  const paidCohortAttentionCount = paidBetaCohort?.attentionAccounts.length ?? 0;
+  const paidCohortAttention = paidBetaCohort?.attentionAccounts[0] ?? null;
+  const paidCohortAttentionAccounts = paidBetaCohort?.attentionAccounts.slice(0, 4) ?? [];
+  const paidCohortStatus = !paidBetaActive
+    ? "Ready after access"
+    : paidBetaCohortLoading
+      ? "Checking"
+      : paidBetaCohortError
+        ? "Needs refresh"
+        : paidBetaCohort?.label ?? "Checking";
+  const paidCohortVariant: "default" | "secondary" | "outline" =
+    paidBetaActive && paidBetaCohort?.state === "operable"
+      ? "default"
+      : paidBetaActive
+        ? "secondary"
+        : "outline";
+  const paidCohortGuardrailSignal = paidBetaCohort
+    ? paidBetaCohort.hardStopAccountCount > 0
+      ? pluralizeCount(paidBetaCohort.hardStopAccountCount, "paused account")
+      : paidBetaCohort.warningAccountCount > 0
+        ? pluralizeCount(paidBetaCohort.warningAccountCount, "watch account")
+        : "Clear"
+    : paidBetaActive
+      ? "Checking"
+      : "Access first";
+  const paidCohortItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "accounts",
+      icon: Users,
+      label: "Accounts",
+      signal: paidBetaCohort
+        ? `${paidBetaCohort.activeAccountCount}/${paidBetaCohort.accountCount} active`
+        : paidBetaActive
+          ? "Checking"
+          : "Access first",
+      summary: paidBetaCohort
+        ? customerProofPackSummary(paidBetaCohort.summary)
+        : "Paid-account health appears here after access is active.",
+      variant: paidBetaCohort && paidBetaCohort.activeAccountCount === paidBetaCohort.accountCount
+        ? "default"
+        : paidBetaActive
+          ? "secondary"
+          : "outline",
+    },
+    {
+      key: "credit",
+      icon: CircleDollarSign,
+      label: "Credit",
+      signal: paidBetaCohort
+        ? money(paidBetaCohort.remainingCreditCents)
+        : paidBetaActive
+          ? "Checking"
+          : "Access first",
+      summary: paidBetaCohort
+        ? `Current-cycle spend is ${money(paidBetaCohort.cycleSpendCents)} against ${money(paidBetaCohort.cycleBudgetCents)} in operating budget.`
+        : "Remaining paid credit is checked before new paid cycles run.",
+      variant: paidBetaCohort && paidBetaCohort.remainingCreditCents > 0 ? "default" : "outline",
+    },
+    {
+      key: "guardrails",
+      icon: Gauge,
+      label: "Guardrails",
+      signal: paidCohortGuardrailSignal,
+      summary: paidBetaCohort
+        ? customerProofPackSummary(paidBetaCohort.nextAction)
+        : "DearMe checks paused, near-limit, and decision-needed accounts before more work runs.",
+      variant: paidBetaCohort && paidBetaCohort.hardStopAccountCount + paidBetaCohort.warningAccountCount === 0
+        ? "default"
+        : paidBetaActive
+          ? "secondary"
+          : "outline",
+    },
+    {
+      key: "attention",
+      icon: LifeBuoy,
+      label: "Attention",
+      signal: paidCohortAttentionCount > 0 ? `${paidCohortAttentionCount} attention` : "None",
+      summary: paidCohortAttention
+        ? customerProofPackSummary(paidCohortAttention.nextAction)
+        : paidBetaCohortError
+          ? paidBetaCohortError
+          : "No paid account needs activation or spend review right now.",
+      variant: paidCohortAttentionCount > 0 || paidBetaCohortError ? "secondary" : "outline",
+    },
+  ];
+  const paidCohortHealthText = [
+    "DearMe paid cohort health receipt",
+    `Status: ${paidCohortStatus}`,
+    `Accounts: ${paidCohortItems[0]?.signal ?? "Access first"} - ${paidCohortItems[0]?.summary ?? "Paid-account health appears here after access is active."}`,
+    `Credit: ${paidCohortItems[1]?.signal ?? "Access first"} - ${paidCohortItems[1]?.summary ?? "Remaining paid credit is checked before new paid cycles run."}`,
+    `Guardrails: ${paidCohortItems[2]?.signal ?? "Access first"} - ${paidCohortItems[2]?.summary ?? "DearMe checks paused, near-limit, and decision-needed accounts before more work runs."}`,
+    `Attention: ${paidCohortItems[3]?.signal ?? "None"} - ${paidCohortItems[3]?.summary ?? "No paid account needs activation or spend review right now."}`,
+    ...paidCohortAttentionAccounts.map((account) =>
+      `Attention account: ${paidBetaCohortCompanyName(paidBetaCohortCompanyNames, account.companyId)} - ${account.label}: ${customerProofPackSummary(account.nextAction)}`,
+    ),
+    "Boundary: paid operations can continue only while access, credit, guardrails, and attention accounts stay clear; public sends, launches, spend-sensitive moves, and irreversible changes still need the final call.",
+  ].join("\n");
+  const downloadPaidCohortHealthReceipt = useCallback(() => {
+    downloadDearMeReceipt(paidCohortHealthText, DEARME_PAID_COHORT_HEALTH_RECEIPT_FILENAME);
+  }, [paidCohortHealthText]);
+  const weeklyValueItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "useful-outputs",
+      icon: CheckCircle2,
+      label: "Useful outputs",
+      signal: paidBetaActive
+        ? visibleOutputCount > 0
+          ? `${visibleOutputCount} visible`
+          : "No output yet"
+        : "Opens after access",
+      summary: paidBetaActive
+        ? "Drafts, opportunities, proof, and reports stay visible so the week cannot feel empty."
+        : "The weekly value loop is shaped, but new paid work starts after access is recorded.",
+      variant: paidBetaActive && visibleOutputCount > 0 ? "default" : "secondary",
+    },
+    {
+      key: "weekly-report",
+      icon: FileText,
+      label: "Weekly report",
+      signal: workbench.report ? "Briefing ready" : "First briefing pending",
+      summary: workbench.report
+        ? customerProofPackSummary(workbench.report.summary)
+        : "DearMe writes the next report once the brand team has useful work to recap.",
+      variant: workbench.report ? "default" : "outline",
+    },
+    {
+      key: "opportunity-proof",
+      icon: Telescope,
+      label: "Opportunity and proof",
+      signal: opportunityProofCount > 0
+        ? pluralizeCount(opportunityProofCount, "path")
+        : pluralizeCount(workbench.memory.sourceCount, "source"),
+      summary: workbench.memory.sourceCount > 0
+        ? "Saved proof and opportunity work are available for the next launch-ready pass."
+        : "DearMe needs proof sources before it can make stronger opportunity and portfolio moves.",
+      variant: opportunityProofCount > 0 || workbench.memory.sourceCount > 0 ? "default" : "outline",
+    },
+    {
+      key: "empty-week-recovery",
+      icon: LifeBuoy,
+      label: "Empty-week recovery",
+      signal: paidBetaActive && visibleOutputCount === 0 ? "Needs support" : "Covered",
+      summary:
+        "If a paid week has no useful deliverable, DearMe should surface recovery instead of pretending the cycle worked.",
+      variant: paidBetaActive && visibleOutputCount === 0 ? "secondary" : "outline",
+    },
+  ];
+  const weeklyValueReadyWork = workbench.workReady
+    .slice(0, 3)
+    .map((item) => `${customerProofPackSummary(item.title)} - ${customerProofPackSummary(item.summary)}`);
+  const weeklyValueActiveWork = workbench.activeWork
+    .slice(0, 3)
+    .map((item) => `${customerProofPackSummary(item.title)} - ${customerProofPackSummary(item.summary)}`);
+  const weeklyValueReceiptText = [
+    "DearMe weekly value receipt",
+    `Status: ${weeklyValueStatus}`,
+    `Visible useful outputs: ${visibleOutputCount}`,
+    workbench.report
+      ? `Report: ${customerProofPackSummary(workbench.report.title)} - ${customerProofPackSummary(workbench.report.summary)}`
+      : "Report: The first Dear me report appears after the brand team has useful work to recap.",
+    `Ready work: ${weeklyValueReadyWork.length > 0 ? weeklyValueReadyWork.join("; ") : "No review-ready work yet."}`,
+    `Active work: ${weeklyValueActiveWork.length > 0 ? weeklyValueActiveWork.join("; ") : "No active work yet."}`,
+    `Voice & Memory: ${customerProofPackSummary(workbench.memory.summary)} Voice ${voiceConfidence}%.`,
+    `Decisions: ${supportDecisionSignal}`,
+    emptyWeekRecoveryActive
+      ? "Recovery: this paid week needs one useful output and a plain customer update before it is healthy."
+      : "Recovery: the week has visible useful work; recovery stays ready if the next cycle goes quiet.",
+    `Next support step: ${supportFollowUpText}`,
+    "Boundary: DearMe can keep preparing private work; public sends, launches, spend, account changes, and irreversible moves still wait for the final call.",
+  ].join("\n");
+  const downloadWeeklyValueReceipt = useCallback(() => {
+    downloadDearMeReceipt(weeklyValueReceiptText, DEARME_WEEKLY_VALUE_RECEIPT_FILENAME);
+  }, [weeklyValueReceiptText]);
+  const accountHealthItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "outcome-target",
+      icon: Gauge,
+      label: "Outcome target",
+      signal: paidBetaActive
+        ? visibleOutputCount > 0
+          ? "Useful work visible"
+          : "Needs useful work"
+        : "Opens after access",
+      summary:
+        "Target: at least one voice-matched growth output ready for the customer's call each week.",
+      variant: paidBetaActive && visibleOutputCount > 0 ? "default" : "secondary",
+    },
+    {
+      key: "voice-fit",
+      icon: Sparkles,
+      label: "Voice fit",
+      signal: `Voice ${voiceConfidence}%`,
+      summary: customerProofPackSummary(workbench.memory.voiceProfile.guidance),
+      variant: voiceConfidence >= 50 ? "default" : "secondary",
+    },
+    {
+      key: "launch-progress",
+      icon: ShieldCheck,
+      label: "Launch progress",
+      signal: decisionCount > 0 ? pluralizeCount(decisionCount, "call") : "No call waiting",
+      summary:
+        "Approved public moves still wait for the launch call; internal prep can continue.",
+      variant: decisionCount > 0 ? "secondary" : "outline",
+    },
+    {
+      key: "cost-clarity",
+      icon: CircleDollarSign,
+      label: "Cost clarity",
+      signal: latestSpendCheckpoint ? "Spend visible" : "No spend yet",
+      summary: latestSpendCheckpoint
+        ? customerProofPackSummary(latestSpendCheckpoint.summary)
+        : "Brand work can continue until a move would spend money or cross the monthly guardrail.",
+      variant: latestSpendCheckpoint ? "secondary" : "outline",
+    },
+  ];
+  const paidAccountHealthText = [
+    "DearMe paid account health receipt",
+    `Status: ${accountHealthStatus}`,
+    `Outcome target: ${accountHealthItems[0]?.signal ?? "Opens after access"} - ${accountHealthItems[0]?.summary ?? "Target: at least one voice-matched growth output ready for the customer's call each week."}`,
+    `Voice fit: ${accountHealthItems[1]?.signal ?? `Voice ${voiceConfidence}%`} - ${accountHealthItems[1]?.summary ?? customerProofPackSummary(workbench.memory.voiceProfile.guidance)}`,
+    `Launch progress: ${accountHealthItems[2]?.signal ?? "No call waiting"} - ${accountHealthItems[2]?.summary ?? "Approved public moves still wait for the launch call; internal prep can continue."}`,
+    `Cost clarity: ${accountHealthItems[3]?.signal ?? "No spend yet"} - ${accountHealthItems[3]?.summary ?? "Brand work can continue until a move would spend money or cross the monthly guardrail."}`,
+    `Retention owner: ${retentionOwnerSignal}`,
+    `Next support step: ${supportFollowUpText}`,
+    "Boundary: DearMe can prepare private growth work, but public sends, launches, spend, account changes, and irreversible moves still wait for the final call.",
+  ].join("\n");
+  const downloadPaidAccountHealthReceipt = useCallback(() => {
+    downloadDearMeReceipt(paidAccountHealthText, DEARME_PAID_ACCOUNT_HEALTH_RECEIPT_FILENAME);
+  }, [paidAccountHealthText]);
+  const emptyWeekRecoveryItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "useful-deliverable",
+      icon: CheckCircle2,
+      label: "Useful deliverable",
+      signal: emptyWeekRecoveryActive
+        ? "Start recovery"
+        : paidBetaActive
+          ? "Covered"
+          : "Opens after access",
+      summary: emptyWeekRecoveryActive
+        ? "Create or refresh one voice-matched content, opportunity, portfolio, or report item before the week is treated as healthy."
+        : "The account already has visible useful work, so empty-week recovery is standing by instead of interrupting the cycle.",
+      variant: emptyWeekRecoveryActive ? "secondary" : "outline",
+    },
+    {
+      key: "fastest-path",
+      icon: ArrowRight,
+      label: "Fastest path",
+      signal: recoveryCandidate ? customerProofPackSummary(recoveryCandidate.title) : "Use saved proof",
+      summary: recoveryCandidate
+        ? customerProofPackSummary(recoveryCandidate.summary)
+        : customerProofPackSummary(workbench.memory.sourcePlan.summary),
+      variant: emptyWeekRecoveryActive ? "default" : "outline",
+    },
+    {
+      key: "customer-update",
+      icon: MessageSquare,
+      label: "Customer update",
+      signal: emptyWeekRecoveryActive ? "Explain the miss" : "No miss",
+      summary: emptyWeekRecoveryActive
+        ? "Tell the customer what is being recovered, what will be ready next, and what still needs their launch call."
+        : "Keep the outcome receipt visible so the customer sees what changed before the next check-in.",
+      variant: emptyWeekRecoveryActive ? "secondary" : "outline",
+    },
+    {
+      key: "support-escalation",
+      icon: LifeBuoy,
+      label: "Escalation",
+      signal: emptyWeekRecoveryActive ? "Human support" : "Autonomous",
+      summary: emptyWeekRecoveryActive
+        ? "If recovery cannot produce one useful item, support steps in with a plain account handoff."
+        : "Human support stays reserved for account access, launch, spend, or irreversible calls.",
+      variant: emptyWeekRecoveryActive ? "secondary" : "outline",
+    },
+  ];
+  const emptyWeekRecoveryText = [
+    "DearMe empty-week recovery brief",
+    `Account: ${paidBetaActive ? "Paid beta active" : "Waiting for paid beta access"}`,
+    `Visible useful outputs: ${visibleOutputCount}`,
+    `Fastest recovery path: ${
+      recoveryCandidate
+        ? `${customerProofPackSummary(recoveryCandidate.title)} - ${customerProofPackSummary(recoveryCandidate.summary)}`
+        : customerProofPackSummary(workbench.memory.sourcePlan.summary)
+    }`,
+    `Voice confidence: ${voiceConfidence}%`,
+    "Goal: create or refresh one voice-matched content, opportunity, portfolio, or report item before this week is treated as healthy.",
+    "Customer update: explain what is being recovered, what will be ready next, and what still needs the launch call.",
+    "Follow-up: Same-day make-good before the next customer check-in.",
+    "Boundary: no public send, launch, spend, account change, or irreversible move without the final call.",
+  ].join("\n");
+  const downloadEmptyWeekRecoveryReceipt = useCallback(() => {
+    downloadDearMeReceipt(emptyWeekRecoveryText, DEARME_EMPTY_WEEK_RECOVERY_RECEIPT_FILENAME);
+  }, [emptyWeekRecoveryText]);
+  const emptyWeekRecoveryActionDisabled = !emptyWeekRecoveryActive || emptyWeekRecoveryPending;
+  const operationsActionActive = paidBetaActive && (emptyWeekRecoveryActive || staleLoopCount > 0);
+  const operationsReceiptItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "operating-log",
+      icon: Gauge,
+      label: "Operating log",
+      signal: workbench.runLedger.length > 0
+        ? pluralizeCount(workbench.runLedger.length, "entry", "entries")
+        : "No entries yet",
+      summary: latestLedgerEntry
+        ? `${customerProofPackSummary(latestLedgerEntry.title)}: ${customerProofPackSummary(latestLedgerEntry.nextAction)}`
+        : "DearMe will record moved work, prepared work, learning, skips, and launch calls here as cycles run.",
+      variant: workbench.runLedger.length > 0 ? "default" : "outline",
+    },
+    {
+      key: "recovery-path",
+      icon: RefreshCw,
+      label: "Recovery path",
+      signal: staleLoopCount > 0 ? "Needs direction" : "Self-correcting",
+      summary: staleLoopCount > 0
+        ? "A repeated path is stopped and brought back for clearer direction before more effort is spent."
+        : "Repeated paths stay capped; DearMe keeps preparing what it can and asks only when a better direction is needed.",
+      variant: staleLoopCount > 0 ? "secondary" : "outline",
+    },
+    {
+      key: "cost-recovery",
+      icon: CircleDollarSign,
+      label: "Cost guardrail",
+      signal: spendCheckpointCount > 0 ? pluralizeCount(spendCheckpointCount, "checkpoint") : "No spend yet",
+      summary: latestSpendCheckpoint
+        ? customerProofPackSummary(latestSpendCheckpoint.summary)
+        : "Brand work can continue until a move would spend money or cross the monthly guardrail.",
+      variant: spendCheckpointCount > 0 ? "secondary" : "outline",
+    },
+    {
+      key: "human-support",
+      icon: LifeBuoy,
+      label: "Human support",
+      signal: paidBetaActive ? "Hard calls only" : "Ready after access",
+      summary:
+        "Human support steps in for real sends, public launches, account authorization, new spend, legal/privacy calls, brand judgment, or irreversible moves.",
+      variant: paidBetaActive ? "default" : "secondary",
+    },
+  ];
+  const paidUserOperationsNextStep = emptyWeekRecoveryActive
+    ? "Open same-day recovery, then hand support the account context if one useful item cannot be prepared."
+    : staleLoopCount > 0
+      ? `Open the support handoff before another repeated path spends more effort: ${staleLoopSignal}.`
+      : paidBetaActive
+        ? "Keep the weekly operating loop moving and review account health before the next paid check-in."
+        : "Record paid access before treating this as an operating paid account.";
+  const paidUserOperationsReceiptText = [
+    "DearMe paid user operations receipt",
+    `Account: ${paidBetaActive ? "Supportable account" : "Ready after paid access"}`,
+    `Operating log: ${operationsReceiptItems[0]?.signal ?? "No entries yet"} - ${
+      operationsReceiptItems[0]?.summary ??
+      "DearMe will record moved work, prepared work, learning, skips, and launch calls here as cycles run."
+    }`,
+    `Recovery path: ${operationsReceiptItems[1]?.signal ?? "Self-correcting"} - ${
+      operationsReceiptItems[1]?.summary ??
+      "Repeated paths stay capped; DearMe keeps preparing what it can and asks only when a better direction is needed."
+    }`,
+    `Cost guardrail: ${operationsReceiptItems[2]?.signal ?? "No spend yet"} - ${
+      operationsReceiptItems[2]?.summary ??
+      "Brand work can continue until a move would spend money or cross the monthly guardrail."
+    }`,
+    `Human support: ${operationsReceiptItems[3]?.signal ?? "Ready after access"} - ${
+      operationsReceiptItems[3]?.summary ??
+      "Human support steps in for real sends, public launches, account authorization, new spend, legal/privacy calls, brand judgment, or irreversible moves."
+    }`,
+    `Next support step: ${paidUserOperationsNextStep}`,
+    "Boundary: DearMe can keep preparing, learning, reporting, recovering, and routing support privately; real sends, public launches, account authorization, new spend, legal/privacy calls, brand judgment, and irreversible moves still wait for the final call.",
+  ].join("\n");
+  const downloadPaidUserOperationsReceipt = useCallback(() => {
+    downloadDearMeReceipt(paidUserOperationsReceiptText, DEARME_PAID_USER_OPERATIONS_RECEIPT_FILENAME);
+  }, [paidUserOperationsReceiptText]);
+  const autonomyContractStatus = !paidBetaActive
+    ? "Ready after access"
+    : decisionCount > 0
+      ? "External calls held"
+      : "Team can work";
+  const autonomyContractVariant: "default" | "secondary" | "outline" = paidBetaActive && decisionCount === 0
+    ? "default"
+    : paidBetaActive
+      ? "secondary"
+      : "outline";
+  const autonomyContractItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "read-only-research",
+      icon: Telescope,
+      label: "Read-only research",
+      signal: paidBetaActive ? "Runs freely" : "Starts after access",
+      summary:
+        "DearMe can inspect saved profile, proof, memory, reports, and account receipts without asking for another call.",
+      variant: paidBetaActive ? "default" : "secondary",
+    },
+    {
+      key: "private-prep",
+      icon: Workflow,
+      label: "Team preparation",
+      signal: paidBetaActive ? "Can run together" : "Access first",
+      summary:
+        "Drafts, opportunity research, portfolio updates, report prep, Voice & Memory, and review prep can move at the same time while they stay private.",
+      variant: paidBetaActive ? "default" : "secondary",
+    },
+    {
+      key: "launch-actions",
+      icon: ShieldCheck,
+      label: "Launch actions",
+      signal: decisionCount > 0 ? pluralizeCount(decisionCount, "call") : "Needs your call",
+      summary:
+        "Posting, outreach, page changes, account authorization, spend, and public proof stay behind the launch call.",
+      variant: decisionCount > 0 ? "secondary" : "outline",
+    },
+    {
+      key: "recovery-support",
+      icon: LifeBuoy,
+      label: "Recovery and support",
+      signal: staleLoopCount > 0 ? "Needs support" : "Escalates only when needed",
+      summary:
+        "Repeated failures, account access, credentials, legal/privacy judgment, brand calls, and irreversible moves come back to human support.",
+      variant: staleLoopCount > 0 ? "secondary" : "outline",
+    },
+  ];
+  const autonomyContractText = [
+    "DearMe autonomy contract",
+    `Account: ${paidBetaActive ? "paid beta active" : "waiting for paid beta access"}`,
+    "Can keep moving: research, drafts, opportunity prep, portfolio proof, reports, Voice & Memory, retry planning.",
+    "Can run at the same time: independent research, review prep, proof packaging, and report preparation when they stay private.",
+    "Must ask first: public posts, outreach, page changes, account authorization, new spend, legal/privacy judgment, brand calls, or irreversible moves.",
+    "Recovery: if a path repeats failures or a paid week has no useful deliverable, DearMe surfaces recovery or support handoff.",
+  ].join("\n");
+  const downloadAutonomyContractReceipt = useCallback(() => {
+    downloadDearMeReceipt(autonomyContractText, DEARME_AUTONOMY_CONTRACT_RECEIPT_FILENAME);
+  }, [autonomyContractText]);
+  const supportHandoffItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "account-state",
+      icon: CreditCard,
+      label: "Account state",
+      signal: paidBetaActive ? "Paid beta active" : "Access first",
+      summary: paidBetaActive
+        ? "Support can treat this as an operating paid beta account."
+        : "Take payment and record access before treating this as a paid support case.",
+      variant: paidBetaActive ? "default" : "secondary",
+    },
+    {
+      key: "latest-context",
+      icon: FileText,
+      label: "Latest context",
+      signal: supportLatestContextReady ? "Attached" : "Starter context",
+      summary: supportLatestContextReady && latestLedgerEntry
+        ? `${supportWorkSignal}: ${customerProofPackSummary(latestLedgerEntry.nextAction)}`
+        : "DearMe will attach the first brand cycle once paid access starts.",
+      variant: supportLatestContextReady ? "default" : "outline",
+    },
+    {
+      key: "decision-state",
+      icon: ShieldCheck,
+      label: "Decision state",
+      signal: supportDecisionSignal,
+      summary: decisionCount > 0
+        ? "Support should help the customer choose launch, revise, pause, or another pass."
+        : "Support can focus on account access, direction, or the next brand-work request.",
+      variant: decisionCount > 0 ? "secondary" : "outline",
+    },
+    {
+      key: "follow-up",
+      icon: RefreshCw,
+      label: "Follow-up",
+      signal: supportFollowUpSignal,
+      summary: supportFollowUpText,
+      variant: emptyWeekRecoveryActive || staleLoopCount > 0 ? "secondary" : paidBetaActive ? "default" : "outline",
     },
   ];
   const rules: Array<{
@@ -4923,10 +6634,10 @@ function TeamOperatingPolicyPanel({
     {
       key: "private-work",
       icon: Workflow,
-      label: "Can work privately",
+      label: "Can keep moving",
       summary: paidBetaActive
         ? "Drafts, lead research, proof packaging, and memory updates can move forward without changing your public surface."
-        : "Paid beta access unlocks private preparation before the team starts new cycles.",
+        : "Paid beta access unlocks brand-team preparation before the team starts new cycles.",
       signal: paidBetaActive ? "Allowed" : "Locked",
       variant: paidBetaActive ? "default" : "secondary",
     },
@@ -4954,7 +6665,7 @@ function TeamOperatingPolicyPanel({
       icon: CircleDollarSign,
       label: "Spend is visible",
       summary:
-        "Private spend appears as plain checkpoints and monthly guardrails; billing details stay backstage.",
+        "Spend appears as plain checkpoints and monthly guardrails; billing details stay backstage.",
       signal: spendCheckpointCount > 0 ? pluralizeCount(spendCheckpointCount, "checkpoint") : "No spend yet",
       variant: spendCheckpointCount > 0 ? "secondary" : "outline",
     },
@@ -4966,7 +6677,7 @@ function TeamOperatingPolicyPanel({
         icon={ShieldCheck}
         eyebrow="Team operating policy"
         title={policyTitle}
-        description="DearMe is meant to run, not wait: private brand work keeps moving, while external moves become clear launch calls."
+        description="DearMe is meant to run, not wait: brand work keeps moving, while external moves become clear launch calls."
         trailing={<Badge variant={paidBetaActive ? "default" : "secondary"}>{policyLabel}</Badge>}
       />
 
@@ -4978,18 +6689,30 @@ function TeamOperatingPolicyPanel({
           <div>
             <p className="text-xs font-medium uppercase text-muted-foreground">Readiness</p>
             <h3 className="mt-1 text-base font-semibold text-foreground">
-              Private cycle runs; public launch follows your rules.
+              Brand cycle runs; public launch follows your rules.
             </h3>
             <p className="mt-1 max-w-3xl text-sm text-foreground/80">
-              DearMe keeps work moving privately, then turns any public, outbound, spend, or page-changing move into one reviewable call.
+              DearMe keeps work moving, then turns any public, outbound, spend, or page-changing move into one reviewable call.
             </p>
           </div>
-          <Badge variant={paidBetaActive ? "default" : "secondary"}>
-            {paidBetaActive ? "Private proof ready" : "Setup needed"}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <Badge variant={paidBetaActive ? "default" : "secondary"}>
+              {paidBetaActive ? "Proof ready" : "Setup needed"}
+            </Badge>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-label={`Download ${DEARME_LAUNCH_READINESS_RECEIPT_FILENAME}`}
+              onClick={downloadLaunchReadinessReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Download receipt
+            </Button>
+          </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {readinessItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -5006,6 +6729,895 @@ function TeamOperatingPolicyPanel({
             );
           })}
         </div>
+        <Textarea
+          aria-label="Launch readiness receipt note"
+          className="mt-4 min-h-40 resize-none bg-background/80 font-mono text-xs leading-relaxed"
+          readOnly
+          value={launchReadinessText}
+        />
+      </section>
+
+      <section
+        aria-label="Commercial readiness"
+        className="mt-4 rounded-md border border-border bg-background p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Commercial readiness</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              Private beta can be sold; public launch still needs proof.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              DearMe can operate paid beta users with manual access and visible guardrails while broad launch waits for verified live receipts.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <Badge variant={paidBetaActive ? "default" : "outline"}>
+              {paidBetaActive ? "Paid user operating" : "Sell private beta"}
+            </Badge>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-label={`Download ${DEARME_COMMERCIAL_READINESS_RECEIPT_FILENAME}`}
+              onClick={downloadCommercialReadinessReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Download receipt
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {commercialItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-muted/20 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+        <div
+          aria-label="Public launch proof action"
+          className="mt-4 flex flex-col gap-3 rounded-md border border-amber-500/25 bg-amber-50/70 p-3 text-amber-950 dark:bg-amber-950/20 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <p className="text-sm font-medium">Next public-launch blocker: live receipt details.</p>
+            <p className="mt-1 text-xs text-amber-900/80 dark:text-amber-100/80">
+              Keep selling and operating private beta; open the proof handoff only when the launch route and first recipients are approved.
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-auto min-h-9 w-full min-w-0 whitespace-normal bg-background/80 sm:w-auto"
+            onClick={onOpenLaunchProof}
+          >
+            <ShieldCheck className="h-4 w-4" />
+            Open launch proof
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <Textarea
+          aria-label="Commercial readiness receipt note"
+          className="mt-4 min-h-40 resize-none bg-muted/20 font-mono text-xs leading-relaxed"
+          readOnly
+          value={commercialReadinessText}
+        />
+      </section>
+
+      <section
+        aria-label="Paid cohort health receipt"
+        className="mt-4 rounded-md border border-primary/20 bg-primary/5 p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Paid cohort</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              Paid accounts roll up into one operating view.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              DearMe checks access, credit, guardrails, and attention accounts before support treats paid operations as healthy.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <Badge variant={paidCohortVariant}>{paidCohortStatus}</Badge>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-label={`Download ${DEARME_PAID_COHORT_HEALTH_RECEIPT_FILENAME}`}
+              onClick={downloadPaidCohortHealthReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Download receipt
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {paidCohortItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-background/85 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+        {paidBetaCohortError ? (
+          <div
+            aria-label="Paid cohort health error"
+            className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {paidBetaCohortError}
+          </div>
+        ) : null}
+        <div
+          aria-label="Paid operations attention list"
+          className="mt-4 rounded-md border border-border bg-background/85 p-3"
+        >
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase text-muted-foreground">Operations list</p>
+              <h4 className="mt-1 text-sm font-semibold text-foreground">
+                {paidCohortAttentionCount > 0
+                  ? "Fix paid-account blockers before the next cycle."
+                  : "No paid-account blocker is waiting right now."}
+              </h4>
+            </div>
+            <Badge variant={paidCohortAttentionCount > 0 ? "secondary" : "outline"}>
+              {paidCohortAttentionCount > 0
+                ? pluralizeCount(paidCohortAttentionCount, "account")
+                : "List clear"}
+            </Badge>
+          </div>
+          {paidCohortAttentionAccounts.length > 0 ? (
+            <div className="mt-3 grid gap-2">
+              {paidCohortAttentionAccounts.map((account) => (
+                <div
+                  key={`${account.companyId}-${account.state}`}
+                  className="rounded-md border border-border bg-muted/20 p-3"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {paidBetaCohortCompanyName(paidBetaCohortCompanyNames, account.companyId)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {customerProofPackSummary(account.nextAction)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+                      <Badge variant={account.state === "hard_stop" ? "secondary" : "outline"}>
+                        {account.label}
+                      </Badge>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onOpenPaidBetaAccount(account.companyId)}
+                      >
+                        Open account
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-muted-foreground">
+              DearMe can keep the paid cohort moving until an account needs activation, credit, spend, or support attention.
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section
+        aria-label="Weekly value receipt"
+        className="mt-4 rounded-md border border-primary/20 bg-primary/5 p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Seven-day value</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              A paid week should show useful work, not activity.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              DearMe keeps the customer-visible deliverables, report, proof, and recovery trigger in one receipt so a quiet week becomes obvious.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <Badge variant={weeklyValueVariant}>{weeklyValueStatus}</Badge>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-label={`Download ${DEARME_WEEKLY_VALUE_RECEIPT_FILENAME}`}
+              onClick={downloadWeeklyValueReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Download receipt
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {weeklyValueItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-background/85 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+        <Textarea
+          aria-label="Weekly value receipt note"
+          className="mt-4 min-h-36 resize-none bg-background/85 text-sm"
+          value={weeklyValueReceiptText}
+          readOnly
+        />
+        {emptyWeekRecoveryActive ? (
+          <div
+            aria-label="Weekly value recovery handoff"
+            className="mt-4 flex flex-col gap-3 rounded-md border border-primary/25 bg-background/85 p-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Recover this week before it feels empty.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                DearMe should prepare one useful output and a plain customer update before the next check-in.
+              </p>
+            </div>
+            <Button type="button" variant="outline" onClick={scrollToDearMeEmptyWeekRecovery}>
+              <LifeBuoy className="h-4 w-4" />
+              Open recovery
+            </Button>
+          </div>
+        ) : null}
+      </section>
+
+      <section
+        aria-label="Paid account health receipt"
+        className="mt-4 rounded-md border border-border bg-background p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Account health</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              Renewal health is based on outcomes, not busywork.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              DearMe checks weekly useful work, voice fit, launch calls, and cost clarity before this account is treated as healthy.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <Badge variant={accountHealthVariant}>{accountHealthStatus}</Badge>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-label={`Download ${DEARME_PAID_ACCOUNT_HEALTH_RECEIPT_FILENAME}`}
+              onClick={downloadPaidAccountHealthReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Download receipt
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {accountHealthItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-muted/20 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+        {emptyWeekRecoveryActive ? (
+          <div
+            aria-label="Paid account health recovery handoff"
+            className="mt-4 flex flex-col gap-3 rounded-md border border-primary/25 bg-primary/5 p-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Recovery is the next account-health action.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                DearMe should not call this account healthy again until one useful deliverable is prepared.
+              </p>
+            </div>
+            <Button type="button" variant="outline" onClick={scrollToDearMeEmptyWeekRecovery}>
+              <LifeBuoy className="h-4 w-4" />
+              Open recovery
+            </Button>
+          </div>
+        ) : null}
+      </section>
+
+      <section
+        aria-label="Paid retention pulse"
+        className="mt-4 rounded-md border border-primary/20 bg-background p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Retention pulse</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              This account has a weekly renewal signal.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              DearMe combines visible value, voice fit, launch calls, and recovery ownership so paid support knows whether the account is healthy this week.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <Badge variant={retentionPulseVariant}>{retentionPulseStatus}</Badge>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-label={`Download ${DEARME_PAID_RETENTION_PULSE_RECEIPT_FILENAME}`}
+              onClick={downloadRetentionPulseReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Download receipt
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {retentionPulseItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-muted/20 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+        <Textarea
+          aria-label="Paid retention pulse note"
+          className="mt-4 min-h-36 resize-none bg-background/85 text-sm"
+          value={retentionPulseText}
+          readOnly
+        />
+
+        {paidBetaActive && (emptyWeekRecoveryActive || staleLoopCount > 0) ? (
+          <div
+            aria-label="Paid retention pulse action"
+            className="mt-4 flex flex-col gap-3 rounded-md border border-primary/25 bg-primary/5 p-3 lg:flex-row lg:items-center lg:justify-between"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">
+                {emptyWeekRecoveryActive
+                  ? "Retention risk is recovery-owned now."
+                  : "Retention risk is support-owned now."}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {emptyWeekRecoveryActive
+                  ? "Open the make-good path before the next customer check-in."
+                  : "Open the stuck work or support handoff before another repeated path spends more effort."}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              {emptyWeekRecoveryActive ? (
+                <Button type="button" variant="outline" onClick={scrollToDearMeEmptyWeekRecovery}>
+                  <LifeBuoy className="h-4 w-4" />
+                  Open recovery
+                </Button>
+              ) : null}
+              {!emptyWeekRecoveryActive && staleLoopWorkReference ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenSupportHandoffIssue(staleLoopWorkReference)}
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Open stuck work
+                </Button>
+              ) : null}
+              <Button type="button" variant="secondary" onClick={scrollToDearMeSupportHandoff}>
+                <LifeBuoy className="h-4 w-4" />
+                Open support handoff
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section
+        id={DEARME_EMPTY_WEEK_RECOVERY_ID}
+        aria-label="Empty week recovery receipt"
+        className="mt-4 rounded-md border border-border bg-muted/20 p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Recovery</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              If a paid week is empty, DearMe has to recover visibly.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              Zero useful deliverables in seven days is treated as a retention issue, with a concrete make-good path instead of silent activity.
+            </p>
+          </div>
+          <Badge variant={emptyWeekRecoveryVariant}>{emptyWeekRecoveryStatus}</Badge>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {emptyWeekRecoveryItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-background/80 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+        {emptyWeekRecoveryActive ? (
+          <div
+            className="mt-4 rounded-md border border-primary/25 bg-background/85 p-3"
+            aria-label="Empty week recovery action"
+          >
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase text-muted-foreground">Make-good brief</p>
+                <h4 className="mt-1 text-sm font-semibold text-foreground">
+                  Start one private recovery pass now.
+                </h4>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  DearMe will prepare a useful item and customer update before any public move.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  aria-label={`Download ${DEARME_EMPTY_WEEK_RECOVERY_RECEIPT_FILENAME}`}
+                  onClick={downloadEmptyWeekRecoveryReceipt}
+                >
+                  <FileText className="h-4 w-4" aria-hidden="true" />
+                  Download receipt
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={scrollToDearMeSupportHandoff}
+                >
+                  <LifeBuoy className="h-4 w-4" />
+                  Open support handoff
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={emptyWeekRecoveryActionDisabled}
+                  onClick={() => onStartEmptyWeekRecovery(emptyWeekRecoveryText)}
+                >
+                  {emptyWeekRecoveryPending ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <LifeBuoy className="h-4 w-4" />
+                  )}
+                  Start recovery
+                </Button>
+              </div>
+            </div>
+            <Textarea
+              aria-label="Empty week recovery brief note"
+              className="mt-3 min-h-36 resize-none bg-muted/20 font-mono text-xs leading-relaxed"
+              readOnly
+              value={emptyWeekRecoveryText}
+            />
+            {emptyWeekRecoveryError ? (
+              <div
+                aria-label="Empty week recovery error"
+                className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                {emptyWeekRecoveryError}
+              </div>
+            ) : null}
+            {emptyWeekRecoveryResult ? (
+              <div
+                aria-label="Empty week recovery start receipt"
+                className="mt-3 flex flex-col gap-3 rounded-md border border-primary/25 bg-primary/5 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    {emptyWeekRecoveryResult.status === "queued" ? "Recovery brief sent" : "Recovery brief saved"}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {customerProofPackSummary(emptyWeekRecoveryResult.nextStep)}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                  <Button type="button" variant="outline" onClick={onOpenVoiceMemory}>
+                    <Sparkles className="h-4 w-4" />
+                    Open Voice & Memory
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      onOpenEmptyWeekRecoveryIssue(
+                        emptyWeekRecoveryResult.issueIdentifier ?? emptyWeekRecoveryResult.issueId,
+                      )
+                    }
+                  >
+                    <ArrowRight className="h-4 w-4" />
+                    Open recovery work
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
+      <section
+        aria-label="Paid user operations receipt"
+        className="mt-4 rounded-md border border-border bg-muted/20 p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Operations receipt</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              Paid users get recovery, cost, and support clarity.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              DearMe keeps an operating log, caps repeated paths, shows spend checkpoints, and only escalates hard external calls.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <Badge variant={paidBetaActive ? "default" : "secondary"}>
+              {paidBetaActive ? "Supportable account" : "Ready after paid access"}
+            </Badge>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-label={`Download ${DEARME_PAID_USER_OPERATIONS_RECEIPT_FILENAME}`}
+              onClick={downloadPaidUserOperationsReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Download receipt
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {operationsReceiptItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-background/80 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+        <Textarea
+          aria-label="Paid user operations receipt note"
+          className="mt-4 min-h-36 resize-none bg-background/85 font-mono text-xs leading-relaxed"
+          readOnly
+          value={paidUserOperationsReceiptText}
+        />
+        {operationsActionActive ? (
+          <div
+            aria-label="Paid user operations action"
+            className="mt-4 flex flex-col gap-3 rounded-md border border-primary/25 bg-background/85 p-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Operations risk needs an owner now.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {emptyWeekRecoveryActive
+                  ? "Open the recovery pass, then hand support the account context if one useful item cannot be prepared."
+                  : `Open the support handoff before another repeated path spends more effort: ${staleLoopSignal}.`}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              {emptyWeekRecoveryActive ? (
+                <Button type="button" variant="outline" onClick={scrollToDearMeEmptyWeekRecovery}>
+                  <LifeBuoy className="h-4 w-4" />
+                  Open recovery
+                </Button>
+              ) : null}
+              {!emptyWeekRecoveryActive && staleLoopWorkReference ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenSupportHandoffIssue(staleLoopWorkReference)}
+                >
+                  <ArrowRight className="h-4 w-4" />
+                  Open stuck work
+                </Button>
+              ) : null}
+              <Button type="button" variant="outline" onClick={scrollToDearMeSupportHandoff}>
+                <LifeBuoy className="h-4 w-4" />
+                Open support handoff
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section
+        aria-label="Autonomy contract receipt"
+        className="mt-4 rounded-md border border-primary/20 bg-primary/5 p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Autonomy contract</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              DearMe can keep working until a move would represent you.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              The team has a plain operating boundary: team preparation moves forward, external action becomes one launch call.
+            </p>
+          </div>
+          <Badge variant={autonomyContractVariant}>{autonomyContractStatus}</Badge>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {autonomyContractItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-background/85 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        <Textarea
+          aria-label="Autonomy contract note"
+          className="mt-4 min-h-40 resize-none bg-background/85 font-mono text-xs leading-relaxed"
+          readOnly
+          value={autonomyContractText}
+        />
+        <div className="mt-3 flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            aria-label={`Download ${DEARME_AUTONOMY_CONTRACT_RECEIPT_FILENAME}`}
+            onClick={downloadAutonomyContractReceipt}
+          >
+            <FileText className="h-4 w-4" aria-hidden="true" />
+            Download receipt
+          </Button>
+        </div>
+        {operationsActionActive ? (
+          <div
+            aria-label="Autonomy contract action"
+            className="mt-4 flex flex-col gap-3 rounded-md border border-primary/25 bg-background/85 p-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Autonomy has a next step, not just a boundary.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {emptyWeekRecoveryActive
+                  ? "A paid week with no useful output should move into recovery before the account is treated as healthy."
+                  : `A repeated path is stopped; open the stuck work or hand support the context before another pass: ${staleLoopSignal}.`}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              {emptyWeekRecoveryActive ? (
+                <Button type="button" variant="outline" onClick={scrollToDearMeEmptyWeekRecovery}>
+                  <LifeBuoy className="h-4 w-4" />
+                  Open recovery
+                </Button>
+              ) : null}
+              {!emptyWeekRecoveryActive && staleLoopWorkReference ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenSupportHandoffIssue(staleLoopWorkReference)}
+                >
+                  <ArrowRight className="h-4 w-4" />
+                  Open stuck work
+                </Button>
+              ) : null}
+              <Button type="button" variant="outline" onClick={scrollToDearMeSupportHandoff}>
+                <LifeBuoy className="h-4 w-4" />
+                Open support handoff
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section
+        id={DEARME_SUPPORT_HANDOFF_ID}
+        aria-label="Paid user support handoff"
+        className="mt-4 rounded-md border border-border bg-background p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Support handoff</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              Customer help starts with the account context already attached.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              DearMe keeps preparing brand work, then gives support a plain handoff when the customer needs account help, a launch call, or clearer direction.
+            </p>
+          </div>
+          <Badge variant={paidBetaActive ? "default" : "secondary"}>
+            {paidBetaActive ? "Ready for paid support" : "Use after access"}
+          </Badge>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {supportHandoffItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-muted/20 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        <Textarea
+          aria-label="Support handoff note"
+          className="mt-4 min-h-36 resize-none bg-muted/20 font-mono text-xs leading-relaxed"
+          readOnly
+          value={supportHandoffText}
+        />
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted-foreground">
+            Support notes become feedback work and a next check-in before the next public move.
+          </p>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              aria-label={`Download ${DEARME_SUPPORT_HANDOFF_RECEIPT_FILENAME}`}
+              onClick={downloadSupportHandoffReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Download receipt
+            </Button>
+            {paidBetaActive && staleLoopWorkReference ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenSupportHandoffIssue(staleLoopWorkReference)}
+              >
+                <ArrowRight className="h-4 w-4" />
+                Open stuck work
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={supportHandoffActionDisabled}
+              onClick={() => onHandleSupportHandoff(supportHandoffText)}
+            >
+              {supportHandoffPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Send to Chief of Staff
+            </Button>
+          </div>
+        </div>
+        {supportHandoffError ? (
+          <div
+            aria-label="Support handoff feedback error"
+            className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {supportHandoffError}
+          </div>
+        ) : null}
+        {supportHandoffResult ? (
+          <div
+            aria-label="Support handoff feedback receipt"
+            className="mt-3 flex flex-col gap-3 rounded-md border border-primary/25 bg-primary/5 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">
+                {supportHandoffResult.status === "queued" ? "Feedback brief sent" : "Feedback brief saved"}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {customerProofPackSummary(supportHandoffResult.nextStep)}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              {paidBetaActive && staleLoopWorkReference ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenSupportHandoffIssue(staleLoopWorkReference)}
+                >
+                  <ArrowRight className="h-4 w-4" />
+                  Open stuck work
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onOpenVoiceMemory}
+              >
+                <Sparkles className="h-4 w-4" />
+                Open Voice & Memory
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  onOpenSupportHandoffIssue(
+                    supportHandoffResult.issueIdentifier ?? supportHandoffResult.issueId,
+                  )
+                }
+              >
+                <ArrowRight className="h-4 w-4" />
+                Open feedback work
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -5068,8 +7680,9 @@ function WorkReadyPanel({
             const routeIntent = reviewLoopRouteIntent(item.reviewLoop);
             const defaultBoundaryCopy = reviewLoopDefaultBoundaryCopy(item.reviewLoop);
             const focused = decisionFocus ? matchesWorkItemFocus(item, decisionFocus) : false;
+            const isStuck = isReviewLoopStuck(item.reviewLoop);
             const isReviewable =
-              item.status === "ready_for_review" || item.reviewLoop.state === "needs_user_review";
+              !isStuck && (item.status === "ready_for_review" || item.reviewLoop.state === "needs_user_review");
             return (
               <DearMeActionCard
                 key={item.id}
@@ -5133,8 +7746,8 @@ function WorkReadyPanel({
                 <FocusedPreparedWorkReviewControls
                   outputId={item.id}
                   noteId={`dearme-work-ready-output-note-${index}`}
-                  description="Review this launch-ready item without leaving the board. Launch it, send changes back, ask for another private pass, or choose a new direction."
-                  disabledReason="This lane is still in private work; DearMe will bring it back when it needs your call."
+                  description="Review this launch-ready item without leaving the board. Launch it, send changes back, ask for another pass, or choose a new direction."
+                  disabledReason={isStuck ? REVIEW_LOOP_STUCK_DISABLED_REASON : "This lane is still preparing; DearMe will bring it back when it needs your call."}
                   compact
                   isReviewable={isReviewable}
                   reviewState={outputReviewState}
@@ -5149,7 +7762,33 @@ function WorkReadyPanel({
   );
 }
 
-function LaunchProofGapPanel() {
+function LaunchProofGapPanel({ companyId }: { companyId: string }) {
+  const [proofFactValues, setProofFactValues] = useState<Record<string, string>>(() =>
+    readDearMeLaunchProofDetailValues(companyId),
+  );
+  const capturedFactCount = DEARME_OWNER_PROOF_FACT_SPECS.filter(
+    (fact) => proofFactValues[fact.provideAs]?.trim(),
+  ).length;
+  const remainingFactCount = DEARME_OWNER_PROOF_FACT_SPECS.length - capturedFactCount;
+  const allProofFactsCaptured = remainingFactCount === 0;
+  const ownerProofHandoffReceipt = buildDearMeOwnerProofHandoffReceipt({
+    values: proofFactValues,
+  });
+
+  useEffect(() => {
+    writeDearMeLaunchProofDetailValues(companyId, proofFactValues);
+  }, [companyId, proofFactValues]);
+
+  const updateProofFactValue = useCallback((fact: OwnerProofFact, value: string) => {
+    setProofFactValues((current) => ({
+      ...current,
+      [fact.provideAs]: value,
+    }));
+  }, []);
+  const downloadOwnerProofHandoffReceipt = useCallback(() => {
+    downloadDearMeOwnerProofHandoffReceipt(ownerProofHandoffReceipt);
+  }, [ownerProofHandoffReceipt]);
+
   return (
     <section
       aria-label="Launch proof gap"
@@ -5160,15 +7799,14 @@ function LaunchProofGapPanel() {
           <p className="text-xs font-medium uppercase text-amber-800 dark:text-amber-200">
             Launch proof
           </p>
-          <h3 className="mt-1 text-base font-semibold">
-            Private proof is usable. Public launch still needs live receipts.
-          </h3>
-          <p className="mt-1 max-w-3xl text-sm text-amber-900/80 dark:text-amber-100/80">
-            Keep reviewing private work here. Public launch stays held until the approved live delivery details are
-            supplied and checked.
-          </p>
-        </div>
-        <Badge variant="secondary">Launch held</Badge>
+	      <h3 className="mt-1 text-base font-semibold">
+	        Proof is usable. Live launch receipts need three details.
+	      </h3>
+	      <p className="mt-1 max-w-3xl text-sm text-amber-900/80 dark:text-amber-100/80">
+	        Keep using the proof here. Broad launch starts after the live delivery details are supplied and checked.
+	      </p>
+	    </div>
+	    <Badge variant="secondary">Launch call</Badge>
       </div>
 
       <DearMeEvidenceGrid className="mt-4">
@@ -5198,11 +7836,11 @@ function LaunchProofGapPanel() {
         aria-label="Owner live-proof details to provide"
       >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-xs font-medium uppercase text-muted-foreground">What I need from you</p>
-            <h4 className="mt-1 text-sm font-semibold text-foreground">
-              Three approved details unlock the guarded receipt.
-            </h4>
+	    <div>
+	      <p className="text-xs font-medium uppercase text-muted-foreground">What I need from you</p>
+	      <h4 className="mt-1 text-sm font-semibold text-foreground">
+	        Three launch details unlock the guarded receipt.
+	      </h4>
           </div>
           <Badge variant="outline">{DEARME_OWNER_PROOF_FACT_SPECS.length} details</Badge>
         </div>
@@ -5215,17 +7853,49 @@ function LaunchProofGapPanel() {
               <div className="flex h-8 w-8 items-center justify-center rounded-md border border-amber-500/30 bg-amber-100 text-xs font-semibold text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
                 {index + 1}
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">{fact.label}</p>
-                <p className="mt-1 text-sm text-foreground/80">{fact.ownerPrompt}</p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground/80">Example: </span>
-                  {fact.safeExample}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">{fact.boundary}</p>
-              </div>
+	      <div className="min-w-0">
+	        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+	          <p className="text-sm font-medium text-foreground">{ownerProofFactLabel(fact)}</p>
+	          <Badge variant={proofFactValues[fact.provideAs]?.trim() ? "secondary" : "outline"}>
+	            {proofFactValues[fact.provideAs]?.trim() ? "Captured" : "Needed"}
+	          </Badge>
+	        </div>
+	        <p className="mt-1 text-sm text-foreground/80">{ownerProofFactPrompt(fact)}</p>
+	        <p className="mt-2 text-xs text-muted-foreground">
+	          <span className="font-medium text-foreground/80">How to provide it: </span>
+	          {ownerProofFactExample(fact)}
+	        </p>
+	        <p className="mt-1 text-xs text-muted-foreground">{ownerProofFactBoundary(fact)}</p>
+	        <div className="mt-3">
+	          <Input
+	            aria-label={`Provide ${ownerProofFactLabel(fact)}`}
+	            type={ownerProofFactInputType(fact)}
+	            inputMode={fact.provideAs === "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT" ? "tel" : undefined}
+	            placeholder={ownerProofFactExample(fact)}
+	            value={proofFactValues[fact.provideAs] ?? ""}
+	            onChange={(event: ChangeEvent<HTMLInputElement>) => updateProofFactValue(fact, event.target.value)}
+	          />
+	        </div>
+	      </div>
             </div>
           ))}
+        </div>
+        <div
+          className="mt-3 rounded-md border border-amber-500/25 bg-amber-50/70 p-3 text-sm text-amber-950 dark:bg-amber-950/20 dark:text-amber-100"
+          aria-label="Launch proof detail readiness"
+          aria-live="polite"
+        >
+          <p className="font-medium">
+            {allProofFactsCaptured ? "Ready for no-send check." : `${remainingFactCount} details left before no-send check.`}
+          </p>
+          <p className="mt-1 text-xs text-amber-900/80 dark:text-amber-100/80">
+            {allProofFactsCaptured
+              ? "DearMe has the three approved details in this browser tab and still waits before sending, posting, changing the page, or spending."
+              : "Fill the three details here first; DearMe keeps every external move behind the launch call."}
+          </p>
+          <p className="mt-1 text-xs text-amber-900/80 dark:text-amber-100/80">
+            Saved for this browser tab so the no-send preparation survives refresh without creating a public move.
+          </p>
         </div>
       </div>
 
@@ -5233,10 +7903,10 @@ function LaunchProofGapPanel() {
         className="mt-4 rounded-md border border-amber-500/25 bg-background/85 p-3"
         aria-label="Owner proof reply template"
       >
-        <p className="text-xs font-medium uppercase text-muted-foreground">One reply</p>
-        <h4 className="mt-1 text-sm font-semibold text-foreground">
-          Send these approved details to unlock the proof pass.
-        </h4>
+	    <p className="text-xs font-medium uppercase text-muted-foreground">One reply</p>
+	    <h4 className="mt-1 text-sm font-semibold text-foreground">
+	      Send these launch details to unlock the proof pass.
+	    </h4>
         <div className="mt-3 grid gap-2">
           {DEARME_OWNER_PROOF_REPLY_TEMPLATE.map((line) => (
             <p key={line.label} className="rounded-md border border-border bg-background/70 p-2 text-sm text-foreground/85">
@@ -5245,9 +7915,49 @@ function LaunchProofGapPanel() {
             </p>
           ))}
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          This reply still starts with a no-send check; the live receipt remains held for approval.
+        <p className="mt-3 rounded-md border border-border bg-background/70 p-2 text-xs text-muted-foreground">
+          Captured here: {capturedFactCount}/{DEARME_OWNER_PROOF_FACT_SPECS.length} details. This prepares the
+          check only; it does not launch anything.
         </p>
+	  <p className="mt-3 text-xs text-muted-foreground">
+		    DearMe checks the route first; the live receipt remains behind the final launch call.
+	  </p>
+      </div>
+
+      <div
+        className="mt-4 rounded-md border border-amber-500/25 bg-background/85 p-3"
+        aria-label="Launch proof handoff receipt"
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Handoff receipt</p>
+            <h4 className="mt-1 text-sm font-semibold text-foreground">
+              One private note carries the setup into the no-send check.
+            </h4>
+          </div>
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <Badge variant={allProofFactsCaptured ? "secondary" : "outline"}>
+            {allProofFactsCaptured ? "Ready for check" : `${remainingFactCount} left`}
+          </Badge>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            aria-label={`Download ${DEARME_OWNER_PROOF_HANDOFF_RECEIPT_FILENAME}`}
+            onClick={downloadOwnerProofHandoffReceipt}
+          >
+            <FileText className="h-4 w-4" aria-hidden="true" />
+            <span>Download receipt</span>
+          </Button>
+        </div>
+      </div>
+      <Textarea
+        aria-label="Launch proof handoff receipt note"
+          className="mt-3 min-h-48 resize-none bg-muted/20 font-mono text-xs leading-relaxed"
+          readOnly
+          value={ownerProofHandoffReceipt}
+        />
       </div>
 
       <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)]">
@@ -5270,38 +7980,44 @@ function LaunchProofGapPanel() {
           className="rounded-md border border-amber-500/25 bg-background/85 p-3"
           aria-label="Launch proof safety boundary"
         >
-          <p className="text-xs font-medium uppercase text-muted-foreground">Safety boundary</p>
-          <p className="mt-2 text-sm text-foreground/85">
-            No public message, page change, spend, or broad launch moves from this panel. The first pass is a no-send
-            check; the guarded live receipt runs only after the owner approves the exact details.
-          </p>
+	  <p className="text-xs font-medium uppercase text-muted-foreground">Safety boundary</p>
+	  <p className="mt-2 text-sm text-foreground/85">
+	    No public message, page change, spend, or broad launch moves from this panel. The first pass is a no-send
+	    check; the guarded live receipt runs only after you choose the exact details.
+	  </p>
         </div>
       </div>
 
-      <p className="mt-3 rounded-md border border-amber-500/25 bg-background/80 p-3 text-sm text-foreground/85">
-        Next action: collect the approved live-proof details, run one guarded launch-proof pass, then bring the receipt
-        back as the launch call.
-      </p>
+	  <p className="mt-3 rounded-md border border-amber-500/25 bg-background/80 p-3 text-sm text-foreground/85">
+	    Next action: collect the live-proof details, run one guarded launch-proof pass, then bring the receipt
+	    back as the launch call.
+	  </p>
     </section>
   );
 }
 
 function DecisionsNeededPanel({
+  companyId,
   batches,
+  batchReviewLoops,
   decisions,
   sourceReviews,
   decisionFocus,
   onOpenBatch,
   onOpenDecision,
   onOpenSourceReview,
+  onOpenWorkReady,
 }: {
+  companyId: string;
   batches: DearMeWorkbenchBatchDecision[];
+  batchReviewLoops: ReadonlyMap<string, DearMeOutputReviewLoop | null>;
   decisions: DearMeWorkbenchDecision[];
   sourceReviews: DearMeSourceReviewItem[];
   decisionFocus?: DearMeDecisionFocus | null;
   onOpenBatch: (batch: DearMeWorkbenchBatchDecision) => void;
   onOpenDecision: (decision: DearMeWorkbenchDecision) => void;
   onOpenSourceReview: (sourceReview: DearMeSourceReviewItem) => void;
+  onOpenWorkReady: () => void;
 }) {
   const waitingCount = batches.length + decisions.length + sourceReviews.length;
   const launchQualityChecks: Array<{
@@ -5314,7 +8030,7 @@ function DecisionsNeededPanel({
       key: "voice-fit",
       icon: Gauge,
       label: "Voice fit",
-      summary: "If it does not sound like you, request changes or another private pass.",
+      summary: "If it does not sound like you, request changes or another pass.",
     },
     {
       key: "proof-attached",
@@ -5339,7 +8055,7 @@ function DecisionsNeededPanel({
     {
       key: "approve",
       icon: CheckCircle2,
-      label: "Approve inside boundary",
+      label: "Launch inside boundary",
       title: "Let the prepared move go forward when the proof is safe.",
       summary: "Useful when the draft, source, audience, and launch rule all match what you want represented.",
     },
@@ -5348,7 +8064,7 @@ function DecisionsNeededPanel({
       icon: MessageSquare,
       label: "Request changes",
       title: "Send the work back with one plain note.",
-      summary: "DearMe keeps the context, updates the private draft, and returns with a cleaner pass.",
+      summary: "DearMe keeps the context, updates the draft, and returns with a cleaner pass.",
     },
     {
       key: "pause",
@@ -5360,26 +8076,64 @@ function DecisionsNeededPanel({
     {
       key: "private-pass",
       icon: RefreshCw,
-      label: "Another private pass",
+      label: "Another pass",
       title: "Let the team keep working without public action.",
       summary: "Useful when the direction is right but the work needs more proof, voice, or options.",
     },
   ];
+  const beforeLaunchChecksReceiptText = [
+    "DearMe before-launch checks receipt",
+    `Waiting launch calls: ${waitingCount}`,
+    `Call choices: ${launchCallChoices.map((choice) => choice.label).join("; ")}`,
+    ...launchQualityChecks.map((check) => `${check.label}: ${check.summary}`),
+    waitingCount > 0
+      ? "Next support step: open the waiting call, check voice, proof, and boundary, then choose launch, revise, pause, or another pass."
+      : "Next support step: keep the team preparing privately until a real launch call appears.",
+    "Can continue privately: another pass, proof gathering, Voice & Memory updates, report prep, and opportunity research.",
+    "Must wait: public posts, outbound messages, page changes, spend, account authorization, live proof, and irreversible moves.",
+    "Boundary: launch only when the work sounds right, cites real proof, and stays inside the launch rule.",
+  ].join("\n");
+  const afterCallOutcomeReceiptText = [
+    "DearMe after-call outcome receipt",
+    `Waiting launch calls: ${waitingCount}`,
+    "Launch inside boundary: approved work moves forward only inside the launch rule you just chose.",
+    "Request changes: DearMe keeps the context, applies your note, and returns with a cleaner pass.",
+    "Pause the lane: DearMe stops this path, preserves the reason, and shifts attention to better work.",
+    "Another pass: DearMe keeps working privately with more proof, voice fit, or options before asking again.",
+    waitingCount > 0
+      ? "Next support step: open a waiting call, make one clear choice, then let DearMe continue the right path."
+      : "Next support step: no launch call is waiting; DearMe can keep preparing privately until one is ready.",
+    "Can continue privately: revisions, research, proof gathering, Voice & Memory updates, reports, and next-cycle prep.",
+    "Must wait: public posts, outbound messages, page changes, spend, account authorization, live proof, and irreversible moves.",
+  ].join("\n");
+  const downloadAfterCallOutcomeReceipt = useCallback(() => {
+    downloadDearMeReceipt(afterCallOutcomeReceiptText, DEARME_AFTER_CALL_OUTCOME_RECEIPT_FILENAME);
+  }, [afterCallOutcomeReceiptText]);
+  const downloadBeforeLaunchChecksReceipt = useCallback(() => {
+    downloadDearMeReceipt(beforeLaunchChecksReceiptText, DEARME_BEFORE_LAUNCH_CHECKS_RECEIPT_FILENAME);
+  }, [beforeLaunchChecksReceiptText]);
 
   return (
-    <DearMePanel aria-label="Decisions needed">
+    <DearMePanel id="dearme-decisions-needed" aria-label="Decisions needed">
       <DearMeWorkbenchSectionHeader
         icon={ShieldCheck}
         eyebrow="Decisions needed"
         title="High-leverage calls"
-        description="After Work Ready, make the launch call here: approve, request changes, pause a lane, or ask for another private pass."
+        description="After Work Ready, make the launch call here: launch, request changes, pause a lane, or ask for another pass."
         trailing={
-          waitingCount > 0 ? (
-            <Badge variant="secondary">{waitingCount} waiting</Badge>
-          ) : null
+          <div className="flex flex-wrap items-center gap-2 justify-end">
+            {waitingCount > 0 ? (
+              <Badge variant="secondary">{waitingCount} waiting</Badge>
+            ) : null}
+            <Button type="button" size="sm" variant="outline" onClick={onOpenWorkReady}>
+              <FileText className="h-4 w-4" />
+              Review Work Ready
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
         }
       />
-      <LaunchProofGapPanel />
+      <LaunchProofGapPanel companyId={companyId} />
       <section
         aria-label="Launch call choices"
         className="mt-4 rounded-md border border-border bg-background/75 p-4"
@@ -5388,15 +8142,27 @@ function DecisionsNeededPanel({
           <div>
             <p className="text-xs font-medium uppercase text-muted-foreground">Launch call choices</p>
             <h3 className="mt-1 text-base font-semibold text-foreground">
-              One call can approve, revise, pause, or keep work private.
+              One call can launch, revise, pause, or keep the team working.
             </h3>
             <p className="mt-1 max-w-3xl text-sm text-foreground/80">
               DearMe keeps moving autonomously until a move would represent you. Then it gives you one clear call instead of a process to manage.
             </p>
           </div>
-          <Badge variant={waitingCount > 0 ? "secondary" : "outline"}>
-            {waitingCount > 0 ? pluralizeCount(waitingCount, "waiting call") : "No call waiting"}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <Badge variant={waitingCount > 0 ? "secondary" : "outline"}>
+              {waitingCount > 0 ? pluralizeCount(waitingCount, "waiting call") : "No call waiting"}
+            </Badge>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-label={`Download ${DEARME_AFTER_CALL_OUTCOME_RECEIPT_FILENAME}`}
+              onClick={downloadAfterCallOutcomeReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Download receipt
+            </Button>
+          </div>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {launchCallChoices.map((choice) => {
@@ -5414,22 +8180,40 @@ function DecisionsNeededPanel({
             );
           })}
         </div>
+        <Textarea
+          aria-label="After-call outcome receipt note"
+          className="mt-4 min-h-40 resize-none bg-background/85 font-mono text-xs leading-relaxed"
+          readOnly
+          value={afterCallOutcomeReceiptText}
+        />
       </section>
       <section
-        aria-label="Before approve checks"
+        aria-label="Before launch checks"
         className="mt-4 rounded-md border border-border bg-muted/20 p-4"
       >
         <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="text-xs font-medium uppercase text-muted-foreground">Before approve</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Before launch</p>
             <h3 className="mt-1 text-base font-semibold text-foreground">
               Check voice, proof, and boundary before anything represents you.
             </h3>
             <p className="mt-1 max-w-3xl text-sm text-foreground/80">
-              Approve only when the work sounds right, cites real proof, and stays inside the launch rule.
+              Launch only when the work sounds right, cites real proof, and stays inside the launch rule.
             </p>
           </div>
-          <Badge variant="outline">Quality gate</Badge>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <Badge variant="outline">Quality gate</Badge>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-label={`Download ${DEARME_BEFORE_LAUNCH_CHECKS_RECEIPT_FILENAME}`}
+              onClick={downloadBeforeLaunchChecksReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Download receipt
+            </Button>
+          </div>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           {launchQualityChecks.map((check) => {
@@ -5446,12 +8230,20 @@ function DecisionsNeededPanel({
             );
           })}
         </div>
+        <Textarea
+          aria-label="Before launch checks receipt note"
+          className="mt-4 min-h-40 resize-none bg-background/85 font-mono text-xs leading-relaxed"
+          readOnly
+          value={beforeLaunchChecksReceiptText}
+        />
       </section>
       {batches.length > 0 ? (
         <div className="mt-4 space-y-3">
           <p className="text-xs font-medium text-muted-foreground">Batch decisions</p>
           {batches.map((batch) => {
             const focused = decisionFocus ? matchesBatchFocus(batch, decisionFocus) : false;
+            const reviewLoop = batchReviewLoops.get(batch.id) ?? null;
+            const isStuck = isReviewLoopStuck(reviewLoop);
             return (
               <DearMeActionCard
                 key={batch.id}
@@ -5459,16 +8251,34 @@ function DecisionsNeededPanel({
                 focused={focused}
                 title={customerProofPackSummary(batch.title)}
                 summary={customerProofPackSummary(batch.summary)}
-                attention={{
-                  kind: "decision_needed",
-                  label: "Waiting on your decision",
-                  detail: `Choose the launch boundary for ${batch.itemCount} prepared move${batch.itemCount === 1 ? "" : "s"}.`,
-                }}
+                attention={isStuck
+                  ? {
+                      kind: "blocked",
+                      label: "Direction needed",
+                      detail: REVIEW_LOOP_STUCK_DISABLED_REASON,
+                    }
+                  : {
+                      kind: "decision_needed",
+                      label: "Launch call ready",
+                      detail: `Choose the launch boundary for ${batch.itemCount} prepared move${batch.itemCount === 1 ? "" : "s"}.`,
+                    }}
                 statusBadges={[
                   {
                     label: batch.riskGate ? RISK_GATE_LABELS[batch.riskGate] : "Review",
                     variant: batch.riskGate ? "secondary" : "outline",
                   },
+                  ...(reviewLoop
+                    ? [
+                        {
+                          label: reviewLoopLabel(reviewLoop),
+                          variant: "outline" as const,
+                        },
+                        {
+                          label: reviewLoopStateLabel(reviewLoop),
+                          variant: reviewLoopVariant(reviewLoop),
+                        },
+                      ]
+                    : []),
                 ]}
                 chips={[
                   {
@@ -5488,18 +8298,30 @@ function DecisionsNeededPanel({
               >
                 <DearMeEvidenceGrid>
                   <div className="rounded-md border border-border bg-background/80 p-3">
-                    <p className="text-xs font-medium text-muted-foreground">Waiting on you</p>
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {isStuck ? "Direction needed" : "Launch call ready"}
+                    </p>
                     <p className="mt-1 text-sm">
-                      Review {batch.itemCount} prepared move{batch.itemCount === 1 ? "" : "s"}.
+                      {isStuck
+                        ? "Review the capped path before spending another pass."
+                        : `Review ${batch.itemCount} prepared move${batch.itemCount === 1 ? "" : "s"}.`}
                     </p>
                   </div>
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">Choices</p>
-                    <p className="mt-1 text-sm">Launch, request changes, pause, or ask for another private pass.</p>
+                    <p className="mt-1 text-sm">
+                      {isStuck
+                        ? "Add Voice & Memory context or use support before another pass."
+                        : "Launch, request changes, pause, or ask for another pass."}
+                    </p>
                   </div>
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">After your call</p>
-                    <p className="mt-1 text-sm text-foreground/85">{decisionAfterCallLabel(batch.riskGate)}</p>
+                    <p className="mt-1 text-sm text-foreground/85">
+                      {reviewLoop
+                        ? customerProofPackSummary(reviewLoop.nextStep)
+                        : decisionAfterCallLabel(batch.riskGate)}
+                    </p>
                   </div>
                 </DearMeEvidenceGrid>
               </DearMeActionCard>
@@ -5521,7 +8343,7 @@ function DecisionsNeededPanel({
                 summary={customerProofPackSummary(item.summary)}
                 attention={{
                   kind: "decision_needed",
-                  label: "Waiting on your review",
+	                  label: "Review ready",
                   detail: customerProofPackSummary(item.nextAction),
                 }}
                 statusBadges={[
@@ -5541,7 +8363,7 @@ function DecisionsNeededPanel({
                   { label: shortDate(item.createdAt), variant: "outline" },
                 ]}
                 calloutLabel="Why it matters"
-                callout="Your team found a private source it can use, but it should become reviewed memory before guiding future public work."
+                callout="Your team found a saved source it can use, but it should become reviewed memory before guiding future public work."
                 action={{
                   label: "Review source",
                   ariaLabel: `Review source ${item.sourceTitle}`,
@@ -5615,7 +8437,7 @@ function DecisionsNeededPanel({
                   {
                     label: decision.outputKind
                       ? OUTPUT_KIND_LABELS[decision.outputKind]
-                      : "Private team decision",
+                      : "Brand team decision",
                     variant: "outline",
                   },
                 ]}
@@ -5633,12 +8455,12 @@ function DecisionsNeededPanel({
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">Prepared artifact</p>
                     <p className="mt-1 text-sm">
-                      {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Private team decision"}
+                      {decision.outputKind ? OUTPUT_KIND_LABELS[decision.outputKind] : "Brand team decision"}
                     </p>
                   </div>
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">Available choices</p>
-                    <p className="mt-1 text-sm">Launch, request changes, pause, or keep it private.</p>
+                    <p className="mt-1 text-sm">Launch, request changes, pause, or keep it staged.</p>
                   </div>
                   <div className="rounded-md border border-border bg-background/80 p-3">
                     <p className="text-xs font-medium text-muted-foreground">After your call</p>
@@ -5666,10 +8488,34 @@ function DecisionsNeededPanel({
 function OperatingLoopPanel({
   workbench,
   paidBetaActive,
+  onOpenVoiceMemory,
+  onOpenNextDecision,
+  onOpenWorkReady,
 }: {
   workbench: DearMeWorkbenchResponse;
   paidBetaActive: boolean;
+  onOpenVoiceMemory: () => void;
+  onOpenNextDecision: () => void;
+  onOpenWorkReady: () => void;
 }) {
+  const reviewLoops = [
+    ...workbench.workReady.map((item) => item.reviewLoop),
+    ...workbench.activeWork.map((item) => item.reviewLoop),
+    ...workbench.decisionsNeeded.map((item) => item.reviewLoop),
+    ...workbench.workStream.map((item) => item.reviewLoop),
+  ].filter((loop): loop is DearMeOutputReviewLoop => Boolean(loop));
+  const feedbackTraces = reviewLoops
+    .map((loop) => loop.feedbackTrace)
+    .filter((trace): trace is NonNullable<DearMeOutputReviewLoop["feedbackTrace"]> => Boolean(trace));
+  const appliedChangeCount = feedbackTraces.reduce((count, trace) => count + trace.changes.length, 0);
+  const latestFeedbackTrace = feedbackTraces[0] ?? null;
+  const reviewFeedbackItems = workbench.memory.latest.filter((item) => item.kind === "review_feedback");
+  const latestReviewFeedback = reviewFeedbackItems[0] ?? null;
+  const feedbackWorkItems = workbench.workStream.filter((item) =>
+    item.sourceLabel === "Feedback brief" ||
+    (item.role === "chief_of_staff" && item.cycleStage === "learn" && item.artifact === "Feedback brief")
+  );
+  const latestFeedbackWorkItem = feedbackWorkItems[0] ?? null;
   const decisionCount =
     workbench.decisionsNeeded.length +
     workbench.batchDecisions.length +
@@ -5688,8 +8534,233 @@ function OperatingLoopPanel({
     memorySignalCount,
     workbench.memory.latest.length +
       workbench.memory.sourceReviewQueue.length +
+      feedbackWorkItems.length +
       (workbench.report?.learnings.length ?? 0),
   );
+  const nextCycleWorkSignal = paidBetaActive
+    ? workCount > 0
+      ? pluralizeCount(workCount, "work item")
+      : "Queue ready"
+    : "Starts after access";
+  const nextCycleDecisionSignal = decisionCount > 0
+    ? pluralizeCount(decisionCount, "call")
+    : "No call waiting";
+  const nextCycleMemorySummary = workbench.report?.learnings[0]
+    ? customerProofPackSummary(workbench.report.learnings[0])
+    : latestReviewFeedback
+      ? customerProofPackSummary(latestReviewFeedback.bodyPreview)
+      : customerProofPackSummary(workbench.memory.voiceProfile.nextStep);
+  const autonomousNextMoveItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    actionLabel: string;
+    onAction: () => void;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "launch-calls",
+      icon: ShieldCheck,
+      label: decisionCount > 0 ? "Handle launch calls" : "Keep launch boundary clear",
+      signal: decisionCount > 0 ? pluralizeCount(decisionCount, "call") : "No call waiting",
+      summary: decisionCount > 0
+        ? "Start with the next waiting call, then launch, revise, pause, or keep the work staged."
+        : "DearMe can keep preparing brand work until a public, outbound, spend, or page-changing move appears.",
+      actionLabel: decisionCount > 0 ? "Open next decision" : "Review work ready",
+      onAction: decisionCount > 0 ? onOpenNextDecision : onOpenWorkReady,
+      variant: decisionCount > 0 ? "default" : "outline",
+    },
+    {
+      key: "voice-memory",
+      icon: Sparkles,
+      label: workbench.memory.sourceReviewQueue.length > 0
+        ? "Review sources for memory"
+        : "Strengthen Voice & Memory",
+      signal: workbench.memory.sourceReviewQueue.length > 0
+        ? `${workbench.memory.sourceReviewQueue.length} source`
+        : `Voice ${Math.round(workbench.memory.voiceProfile.confidence)}%`,
+      summary: workbench.memory.sourceReviewQueue[0]
+        ? customerProofPackSummary(workbench.memory.sourceReviewQueue[0].nextAction)
+        : customerProofPackSummary(workbench.memory.voiceProfile.nextStep),
+      actionLabel: "Open Voice & Memory",
+      onAction: onOpenVoiceMemory,
+      variant: workbench.memory.sourceReviewQueue.length > 0 ? "secondary" : "outline",
+    },
+    {
+      key: "ready-work",
+      icon: Workflow,
+      label: workCount > 0 ? "Keep ready work visible" : "Prepare first useful output",
+      signal: workCount > 0 ? pluralizeCount(workCount, "item") : paidBetaActive ? "Queue ready" : "Access first",
+      summary: workCount > 0
+        ? "Prepared work stays easy to find so the customer sees progress before another team pass runs."
+        : paidBetaActive
+          ? "DearMe should create one useful output before the next customer check-in."
+          : "The brand work list opens after paid beta access is recorded.",
+      actionLabel: "Open work ready",
+      onAction: onOpenWorkReady,
+      variant: workCount > 0 ? "default" : "secondary",
+    },
+  ];
+  const nextCycleReceiptItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "next-briefing",
+      icon: FileText,
+      label: "Next briefing",
+      signal: workbench.report ? "Briefing ready" : "First report pending",
+      summary: workbench.report?.nextBets[0]
+        ? customerProofPackSummary(workbench.report.nextBets[0])
+        : "The first Dear me report appears after the brand cycle has useful work to recap.",
+      variant: workbench.report ? "default" : "outline",
+    },
+    {
+      key: "work-continues",
+      icon: Workflow,
+      label: "Work continues",
+      signal: nextCycleWorkSignal,
+      summary: paidBetaActive
+        ? "DearMe keeps preparing drafts, opportunities, proof, and report updates until a launch call is needed."
+        : "The loop is ready, but new operating work waits for paid beta access.",
+      variant: paidBetaActive ? "default" : "secondary",
+    },
+    {
+      key: "decision-rhythm",
+      icon: ShieldCheck,
+      label: "Decision rhythm",
+      signal: nextCycleDecisionSignal,
+      summary: decisionCount > 0
+        ? "Your next visit starts with the waiting launch calls, not with setup work."
+        : "DearMe can keep moving internally until a public, outbound, spend, or page-changing move appears.",
+      variant: decisionCount > 0 ? "secondary" : "outline",
+    },
+    {
+      key: "memory-reuse",
+      icon: Sparkles,
+      label: "Memory to reuse",
+      signal: learningSignalCount > 0 ? pluralizeCount(learningSignalCount, "signal") : "Learning ready",
+      summary: nextCycleMemorySummary,
+      variant: "outline",
+    },
+  ];
+  const nextCycleRetentionReceiptText = [
+    "DearMe next cycle retention receipt",
+    `Account: ${paidBetaActive ? "Retention loop active" : "Ready after access"}`,
+    `Next briefing: ${nextCycleReceiptItems[0]?.signal ?? "First report pending"} - ${
+      nextCycleReceiptItems[0]?.summary ??
+      "The first Dear me report appears after the brand cycle has useful work to recap."
+    }`,
+    `Work continues: ${nextCycleReceiptItems[1]?.signal ?? nextCycleWorkSignal} - ${
+      nextCycleReceiptItems[1]?.summary ??
+      "DearMe keeps preparing drafts, opportunities, proof, and report updates until a launch call is needed."
+    }`,
+    `Decision rhythm: ${nextCycleReceiptItems[2]?.signal ?? nextCycleDecisionSignal} - ${
+      nextCycleReceiptItems[2]?.summary ??
+      "DearMe can keep moving internally until a public, outbound, spend, or page-changing move appears."
+    }`,
+    `Memory to reuse: ${nextCycleReceiptItems[3]?.signal ?? "Learning ready"} - ${
+      nextCycleReceiptItems[3]?.summary ?? nextCycleMemorySummary
+    }`,
+    latestEvent
+      ? `Latest signal: ${customerProofPackSummary(latestEvent.title)} - ${customerProofPackSummary(latestEvent.summary)}`
+      : "Latest signal: Start the first growth cycle to see what the team is doing now.",
+    `Next support step: ${
+      decisionCount > 0
+        ? "Start with the waiting launch calls before another public move."
+        : paidBetaActive
+          ? "Keep preparing the next private proof pack until a launch call is needed."
+          : "Record paid access before new operating work starts."
+    }`,
+    "Boundary: DearMe can keep planning, drafting, researching, reporting, and learning privately; public sends, launches, spend, account changes, and irreversible moves still wait for the final call.",
+  ].join("\n");
+  const downloadNextCycleRetentionReceipt = useCallback(() => {
+    downloadDearMeReceipt(nextCycleRetentionReceiptText, DEARME_NEXT_CYCLE_RETENTION_RECEIPT_FILENAME);
+  }, [nextCycleRetentionReceiptText]);
+  const feedbackLearningItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "feedback-brief",
+      icon: LifeBuoy,
+      label: "Feedback in progress",
+      signal: feedbackWorkItems.length > 0 ? pluralizeCount(feedbackWorkItems.length, "active brief") : "Ready for support notes",
+      summary: latestFeedbackWorkItem
+        ? customerProofPackSummary(latestFeedbackWorkItem.summary)
+        : "When feedback or support notes arrive, DearMe turns them into recovery work and next-cycle changes.",
+      variant: feedbackWorkItems.length > 0 ? "default" : "outline",
+    },
+    {
+      key: "review-feedback",
+      icon: MessageSquare,
+      label: "Review feedback",
+      signal: reviewFeedbackItems.length > 0 ? pluralizeCount(reviewFeedbackItems.length, "saved note") : "Ready to learn",
+      summary: latestReviewFeedback
+        ? customerProofPackSummary(latestReviewFeedback.bodyPreview)
+        : "When you request changes, DearMe saves the useful direction for the next pass.",
+      variant: reviewFeedbackItems.length > 0 ? "default" : "outline",
+    },
+    {
+      key: "applied-changes",
+      icon: CheckCircle2,
+      label: "Applied changes",
+      signal: appliedChangeCount > 0 ? pluralizeCount(appliedChangeCount, "change") : "Waiting on first revision",
+      summary: latestFeedbackTrace
+        ? customerProofPackSummary(latestFeedbackTrace.summary)
+        : "Revision receipts will show what changed before the work comes back to you.",
+      variant: appliedChangeCount > 0 ? "default" : "outline",
+    },
+    {
+      key: "source-learning",
+      icon: FileText,
+      label: "Sources to learn",
+      signal: workbench.memory.sourceReviewQueue.length > 0
+        ? `${workbench.memory.sourceReviewQueue.length} to review`
+        : pluralizeCount(workbench.memory.sourceCount, "saved source"),
+      summary: customerProofPackSummary(workbench.memory.sourcePlan.summary),
+      variant: workbench.memory.sourceReviewQueue.length > 0 ? "secondary" : "outline",
+    },
+    {
+      key: "next-cycle-memory",
+      icon: Sparkles,
+      label: "Next cycle memory",
+      signal: workbench.report?.learnings.length
+        ? pluralizeCount(workbench.report.learnings.length, "learning")
+        : titleizeStatus(workbench.memory.voiceProfile.status),
+      summary: workbench.report?.learnings[0]
+        ? customerProofPackSummary(workbench.report.learnings[0])
+        : customerProofPackSummary(workbench.memory.voiceProfile.nextStep),
+      variant: "outline",
+    },
+  ];
+  const feedbackLearningReceiptText = [
+    "DearMe feedback learning receipt",
+    `Account: ${paidBetaActive ? "Learning while operating" : "Ready after first review"}`,
+    `Feedback in progress: ${feedbackLearningItems[0]?.signal ?? "Ready for support notes"}`,
+    `Feedback brief: ${feedbackLearningItems[0]?.summary ?? "When feedback or support notes arrive, DearMe turns them into recovery work and next-cycle changes."}`,
+    `Saved feedback: ${feedbackLearningItems[1]?.signal ?? "Ready to learn"}`,
+    `Latest direction: ${feedbackLearningItems[1]?.summary ?? "When you request changes, DearMe saves the useful direction for the next pass."}`,
+    `Applied changes: ${feedbackLearningItems[2]?.signal ?? "Waiting on first revision"}`,
+    `Revision receipt: ${feedbackLearningItems[2]?.summary ?? "Revision receipts will show what changed before the work comes back to you."}`,
+    `Sources to learn: ${feedbackLearningItems[3]?.signal ?? "No sources waiting"}`,
+    `Source plan: ${feedbackLearningItems[3]?.summary ?? customerProofPackSummary(workbench.memory.sourcePlan.summary)}`,
+    `Next cycle memory: ${feedbackLearningItems[4]?.summary ?? nextCycleMemorySummary}`,
+    "Boundary: feedback updates private direction, memory, and next drafts; public sends, launches, spend, account changes, and irreversible moves still wait for the final call.",
+  ].join("\n");
+  const downloadFeedbackLearningReceipt = useCallback(() => {
+    downloadDearMeReceipt(feedbackLearningReceiptText, DEARME_FEEDBACK_LEARNING_RECEIPT_FILENAME);
+  }, [feedbackLearningReceiptText]);
   const loopStages = [
     {
       key: "plan",
@@ -5704,7 +8775,7 @@ function OperatingLoopPanel({
       icon: Workflow,
       label: "Work",
       title: "The team prepares assets",
-      summary: "Content, opportunity, and proof lanes turn private sources into draft work before you step in.",
+      summary: "Content, opportunity, and proof lanes turn saved sources into draft work before you step in.",
       signal: workCount > 0 ? pluralizeCount(workCount, "item") : "Ready after the first cycle",
     },
     {
@@ -5720,7 +8791,7 @@ function OperatingLoopPanel({
       icon: Sparkles,
       label: "Learn",
       title: "Voice & Memory improves the next pass",
-      summary: "Feedback, proof sources, and report learnings shape the next private cycle automatically.",
+      summary: "Feedback, proof sources, and report learnings shape the next brand cycle automatically.",
       signal: learningSignalCount > 0 ? pluralizeCount(learningSignalCount, "learning signal") : "Ready after feedback",
     },
   ];
@@ -5731,7 +8802,7 @@ function OperatingLoopPanel({
         icon={Workflow}
         eyebrow="Growth cycle"
         title="Plan, work, review, then learn."
-        description="DearMe keeps the operating rhythm visible while the team moves, the work becomes reviewable, and the launch call stays separate from private motion."
+        description="DearMe keeps the operating rhythm visible while the team moves, the work becomes reviewable, and the launch call stays separate from team motion."
         trailing={
           <Badge variant={paidBetaActive ? "default" : "secondary"}>
             {paidBetaActive ? "Cycle active" : "Preview mode"}
@@ -5780,17 +8851,176 @@ function OperatingLoopPanel({
         <div className="rounded-md border border-border bg-background/80 p-4">
           <p className="text-xs font-medium uppercase text-muted-foreground">Launch boundary</p>
           <p className="mt-2 text-sm text-foreground/85">
-            Private work keeps moving. Public posts, outbound messages, page changes, and spend come back as one launch call.
+            Brand work keeps moving. Public posts, outbound messages, page changes, and spend come back as one launch call.
           </p>
         </div>
       </div>
+
+      <section
+        aria-label="Autonomous next moves"
+        className="mt-4 rounded-md border border-primary/20 bg-background p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Next moves</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              DearMe has next moves ready before it needs you again.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              The next actions stay explicit: clear the launch calls, improve memory, and keep ready work visible before another cycle spends effort.
+            </p>
+          </div>
+          <Badge variant={decisionCount > 0 ? "secondary" : "default"}>
+            {decisionCount > 0 ? pluralizeCount(decisionCount, "call") : "Self-moving"}
+          </Badge>
+        </div>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-3">
+          {autonomousNextMoveItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="flex min-h-full flex-col rounded-md border border-border bg-muted/20 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 flex-1 text-xs text-muted-foreground">{item.summary}</p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="mt-3 h-auto min-h-9 w-full min-w-0 whitespace-normal"
+                  onClick={item.onAction}
+                >
+                  {item.actionLabel}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section
+        aria-label="Next cycle retention receipt"
+        className="mt-4 rounded-md border border-primary/20 bg-primary/5 p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Next check-in</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              You can leave and know what DearMe will do next.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              The brand team keeps the next briefing, work list, launch calls, and memory signals visible so returning does not feel like restarting.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <Badge variant={paidBetaActive ? "default" : "secondary"}>
+              {paidBetaActive ? "Retention loop active" : "Ready after access"}
+            </Badge>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-label={`Download ${DEARME_NEXT_CYCLE_RETENTION_RECEIPT_FILENAME}`}
+              onClick={downloadNextCycleRetentionReceipt}
+            >
+              <FileText className="h-4 w-4" />
+              Download receipt
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {nextCycleReceiptItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-background/85 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+        <Textarea
+          aria-label="Next cycle retention receipt note"
+          className="mt-4 min-h-36 resize-none bg-background/85 text-sm"
+          value={nextCycleRetentionReceiptText}
+          readOnly
+        />
+      </section>
+
+      <section
+        aria-label="Feedback learning receipt"
+        className="mt-4 rounded-md border border-border bg-muted/20 p-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Learning receipt</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              Your corrections become the next pass.
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              DearMe turns review notes, saved sources, and report learnings into the next brand cycle instead of making you repeat direction.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <Badge variant={paidBetaActive ? "default" : "secondary"}>
+              {paidBetaActive ? "Learning while operating" : "Ready after first review"}
+            </Badge>
+            <Button type="button" size="sm" variant="outline" onClick={onOpenVoiceMemory}>
+              <Sparkles className="h-4 w-4" />
+              Open Voice & Memory
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-label={`Download ${DEARME_FEEDBACK_LEARNING_RECEIPT_FILENAME}`}
+              onClick={downloadFeedbackLearningReceipt}
+            >
+              <FileText className="h-4 w-4" />
+              Download receipt
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {feedbackLearningItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-background/85 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       <div className="mt-4 rounded-md border border-border bg-background/80 p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-medium uppercase text-muted-foreground">Growth map</p>
             <p className="mt-2 text-sm text-foreground/85">
-              Your team turns private work into launch-ready moves, remembers what you change, and keeps public action inside one boundary.
+              Your team turns brand work into launch-ready moves, remembers what you change, and keeps public action inside one boundary.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -5891,7 +9121,7 @@ function BrandTeamRunLedgerPanel({ entries }: { entries: DearMeWorkbenchRunLedge
         icon={Gauge}
         eyebrow="Brand team run ledger"
         title="What your team moved while you were away."
-        description="A compact record of what the brand team moved, prepared, learned, held safely, skipped, and now needs from you."
+        description="A compact record of what the brand team moved, prepared, learned, staged at the boundary, skipped, and now needs from you."
         trailing={<Badge variant="outline">{pluralizeCount(entries.length, "entry")}</Badge>}
       />
 
@@ -5946,7 +9176,7 @@ function BrandTeamRunLedgerPanel({ entries }: { entries: DearMeWorkbenchRunLedge
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="outline">{roleLabel(entry.role)}</Badge>
                     <Badge variant="outline">{WORKSTREAM_STATUS_LABELS[entry.status]}</Badge>
-                    {entry.needsApproval ? <Badge variant="secondary">Waiting on you</Badge> : null}
+                    {entry.needsApproval ? <Badge variant="secondary">Launch call ready</Badge> : null}
                   </div>
                 }
               >
@@ -5970,8 +9200,8 @@ function BrandTeamRunLedgerPanel({ entries }: { entries: DearMeWorkbenchRunLedge
         <DearMeEmptyState
           className="mt-4"
           icon={Workflow}
-          title="The run ledger starts after private work begins"
-          description="Start the first cycle to see what the team moved, prepared, learned, held safely, skipped, and needs from you."
+          title="The run ledger starts after brand work begins"
+          description="Start the first cycle to see what the team moved, prepared, learned, staged at the boundary, skipped, and needs from you."
         />
       )}
     </DearMePanel>
@@ -5994,7 +9224,7 @@ function DearMeLetterPanel({
       <DearMeWorkbenchSectionHeader
         icon={FileText}
         eyebrow="Weekly Dear me"
-        title="Private progress letter"
+        title="Progress letter"
         description="A weekly ritual for what changed, what needs a call, and what the team is learning."
       />
       {report ? (
@@ -6030,7 +9260,7 @@ function DearMeLetterPanel({
                 Proof pack review
               </div>
               <p className="mt-1 text-sm text-foreground/80">
-                DearMe prepared the draft and this report from one private proof pack. Review once; nothing public moves until you approve it.
+                DearMe prepared the draft and this report from one proof pack. Review once; anything public stays behind your launch call.
               </p>
             </section>
           ) : null}
@@ -6139,7 +9369,7 @@ function LiveTeamFeedPanel({
       <DearMeWorkbenchSectionHeader
         icon={Workflow}
         eyebrow="Live proof feed"
-        description="A live proof feed for the work your team prepared, updated, or held for your call. The machinery stays backstage."
+        description="A live proof feed for the work your team prepared, updated, or staged for your call. The machinery stays backstage."
         trailing={
           <div className="flex flex-wrap gap-2 sm:justify-end">
             <Badge variant={needsCallCount > 0 ? "default" : "outline"}>
@@ -6169,6 +9399,7 @@ function LiveTeamFeedPanel({
                 const canOpen = Boolean(item.approvalId || issueReference);
                 const actionLabel = canOpen ? liveFeedActionLabel(item) : null;
                 const reviewableOutputId = liveFeedReviewableOutputId(item);
+                const isStuck = isReviewLoopStuck(item.reviewLoop);
                 const isLatest = section.id === liveFeedSections[0]?.id && index === 0;
 
                 return (
@@ -6243,8 +9474,9 @@ function LiveTeamFeedPanel({
                       <FocusedPreparedWorkReviewControls
                         outputId={reviewableOutputId}
                         noteId={`dearme-live-feed-output-note-${section.id}-${index}`}
-                        description="Review this private work here. Keep it moving, request changes, ask for another pass, or choose a new direction."
-                        disabledReason="This private work is still moving; DearMe will bring it back when it needs your call."
+                        description="Review this brand work here. Keep it moving, request changes, ask for another pass, or choose a new direction."
+                        disabledReason={isStuck ? REVIEW_LOOP_STUCK_DISABLED_REASON : "This brand work is still moving; DearMe will bring it back when it needs your call."}
+                        isReviewable={!isStuck}
                         reviewState={outputReviewState}
                         onReviewOutput={onReviewOutput}
                       />
@@ -6271,6 +9503,7 @@ function VoiceMemoryPanel({
   onUpdate,
   onArchive,
   onRestore,
+  onOpenWorkReady,
 }: {
   memory: DearMeWorkbenchMemory;
   sourceReviewFocus: DearMeSourceReviewFocus | null;
@@ -6282,6 +9515,7 @@ function VoiceMemoryPanel({
   onUpdate: (memoryId: string, input: DearMeMemoryUpdate) => void;
   onArchive: (memoryId: string) => void;
   onRestore: (memoryId: string) => void;
+  onOpenWorkReady: () => void;
 }) {
   const [kind, setKind] = useState<DearMeMemoryUpdateKind>("voice_sample");
   const [sourceGuideId, setSourceGuideId] = useState<MemorySourceGuideId>("writing_sample");
@@ -6310,13 +9544,13 @@ function VoiceMemoryPanel({
     : null;
   const sourceLabelText =
     sourceInputMode === "link"
-      ? "Private link"
+      ? "Source link"
       : sourceInputMode === "import_note"
         ? "Source to import"
         : "Source or note";
   const sourcePlaceholder =
     sourceInputMode === "link"
-      ? "https://example.com/private-source"
+      ? "https://example.com/source"
       : sourceInputMode === "import_note"
         ? "Resume, transcript, portfolio, call notes, or backlog item"
         : selectedGuide.sourcePlaceholder;
@@ -6348,6 +9582,27 @@ function VoiceMemoryPanel({
     recordedMemory && !recordedMemoryAlreadyLoaded && recordedMemory.kind === "proof_point"
       ? memory.proofCount + 1
       : memory.proofCount;
+  const voiceMemoryReceiptText = [
+    "DearMe Voice & Memory receipt",
+    `Summary: ${customerProofPackSummary(memory.summary)}`,
+    `Voice profile: ${customerProofPackSummary(voiceProfile.title)} / ${VOICE_PROFILE_STATUS_LABELS[voiceProfile.status]} / ${voiceProfile.confidence}% confidence / ${voiceProfile.sampleCount} samples`,
+    `Guidance: ${customerProofPackSummary(voiceProfile.guidance)}`,
+    `Next voice step: ${customerProofPackSummary(voiceProfile.nextStep)}`,
+    `Tone signals: ${voiceProfile.draftTone.length > 0 ? voiceProfile.draftTone.join(", ") : "Waiting for real samples"}`,
+    `Sources: ${displayedSourceCount} saved / ${displayedVoiceSampleCount} voice samples / ${displayedProofCount} proof sources`,
+    `Source coverage: ${MEMORY_SOURCE_PLAN_STATUS_LABELS[sourcePlan.status]} - ${customerProofPackSummary(sourcePlan.summary)}`,
+    ...sourcePlan.required.map((requirement) =>
+      `Coverage - ${requirement.label}: ${MEMORY_SOURCE_REQUIREMENT_STATUS_LABELS[requirement.status]} (${requirement.count}/${requirement.target}). ${customerProofPackSummary(requirement.nextAction)}`,
+    ),
+    `Review preferences: ${reviewPreferences.length > 0 ? reviewPreferences.map((item) => customerProofPackSummary(item.bodyPreview)).join(" | ") : "No review preferences saved yet"}`,
+    `Latest memory: ${visibleLatestMemory.length > 0 ? visibleLatestMemory.slice(0, 3).map((item) => `${MEMORY_KIND_LABELS[item.kind]} - ${customerProofPackSummary(item.title ?? MEMORY_KIND_LABELS[item.kind])}: ${customerProofPackSummary(item.bodyPreview)}`).join(" | ") : "No saved memory yet"}`,
+    `Source review: ${memory.sourceReviewQueue.length > 0 ? `${memory.sourceReviewQueue.length} source${memory.sourceReviewQueue.length === 1 ? "" : "s"} waiting for review` : "No source review waiting"}`,
+    "Boundary: DearMe can use this privately for drafts, opportunities, reports, portfolio proof, and review prep; public sends, page changes, and spend still wait for the launch call.",
+    "Next support step: Save this receipt when handing the account to support or before the next brand cycle.",
+  ].join("\n");
+  const downloadVoiceMemoryReceipt = useCallback(() => {
+    downloadDearMeReceipt(voiceMemoryReceiptText, DEARME_VOICE_MEMORY_RECEIPT_FILENAME);
+  }, [voiceMemoryReceiptText]);
   const handledSourceReviewFocusRequest = useRef<number | null>(null);
 
   function resetMemoryDraft() {
@@ -6407,7 +9662,7 @@ function VoiceMemoryPanel({
       return;
     }
     if (trimmedBody.length > VOICE_MEMORY_SOURCE_BODY_MAX_LENGTH) {
-      setLocalError("Keep private sources under 4,000 characters for now.");
+      setLocalError("Keep saved sources under 4,000 characters for now.");
       return;
     }
     if (trimmedTitle.length > VOICE_MEMORY_SOURCE_TITLE_MAX_LENGTH) {
@@ -6420,7 +9675,7 @@ function VoiceMemoryPanel({
     }
     if (sourceInputMode === "link") {
       if (!trimmedSourceLabel) {
-        setLocalError("Add the private link DearMe should remember.");
+        setLocalError("Add the source link DearMe should remember.");
         return;
       }
       try {
@@ -6540,6 +9795,12 @@ function VoiceMemoryPanel({
         icon={Sparkles}
         eyebrow="Voice & Memory"
         description={memory.summary}
+        trailing={
+          <Button type="button" size="sm" variant="outline" onClick={onOpenWorkReady}>
+            <FileText className="h-4 w-4" />
+            Review Work Ready
+          </Button>
+        }
       />
 
       <DearMeMetricStrip className="mt-5">
@@ -6547,6 +9808,35 @@ function VoiceMemoryPanel({
         <Metric icon={Sparkles} label="Voice" value={displayedVoiceSampleCount} />
         <Metric icon={ShieldCheck} label="Proof" value={displayedProofCount} />
       </DearMeMetricStrip>
+
+      <section className="mt-5 rounded-md border border-border bg-muted/20 p-4" aria-label="Voice & Memory receipt">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Memory receipt</p>
+            <p className="mt-1 text-sm font-medium text-foreground">What DearMe will remember next</p>
+            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+              Save this before a support handoff or a new brand cycle so the account keeps its voice,
+              proof, review preferences, and public-launch boundary.
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            aria-label={`Download ${DEARME_VOICE_MEMORY_RECEIPT_FILENAME}`}
+            onClick={downloadVoiceMemoryReceipt}
+          >
+            <Download className="h-4 w-4" />
+            Download receipt
+          </Button>
+        </div>
+        <Textarea
+          aria-label="Voice & Memory receipt note"
+          className="mt-4 min-h-40 resize-none bg-background/80 font-mono text-xs leading-relaxed"
+          readOnly
+          value={voiceMemoryReceiptText}
+        />
+      </section>
 
       <div className="mt-5 grid gap-4 border-t border-border pt-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(12rem,0.6fr)]">
         <div>
@@ -6631,7 +9921,7 @@ function VoiceMemoryPanel({
             <div>
               <p className="text-sm font-medium">Source review</p>
               <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-                Private links and import notes wait here until you turn them into reviewed Voice & Memory facts.
+                Source links and import notes wait here until you turn them into reviewed Voice & Memory facts.
               </p>
             </div>
             <Badge variant="outline">{memory.sourceReviewQueue.length} to review</Badge>
@@ -6715,7 +10005,7 @@ function VoiceMemoryPanel({
                 Review preferences
               </p>
               <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-                DearMe uses these review notes as next-draft guidance before future private work.
+                DearMe uses these review notes as next-draft guidance before future brand work.
               </p>
             </div>
             <Badge variant="outline">{reviewPreferences.length} learned</Badge>
@@ -6747,7 +10037,7 @@ function VoiceMemoryPanel({
           <FieldLabel htmlFor="dearme-memory-source-guide" label="Source guide" />
           {editingMemoryId ? (
             <div className="mt-2 flex flex-col gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
-              <span>Revising a saved source. Future private work will use the revised version.</span>
+              <span>Revising a saved source. Future brand work will use the revised version.</span>
               <Button type="button" size="sm" variant="outline" onClick={handleCancelRevise}>
                 Cancel revise
               </Button>
@@ -6882,7 +10172,7 @@ function VoiceMemoryPanel({
               onChange={(event) => setBody(event.target.value)}
             />
             <p className="mt-2 text-xs text-muted-foreground">
-              Add at least 20 characters. DearMe uses this as private memory, not public copy.
+              Add at least 20 characters. DearMe uses this as saved memory, not public copy.
             </p>
             {localError || error ? (
               <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -6890,8 +10180,15 @@ function VoiceMemoryPanel({
               </div>
             ) : null}
             {feedback && !error ? (
-              <div className="mt-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-foreground">
-                {feedback}
+              <div
+                className="mt-2 flex flex-col gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-foreground sm:flex-row sm:items-center sm:justify-between"
+                aria-label="Voice & Memory save receipt"
+              >
+                <span>{feedback}</span>
+                <Button type="button" size="sm" variant="outline" onClick={onOpenWorkReady}>
+                  <FileText className="h-4 w-4" />
+                  Review refreshed work
+                </Button>
               </div>
             ) : null}
             <div className="mt-3 flex justify-end">
@@ -6981,10 +10278,10 @@ function VoiceMemoryPanel({
       <Dialog open={retireCandidate !== null} onOpenChange={handleRetireDialogOpenChange}>
         <DialogContent showCloseButton={!isPending}>
           <DialogHeader>
-            <DialogTitle>Retire private source?</DialogTitle>
+            <DialogTitle>Retire saved source?</DialogTitle>
             <DialogDescription>
               DearMe will stop using {retireCandidateTitle} for future drafts. The source stays in
-              private history so you can restore it later.
+              saved history so you can restore it later.
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
@@ -7025,7 +10322,7 @@ function VoiceMemoryPanel({
             <div>
               <p className="text-sm font-medium">Retired sources</p>
               <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-                These stay private. Restore one if DearMe should use it again.
+                These stay saved. Restore one if DearMe should use it again.
               </p>
             </div>
             <Badge variant="outline">{visibleArchivedMemory.length} retired</Badge>
@@ -7062,22 +10359,27 @@ function VoiceMemoryPanel({
 }
 
 function ChiefOfStaffComposerPanel({
+  companyId,
   paidBetaActive,
   isPending,
   error,
   result,
   onSubmit,
   onOpenIssue,
+  onOpenVoiceMemory,
 }: {
+  companyId: string;
   paidBetaActive: boolean;
   isPending: boolean;
   error: string | null;
   result: DearMeChiefOfStaffMessageResult | null;
   onSubmit: (input: { intent: DearMeChiefOfStaffMessageIntent; message: string }) => void;
   onOpenIssue: (issueReference: string) => void;
+  onOpenVoiceMemory: () => void;
 }) {
   const [intent, setIntent] = useState<DearMeChiefOfStaffMessageIntent>(DEFAULT_CHIEF_OF_STAFF_INTENT);
   const [message, setMessage] = useState("");
+  const [recentBriefs, setRecentBriefs] = useState(() => readDearMeChiefOfStaffRecentControls(companyId));
   const selectedIntent = CHIEF_OF_STAFF_INTENT_OPTIONS.find((option) => option.value === intent) ?? {
     value: DEFAULT_CHIEF_OF_STAFF_INTENT,
     label: "Plan next moves",
@@ -7086,18 +10388,53 @@ function ChiefOfStaffComposerPanel({
   const trimmedMessage = message.trim();
   const disabled = !paidBetaActive || isPending || trimmedMessage.length === 0;
 
+  useEffect(() => {
+    setRecentBriefs(readDearMeChiefOfStaffRecentControls(companyId));
+  }, [companyId]);
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (disabled) return;
+    rememberRecentBrief(chiefOfStaffRecentBriefFromMessage(intent, trimmedMessage));
     onSubmit({ intent, message: trimmedMessage });
     setMessage("");
+  }
+
+  function rememberRecentBrief(brief: DearMeChiefOfStaffRecentBrief) {
+    setRecentBriefs((current) => {
+      const next = [brief, ...current.filter((item) => item.id !== brief.id)].slice(
+        0,
+        DEARME_CHIEF_OF_STAFF_RECENT_CONTROLS_MAX,
+      );
+      writeDearMeChiefOfStaffRecentControls(companyId, next);
+      return next;
+    });
   }
 
   function handleCycleControl(control: (typeof CHIEF_OF_STAFF_CYCLE_CONTROLS)[number]) {
     if (!paidBetaActive || isPending) return;
     setIntent(control.intent);
     setMessage(control.message);
+    rememberRecentBrief(chiefOfStaffRecentBriefFromControl(control));
   }
+
+  function handleRecentBrief(brief: DearMeChiefOfStaffRecentBrief) {
+    if (!paidBetaActive || isPending) return;
+    setIntent(brief.intent);
+    setMessage(brief.message);
+    rememberRecentBrief(brief);
+  }
+
+  const resultIsFeedbackBrief = result?.title.toLowerCase().includes("handle feedback") ?? false;
+  const resultTitle = resultIsFeedbackBrief
+    ? (result?.status === "queued" ? "Feedback brief sent" : "Feedback brief saved")
+    : (result?.status === "queued" ? "Brief sent" : "Brief saved");
+  const resultOpenLabel = resultIsFeedbackBrief ? "Open feedback work" : "Open brand work";
+  const resultReceiptText = result ? chiefOfStaffBriefReceiptText(result) : "";
+  const downloadResultReceipt = useCallback(() => {
+    if (!resultReceiptText) return;
+    downloadDearMeReceipt(resultReceiptText, DEARME_CHIEF_OF_STAFF_BRIEF_RECEIPT_FILENAME);
+  }, [resultReceiptText]);
 
   return (
     <DearMePanel className="bg-muted/10" aria-label="Chief of Staff composer">
@@ -7105,10 +10442,10 @@ function ChiefOfStaffComposerPanel({
         icon={MessageSquare}
         eyebrow="Chief of Staff"
         title="Brief the team"
-        description="Ask for the next plan, a content batch, opportunity research, a portfolio update, or this week's direction. DearMe turns the ask into reviewable work automatically."
+        description="Ask for the next plan, a content batch, opportunity research, a portfolio update, customer feedback handling, or this week's direction. DearMe turns the ask into reviewable work automatically."
         trailing={
           <Badge variant={paidBetaActive ? "secondary" : "outline"}>
-            {paidBetaActive ? "Private work ready" : "Paid beta needed"}
+            {paidBetaActive ? "Brand work ready" : "Paid beta needed"}
           </Badge>
         }
       />
@@ -7117,7 +10454,7 @@ function ChiefOfStaffComposerPanel({
           <div>
             <p className="text-xs font-medium uppercase text-muted-foreground">Cycle controls</p>
             <p className="mt-1 text-sm text-foreground/85">
-              Pick the next private cycle; your team turns it into reviewable moves.
+              Pick the next brand cycle; your team turns it into reviewable moves.
             </p>
           </div>
           <Badge variant="outline">Review pass</Badge>
@@ -7150,6 +10487,29 @@ function ChiefOfStaffComposerPanel({
             );
           })}
         </div>
+        {recentBriefs.length > 0 ? (
+          <div className="mt-3 rounded-md border border-border bg-background/70 p-3" aria-label="Recent Chief of Staff briefs">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs font-medium uppercase text-muted-foreground">Recent briefs</p>
+              <Badge variant="outline">One-click replay</Badge>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {recentBriefs.map((brief) => (
+                <Button
+                  key={brief.id}
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-auto whitespace-normal text-left"
+                  disabled={!paidBetaActive || isPending}
+                  onClick={() => handleRecentBrief(brief)}
+                >
+                  {brief.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
       <form className="mt-5 space-y-3" onSubmit={handleSubmit}>
         <div className="grid gap-3 lg:grid-cols-[16rem_minmax(0,1fr)]">
@@ -7195,7 +10555,7 @@ function ChiefOfStaffComposerPanel({
       </form>
       {!paidBetaActive ? (
         <div className="mt-4 rounded-md border border-border bg-background/70 px-3 py-2 text-sm text-muted-foreground">
-          Activate paid beta, then brief the private team.
+          Activate paid beta, then brief the brand team.
         </div>
       ) : null}
       {error ? (
@@ -7206,17 +10566,37 @@ function ChiefOfStaffComposerPanel({
       {result ? (
         <div className="mt-4 flex flex-col gap-3 rounded-md border border-border bg-background/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <p className="text-sm font-medium">{result.status === "queued" ? "Brief sent" : "Brief saved"}</p>
+            <p className="text-sm font-medium">{resultTitle}</p>
             <p className="mt-1 text-sm text-muted-foreground">{result.nextStep}</p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenIssue(result.issueIdentifier ?? result.issueId)}
-          >
-            <ArrowRight className="h-4 w-4" />
-            Open private work
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            {resultIsFeedbackBrief ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onOpenVoiceMemory}
+              >
+                <Sparkles className="h-4 w-4" />
+                Open Voice & Memory
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={downloadResultReceipt}
+            >
+              <Download className="h-4 w-4" />
+              Download receipt
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenIssue(result.issueIdentifier ?? result.issueId)}
+            >
+              <ArrowRight className="h-4 w-4" />
+              {resultOpenLabel}
+            </Button>
+          </div>
         </div>
       ) : null}
     </DearMePanel>
@@ -7225,24 +10605,33 @@ function ChiefOfStaffComposerPanel({
 
 function TeamWorkbenchPanel({
   companyId,
+  paidBetaCohortCompanyIds,
+  paidBetaCohortCompanyNames,
   paidBetaActive,
   selectedView,
   decisionFocus,
   canStartPrivateWork,
+  onOpenPaidBetaAccount,
   onFocusFirstCycle,
   onOpenApproval,
   onOpenIssue,
   onOpenWorkItem,
+  onOpenWorkReady,
+  onOpenLaunchProof,
+  onOpenVoiceMemory,
   onReviewApproval,
   onReviewOutput,
   reviewState,
   outputReviewState,
 }: {
   companyId: string;
+  paidBetaCohortCompanyIds: string[];
+  paidBetaCohortCompanyNames: Record<string, string>;
   paidBetaActive: boolean;
   selectedView: DearMePageView;
   decisionFocus: DearMeDecisionFocus | null;
   canStartPrivateWork: boolean;
+  onOpenPaidBetaAccount: (companyId: string) => void;
   onFocusFirstCycle: () => void;
   onOpenApproval: (approvalId: string) => void;
   onOpenIssue: (issueReference: string, outputId?: string | null) => void;
@@ -7251,6 +10640,9 @@ function TeamWorkbenchPanel({
     outputId: string,
     intent?: DearMeReviewEntryIntent | null,
   ) => void;
+  onOpenWorkReady: () => void;
+  onOpenLaunchProof: () => void;
+  onOpenVoiceMemory: () => void;
   onReviewApproval: (
     approvalId: string,
     action: DearMeApprovalReviewAction,
@@ -7264,11 +10656,19 @@ function TeamWorkbenchPanel({
   const [memoryError, setMemoryError] = useState<string | null>(null);
   const [chiefOfStaffError, setChiefOfStaffError] = useState<string | null>(null);
   const [chiefOfStaffResult, setChiefOfStaffResult] = useState<DearMeChiefOfStaffMessageResult | null>(null);
+  const [chiefOfStaffEntryPoint, setChiefOfStaffEntryPoint] = useState<
+    "composer" | "support_handoff" | "empty_week_recovery" | null
+  >(null);
   const [sourceReviewFocus, setSourceReviewFocus] = useState<DearMeSourceReviewFocus | null>(null);
   const [livePulse, setLivePulse] = useState<DearMeLiveTeamPulse | null>(null);
   const workbenchQuery = useQuery({
     queryKey: queryKeys.dearme.workbench(companyId),
     queryFn: () => dearmeApi.getWorkbench(companyId),
+  });
+  const paidBetaCohortQuery = useQuery({
+    queryKey: queryKeys.dearme.paidBetaCohort(paidBetaCohortCompanyIds),
+    queryFn: () => dearmeApi.getPaidBetaCohort(paidBetaCohortCompanyIds),
+    enabled: paidBetaActive && paidBetaCohortCompanyIds.length > 0,
   });
   useEffect(() => {
     const workbenchKey = queryKeys.dearme.workbench(companyId);
@@ -7323,7 +10723,7 @@ function TeamWorkbenchPanel({
       setChiefOfStaffError(
         dearMeCustomerErrorMessage(
           err,
-          "Chief of Staff brief needs attention. Try again before starting the next private move.",
+          "Chief of Staff brief needs attention. Try again before starting the next brand move.",
         ),
       );
     },
@@ -7344,7 +10744,7 @@ function TeamWorkbenchPanel({
       setMemoryError(
         dearMeCustomerErrorMessage(
           err,
-          "Voice & Memory needs attention. Try again before adding or editing private sources.",
+          "Voice & Memory needs attention. Try again before adding or editing saved sources.",
         ),
       );
     },
@@ -7360,7 +10760,7 @@ function TeamWorkbenchPanel({
       setMemoryError(
         dearMeCustomerErrorMessage(
           err,
-          "Voice & Memory needs attention. Try again before adding or editing private sources.",
+          "Voice & Memory needs attention. Try again before adding or editing saved sources.",
         ),
       );
     },
@@ -7375,7 +10775,7 @@ function TeamWorkbenchPanel({
       setMemoryError(
         dearMeCustomerErrorMessage(
           err,
-          "Voice & Memory needs attention. Try again before retiring a private source.",
+          "Voice & Memory needs attention. Try again before retiring a saved source.",
         ),
       );
     },
@@ -7390,7 +10790,7 @@ function TeamWorkbenchPanel({
       setMemoryError(
         dearMeCustomerErrorMessage(
           err,
-          "Voice & Memory needs attention. Try again before restoring a private source.",
+          "Voice & Memory needs attention. Try again before restoring a saved source.",
         ),
       );
     },
@@ -7412,7 +10812,7 @@ function TeamWorkbenchPanel({
         <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {dearMeCustomerErrorMessage(
             workbenchQuery.error,
-            "DearMe team progress needs attention. Try again before reviewing private work.",
+            "DearMe team progress needs attention. Try again before reviewing brand work.",
           )}
         </div>
         <TeamWorkstreamPanel previewReady={false} paidBetaActive={paidBetaActive} />
@@ -7423,6 +10823,9 @@ function TeamWorkbenchPanel({
   const readyItems = workbench.workReady.slice(0, 3);
   const decisions = workbench.decisionsNeeded.slice(0, 3);
   const batches = workbench.batchDecisions.slice(0, 3);
+  const batchReviewLoops = new Map(
+    batches.map((batch) => [batch.id, batchPreparedOutputReviewLoop(batch, workbench)]),
+  );
   const sourceReviews = workbench.memory.sourceReviewQueue.slice(0, 3);
   const liveStream = workbench.workStream.slice(0, 6);
   const privateExecutionHandoff = workbench.recentProgress.find((item) =>
@@ -7440,8 +10843,23 @@ function TeamWorkbenchPanel({
   const focusedBatch = decisionFocus && !focusedDecision
     ? workbench.batchDecisions.find((batch) => matchesBatchFocus(batch, decisionFocus)) ?? null
     : null;
+  const focusedBatchReviewLoop = focusedBatch
+    ? batchPreparedOutputReviewLoop(focusedBatch, workbench)
+    : null;
   const focusedWorkItem = decisionFocus && !focusedDecision && !focusedBatch
     ? [...workbench.workReady, ...workbench.activeWork].find((item) => matchesWorkItemFocus(item, decisionFocus)) ?? null
+    : null;
+  const supportHandoffResult = chiefOfStaffEntryPoint === "support_handoff" ? chiefOfStaffResult : null;
+  const supportHandoffError = chiefOfStaffEntryPoint === "support_handoff" ? chiefOfStaffError : null;
+  const emptyWeekRecoveryResult = chiefOfStaffEntryPoint === "empty_week_recovery" ? chiefOfStaffResult : null;
+  const emptyWeekRecoveryError = chiefOfStaffEntryPoint === "empty_week_recovery" ? chiefOfStaffError : null;
+  const composerResult = chiefOfStaffEntryPoint === "composer" ? chiefOfStaffResult : null;
+  const composerError = chiefOfStaffEntryPoint === "composer" ? chiefOfStaffError : null;
+  const paidBetaCohortError = paidBetaCohortQuery.isError
+    ? dearMeCustomerErrorMessage(
+      paidBetaCohortQuery.error,
+      "Paid cohort health needs attention. Try again before reviewing paid operations.",
+    )
     : null;
 
   function openDecision(decision: DearMeWorkbenchDecision) {
@@ -7487,16 +10905,34 @@ function TeamWorkbenchPanel({
     }
   }
 
+  function openNextDecision() {
+    const currentWorkbench = workbenchQuery.data;
+    if (!currentWorkbench) return;
+    if (currentWorkbench.batchDecisions[0]) {
+      openBatch(currentWorkbench.batchDecisions[0]);
+      return;
+    }
+    if (currentWorkbench.decisionsNeeded[0]) {
+      openDecision(currentWorkbench.decisionsNeeded[0]);
+      return;
+    }
+    if (currentWorkbench.memory.sourceReviewQueue[0]) {
+      openSourceReview(currentWorkbench.memory.sourceReviewQueue[0]);
+    }
+  }
+
   return (
     <section className="space-y-4" aria-label="DearMe brand workroom">
       {decisionFocus ? (
         <FocusedDecisionPanel
           decision={focusedDecision}
           batch={focusedBatch}
+          batchReviewLoop={focusedBatchReviewLoop}
           workItem={focusedWorkItem}
           onOpenDecision={openDecision}
           onOpenBatch={openBatch}
           onOpenWorkItem={openWorkItem}
+          onOpenVoiceMemory={onOpenVoiceMemory}
           onReviewApproval={onReviewApproval}
           onReviewOutput={onReviewOutput}
           reviewState={reviewState}
@@ -7510,19 +10946,7 @@ function TeamWorkbenchPanel({
         livePulse={livePulse}
         canStartPrivateWork={canStartPrivateWork}
         onFocusFirstCycle={onFocusFirstCycle}
-        onOpenNextDecision={() => {
-          if (workbench.batchDecisions[0]) {
-            openBatch(workbench.batchDecisions[0]);
-            return;
-          }
-          if (workbench.decisionsNeeded[0]) {
-            openDecision(workbench.decisionsNeeded[0]);
-            return;
-          }
-          if (workbench.memory.sourceReviewQueue[0]) {
-            openSourceReview(workbench.memory.sourceReviewQueue[0]);
-          }
-        }}
+        onOpenNextDecision={openNextDecision}
       />
 
       {privateExecutionHandoff ? (
@@ -7542,19 +10966,62 @@ function TeamWorkbenchPanel({
 
       <TeamSummaryPanel workbench={workbench} paidBetaActive={paidBetaActive} />
 
-      <TeamOperatingPolicyPanel workbench={workbench} paidBetaActive={paidBetaActive} />
+      <TeamOperatingPolicyPanel
+        workbench={workbench}
+        paidBetaActive={paidBetaActive}
+        paidBetaCohort={paidBetaCohortQuery.data ?? null}
+        paidBetaCohortCompanyNames={paidBetaCohortCompanyNames}
+        paidBetaCohortLoading={paidBetaCohortQuery.isLoading}
+        paidBetaCohortError={paidBetaCohortError}
+        supportHandoffPending={chiefOfStaffMutation.isPending}
+        supportHandoffResult={supportHandoffResult}
+        supportHandoffError={supportHandoffError}
+        emptyWeekRecoveryPending={chiefOfStaffMutation.isPending}
+        emptyWeekRecoveryResult={emptyWeekRecoveryResult}
+        emptyWeekRecoveryError={emptyWeekRecoveryError}
+        onStartEmptyWeekRecovery={(message) => {
+          setChiefOfStaffEntryPoint("empty_week_recovery");
+          chiefOfStaffMutation.mutate({
+            intent: "handle_feedback",
+            message,
+          });
+        }}
+        onHandleSupportHandoff={(message) => {
+          setChiefOfStaffEntryPoint("support_handoff");
+          chiefOfStaffMutation.mutate({
+            intent: "handle_feedback",
+            message,
+          });
+        }}
+        onOpenEmptyWeekRecoveryIssue={onOpenIssue}
+        onOpenSupportHandoffIssue={onOpenIssue}
+        onOpenVoiceMemory={onOpenVoiceMemory}
+        onOpenLaunchProof={onOpenLaunchProof}
+        onOpenPaidBetaAccount={onOpenPaidBetaAccount}
+      />
 
       <BrandTeamRunLedgerPanel entries={visibleRunLedger} />
 
-      <OperatingLoopPanel workbench={workbench} paidBetaActive={paidBetaActive} />
+      <OperatingLoopPanel
+        workbench={workbench}
+        paidBetaActive={paidBetaActive}
+        onOpenVoiceMemory={onOpenVoiceMemory}
+        onOpenNextDecision={openNextDecision}
+        onOpenWorkReady={onOpenWorkReady}
+      />
 
       <ChiefOfStaffComposerPanel
+        companyId={companyId}
         paidBetaActive={paidBetaActive}
         isPending={chiefOfStaffMutation.isPending}
-        error={chiefOfStaffError}
-        result={chiefOfStaffResult}
-        onSubmit={(input) => chiefOfStaffMutation.mutate(input)}
+        error={composerError}
+        result={composerResult}
+        onSubmit={(input) => {
+          setChiefOfStaffEntryPoint("composer");
+          chiefOfStaffMutation.mutate(input);
+        }}
         onOpenIssue={onOpenIssue}
+        onOpenVoiceMemory={onOpenVoiceMemory}
       />
 
       <DearMeCockpitGrid variant="primary">
@@ -7566,13 +11033,16 @@ function TeamWorkbenchPanel({
           onReviewOutput={onReviewOutput}
         />
         <DecisionsNeededPanel
+          companyId={companyId}
           batches={batches}
+          batchReviewLoops={batchReviewLoops}
           decisions={decisions}
           sourceReviews={sourceReviews}
           decisionFocus={decisionFocus}
           onOpenBatch={openBatch}
           onOpenDecision={openDecision}
           onOpenSourceReview={openSourceReview}
+          onOpenWorkReady={onOpenWorkReady}
         />
       </DearMeCockpitGrid>
 
@@ -7595,6 +11065,7 @@ function TeamWorkbenchPanel({
             onUpdate={(memoryId, input) => memoryUpdateMutation.mutate({ memoryId, update: input })}
             onArchive={(memoryId) => memoryArchiveMutation.mutate(memoryId)}
             onRestore={(memoryId) => memoryRestoreMutation.mutate(memoryId)}
+            onOpenWorkReady={onOpenWorkReady}
           />
         </div>
       </DearMeCockpitGrid>
@@ -7632,7 +11103,7 @@ function PreviewPanel({
         className="min-h-[360px] rounded-lg p-5"
         icon={Sparkles}
         title="First cycle preview"
-        description="See the team, first private work, budget, memory seeds, and launch boundaries before anything starts."
+        description="See the team, first brand work, budget, memory seeds, and launch boundaries before anything starts."
       />
     );
   }
@@ -7641,7 +11112,7 @@ function PreviewPanel({
     <section className="space-y-4" aria-label="Profile preview">
       {!previewMatchesForm ? (
         <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-          Refresh the preview before starting the private team.
+          Refresh the preview before starting the brand team.
         </div>
       ) : null}
 
@@ -7705,7 +11176,7 @@ function PreviewPanel({
       <section className="space-y-3">
         <div className="flex items-center gap-2 text-sm font-medium">
           <FileText className="h-4 w-4" />
-          First private work
+          First brand work
         </div>
         <div className="grid gap-2">
           {executionPlan.operations.map((operation) => (
@@ -7739,12 +11210,14 @@ function PaidBetaAccessPanel({
   isLoading,
   isError,
   error,
+  onFocusFirstCycle,
 }: {
   companyId: string;
   status: DearMePaidBetaStatus | null;
   isLoading: boolean;
   isError: boolean;
   error: unknown;
+  onFocusFirstCycle: () => void;
 }) {
   const queryClient = useQueryClient();
   const [amountDollars, setAmountDollars] = useState("250");
@@ -7753,6 +11226,418 @@ function PaidBetaAccessPanel({
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const entitlement = status?.entitlement ?? null;
   const cycleGuardrail = status?.cycleGuardrail ?? null;
+  const paidBetaActive = status?.status === "active";
+  const hostedCheckout = status?.hostedCheckout ?? null;
+  const hostedCheckoutUrl = hostedCheckout?.configured ? hostedCheckout.paymentUrl : null;
+  const hostedCheckoutReady = Boolean(!paidBetaActive && hostedCheckoutUrl);
+  const customerReceiptRows = [
+    {
+      label: "Access",
+      value: paidBetaActive ? "Open" : "Not open yet",
+    },
+    {
+      label: "Paid",
+      value: money(status?.netPaidCents ?? 0),
+    },
+    {
+      label: "Remaining credit",
+      value: money(status?.remainingCreditCents ?? 0),
+    },
+    {
+      label: "Payment date",
+      value: paymentDate(status?.latestPaymentAt ?? null),
+    },
+    {
+      label: "Receipt note",
+      value: paidBetaActive ? status?.latestPaymentDescription || "Paid beta payment" : "Waiting for payment",
+    },
+    {
+      label: "Reference",
+      value: paidBetaActive ? status?.latestExternalInvoiceId || "No reference saved" : "Add after payment",
+    },
+  ];
+  const customerReceiptNextSteps = paidBetaActive
+    ? [
+        {
+          label: "Start brand team",
+          summary: "Brief the team and create the first launch-ready brand assets.",
+        },
+        {
+          label: "Keep credit visible",
+          summary: "DearMe shows remaining credit and monthly spend before more brand work runs.",
+        },
+        {
+          label: "Hold public moves",
+          summary: "Posts, outreach, page changes, and new spend still wait for the launch call.",
+        },
+      ]
+    : [
+        {
+          label: "Take payment first",
+          summary: "Only record access after the customer has actually paid through the private-beta channel.",
+        },
+        {
+          label: "Save a reference",
+          summary: "Add the receipt or invoice reference so support can confirm the account later.",
+        },
+        {
+          label: "Then start work",
+          summary: "Once paid access is open, DearMe can start the first brand cycle.",
+        },
+      ];
+  const customerReceiptText = [
+    "DearMe paid beta customer receipt",
+    `Status: ${
+      paidBetaActive
+        ? "Paid beta account open"
+        : hostedCheckoutReady
+          ? "Checkout ready; account opens after signed receipt"
+          : "Waiting for payment"
+    }`,
+    ...customerReceiptRows.map((item) => `${item.label}: ${item.value}`),
+    hostedCheckoutReady && !paidBetaActive ? `Checkout: ${hostedCheckoutUrl}` : null,
+    `Next steps: ${customerReceiptNextSteps
+      .map((item) => `${item.label} - ${item.summary}`)
+      .join("; ")}`,
+    paidBetaActive
+      ? "First cycle: start the brand team from this account when the customer is ready."
+      : "First cycle: starts after paid access is open.",
+    "Boundary: public posts, outreach, page changes, and spend wait for the launch call.",
+  ].filter(Boolean).join("\n");
+  const downloadCustomerReceipt = useCallback(() => {
+    downloadDearMeReceipt(customerReceiptText, DEARME_PAID_BETA_CUSTOMER_RECEIPT_FILENAME);
+  }, [customerReceiptText]);
+  const welcomePlanItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "first-five-minutes",
+      icon: Sparkles,
+      label: "First 5 minutes",
+      signal: paidBetaActive ? "Proof fast" : "Opens after payment",
+      summary: paidBetaActive
+        ? "Start from one sentence; DearMe prepares the first proof pack, Voice & Memory, and launch boundary."
+        : "After access opens, the first brand cycle starts from one sentence instead of a settings project.",
+      variant: paidBetaActive ? "default" : "secondary",
+    },
+    {
+      key: "first-week",
+      icon: Workflow,
+      label: "First week",
+      signal: paidBetaActive ? "Useful work" : "Ready to run",
+      summary: "DearMe keeps content, opportunities, portfolio proof, reports, and review calls visible.",
+      variant: paidBetaActive ? "default" : "outline",
+    },
+    {
+      key: "support-follow-up",
+      icon: LifeBuoy,
+      label: "Support follow-up",
+      signal: paidBetaActive ? "Check-in ready" : "After access",
+      summary: "Empty weeks or stuck paths get a make-good or clearer-direction follow-up before the next check-in.",
+      variant: paidBetaActive ? "default" : "outline",
+    },
+    {
+      key: "launch-boundary",
+      icon: ShieldCheck,
+      label: "Launch boundary",
+      signal: "Your call",
+      summary: "Public posts, outreach, page changes, and spend wait for the launch call.",
+      variant: "outline",
+    },
+  ];
+  const welcomePlanText = [
+    "DearMe paid beta welcome plan",
+    `Account: ${paidBetaActive ? "paid beta open" : "waiting for paid beta access"}`,
+    `Receipt: ${paidBetaActive ? status?.latestExternalInvoiceId || "No reference saved" : "record after payment"}`,
+    "First 5 minutes: start from one sentence and show a proof pack, Voice & Memory, and launch boundary.",
+    "First week: keep useful content, opportunities, portfolio proof, reports, and review calls visible.",
+    "Support: empty weeks or stuck paths get a make-good or clearer-direction follow-up before the next check-in.",
+    "Boundary: public posts, outreach, page changes, and spend wait for the launch call.",
+  ].join("\n");
+  const downloadWelcomePlanReceipt = useCallback(() => {
+    downloadDearMeReceipt(welcomePlanText, DEARME_PAID_BETA_WELCOME_PLAN_RECEIPT_FILENAME);
+  }, [welcomePlanText]);
+  const parsedCloseKitAmountDollars = Number(amountDollars);
+  const closeKitAmountCents = Number.isFinite(parsedCloseKitAmountDollars)
+    ? Math.max(Math.round(parsedCloseKitAmountDollars * 100), DEARME_PAID_BETA_MIN_PAYMENT_CENTS)
+    : DEARME_PAID_BETA_MIN_PAYMENT_CENTS;
+  const closeKitPrice = paidBetaActive ? money(status?.netPaidCents ?? 0) : money(closeKitAmountCents);
+  const closeKitReference = paidBetaActive
+    ? status?.latestExternalInvoiceId || "No reference saved"
+    : externalInvoiceId.trim() || "Add receipt reference after payment";
+  const closeKitReceiptNote = paidBetaActive
+    ? status?.latestPaymentDescription || "Paid beta payment"
+    : description.trim() || "Private beta payment";
+  const closeKitItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = paidBetaActive
+    ? [
+        {
+          key: "confirm-access",
+          icon: CreditCard,
+          label: "Confirm access",
+          signal: "Account open",
+          summary: `Paid beta access is recorded with ${closeKitReference}.`,
+          variant: "default",
+        },
+        {
+          key: "start-first-cycle",
+          icon: Workflow,
+          label: "Start first cycle",
+          signal: "Ready to start",
+          summary: "Brief the brand team and create the first launch-ready brand assets.",
+          variant: "default",
+        },
+        {
+          key: "keep-launch-boundary",
+          icon: ShieldCheck,
+          label: "Keep launch boundary",
+          signal: "Launch call",
+          summary: "Public posts, outreach, page changes, and spend wait for the launch call.",
+          variant: "outline",
+        },
+      ]
+    : [
+        {
+          key: "close-sale",
+          icon: CreditCard,
+          label: "Close the sale",
+          signal: hostedCheckoutReady ? "Checkout ready" : "Ready to close",
+          summary: hostedCheckoutReady
+            ? `Private beta can be sold at ${closeKitPrice}; checkout opens access after the signed receipt arrives.`
+            : `Private beta can be sold at ${closeKitPrice}; open access only after payment.`,
+          variant: "default",
+        },
+        {
+          key: "open-account",
+          icon: Workflow,
+          label: "Open the account",
+          signal: hostedCheckoutReady ? "Automatic receipt" : "After receipt",
+          summary: hostedCheckoutReady
+            ? "Signed checkout receipts open access automatically; keep manual recording as the fallback."
+            : "Record the payment reference, then start the first brand cycle.",
+          variant: "secondary",
+        },
+        {
+          key: "keep-launch-boundary",
+          icon: ShieldCheck,
+          label: "Keep launch boundary",
+          signal: "Receipts first",
+          summary: "Public claims still wait for approved live delivery receipts.",
+          variant: "outline",
+        },
+      ];
+  const closeKitHandoffText = paidBetaActive
+    ? [
+        "DearMe paid beta start kit",
+        "Account: paid beta open",
+        `Receipt: ${closeKitReference}`,
+        `Paid: ${closeKitPrice}`,
+        `Remaining credit: ${money(status?.remainingCreditCents ?? 0)}`,
+        `Receipt note: ${closeKitReceiptNote}`,
+        "Start: brief the brand team and create the first launch-ready brand assets.",
+        "Boundary: public posts, outreach, page changes, and spend wait for the launch call.",
+      ].join("\n")
+    : [
+        "DearMe private beta close kit",
+        "Offer: personal brand growth team",
+        "Status: ready to sell after payment",
+        `Price: ${closeKitPrice}`,
+        `Receipt note: ${closeKitReceiptNote}`,
+        "What opens: first brand cycle, Voice & Memory, weekly receipt, and launch-call boundary.",
+        hostedCheckoutReady
+          ? "After payment: signed checkout receipt opens access automatically; use manual recording only as fallback."
+          : "After payment: record access with the receipt reference, then start the first brand cycle.",
+        "Not included yet: public launch proof waits for approved live delivery receipts.",
+      ].join("\n");
+  const downloadCloseKitReceipt = useCallback(() => {
+    downloadDearMeReceipt(closeKitHandoffText, DEARME_PAID_BETA_CLOSE_KIT_RECEIPT_FILENAME);
+  }, [closeKitHandoffText]);
+  const paymentPathItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = paidBetaActive
+    ? [
+        {
+          key: "payment-path",
+          icon: CreditCard,
+          label: "Payment path",
+          signal: "Receipt recorded",
+          summary: "This account has a saved payment reference and paid beta access is open.",
+          variant: "default",
+        },
+        {
+          key: "access-activation",
+          icon: CheckCircle2,
+          label: "Activation",
+          signal: "Open",
+          summary: "Brand work can start from the same receipt without another approval loop.",
+          variant: "default",
+        },
+        {
+          key: "checkout-upgrade",
+          icon: Workflow,
+          label: "Self-serve upgrade",
+          signal: "Ready to connect",
+          summary: "Hosted checkout can replace manual recording once the payment link and receipt sync are configured.",
+          variant: "outline",
+        },
+      ]
+    : [
+        {
+          key: "payment-path",
+          icon: CreditCard,
+          label: "Payment path",
+          signal: hostedCheckoutReady ? "Self-serve checkout" : "Manual private beta",
+          summary: hostedCheckoutReady
+            ? "Open the account checkout link; DearMe waits for the signed receipt before unlocking paid work."
+            : "Take payment through the current private-beta channel before opening access.",
+          variant: "secondary",
+        },
+        {
+          key: "access-activation",
+          icon: FileText,
+          label: "Activation",
+          signal: hostedCheckoutReady ? "Receipt sync" : "Record receipt",
+          summary: hostedCheckoutReady
+            ? "Signed checkout receipts are ready to unlock paid beta access for this account."
+            : "Save the amount, receipt note, and reference; DearMe opens brand work from that record.",
+          variant: "default",
+        },
+        {
+          key: "checkout-upgrade",
+          icon: Workflow,
+          label: "Self-serve upgrade",
+          signal: hostedCheckoutReady ? "Connected" : "Ready to connect",
+          summary: hostedCheckout?.summary ??
+            "Hosted checkout can replace manual recording once the payment link and receipt sync are configured.",
+          variant: hostedCheckoutReady ? "default" : "outline",
+        },
+      ];
+  const paymentPathReceiptText = paidBetaActive
+    ? [
+        "DearMe payment path receipt",
+        "Mode: paid beta access recorded",
+        `Receipt: ${closeKitReference}`,
+        `Paid: ${closeKitPrice}`,
+        `Receipt note: ${closeKitReceiptNote}`,
+        "Activation: paid access is open for this account.",
+        "Next: start the first brand cycle from the same account.",
+        "Upgrade path: hosted checkout setup can replace manual recording after the payment link and receipt sync are configured.",
+      ].join("\n")
+    : [
+        "DearMe payment path receipt",
+        hostedCheckoutReady ? "Mode: self-serve hosted checkout" : "Mode: private beta manual payment",
+        `Target amount: ${closeKitPrice}`,
+        `Receipt note: ${closeKitReceiptNote}`,
+        hostedCheckoutReady
+          ? "Collect: send the hosted checkout link for this account."
+          : "Collect: payment reference from the current private-beta channel.",
+        hostedCheckoutReady
+          ? "Activation: signed receipt sync opens paid access automatically."
+          : "Activation: record amount, receipt note, and reference to open paid access.",
+        "Next: start the first brand cycle once access is open.",
+        hostedCheckoutReady
+          ? "Manual fallback: record payment here only if checkout receipt sync needs support."
+          : "Upgrade path: hosted checkout setup can replace manual recording after the payment link and receipt sync are configured.",
+      ].join("\n");
+  const downloadPaymentPathReceipt = useCallback(() => {
+    downloadDearMeReceipt(paymentPathReceiptText, DEARME_PAID_BETA_PAYMENT_PATH_RECEIPT_FILENAME);
+  }, [paymentPathReceiptText]);
+  const operatingReceiptItems: Array<{
+    key: string;
+    icon: LucideIcon;
+    label: string;
+    signal: string;
+    summary: string;
+    variant: "default" | "secondary" | "outline";
+  }> = [
+    {
+      key: "access-receipt",
+      icon: CreditCard,
+      label: "Access receipt",
+      signal: paidBetaActive ? paidBetaReceiptLabel(status) : "Record access",
+      summary: paidBetaActive
+        ? `${money(status?.netPaidCents ?? 0)} net paid access is recorded for this account.`
+        : "Record a paid beta payment after the customer has actually paid through the current private-beta channel.",
+      variant: paidBetaActive ? "default" : "secondary",
+    },
+    {
+      key: "work-unlocked",
+      icon: Workflow,
+      label: "Brand work",
+      signal: paidBetaActive ? "Unlocked" : "Locked",
+      summary: paidBetaActive
+        ? "DearMe can run brand cycles, prepare assets, update Voice & Memory, and prepare launch calls."
+        : "Preview stays available, but new brand cycles wait for paid beta access.",
+      variant: paidBetaActive ? "default" : "secondary",
+    },
+    {
+      key: "support-boundary",
+      icon: MessageSquare,
+      label: "Support boundary",
+      signal: paidBetaActive ? "Operating" : "Ready after access",
+      summary: paidBetaActive
+        ? "Human support is only needed for account access, hosted checkout setup, live external proof, public launch, or spend-sensitive moves."
+        : "Once access is active, DearMe can keep preparing work; hosted checkout setup and real launch/support calls stay with Human Support.",
+      variant: paidBetaActive ? "outline" : "secondary",
+    },
+    {
+      key: "public-launch-proof",
+      icon: ShieldCheck,
+      label: "Public launch proof",
+      signal: "Receipts needed",
+      summary:
+        "Paid beta work can continue, but broad launch claims still wait for approved live delivery receipts.",
+      variant: "outline",
+    },
+  ];
+  const paidBetaOperatingNextStep = paidBetaActive
+    ? "Start the first brand cycle from this account and keep credit, support, and launch boundaries visible."
+    : hostedCheckoutReady
+      ? "Use the hosted checkout link, then open paid access when the signed receipt arrives."
+      : "Collect the private-beta payment, save the receipt reference, then open paid access.";
+  const paidBetaOperatingReceiptText = [
+    "DearMe paid beta operating receipt",
+    `Account: ${paidBetaActive ? "Paid user operating" : "Awaiting paid access"}`,
+    `Access receipt: ${operatingReceiptItems[0]?.signal ?? "Record access"} - ${
+      operatingReceiptItems[0]?.summary ??
+      "Record a paid beta payment after the customer has actually paid through the current private-beta channel."
+    }`,
+    `Brand work: ${operatingReceiptItems[1]?.signal ?? "Locked"} - ${
+      operatingReceiptItems[1]?.summary ?? "Preview stays available, but new brand cycles wait for paid beta access."
+    }`,
+    `Support boundary: ${operatingReceiptItems[2]?.signal ?? "Ready after access"} - ${
+      operatingReceiptItems[2]?.summary ??
+      "Once access is active, DearMe can keep preparing work; hosted checkout setup and real launch/support calls stay with Human Support."
+    }`,
+    `Public launch proof: ${operatingReceiptItems[3]?.signal ?? "Receipts needed"} - ${
+      operatingReceiptItems[3]?.summary ??
+      "Paid beta work can continue, but broad launch claims still wait for approved live delivery receipts."
+    }`,
+    `Paid: ${money(status?.netPaidCents ?? 0)}`,
+    `Remaining credit: ${money(status?.remainingCreditCents ?? 0)}`,
+    `Payment reference: ${paidBetaActive ? status?.latestExternalInvoiceId || "No reference saved" : "Record after payment"}`,
+    `Next support step: ${paidBetaOperatingNextStep}`,
+    "Boundary: paid beta work can run after access is open; public posts, outreach, page changes, new spend, live proof, and irreversible moves wait for the launch call.",
+  ].join("\n");
+  const downloadPaidBetaOperatingReceipt = useCallback(() => {
+    downloadDearMeReceipt(paidBetaOperatingReceiptText, DEARME_PAID_BETA_OPERATING_RECEIPT_FILENAME);
+  }, [paidBetaOperatingReceiptText]);
 
   const recordPaymentMutation = useMutation({
     mutationFn: () => {
@@ -7769,11 +11654,12 @@ function PaidBetaAccessPanel({
         occurredAt: new Date().toISOString(),
       });
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       setPaymentError(null);
       setExternalInvoiceId("");
-      queryClient.invalidateQueries({ queryKey: queryKeys.dearme.paidBetaAccess(companyId) });
+      queryClient.setQueryData(queryKeys.dearme.paidBetaAccess(companyId), result.access);
       queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(companyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dearme.paidBetaCohorts });
       queryClient.invalidateQueries({ queryKey: queryKeys.financeSummary(companyId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.financeEvents(companyId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.activity(companyId) });
@@ -7795,7 +11681,7 @@ function PaidBetaAccessPanel({
   }
 
   return (
-    <DearMePanel aria-label="Paid beta access">
+    <DearMePanel id={DEARME_PAID_BETA_ACCESS_ID} aria-label="Paid beta access">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm font-medium">
@@ -7867,6 +11753,347 @@ function PaidBetaAccessPanel({
         <Metric icon={CheckCircle2} label="Latest receipt" value={paymentDate(status?.latestPaymentAt ?? null)} />
       </div>
 
+      <section
+        aria-label="Paid beta operating receipt"
+        className="mt-4 rounded-md border border-border bg-background px-4 py-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Operating receipt</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              {paidBetaActive ? "Paid access is active; the team can operate." : "Private beta sale is ready when access is recorded."}
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              {paidBetaActive
+                ? "This account can receive private brand-team work with visible credit, support, and launch boundaries."
+                : "Keep the preview free; record paid access only after a real private-beta payment exists."}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <Badge variant={paidBetaActive ? "default" : "secondary"}>
+              {paidBetaActive ? "Paid user operating" : "Awaiting paid access"}
+            </Badge>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-label={`Download ${DEARME_PAID_BETA_OPERATING_RECEIPT_FILENAME}`}
+              onClick={downloadPaidBetaOperatingReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Download receipt
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {operatingReceiptItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-muted/20 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+        <Textarea
+          aria-label="Paid beta operating receipt note"
+          className="mt-4 min-h-40 resize-none bg-muted/20 font-mono text-xs leading-relaxed"
+          readOnly
+          value={paidBetaOperatingReceiptText}
+        />
+      </section>
+
+      <section
+        aria-label="Paid beta customer receipt"
+        className="mt-4 rounded-md border border-border bg-muted/20 px-4 py-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Customer receipt</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              {paidBetaActive ? "Paid beta account is open." : "Receipt appears after paid access is recorded."}
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              {paidBetaActive
+                ? "Use this receipt to confirm access with the customer, then start the first brand cycle from the same account."
+              : "DearMe keeps the preview free and only opens brand work after a real payment is recorded."}
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {hostedCheckoutReady ? (
+              <Button asChild size="sm">
+                <a href={hostedCheckoutUrl ?? undefined} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-4 w-4" />
+                  Open checkout
+                </a>
+              </Button>
+            ) : null}
+            {paidBetaActive ? (
+              <Button type="button" size="sm" onClick={onFocusFirstCycle}>
+                <Sparkles className="h-4 w-4" />
+                Start first cycle now
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-label={`Download ${DEARME_PAID_BETA_CUSTOMER_RECEIPT_FILENAME}`}
+              onClick={downloadCustomerReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Download receipt
+            </Button>
+            <Badge variant={paidBetaActive ? "default" : "secondary"}>
+              {paidBetaActive ? "Account open" : "Waiting for payment"}
+            </Badge>
+          </div>
+        </div>
+
+        <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {customerReceiptRows.map((item) => (
+            <div key={item.label} className="rounded-md border border-border bg-background px-3 py-2">
+              <dt className="text-xs font-medium uppercase text-muted-foreground">{item.label}</dt>
+              <dd className="mt-1 break-words text-sm font-medium text-foreground">{item.value}</dd>
+            </div>
+          ))}
+        </dl>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {customerReceiptNextSteps.map((item) => (
+            <div key={item.label} className="rounded-md border border-border bg-background px-3 py-3">
+              <p className="text-sm font-medium text-foreground">{item.label}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{item.summary}</p>
+            </div>
+          ))}
+        </div>
+        <Textarea
+          aria-label="Paid beta customer receipt note"
+          className="mt-4 min-h-40 resize-none bg-background font-mono text-xs leading-relaxed"
+          readOnly
+          value={customerReceiptText}
+        />
+      </section>
+
+      <section
+        aria-label="Paid beta welcome plan"
+        className="mt-4 rounded-md border border-primary/20 bg-primary/5 px-4 py-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Welcome plan</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              {paidBetaActive
+                ? "The first paid week has a clear promise."
+                : "The first paid week is ready once access opens."}
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              {paidBetaActive
+                ? "Use this as the customer-safe welcome note: first proof fast, weekly value visible, support follow-up owned, launch still under review."
+                : "Before payment, this is the promise DearMe will fulfill after the account opens."}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <Badge variant={paidBetaActive ? "default" : "secondary"}>
+              {paidBetaActive ? "Welcome ready" : "Ready after payment"}
+            </Badge>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              aria-label={`Download ${DEARME_PAID_BETA_WELCOME_PLAN_RECEIPT_FILENAME}`}
+              onClick={downloadWelcomePlanReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              <span>Download receipt</span>
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {welcomePlanItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-background/85 px-3 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        <Textarea
+          aria-label="Paid beta welcome plan note"
+          className="mt-4 min-h-40 resize-none bg-background/85 font-mono text-xs leading-relaxed"
+          readOnly
+          value={welcomePlanText}
+        />
+      </section>
+
+      <section
+        aria-label="Paid beta close kit"
+        className="mt-4 rounded-md border border-primary/20 bg-primary/5 px-4 py-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Close kit</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              {paidBetaActive
+                ? "Paid beta account is ready to start."
+                : "Private beta is ready to sell from this account."}
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              {paidBetaActive
+                ? "Use this customer-safe handoff to confirm access and move directly into the first brand-team cycle."
+                : "Use this customer-safe close note to take payment, record the receipt, and open brand work without extra setup."}
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {hostedCheckoutReady ? (
+              <Button asChild size="sm">
+                <a href={hostedCheckoutUrl ?? undefined} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-4 w-4" />
+                  Open checkout
+                </a>
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              aria-label={`Download ${DEARME_PAID_BETA_CLOSE_KIT_RECEIPT_FILENAME}`}
+              onClick={downloadCloseKitReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              <span>Download receipt</span>
+            </Button>
+            <Badge variant={paidBetaActive ? "default" : "secondary"}>
+              {paidBetaActive ? "Ready to start" : hostedCheckoutReady ? "Checkout ready" : "Ready to close"}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {closeKitItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-background px-3 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        <Textarea
+          aria-label="Paid beta close kit note"
+          className="mt-4 min-h-40 resize-none bg-background/80 font-mono text-xs leading-relaxed"
+          readOnly
+          value={closeKitHandoffText}
+        />
+      </section>
+
+      <section
+        aria-label="Paid beta payment path receipt"
+        className="mt-4 rounded-md border border-border bg-background px-4 py-4"
+      >
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Payment path</p>
+            <h3 className="mt-1 text-base font-semibold text-foreground">
+              {paidBetaActive
+                ? "Payment is recorded; paid work can start."
+                : hostedCheckoutReady
+                  ? "Self-serve checkout is ready for this account."
+                  : "Payment can be taken now; access opens from the receipt."}
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm text-foreground/80">
+              {paidBetaActive
+                ? "This keeps the paid account, receipt, customer handoff, and first brand cycle tied to one account."
+                : hostedCheckoutReady
+                  ? "Open checkout from this account; DearMe will unlock paid beta access after the signed receipt arrives."
+                  : "Use the current private-beta payment path today, then swap in hosted checkout when the link and receipt sync are ready."}
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {hostedCheckoutReady ? (
+              <Button asChild size="sm">
+                <a href={hostedCheckoutUrl ?? undefined} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-4 w-4" />
+                  Open checkout
+                </a>
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              aria-label={`Download ${DEARME_PAID_BETA_PAYMENT_PATH_RECEIPT_FILENAME}`}
+              onClick={downloadPaymentPathReceipt}
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              <span>Download receipt</span>
+            </Button>
+            <Badge variant={paidBetaActive || hostedCheckoutReady ? "default" : "secondary"}>
+              {paidBetaActive
+                ? "Receipt-backed access"
+                : hostedCheckoutReady
+                  ? "Self-serve checkout"
+                  : "Manual payment path"}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {paymentPathItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.key} className="rounded-md border border-border bg-muted/20 px-3 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                  </div>
+                  <Badge variant={item.variant}>{item.signal}</Badge>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{item.summary}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        <Textarea
+          aria-label="Paid beta payment path note"
+          className="mt-4 min-h-40 resize-none bg-muted/20 font-mono text-xs leading-relaxed"
+          readOnly
+          value={paymentPathReceiptText}
+        />
+      </section>
+
       <form className="mt-5 grid gap-3 lg:grid-cols-[9rem_minmax(0,1fr)_minmax(0,1fr)_auto]" onSubmit={handleRecordPayment}>
         <div>
           <FieldLabel htmlFor="dearme-paid-beta-amount" label="Amount" />
@@ -7910,6 +12137,23 @@ function PaidBetaAccessPanel({
           {paymentError}
         </div>
       ) : null}
+
+      {recordPaymentMutation.isSuccess ? (
+        <div
+          className="mt-3 flex flex-col gap-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-foreground sm:flex-row sm:items-center sm:justify-between"
+          aria-label="Paid beta payment recorded"
+        >
+          <span>
+            Payment recorded. Paid beta access is open for this account; start the brand team when the
+            customer is ready.
+          </span>
+          <Button type="button" size="sm" onClick={onFocusFirstCycle}>
+            <Sparkles className="h-4 w-4" />
+            Start first cycle now
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : null}
     </DearMePanel>
   );
 }
@@ -7944,7 +12188,7 @@ function FirstCyclePacketSpotlight({
           </div>
           <p className="mt-1 text-sm text-foreground/85">
             One review path: check the proof pack in Work Ready, make the launch call in Decisions, then keep the
-            live proof feed in view while the private lane keeps moving.
+            live proof feed in view while the brand lane keeps moving.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -7954,7 +12198,7 @@ function FirstCyclePacketSpotlight({
           <Badge variant="outline">Review first</Badge>
           <Badge variant="outline">Work Ready</Badge>
           <Badge variant="outline">Decisions</Badge>
-          <Badge variant="outline">Private lane</Badge>
+          <Badge variant="outline">Brand lane</Badge>
         </div>
       </div>
 
@@ -8012,6 +12256,8 @@ function PrivateWorkPanel({
   outputKindFilter,
   decisionFocus,
   onOpenOutput,
+  onOpenDecisions,
+  onOpenVoiceMemory,
   outputReviewState,
   onReviewOutput,
 }: {
@@ -8019,6 +12265,8 @@ function PrivateWorkPanel({
   outputKindFilter?: DearMeOutputItem["kind"] | null;
   decisionFocus: DearMeDecisionFocus | null;
   onOpenOutput: (output: DearMeOutputItem, intent?: DearMeReviewEntryIntent | null) => void;
+  onOpenDecisions: () => void;
+  onOpenVoiceMemory: () => void;
   outputReviewState: DearMeOutputReviewState;
   onReviewOutput: (outputId: string, action: DearMeOutputReviewAction, decisionNote: string) => void;
 }) {
@@ -8036,7 +12284,10 @@ function PrivateWorkPanel({
     : null;
 
   return (
-    <DearMePanel aria-label={isOpportunityView ? "Opportunity work ready" : "Private work ready"}>
+    <DearMePanel
+      id={isOpportunityView ? "dearme-opportunities-ready" : "dearme-work-ready"}
+      aria-label={isOpportunityView ? "Opportunity work ready" : "Brand work ready"}
+    >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm font-medium">
@@ -8046,23 +12297,34 @@ function PrivateWorkPanel({
           <p className="mt-1 text-sm text-muted-foreground">
             {isOpportunityView
               ? "Prepared opportunity drafts: targets, contact evidence, fit reasons, outreach angles, draft messages, and launch boundaries."
-              : "Review first in Work Ready, make launch calls in Decisions, and let the private lane keep moving between your calls."}
+              : "Review first in Work Ready, make launch calls in Decisions, and let the brand lane keep moving between your calls."}
           </p>
         </div>
-        {outputs.length > 0 ? (
-          <Badge variant="outline">
-            {isOpportunityView
-              ? `${outputs.length} opportunity${outputs.length === 1 ? "" : "ies"}`
-              : pluralizeCount(outputs.length, "private item ready", "private items ready")}
-          </Badge>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          {outputs.length > 0 ? (
+            <Badge variant="outline">
+              {isOpportunityView
+                ? `${outputs.length} opportunity${outputs.length === 1 ? "" : "ies"}`
+                : pluralizeCount(outputs.length, "item ready", "items ready")}
+            </Badge>
+          ) : null}
+          <Button type="button" size="sm" variant="outline" onClick={onOpenDecisions}>
+            <ShieldCheck className="h-4 w-4" />
+            Open Decisions
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={onOpenVoiceMemory}>
+            <Sparkles className="h-4 w-4" />
+            Open Voice & Memory
+          </Button>
+        </div>
       </div>
 
       {outputsQuery.isError ? (
         <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {dearMeCustomerErrorMessage(
             outputsQuery.error,
-            "Prepared work needs attention. Try again before reviewing private drafts.",
+            "Prepared work needs attention. Try again before reviewing drafts.",
           )}
         </div>
       ) : null}
@@ -8077,8 +12339,8 @@ function PrivateWorkPanel({
         <DearMeEmptyState
           className="mt-4"
           icon={isOpportunityView ? Telescope : Workflow}
-          title={isOpportunityView ? "Opportunity scouting has not produced reviewable leads yet" : "Private work has not started yet"}
-          description={isOpportunityView ? "Ask the Chief of Staff to scout practical openings and stage outreach behind the launch boundary." : "Start your private team."}
+          title={isOpportunityView ? "Opportunity scouting has not produced reviewable leads yet" : "Brand work has not started yet"}
+          description={isOpportunityView ? "Ask the Chief of Staff to scout practical openings and stage outreach behind the launch boundary." : "Start your brand team."}
         />
       ) : (
         <>
@@ -8088,6 +12350,7 @@ function PrivateWorkPanel({
               output={focusedOutput}
               entryIntent={decisionFocus?.intent ?? null}
               reviewState={outputReviewState}
+              onOpenVoiceMemory={onOpenVoiceMemory}
               onReviewOutput={onReviewOutput}
             />
           ) : null}
@@ -8101,7 +12364,7 @@ function PrivateWorkPanel({
               const launchBoundary = outputLaunchBoundaryPreview(output);
               const footer = `Updated ${shortDate(output.updatedAt)}${
                 output.documents.length > 0
-                  ? ` / ${output.documents.length} private reference${output.documents.length === 1 ? "" : "s"}`
+                  ? ` / ${output.documents.length} proof reference${output.documents.length === 1 ? "" : "s"}`
                   : ""
               }`;
               return (
@@ -8155,7 +12418,7 @@ function PrivateWorkPanel({
                       {customerProofPackSummary(preview)}
                     </p>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Waiting for the first private draft.</p>
+                    <p className="text-sm text-muted-foreground">Waiting for the first draft.</p>
                   )}
 
                   <p className="mt-3 rounded-md border border-border bg-background/80 p-2 text-xs text-muted-foreground">
@@ -8204,7 +12467,7 @@ function PrivateWorkPanel({
 }
 
 export function DearMeOnboarding() {
-  const { selectedCompanyId, selectedCompany } = useCompany();
+  const { companies, selectedCompanyId, selectedCompany, setSelectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -8217,6 +12480,7 @@ export function DearMeOnboarding() {
   const [previewSignature, setPreviewSignature] = useState<string | null>(null);
   const [firstCycleIntent, setFirstCycleIntent] = useState("");
   const [firstCyclePreview, setFirstCyclePreview] = useState<DearMeFirstCyclePreviewResponse | null>(null);
+  const [firstCyclePrivateWorkStarted, setFirstCyclePrivateWorkStarted] = useState(false);
   const [publicFirstRunStarted, setPublicFirstRunStarted] = useState(false);
   const [fullProfileControlsOpen, setFullProfileControlsOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -8237,6 +12501,14 @@ export function DearMeOnboarding() {
     if (!selectedCompany?.name || form.displayName.trim()) return;
     setForm((current) => ({ ...current, displayName: selectedCompany.name }));
   }, [form.displayName, selectedCompany?.name]);
+
+  useEffect(() => {
+    if (location.hash !== `#${DEARME_PAID_BETA_ACCESS_ID}`) return;
+    document.getElementById(DEARME_PAID_BETA_ACCESS_ID)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [location.hash]);
 
   const currentSignature = useMemo(
     () => createDearMeBrandBlueprintSignature(form, selectedCompany?.name),
@@ -8263,6 +12535,19 @@ export function DearMeOnboarding() {
   const paidBetaEntitlement = paidBetaStatus?.entitlement ?? null;
   const canRequestPaidBetaWork = paidBetaEntitlement?.canRequestBrandOsApproval === true;
   const canStartPrivateWork = paidBetaEntitlement?.canStartPrivateWork === true;
+  const paidBetaCohortCompanyIds = useMemo(
+    () => normalizePaidBetaCohortCompanyIds(selectedCompanyId, companies),
+    [companies, selectedCompanyId],
+  );
+  const paidBetaCohortCompanyNames = useMemo(() => {
+    const entries = companies
+      .filter((company) => company.status !== "archived")
+      .map((company) => [company.id, company.name] as const);
+    if (selectedCompany && !entries.some(([companyId]) => companyId === selectedCompany.id)) {
+      entries.push([selectedCompany.id, selectedCompany.name]);
+    }
+    return Object.fromEntries(entries);
+  }, [companies, selectedCompany]);
 
   function updateField<K extends keyof DearMeBrandBlueprintFormState>(
     key: K,
@@ -8270,6 +12555,7 @@ export function DearMeOnboarding() {
   ) {
     setActionError(null);
     setFirstCyclePreview(null);
+    setFirstCyclePrivateWorkStarted(false);
     setForm((current) => ({ ...current, [key]: value }));
   }
 
@@ -8286,12 +12572,14 @@ export function DearMeOnboarding() {
         : dearmeApi.previewFirstCycle(selectedCompanyId, firstCycleRequest);
     },
     onSuccess: (result, input) => {
+      const nextPreview = withDearMeFirstCycleRuntimeDefaults(result);
       setForm(input.nextForm);
-      setFirstCyclePreview(result);
+      setFirstCyclePreview(nextPreview);
+      setFirstCyclePrivateWorkStarted(input.startPrivateWork);
       setPreviewResult(null);
       setPreviewSignature(null);
       setActionError(null);
-      writeDearMeFirstCyclePreview(result);
+      writeDearMeFirstCyclePreview(nextPreview);
       if (selectedCompanyId && input.startPrivateWork) {
         queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(selectedCompanyId) });
         queryClient.invalidateQueries({ queryKey: queryKeys.dearme.outputs(selectedCompanyId) });
@@ -8303,7 +12591,7 @@ export function DearMeOnboarding() {
       setActionError(
         dearMeCustomerErrorMessage(
           err,
-          "First cycle needs attention. Try again before starting private work.",
+          "First cycle needs attention. Try again before starting brand work.",
         ),
       );
     },
@@ -8325,7 +12613,7 @@ export function DearMeOnboarding() {
       setActionError(
         dearMeCustomerErrorMessage(
           err,
-          "Profile preview needs attention. Try again before starting private work.",
+          "Profile preview needs attention. Try again before starting brand work.",
         ),
       );
     },
@@ -8352,7 +12640,7 @@ export function DearMeOnboarding() {
       setActionError(
         dearMeCustomerErrorMessage(
           err,
-          "Approval request needs attention. Try again before moving the private team forward.",
+          "Launch request needs attention. Try again before moving the brand team forward.",
         ),
       );
     },
@@ -8496,13 +12784,13 @@ export function DearMeOnboarding() {
 
   function handleApplyRequest() {
     if (!previewResult || !previewMatchesForm) {
-      setActionError("Refresh the preview before starting the private team.");
+      setActionError("Refresh the preview before starting the brand team.");
       return;
     }
     if (!canRequestPaidBetaWork) {
       setActionError(
         paidBetaEntitlement?.nextActionDescription ??
-          "Paid beta access is required before starting private team work.",
+          "Paid beta access is required before starting brand team work.",
       );
       return;
     }
@@ -8555,6 +12843,26 @@ export function DearMeOnboarding() {
     }
 
     navigate(buildDearMeSitePreviewPath(handle));
+  }
+
+  function handleOpenWorkReady() {
+    navigate(buildDearMeWorkReadyRoute(location.search));
+  }
+
+  function handleOpenDecisionsReady() {
+    navigate(buildDearMeDecisionsReadyRoute(location.search));
+  }
+
+  function handleOpenVoiceMemory() {
+    navigate(buildDearMeVoiceMemoryRoute(location.search));
+  }
+
+  function handleOpenPaidBetaAccount(companyId: string) {
+    const targetCompany =
+      companies.find((company) => company.id === companyId) ??
+      (selectedCompany?.id === companyId ? selectedCompany : null);
+    setSelectedCompanyId(companyId, { source: "route_sync" });
+    navigate(buildDearMePaidBetaAccessRoute(location.search, targetCompany?.issuePrefix));
   }
 
   function handleReviewApproval(
@@ -8631,7 +12939,7 @@ export function DearMeOnboarding() {
         title="DearMe grows your personal brand while you work."
         description={
           <>
-            Dear me, your team is already running the private brand cycle: planning, drafting, scouting,
+            Dear me, your team is already running the brand cycle: planning, drafting, scouting,
             packaging proof, and preparing weekly direction. It shows the work it did and brings you only the launch calls that matter.
           </>
         }
@@ -8654,7 +12962,7 @@ export function DearMeOnboarding() {
               )}
             >
               <ExternalLink className="h-4 w-4" />
-              View private proof
+              View proof
               <ArrowRight className="h-4 w-4" />
             </Button>
           </>
@@ -8684,24 +12992,33 @@ export function DearMeOnboarding() {
         isPending={firstCycleMutation.isPending}
         canStartPrivateWork={canStartPrivateWork}
         onOpenPreview={handleOpenFirstCyclePreview}
+        onOpenWorkReady={handleOpenWorkReady}
         onIntentChange={(value) => {
           setActionError(null);
           setFirstCycleIntent(value);
           setFirstCyclePreview(null);
+          setFirstCyclePrivateWorkStarted(false);
         }}
         onPreview={handleFirstCyclePreview}
+        privateWorkStarted={firstCyclePrivateWorkStarted}
       />
 
       <TeamWorkbenchPanel
         companyId={selectedCompanyId}
+        paidBetaCohortCompanyIds={paidBetaCohortCompanyIds}
+        paidBetaCohortCompanyNames={paidBetaCohortCompanyNames}
         paidBetaActive={canRequestPaidBetaWork}
         selectedView={selectedView}
         decisionFocus={decisionFocus}
         canStartPrivateWork={canStartPrivateWork}
+        onOpenPaidBetaAccount={handleOpenPaidBetaAccount}
         onFocusFirstCycle={handleFocusFirstCycle}
         onOpenApproval={handleOpenApproval}
         onOpenIssue={handleOpenIssue}
         onOpenWorkItem={handleOpenWorkbenchWorkItem}
+        onOpenWorkReady={handleOpenWorkReady}
+        onOpenLaunchProof={handleOpenDecisionsReady}
+        onOpenVoiceMemory={handleOpenVoiceMemory}
         onReviewApproval={handleReviewApproval}
         onReviewOutput={handleReviewOutput}
         reviewState={{
@@ -8721,6 +13038,8 @@ export function DearMeOnboarding() {
         outputKindFilter={selectedView === "opportunities" ? "opportunity_drafts" : null}
         decisionFocus={decisionFocus}
         onOpenOutput={handleOpenOutput}
+        onOpenDecisions={handleOpenDecisionsReady}
+        onOpenVoiceMemory={handleOpenVoiceMemory}
         outputReviewState={{
           outputId: pendingOutputReview?.outputId ?? null,
           action: pendingOutputReview?.action ?? null,
@@ -8735,6 +13054,7 @@ export function DearMeOnboarding() {
         isLoading={paidBetaAccessQuery.isLoading}
         isError={paidBetaAccessQuery.isError}
         error={paidBetaAccessQuery.error}
+        onFocusFirstCycle={handleFocusFirstCycle}
       />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
@@ -8862,7 +13182,7 @@ export function DearMeOnboarding() {
                 <div className="flex min-h-10 items-center justify-between gap-4 rounded-md border border-border px-3 py-2">
                   <div>
                     <p className="text-sm font-medium">Auto-draft</p>
-                    <p className="text-xs text-muted-foreground">Drafts start privately</p>
+	                    <p className="text-xs text-muted-foreground">Drafts start automatically</p>
                   </div>
                   <ToggleSwitch
                     checked={form.autoDraftEnabled}
@@ -8903,7 +13223,7 @@ export function DearMeOnboarding() {
                     disabled={requestDisabled}
                   >
                     {applyRequestMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                    Start private team
+                    Start brand team
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -8918,10 +13238,10 @@ export function DearMeOnboarding() {
               <p className="text-sm font-medium">Full profile controls are parked until you need them.</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 The first brand cycle can run from the sentence above. Open this only when you want
-                to tune the private team profile before starting a richer cycle.
+                to tune the brand team profile before starting a richer cycle.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Badge variant="outline">Private defaults</Badge>
+                <Badge variant="outline">Smart defaults</Badge>
                 <Badge variant="outline">Budget visible</Badge>
                 <Badge variant="outline">Launch call required</Badge>
               </div>
