@@ -156,6 +156,14 @@ test("DearMe release gate allows private proof while blocking public launch", ()
     "pnpm --silent dearme:next-proof -- --target all --linkedin-messages-url <partner-messages-url> --linkedin-recipient-urn <approved-linkedin-recipient-urn> --imessage-recipient <approved-phone-or-imessage>",
   );
   assert.equal(
+    gate.operatorHandoff.handoffReceiptPreviewCommand,
+    "pnpm --silent dearme:next-proof -- --target all --no-write --handoff-receipt-file <launch-proof-handoff-receipt.txt>",
+  );
+  assert.equal(
+    gate.operatorHandoff.handoffReceiptCommand,
+    "pnpm --silent dearme:next-proof -- --target all --handoff-receipt-file <launch-proof-handoff-receipt.txt>",
+  );
+  assert.equal(
     gate.operatorHandoff.checkCommand,
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
   );
@@ -174,6 +182,73 @@ test("DearMe release gate allows private proof while blocking public launch", ()
     "Approved phone-message proof recipient",
   ]);
   assert.equal(gate.productReadiness.nextAction.label, "Supply approved live-proof details");
+  assert.equal(gate.commercialReadiness.status, "sellable-private-beta");
+  assert.equal(gate.commercialReadiness.canSellPrivateBeta, true);
+  assert.equal(gate.commercialReadiness.canOperatePaidUsers, true);
+  assert.equal(
+    gate.commercialReadiness.headline,
+    "Sellable and operable as a private beta",
+  );
+  assert.deepEqual(gate.commercialReadiness.cannotClaimPublicLaunchUntil, [
+    "Professional-network delivery route",
+    "Approved professional-network recipient",
+    "Approved phone-message proof recipient",
+  ]);
+  assert.deepEqual(
+    gate.commercialReadiness.items.map((item) => [item.key, item.status]),
+    [
+      ["paid_access", "ready"],
+      ["payment_path", "ready"],
+      ["first_wow", "ready"],
+      ["weekly_value_receipt", "ready"],
+      ["account_health_receipt", "ready"],
+      ["paid_retention_pulse", "ready"],
+      ["empty_week_recovery", "ready"],
+      ["autonomy_contract", "ready"],
+      ["launch_boundary", "ready"],
+      ["cost_guardrail", "ready"],
+      ["feedback_learning", "ready"],
+      ["support_handoff", "ready"],
+    ],
+  );
+  const emptyWeekRecovery = gate.commercialReadiness.items.find((item) => item.key === "empty_week_recovery");
+  const weeklyValue = gate.commercialReadiness.items.find((item) => item.key === "weekly_value_receipt");
+  const paidRetention = gate.commercialReadiness.items.find((item) => item.key === "paid_retention_pulse");
+  const feedbackLearning = gate.commercialReadiness.items.find((item) => item.key === "feedback_learning");
+  const supportHandoff = gate.commercialReadiness.items.find((item) => item.key === "support_handoff");
+  assert.ok(weeklyValue?.evidence.some((line) => /Cohort-retention proof verifies/.test(line)));
+  assert.match(weeklyValue?.remainingGap ?? "", /Cohort-retention proof verifies weekly value analytics/);
+  assert.ok(paidRetention?.evidence.some((line) => /Cohort-retention proof turns/.test(line)));
+  assert.match(paidRetention?.remainingGap ?? "", /Cohort-retention proof keeps/);
+  assert.ok(feedbackLearning?.evidence.some((line) => /Feedback-learning contract keeps/.test(line)));
+  assert.ok(feedbackLearning?.evidence.some((line) => /Cohort-retention proof carries/.test(line)));
+  assert.match(feedbackLearning?.remainingGap ?? "", /Feedback-learning proof and cohort-retention proof verify/);
+  assert.ok(emptyWeekRecovery?.evidence.some((line) => /Support-recovery proof verifies/.test(line)));
+  assert.match(emptyWeekRecovery?.remainingGap ?? "", /Support-recovery proof verifies/);
+  assert.ok(supportHandoff?.evidence.some((line) => /Support-recovery proof keeps/.test(line)));
+  assert.match(supportHandoff?.remainingGap ?? "", /Support-recovery proof verifies/);
+  const paidAccess = gate.commercialReadiness.items.find((item) => item.key === "paid_access");
+  assert.ok(paidAccess);
+  assert.match(paidAccess.remainingGap, /Self-serve checkout/);
+  assert.equal(
+    paidAccess.evidence.some((item) => item.includes("trial access blocks first-cycle work")),
+    true,
+  );
+  const paymentPath = gate.commercialReadiness.items.find((item) => item.key === "payment_path");
+  assert.ok(paymentPath);
+  assert.match(paymentPath.remainingGap, /dearme:payment-readiness/);
+  assert.equal(
+    paymentPath.evidence.some((item) => item.includes("Manual receipt recording")),
+    true,
+  );
+  assert.equal(
+    paymentPath.evidence.some((item) => item.includes("net paid access is recorded")),
+    true,
+  );
+  assert.equal(
+    paymentPath.evidence.some((item) => item.includes("Stripe Payment Link/Checkout-shaped completed events")),
+    true,
+  );
   assert.equal(
     gate.productComparison.verdict,
     "DearMe has matched the Naive/Paperclip reuse layer and reached a private Polsia-style wow; the remaining benchmark gap is live external channel proof.",
@@ -211,12 +286,31 @@ test("DearMe release gate allows private proof while blocking public launch", ()
   assert.match(formatted, /LinkedIn approved smoke recipient: provide DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN/);
   assert.match(formatted, /Operator handoff:/);
   assert.match(formatted, /Capture approved facts locally: pnpm --silent dearme:next-proof -- --target all --linkedin-messages-url <partner-messages-url> --linkedin-recipient-urn <approved-linkedin-recipient-urn> --imessage-recipient <approved-phone-or-imessage>/);
+  assert.match(formatted, /Preview the product handoff receipt without writing: pnpm --silent dearme:next-proof -- --target all --no-write --handoff-receipt-file <launch-proof-handoff-receipt\.txt>/);
+  assert.match(formatted, /If preview passes, import the product handoff receipt: pnpm --silent dearme:next-proof -- --target all --handoff-receipt-file <launch-proof-handoff-receipt\.txt>/);
   assert.match(formatted, /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
   assert.match(formatted, /Guarded live proof:/);
   assert.match(formatted, /Product readiness needs:/);
   assert.match(formatted, /Professional-network delivery route/);
   assert.match(formatted, /Approved professional-network recipient/);
   assert.match(formatted, /Approved phone-message proof recipient/);
+  assert.match(formatted, /Commercial readiness:/);
+  assert.match(formatted, /sellable-private-beta: Sellable and operable as a private beta/);
+  assert.match(formatted, /Sell private beta: yes/);
+  assert.match(formatted, /Operate paid users: yes/);
+  assert.match(formatted, /Paid beta access: ready/);
+  assert.match(formatted, /Payment path proof: ready/);
+  assert.match(formatted, /Weekly value receipt: ready/);
+  assert.match(formatted, /Paid account health receipt: ready/);
+  assert.match(formatted, /Paid-ops proof routes healthy, trial, near-guardrail, and paused accounts/);
+  assert.match(formatted, /Paid retention pulse: ready/);
+  assert.match(formatted, /Cohort-retention proof keeps the renewal pulse measurable/);
+  assert.match(formatted, /real paid-cohort events/);
+  assert.match(formatted, /Empty-week recovery: ready/);
+  assert.match(formatted, /Autonomy contract receipt: ready/);
+  assert.match(formatted, /hosted checkout setup/);
+  assert.match(formatted, /Validate the autonomy contract against real paid-user support cases/);
+  assert.match(formatted, /Cannot claim public launch until:/);
   assert.match(formatted, /Benchmark comparison:/);
   assert.match(formatted, /Naive\/Paperclip: matched/);
   assert.match(formatted, /Polsia: partial/);
@@ -245,6 +339,12 @@ test("DearMe release gate passes public launch only when the goal audit is compl
   assert.equal(gate.operatorHandoff.status, "ready");
   assert.deepEqual(gate.operatorHandoff.factsToCapture, []);
   assert.equal(gate.operatorHandoff.captureCommand, null);
+  assert.equal(gate.operatorHandoff.handoffReceiptPreviewCommand, null);
+  assert.equal(gate.operatorHandoff.handoffReceiptCommand, null);
+  assert.equal(gate.commercialReadiness.status, "public-launch-ready");
+  assert.equal(gate.commercialReadiness.canSellPrivateBeta, true);
+  assert.equal(gate.commercialReadiness.canOperatePaidUsers, true);
+  assert.deepEqual(gate.commercialReadiness.cannotClaimPublicLaunchUntil, []);
   assert.deepEqual(
     gate.productComparison.items.map((item) => [item.benchmark, item.status]),
     [
@@ -270,6 +370,17 @@ test("DearMe release gate blocks private proof when the phone-reachable wow proo
   assert.equal(gate.overall, "blocked");
   assert.equal(gate.canUse, false);
   assert.equal(gate.canPublish, false);
+  assert.equal(gate.commercialReadiness.status, "blocked");
+  assert.equal(gate.commercialReadiness.canSellPrivateBeta, false);
+  assert.equal(gate.commercialReadiness.canOperatePaidUsers, false);
+  assert.equal(
+    gate.commercialReadiness.items.find((item) => item.key === "paid_access")?.status,
+    "blocked",
+  );
+  assert.equal(
+    gate.commercialReadiness.items.find((item) => item.key === "payment_path")?.status,
+    "blocked",
+  );
   assert.deepEqual(gate.privateProof.blockers, [
     "Polsia-level phone-reachable private proof page: deploy_site_production",
   ]);
@@ -289,6 +400,9 @@ test("DearMe release gate blocks private proof when the public first-run landing
   assert.equal(gate.overall, "blocked");
   assert.equal(gate.canUse, false);
   assert.equal(gate.canPublish, false);
+  assert.equal(gate.commercialReadiness.status, "blocked");
+  assert.equal(gate.commercialReadiness.canSellPrivateBeta, false);
+  assert.equal(gate.commercialReadiness.canOperatePaidUsers, false);
   assert.deepEqual(gate.privateProof.blockers, [
     "Polsia-style public first-run landing: public_first_run_landing_not_checked",
   ]);

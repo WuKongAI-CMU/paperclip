@@ -24,6 +24,8 @@ test("DearMe aha proof proves the first private five-minute loop", () => {
     "five_minute_sequence",
     "live_work_receipts",
     "cycle_report_contract",
+    "value_report_contract",
+    "opportunity_roi_report_contract",
     "private_outputs",
     "recurring_private_work",
     "phone_ready_private_site",
@@ -41,13 +43,13 @@ test("DearMe aha proof proves the first private five-minute loop", () => {
   assert.deepEqual(preview.proofSequence.map((step) => step.preparedArtifact), [
     "Voice profile and known-for line",
     "Audience shortlist and first opportunity",
-    "Private proof page move",
+    "Proof page move",
   ]);
   assert.deepEqual(preview.liveWorkTrail.map((item) => item.action), [
     "Studying your voice",
     "Finding likely audiences",
     "Drafting first moves",
-    "Preparing your private proof",
+    "Preparing your proof page",
     "Ready for your launch call",
   ]);
   assert.deepEqual(preview.liveWorkTrail.map((item) => item.ownerRole), [
@@ -69,25 +71,59 @@ test("DearMe aha proof proves the first private five-minute loop", () => {
     "What moved while you were away",
     "Ready for your launch call",
     "Prepared but blocked",
-    "Next private cycle",
+    "Next proof cycle",
   ]);
   assert.deepEqual(preview.cycleReport.items.map((item) => item.status), ["moved", "ready", "blocked", "next"]);
   assert.deepEqual(preview.cycleReport.items.map((item) => item.source), [
     "Live work receipts",
-    "Private proof pack",
+    "Proof pack",
     "Launch boundary",
-    "Next private pass",
+    "Next pass",
   ]);
+  assert.equal(preview.valueReport.title, "First value report");
+  assert.equal(preview.valueReport.period, "First five minutes");
+  assert.deepEqual(preview.valueReport.items.map((item) => item.label), [
+    "Reviewable assets prepared",
+    "Opportunity coverage staged",
+    "Proof loop opened",
+    "Launch risk held back",
+  ]);
+  assert.deepEqual(preview.valueReport.items.map((item) => item.metric), [
+    "5 drafts + 1 proof card",
+    "5 leads",
+    "1 private route + 3 next-pass improvements",
+    "4 approval boundaries",
+  ]);
+  assert.deepEqual(preview.valueReport.items.map((item) => item.count), [6, 5, 4, 4]);
+  assert.equal(preview.opportunityRoiReport.title, "Opportunity ROI report");
+  assert.deepEqual(preview.opportunityRoiReport.items.map((item) => item.priority), [
+    "launch_first",
+    "launch_first",
+    "verify_contact",
+    "verify_contact",
+    "warm_intro",
+  ]);
+  assert.deepEqual(preview.opportunityRoiReport.items.map((item) => item.score), [91, 82, 73, 73, 72]);
+  assert.match(preview.opportunityRoiReport.items[0]?.expectedReturn ?? "", /Founders evaluating local AI workflows/);
+  assert.match(preview.opportunityRoiReport.items.at(-1)?.nextAction ?? "", /trusted introduction/);
   assert.equal(preview.starterPosts.length, DEARME_FIRST_CYCLE_STARTER_POST_COUNT);
   assert.equal(preview.opportunityShortlist.length, 5);
   assert.equal(preview.sitePreview.status, "private_preview");
   assert.equal(preview.continuationPlan.title, "Keeps working after the first proof");
-  assert.equal(preview.continuationPlan.nextReview, "Next private review");
+  assert.equal(preview.continuationPlan.nextReview, "Next proof review");
   assert.equal(preview.continuationPlan.items.length, 3);
   assert.deepEqual(preview.continuationPlan.items.map((item) => item.preparedArtifact), [
     "Next proof-backed draft",
     "Updated opportunity angle",
-    "Updated private proof card",
+    "Updated proof card",
+  ]);
+  assert.equal(preview.memoryPlan.title, "Voice & Memory plan");
+  assert.deepEqual(preview.memoryPlan.items.map((item) => item.label), [
+    "Known-for direction",
+    "Voice sample coverage",
+    "Primary proof",
+    "First audience lane",
+    "Review feedback slot",
   ]);
   assert.deepEqual(preview.approvalBoundary.blockedActions, [
     "Post publicly",
@@ -133,6 +169,8 @@ test("DearMe aha proof output is operator-readable without leaking secrets", () 
   assert.match(formatted, /Five-minute private wow sequence: ready/);
   assert.match(formatted, /Live work receipts: ready/);
   assert.match(formatted, /Cycle report contract: ready/);
+  assert.match(formatted, /Value report contract: ready/);
+  assert.match(formatted, /Opportunity ROI report contract: ready/);
   assert.match(formatted, /Recurring private work: ready/);
   assert.match(formatted, /Phone-ready private site artifact: ready/);
   assert.match(formatted, /Public launch proof needs: ready/);
@@ -153,7 +191,7 @@ test("DearMe aha proof renders a static private site artifact without hidden ter
   assert.match(html, /DearMe private proof/);
   assert.match(html, /dearme\.app\/peter-studio/);
   assert.match(html, /Current proof, next pass, launch call/);
-  assert.match(html, /3 private improvements are already lined up/);
+  assert.match(html, /3 improvements are already lined up/);
   assert.match(html, /Your one sentence became a private proof system/);
   assert.match(html, /Private proof is ready\. Public launch waits for three live receipts/);
   assert.match(html, /Professional-network delivery route/);
@@ -172,8 +210,19 @@ test("DearMe aha proof renders a static private site artifact without hidden ter
   assert.match(html, /First-cycle report/);
   assert.match(html, /What moved while you were away/);
   assert.match(html, /Prepared but blocked/);
-  assert.match(html, /DearMe keeps working privately/);
+  assert.match(html, /DearMe keeps working;/);
+  assert.match(html, /First value report/);
+  assert.match(html, /Reviewable assets prepared/);
+  assert.match(html, /5 drafts \+ 1 proof card/);
+  assert.match(html, /Launch risk held back/);
+  assert.match(html, /Opportunity ROI report/);
+  assert.match(html, /Score: 91/);
+  assert.match(html, /Priority: Launch First/);
+  assert.match(html, /Warm Intro/);
   assert.match(html, /Keeps working after the first proof/);
+  assert.match(html, /Voice &amp; Memory plan/);
+  assert.match(html, /Known-for direction/);
+  assert.match(html, /Review feedback slot/);
   assert.match(html, /What Peter wants to become known for/);
   assert.match(html, /The positioning to test this week/);
   assert.match(html, /Direct customer lead/);
@@ -220,6 +269,28 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
           statuses: string[];
           sources: string[];
         };
+        valueReportCount: number;
+        valueReport: {
+          title: string;
+          period: string;
+          labels: string[];
+          ownerRoles: string[];
+          metrics: string[];
+          counts: number[];
+          units: string[];
+          sources: string[];
+        };
+        opportunityRoiReportCount: number;
+        opportunityRoiReport: {
+          title: string;
+          priorities: string[];
+          scores: number[];
+          expectedReturns: string[];
+          efforts: string[];
+          confidences: string[];
+          nextActions: string[];
+          sources: string[];
+        };
         continuationCount: number;
         continuation: {
           title: string;
@@ -227,6 +298,13 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
           preparedArtifacts: string[];
           ownerRoles: string[];
           approvalBoundaries: string[];
+        };
+        memoryPlanCount: number;
+        memoryPlan: {
+          title: string;
+          labels: string[];
+          kinds: string[];
+          sources: string[];
         };
         launchProofNeedCount: number;
         launchProofNeeds: {
@@ -246,8 +324,11 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
     assert.equal(result.expectedText, "Peter Studio has a private growth team already working");
     assert.equal(result.htmlBytes, Buffer.byteLength(html, "utf8"));
     assert.match(result.htmlSha256, /^[a-f0-9]{64}$/);
-    assert.match(html, /Next private review/);
-    assert.match(html, /Updated private proof card/);
+    assert.match(html, /Next proof review/);
+    assert.match(html, /Updated proof card/);
+    assert.match(html, /First value report/);
+    assert.match(html, /Opportunity ROI report/);
+    assert.match(html, /Voice &amp; Memory plan/);
     assert.deepEqual(proof, preview);
     assert.deepEqual(manifest.files, { html: "index.html", proof: "proof.json" });
     assert.equal(manifest.version, 1);
@@ -264,7 +345,7 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
         "Studying your voice",
         "Finding likely audiences",
         "Drafting first moves",
-        "Preparing your private proof",
+        "Preparing your proof page",
         "Ready for your launch call",
       ],
       ownerRoles: [
@@ -279,7 +360,7 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
         "Voice profile and known-for line",
         "Audience shortlist and first opportunity",
         "5 starter drafts",
-        "Private proof page move",
+        "Proof page move",
         "Launch boundary",
       ],
     });
@@ -290,32 +371,84 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
         "What moved while you were away",
         "Ready for your launch call",
         "Prepared but blocked",
-        "Next private cycle",
+        "Next proof cycle",
       ],
       ownerRoles: ["chief_of_staff", "chief_of_staff", "voice_editor", "portfolio_builder"],
       statuses: ["moved", "ready", "blocked", "next"],
       sources: [
         "Live work receipts",
-        "Private proof pack",
+        "Proof pack",
         "Launch boundary",
-        "Next private pass",
+        "Next pass",
       ],
     });
+    assert.equal(manifest.checks.valueReportCount, 4);
+    assert.deepEqual(manifest.checks.valueReport, {
+      title: "First value report",
+      period: "First five minutes",
+      labels: [
+        "Reviewable assets prepared",
+        "Opportunity coverage staged",
+        "Proof loop opened",
+        "Launch risk held back",
+      ],
+      ownerRoles: ["growth_analyst", "opportunity_scout", "portfolio_builder", "chief_of_staff"],
+      metrics: [
+        "5 drafts + 1 proof card",
+        "5 leads",
+        "1 private route + 3 next-pass improvements",
+        "4 approval boundaries",
+      ],
+      counts: [6, 5, 4, 4],
+      units: ["reviewable assets", "qualified leads", "proof moves", "protected actions"],
+      sources: [
+        "Proof pack",
+        "Opportunity shortlist",
+        "Private proof page",
+        "Launch boundary",
+      ],
+    });
+    assert.equal(manifest.checks.opportunityRoiReportCount, 5);
+    assert.deepEqual(manifest.checks.opportunityRoiReport.priorities, [
+      "launch_first",
+      "launch_first",
+      "verify_contact",
+      "verify_contact",
+      "warm_intro",
+    ]);
+    assert.deepEqual(manifest.checks.opportunityRoiReport.scores, [91, 82, 73, 73, 72]);
+    assert.equal(manifest.checks.opportunityRoiReport.title, "Opportunity ROI report");
+    assert.match(manifest.checks.opportunityRoiReport.expectedReturns[0] ?? "", /Founders evaluating local AI workflows/);
+    assert.match(manifest.checks.opportunityRoiReport.nextActions.at(-1) ?? "", /trusted introduction/);
+    assert.equal(manifest.checks.opportunityRoiReport.sources.length, 5);
     assert.equal(manifest.checks.continuationCount, 3);
     assert.deepEqual(manifest.checks.continuation, {
       title: "Keeps working after the first proof",
-      nextReview: "Next private review",
+      nextReview: "Next proof review",
       preparedArtifacts: [
         "Next proof-backed draft",
         "Updated opportunity angle",
-        "Updated private proof card",
+        "Updated proof card",
       ],
       ownerRoles: ["content_producer", "opportunity_scout", "portfolio_builder"],
       approvalBoundaries: [
-        "The draft can improve privately; posting waits for approval.",
-        "The outreach can be prepared privately; sending waits for approval.",
-        "The page can be staged privately; public changes wait for approval.",
+        "Posting stays behind the launch call while the draft keeps improving.",
+        "Sending stays behind the launch call while the outreach angle keeps improving.",
+        "Public page changes stay behind the launch call while the proof card keeps improving.",
       ],
+    });
+    assert.equal(manifest.checks.memoryPlanCount, 5);
+    assert.deepEqual(manifest.checks.memoryPlan, {
+      title: "Voice & Memory plan",
+      labels: [
+        "Known-for direction",
+        "Voice sample coverage",
+        "Primary proof",
+        "First audience lane",
+        "Review feedback slot",
+      ],
+      kinds: ["profile", "voice", "proof", "audience", "feedback"],
+      sources: ["First answer", "Voice samples", "Supplied proof point", "Audience map", "Launch review"],
     });
     assert.equal(manifest.checks.launchProofNeedCount, 3);
     assert.deepEqual(manifest.checks.launchProofNeeds.labels, [
@@ -326,7 +459,7 @@ test("DearMe aha proof exports private site HTML, proof JSON, and host smoke man
     assert.deepEqual(manifest.checks.launchProofNeeds.boundaries, [
       "DearMe checks this in no-send mode before any live receipt can move.",
       "Only this selected recipient is used for the first guarded receipt.",
-      "The receipt still waits for owner approval after the no-send check.",
+      "The receipt stays behind the final launch call after the no-send check.",
     ]);
     assert.match(manifest.checksums.htmlSha256, /^[a-f0-9]{64}$/);
     assert.match(manifest.checksums.proofSha256, /^[a-f0-9]{64}$/);

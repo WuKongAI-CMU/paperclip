@@ -3,6 +3,12 @@ import {
   inspectDearMeProviderSmokeReadiness,
   type DearMeProviderSmokeReadiness,
 } from "./dearme-provider-smoke.ts";
+import { runDearMePaidLoopProof } from "./dearme-paid-loop-proof.ts";
+import { runDearMePaidOpsProof } from "./dearme-paid-ops-proof.ts";
+import { runDearMeSupportRecoveryProof } from "./dearme-support-recovery-proof.ts";
+import { runDearMeCohortRetentionProof } from "./dearme-cohort-retention-proof.ts";
+import { inspectDearMeFeedbackLearningContract } from "./dearme-feedback-learning-proof.ts";
+import { inspectDearMePaymentReadiness } from "./dearme-payment-readiness.ts";
 import {
   buildDearMeGoalAudit,
   formatDearMeGoalAudit,
@@ -19,6 +25,8 @@ import {
   dearMeCustomerSafeLaunchNeed,
   dearMeOwnerProofFactSpec,
 } from "../packages/shared/src/dearme-customer-text.ts";
+
+type Env = Record<string, string | undefined>;
 
 export type DearMeReleaseGateTarget = "private-proof" | "public-launch";
 
@@ -48,6 +56,7 @@ export interface DearMeReleaseGate {
   factsNeeded: DearMeProofFactNeed[];
   operatorHandoff: DearMeReleaseGateOperatorHandoff;
   productReadiness: DearMeProductReadiness;
+  commercialReadiness: DearMeCommercialReadiness;
   productComparison: DearMeProductComparison;
   nextAction: DearMeGoalAudit["nextAction"];
   audit: DearMeGoalAudit;
@@ -65,6 +74,43 @@ export interface DearMeProductReadiness {
   };
 }
 
+export type DearMeCommercialReadinessStatus =
+  | "blocked"
+  | "sellable-private-beta"
+  | "public-launch-ready";
+
+export type DearMeCommercialReadinessItemStatus = "ready" | "blocked";
+
+export interface DearMeCommercialReadinessItem {
+  key:
+    | "paid_access"
+    | "payment_path"
+    | "first_wow"
+    | "weekly_value_receipt"
+    | "account_health_receipt"
+    | "paid_retention_pulse"
+    | "empty_week_recovery"
+    | "autonomy_contract"
+    | "launch_boundary"
+    | "cost_guardrail"
+    | "feedback_learning"
+    | "support_handoff";
+  label: string;
+  status: DearMeCommercialReadinessItemStatus;
+  evidence: string[];
+  remainingGap: string;
+}
+
+export interface DearMeCommercialReadiness {
+  status: DearMeCommercialReadinessStatus;
+  headline: string;
+  summary: string;
+  canSellPrivateBeta: boolean;
+  canOperatePaidUsers: boolean;
+  cannotClaimPublicLaunchUntil: string[];
+  items: DearMeCommercialReadinessItem[];
+}
+
 export interface DearMeReleaseGateOperatorFact {
   label: string;
   provideAs: string;
@@ -78,6 +124,8 @@ export interface DearMeReleaseGateOperatorHandoff {
   status: "blocked" | "ready";
   factsToCapture: DearMeReleaseGateOperatorFact[];
   captureCommand: string | null;
+  handoffReceiptPreviewCommand: string | null;
+  handoffReceiptCommand: string | null;
   checkCommand: string;
   guardedLiveCommands: string[];
   noSendGuarantee: true;
@@ -101,7 +149,7 @@ export interface DearMeProductComparison {
 
 type DearMeReleaseGateBase = Omit<
   DearMeReleaseGate,
-  "operatorHandoff" | "productReadiness" | "productComparison"
+  "operatorHandoff" | "productReadiness" | "commercialReadiness" | "productComparison"
 >;
 type DearMeProviderSmokeTarget = DearMeProviderSmokeReadiness["target"];
 
@@ -181,6 +229,12 @@ function buildOperatorHandoff(
   const captureCommand = captureArgs.length > 0
     ? `pnpm --silent dearme:next-proof -- --target all ${captureArgs.join(" ")}`
     : null;
+  const handoffReceiptPreviewCommand = captureArgs.length > 0
+    ? "pnpm --silent dearme:next-proof -- --target all --no-write --handoff-receipt-file <launch-proof-handoff-receipt.txt>"
+    : null;
+  const handoffReceiptCommand = captureArgs.length > 0
+    ? "pnpm --silent dearme:next-proof -- --target all --handoff-receipt-file <launch-proof-handoff-receipt.txt>"
+    : null;
   const guardedLiveCommands = unique(
     gate.publicLaunch.commands.filter((command) =>
       command.includes("DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1")
@@ -191,10 +245,13 @@ function buildOperatorHandoff(
     status: factsToCapture.length > 0 ? "blocked" : "ready",
     factsToCapture,
     captureCommand,
+    handoffReceiptPreviewCommand,
+    handoffReceiptCommand,
     checkCommand: "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
     guardedLiveCommands,
     noSendGuarantee: true,
     safety: [
+      "The receipt preview command checks downloaded product facts in memory; it does not change the local env file.",
       "The capture command only writes local proof setup; it does not send messages, publish, deploy, or spend.",
       "Run the no-send check before any guarded live proof.",
       "Live proof still requires DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.",
@@ -242,6 +299,285 @@ function buildProductReadiness(
       label: "Repair private proof blockers",
       reason: "Private proof must be restored before public launch proof work continues.",
     },
+  };
+}
+
+function commercialStatus(
+  gate: DearMeReleaseGateBase,
+): DearMeCommercialReadinessStatus {
+  if (!gate.canUse) return "blocked";
+  return gate.canPublish ? "public-launch-ready" : "sellable-private-beta";
+}
+
+function commercialItem(
+  item: Omit<DearMeCommercialReadinessItem, "status"> & {
+    ready: boolean;
+  },
+): DearMeCommercialReadinessItem {
+  const { ready, ...rest } = item;
+  return {
+    ...rest,
+    status: ready ? "ready" : "blocked",
+  };
+}
+
+function buildCommercialReadiness(
+  gate: DearMeReleaseGateBase,
+  operatorHandoff: DearMeReleaseGateOperatorHandoff,
+  productReadiness: DearMeProductReadiness,
+  env: Env = process.env,
+): DearMeCommercialReadiness {
+  const voiceEvidence = metEvidence(gate.audit, ["voice_autonomy"]);
+  const paidLoopProof = runDearMePaidLoopProof();
+  const paidOpsProof = runDearMePaidOpsProof();
+  const supportRecoveryProof = runDearMeSupportRecoveryProof();
+  const cohortRetentionProof = runDearMeCohortRetentionProof();
+  const feedbackLearningContract = inspectDearMeFeedbackLearningContract();
+  const paymentReadiness = inspectDearMePaymentReadiness(env);
+  const privatePaymentPathReady =
+    paidLoopProof.status === "ready" && paymentReadiness.canSellPrivateBeta;
+  const paidOpsReady = paidOpsProof.status === "ready";
+  const supportRecoveryReady = supportRecoveryProof.status === "ready";
+  const cohortRetentionReady = cohortRetentionProof.status === "ready";
+  const feedbackLearningReady = feedbackLearningContract.status === "ready";
+  const supportHandoffReady = operatorHandoff.status === "ready" ||
+    (operatorHandoff.captureCommand !== null && operatorHandoff.noSendGuarantee);
+  const launchBoundaryReady = gate.canUse &&
+    (gate.canPublish || (gate.factsNeeded.length > 0 && operatorHandoff.noSendGuarantee));
+  const cannotClaimPublicLaunchUntil = gate.canPublish
+    ? []
+    : productReadiness.publicLaunchNeeds.length > 0
+      ? productReadiness.publicLaunchNeeds
+      : gate.publicLaunch.blockers;
+  const status = commercialStatus(gate);
+  const items: DearMeCommercialReadinessItem[] = [
+    commercialItem({
+      key: "paid_access",
+      label: "Paid beta access",
+      ready: gate.canUse && paidLoopProof.status === "ready",
+      evidence: gate.canUse && paidLoopProof.status === "ready"
+        ? [
+          "Private proof is usable, so paid beta access can unlock private brand-team preparation.",
+          "Paid-loop proof shows trial access blocks first-cycle work until a paid beta receipt is recorded.",
+          "The recorded receipt activates paid access and removes the first-cycle paid-beta blocker.",
+        ]
+        : [],
+      remainingGap: gate.canUse
+        ? paidLoopProof.status === "ready"
+          ? "Paid-loop proof shows a recorded receipt activates access and unblocks first-cycle work; Self-serve checkout can stay separate until broadened."
+          : "Repair pnpm --silent dearme:paid-loop-proof -- --check before selling paid beta access."
+        : "Restore private proof before selling access.",
+    }),
+    commercialItem({
+      key: "payment_path",
+      label: "Payment path proof",
+      ready: gate.canUse && privatePaymentPathReady,
+      evidence: gate.canUse && privatePaymentPathReady
+        ? [
+          paymentReadiness.manualPaidBeta.summary,
+          paidLoopProof.checks.find((check) => check.key === "receipt_activates_paid_access")?.summary ??
+            "Paid-loop proof activates paid access from a recorded receipt.",
+          paymentReadiness.canClaimSelfServeCheckout
+            ? paymentReadiness.hostedCheckout.summary
+            : "Hosted checkout remains a separate blocked proof path, so private beta can sell now without overstating self-serve readiness.",
+          paymentReadiness.receiptSyncProof.summary,
+          paymentReadiness.providerContractProof.summary,
+        ]
+        : [],
+      remainingGap: gate.canUse
+        ? paymentReadiness.canClaimSelfServeCheckout
+          ? "Local receipt-sync and provider-contract proofs are ready with the hosted payment link and receipt sync setup; run a guarded provider receipt sync smoke before broad public self-serve checkout claims."
+          : `${paymentReadiness.nextAction} Re-run pnpm --silent dearme:payment-readiness before any hosted checkout claim.`
+        : "Restore private proof before relying on payment-path readiness.",
+    }),
+    commercialItem({
+      key: "first_wow",
+      label: "Five-minute first wow",
+      ready: gate.privateProof.ready,
+      evidence: gate.privateProof.evidence,
+      remainingGap: gate.privateProof.ready
+        ? "Keep measuring real onboarding users; no release-gate blocker remains for private proof."
+        : "Repair private first-run, host, reuse, or safe-contract blockers.",
+    }),
+    commercialItem({
+      key: "weekly_value_receipt",
+      label: "Weekly value receipt",
+      ready: gate.canUse && cohortRetentionReady,
+      evidence: gate.canUse && cohortRetentionReady
+        ? [
+          "Paid beta workbench shows useful outputs, weekly report coverage, opportunity/proof coverage, and the empty-week trigger together.",
+          "The receipt makes a paid week measurable by customer-visible outcomes instead of internal activity.",
+          "Cohort-retention proof verifies weekly value analytics across content, opportunities, portfolio, reports, Voice & Memory, and launch decisions.",
+          "Paid-event-source proof maps finance, workbench, Voice & Memory, decision, and support receipts into those retention analytics.",
+        ]
+        : [],
+      remainingGap: gate.canUse
+        ? cohortRetentionReady
+          ? "Cohort-retention proof verifies weekly value analytics and its paid-event-source contract is ready for live paid-user events as cohorts start."
+          : "Repair pnpm --silent dearme:cohort-retention-proof -- --check before claiming weekly value analytics."
+        : "Restore private proof before claiming weekly value delivery.",
+    }),
+    commercialItem({
+      key: "account_health_receipt",
+      label: "Paid account health receipt",
+      ready: gate.canUse && paidOpsReady,
+      evidence: gate.canUse && paidOpsReady
+        ? [
+          "Paid account health combines useful work, Voice & Memory confidence, launch calls, and spend clarity.",
+          "Paid-ops proof routes healthy paid accounts, trial previews, near-guardrail accounts, and paused spend-review accounts to the right next action.",
+          "The account is treated as healthy only when outcomes are visible enough to support renewal.",
+        ]
+        : [],
+      remainingGap: gate.canUse
+        ? paidOpsReady
+          ? "Paid-ops proof routes healthy, trial, near-guardrail, and paused accounts; connect the health receipt to live paid-user retention signals before broad self-serve launch."
+          : "Repair pnpm --silent dearme:paid-ops-proof -- --check before claiming paid account health."
+        : "Restore private proof before claiming paid account health.",
+    }),
+    commercialItem({
+      key: "paid_retention_pulse",
+      label: "Paid retention pulse",
+      ready: gate.canUse && paidOpsReady && cohortRetentionReady,
+      evidence: gate.canUse && paidOpsReady && cohortRetentionReady
+        ? [
+          "Brand OS now combines visible value, Voice & Memory risk, review risk, and risk owner into one weekly renewal signal.",
+          "Paid-ops proof keeps healthy cohorts operable and escalates trial, warning, and hard-stop accounts before they become silent retention failures.",
+          "Empty paid weeks route to recovery and support; repeated capped paths route to stuck work and support.",
+          "Cohort-retention proof turns weekly paid-user outcomes into renewal-ready, recovered, and support-owned risk states.",
+          "Paid-event-source proof keeps those states connected to local finance, workbench, memory, decision, and support receipts.",
+        ]
+        : [],
+      remainingGap: gate.canUse
+        ? !paidOpsReady
+          ? "Repair pnpm --silent dearme:paid-ops-proof -- --check before claiming a paid retention pulse."
+          : cohortRetentionReady
+          ? "Cohort-retention proof keeps the renewal pulse measurable; its paid-event-source contract is ready for real paid-cohort events after live usage starts."
+          : "Repair pnpm --silent dearme:cohort-retention-proof -- --check before claiming paid retention analytics."
+        : "Restore private proof before claiming a paid retention pulse.",
+    }),
+    commercialItem({
+      key: "empty_week_recovery",
+      label: "Empty-week recovery",
+      ready: gate.canUse && supportRecoveryReady,
+      evidence: gate.canUse && supportRecoveryReady
+        ? [
+          "A paid account with zero useful deliverables gets a visible make-good path instead of silent activity.",
+          "Recovery uses the existing work stream, Voice & Memory plan, and support handoff rather than a separate retention subsystem.",
+          "Support-recovery proof verifies empty-week recovery, stuck-work routing, and private support feedback handling.",
+        ]
+        : [],
+      remainingGap: gate.canUse
+        ? supportRecoveryReady
+          ? "Support-recovery proof verifies empty-week recovery and support routing; validate it against real paid weeks."
+          : "Repair pnpm --silent dearme:support-recovery-proof -- --check before claiming empty-week recovery."
+        : "Restore private proof before claiming retention recovery.",
+    }),
+    commercialItem({
+      key: "autonomy_contract",
+      label: "Autonomy contract receipt",
+      ready: gate.canUse,
+      evidence: gate.canUse
+        ? [
+          "Brand OS shows what DearMe can research privately, prepare in parallel, and hold for a launch call.",
+          "The receipt keeps autonomous work moving without exposing donor terms or creating another approval system.",
+        ]
+        : [],
+      remainingGap: gate.canUse
+        ? "Validate the autonomy contract against real paid-user support cases and live launch calls."
+        : "Restore private proof before claiming autonomous paid-user operation.",
+    }),
+    commercialItem({
+      key: "launch_boundary",
+      label: "Review and launch boundary",
+      ready: launchBoundaryReady,
+      evidence: launchBoundaryReady
+        ? [
+          "The gate separates private usability from public launch readiness.",
+          "External launch and live proof remain behind approved facts and explicit live confirmation.",
+        ]
+        : [],
+      remainingGap: launchBoundaryReady
+        ? "Keep the boundary visible until all live proof receipts are verified."
+        : "Restore the release boundary before running paid private cycles.",
+    }),
+    commercialItem({
+      key: "cost_guardrail",
+      label: "Cost and cycle guardrail",
+      ready: gate.canUse && paidOpsReady,
+      evidence: gate.canUse && paidOpsReady
+        ? [
+          "Paid beta cycles run through the existing access and monthly spend guardrail contract.",
+          "Paid-ops proof blocks trial and exhausted accounts while allowing healthy paid accounts to continue.",
+        ]
+        : [],
+      remainingGap: gate.canUse
+        ? paidOpsReady
+          ? "Paid-ops proof blocks trial and exhausted accounts while allowing healthy paid accounts to continue; add live payment-provider reconciliation before broad self-serve sales."
+          : "Repair pnpm --silent dearme:paid-ops-proof -- --check before claiming paid cycle guardrails."
+        : "Restore private proof before paid cycle guardrails matter.",
+    }),
+    commercialItem({
+      key: "feedback_learning",
+      label: "Feedback and memory learning",
+      ready: voiceEvidence.length > 0 && feedbackLearningReady && cohortRetentionReady,
+      evidence: voiceEvidence.length > 0 && feedbackLearningReady && cohortRetentionReady
+        ? [
+          ...voiceEvidence,
+          "Feedback-learning contract keeps review feedback private, saves the note, opens Voice & Memory, and preserves launch boundaries.",
+          "Cohort-retention proof carries learned feedback through the paid-event-source contract into paid-user retention analytics before real paid events replace local receipts.",
+        ]
+        : voiceEvidence,
+      remainingGap: voiceEvidence.length > 0
+        ? !feedbackLearningReady
+          ? `Repair ${feedbackLearningContract.proofCommand} before claiming autonomous learning.`
+          : cohortRetentionReady
+          ? "Feedback-learning proof and cohort-retention proof verify private review-to-Voice & Memory learning plus paid-user feedback analytics, with the paid-event-source contract ready for real paid feedback events as cohorts start."
+          : "Repair pnpm --silent dearme:cohort-retention-proof -- --check before claiming paid-user feedback analytics."
+        : "Restore Voice & Memory proof before claiming autonomous learning.",
+    }),
+    commercialItem({
+      key: "support_handoff",
+      label: "Human support handoff",
+      ready: supportHandoffReady && supportRecoveryReady,
+      evidence: supportHandoffReady && supportRecoveryReady
+        ? operatorHandoff.status === "ready"
+          ? [
+            "No owner-supplied live proof facts are missing for the current release gate.",
+            "Support-recovery proof keeps paid-user recovery and support notes private before any external action.",
+          ]
+          : [
+            "The gate lists the exact owner-approved facts still needed before live proof.",
+            "The capture step is local-only and protected by a no-send check.",
+            "Support-recovery proof keeps paid-user recovery and support notes private before any external action.",
+          ]
+        : [],
+      remainingGap: supportHandoffReady
+        ? supportRecoveryReady
+          ? "Support-recovery proof verifies paid-user recovery/support routing; owner support is only needed for approved external details, hosted checkout setup, live proof, public launch, or spend-sensitive actions."
+          : "Repair pnpm --silent dearme:support-recovery-proof -- --check before claiming paid-user support handoff readiness."
+        : "Create a concrete owner handoff before selling paid beta access.",
+    }),
+  ];
+  const canSellPrivateBeta = gate.canUse && privatePaymentPathReady;
+  const canOperatePaidUsers = canSellPrivateBeta &&
+    items.every((item) => item.status === "ready");
+
+  return {
+    status,
+    headline: status === "public-launch-ready"
+      ? "Commercially ready for public launch"
+      : status === "sellable-private-beta"
+        ? "Sellable and operable as a private beta"
+        : "Not ready to sell",
+    summary: status === "public-launch-ready"
+      ? "DearMe can be sold, operated, and publicly launched under the current proof gate."
+      : status === "sellable-private-beta"
+        ? "DearMe can be sold as a private beta with manual paid access and operated for paying users while broad public launch waits for live proof receipts."
+        : "DearMe should not be sold until private proof, launch boundary, and operating handoff are restored.",
+    canSellPrivateBeta,
+    canOperatePaidUsers,
+    cannotClaimPublicLaunchUntil,
+    items,
   };
 }
 
@@ -428,6 +764,7 @@ function decisionFor(
 export function summarizeDearMeReleaseGate(
   audit: DearMeGoalAudit,
   providerReadiness: readonly DearMeProviderSmokeReadiness[] = [],
+  env: Env = process.env,
 ): DearMeReleaseGate {
   const privateProof = decisionFor(audit, "private-proof");
   const publicLaunch = decisionFor(audit, "public-launch");
@@ -447,11 +784,18 @@ export function summarizeDearMeReleaseGate(
   };
   const operatorHandoff = buildOperatorHandoff(base);
   const productReadiness = buildProductReadiness(base);
+  const commercialReadiness = buildCommercialReadiness(
+    base,
+    operatorHandoff,
+    productReadiness,
+    env,
+  );
   const productComparison = buildProductComparison(base, providerReadiness);
   return {
     ...base,
     operatorHandoff,
     productReadiness,
+    commercialReadiness,
     productComparison,
   };
 }
@@ -503,12 +847,34 @@ export function formatDearMeReleaseGate(gate: DearMeReleaseGate): string[] {
   }
 
   lines.push("");
+  lines.push("Commercial readiness:");
+  lines.push(`- ${gate.commercialReadiness.status}: ${gate.commercialReadiness.headline}`);
+  lines.push(`- ${gate.commercialReadiness.summary}`);
+  lines.push(`- Sell private beta: ${gate.commercialReadiness.canSellPrivateBeta ? "yes" : "no"}`);
+  lines.push(`- Operate paid users: ${gate.commercialReadiness.canOperatePaidUsers ? "yes" : "no"}`);
+  if (gate.commercialReadiness.cannotClaimPublicLaunchUntil.length > 0) {
+    lines.push("- Cannot claim public launch until:");
+    for (const gap of gate.commercialReadiness.cannotClaimPublicLaunchUntil) {
+      lines.push(`  - ${gap}`);
+    }
+  }
+  for (const item of gate.commercialReadiness.items) {
+    lines.push(`- ${item.label}: ${item.status}. ${item.remainingGap}`);
+  }
+
+  lines.push("");
   lines.push("Operator handoff:");
   lines.push(`- status: ${gate.operatorHandoff.status}`);
   if (gate.operatorHandoff.captureCommand) {
     lines.push(`- Capture approved facts locally: ${gate.operatorHandoff.captureCommand}`);
   } else {
     lines.push("- Capture approved facts locally: no non-secret owner facts missing.");
+  }
+  if (gate.operatorHandoff.handoffReceiptCommand) {
+    if (gate.operatorHandoff.handoffReceiptPreviewCommand) {
+      lines.push(`- Preview the product handoff receipt without writing: ${gate.operatorHandoff.handoffReceiptPreviewCommand}`);
+    }
+    lines.push(`- If preview passes, import the product handoff receipt: ${gate.operatorHandoff.handoffReceiptCommand}`);
   }
   lines.push(`- No-send check: ${gate.operatorHandoff.checkCommand}`);
   if (gate.operatorHandoff.guardedLiveCommands.length > 0) {
@@ -612,6 +978,7 @@ async function main() {
     const gate = summarizeDearMeReleaseGate(
       await buildDearMeGoalAudit(parsed.envFiles, process.env),
       inspectDearMeProviderSmokeReadiness(env, "all"),
+      env,
     );
     if (parsed.json) {
       console.log(JSON.stringify({ gate }, null, 2));

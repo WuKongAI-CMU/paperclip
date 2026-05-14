@@ -235,11 +235,13 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     "five_minute_sequence",
     "live_work_receipts",
     "cycle_report_contract",
+    "value_report_contract",
     "private_outputs",
     "recurring_private_work",
     "phone_ready_private_site",
     "minimum_team",
     "approval_boundaries",
+    "public_launch_proof_needs",
     "customer_language",
   ]);
   assert.equal(local?.ready, true);
@@ -253,7 +255,51 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     "profile_token_review_loop",
   ]);
   assert.equal(live?.ready, false);
+  assert.equal(status.commercialReadiness.status, "sellable-private-beta");
+  assert.equal(status.commercialReadiness.canSellPrivateBeta, true);
+  assert.equal(status.commercialReadiness.canOperatePaidUsers, true);
+  assert.equal(
+    status.commercialReadiness.detailedGateCommand,
+    "pnpm --silent dearme:release-gate -- --target private-proof",
+  );
+  assert.deepEqual(
+    status.commercialReadiness.items.map((item) => [item.key, item.status]),
+    [
+      ["paid_access", "ready"],
+      ["payment_path", "ready"],
+      ["first_wow", "ready"],
+      ["weekly_value_receipt", "ready"],
+      ["account_health_receipt", "ready"],
+      ["paid_retention_pulse", "ready"],
+      ["empty_week_recovery", "ready"],
+      ["autonomy_contract", "ready"],
+      ["launch_boundary", "ready"],
+      ["cost_guardrail", "ready"],
+      ["feedback_learning", "ready"],
+      ["support_handoff", "ready"],
+    ],
+  );
+  const emptyWeekRecovery = status.commercialReadiness.items.find((item) => item.key === "empty_week_recovery");
+  const weeklyValue = status.commercialReadiness.items.find((item) => item.key === "weekly_value_receipt");
+  const paidRetention = status.commercialReadiness.items.find((item) => item.key === "paid_retention_pulse");
+  const feedbackLearning = status.commercialReadiness.items.find((item) => item.key === "feedback_learning");
+  const supportHandoff = status.commercialReadiness.items.find((item) => item.key === "support_handoff");
+  assert.match(weeklyValue?.remainingGap ?? "", /Cohort-retention proof verifies weekly value analytics/);
+  assert.match(paidRetention?.remainingGap ?? "", /Cohort-retention proof turns paid account health/);
+  assert.match(feedbackLearning?.remainingGap ?? "", /Feedback-learning proof verifies/);
+  assert.match(feedbackLearning?.remainingGap ?? "", /cohort-retention proof carries learned feedback/);
+  assert.match(emptyWeekRecovery?.remainingGap ?? "", /Support-recovery proof verifies/);
+  assert.match(supportHandoff?.remainingGap ?? "", /Support-recovery proof keeps/);
+  assert.ok(
+    status.commercialReadiness.cannotClaimPublicLaunchUntil.includes(
+      "Voice & Memory semantic/review-loop proof",
+    ),
+  );
   assert.equal(status.commands.ahaProof, "pnpm --silent dearme:aha-proof -- --check");
+  assert.equal(
+    status.commands.releaseGate,
+    "pnpm --silent dearme:release-gate -- --target private-proof",
+  );
   assert.deepEqual(live?.blockedTargets.map((item) => item.target), [
     "deploy_site_production",
     "linkedin_dm",
@@ -328,6 +374,14 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     "pnpm --silent dearme:next-proof -- --target meta_campaign",
   ]);
   assert.equal(
+    status.liveProofHandoff.handoffReceiptPreviewCommand,
+    "pnpm --silent dearme:next-proof -- --target all --no-write --handoff-receipt-file <launch-proof-handoff-receipt.txt>",
+  );
+  assert.equal(
+    status.liveProofHandoff.handoffReceiptCommand,
+    "pnpm --silent dearme:next-proof -- --target all --handoff-receipt-file <launch-proof-handoff-receipt.txt>",
+  );
+  assert.equal(
     status.liveProofHandoff.checkCommand,
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
   );
@@ -351,6 +405,14 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     status.liveProofHandoff.setupCommands,
   );
   assert.equal(
+    status.ownerProofChecklist.handoffReceiptPreviewCommand,
+    status.liveProofHandoff.handoffReceiptPreviewCommand,
+  );
+  assert.equal(
+    status.ownerProofChecklist.handoffReceiptCommand,
+    status.liveProofHandoff.handoffReceiptCommand,
+  );
+  assert.equal(
     status.ownerProofChecklist.checkCommand,
     status.liveProofHandoff.checkCommand,
   );
@@ -364,7 +426,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     [
       "Only three facts are missing",
       "No-send check comes first",
-      "Live receipt needs approval",
+      "Live receipt needs launch call",
     ],
   );
   assert.match(
@@ -373,6 +435,27 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   );
   assert.match(formatted, /DearMe product proof status/);
   assert.match(formatted, /Product verdict: private first-wow proof exists/);
+  assert.match(formatted, /Commercial readiness:/);
+  assert.match(formatted, /sellable-private-beta: Private beta is sellable and operable/);
+  assert.match(formatted, /Sell private beta: yes/);
+  assert.match(formatted, /Operate paid users: yes/);
+  assert.match(formatted, /Paid beta access: ready\. Paid-loop proof shows a recorded receipt activates access and unblocks first-cycle work/);
+  assert.match(formatted, /Payment path proof: ready\. Keep selling private beta through recorded receipts/);
+  assert.match(formatted, /dearme:payment-readiness/);
+  assert.match(formatted, /Public launch still waits for:/);
+  assert.match(formatted, /Voice & Memory semantic\/review-loop proof/);
+  assert.match(formatted, /Weekly value receipt: ready/);
+  assert.match(formatted, /Paid account health receipt: ready/);
+  assert.match(formatted, /Paid-ops proof routes healthy, trial, near-guardrail, and paused accounts/);
+  assert.match(formatted, /Paid retention pulse: ready/);
+  assert.match(formatted, /Cohort-retention proof turns paid account health into weekly renewal states/);
+  assert.match(formatted, /real paid-cohort events/);
+  assert.match(formatted, /Empty-week recovery: ready/);
+  assert.match(formatted, /Autonomy contract receipt: ready/);
+  assert.match(formatted, /Keep validating what can run privately/);
+  assert.match(formatted, /Human support handoff: ready/);
+  assert.match(formatted, /hosted checkout setup/);
+  assert.match(formatted, /Detailed gate: pnpm --silent dearme:release-gate -- --target private-proof/);
   assert.match(formatted, /First-wow aha proof: ready/);
   assert.match(formatted, /recurring private work/);
   assert.match(formatted, /pnpm --silent dearme:aha-proof -- --check/);
@@ -390,8 +473,10 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /Owner proof facts needed before public launch/);
   assert.match(formatted, /Only three facts are missing: Delivery route, professional-network recipient, and phone-message recipient\./);
   assert.match(formatted, /No-send check comes first: DearMe verifies the setup before anything is delivered publicly\./);
-  assert.match(formatted, /Live receipt needs approval: The guarded receipt pass stays held until the owner approves the exact details\./);
+  assert.match(formatted, /Live receipt needs launch call: The guarded receipt pass stays behind the exact launch details you choose\./);
   assert.match(formatted, /Capture setup locally:/);
+  assert.match(formatted, /Preview the product handoff receipt without writing: pnpm --silent dearme:next-proof -- --target all --no-write --handoff-receipt-file <launch-proof-handoff-receipt\.txt>/);
+  assert.match(formatted, /If preview passes, import the product handoff receipt: pnpm --silent dearme:next-proof -- --target all --handoff-receipt-file <launch-proof-handoff-receipt\.txt>/);
   assert.match(formatted, /OpenClaw gateway URL: provide OPENCLAW_GATEWAY_URL or DEARME_USE_LOCAL_OPENCLAW_CONFIG=1/);
   assert.match(formatted, /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
   assert.match(formatted, /Guarded live proof:/);
@@ -543,9 +628,13 @@ test("DearMe proof status can be lane scoped", () => {
   assert.deepEqual(status.liveProviderFocus, []);
   assert.deepEqual(status.liveProofHandoff.factsNeeded, []);
   assert.deepEqual(status.liveProofHandoff.setupCommands, []);
+  assert.equal(status.liveProofHandoff.handoffReceiptPreviewCommand, null);
+  assert.equal(status.liveProofHandoff.handoffReceiptCommand, null);
   assert.deepEqual(status.liveProofHandoff.guardedLiveCommands, []);
   assert.equal(status.ownerProofChecklist.status, "ready_for_guarded_live_proof");
   assert.equal(status.ownerProofChecklist.factsNeededCount, 0);
+  assert.equal(status.ownerProofChecklist.handoffReceiptPreviewCommand, null);
+  assert.equal(status.ownerProofChecklist.handoffReceiptCommand, null);
   const formatted = formatDearMeProofStatus(status).join("\n");
   assert.match(formatted, /scoped proof status only/);
   assert.match(formatted, /pnpm --silent dearme:proof -- --print-env-template --lane voice > \.dearme-proof\.env/);

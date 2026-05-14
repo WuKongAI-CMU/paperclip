@@ -31,6 +31,8 @@ export interface DearMeAhaProofCheck {
     | "five_minute_sequence"
     | "live_work_receipts"
     | "cycle_report_contract"
+    | "value_report_contract"
+    | "opportunity_roi_report_contract"
     | "private_outputs"
     | "recurring_private_work"
     | "phone_ready_private_site"
@@ -93,6 +95,28 @@ export interface DearMePrivateSiteHostSmokeManifest {
       statuses: string[];
       sources: string[];
     };
+    valueReportCount: number;
+    valueReport: {
+      title: string;
+      period: string;
+      labels: string[];
+      ownerRoles: string[];
+      metrics: string[];
+      counts: number[];
+      units: string[];
+      sources: string[];
+    };
+    opportunityRoiReportCount: number;
+    opportunityRoiReport: {
+      title: string;
+      priorities: string[];
+      scores: number[];
+      expectedReturns: string[];
+      efforts: string[];
+      confidences: string[];
+      nextActions: string[];
+      sources: string[];
+    };
     continuationCount: number;
     continuation: {
       title: string;
@@ -100,6 +124,13 @@ export interface DearMePrivateSiteHostSmokeManifest {
       preparedArtifacts: string[];
       ownerRoles: string[];
       approvalBoundaries: string[];
+    };
+    memoryPlanCount: number;
+    memoryPlan: {
+      title: string;
+      labels: string[];
+      kinds: string[];
+      sources: string[];
     };
     launchProofNeedCount: number;
     launchProofNeeds: {
@@ -312,7 +343,7 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
       `Prompt: ${preview.prompt}`,
     ]),
     renderCard("DearMe staged", preview.sitePreview.route, [
-      "Private proof page ready before a public launch decision.",
+      "Proof page ready before a public launch decision.",
     ]),
     renderCard("It prepared", `${preview.starterPosts.length} drafts and ${preview.opportunityShortlist.length} leads`, [
       firstOpportunity ? `First lead: ${firstOpportunity.target}` : "First opportunity lane is ready.",
@@ -322,13 +353,13 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
     ]),
   ].join("\n");
   const proofLoopCards = [
-    renderCard("Proof ready", "The current private proof pack is ready to review before anything goes public.", [
-      `Prepared: ${preview.proofSequence[2]?.preparedArtifact ?? "Private proof page move"}`,
+    renderCard("Proof ready", "The current proof pack is ready to review before anything goes public.", [
+      `Prepared: ${preview.proofSequence[2]?.preparedArtifact ?? "Proof page move"}`,
     ]),
-    renderCard("Next pass", `${preview.continuationPlan.items.length} private improvements are already lined up.`, [
+    renderCard("Next pass", `${preview.continuationPlan.items.length} improvements are already lined up.`, [
       `Review: ${preview.continuationPlan.nextReview}`,
     ]),
-    renderCard("Launch call", "Public posts, outreach, page changes, and spend still wait for one approval.", [
+    renderCard("Launch call", "Public posts, outreach, page changes, and spend still wait for one launch decision.", [
       `Boundary: ${preview.approvalBoundary.label}`,
     ]),
   ].join("\n");
@@ -353,10 +384,36 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
       item.nextCall ? `Next call: ${item.nextCall}` : "",
     ].filter(Boolean)),
   ).join("\n");
+  const valueReportCards = preview.valueReport.items.map((item) =>
+    renderCard(item.label, item.summary, [
+      `Metric: ${item.metric}`,
+      `Count: ${item.count} ${item.unit}`,
+      `By: ${formatEnumLabel(item.ownerRole)}`,
+      `Source: ${item.source}`,
+    ]),
+  ).join("\n");
+  const opportunityRoiCards = preview.opportunityRoiReport.items.map((item) =>
+    renderCard(item.leadTitle, item.target, [
+      `Score: ${item.score}`,
+      `Priority: ${formatEnumLabel(item.priority)}`,
+      `Return: ${item.expectedReturn}`,
+      `Effort: ${item.effort}`,
+      `Confidence: ${item.confidence}`,
+      `Next: ${item.nextAction}`,
+      `Source: ${item.source}`,
+    ]),
+  ).join("\n");
   const continuationCards = preview.continuationPlan.items.map((item) =>
     renderCard(item.title, item.summary, [
       `Prepared: ${item.preparedArtifact}`,
       `Waits: ${item.approvalBoundary}`,
+    ]),
+  ).join("\n");
+  const memoryPlanCards = preview.memoryPlan.items.map((item) =>
+    renderCard(item.label, item.summary, [
+      `Type: ${formatEnumLabel(item.kind)}`,
+      `Source: ${item.source}`,
+      `Next: ${item.howUsedNext}`,
     ]),
   ).join("\n");
   const starterPostCards = preview.starterPosts.map((post) =>
@@ -458,11 +515,33 @@ export function renderDearMePrivateSitePreviewHtml(preview: DearMeFirstCyclePrev
       <p class="next-review">${escapeHtml(preview.cycleReport.closingLine)}</p>
     </section>
 
+    <section aria-label="Value report">
+      <h2>${escapeHtml(preview.valueReport.title)}</h2>
+      <p class="summary">${escapeHtml(preview.valueReport.summary)}</p>
+      <p class="next-review">${escapeHtml(preview.valueReport.period)}</p>
+      <div class="grid">${valueReportCards}</div>
+      <p class="next-review">${escapeHtml(preview.valueReport.closingLine)}</p>
+    </section>
+
+    <section aria-label="Opportunity ROI report">
+      <h2>${escapeHtml(preview.opportunityRoiReport.title)}</h2>
+      <p class="summary">${escapeHtml(preview.opportunityRoiReport.summary)}</p>
+      <div class="grid">${opportunityRoiCards}</div>
+      <p class="next-review">${escapeHtml(preview.opportunityRoiReport.closingLine)}</p>
+    </section>
+
     <section aria-label="Keeps working">
       <h2>${escapeHtml(preview.continuationPlan.title)}</h2>
       <p class="summary">${escapeHtml(preview.continuationPlan.summary)}</p>
       <p class="next-review">${escapeHtml(preview.continuationPlan.nextReview)}</p>
       <div class="grid">${continuationCards}</div>
+    </section>
+
+    <section aria-label="Voice and Memory plan">
+      <h2>${escapeHtml(preview.memoryPlan.title)}</h2>
+      <p class="summary">${escapeHtml(preview.memoryPlan.summary)}</p>
+      <p class="next-review">${escapeHtml(preview.memoryPlan.savePolicy.join(" "))}</p>
+      <div class="grid">${memoryPlanCards}</div>
     </section>
 
     <section aria-label="Prepared drafts">
@@ -523,14 +602,42 @@ function dearMeCustomerVisiblePreviewText(preview: DearMeFirstCyclePreviewRespon
     pushTexts([item.label, item.summary, item.source, item.nextCall]);
   }
 
+  pushTexts([
+    preview.valueReport.title,
+    preview.valueReport.summary,
+    preview.valueReport.period,
+    preview.valueReport.closingLine,
+  ]);
+  for (const item of preview.valueReport.items) {
+    pushTexts([item.label, item.metric, item.unit, item.summary, item.source]);
+  }
+
+  pushTexts([
+    preview.opportunityRoiReport.title,
+    preview.opportunityRoiReport.summary,
+    preview.opportunityRoiReport.closingLine,
+  ]);
+  for (const item of preview.opportunityRoiReport.items) {
+    pushTexts([
+      item.leadTitle,
+      item.target,
+      item.expectedReturn,
+      item.effort,
+      item.confidence,
+      item.nextAction,
+      item.source,
+    ]);
+  }
+
   for (const lead of [preview.opportunityLead, ...preview.opportunityShortlist]) {
     pushTexts([
       lead.title,
       lead.target,
       lead.whyRelevant,
       lead.contactEvidence.sourceSignal,
-      lead.contactEvidence.email ?? undefined,
-      lead.contactEvidence.linkedinUrl ?? undefined,
+      lead.contactEvidence.contactEmail ?? undefined,
+      lead.contactEvidence.contactHandle ?? undefined,
+      lead.contactEvidence.contactUrl ?? undefined,
       lead.outreachAngle,
       lead.draftMessage,
     ]);
@@ -562,6 +669,11 @@ function dearMeCustomerVisiblePreviewText(preview: DearMeFirstCyclePreviewRespon
   ]);
   for (const item of preview.continuationPlan.items) {
     pushTexts([item.title, item.preparedArtifact, item.summary, item.approvalBoundary]);
+  }
+  pushTexts([preview.memoryPlan.title, preview.memoryPlan.summary]);
+  pushTexts(preview.memoryPlan.savePolicy);
+  for (const item of preview.memoryPlan.items) {
+    pushTexts([item.label, item.summary, item.source, item.howUsedNext]);
   }
   pushTexts([
     "Private proof is ready. Public launch waits for three live receipts.",
@@ -626,6 +738,28 @@ export function createDearMePrivateSiteHostSmokeManifest(
         statuses: preview.cycleReport.items.map((item) => item.status),
         sources: preview.cycleReport.items.map((item) => item.source),
       },
+      valueReportCount: preview.valueReport.items.length,
+      valueReport: {
+        title: preview.valueReport.title,
+        period: preview.valueReport.period,
+        labels: preview.valueReport.items.map((item) => item.label),
+        ownerRoles: preview.valueReport.items.map((item) => item.ownerRole),
+        metrics: preview.valueReport.items.map((item) => item.metric),
+        counts: preview.valueReport.items.map((item) => item.count),
+        units: preview.valueReport.items.map((item) => item.unit),
+        sources: preview.valueReport.items.map((item) => item.source),
+      },
+      opportunityRoiReportCount: preview.opportunityRoiReport.items.length,
+      opportunityRoiReport: {
+        title: preview.opportunityRoiReport.title,
+        priorities: preview.opportunityRoiReport.items.map((item) => item.priority),
+        scores: preview.opportunityRoiReport.items.map((item) => item.score),
+        expectedReturns: preview.opportunityRoiReport.items.map((item) => item.expectedReturn),
+        efforts: preview.opportunityRoiReport.items.map((item) => item.effort),
+        confidences: preview.opportunityRoiReport.items.map((item) => item.confidence),
+        nextActions: preview.opportunityRoiReport.items.map((item) => item.nextAction),
+        sources: preview.opportunityRoiReport.items.map((item) => item.source),
+      },
       continuationCount: preview.continuationPlan.items.length,
       continuation: {
         title: preview.continuationPlan.title,
@@ -633,6 +767,13 @@ export function createDearMePrivateSiteHostSmokeManifest(
         preparedArtifacts: preview.continuationPlan.items.map((item) => item.preparedArtifact),
         ownerRoles: preview.continuationPlan.items.map((item) => item.ownerRole),
         approvalBoundaries: preview.continuationPlan.items.map((item) => item.approvalBoundary),
+      },
+      memoryPlanCount: preview.memoryPlan.items.length,
+      memoryPlan: {
+        title: preview.memoryPlan.title,
+        labels: preview.memoryPlan.items.map((item) => item.label),
+        kinds: preview.memoryPlan.items.map((item) => item.kind),
+        sources: preview.memoryPlan.items.map((item) => item.source),
       },
       launchProofNeedCount: DEARME_OWNER_PROOF_FACT_SPECS.length,
       launchProofNeeds: {
@@ -689,6 +830,12 @@ export function inspectDearMeAhaProofPreview(
   const cycleReportLabels = preview.cycleReport.items.map((item) => item.label);
   const cycleReportStatuses = preview.cycleReport.items.map((item) => item.status);
   const cycleReportSources = preview.cycleReport.items.map((item) => item.source);
+  const valueReportLabels = preview.valueReport.items.map((item) => item.label);
+  const valueReportMetrics = preview.valueReport.items.map((item) => item.metric);
+  const valueReportSources = preview.valueReport.items.map((item) => item.source);
+  const opportunityRoiPriorities = preview.opportunityRoiReport.items.map((item) => item.priority);
+  const opportunityRoiScores = preview.opportunityRoiReport.items.map((item) => item.score);
+  const opportunityRoiNextActions = preview.opportunityRoiReport.items.map((item) => item.nextAction);
   const firstOpportunity = preview.opportunityShortlist[0];
   const ownerRoles = new Set<string>([
     preview.growthPlan.ownerRole,
@@ -699,6 +846,7 @@ export function inspectDearMeAhaProofPreview(
     ...preview.autonomyPlan.autonomousSteps.map((step) => step.ownerRole),
     ...liveWorkOwnerRoles,
     ...preview.cycleReport.items.map((item) => item.ownerRole),
+    ...preview.valueReport.items.map((item) => item.ownerRole),
   ]);
   const serializedPreview = JSON.stringify(preview);
   const visiblePreviewText = dearMeCustomerVisiblePreviewText(preview);
@@ -717,7 +865,10 @@ export function inspectDearMeAhaProofPreview(
     1 +
     1 +
     preview.continuationPlan.items.length +
-    preview.cycleReport.items.length;
+    preview.cycleReport.items.length +
+    preview.valueReport.items.length +
+    preview.opportunityRoiReport.items.length +
+    preview.memoryPlan.items.length;
   const checks: DearMeAhaProofCheck[] = [
     check(
       "one_sentence_start",
@@ -764,7 +915,7 @@ export function inspectDearMeAhaProofPreview(
           "Studying your voice",
           "Finding likely audiences",
           "Drafting first moves",
-          "Preparing your private proof",
+          "Preparing your proof page",
           "Ready for your launch call",
         ]) &&
         liveWorkStatuses.includes("your_call") &&
@@ -784,9 +935,15 @@ export function inspectDearMeAhaProofPreview(
           "What moved while you were away",
           "Ready for your launch call",
           "Prepared but blocked",
-          "Next private cycle",
+          "Next proof cycle",
         ]) &&
         sameValues(cycleReportStatuses, ["moved", "ready", "blocked", "next"]) &&
+        sameValues(cycleReportSources, [
+          "Live work receipts",
+          "Proof pack",
+          "Launch boundary",
+          "Next pass",
+        ]) &&
         preview.cycleReport.items.every((item) => item.ownerRole && item.source && item.summary),
       "The first wow loop returns a Polsia-style operator report: what moved, what is ready, what is blocked, and what continues next.",
       [
@@ -794,6 +951,73 @@ export function inspectDearMeAhaProofPreview(
         `labels=${cycleReportLabels.join(" | ")}`,
         `statuses=${cycleReportStatuses.join(",")}`,
         `sources=${cycleReportSources.join(" | ")}`,
+      ],
+    ),
+    check(
+      "value_report_contract",
+      "Value report contract",
+      preview.valueReport.title === "First value report" &&
+        preview.valueReport.period === "First five minutes" &&
+        preview.valueReport.items.length === 4 &&
+        sameValues(valueReportLabels, [
+          "Reviewable assets prepared",
+          "Opportunity coverage staged",
+          "Proof loop opened",
+          "Launch risk held back",
+        ]) &&
+        sameValues(valueReportMetrics, [
+          "5 drafts + 1 proof card",
+          "5 leads",
+          "1 private route + 3 next-pass improvements",
+          "4 approval boundaries",
+        ]) &&
+        sameValues(valueReportSources, [
+          "Proof pack",
+          "Opportunity shortlist",
+          "Private proof page",
+          "Launch boundary",
+        ]) &&
+        preview.valueReport.items.every((item) => item.count > 0 && item.ownerRole && item.summary),
+      "The first wow loop quantifies the private value created before the user decides what goes public.",
+      [
+        `title=${preview.valueReport.title}`,
+        `period=${preview.valueReport.period}`,
+        `labels=${valueReportLabels.join(" | ")}`,
+        `metrics=${valueReportMetrics.join(" | ")}`,
+        `sources=${valueReportSources.join(" | ")}`,
+      ],
+    ),
+    check(
+      "opportunity_roi_report_contract",
+      "Opportunity ROI report contract",
+      preview.opportunityRoiReport.title === "Opportunity ROI report" &&
+        preview.opportunityRoiReport.items.length === 5 &&
+        sameValues(opportunityRoiPriorities, [
+          "launch_first",
+          "launch_first",
+          "verify_contact",
+          "verify_contact",
+          "warm_intro",
+        ]) &&
+        sameValues(opportunityRoiScores.map(String), ["91", "82", "73", "73", "72"]) &&
+        preview.opportunityRoiReport.items.every((item) =>
+          item.leadTitle &&
+          item.target &&
+          item.expectedReturn &&
+          item.effort &&
+          item.confidence &&
+          item.nextAction &&
+          item.source,
+        ) &&
+        staticHtml.includes(escapeHtml(preview.opportunityRoiReport.title)) &&
+        staticHtml.includes("Launch First") &&
+        staticHtml.includes("Warm Intro"),
+      "The first wow loop ranks prepared opportunities by expected return, effort, confidence, and next safe action before outreach.",
+      [
+        `title=${preview.opportunityRoiReport.title}`,
+        `priorities=${opportunityRoiPriorities.join(",")}`,
+        `scores=${opportunityRoiScores.join(",")}`,
+        `nextActions=${opportunityRoiNextActions.join(" | ")}`,
       ],
     ),
     check(
@@ -832,7 +1056,10 @@ export function inspectDearMeAhaProofPreview(
       staticHtml.includes('<meta name="viewport" content="width=device-width, initial-scale=1" />') &&
         staticHtml.includes("Your one sentence became a private proof system") &&
         staticHtml.includes(preview.sitePreview.route) &&
+        staticHtml.includes(escapeHtml(preview.valueReport.title)) &&
+        staticHtml.includes(escapeHtml(preview.opportunityRoiReport.title)) &&
         staticHtml.includes(preview.continuationPlan.title) &&
+        staticHtml.includes(escapeHtml(preview.memoryPlan.title)) &&
         staticHtml.includes(preview.approvalBoundary.label) &&
         staticHtmlHiddenMatch === null,
       "The same proof contract can render as a static private site artifact before a real host deploy smoke.",

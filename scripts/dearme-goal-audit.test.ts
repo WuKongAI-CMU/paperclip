@@ -155,6 +155,54 @@ function readyPublicFirstRunLandingEvidence() {
   };
 }
 
+function readyCommercialReadiness() {
+  const item = (
+    key:
+      | "paid_access"
+      | "payment_path"
+      | "first_wow"
+      | "weekly_value_receipt"
+      | "account_health_receipt"
+      | "paid_retention_pulse"
+      | "empty_week_recovery"
+      | "autonomy_contract"
+      | "launch_boundary"
+      | "cost_guardrail"
+      | "feedback_learning"
+      | "support_handoff",
+    label: string,
+  ) => ({
+    key,
+    label,
+    status: "ready" as const,
+    remainingGap: `${label} is proven by the local commercial proof suite.`,
+  });
+
+  return {
+    status: "public-launch-ready" as const,
+    headline: "Private beta and public launch proof are ready from this status.",
+    summary: "The status check sees private value delivery and live-provider proof as ready.",
+    canSellPrivateBeta: true,
+    canOperatePaidUsers: true,
+    cannotClaimPublicLaunchUntil: [],
+    detailedGateCommand: "pnpm --silent dearme:release-gate -- --target private-proof",
+    items: [
+      item("paid_access", "Paid beta access"),
+      item("payment_path", "Payment path proof"),
+      item("first_wow", "Five-minute first wow"),
+      item("weekly_value_receipt", "Weekly value receipt"),
+      item("account_health_receipt", "Paid account health receipt"),
+      item("paid_retention_pulse", "Paid retention pulse"),
+      item("empty_week_recovery", "Empty-week recovery"),
+      item("autonomy_contract", "Autonomy contract receipt"),
+      item("launch_boundary", "Review and launch boundary"),
+      item("cost_guardrail", "Cost and cycle guardrail"),
+      item("feedback_learning", "Feedback and memory learning"),
+      item("support_handoff", "Human support handoff"),
+    ],
+  };
+}
+
 function readyStatus(): DearMeProofStatus {
   return {
     lane: "all",
@@ -248,9 +296,37 @@ function readyStatus(): DearMeProofStatus {
         operatorCommand: "pnpm --silent dearme:provider-smoke -- --target meta_campaign --live",
       },
     ],
+    liveProofHandoff: {
+      factsNeeded: [],
+      setupCommands: [],
+      handoffReceiptPreviewCommand: null,
+      handoffReceiptCommand: null,
+      checkCommand: "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
+      guardedLiveCommands: [],
+      noSendGuarantee: true,
+    },
+    ownerProofChecklist: {
+      status: "ready",
+      headline: "Owner proof handoff is ready.",
+      summary: "No external proof facts are missing.",
+      factsNeededCount: 0,
+      factsNeeded: [],
+      captureCommands: [],
+      handoffReceiptPreviewCommand: null,
+      handoffReceiptCommand: null,
+      checkCommand: "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
+      guardedLiveCommands: [],
+      noSendGuarantee: true,
+      checklistItems: [],
+      safety: [],
+    },
+    commercialReadiness: readyCommercialReadiness(),
     commands: {
       ahaProof: "pnpm --silent dearme:aha-proof -- --check",
       integrationAudit: "pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs",
+      openClawMessageRehearsal: "pnpm --silent dearme:openclaw-message-rehearsal -- --json",
+      linkedInDmRehearsal: "pnpm --silent dearme:linkedin-dm-rehearsal -- --json",
+      releaseGate: "pnpm --silent dearme:release-gate -- --target private-proof",
       printEnvTemplate: "pnpm --silent dearme:proof -- --print-env-template > .dearme-proof.env",
       runSafe: "pnpm --silent dearme:proof -- --run-safe",
       check: "pnpm --silent dearme:proof -- --check",
@@ -379,9 +455,15 @@ test("DearMe goal audit blocks completion on live production host proof", () => 
   assert.match(formatted, /DearMe active goal completion audit/);
   assert.match(formatted, /Prompt-to-artifact checklist:/);
   assert.match(formatted, /Maximize reuse of Polsia, Naive\/Paperclip, and OpenClaw instead of rebuilding substrate: blocked/);
+  assert.match(formatted, /Cover the commercial user system: paid access, payment path, account health, cost guardrails, and launch boundaries: met/);
+  assert.match(formatted, /Keep paid users receiving weekly value, retention recovery, feedback learning, and support handoff: met/);
   assert.match(formatted, /Do not mark completion from proxy proof; require real live OpenClaw\/channel\/provider evidence: blocked/);
   assert.match(formatted, /Missing: OpenClaw shared Telegram\/iMessage message proof, Live provider proof set/);
   assert.match(formatted, /\[x\] Naive\/Paperclip reuse and worktree absorption: met/);
+  assert.match(formatted, /\[x\] Sellable private-beta paid access loop: met/);
+  assert.match(formatted, /\[x\] Paid-user operations and guardrail loop: met/);
+  assert.match(formatted, /\[x\] Weekly value and paid-retention loop: met/);
+  assert.match(formatted, /\[x\] Feedback learning and support handoff loop: met/);
   assert.match(formatted, /\[ \] Polsia-level phone-reachable private proof page: blocked/);
   assert.match(formatted, /Missing capabilities: enable production host smoke; public HTTPS DearMe host; exported private proof artifact; proof-page text or host-smoke manifest/);
   assert.match(formatted, /Run: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --target deploy_site_production/);
@@ -498,8 +580,44 @@ test("DearMe goal audit passes only when every required proof item is ready", ()
   );
   assert.equal(audit.nextAction.label, "Mark the active goal complete");
   assert.match(formatted, /Prompt-to-artifact checklist:/);
+  assert.match(formatted, /Cover the commercial user system: paid access, payment path, account health, cost guardrails, and launch boundaries: met/);
+  assert.match(formatted, /Keep paid users receiving weekly value, retention recovery, feedback learning, and support handoff: met/);
   assert.match(formatted, /Make the product autonomous and useful without exposing too many setup concerns: met/);
   assert.match(formatted, /pnpm --silent dearme:goal-audit -- --check/);
+});
+
+test("DearMe goal audit requires the paid-user retention loop before completion", () => {
+  const status = readyStatus();
+  status.commercialReadiness = {
+    ...status.commercialReadiness,
+    items: status.commercialReadiness.items.map((item) =>
+      item.key === "paid_retention_pulse"
+        ? {
+          ...item,
+          status: "blocked" as const,
+          remainingGap: "Repair pnpm --silent dearme:cohort-retention-proof -- --check before claiming paid retention analytics.",
+        }
+        : item
+    ),
+  };
+  const audit = summarizeDearMeGoalAudit(
+    status,
+    deliveredHostRehearsalEvidence(),
+    readyHostProviderEvidence(),
+    readyOpenClawMessageRehearsalEvidence(),
+    readyPublicFirstRunLandingEvidence(),
+  );
+  const formatted = formatDearMeGoalAudit(audit).join("\n");
+
+  assert.equal(audit.complete, false);
+  assert.equal(audit.nextAction.label, "Weekly value and paid-retention loop");
+  assert.deepEqual(
+    audit.items.find((item) => item.key === "weekly_retention_loop")?.blockers,
+    ["paid_retention_pulse"],
+  );
+  assert.match(formatted, /\[ \] Weekly value and paid-retention loop: blocked/);
+  assert.match(formatted, /Repair pnpm --silent dearme:cohort-retention-proof -- --check/);
+  assert.match(formatted, /Run: pnpm --silent dearme:cohort-retention-proof -- --check/);
 });
 
 test("DearMe goal audit does not silently skip the public first-run landing proof", () => {

@@ -25,6 +25,12 @@ import {
   runDearMeAhaProof,
   type DearMeAhaProofReport,
 } from "./dearme-aha-proof.ts";
+import { runDearMePaidLoopProof } from "./dearme-paid-loop-proof.ts";
+import { runDearMePaidOpsProof } from "./dearme-paid-ops-proof.ts";
+import { runDearMeSupportRecoveryProof } from "./dearme-support-recovery-proof.ts";
+import { runDearMeCohortRetentionProof } from "./dearme-cohort-retention-proof.ts";
+import { inspectDearMeFeedbackLearningContract } from "./dearme-feedback-learning-proof.ts";
+import { inspectDearMePaymentReadiness } from "./dearme-payment-readiness.ts";
 import {
   runDearMeOpenClawMessageRehearsal,
   type DearMeOpenClawMessageRehearsalReport,
@@ -35,6 +41,7 @@ import {
 } from "./dearme-proof-facts.ts";
 import {
   DEARME_OWNER_PROOF_CHECKLIST_ITEMS,
+  dearMeOwnerProofFactSpec,
   type DearMeOwnerProofChecklistItem,
 } from "../packages/shared/src/dearme-customer-text.ts";
 
@@ -140,6 +147,8 @@ export interface DearMeProofLiveProviderFocus {
 export interface DearMeProofLiveProofHandoff {
   factsNeeded: DearMeProofFactNeed[];
   setupCommands: string[];
+  handoffReceiptPreviewCommand: string | null;
+  handoffReceiptCommand: string | null;
   checkCommand: string;
   guardedLiveCommands: string[];
   noSendGuarantee: true;
@@ -152,11 +161,50 @@ export interface DearMeProofOwnerChecklist {
   factsNeededCount: number;
   factsNeeded: DearMeProofFactNeed[];
   captureCommands: string[];
+  handoffReceiptPreviewCommand: string | null;
+  handoffReceiptCommand: string | null;
   checkCommand: string;
   guardedLiveCommands: string[];
   noSendGuarantee: true;
   checklistItems: readonly DearMeOwnerProofChecklistItem[];
   safety: string[];
+}
+
+export type DearMeProofCommercialReadinessStatus =
+  | "blocked"
+  | "sellable-private-beta"
+  | "public-launch-ready";
+
+export type DearMeProofCommercialReadinessItemStatus = "ready" | "blocked";
+
+export interface DearMeProofCommercialReadinessItem {
+  key:
+    | "paid_access"
+    | "payment_path"
+    | "first_wow"
+    | "weekly_value_receipt"
+    | "account_health_receipt"
+    | "paid_retention_pulse"
+    | "empty_week_recovery"
+    | "autonomy_contract"
+    | "launch_boundary"
+    | "cost_guardrail"
+    | "feedback_learning"
+    | "support_handoff";
+  label: string;
+  status: DearMeProofCommercialReadinessItemStatus;
+  remainingGap: string;
+}
+
+export interface DearMeProofCommercialReadiness {
+  status: DearMeProofCommercialReadinessStatus;
+  headline: string;
+  summary: string;
+  canSellPrivateBeta: boolean;
+  canOperatePaidUsers: boolean;
+  cannotClaimPublicLaunchUntil: string[];
+  items: DearMeProofCommercialReadinessItem[];
+  detailedGateCommand: string;
 }
 
 export interface DearMeProofStatus {
@@ -165,11 +213,13 @@ export interface DearMeProofStatus {
   liveProviderFocus: DearMeProofLiveProviderFocus[];
   liveProofHandoff: DearMeProofLiveProofHandoff;
   ownerProofChecklist: DearMeProofOwnerChecklist;
+  commercialReadiness: DearMeProofCommercialReadiness;
   commands: {
     ahaProof: string;
     integrationAudit: string;
     openClawMessageRehearsal: string;
     linkedInDmRehearsal: string;
+    releaseGate: string;
     printEnvTemplate: string;
     runSafe: string;
     check: string;
@@ -246,6 +296,10 @@ interface DearMeWorktreeSummaryJson {
 }
 
 const PROOF_ENV_FILE = ".dearme-proof.env";
+const OWNER_PROOF_HANDOFF_RECEIPT_PREVIEW_COMMAND =
+  "pnpm --silent dearme:next-proof -- --target all --no-write --handoff-receipt-file <launch-proof-handoff-receipt.txt>";
+const OWNER_PROOF_HANDOFF_RECEIPT_IMPORT_COMMAND =
+  "pnpm --silent dearme:next-proof -- --target all --handoff-receipt-file <launch-proof-handoff-receipt.txt>";
 const PRIVATE_SITE_EXPORT_COMMAND =
   "pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof";
 const INTEGRATION_AUDIT_COMMAND =
@@ -254,6 +308,8 @@ const OPENCLAW_MESSAGE_REHEARSAL_COMMAND =
   "pnpm --silent dearme:openclaw-message-rehearsal -- --json";
 const LINKEDIN_DM_REHEARSAL_COMMAND =
   "pnpm --silent dearme:linkedin-dm-rehearsal -- --json";
+const COMMERCIAL_RELEASE_GATE_COMMAND =
+  "pnpm --silent dearme:release-gate -- --target private-proof";
 const OPENCLAW_MESSAGE_CONTRACT_TARGETS = [
   "telegram_message",
   "imessage_message",
@@ -1034,14 +1090,260 @@ function buildOwnerProofChecklist(
     factsNeededCount,
     factsNeeded: handoff.factsNeeded,
     captureCommands: handoff.setupCommands,
+    handoffReceiptPreviewCommand: handoff.handoffReceiptPreviewCommand,
+    handoffReceiptCommand: handoff.handoffReceiptCommand,
     checkCommand: handoff.checkCommand,
     guardedLiveCommands: handoff.guardedLiveCommands,
     noSendGuarantee: true,
     checklistItems: DEARME_OWNER_PROOF_CHECKLIST_ITEMS,
     safety: [
+      "Receipt preview commands check downloaded product facts in memory; they do not change the local env file.",
       "Capture commands only write local proof setup; they do not send messages, publish, deploy, or spend.",
       "Run the no-send check before any guarded live proof.",
       "Guarded live proof still requires DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.",
+    ],
+  };
+}
+
+function ownerProofHandoffReceiptImportCommand(
+  factsNeeded: readonly DearMeProofFactNeed[],
+) {
+  return factsNeeded.some((fact) => dearMeOwnerProofFactSpec(fact.provideAs))
+    ? OWNER_PROOF_HANDOFF_RECEIPT_IMPORT_COMMAND
+    : null;
+}
+
+function ownerProofHandoffReceiptPreviewCommand(
+  factsNeeded: readonly DearMeProofFactNeed[],
+) {
+  return factsNeeded.some((fact) => dearMeOwnerProofFactSpec(fact.provideAs))
+    ? OWNER_PROOF_HANDOFF_RECEIPT_PREVIEW_COMMAND
+    : null;
+}
+
+function proofCommercialItem(options: {
+  key: DearMeProofCommercialReadinessItem["key"];
+  label: string;
+  ready: boolean;
+  remainingGap: string;
+}): DearMeProofCommercialReadinessItem {
+  return {
+    key: options.key,
+    label: options.label,
+    status: options.ready ? "ready" : "blocked",
+    remainingGap: options.remainingGap,
+  };
+}
+
+function isProofSectionReady(
+  sections: readonly DearMeProofStatusSection[],
+  key: DearMeProofStatusSection["key"],
+  defaultReady = false,
+) {
+  return sections.find((section) => section.key === key)?.ready ?? defaultReady;
+}
+
+function commercialPublicLaunchGaps(
+  sections: readonly DearMeProofStatusSection[],
+  handoff: DearMeProofLiveProofHandoff,
+) {
+  const gaps = new Set<string>();
+
+  if (!isProofSectionReady(sections, "voice_semantic_proof")) {
+    gaps.add("Voice & Memory semantic/review-loop proof");
+  }
+
+  for (const fact of handoff.factsNeeded) {
+    gaps.add(fact.label);
+  }
+
+  const live = sections.find((section) => section.key === "live_provider_proof");
+  if (live && !live.ready && handoff.factsNeeded.length === 0) {
+    for (const blocker of live.blockedTargets) {
+      gaps.add(blocker.target);
+    }
+  }
+
+  return [...gaps];
+}
+
+function buildProofCommercialReadiness(
+  lane: DearMeProofLane,
+  sections: readonly DearMeProofStatusSection[],
+  handoff: DearMeProofLiveProofHandoff,
+  env: Env = process.env,
+): DearMeProofCommercialReadiness {
+  const ahaReady = isProofSectionReady(sections, "first_wow_aha_proof");
+  const localReady = isProofSectionReady(sections, "local_safe_proof");
+  const integrationReady = isProofSectionReady(
+    sections,
+    "integration_absorption_proof",
+    true,
+  );
+  const liveReady = isProofSectionReady(sections, "live_provider_proof");
+  const allLane = lane === "all";
+  const privateBetaUsable = allLane && ahaReady && localReady && integrationReady;
+  const paidLoopProof = runDearMePaidLoopProof();
+  const paidOpsProof = runDearMePaidOpsProof();
+  const supportRecoveryProof = runDearMeSupportRecoveryProof();
+  const cohortRetentionProof = runDearMeCohortRetentionProof();
+  const feedbackLearningContract = inspectDearMeFeedbackLearningContract();
+  const paymentReadiness = inspectDearMePaymentReadiness(env);
+  const privatePaymentPathReady =
+    paidLoopProof.status === "ready" && paymentReadiness.canSellPrivateBeta;
+  const paidOpsReady = paidOpsProof.status === "ready";
+  const supportRecoveryReady = supportRecoveryProof.status === "ready";
+  const cohortRetentionReady = cohortRetentionProof.status === "ready";
+  const feedbackLearningReady = feedbackLearningContract.status === "ready";
+  const publicLaunchGaps = commercialPublicLaunchGaps(sections, handoff);
+  const status: DearMeProofCommercialReadinessStatus = privateBetaUsable
+    ? liveReady && publicLaunchGaps.length === 0
+      ? "public-launch-ready"
+      : "sellable-private-beta"
+    : "blocked";
+  const canSellPrivateBeta = privateBetaUsable && privatePaymentPathReady;
+  const canOperatePaidUsers = canSellPrivateBeta &&
+    paidOpsReady &&
+    supportRecoveryReady &&
+    cohortRetentionReady;
+
+  return {
+    status,
+    headline: status === "blocked"
+      ? "Private beta is not sellable from this proof status yet."
+      : status === "public-launch-ready"
+        ? "Private beta and public launch proof are ready from this status."
+        : "Private beta is sellable and operable; public launch still waits for external proof.",
+    summary: status === "blocked"
+      ? "Run the all-lane DearMe status and restore the first-wow, local proof, and integration receipts before selling access."
+      : status === "public-launch-ready"
+        ? "The status check sees private value delivery and live-provider proof as ready."
+        : "The status check now carries the commercial operating receipts, so private paid users can be served without claiming broad public launch readiness.",
+    canSellPrivateBeta,
+    canOperatePaidUsers,
+    cannotClaimPublicLaunchUntil: privateBetaUsable && status !== "public-launch-ready"
+      ? publicLaunchGaps
+      : [],
+    detailedGateCommand: COMMERCIAL_RELEASE_GATE_COMMAND,
+    items: [
+      proofCommercialItem({
+        key: "paid_access",
+        label: "Paid beta access",
+        ready: privateBetaUsable && paidLoopProof.status === "ready",
+        remainingGap: privateBetaUsable
+          ? paidLoopProof.status === "ready"
+            ? "Paid-loop proof shows a recorded receipt activates access and unblocks first-cycle work; self-serve checkout can stay separate until broadened."
+            : "Repair pnpm --silent dearme:paid-loop-proof -- --check before selling access."
+          : "Restore the private proof path before selling access.",
+      }),
+      proofCommercialItem({
+        key: "payment_path",
+        label: "Payment path proof",
+        ready: privateBetaUsable && privatePaymentPathReady,
+        remainingGap: privateBetaUsable
+          ? paymentReadiness.canClaimSelfServeCheckout
+            ? "Hosted checkout proof has a payment link, receipt sync setup, the local payment-receipt-sync proof, and the local payment-provider contract proof; run guarded provider receipt sync smoke before public self-serve claims."
+            : `${paymentReadiness.nextAction} Re-run pnpm --silent dearme:payment-readiness before any hosted checkout claim.`
+          : "Restore private proof before relying on payment-path readiness.",
+      }),
+      proofCommercialItem({
+        key: "first_wow",
+        label: "Five-minute first wow",
+        ready: ahaReady,
+        remainingGap: ahaReady
+          ? "Keep measuring real onboarding users; the local first-wow proof is ready."
+          : "Repair the first-run aha proof before claiming a five-minute value moment.",
+      }),
+      proofCommercialItem({
+        key: "weekly_value_receipt",
+        label: "Weekly value receipt",
+        ready: privateBetaUsable && cohortRetentionReady,
+        remainingGap: privateBetaUsable
+          ? cohortRetentionReady
+            ? "Cohort-retention proof verifies weekly value analytics across content, opportunities, portfolio, reports, Voice & Memory, and launch decisions, with the paid-event-source proof mapping finance, workbench, memory, decision, and support receipts into the same analytics before live paid-user events replace local receipts."
+            : "Repair pnpm --silent dearme:cohort-retention-proof -- --check before claiming weekly value analytics."
+          : "Restore private proof before claiming weekly value delivery.",
+      }),
+      proofCommercialItem({
+        key: "account_health_receipt",
+        label: "Paid account health receipt",
+        ready: privateBetaUsable && paidOpsReady,
+        remainingGap: privateBetaUsable
+          ? paidOpsReady
+            ? "Paid-ops proof routes healthy, trial, near-guardrail, and paused accounts before broad self-serve launch."
+            : "Repair pnpm --silent dearme:paid-ops-proof -- --check before claiming paid account health."
+          : "Restore private proof before claiming paid account health.",
+      }),
+      proofCommercialItem({
+        key: "paid_retention_pulse",
+        label: "Paid retention pulse",
+        ready: privateBetaUsable && paidOpsReady && cohortRetentionReady,
+        remainingGap: privateBetaUsable
+          ? !paidOpsReady
+            ? "Repair pnpm --silent dearme:paid-ops-proof -- --check before claiming a paid retention pulse."
+            : cohortRetentionReady
+            ? "Cohort-retention proof turns paid account health into weekly renewal states, recovery routes, and support-owned risks; its paid-event-source contract is ready for real paid-cohort events after live usage starts."
+            : "Repair pnpm --silent dearme:cohort-retention-proof -- --check before claiming paid retention analytics."
+          : "Restore private proof before claiming a paid retention pulse.",
+      }),
+      proofCommercialItem({
+        key: "empty_week_recovery",
+        label: "Empty-week recovery",
+        ready: privateBetaUsable && supportRecoveryReady,
+        remainingGap: privateBetaUsable
+          ? supportRecoveryReady
+            ? "Support-recovery proof verifies empty-week make-good and stuck-work support routing; validate it against real paid weeks after live cohort usage starts."
+            : "Repair pnpm --silent dearme:support-recovery-proof -- --check before claiming retention recovery."
+          : "Restore private proof before claiming retention recovery.",
+      }),
+      proofCommercialItem({
+        key: "autonomy_contract",
+        label: "Autonomy contract receipt",
+        ready: privateBetaUsable,
+        remainingGap: privateBetaUsable
+          ? "Keep validating what can run privately, what can run together, and what still waits for the launch call."
+          : "Restore private proof before claiming autonomous paid-user operation.",
+      }),
+      proofCommercialItem({
+        key: "launch_boundary",
+        label: "Review and launch boundary",
+        ready: privateBetaUsable,
+        remainingGap: privateBetaUsable
+          ? "Keep external launch and live proof behind approved facts and explicit confirmation."
+          : "Restore private proof before relying on the review/launch boundary.",
+      }),
+      proofCommercialItem({
+        key: "cost_guardrail",
+        label: "Cost and cycle guardrail",
+        ready: privateBetaUsable && paidOpsReady,
+        remainingGap: privateBetaUsable
+          ? paidOpsReady
+            ? "Paid-ops proof enforces trial and hard-stop blockers while letting healthy paid accounts continue."
+            : "Repair pnpm --silent dearme:paid-ops-proof -- --check before claiming a paid operating guardrail."
+          : "Restore private proof before claiming a paid operating guardrail.",
+      }),
+      proofCommercialItem({
+        key: "feedback_learning",
+        label: "Feedback and memory learning",
+        ready: privateBetaUsable && feedbackLearningReady && cohortRetentionReady,
+        remainingGap: privateBetaUsable
+          ? !feedbackLearningReady
+            ? `Repair ${feedbackLearningContract.proofCommand} before claiming learning-loop readiness.`
+            : cohortRetentionReady
+            ? "Feedback-learning proof verifies the private review-to-Voice & Memory loop, and cohort-retention proof carries learned feedback through the paid-event-source contract into paid-user retention analytics."
+            : "Repair pnpm --silent dearme:cohort-retention-proof -- --check before claiming paid-user feedback analytics."
+          : "Restore private proof before claiming learning-loop readiness.",
+      }),
+      proofCommercialItem({
+        key: "support_handoff",
+        label: "Human support handoff",
+        ready: privateBetaUsable && supportRecoveryReady,
+        remainingGap: privateBetaUsable
+          ? supportRecoveryReady
+            ? "Support-recovery proof keeps paid-user recovery and support notes private; Peter only steps in for external proof facts, hosted checkout setup, launch approval, spend, credentials, or irreversible actions."
+            : "Repair pnpm --silent dearme:support-recovery-proof -- --check before claiming paid-user support handoff readiness."
+          : "Restore private proof before claiming operator handoff readiness.",
+      }),
     ],
   };
 }
@@ -1051,6 +1353,7 @@ export function summarizeDearMeProofStatus(
   lane: DearMeProofLane = "all",
   integrationAudit?: DearMeIntegrationAuditStatus,
   openClawMessageContract?: DearMeOpenClawMessageContractStatus,
+  env: Env = process.env,
 ): DearMeProofStatus {
   const provider = providerLane(readiness);
   const voice = voiceLane(readiness);
@@ -1060,6 +1363,8 @@ export function summarizeDearMeProofStatus(
   let liveProofHandoff: DearMeProofLiveProofHandoff = {
     factsNeeded: [],
     setupCommands: [],
+    handoffReceiptPreviewCommand: null,
+    handoffReceiptCommand: null,
     checkCommand: `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --check`,
     guardedLiveCommands: [],
     noSendGuarantee: true,
@@ -1123,11 +1428,14 @@ export function summarizeDearMeProofStatus(
       blockedTargets.map((item) => item.target as DearMeProviderSmokeReadiness["target"]),
     );
     liveProviderFocus = liveProviderFocusPlan(provider);
+    const factsNeeded = dearMeProofFactsNeededFromReadiness(provider.readiness);
     liveProofHandoff = {
-      factsNeeded: dearMeProofFactsNeededFromReadiness(provider.readiness),
+      factsNeeded,
       setupCommands: liveProviderSetup.filter((command) =>
         command.includes("dearme:next-proof")
       ),
+      handoffReceiptPreviewCommand: ownerProofHandoffReceiptPreviewCommand(factsNeeded),
+      handoffReceiptCommand: ownerProofHandoffReceiptImportCommand(factsNeeded),
       checkCommand: `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --check`,
       guardedLiveCommands: liveProviderSetup.filter((command) =>
         command.includes("DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1")
@@ -1144,17 +1452,21 @@ export function summarizeDearMeProofStatus(
     });
   }
 
+  const ownerProofChecklist = buildOwnerProofChecklist(liveProofHandoff);
+
   return {
     lane,
     sections,
     liveProviderFocus,
     liveProofHandoff,
-    ownerProofChecklist: buildOwnerProofChecklist(liveProofHandoff),
+    ownerProofChecklist,
+    commercialReadiness: buildProofCommercialReadiness(lane, sections, liveProofHandoff, env),
     commands: {
       ahaProof: "pnpm --silent dearme:aha-proof -- --check",
       integrationAudit: INTEGRATION_AUDIT_COMMAND,
       openClawMessageRehearsal: OPENCLAW_MESSAGE_REHEARSAL_COMMAND,
       linkedInDmRehearsal: LINKEDIN_DM_REHEARSAL_COMMAND,
+      releaseGate: COMMERCIAL_RELEASE_GATE_COMMAND,
       printEnvTemplate: `pnpm --silent dearme:proof -- --print-env-template${laneFlag(lane)} > ${PROOF_ENV_FILE}`,
       runSafe: proofCommand("--run-safe", lane),
       check: proofCommand("--check", lane),
@@ -1246,7 +1558,28 @@ function formatProductVerdict(status: DearMeProofStatus) {
 export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
   const lines = ["DearMe product proof status"];
   const checklist = status.ownerProofChecklist;
+  const commercial = status.commercialReadiness;
   lines.push(formatProductVerdict(status));
+
+  if (status.lane === "all") {
+    lines.push("");
+    lines.push("Commercial readiness:");
+    lines.push(`- ${commercial.status}: ${commercial.headline}`);
+    lines.push(`- ${commercial.summary}`);
+    lines.push(`- Sell private beta: ${commercial.canSellPrivateBeta ? "yes" : "no"}`);
+    lines.push(`- Operate paid users: ${commercial.canOperatePaidUsers ? "yes" : "no"}`);
+    if (commercial.cannotClaimPublicLaunchUntil.length > 0) {
+      lines.push("- Public launch still waits for:");
+      for (const gap of commercial.cannotClaimPublicLaunchUntil) {
+        lines.push(`  - ${gap}`);
+      }
+    }
+    for (const item of commercial.items) {
+      lines.push(`- ${item.label}: ${item.status}. ${item.remainingGap}`);
+    }
+    lines.push(`- Detailed gate: ${commercial.detailedGateCommand}`);
+  }
+
   for (const section of status.sections) {
     lines.push(
       `- ${section.label}: ${section.ready ? "ready" : "blocked"}. ${section.description}${formatBlockedTargets(section.blockedTargets)}`,
@@ -1269,6 +1602,8 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
   if (
     checklist.factsNeededCount > 0 ||
     checklist.captureCommands.length > 0 ||
+    checklist.handoffReceiptPreviewCommand !== null ||
+    checklist.handoffReceiptCommand !== null ||
     checklist.guardedLiveCommands.length > 0
   ) {
     lines.push("");
@@ -1292,6 +1627,12 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
         lines.push(`  - ${command}`);
       }
     }
+    if (checklist.handoffReceiptCommand) {
+      if (checklist.handoffReceiptPreviewCommand) {
+        lines.push(`- Preview the product handoff receipt without writing: ${checklist.handoffReceiptPreviewCommand}`);
+      }
+      lines.push(`- If preview passes, import the product handoff receipt: ${checklist.handoffReceiptCommand}`);
+    }
     lines.push(`- No-send check: ${checklist.checkCommand}`);
     if (checklist.guardedLiveCommands.length > 0) {
       lines.push("- Guarded live proof:");
@@ -1308,6 +1649,7 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
     lines.push(`- ${status.commands.integrationAudit}`);
     lines.push(`- ${status.commands.openClawMessageRehearsal}`);
     lines.push(`- ${status.commands.linkedInDmRehearsal}`);
+    lines.push(`- ${status.commands.releaseGate}`);
   }
   if (shouldShowProofEnvTemplateCommand(status)) {
     lines.push(`- ${status.commands.printEnvTemplate}`);
@@ -1577,6 +1919,7 @@ async function main() {
         parsed.lane,
         parsed.lane === "all" ? inspectDearMeIntegrationAuditStatus() : undefined,
         parsed.lane === "all" ? await inspectDearMeOpenClawMessageContractStatus() : undefined,
+        env,
       );
       if (parsed.json) {
         console.log(JSON.stringify({ status }, null, 2));

@@ -33,6 +33,10 @@ export type DearMeGoalAuditItemKey =
   | "symphony_coordination"
   | "public_first_run_landing"
   | "private_first_wow"
+  | "commercial_private_beta_loop"
+  | "paid_user_operations_loop"
+  | "weekly_retention_loop"
+  | "feedback_support_learning_loop"
   | "loopback_host_rehearsal"
   | "voice_autonomy"
   | "production_host_provider_auth"
@@ -65,6 +69,8 @@ export type DearMeGoalAuditPromptChecklistItemKey =
   | "symphony_coordination"
   | "architecture_first"
   | "polsia_style_aha"
+  | "commercial_user_system"
+  | "retention_learning_operations"
   | "autonomous_good_product"
   | "live_provider_truth";
 
@@ -171,10 +177,30 @@ const PROMPT_TO_ARTIFACT_REQUIREMENTS: readonly {
     ],
   },
   {
+    key: "commercial_user_system",
+    promptRequirement: "Cover the commercial user system: paid access, payment path, account health, cost guardrails, and launch boundaries",
+    artifactItems: [
+      "commercial_private_beta_loop",
+      "paid_user_operations_loop",
+    ],
+  },
+  {
+    key: "retention_learning_operations",
+    promptRequirement: "Keep paid users receiving weekly value, retention recovery, feedback learning, and support handoff",
+    artifactItems: [
+      "weekly_retention_loop",
+      "feedback_support_learning_loop",
+    ],
+  },
+  {
     key: "autonomous_good_product",
     promptRequirement: "Make the product autonomous and useful without exposing too many setup concerns",
     artifactItems: [
       "private_first_wow",
+      "commercial_private_beta_loop",
+      "paid_user_operations_loop",
+      "weekly_retention_loop",
+      "feedback_support_learning_loop",
       "voice_autonomy",
       "live_provider_set",
     ],
@@ -210,9 +236,9 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
     snippet: "What do you want to be known for?",
   },
   {
-    key: "source_private_proof_pack_cta",
+    key: "source_proof_pack_cta",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "Start my first private proof pack",
+    snippet: "Start my first proof pack",
   },
   {
     key: "source_first_proof_pack_hook",
@@ -220,14 +246,14 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
     snippet: "Watch the team work live",
   },
   {
-    key: "source_private_receipt_hook",
+    key: "source_live_receipt_hook",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "Watch DearMe prepare private brand work live",
+    snippet: "Watch DearMe prepare brand work live",
   },
   {
-    key: "source_private_receipt_stats",
+    key: "source_live_receipt_stats",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: 'aria-label="Live private proof receipts"',
+    snippet: 'aria-label="Live proof receipts"',
   },
   {
     key: "source_live_work_trail_contract",
@@ -240,9 +266,9 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
     snippet: "SAMPLE_FIRST_CYCLE_PREVIEW.cycleReport",
   },
   {
-    key: "source_approval_boundary",
+    key: "source_launch_boundary",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "No public posts. No outreach. Nothing launches without approval.",
+    snippet: "Anything public stays behind your launch call.",
   },
   {
     key: "test_public_first_run_landing",
@@ -260,9 +286,9 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
     snippet: "First-run live work receipts",
   },
   {
-    key: "test_private_receipt_hook",
+    key: "test_live_receipt_hook",
     file: PUBLIC_FIRST_RUN_LANDING_TEST,
-    snippet: "Watch DearMe prepare private brand work live",
+    snippet: "Watch DearMe prepare brand work live",
   },
   {
     key: "test_workroom_queues",
@@ -280,6 +306,20 @@ const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
     snippet: "expect(mockDearmeApi.getOutputs).not.toHaveBeenCalled();",
   },
 ];
+
+const COMMERCIAL_PROOF_COMMANDS = {
+  releaseGate: "pnpm --silent dearme:release-gate -- --target private-proof",
+  paidLoop: "pnpm --silent dearme:paid-loop-proof -- --check",
+  paymentReadiness: "pnpm --silent dearme:payment-readiness",
+  paidOps: "pnpm --silent dearme:paid-ops-proof -- --check",
+  supportRecovery: "pnpm --silent dearme:support-recovery-proof -- --check",
+  cohortRetention: "pnpm --silent dearme:cohort-retention-proof -- --check",
+  feedbackLearning: "pnpm --silent dearme:feedback-learning-proof -- --check",
+} as const;
+
+type CommercialReadiness = NonNullable<DearMeProofStatus["commercialReadiness"]>;
+type CommercialItem = CommercialReadiness["items"][number];
+type CommercialItemKey = CommercialItem["key"];
 
 function repoFile(relativePath: string): string {
   return join(fileURLToPath(new URL("..", import.meta.url)), relativePath);
@@ -662,6 +702,141 @@ function publicFirstRunLandingItem(
   };
 }
 
+function commercialLoopItem(options: {
+  key: DearMeGoalAuditItemKey;
+  label: string;
+  status: DearMeProofStatus;
+  requiredKeys: readonly CommercialItemKey[];
+  ready: (commercial: CommercialReadiness) => boolean;
+  readyEvidence: string;
+  commands: readonly string[];
+}): DearMeGoalAuditItem {
+  const commercial = options.status.commercialReadiness;
+  if (!commercial) {
+    return {
+      key: options.key,
+      label: options.label,
+      status: "unverified",
+      requiredForGoal: true,
+      evidence: "The unified proof status did not include commercial readiness.",
+      blockers: ["missing_commercial_readiness"],
+      commands: [COMMERCIAL_PROOF_COMMANDS.releaseGate],
+    };
+  }
+
+  const byKey = new Map(commercial.items.map((item) => [item.key, item]));
+  const requiredItems = options.requiredKeys
+    .map((key) => byKey.get(key))
+    .filter((item): item is CommercialItem => Boolean(item));
+  const missingKeys = options.requiredKeys.filter((key) => !byKey.has(key));
+  const blockedItems = requiredItems.filter((item) => item.status !== "ready");
+  const ready = missingKeys.length === 0 && blockedItems.length === 0 && options.ready(commercial);
+
+  return {
+    key: options.key,
+    label: options.label,
+    status: ready ? "met" : missingKeys.length > 0 ? "unverified" : "blocked",
+    requiredForGoal: true,
+    evidence: ready
+      ? options.readyEvidence
+      : [
+        commercial.summary,
+        ...blockedItems.map((item) => `${item.label}: ${item.remainingGap}`),
+        ...missingKeys.map((key) => `Missing commercial readiness item: ${key}.`),
+      ].join(" "),
+    blockers: [
+      ...blockedItems.map((item) => item.key),
+      ...missingKeys.map((key) => `missing_${key}`),
+      ...(!options.ready(commercial) && blockedItems.length === 0 && missingKeys.length === 0
+        ? [commercial.status]
+        : []),
+    ],
+    commands: [...options.commands],
+  };
+}
+
+function commercialPrivateBetaLoopItem(status: DearMeProofStatus): DearMeGoalAuditItem {
+  return commercialLoopItem({
+    key: "commercial_private_beta_loop",
+    label: "Sellable private-beta paid access loop",
+    status,
+    requiredKeys: ["paid_access", "payment_path", "first_wow"],
+    ready: (commercial) => commercial.canSellPrivateBeta,
+    readyEvidence:
+      "Paid access, private-beta payment path, and five-minute first-wow are ready from local commercial proofs.",
+    commands: [
+      COMMERCIAL_PROOF_COMMANDS.paidLoop,
+      COMMERCIAL_PROOF_COMMANDS.paymentReadiness,
+      COMMERCIAL_PROOF_COMMANDS.releaseGate,
+    ],
+  });
+}
+
+function paidUserOperationsLoopItem(status: DearMeProofStatus): DearMeGoalAuditItem {
+  return commercialLoopItem({
+    key: "paid_user_operations_loop",
+    label: "Paid-user operations and guardrail loop",
+    status,
+    requiredKeys: [
+      "account_health_receipt",
+      "autonomy_contract",
+      "launch_boundary",
+      "cost_guardrail",
+    ],
+    ready: (commercial) => commercial.canOperatePaidUsers,
+    readyEvidence:
+      "Paid account health, autonomous private operation, launch boundary, and cost guardrails are ready for paid users.",
+    commands: [
+      COMMERCIAL_PROOF_COMMANDS.paidOps,
+      COMMERCIAL_PROOF_COMMANDS.supportRecovery,
+      COMMERCIAL_PROOF_COMMANDS.releaseGate,
+    ],
+  });
+}
+
+function weeklyRetentionLoopItem(status: DearMeProofStatus): DearMeGoalAuditItem {
+  return commercialLoopItem({
+    key: "weekly_retention_loop",
+    label: "Weekly value and paid-retention loop",
+    status,
+    requiredKeys: [
+      "weekly_value_receipt",
+      "paid_retention_pulse",
+      "empty_week_recovery",
+    ],
+    ready: (commercial) => commercial.canOperatePaidUsers,
+    readyEvidence:
+      "Weekly value receipts, paid retention pulse, and empty-week recovery are ready from the cohort-retention/support proofs.",
+    commands: [
+      COMMERCIAL_PROOF_COMMANDS.cohortRetention,
+      COMMERCIAL_PROOF_COMMANDS.supportRecovery,
+      COMMERCIAL_PROOF_COMMANDS.paidOps,
+      COMMERCIAL_PROOF_COMMANDS.releaseGate,
+    ],
+  });
+}
+
+function feedbackSupportLearningLoopItem(status: DearMeProofStatus): DearMeGoalAuditItem {
+  return commercialLoopItem({
+    key: "feedback_support_learning_loop",
+    label: "Feedback learning and support handoff loop",
+    status,
+    requiredKeys: [
+      "feedback_learning",
+      "support_handoff",
+    ],
+    ready: (commercial) => commercial.canOperatePaidUsers,
+    readyEvidence:
+      "Private feedback learning, Voice & Memory carry-forward, and support handoff are ready for paid-user operations.",
+    commands: [
+      COMMERCIAL_PROOF_COMMANDS.feedbackLearning,
+      COMMERCIAL_PROOF_COMMANDS.cohortRetention,
+      COMMERCIAL_PROOF_COMMANDS.supportRecovery,
+      COMMERCIAL_PROOF_COMMANDS.releaseGate,
+    ],
+  });
+}
+
 function promptToArtifactChecklist(
   items: readonly DearMeGoalAuditItem[],
 ): DearMeGoalAuditPromptChecklistItem[] {
@@ -716,6 +891,10 @@ export function summarizeDearMeGoalAudit(
     symphonyCoordinationItem(status),
     publicFirstRunLandingItem(publicFirstRunLanding),
     combinedPrivateFirstWowItem(status),
+    commercialPrivateBetaLoopItem(status),
+    paidUserOperationsLoopItem(status),
+    weeklyRetentionLoopItem(status),
+    feedbackSupportLearningLoopItem(status),
     loopbackHostRehearsalItem(hostRehearsal),
     sectionItem({
       key: "voice_autonomy",
@@ -752,7 +931,7 @@ export function summarizeDearMeGoalAudit(
   return {
     complete,
     verdict: complete
-      ? "Goal audit: complete. DearMe has proven architecture, reuse, public first-run, private aha, Symphony absorption, OpenClaw message proof, and live provider proof."
+      ? "Goal audit: complete. DearMe has proven architecture, reuse, public first-run, private aha, commercial paid-user operations, Symphony absorption, OpenClaw message proof, and live provider proof."
       : `Goal audit: not complete. ${incompleteItem?.label ?? "A required item"} is still ${incompleteItem?.status ?? "unverified"}.`,
     promptToArtifactChecklist: promptChecklist,
     items,

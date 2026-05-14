@@ -20,6 +20,7 @@ import {
 } from "./dearme-release-gate.ts";
 import {
   DEARME_OWNER_PROOF_FACT_SPECS,
+  DEARME_OWNER_PROOF_REPLY_TEMPLATE,
   dearMeOwnerProofFactSpec,
 } from "../packages/shared/src/dearme-customer-text.ts";
 
@@ -31,10 +32,12 @@ export type DearMeNextProofTarget = NonNullable<
 export interface DearMeNextProofArgs {
   help: boolean;
   json: boolean;
+  humanHelpMarkdown: boolean;
   force: boolean;
   noWrite: boolean;
   target: DearMeNextProofTarget | null;
   envFile: string;
+  handoffReceiptFile: string | null;
   factCaptures: DearMeNextProofFactCapture[];
 }
 
@@ -51,6 +54,7 @@ export interface DearMeNextProofSetup {
   envStatus: DearMeNextProofEnvStatus;
   readiness: DearMeProviderSmokeReadiness[];
   factsNeeded: DearMeProofFactNeed[];
+  noSendCheck: DearMeNextProofNoSendCheck;
   ownerHandoff: DearMeNextProofOwnerHandoff;
   capturedFacts: DearMeNextProofCapturedFact[];
   commands: {
@@ -91,6 +95,17 @@ export interface DearMeNextProofLaneSummary {
   nextStep: string;
 }
 
+export interface DearMeNextProofNoSendCheck {
+  status: "ready" | "blocked";
+  command: string;
+  checkedTargets: DearMeProviderSmokeReadiness["target"][];
+  blockedTargets: Array<{
+    target: DearMeProviderSmokeReadiness["target"];
+    waitingOn: string[];
+  }>;
+  noSendGuarantee: true;
+}
+
 export interface DearMeNextProofOwnerHandoff {
   status: "blocked" | "ready";
   headline: string;
@@ -98,6 +113,8 @@ export interface DearMeNextProofOwnerHandoff {
   proofLanes: DearMeNextProofLaneSummary[];
   factsToProvide: DearMeNextProofOwnerFact[];
   captureCommand: string | null;
+  handoffReceiptPreviewCommand: string | null;
+  handoffReceiptCommand: string | null;
   checkCommand: string;
   liveOrRunCommand: string;
   noSendGuarantee: true;
@@ -173,6 +190,35 @@ function assertFactCaptureValue(key: FactCaptureKey, value: string): DearMeNextP
   return { key, value: trimmed };
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function parseDearMeOwnerProofHandoffReceipt(
+  receipt: string,
+): DearMeNextProofFactCapture[] {
+  const captures: DearMeNextProofFactCapture[] = [];
+  for (const fact of DEARME_OWNER_PROOF_FACT_SPECS) {
+    const linePattern = new RegExp(
+      `^\\s*-\\s*${escapeRegExp(fact.label)}:\\s*Captured\\s*-\\s*(.+?)\\s*$`,
+      "im",
+    );
+    const match = receipt.match(linePattern);
+    if (match?.[1]) {
+      captures.push(assertFactCaptureValue(fact.provideAs, match[1]));
+    }
+  }
+  return captures;
+}
+
+function mergeFactCaptures(captures: readonly DearMeNextProofFactCapture[]) {
+  const byKey = new Map<string, DearMeNextProofFactCapture>();
+  for (const capture of captures) {
+    byKey.set(capture.key, capture);
+  }
+  return [...byKey.values()];
+}
+
 function factCaptureFlagParts(arg: string) {
   const separatorIndex = arg.indexOf("=");
   return separatorIndex === -1
@@ -215,6 +261,14 @@ function upsertEnvFacts(existing: string, captures: readonly DearMeNextProofFact
     lines.push(`${capture.key}=${envQuotedValue(capture.value)}`);
   }
   return `${lines.join("\n").trimEnd()}\n`;
+}
+
+function envWithFactCaptures(env: Env, captures: readonly DearMeNextProofFactCapture[]) {
+  if (captures.length === 0) return env;
+  return {
+    ...env,
+    ...Object.fromEntries(captures.map((capture) => [capture.key, capture.value])),
+  };
 }
 
 function envKeysFromText(text: string) {
@@ -280,6 +334,28 @@ function buildDearMeProofLaneSummary(
   };
 }
 
+function buildDearMeNoSendCheck(
+  readiness: readonly DearMeProviderSmokeReadiness[],
+  command: string,
+): DearMeNextProofNoSendCheck {
+  const blockedTargets = readiness
+    .filter((item) => !item.ready)
+    .map((item) => ({
+      target: item.target,
+      waitingOn: item.missing.map((requirement) =>
+        describeDearMeProofFactNeed(requirement).label
+      ),
+    }));
+
+  return {
+    status: blockedTargets.length === 0 ? "ready" : "blocked",
+    command,
+    checkedTargets: readiness.map((item) => item.target),
+    blockedTargets,
+    noSendGuarantee: true,
+  };
+}
+
 function buildDearMeOwnerHandoff(
   target: DearMeNextProofTarget,
   readiness: readonly DearMeProviderSmokeReadiness[],
@@ -300,6 +376,12 @@ function buildDearMeOwnerHandoff(
   const captureCommand = captureArgs.length > 0
     ? `${commands.setup} ${captureArgs.join(" ")}`
     : null;
+  const handoffReceiptPreviewCommand = captureArgs.length > 0
+    ? `${commands.setup} --no-write --handoff-receipt-file <launch-proof-handoff-receipt.txt>`
+    : null;
+  const handoffReceiptCommand = captureArgs.length > 0
+    ? `${commands.setup} --handoff-receipt-file <launch-proof-handoff-receipt.txt>`
+    : null;
   const blocked = factsToProvide.length > 0;
   const targetLabel = ownerHandoffTargetLabel(target);
 
@@ -314,11 +396,14 @@ function buildDearMeOwnerHandoff(
     proofLanes: readiness.map(buildDearMeProofLaneSummary),
     factsToProvide,
     captureCommand,
+    handoffReceiptPreviewCommand,
+    handoffReceiptCommand,
     checkCommand: commands.check,
     liveOrRunCommand: commands.liveOrRun,
     noSendGuarantee: true,
     requiresLiveGuard: commands.liveOrRun.includes("DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1"),
     safety: [
+      "The receipt preview command checks downloaded product facts in memory; it does not change the local env file.",
       "dearme:next-proof only prepares local proof setup; it does not send messages, publish, deploy, or spend.",
       "Run the no-send check command before the guarded live/run command.",
       "Any live external proof still requires the explicit DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 guard.",
@@ -330,10 +415,12 @@ export function parseDearMeNextProofArgs(argv: readonly string[]): DearMeNextPro
   const args: DearMeNextProofArgs = {
     help: false,
     json: false,
+    humanHelpMarkdown: false,
     force: false,
     noWrite: false,
     target: null,
     envFile: DEFAULT_PROOF_ENV_FILE,
+    handoffReceiptFile: null,
     factCaptures: [],
   };
   const normalizedArgv = argv.filter((arg) => arg !== "--");
@@ -344,6 +431,8 @@ export function parseDearMeNextProofArgs(argv: readonly string[]): DearMeNextPro
       args.help = true;
     } else if (arg === "--json") {
       args.json = true;
+    } else if (arg === "--human-help-markdown") {
+      args.humanHelpMarkdown = true;
     } else if (arg === "--force") {
       args.force = true;
     } else if (arg === "--no-write") {
@@ -364,6 +453,15 @@ export function parseDearMeNextProofArgs(argv: readonly string[]): DearMeNextPro
       const envFile = arg.slice("--env-file=".length);
       if (!envFile) throw new Error("--env-file requires a value");
       args.envFile = envFile;
+    } else if (arg === "--handoff-receipt-file") {
+      const next = normalizedArgv[index + 1];
+      if (!next) throw new Error("--handoff-receipt-file requires a value");
+      args.handoffReceiptFile = next;
+      index += 1;
+    } else if (arg.startsWith("--handoff-receipt-file=")) {
+      const handoffReceiptFile = arg.slice("--handoff-receipt-file=".length);
+      if (!handoffReceiptFile) throw new Error("--handoff-receipt-file requires a value");
+      args.handoffReceiptFile = handoffReceiptFile;
     } else {
       const { flag, value } = factCaptureFlagParts(arg);
       const captureKey = FACT_CAPTURE_KEY_BY_FLAG.get(flag);
@@ -437,10 +535,7 @@ export async function prepareDearMeNextProofSetup(
   const cwd = options.cwd ?? process.cwd();
   const envFile = options.envFile ?? DEFAULT_PROOF_ENV_FILE;
   const resolvedEnvFile = resolve(cwd, envFile);
-  const factCaptures = options.factCaptures ?? [];
-  if (options.noWrite && factCaptures.length > 0) {
-    throw new Error("--no-write cannot be used with fact capture flags");
-  }
+  const factCaptures = mergeFactCaptures(options.factCaptures ?? []);
   const target =
     options.target ?? await inferNextProofTarget(envFile, cwd, options.baseEnv ?? process.env);
   const existed = await envFileExists(resolvedEnvFile);
@@ -465,13 +560,14 @@ export async function prepareDearMeNextProofSetup(
     envStatus = existed ? "overwritten" : "created";
   }
 
-  if (factCaptures.length > 0) {
+  if (!options.noWrite && factCaptures.length > 0) {
     const existing = await readFile(resolvedEnvFile, "utf8");
     await writeFile(resolvedEnvFile, upsertEnvFacts(existing, factCaptures));
   }
 
   const envFiles = await envFileExists(resolvedEnvFile) ? [resolvedEnvFile] : [];
-  const env = await loadDearMeProviderSmokeEnv(envFiles, options.baseEnv ?? process.env);
+  const loadedEnv = await loadDearMeProviderSmokeEnv(envFiles, options.baseEnv ?? process.env);
+  const env = options.noWrite ? envWithFactCaptures(loadedEnv, factCaptures) : loadedEnv;
   const readiness = inspectDearMeProviderSmokeReadiness(env, target);
   const factsNeeded = dearMeProofFactsNeededFromReadiness(readiness);
   const capturedFacts = factCaptures.map(capturedFactMetadata);
@@ -480,6 +576,7 @@ export async function prepareDearMeNextProofSetup(
     check: providerCheckCommand(target, envFile),
     liveOrRun: providerRunCommand(target, envFile, readiness),
   };
+  const noSendCheck = buildDearMeNoSendCheck(readiness, commands.check);
 
   return {
     target,
@@ -487,6 +584,7 @@ export async function prepareDearMeNextProofSetup(
     envStatus,
     readiness,
     factsNeeded,
+    noSendCheck,
     ownerHandoff: buildDearMeOwnerHandoff(target, readiness, factsNeeded, commands),
     capturedFacts,
     commands,
@@ -521,6 +619,21 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
     lines.push(`- ${lane.target}: ${state}. ${lane.nextStep}${live}`);
   }
 
+  lines.push("");
+  lines.push("No-send check result:");
+  lines.push(`- status: ${setup.noSendCheck.status}`);
+  lines.push(`- command: ${setup.noSendCheck.command}`);
+  lines.push(`- checked: ${setup.noSendCheck.checkedTargets.join(", ")}`);
+  if (setup.noSendCheck.blockedTargets.length > 0) {
+    lines.push("- blocked:");
+    for (const item of setup.noSendCheck.blockedTargets) {
+      lines.push(`  - ${item.target}: waiting on ${item.waitingOn.join(", ")}`);
+    }
+  } else {
+    lines.push("- blocked: none");
+  }
+  lines.push("- guarantee: local readiness only; no messages, publishes, deploys, spend, or live provider calls ran.");
+
   if (setup.factsNeeded.length > 0) {
     lines.push("");
     lines.push("Facts needed before any live run:");
@@ -535,7 +648,9 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
 
   if (setup.capturedFacts.length > 0) {
     lines.push("");
-    lines.push("Captured local facts:");
+    lines.push(setup.envStatus === "skipped"
+      ? "Provided local facts for this no-write check:"
+      : "Captured local facts:");
     for (const fact of setup.capturedFacts) {
       const redaction = fact.sensitive ? " (value kept local)" : " (value hidden)";
       lines.push(`- ${fact.label}: ${fact.key}${redaction}`);
@@ -562,6 +677,12 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
   if (setup.ownerHandoff.captureCommand) {
     lines.push(`- Capture command: ${setup.ownerHandoff.captureCommand}`);
   }
+  if (setup.ownerHandoff.handoffReceiptCommand) {
+    if (setup.ownerHandoff.handoffReceiptPreviewCommand) {
+      lines.push(`- Preview receipt without writing: ${setup.ownerHandoff.handoffReceiptPreviewCommand}`);
+    }
+    lines.push(`- If preview passes, import receipt: ${setup.ownerHandoff.handoffReceiptCommand}`);
+  }
   lines.push(`- Check first: ${setup.ownerHandoff.checkCommand}`);
 
   lines.push("");
@@ -571,8 +692,116 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
   return lines;
 }
 
+function markdownCodeBlock(language: string, value: string) {
+  return ["```" + language, value, "```"];
+}
+
+export function formatDearMeNextProofHumanHelp(
+  setup: DearMeNextProofSetup,
+  options: { date?: string } = {},
+): string[] {
+  const date = options.date ?? new Date().toISOString().slice(0, 10);
+  const facts = setup.ownerHandoff.factsToProvide;
+  const factLabel = (fact: DearMeNextProofOwnerFact) =>
+    dearMeOwnerProofFactSpec(fact.provideAs)?.label ?? fact.label;
+  const missingSummary = facts.length === 0
+    ? "no approved live-proof details are missing"
+    : facts.map(factLabel).join(", ");
+  const blocking = facts.length === 0
+    ? "no for internal product work, private-beta operations, or the next no-send check."
+    : "no for internal product work or private-beta operations; yes before public launch or live external receipt proof can be claimed.";
+  const continueAfter = facts.length === 0
+    ? "running the no-send provider check, then guarded live proof only after explicit live confirmation."
+    : "capturing the approved values, running the no-send provider check first, then running guarded live proof only after explicit live confirmation.";
+
+  const lines = [
+    `### ${date} - External live-proof recipients`,
+    "",
+    "- Needs help from: Peter",
+    `- What they need to do: provide ${missingSummary}.`,
+    "- Why agents cannot do it: these choices authorize real external delivery targets and channel details.",
+    `- Blocking: ${blocking}`,
+    "- Estimated human time: 5-10 minutes once the desired test recipients are known.",
+    `- Agents continue after result by: ${continueAfter}`,
+    "",
+    "Needed values:",
+    "",
+  ];
+
+  if (facts.length === 0) {
+    lines.push("- None. Run the no-send check before guarded live proof.");
+  } else {
+    for (const fact of facts) {
+      lines.push(`- \`${fact.provideAs}\`: ${factLabel(fact)}.`);
+    }
+  }
+
+  lines.push("");
+  lines.push("Reply template for Peter:");
+  lines.push("");
+  lines.push(...markdownCodeBlock(
+    "text",
+    DEARME_OWNER_PROOF_REPLY_TEMPLATE.map((line) => `${line.label}:`).join("\n"),
+  ));
+  lines.push("");
+  lines.push("Current generated proof handoff status:");
+  lines.push("");
+  lines.push(`- Status: ${setup.ownerHandoff.status}.`);
+  lines.push(`- Captured details: ${setup.capturedFacts.length}/${DEARME_OWNER_PROOF_FACT_SPECS.length}.`);
+  lines.push(`- No-send check: ${setup.noSendCheck.status}.`);
+  lines.push("- No-send guarantee: this handoff only prepares local proof setup; it does not send, publish, deploy, or spend.");
+
+  if (setup.ownerHandoff.captureCommand) {
+    lines.push("");
+    lines.push("Capture command after Peter provides approved values:");
+    lines.push("");
+    lines.push(...markdownCodeBlock("bash", setup.ownerHandoff.captureCommand));
+  }
+
+  if (setup.ownerHandoff.handoffReceiptPreviewCommand && setup.ownerHandoff.handoffReceiptCommand) {
+    lines.push("");
+    lines.push("Optional handoff receipt commands:");
+    lines.push("");
+    lines.push(...markdownCodeBlock(
+      "bash",
+      [
+        setup.ownerHandoff.handoffReceiptPreviewCommand,
+        setup.ownerHandoff.handoffReceiptCommand,
+      ].join("\n"),
+    ));
+  }
+
+  lines.push("");
+  lines.push("Required no-send check before any live delivery:");
+  lines.push("");
+  lines.push(...markdownCodeBlock("bash", setup.ownerHandoff.checkCommand));
+  lines.push("");
+  lines.push("Guarded live proof command only after explicit live confirmation:");
+  lines.push("");
+  lines.push(...markdownCodeBlock("bash", setup.ownerHandoff.liveOrRunCommand));
+  lines.push("");
+  lines.push("Safety notes:");
+  lines.push("");
+  for (const item of setup.ownerHandoff.safety) {
+    lines.push(`- ${item}`);
+  }
+
+  return lines;
+}
+
+export async function loadDearMeNextProofFactCaptures(args: DearMeNextProofArgs, cwd: string) {
+  const receiptCaptures = args.handoffReceiptFile
+    ? parseDearMeOwnerProofHandoffReceipt(
+      await readFile(resolve(cwd, args.handoffReceiptFile), "utf8"),
+    )
+    : [];
+  return mergeFactCaptures([...receiptCaptures, ...args.factCaptures]);
+}
+
 function printHelp() {
   console.log(`Usage: pnpm dearme:next-proof -- [--target <target>] [--env-file <path>] [--force] [--no-write] [--json]
+       [--human-help-markdown]
+       [--handoff-receipt-file <path>]
        [--imessage-recipient <recipient>] [--linkedin-messages-url <url>] [--linkedin-recipient-urn <urn>]
 
 Creates or preserves the local DearMe proof env file, then prints no-send
@@ -580,11 +809,16 @@ readiness plus the guarded live/run command for the next blocked provider proof.
 The output includes an owner handoff block that states which approved proof
 targets are still needed and how to capture non-secret values locally.
 
-Optional fact-capture flags write non-secret launch facts into the local env file
-and never print captured values.
+Optional fact-capture flags and --handoff-receipt-file write non-secret launch
+facts into the local env file and never print captured values. With --no-write,
+those facts are used only for the local no-send check and the env file is not
+changed.
 
 Targets use the same aliases as dearme:provider-smoke, including openclaw,
-linkedin, meta, telegram, imessage, production, and all.`);
+linkedin, meta, telegram, imessage, production, and all.
+
+Use --human-help-markdown to print the Peter-facing human-support queue entry
+from the same generated proof handoff.`);
 }
 
 async function main() {
@@ -594,6 +828,7 @@ async function main() {
       printHelp();
       return;
     }
+    const factCaptures = await loadDearMeNextProofFactCaptures(args, process.cwd());
 
     const setup = await prepareDearMeNextProofSetup({
       target: args.target,
@@ -601,7 +836,7 @@ async function main() {
       force: args.force,
       noWrite: args.noWrite,
       baseEnv: process.env,
-      factCaptures: args.factCaptures,
+      factCaptures,
     });
 
     if (args.json) {
@@ -609,7 +844,11 @@ async function main() {
       return;
     }
 
-    for (const line of formatDearMeNextProofSetup(setup)) {
+    const lines = args.humanHelpMarkdown
+      ? formatDearMeNextProofHumanHelp(setup)
+      : formatDearMeNextProofSetup(setup);
+
+    for (const line of lines) {
       console.log(line);
     }
   } catch (error) {
