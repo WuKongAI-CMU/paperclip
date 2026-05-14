@@ -2,6 +2,8 @@
 
 > Canonical PM architecture after the Polsia / Naive / OK Partner review.
 > Decision date: 2026-05-07.
+>
+> **P0 carve-out (adopted 2026-05-14).** §9.5 (OpenClaw substrate), §9.6 (tri-substrate integration), §11 (Polsia function mapping), and §14 (MVP boundaries) below describe the **P1+ target state**. In P0 paid beta, OpenClaw runtime and `dearme-ai-proxy` runtime are deferred — code stays in tree as dormant artifacts; runtime wiring is web-only. See [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md) for amendments per section, per-role P0 verdict (8 active / 4 dormant), 5–8 eng-week savings, and revival criteria.
 
 Current positioning, feature roadmap, and code-architecture execution plan:
 [`PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md`](PRODUCT-POSITIONING-ROADMAP-ARCHITECTURE.md).

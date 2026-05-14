@@ -1,6 +1,8 @@
 # OpenClaw Integration Architecture
 
-> **Canonical, runtime-affecting.** This document supersedes any older "DearMe is a standalone Express app on Fly.io" framing. DearMe ships as an **OpenClaw plugin** that runs on the user's device. Everything below is the contract between the two.
+> **STATUS: P1+ design, dormant in P0 paid beta (2026-05-14).** OpenClaw runtime is deferred to P1 per [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md). The contract below remains canonical for the deferred wire-up — code stays in tree, tests stay green, no runtime calls into it during P0. Read this for the target state; read the scope-cut for what P0 actually wires.
+>
+> **Canonical, runtime-affecting (P1+).** This document supersedes any older "DearMe is a standalone Express app on Fly.io" framing. DearMe ships as an **OpenClaw plugin** that runs on the user's device. Everything below is the contract between the two.
 >
 > Last updated: 2026-05-09 (post `DEARME_ROLE_REGISTRY` lock).
 

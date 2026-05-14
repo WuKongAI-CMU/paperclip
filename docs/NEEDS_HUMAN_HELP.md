@@ -8,27 +8,41 @@ stop agent-owned work.
 
 ## Active Requests
 
-### 2026-05-14 - External live-proof recipients
+### 2026-05-14 - External live-proof recipients (updated under P0 scope-cut)
 
 - Needs help from: Peter
-- What they need to do: provide the approved professional-network delivery
-  route, the first professional-network smoke recipient, and the phone-message
-  smoke recipient for guarded live proof.
-- Why agents cannot do it: these choices authorize real external delivery
-  targets and channel details.
+- What they need to do: provide the production Resend API key plus verified
+  sender domain so the `send_email` live smoke can run, and confirm X OAuth
+  client credentials for the single-channel `post_x` live smoke.
+- Why agents cannot do it: these are provider credentials and sender-domain
+  authorizations that must originate from the owner.
 - Blocking: no for internal product work or private-beta operations; yes before
   public launch or live external receipt proof can be claimed.
-- Estimated human time: 5-10 minutes once the desired test recipients are known.
+- Estimated human time: 10-20 minutes once the Resend project + verified domain
+  + X developer app are ready.
 - Agents continue after result by: capturing the approved values, running the
   no-send provider check first, then running guarded live proof only after
   explicit live confirmation.
 
-Needed values:
+P0 scope-cut note (2026-05-14): per
+[`dearme/P0-SCOPE-CUT-2026-05-13.md`](dearme/P0-SCOPE-CUT-2026-05-13.md), the
+prior iMessage and LinkedIn partner-API asks below are **deferred to P1**.
+LinkedIn outbound becomes copy-to-clipboard for P0; iMessage / Telegram /
+WhatsApp / Signal / SMS / Voice all defer to OpenClaw runtime revival.
 
-- `DEARME_LINKEDIN_DM_MESSAGES_URL`: approved LinkedIn partner messages endpoint.
-- `DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN`: approved LinkedIn smoke recipient.
-- `DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT`: approved iMessage/SMS smoke
-  recipient.
+P0 needed values:
+
+- `DEARME_RESEND_API_KEY`: production Resend API key for `send_email` dispatch.
+- `DEARME_RESEND_FROM_EMAIL`: verified sender on a domain you control.
+- `DEARME_RESEND_SMOKE_RECIPIENT`: smoke recipient inbox (your own is fine).
+- `DEARME_X_OAUTH_CLIENT_ID` / `DEARME_X_OAUTH_CLIENT_SECRET`: X developer app
+  credentials so the existing PKCE callback can complete the `post_x` smoke.
+
+Deferred to P1 (no longer P0-blocking):
+
+- `DEARME_LINKEDIN_DM_MESSAGES_URL`: LinkedIn partner messages endpoint.
+- `DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN`: LinkedIn smoke recipient.
+- `DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT`: iMessage/SMS smoke recipient.
 
 Reply template for Peter:
 
