@@ -297,6 +297,10 @@ function optionalPayloadString(value: unknown) {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
+function optionalPayloadNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 function outputKindFromPayload(value: unknown): DearMeOutputKind | null {
   return typeof value === "string" && OUTPUT_KIND_SET.has(value) ? value as DearMeOutputKind : null;
 }
@@ -580,10 +584,30 @@ function statusFromChiefBriefIssue(status: string): DearMeWorkbenchWorkItem["sta
   return "queued";
 }
 
+function isFeedbackChiefBriefTitle(title: string) {
+  const normalized = title.toLowerCase();
+  return normalized.includes("handle feedback") ||
+    normalized.includes("review feedback") ||
+    normalized.includes("feedback learning");
+}
+
+function isFeedbackChiefBriefWork(item: DearMeWorkbenchWorkItem) {
+  return !item.outputKind &&
+    item.ownerRole === "chief_of_staff" &&
+    isFeedbackChiefBriefTitle(item.title);
+}
+
 function reviewLoopFromChiefBriefStatus(
   status: DearMeWorkbenchWorkItem["status"],
+  options: { feedbackBrief?: boolean } = {},
 ): DearMeWorkbenchWorkItem["reviewLoop"] {
   const needsReview = status === "ready_for_review" || status === "complete";
+  const nextStep = needsReview
+    ? "Review the prepared private move, then launch, request changes, ask for another pass, or mark it not useful."
+    : options.feedbackBrief
+      ? "Chief of Staff is turning this feedback into Voice & Memory learning, recovery work, and next-cycle changes before any public move."
+      : "Chief of Staff is preparing this privately before it asks for a public or external move.";
+
   return {
     state: needsReview ? "needs_user_review" : "fresh",
     attemptCount: 0,
@@ -594,9 +618,7 @@ function reviewLoopFromChiefBriefStatus(
     lastDecisionNotePreview: null,
     reviewHandoff: null,
     feedbackTrace: null,
-    nextStep: needsReview
-      ? "Review the prepared private move, then launch, request changes, ask for another pass, or mark it not useful."
-      : "Chief of Staff is preparing this privately before it asks for a public or external move.",
+    nextStep,
   };
 }
 
@@ -613,17 +635,20 @@ function workItemFromChiefBriefIssue(input: {
   updatedAt: Date;
 }): DearMeWorkbenchWorkItem {
   const status = statusFromChiefBriefIssue(input.status);
+  const feedbackBrief = isFeedbackChiefBriefTitle(input.title);
   return {
     id: input.id,
     title: titleFromChiefBriefIssue(input.title),
-    summary: "Chief of Staff accepted this private brief and is turning it into the next launch-ready move. Public moves wait for the launch call.",
+    summary: feedbackBrief
+      ? "Chief of Staff accepted this feedback and is turning it into Voice & Memory learning, recovery work, and sharper next-cycle changes. Public moves wait for the launch call."
+      : "Chief of Staff accepted this private brief and is turning it into the next launch-ready move. Public moves wait for the launch call.",
     status,
     ownerRole: "chief_of_staff",
     outputKind: null,
     issueId: input.id,
     issueIdentifier: input.identifier,
     updatedAt: toIso(input.updatedAt),
-    reviewLoop: reviewLoopFromChiefBriefStatus(status),
+    reviewLoop: reviewLoopFromChiefBriefStatus(status, { feedbackBrief }),
   };
 }
 
@@ -687,6 +712,7 @@ function actionForWork(input: {
   isChiefBrief: boolean;
   isReady: boolean;
 }): DearMeWorkEventAction {
+  if (isFeedbackChiefBriefWork(input.item)) return "learn";
   if (input.isChiefBrief) return "plan";
   if (input.isReady) return input.item.outputKind === "weekly_report" ? "report" : "review";
   if (input.item.outputKind === "opportunity_drafts") return "research";
@@ -701,6 +727,7 @@ function actionForDecision(decision: DearMeWorkbenchDecision): DearMeWorkEventAc
 
 function actionForProgress(item: DearMeWorkbenchProgressItem): DearMeWorkEventAction {
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "learn";
+  if (item.kind === "first_cycle_aha") return "report";
   if (item.kind === "brand_os_requested" || item.kind === "brand_os_applied") return "plan";
   if (item.kind === "next_move_approved") return "approve";
   if (item.kind === "execution_handoff_prepared") return "handoff";
@@ -726,6 +753,7 @@ function streamKindForWork(item: DearMeWorkbenchWorkItem): DearMeStreamKind {
 }
 
 function cycleStageForWork(item: DearMeWorkbenchWorkItem): DearMeCycleStage {
+  if (isFeedbackChiefBriefWork(item)) return "learn";
   if (!item.outputKind && item.ownerRole === "chief_of_staff") return "plan";
   if (item.status === "ready_for_review") {
     return item.outputKind === "weekly_report" ? "report" : "review";
@@ -752,6 +780,7 @@ function sourceLabelForWork(input: {
   item: DearMeWorkbenchWorkItem;
   isChiefBrief: boolean;
 }) {
+  if (isFeedbackChiefBriefWork(input.item)) return "Feedback brief";
   if (input.isChiefBrief) return "Chief of Staff brief";
   if (input.item.outputKind === "voice_profile") return "Voice & Memory";
   if (input.item.outputKind === "weekly_report") return "Weekly report";
@@ -791,6 +820,7 @@ function deliveryStatusFromPayload(value: unknown): DearMeNextMoveDeliveryStatus
 }
 
 function cycleStageForProgress(item: DearMeWorkbenchProgressItem): DearMeCycleStage {
+  if (item.kind === "first_cycle_aha") return "review";
   if (item.kind === "next_move_approved") return "review";
   if (item.kind === "execution_handoff_prepared") return "work";
   if (item.kind === "next_move_delivery_recorded") return "work";
@@ -802,6 +832,7 @@ function cycleStageForProgress(item: DearMeWorkbenchProgressItem): DearMeCycleSt
 }
 
 function sourceLabelForProgress(item: DearMeWorkbenchProgressItem) {
+  if (item.kind === "first_cycle_aha") return "First 5-minute proof";
   if (item.kind === "next_move_approved") return "Launch receipt";
   if (item.kind === "execution_handoff_prepared") return "Launch brief";
   if (item.kind === "next_move_delivery_recorded") return "Delivery receipt";
@@ -814,6 +845,7 @@ function sourceLabelForProgress(item: DearMeWorkbenchProgressItem) {
 }
 
 function costImpactForProgress(item: DearMeWorkbenchProgressItem) {
+  if (item.kind === "first_cycle_aha") return "No external action has run";
   if (item.kind === "next_move_approved") return "No external action has run";
   if (item.kind === "execution_handoff_prepared") return "No external action has run";
   if (item.kind === "next_move_delivery_recorded") {
@@ -831,13 +863,16 @@ function costImpactForProgress(item: DearMeWorkbenchProgressItem) {
 
 function roleForProgress(item: DearMeWorkbenchProgressItem): DearMeTeamRole {
   if (item.outputKind) return OUTPUT_OWNER_ROLE[item.outputKind];
-  if (item.kind === "brand_os_applied" || item.kind === "cycle_check_in") return "chief_of_staff";
+  if (item.kind === "first_cycle_aha" || item.kind === "brand_os_applied" || item.kind === "cycle_check_in") {
+    return "chief_of_staff";
+  }
   if (item.kind === "team_progress" && item.title === "Voice & Memory updated") return "voice_editor";
   return "growth_analyst";
 }
 
 function artifactForProgress(item: DearMeWorkbenchProgressItem) {
   if (item.outputKind) return OUTPUT_KIND_ARTIFACT_LABELS[item.outputKind];
+  if (item.kind === "first_cycle_aha") return "First proof receipt";
   if (item.kind === "next_move_approved") return "Approved next move";
   if (item.kind === "execution_handoff_prepared") return "Launch-ready brief";
   if (item.kind === "next_move_delivery_recorded") return "Delivery receipt";
@@ -848,6 +883,9 @@ function artifactForProgress(item: DearMeWorkbenchProgressItem) {
 }
 
 function nextActionForProgress(item: DearMeWorkbenchProgressItem) {
+  if (item.kind === "first_cycle_aha") {
+    return item.nextStep ?? "Review Work Ready or open the proof page; public moves still wait for the launch call.";
+  }
   if (item.kind === "next_move_approved") {
     return "Final approval is recorded; DearMe will prepare the governed brief before the next external move.";
   }
@@ -921,13 +959,23 @@ function statusForProgress(item: DearMeWorkbenchProgressItem): DearMeWorkbenchSt
 function streamItemFromWork(item: DearMeWorkbenchWorkItem): DearMeWorkbenchStreamItem {
   const role = item.ownerRole;
   const isChiefBrief = !item.outputKind && role === "chief_of_staff";
+  const isFeedbackChiefBrief = isFeedbackChiefBriefWork(item);
   const artifact = item.outputKind
     ? OUTPUT_KIND_ARTIFACT_LABELS[item.outputKind]
-    : isChiefBrief
-      ? "Cycle brief"
-      : "Prepared work";
+    : isFeedbackChiefBrief
+      ? "Feedback brief"
+      : isChiefBrief
+        ? "Cycle brief"
+        : "Prepared work";
   const isReady = item.status === "ready_for_review";
   const nextAction = nextActionForWork({ item, isChiefBrief, isReady });
+  const title = isFeedbackChiefBrief
+    ? "Chief of Staff is turning feedback into the next pass"
+    : isChiefBrief
+      ? "Chief of Staff is turning your brief into private work"
+      : isReady
+        ? `${TEAM_ROLE_PUBLIC_LABELS[role]} prepared ${item.title}`
+        : `${TEAM_ROLE_PUBLIC_LABELS[role]} is working on ${item.title}`;
 
   return {
     id: `work:${item.id}`,
@@ -935,11 +983,7 @@ function streamItemFromWork(item: DearMeWorkbenchWorkItem): DearMeWorkbenchStrea
     cycleStage: cycleStageForWork(item),
     action: actionForWork({ item, isChiefBrief, isReady }),
     role,
-    title: isChiefBrief
-      ? "Chief of Staff is turning your brief into private work"
-      : isReady
-        ? `${TEAM_ROLE_PUBLIC_LABELS[role]} prepared ${item.title}`
-        : `${TEAM_ROLE_PUBLIC_LABELS[role]} is working on ${item.title}`,
+    title,
     summary: item.summary,
     customerSummary: item.summary,
     artifact,
@@ -1924,6 +1968,42 @@ export function dearmeWorkbenchProgressFromActivity(input: {
       kind: "paid_beta",
       title: "Paid beta access recorded",
       summary: "Paid access is active for private DearMe work.",
+      createdAt: toIso(input.createdAt),
+    };
+  }
+
+  if (input.action === "dearme.first_cycle_started") {
+    const starterDraftCount = optionalPayloadNumber(details.starterDraftCount);
+    const opportunityCount = optionalPayloadNumber(details.opportunityCount);
+    const valueReportCount = optionalPayloadNumber(details.valueReportCount);
+    const opportunityRoiReportCount = optionalPayloadNumber(details.opportunityRoiReportCount);
+    const ahaTargetSeconds = optionalPayloadNumber(details.ahaTargetSeconds);
+    const ahaWindow = dearMeWorkbenchProjectionOptionalText(optionalPayloadString(details.ahaWindow)) ?? "3-5min";
+    const firstOpportunityTarget = dearMeWorkbenchProjectionOptionalText(
+      optionalPayloadString(details.firstOpportunityTarget),
+    );
+    const nextStep =
+      dearMeWorkbenchProjectionOptionalText(optionalPayloadString(details.nextStep)) ??
+      "Review Work Ready or open the proof page; public moves still wait for the launch call.";
+    const proofCounts = [
+      starterDraftCount ? `${starterDraftCount} drafts` : null,
+      opportunityCount ? `${opportunityCount} opportunities` : null,
+      valueReportCount ? `${valueReportCount} value receipts` : null,
+      opportunityRoiReportCount ? `${opportunityRoiReportCount} ROI-ranked opportunities` : null,
+    ].filter((item): item is string => Boolean(item));
+
+    return {
+      id: input.id,
+      kind: "first_cycle_aha",
+      title: "First 5-minute proof ready",
+      summary: [
+        `DearMe turned the first positioning answer into ${proofCounts.join(", ") || "a private proof package"} inside the ${ahaWindow} window.`,
+        firstOpportunityTarget ? `First opportunity: ${firstOpportunityTarget}.` : null,
+        ahaTargetSeconds ? `Target: ${Math.round(ahaTargetSeconds / 60)} minutes.` : null,
+      ].filter(Boolean).join(" "),
+      issueId: input.entityId,
+      issueIdentifier: dearMeWorkbenchProjectionOptionalText(optionalPayloadString(details.identifier)),
+      nextStep,
       createdAt: toIso(input.createdAt),
     };
   }

@@ -763,6 +763,89 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
     expect(customerPathJson).not.toContain(DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND);
   });
 
+  it("projects feedback handling briefs as learning work and a recovery receipt", async () => {
+    const companyId = await seedCompany();
+    const chiefOfStaffId = await seedDearMeAgent({
+      companyId,
+      name: "DearMe Chief of Staff",
+      role: "chief_of_staff",
+      updatedAt: new Date("2026-05-07T13:00:00.000Z"),
+    });
+    const feedbackIssueId = await seedIssue({
+      companyId,
+      title: "DearMe: Handle feedback - First report felt generic",
+      identifier: "WB-55",
+      originKind: DEARME_CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND,
+      originFingerprint: "chief-feedback-1",
+      status: "todo",
+      updatedAt: new Date("2026-05-07T16:45:00.000Z"),
+      assigneeAgentId: chiefOfStaffId,
+    });
+
+    const result = await dearmeWorkbenchService(db).getWorkbench(companyId);
+
+    expect(result.activeWork).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: feedbackIssueId,
+          title: expect.stringContaining("Chief of Staff brief: Handle feedback"),
+          summary: expect.stringContaining("Voice & Memory learning"),
+          status: "queued",
+          ownerRole: "chief_of_staff",
+          outputKind: null,
+          issueId: feedbackIssueId,
+          issueIdentifier: "WB-55",
+          reviewLoop: expect.objectContaining({
+            state: "fresh",
+            nextStep: expect.stringContaining("next-cycle changes"),
+          }),
+        }),
+      ]),
+    );
+    expect(result.workStream).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "cycle_brief",
+          cycleStage: "learn",
+          action: "learn",
+          role: "chief_of_staff",
+          title: "Chief of Staff is turning feedback into the next pass",
+          artifact: "Feedback brief",
+          status: "working",
+          needsApproval: false,
+          sourceLabel: "Feedback brief",
+          nextAction: expect.stringContaining("Voice & Memory learning"),
+          relatedOutputId: null,
+          issueId: feedbackIssueId,
+          issueIdentifier: "WB-55",
+        }),
+      ]),
+    );
+    expect(result.runLedger).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "learned",
+          role: "chief_of_staff",
+          title: "Chief of Staff is turning feedback into the next pass",
+          evidenceLabel: "Feedback brief",
+          status: "working",
+          needsApproval: false,
+          issueId: feedbackIssueId,
+        }),
+      ]),
+    );
+    expect(result.actionGraph.nodes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "work_item",
+          role: "chief_of_staff",
+          issueId: feedbackIssueId,
+          label: expect.stringContaining("Handle feedback"),
+        }),
+      ]),
+    );
+  });
+
   it("projects blocked and skipped cycle check-ins into the run ledger", async () => {
     const companyId = await seedCompany();
     const chiefOfStaffId = await seedDearMeAgent({
@@ -850,6 +933,67 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
         }),
       ]),
     );
+  });
+
+  it("projects the first-cycle start as a five-minute proof receipt", async () => {
+    const companyId = await seedCompany();
+    await db.insert(activityLog).values({
+      id: randomUUID(),
+      companyId,
+      actorType: "user",
+      actorId: "user-1",
+      action: "dearme.first_cycle_started",
+      entityType: "issue",
+      entityId: "issue-first-cycle-1",
+      details: {
+        identifier: "PET-31",
+        ahaTargetSeconds: 300,
+        ahaWindow: "3-5min",
+        starterDraftCount: 5,
+        opportunityCount: 5,
+        valueReportCount: 4,
+        opportunityRoiReportCount: 5,
+        firstOpportunityTarget: "Founders evaluating local AI workflows",
+        nextStep: "Review Work Ready or open the proof page; public moves still wait for the launch call.",
+      },
+      createdAt: new Date("2026-05-07T16:50:00.000Z"),
+    });
+
+    const result = await dearmeWorkbenchService(db).getWorkbench(companyId);
+
+    expect(result.recentProgress).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "first_cycle_aha",
+          title: "First 5-minute proof ready",
+          summary: expect.stringContaining("5 drafts, 5 opportunities, 4 value receipts, 5 ROI-ranked opportunities"),
+          issueId: "issue-first-cycle-1",
+          issueIdentifier: "PET-31",
+          nextStep: "Review Work Ready or open the proof page; public moves still wait for the launch call.",
+        }),
+      ]),
+    );
+    expect(result.workStream).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "progress_recorded",
+          cycleStage: "review",
+          action: "report",
+          role: "chief_of_staff",
+          title: "First 5-minute proof ready",
+          artifact: "First proof receipt",
+          status: "recorded",
+          needsApproval: false,
+          sourceLabel: "First 5-minute proof",
+          costImpact: "No external action has run",
+          nextAction: "Review Work Ready or open the proof page; public moves still wait for the launch call.",
+          issueId: "issue-first-cycle-1",
+          issueIdentifier: "PET-31",
+        }),
+      ]),
+    );
+    expect(JSON.stringify(result)).not.toContain("provider");
+    expect(JSON.stringify(result)).not.toContain("runtime");
   });
 
   it("projects shared cycle packets as one private review surface", async () => {
@@ -1382,7 +1526,7 @@ describeEmbeddedPostgres("DearMe workbench service", () => {
           id: "memory-retired",
           kind: "proof_point",
           title: "Old proof",
-          body: "A proof point that should no longer guide private work.",
+          body: "A proof point that should no longer guide brand work.",
         }),
       ],
       sourceReviewQueue: [
