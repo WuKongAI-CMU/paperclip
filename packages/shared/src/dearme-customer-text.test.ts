@@ -6,6 +6,7 @@ import {
   DEARME_OWNER_PROOF_CHECKLIST_ITEMS,
   DEARME_OWNER_PROOF_FACT_SPECS,
   DEARME_OWNER_PROOF_REPLY_TEMPLATE,
+  buildDearMeOwnerProofHandoffReceipt,
   compactDearMeCustomerText,
   dearMeOwnerProofFactSpec,
   dearMeCustomerSafeLaunchNeed,
@@ -28,7 +29,7 @@ describe("DearMe customer text", () => {
       "OpenClaw Symphony adapter provider runtime model setup_payload queued worker with API key token in raw control plane.";
     const safe = dearMeCustomerSafeText(text, "DearMe is preparing the next update.");
 
-    expect(safe).toContain("A private pass");
+    expect(safe).toContain("A proof pass");
     expect(safe).not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
   });
 
@@ -36,15 +37,34 @@ describe("DearMe customer text", () => {
     expect(
       dearMeCustomerSafeText(
         "DearMe Runtime Smoke 1778131117797",
-        "DearMe Private Proof",
+        "DearMe Proof",
       ),
-    ).toBe("DearMe Private Proof Check 1778131117797");
+    ).toBe("DearMe Proof Check 1778131117797");
     expect(
       dearMeCustomerSafeText(
         "Private preview route: dearme.app/dearme runtime smoke 1778131117797.",
-        "DearMe Private Proof",
+        "DearMe Proof",
       ),
-    ).toBe("Private preview route: dearme.app/dearme private proof check 1778131117797.");
+    ).toBe("Private preview route: dearme.app/dearme proof check 1778131117797.");
+  });
+
+  it("translates internal private-work wording into product language", () => {
+    expect(
+      dearMeCustomerSafeText(
+        "Private preparation created a private output; support notes become private feedback work before private cycles run.",
+        "DearMe is preparing the next update.",
+      ),
+    ).toBe(
+      "team preparation created a useful output; support notes become feedback work before brand cycles run.",
+    );
+    expect(
+      dearMeCustomerSafeText(
+        "Save the receipt; DearMe opens private brand work and private DearMe cycles from that record.",
+        "DearMe is preparing the next update.",
+      ),
+    ).toBe(
+      "Save the receipt; DearMe opens brand work and DearMe brand cycles from that record.",
+    );
   });
 
   it("uses the fallback when text is empty after compaction", () => {
@@ -78,8 +98,8 @@ describe("DearMe customer text", () => {
         sensitive: false,
         captureFlag: "--linkedin-messages-url",
         placeholder: "<partner-messages-url>",
-        ownerPrompt: "Paste the approved delivery-route link for the first receipt check.",
-        safeExample: "A partner-approved messages page or delivery-route link.",
+        ownerPrompt: "Paste the delivery-route link for the first receipt check.",
+        safeExample: "A messages page or delivery-route link selected for this proof pass.",
         boundary: "DearMe checks this in no-send mode before any live receipt can move.",
       },
       {
@@ -88,8 +108,8 @@ describe("DearMe customer text", () => {
         sensitive: false,
         captureFlag: "--linkedin-recipient-urn",
         placeholder: "<approved-linkedin-recipient-urn>",
-        ownerPrompt: "Choose one real professional-network recipient approved for the proof pass.",
-        safeExample: "A specific recipient profile or recipient detail you have approved.",
+        ownerPrompt: "Choose one real professional-network recipient for the proof pass.",
+        safeExample: "A specific recipient profile or recipient detail selected for this proof pass.",
         boundary: "Only this selected recipient is used for the first guarded receipt.",
       },
       {
@@ -98,9 +118,9 @@ describe("DearMe customer text", () => {
         sensitive: false,
         captureFlag: "--imessage-recipient",
         placeholder: "<approved-phone-or-imessage>",
-        ownerPrompt: "Choose one approved phone-message recipient for the shared proof pass.",
+        ownerPrompt: "Choose one phone-message recipient for the shared proof pass.",
         safeExample: "A phone number or contact already cleared for the receipt check.",
-        boundary: "The receipt still waits for owner approval after the no-send check.",
+        boundary: "The receipt stays behind the final launch call after the no-send check.",
       },
     ]);
     expect(dearMeOwnerProofFactSpec("DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT")?.label).toBe(
@@ -138,8 +158,8 @@ describe("DearMe customer text", () => {
 
   it("keeps launch proof handoff steps customer-safe", () => {
     expect(DEARME_LAUNCH_PROOF_HANDOFF_STEPS.map((step) => step.label)).toEqual([
-      "Use private proof now",
-      "Capture approved live details",
+      "Use proof now",
+      "Capture live details",
       "Return with receipts before launch",
     ]);
 
@@ -152,7 +172,7 @@ describe("DearMe customer text", () => {
     expect(DEARME_OWNER_PROOF_CHECKLIST_ITEMS.map((item) => item.label)).toEqual([
       "Only three facts are missing",
       "No-send check comes first",
-      "Live receipt needs approval",
+      "Live receipt needs launch call",
     ]);
 
     for (const item of DEARME_OWNER_PROOF_CHECKLIST_ITEMS) {
@@ -164,20 +184,70 @@ describe("DearMe customer text", () => {
     expect(DEARME_OWNER_PROOF_REPLY_TEMPLATE).toEqual([
       {
         label: "Delivery route",
-        value: "approved delivery-route link",
+        value: "delivery-route link",
       },
       {
         label: "Professional-network recipient",
-        value: "approved recipient",
+        value: "selected recipient",
       },
       {
         label: "Phone-message recipient",
-        value: "approved phone number or contact",
+        value: "phone number or contact",
       },
     ]);
 
     for (const line of DEARME_OWNER_PROOF_REPLY_TEMPLATE) {
       expect(`${line.label} ${line.value}`).not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
     }
+  });
+
+  it("builds a customer-safe owner proof handoff receipt from captured details", () => {
+    const emptyReceipt = buildDearMeOwnerProofHandoffReceipt();
+    expect(emptyReceipt).toContain("DearMe launch-proof handoff");
+    expect(emptyReceipt).toContain("0/3 details captured");
+    expect(emptyReceipt).toContain("3 details still needed before the no-send setup check");
+    expect(emptyReceipt).toContain("Professional-network delivery route: Needed");
+    expect(emptyReceipt).toContain(
+      "Capture command: fill the missing details above, then run dearme:next-proof with the approved values.",
+    );
+    expect(emptyReceipt).toContain("Boundary: no public message, page change, spend, or broad launch");
+    expect(emptyReceipt).not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
+
+    const readyReceipt = buildDearMeOwnerProofHandoffReceipt({
+      values: {
+        DEARME_LINKEDIN_DM_MESSAGES_URL: "https://www.linkedin.com/messaging/thread/example",
+        DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN: "selected launch-proof recipient",
+        DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT: "+15551234567",
+      },
+    });
+
+    expect(readyReceipt).toContain("3/3 details captured");
+    expect(readyReceipt).toContain("ready for the no-send setup check");
+    expect(readyReceipt).toContain(
+      "Professional-network delivery route: Captured - https://www.linkedin.com/messaging/thread/example",
+    );
+    expect(readyReceipt).toContain("Approved professional-network recipient: Captured - selected launch-proof recipient");
+    expect(readyReceipt).toContain("Approved phone-message proof recipient: Captured - +15551234567");
+    expect(readyReceipt).toContain(
+      "Capture command: pnpm --silent dearme:next-proof -- --target all --linkedin-messages-url 'https://www.linkedin.com/messaging/thread/example' --linkedin-recipient-urn 'selected launch-proof recipient' --imessage-recipient '+15551234567'",
+    );
+    expect(readyReceipt).toContain("Next: run the no-send setup check");
+    expect(readyReceipt).not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
+  });
+
+  it("quotes owner proof capture command values safely", () => {
+    const receipt = buildDearMeOwnerProofHandoffReceipt({
+      values: {
+        DEARME_LINKEDIN_DM_MESSAGES_URL: "https://www.linkedin.com/messaging/thread/o'hara",
+        DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN: "recipient with ' quote",
+        DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT: "+15551234567",
+      },
+    });
+
+    expect(receipt).toContain(
+      "--linkedin-messages-url 'https://www.linkedin.com/messaging/thread/o'\"'\"'hara'",
+    );
+    expect(receipt).toContain("--linkedin-recipient-urn 'recipient with '\"'\"' quote'");
+    expect(receipt).not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
   });
 });

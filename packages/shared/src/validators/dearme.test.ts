@@ -4,6 +4,8 @@ import {
   DEARME_DIRECT_HEARTBEAT_CADENCE_HOURS,
   DEARME_FIRST_CYCLE_CONCERN_GATES,
   DEARME_FIRST_CYCLE_STARTER_POST_COUNT,
+  DEARME_MEMORY_REJECTED_SOURCE_KINDS,
+  DEARME_MEMORY_SIGNAL_KINDS,
   DEARME_SILENCE_DEFAULT_REVIEW_SCORE,
   DEARME_WORKER_HEARTBEAT_CADENCE_HOURS,
   buildDearMeBrandBlueprintExecutionPlan,
@@ -14,6 +16,7 @@ import {
   dearMeBrandBlueprintApplyRequestSchema,
   dearMeBrandBlueprintPreviewSchema,
   dearMeBrandBlueprintSchema,
+  dearMeChiefOfStaffMessageSchema,
   dearMeContentDraftPacketSchema,
   dearMeFirstCyclePreviewResponseSchema,
   dearMeFirstCyclePreviewSchema,
@@ -137,10 +140,10 @@ describe("DearMe brand blueprint contract", () => {
     expect(executionPlan.operations.find((operation) => operation.id === "schedule_weekly_report")).toEqual(
       expect.objectContaining({
         title: "Draft weekly Dear me report",
-        description: expect.stringContaining("private weekly report"),
+        description: expect.stringContaining("weekly report"),
       }),
     );
-    expect(summary.title).toBe("Create private team profile for Peter");
+    expect(summary.title).toBe("Create brand team profile for Peter");
   });
 
   it("defaults legacy Brand OS team members into the CEO/direct and worker/remote template", () => {
@@ -213,11 +216,11 @@ describe("DearMe brand blueprint contract", () => {
     expect(firstCycle.proofSequence.map((step) => step.title)).toEqual([
       "Identity dossier",
       "Audience map",
-      "Private site proof",
+      "Proof page",
     ]);
     expect(firstCycle.proofSequence[0]?.preparedArtifact).toBe("Voice profile and known-for line");
     expect(firstCycle.proofSequence[1]?.preparedArtifact).toBe("Audience shortlist and first opportunity");
-    expect(firstCycle.proofSequence[2]?.preparedArtifact).toBe("Private proof page move");
+    expect(firstCycle.proofSequence[2]?.preparedArtifact).toBe("Proof page move");
     expect(firstCycle.proofSequence[0]?.sourceLabel).toBeUndefined();
     expect(
       dearMeFirstCyclePreviewResponseSchema.parse({
@@ -225,20 +228,20 @@ describe("DearMe brand blueprint contract", () => {
         proofSequence: [
           {
             ...firstCycle.proofSequence[0]!,
-            sourceLabel: "Prepared from private profile work",
+            sourceLabel: "Prepared from profile work",
           },
           firstCycle.proofSequence[1],
           firstCycle.proofSequence[2],
         ],
       }).proofSequence[0]?.sourceLabel,
-    ).toBe("Prepared from private profile work");
+    ).toBe("Prepared from profile work");
     expect(firstCycle.cycleReport.title).toBe("First-cycle report");
     expect(firstCycle.cycleReport.cadence).toBe("weekly");
     expect(firstCycle.cycleReport.items.map((item) => item.label)).toEqual([
       "What moved while you were away",
       "Ready for your launch call",
       "Prepared but blocked",
-      "Next private cycle",
+      "Next proof cycle",
     ]);
     expect(firstCycle.cycleReport.items.map((item) => item.status)).toEqual([
       "moved",
@@ -248,11 +251,50 @@ describe("DearMe brand blueprint contract", () => {
     ]);
     expect(firstCycle.cycleReport.items.map((item) => item.source)).toEqual([
       "Live work receipts",
-      "Private proof pack",
+      "Proof pack",
       "Launch boundary",
-      "Next private pass",
+      "Next pass",
     ]);
     expect(firstCycle.cycleReport.closingLine).toContain("only public or costly moves");
+    expect(firstCycle.valueReport.title).toBe("First value report");
+    expect(firstCycle.valueReport.period).toBe("First five minutes");
+    expect(firstCycle.valueReport.items.map((item) => item.label)).toEqual([
+      "Reviewable assets prepared",
+      "Opportunity coverage staged",
+      "Proof loop opened",
+      "Launch risk held back",
+    ]);
+    expect(firstCycle.valueReport.items.map((item) => item.metric)).toEqual([
+      "5 drafts + 1 proof card",
+      "5 leads",
+      "1 private route + 3 next-pass improvements",
+      "4 approval boundaries",
+    ]);
+    expect(firstCycle.valueReport.items.map((item) => item.count)).toEqual([6, 5, 4, 4]);
+    expect(firstCycle.valueReport.items.map((item) => item.source)).toEqual([
+      "Proof pack",
+      "Opportunity shortlist",
+      "Private proof page",
+      "Launch boundary",
+    ]);
+    expect(firstCycle.valueReport.closingLine).toContain("launch, revise");
+    expect(firstCycle.opportunityRoiReport.title).toBe("Opportunity ROI report");
+    expect(firstCycle.opportunityRoiReport.items).toHaveLength(5);
+    expect(firstCycle.opportunityRoiReport.items.map((item) => item.priority)).toEqual([
+      "launch_first",
+      "launch_first",
+      "verify_contact",
+      "verify_contact",
+      "warm_intro",
+    ]);
+    expect(firstCycle.opportunityRoiReport.items.map((item) => item.score)).toEqual([91, 82, 73, 73, 72]);
+    expect(firstCycle.opportunityRoiReport.items[0]?.expectedReturn).toContain(
+      "Founders evaluating local AI workflows",
+    );
+    expect(firstCycle.opportunityRoiReport.items[4]?.nextAction).toContain(
+      "trusted introduction",
+    );
+    expect(firstCycle.opportunityRoiReport.closingLine).toContain("highest-return safe lead");
     expect(firstCycle.starterPosts.every((post) => post.approvalGate === "publish_social")).toBe(true);
     expect(firstCycle.starterPosts[0]?.body).toContain(
       "The positioning to test this week: Known for turning AI research into practical local products.",
@@ -316,7 +358,7 @@ describe("DearMe brand blueprint contract", () => {
     expect(firstCycle.autonomyPlan.waitsFor).toEqual(DEARME_FIRST_CYCLE_CONCERN_GATES);
     expect(firstCycle.continuationPlan.title).toBe("Keeps working after the first proof");
     expect(firstCycle.continuationPlan.cadence).toBe("weekly");
-    expect(firstCycle.continuationPlan.nextReview).toBe("Next private review");
+    expect(firstCycle.continuationPlan.nextReview).toBe("Next proof review");
     expect(firstCycle.continuationPlan.items.map((item) => item.ownerRole)).toEqual([
       "content_producer",
       "opportunity_scout",
@@ -325,13 +367,32 @@ describe("DearMe brand blueprint contract", () => {
     expect(firstCycle.continuationPlan.items.map((item) => item.preparedArtifact)).toEqual([
       "Next proof-backed draft",
       "Updated opportunity angle",
-      "Updated private proof card",
+      "Updated proof card",
     ]);
     expect(firstCycle.continuationPlan.items.map((item) => item.approvalBoundary)).toEqual([
-      "The draft can improve privately; posting waits for approval.",
-      "The outreach can be prepared privately; sending waits for approval.",
-      "The page can be staged privately; public changes wait for approval.",
+      "Posting stays behind the launch call while the draft keeps improving.",
+      "Sending stays behind the launch call while the outreach angle keeps improving.",
+      "Public page changes stay behind the launch call while the proof card keeps improving.",
     ]);
+    expect(firstCycle.memoryPlan.title).toBe("Voice & Memory plan");
+    expect(firstCycle.memoryPlan.savePolicy).toEqual([
+      "Save stable identity, voice, proof, audience, offer, boundary, relationship, and review-feedback signals.",
+      "Use saved signals to improve the next draft, opportunity angle, proof card, and report.",
+      "Recheck remembered facts against current sources before they support public claims.",
+    ]);
+    expect(firstCycle.memoryPlan.rejectedSourceKinds).toEqual([...DEARME_MEMORY_REJECTED_SOURCE_KINDS]);
+    expect(firstCycle.memoryPlan.items.map((item) => item.kind)).toEqual([
+      "profile",
+      "voice",
+      "proof",
+      "audience",
+      "feedback",
+    ]);
+    expect(firstCycle.memoryPlan.items.every((item) => DEARME_MEMORY_SIGNAL_KINDS.includes(item.kind))).toBe(true);
+    expect(firstCycle.memoryPlan.items[2]?.summary).toBe(
+      "Shipped an autonomous local product that customers can run",
+    );
+    expect(firstCycle.memoryPlan.items[4]?.summary).toContain("durable direction");
     expect(firstCycle.approvalBoundary.label).toBe("Ready to launch, with you in control");
     expect(firstCycle.approvalBoundary.summary).toContain("one launch decision");
     expect(firstCycle.approvalBoundary.blockedActions).toEqual([
@@ -549,7 +610,7 @@ describe("DearMe brand blueprint contract", () => {
     expect(blueprint.gates.every((gate) => gate.mode === "approval_required")).toBe(true);
     expect(collectDearMeBrandBlueprintWarnings(blueprint)).toEqual([
       "Voice profile needs at least two samples before tone should be trusted.",
-      "No preferred channels were selected; DearMe will draft privately until channels are chosen.",
+      "No preferred channels were selected; DearMe will stage drafts until channels are chosen.",
       "No proof points were supplied; the first cycle should collect proof before public claims.",
     ]);
   });
@@ -613,8 +674,8 @@ describe("DearMe brand blueprint contract", () => {
       cycleGuardrail: {
         state: "ready",
         label: "Guardrails ready",
-        headline: "Private cycles can run within guardrails",
-        summary: "DearMe checks monthly private spend before work runs so prepared moves stay predictable.",
+        headline: "Brand cycles can run within guardrails",
+        summary: "DearMe checks monthly spend before work runs so prepared moves stay predictable.",
         spendCents: 0,
         budgetCents: 25_000,
         utilizationPercent: 0,
@@ -622,12 +683,36 @@ describe("DearMe brand blueprint contract", () => {
         decisionRequired: false,
         decisionLabel: null,
       },
+      hostedCheckout: {
+        configured: true,
+        paymentLinkConfigured: true,
+        receiptSyncConfigured: true,
+        paymentUrl: "https://pay.example.com/dearme?client_reference_id=company-1",
+        providerLabel: "Hosted checkout",
+        label: "Self-serve checkout ready",
+        summary: "A hosted payment link and signed receipt sync are ready for this account.",
+        nextActionLabel: "Open hosted checkout",
+        nextActionDescription: "Send the customer through checkout; DearMe opens paid access after the signed receipt arrives.",
+      },
     });
     const trialEntitlement = describeDearMePaidBetaEntitlement("trial");
 
     expect(status.status).toBe("active");
     expect(status.remainingCreditCents).toBe(25_000);
     expect(status.entitlement.canRequestBrandOsApproval).toBe(true);
+    expect(status.hostedCheckout?.paymentUrl).toBe(
+      "https://pay.example.com/dearme?client_reference_id=company-1",
+    );
+    expect(JSON.stringify(status.hostedCheckout)).not.toContain("whsec");
+    expect(() =>
+      dearMePaidBetaStatusSchema.parse({
+        ...status,
+        hostedCheckout: {
+          ...status.hostedCheckout,
+          webhookSecret: "whsec_hidden",
+        },
+      }),
+    ).toThrow();
     expect(trialEntitlement.canRequestBrandOsApproval).toBe(false);
     expect(trialEntitlement.nextActionLabel).toBe("Record paid beta payment");
   });
@@ -650,25 +735,25 @@ describe("DearMe brand blueprint contract", () => {
     expect(dearMeMemoryUpdateSchema.parse({
       kind: "proof_point",
       sourceInputMode: "link",
-      body: "Shipped the first private growth cycle.",
+      body: "Shipped the first brand cycle.",
       sourceLabel: "https://example.com/proof",
     })).toEqual({
       kind: "proof_point",
       sourceInputMode: "link",
       title: null,
-      body: "Shipped the first private growth cycle.",
+      body: "Shipped the first brand cycle.",
       sourceLabel: "https://example.com/proof",
     });
     expect(dearMeMemoryUpdateSchema.safeParse({
       kind: "proof_point",
       sourceInputMode: "link",
-      body: "Shipped the first private growth cycle.",
+      body: "Shipped the first brand cycle.",
       sourceLabel: "ftp://example.com/proof",
     }).success).toBe(false);
     expect(dearMeMemoryUpdateSchema.safeParse({
       kind: "proof_point",
       sourceInputMode: "link",
-      body: "Shipped the first private growth cycle.",
+      body: "Shipped the first brand cycle.",
     }).success).toBe(false);
     expect(dearMeMemoryUpdateResultSchema.parse({
       companyId: "company-1",
@@ -708,6 +793,18 @@ describe("DearMe brand blueprint contract", () => {
     })).toThrow();
   });
 
+  it("accepts Chief of Staff feedback handling as a private work intent", () => {
+    expect(dearMeChiefOfStaffMessageSchema.parse({
+      intent: "handle_feedback",
+      message:
+        "A paid user said the first report felt generic. Prepare a recovery note and update memory before the next cycle.",
+    })).toEqual({
+      intent: "handle_feedback",
+      message:
+        "A paid user said the first report felt generic. Prepare a recovery note and update memory before the next cycle.",
+    });
+  });
+
   it("describes customer-visible DearMe outputs without provider internals", () => {
     const voiceGate = evaluateDearMeVoiceGate({
       brand: {
@@ -740,7 +837,7 @@ describe("DearMe brand blueprint contract", () => {
           companyId: "company-1",
           kind: "weekly_report",
           title: "Dear me report",
-          summary: "The private weekly report.",
+          summary: "The weekly report.",
           status: "ready_for_review",
           isReviewable: true,
           issueId: "issue-1",
@@ -766,7 +863,7 @@ describe("DearMe brand blueprint contract", () => {
               url: null,
               status: "ready",
               reviewState: "pending",
-              summary: "Three private drafts prepared for review.",
+              summary: "Three drafts prepared for review.",
               voiceGate,
               updatedAt: "2026-05-07T14:00:00.000Z",
             },
@@ -806,8 +903,8 @@ describe("DearMe brand blueprint contract", () => {
             },
             {
               kind: "private_reference",
-              label: "Private references",
-              summary: "1 private reference and 1 prepared artifact used for this review.",
+              label: "Proof references",
+              summary: "1 proof reference and 1 prepared artifact used for this review.",
               source: "document",
             },
           ],
@@ -865,14 +962,14 @@ describe("DearMe brand blueprint contract", () => {
     ).toThrow();
   });
 
-  it("normalizes private content draft packets behind Voice Gate review", () => {
+  it("normalizes content draft packets behind Voice Gate review", () => {
     const voiceGate = evaluateDearMeVoiceGate({
       brand: {
         displayName: "Peter",
         positioning: "Builder of local-first products",
         goals: ["Turn shipping proof into clear public content"],
         audiences: ["Founders evaluating local-first workflows"],
-        proofPoints: ["Shipped a private product launch"],
+        proofPoints: ["Shipped a product launch"],
         offers: ["Paid beta for personal brand growth"],
         voiceSamples: ["Direct, specific, evidence-backed writing.", "Short notes with concrete next steps."],
         preferredChannels: ["linkedin"],
@@ -886,7 +983,7 @@ describe("DearMe brand blueprint contract", () => {
         channel: "linkedin",
         title: "Proof-backed post",
         text: "A short proof-backed post for founders evaluating local-first workflows.",
-        proofUsed: "Shipped a private product launch",
+        proofUsed: "Shipped a product launch",
       },
     });
     const packet = dearMeContentDraftPacketSchema.parse({
@@ -895,7 +992,7 @@ describe("DearMe brand blueprint contract", () => {
         {
           label: "Proof",
           source: "proof",
-          summary: "The latest private work produced a concrete launch receipt.",
+          summary: "The latest work produced a concrete launch receipt.",
         },
       ],
       drafts: [
@@ -905,7 +1002,7 @@ describe("DearMe brand blueprint contract", () => {
           audience: "Founders evaluating local-first workflows",
           hook: "Your personal brand should show proof while you keep building.",
           body: "A short proof-backed post for founders evaluating local-first workflows.",
-          proofUsed: "Shipped a private product launch",
+          proofUsed: "Shipped a product launch",
           voiceGate,
         },
       ],
@@ -966,7 +1063,7 @@ describe("DearMe brand blueprint contract", () => {
           companyId: "company-1",
           kind: "weekly_report",
           title: "Dear me report",
-          summary: "The private weekly report.",
+          summary: "The weekly report.",
           status: "ready_for_review",
           isReviewable: true,
           issueId: "issue-1",
@@ -992,7 +1089,7 @@ describe("DearMe brand blueprint contract", () => {
               url: null,
               status: "ready",
               reviewState: "pending",
-              summary: "Three private drafts prepared for review.",
+          summary: "Three drafts prepared for review.",
               updatedAt: "2026-05-07T14:00:00.000Z",
             },
           ],
@@ -1007,17 +1104,17 @@ describe("DearMe brand blueprint contract", () => {
             reviewHandoff: {
               action: "regenerate",
               title: "Regeneration brief captured",
-              summary: "DearMe will keep this direction attached to the next private draft.",
+              summary: "DearMe will keep this direction attached to the next draft.",
               userDirection: "Make it sharper.",
-              nextDraftDirection: "Prepare a stronger replacement before asking for approval again.",
+              nextDraftDirection: "Prepare a stronger replacement before the next launch call.",
             },
             feedbackTrace: {
               headline: "Feedback applied",
-              summary: "DearMe prepared a new private version instead of lightly editing the previous one.",
+              summary: "DearMe prepared a new version instead of lightly editing the previous one.",
               userFeedback: "Make it sharper.",
               changes: [
                 "Prepared a replacement version from your direction.",
-                "Still private until you approve it.",
+                "Staged until you launch it.",
               ],
               receipts: [
                 "Another pass requested: Make it sharper.",
@@ -1037,7 +1134,7 @@ describe("DearMe brand blueprint contract", () => {
     expect(output.reviewLoop.feedbackTrace).toEqual(expect.objectContaining({
       headline: "Feedback applied",
       userFeedback: "Make it sharper.",
-      changes: expect.arrayContaining(["Still private until you approve it."]),
+      changes: expect.arrayContaining(["Staged until you launch it."]),
       receipts: ["Another pass requested: Make it sharper."],
     }));
     const quietDefaultOutput = dearMeOutputsResponseSchema.parse({
@@ -1050,10 +1147,10 @@ describe("DearMe brand blueprint contract", () => {
             ...output.reviewLoop,
             state: "approved",
             lastAction: "approve",
-            lastDecisionNotePreview: "No response came in, so DearMe kept this private work moving with a default review score of 7/10.",
+            lastDecisionNotePreview: "No response came in, so DearMe kept this brand work moving with a default review score of 7/10.",
             defaultApprovalScore: DEARME_SILENCE_DEFAULT_REVIEW_SCORE,
             defaultedBySilence: true,
-            nextStep: "This private work kept moving with a default review score of 7/10.",
+            nextStep: "This brand work kept moving with a default review score of 7/10.",
             reviewHandoff: null,
             feedbackTrace: null,
           },
@@ -1151,7 +1248,7 @@ describe("DearMe brand blueprint contract", () => {
           issueId: "issue-2",
           issueIdentifier: "PET-8",
           updatedAt: "2026-05-07T14:00:00.000Z",
-          reviewLoop: reviewLoop({ state: "fresh", nextStep: "Your team is preparing this privately." }),
+          reviewLoop: reviewLoop({ state: "fresh", nextStep: "Your team is preparing this work." }),
         },
       ],
       workReady: [
@@ -1172,8 +1269,8 @@ describe("DearMe brand blueprint contract", () => {
         {
           id: "approval:approval-1",
           kind: "approve_brand_os",
-          title: "Start private team for Peter",
-          summary: "Review the first growth-team plan before private work starts.",
+          title: "Start brand team for Peter",
+          summary: "Review the first growth-team plan before brand work starts.",
           riskGate: null,
           status: "pending",
           outputKind: null,
@@ -1205,7 +1302,7 @@ describe("DearMe brand blueprint contract", () => {
           id: "activity-1",
           kind: "brand_os_applied",
           title: "Growth team created",
-          summary: "DearMe created the team, cycles, profile documents, and first private work lanes.",
+          summary: "DearMe created the team, cycles, profile documents, and first brand work lanes.",
           createdAt: "2026-05-07T14:00:00.000Z",
         },
         {
@@ -1249,7 +1346,7 @@ describe("DearMe brand blueprint contract", () => {
               status: "partial",
               count: 1,
               target: 2,
-              nextAction: "Add real posts, notes, transcripts, or approved drafts that already sound like the user.",
+              nextAction: "Add real posts, notes, transcripts, or chosen drafts that already sound like the user.",
             },
             {
               kind: "proof_point",
@@ -1272,7 +1369,7 @@ describe("DearMe brand blueprint contract", () => {
             proposedKind: "proof_point",
             proposedTitle: "Shipped proof",
             proposedBody: "Shipped work should support the launch narrative.",
-            nextAction: "Review this proof point and save the fact once it is ready for future private work.",
+            nextAction: "Review this proof point and save the fact once it is ready for future brand work.",
             createdAt: "2026-05-07T13:00:00.000Z",
           },
         ],
@@ -1304,22 +1401,22 @@ describe("DearMe brand blueprint contract", () => {
           cycleStage: "review",
           action: "approve",
           role: "brand_strategist",
-          title: "Your call: Start private team for Peter",
-          summary: "Review the first growth-team plan before private work starts.",
-          customerSummary: "Review the first growth-team plan before private work starts.",
-          artifact: "Private team profile",
-          artifactTarget: "Private team profile",
+          title: "Your call: Start brand team for Peter",
+          summary: "Review the first growth-team plan before brand work starts.",
+          customerSummary: "Review the first growth-team plan before brand work starts.",
+          artifact: "Brand team profile",
+          artifactTarget: "Brand team profile",
           status: "decision_needed",
           needsApproval: true,
           decisionNeed: {
             needed: true,
             label: "Review needed",
-            reason: "Start the private team when the first cycle and launch boundaries match how you want to be represented.",
+            reason: "Start the brand team when the first cycle and launch boundaries match how you want to be represented.",
             riskGate: null,
           },
           sourceLabel: "Launch call",
           costImpact: null,
-          nextAction: "Start the private team when the first cycle and launch boundaries match how you want to be represented.",
+          nextAction: "Start the brand team when the first cycle and launch boundaries match how you want to be represented.",
           relatedOutputId: null,
           issueId: null,
           issueIdentifier: null,
@@ -1336,12 +1433,12 @@ describe("DearMe brand blueprint contract", () => {
           id: "ledger:decision:approval:approval-1",
           kind: "needs_decision",
           role: "brand_strategist",
-          title: "Your call: Start private team for Peter",
-          summary: "Review the first growth-team plan before private work starts.",
-          evidenceLabel: "Launch call / Private team profile",
+          title: "Your call: Start brand team for Peter",
+          summary: "Review the first growth-team plan before brand work starts.",
+          evidenceLabel: "Launch call / Brand team profile",
           status: "decision_needed",
           needsApproval: true,
-          nextAction: "Start the private team when the first cycle and launch boundaries match how you want to be represented.",
+          nextAction: "Start the brand team when the first cycle and launch boundaries match how you want to be represented.",
           relatedOutputId: null,
           issueId: null,
           issueIdentifier: null,
@@ -1357,7 +1454,7 @@ describe("DearMe brand blueprint contract", () => {
           evidenceLabel: "Manual note",
           status: "recorded",
           needsApproval: false,
-          nextAction: "Use this Voice & Memory signal to make the next private cycle more accurate.",
+          nextAction: "Use this Voice & Memory signal to make the next brand cycle more accurate.",
           relatedOutputId: null,
           issueId: null,
           issueIdentifier: null,
@@ -1367,14 +1464,14 @@ describe("DearMe brand blueprint contract", () => {
       ],
       report: {
         title: "Dear me report",
-        summary: "The private weekly report.",
+        summary: "The weekly report.",
         status: "ready_for_review",
         outputId: "issue-1:weekly_report",
         issueId: "issue-1",
         issueIdentifier: "PET-7",
         bodyPreview: "Completed work and decisions needed.",
-        accomplished: ["Cycle check-in completed and prepared the first private work."],
-        decisions: ["Start the private team before any public-facing move starts."],
+        accomplished: ["Cycle check-in completed and prepared the first brand work."],
+        decisions: ["Start the brand team before any public-facing move starts."],
         learnings: ["Voice Editor has one direct writing sample to learn from."],
         nextBets: ["Review the prepared work and sharpen the next audience bet."],
         updatedAt: "2026-05-07T14:00:00.000Z",
@@ -1399,8 +1496,8 @@ describe("DearMe brand blueprint contract", () => {
           {
             id: "decision:approval:approval-1",
             kind: "decision",
-            label: "Start private team for Peter",
-            summary: "Review the first growth-team plan before private work starts.",
+            label: "Start brand team for Peter",
+            summary: "Review the first growth-team plan before brand work starts.",
             role: "brand_strategist",
             status: "pending",
             source: "decision",
@@ -1457,13 +1554,13 @@ describe("DearMe brand blueprint contract", () => {
       status: "decision_needed",
       needsApproval: true,
       sourceLabel: "Launch call",
-      nextAction: expect.stringContaining("Start the private team"),
+      nextAction: expect.stringContaining("Start the brand team"),
     }));
     expect(response.runLedger.map((entry) => entry.kind)).toEqual(
       expect.arrayContaining(["needs_decision", "learned"]),
     );
     expect(response.runLedger[0]).toEqual(expect.objectContaining({
-      evidenceLabel: "Launch call / Private team profile",
+      evidenceLabel: "Launch call / Brand team profile",
       needsApproval: true,
     }));
     expect(response.actionGraph.nodes.map((node) => node.kind)).toEqual(
