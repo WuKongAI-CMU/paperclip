@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Router, type ErrorRequestHandler, type Response } from "express";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { ZodError } from "zod";
+import { z, ZodError } from "zod";
 import { activityLog, type Db } from "@paperclipai/db";
 import {
   dearMeApprovalResolveRequestSchema,
@@ -18,6 +18,7 @@ import {
   dearMeOutputContinuationRequestSchema,
   dearMeOutputWorkProductSchema,
   dearMeOutputReviewRequestSchema,
+  dearMePaidBetaCohortRequestSchema,
   dearMePaidBetaRecordSchema,
   type DearMeChiefOfStaffMessage,
   type DearMeChiefOfStaffMessageIntent,
@@ -51,6 +52,11 @@ import { forbidden, HttpError, notFound } from "../errors.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { heartbeatService } from "../services/heartbeat.js";
 import { queueIssueAssignmentWakeup } from "../services/issue-assignment-wakeup.js";
+import {
+  projectDearMeStripeCheckoutCompletedEvents,
+  verifyDearMeStripeWebhookSignature,
+  type DearMeStripeCheckoutCompletedEvent,
+} from "../services/dearme-paid-beta-access.js";
 
 function memoryBodyPreview(body: string) {
   return body.length > 700 ? `${body.slice(0, 697)}...` : body;
@@ -92,12 +98,14 @@ const CHIEF_OF_STAFF_MESSAGE_ORIGIN_KIND = "dearme_chief_of_staff_message";
 const FIRST_CYCLE_START_ORIGIN_KIND = "dearme_first_cycle_start";
 const DEARME_MEMORY_UPDATED_ACTION = "dearme.memory_updated";
 const DEARME_MEMORY_ARCHIVED_ACTION = "dearme.memory_archived";
+const DEARME_STRIPE_WEBHOOK_RECORDED_ACTION = "dearme.stripe_payment_webhook_recorded";
 const CHIEF_OF_STAFF_INTENT_LABELS: Record<DearMeChiefOfStaffMessageIntent, string> = {
   plan_next: "Plan next moves",
   draft_content: "Draft content",
   find_opportunities: "Find opportunities",
   refresh_portfolio: "Refresh portfolio",
   prepare_report: "Prepare report",
+  handle_feedback: "Handle feedback",
 };
 
 function writeDearMeSseEvent(res: Response, event: DearMeSseEvent) {
@@ -107,6 +115,35 @@ function writeDearMeSseEvent(res: Response, event: DearMeSseEvent) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+const dearMeStripeCheckoutCompletedEventSchema = z.object({
+  id: z.string().trim().min(1),
+  type: z.literal("checkout.session.completed"),
+  livemode: z.boolean(),
+  data: z.object({
+    object: z.object({
+      id: z.string().trim().min(1),
+      object: z.literal("checkout.session"),
+      status: z.enum(["open", "complete", "expired"]),
+      payment_status: z.enum(["paid", "unpaid", "no_payment_required"]),
+      amount_total: z.number().int().nonnegative().nullable(),
+      currency: z.string().trim().min(1).nullable(),
+      client_reference_id: z.string().trim().min(1).nullable(),
+      payment_intent: z.string().trim().min(1).nullable(),
+      invoice: z.string().trim().min(1).nullable(),
+      metadata: z.record(z.string(), z.string().nullable().optional()).nullable().optional(),
+      created: z.number().int().nonnegative(),
+    }).passthrough().transform((session) => ({
+      ...session,
+      metadata: session.metadata ?? undefined,
+    })),
+  }).passthrough(),
+}).passthrough();
+
+function parseDearMeStripeCheckoutCompletedEvent(payload: unknown): DearMeStripeCheckoutCompletedEvent | null {
+  const parsed = dearMeStripeCheckoutCompletedEventSchema.safeParse(payload);
+  return parsed.success ? parsed.data : null;
 }
 
 function normalizeDearMeRouteError(err: unknown) {
@@ -137,14 +174,32 @@ function trimTitleFragment(value: string) {
 
 function renderChiefOfStaffIssueDescription(input: DearMeChiefOfStaffMessage) {
   const intentLabel = CHIEF_OF_STAFF_INTENT_LABELS[input.intent];
+  const feedbackLearningBoundary = input.intent === "handle_feedback"
+    ? [
+        "Feedback learning:",
+        "Triage the user feedback or support note, identify what should change, capture Voice & Memory learnings, and prepare the next private recovery or follow-up move for review.",
+      ]
+    : [];
   return [
     "DearMe Chief of Staff request",
     `Intent: ${intentLabel}`,
     "User brief:",
     input.message,
+    ...feedbackLearningBoundary,
     "Private-work boundary:",
     "Prepare the next useful move privately. Drafts, outreach, public claims, spend, publishing, or site changes still need explicit user approval before leaving DearMe.",
   ].join("\n\n");
+}
+
+function chiefOfStaffMessageNextStep(input: DearMeChiefOfStaffMessage, assigned: boolean) {
+  if (input.intent === "handle_feedback") {
+    return assigned
+      ? "Chief of Staff has the feedback brief and will turn it into Voice & Memory learning, recovery work, and next-cycle changes before any public move."
+      : "The feedback brief was saved. Start the private team to turn it into Voice & Memory learning, recovery work, and next-cycle changes.";
+  }
+  return assigned
+    ? "Chief of Staff has the brief and will prepare the next private move for review."
+    : "The brief was saved. Start the private team to create the DearMe team and start private work.";
 }
 
 function renderFirstCycleIssueDescription(input: {
@@ -717,9 +772,7 @@ export function dearmeRoutes(
         issueId: issue.id,
         issueIdentifier: issue.identifier ?? null,
         title: issue.title,
-        nextStep: chiefOfStaff
-          ? "Chief of Staff has the brief and will prepare the next private move for review."
-          : "The brief was saved. Start the private team to create the DearMe team and start private work.",
+        nextStep: chiefOfStaffMessageNextStep(input, Boolean(chiefOfStaff)),
       });
       res.status(201).json(responseBody);
     },
@@ -920,6 +973,18 @@ export function dearmeRoutes(
   );
 
   router.post(
+    "/paid-beta/cohort",
+    validate(dearMePaidBetaCohortRequestSchema),
+    async (req, res) => {
+      for (const companyId of req.body.companyIds) {
+        assertCompanyAccess(req, companyId);
+      }
+
+      res.json(await paidBetaAccess.getCohort(req.body.companyIds));
+    },
+  );
+
+  router.post(
     "/companies/:companyId/paid-beta/access-events",
     validate(dearMePaidBetaRecordSchema),
     async (req, res) => {
@@ -947,6 +1012,101 @@ export function dearmeRoutes(
       });
 
       res.status(201).json(result);
+    },
+  );
+
+  router.post(
+    "/payments/stripe/webhook",
+    async (req, res) => {
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+      if (!webhookSecret) {
+        throw new HttpError(503, "DearMe Stripe payment webhook is not configured.");
+      }
+
+      const rawBody = (req as { rawBody?: Buffer }).rawBody;
+      const signatureValid = rawBody
+        ? verifyDearMeStripeWebhookSignature({
+            rawBody,
+            signatureHeader: req.header("stripe-signature"),
+            webhookSecret,
+          })
+        : false;
+      if (!signatureValid) {
+        throw new HttpError(401, "Invalid DearMe payment webhook signature.");
+      }
+
+      if (!isRecord(req.body) || req.body.type !== "checkout.session.completed") {
+        res.status(200).json({
+          received: true,
+          status: "ignored",
+          reason: "unsupported_event_type",
+        });
+        return;
+      }
+
+      const event = parseDearMeStripeCheckoutCompletedEvent(req.body);
+      if (!event) {
+        res.status(200).json({
+          received: true,
+          status: "ignored",
+          reason: "invalid_checkout_session_completed_payload",
+        });
+        return;
+      }
+
+      const providerProjection = projectDearMeStripeCheckoutCompletedEvents([event], {
+        signatureVerified: true,
+      });
+      const [receipt] = providerProjection.hostedReceipts;
+      if (!receipt) {
+        res.status(200).json({
+          received: true,
+          status: "ignored",
+          reason: "checkout_did_not_unlock_paid_access",
+          acceptedProviderEventCount: providerProjection.acceptedProviderEvents.length,
+          rejectedProviderEventCount: providerProjection.rejectedProviderEvents.length,
+        });
+        return;
+      }
+
+      const result = await paidBetaAccess.recordHostedPaymentReceipts(receipt.companyId, [receipt]);
+      const recordedEvent = result.recordedEvents[0] ?? null;
+
+      if (recordedEvent) {
+        await logActivity(db, {
+          companyId: receipt.companyId,
+          actorType: "system",
+          actorId: "stripe-webhook",
+          action: DEARME_STRIPE_WEBHOOK_RECORDED_ACTION,
+          entityType: "finance_event",
+          entityId: recordedEvent.id,
+          details: {
+            providerEventId: event.id,
+            checkoutSessionId: event.data.object.id,
+            amountCents: recordedEvent.amountCents,
+            currency: recordedEvent.currency,
+            status: result.access.status,
+            netPaidCents: result.access.netPaidCents,
+            duplicateSuppressedCount: result.duplicateSuppressedCount,
+            existingDuplicateSuppressedCount: result.existingDuplicateSuppressedCount,
+          },
+        });
+      }
+
+      res.status(200).json({
+        received: true,
+        status: recordedEvent ? "recorded" : "duplicate",
+        provider: "stripe",
+        companyId: receipt.companyId,
+        acceptedProviderEventCount: providerProjection.acceptedProviderEvents.length,
+        rejectedProviderEventCount: providerProjection.rejectedProviderEvents.length,
+        acceptedReceiptCount: result.acceptedReceipts.length,
+        rejectedReceiptCount: result.rejectedReceipts.length,
+        duplicateSuppressedCount: result.duplicateSuppressedCount,
+        existingDuplicateSuppressedCount: result.existingDuplicateSuppressedCount,
+        recordedEventCount: result.recordedEvents.length,
+        access: result.access,
+      });
     },
   );
 
@@ -1014,6 +1174,14 @@ export function dearmeRoutes(
           identifier: issue.identifier,
           assigned: Boolean(chiefOfStaff),
           artifactOrder: artifacts,
+          ahaTargetSeconds: 300,
+          ahaWindow: preview.proofSequence.at(-1)?.window ?? "3-5min",
+          starterDraftCount: preview.starterPosts.length,
+          opportunityCount: preview.opportunityShortlist.length,
+          valueReportCount: preview.valueReport.items.length,
+          opportunityRoiReportCount: preview.opportunityRoiReport.items.length,
+          firstOpportunityTarget: preview.opportunityShortlist[0]?.target ?? null,
+          nextStep: "Review Work Ready or open the proof page; public moves still wait for the launch call.",
         },
       });
 

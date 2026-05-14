@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import express from "express";
 import request from "supertest";
 import { DEARME_FIRST_CYCLE_STARTER_POST_COUNT, describeDearMePaidBetaEntitlement } from "@paperclipai/shared";
@@ -12,7 +13,9 @@ const mockDearMeBrandBlueprintService = vi.hoisted(() => ({
 
 const mockDearMePaidBetaAccessService = vi.hoisted(() => ({
   getAccess: vi.fn(),
+  getCohort: vi.fn(),
   recordPayment: vi.fn(),
+  recordHostedPaymentReceipts: vi.fn(),
 }));
 
 const mockDearMeOutputHandoffService = vi.hoisted(() => ({
@@ -87,7 +90,11 @@ async function createApp(actorOverrides: Record<string, unknown> = {}, db: Recor
     import("../routes/dearme.js"),
   ]);
   const app = express();
-  app.use(express.json());
+  app.use(express.json({
+    verify: (req, _res, buf) => {
+      (req as unknown as { rawBody: Buffer }).rawBody = buf;
+    },
+  }));
   app.use((req, _res, next) => {
     (req as any).actor = {
       type: "board",
@@ -505,6 +512,121 @@ function makeFirstCycleResult() {
       ownerRole: "chief_of_staff",
       approvalGate: "public_claim",
     },
+    valueReport: {
+      title: "First value report",
+      summary: "DearMe turned the first positioning answer into reviewable assets and launch decisions.",
+      period: "First five minutes",
+      items: [
+        {
+          id: "reviewable-assets-prepared",
+          label: "Reviewable assets prepared",
+          ownerRole: "growth_analyst",
+          metric: "5 drafts + 1 proof card",
+          count: 6,
+          unit: "reviewable assets",
+          summary: "Five drafts and one proof card are ready to review without publishing.",
+          source: "Proof pack",
+        },
+        {
+          id: "opportunity-coverage-staged",
+          label: "Opportunity coverage staged",
+          ownerRole: "opportunity_scout",
+          metric: "5 leads",
+          count: 5,
+          unit: "qualified leads",
+          summary: "Five opportunity leads are staged with relevance, angle, and contact evidence status.",
+          source: "Opportunity shortlist",
+        },
+        {
+          id: "proof-loop-opened",
+          label: "Proof loop opened",
+          ownerRole: "portfolio_builder",
+          metric: "1 private route + 3 next-pass improvements",
+          count: 4,
+          unit: "proof moves",
+          summary: "The private proof page is ready with improvements lined up for the next pass.",
+          source: "Private proof page",
+        },
+        {
+          id: "launch-risk-held",
+          label: "Launch risk held back",
+          ownerRole: "chief_of_staff",
+          metric: "4 approval boundaries",
+          count: 4,
+          unit: "protected actions",
+          summary: "Posting, sending, page changes, and spend stay behind one launch call.",
+          source: "Launch boundary",
+        },
+      ],
+      closingLine: "Use this report to decide whether to launch, revise, or let DearMe keep preparing.",
+    },
+    opportunityRoiReport: {
+      title: "Opportunity ROI report",
+      summary: "DearMe ranks prepared leads by likely return before any outreach is sent.",
+      items: [
+        {
+          id: "opportunity-roi-1",
+          leadTitle: "Direct customer lead",
+          target: "Founders",
+          priority: "launch_first",
+          score: 97,
+          expectedReturn: "Likely return: a relevant conversation with Founders tied to visible proof.",
+          effort: "Low effort",
+          confidence: "High confidence",
+          nextAction: "Review the draft message for Founders in the launch call.",
+          source: "Public contact page lists a direct inbox and contact form.",
+        },
+        {
+          id: "opportunity-roi-2",
+          leadTitle: "Warm collaboration lead",
+          target: "Practical AI Product Operators Circle",
+          priority: "launch_first",
+          score: 82,
+          expectedReturn: "Likely return: a relevant conversation with operators tied to visible proof.",
+          effort: "Medium effort",
+          confidence: "Medium-high confidence",
+          nextAction: "Review the collaboration draft in the launch call.",
+          source: "Community profile points to a shared inbox.",
+        },
+        {
+          id: "opportunity-roi-3",
+          leadTitle: "Podcast guest lead",
+          target: "Practical AI Builders Podcast Desk",
+          priority: "verify_contact",
+          score: 79,
+          expectedReturn: "Likely return: a proof-backed guest pitch.",
+          effort: "Low effort",
+          confidence: "Needs one more proof check",
+          nextAction: "Confirm the contact path, then decide whether to send.",
+          source: "Guest submission page publishes a booking inbox.",
+        },
+        {
+          id: "opportunity-roi-4",
+          leadTitle: "Hiring lead",
+          target: "Local AI Workflow Hiring Teams",
+          priority: "verify_contact",
+          score: 73,
+          expectedReturn: "Likely return: a hiring conversation tied to trusted proof.",
+          effort: "Medium effort",
+          confidence: "Needs one more proof check",
+          nextAction: "Confirm the contact path, then decide whether to send.",
+          source: "Hiring page names a recruiting inbox.",
+        },
+        {
+          id: "opportunity-roi-5",
+          leadTitle: "Warm intro lead",
+          target: "Trusted Operator Intro List",
+          priority: "warm_intro",
+          score: 72,
+          expectedReturn: "Likely return: a warm introduction into the right operator.",
+          effort: "Warm intro effort",
+          confidence: "Medium-high confidence",
+          nextAction: "Ask for one trusted introduction before sending anything.",
+          source: "No direct public contact surfaced yet.",
+        },
+      ],
+      closingLine: "Start with the highest-return safe lead, or keep verifying contacts while DearMe prepares the next pass.",
+    },
     autonomyPlan: {
       label: "Autopilot until launch",
       summary:
@@ -608,6 +730,38 @@ function makePaidBetaStatus(
   };
 }
 
+function makeStripeCheckoutCompletedPayload(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "evt-dearme-paid",
+    type: "checkout.session.completed",
+    livemode: false,
+    data: {
+      object: {
+        id: "cs_dearme_paid",
+        object: "checkout.session",
+        status: "complete",
+        payment_status: "paid",
+        amount_total: 25_000,
+        currency: "usd",
+        client_reference_id: "company-1",
+        payment_intent: "pi_dearme_paid",
+        invoice: "in_dearme_paid",
+        metadata: {},
+        created: 1_768_389_600,
+        ...overrides,
+      },
+    },
+  };
+}
+
+function signStripePayload(rawPayload: string, secret: string, timestamp = Math.floor(Date.now() / 1000)) {
+  const signature = createHmac("sha256", secret)
+    .update(`${timestamp}.`)
+    .update(Buffer.from(rawPayload))
+    .digest("hex");
+  return `t=${timestamp},v1=${signature}`;
+}
+
 describe("DearMe brand blueprint routes", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -621,8 +775,30 @@ describe("DearMe brand blueprint routes", () => {
     mockDearMeBrandBlueprintService.prepareFirstCycleProofOutputs.mockReset();
     mockDearMeBrandBlueprintService.createApplyRequest.mockReset();
     mockDearMePaidBetaAccessService.getAccess.mockReset();
+    mockDearMePaidBetaAccessService.getCohort.mockReset();
     mockDearMePaidBetaAccessService.recordPayment.mockReset();
+    mockDearMePaidBetaAccessService.recordHostedPaymentReceipts.mockReset();
     mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("active"));
+    mockDearMePaidBetaAccessService.getCohort.mockResolvedValue({
+      accountCount: 1,
+      activeAccountCount: 1,
+      trialAccountCount: 0,
+      readyAccountCount: 1,
+      warningAccountCount: 0,
+      hardStopAccountCount: 0,
+      decisionRequiredAccountCount: 0,
+      lifetimePaidCents: 25_000,
+      refundedCents: 0,
+      netPaidCents: 25_000,
+      remainingCreditCents: 25_000,
+      cycleSpendCents: 0,
+      cycleBudgetCents: 25_000,
+      state: "operable",
+      label: "Cohort operable",
+      summary: "Paid beta accounts can keep receiving private DearMe cycles within current guardrails.",
+      nextAction: "Keep the weekly value loop moving and review cohort health before the next paid check-in.",
+      attentionAccounts: [],
+    });
     mockDearMeOutputHandoffService.listOutputs.mockReset();
     mockDearMeOutputHandoffService.persistContentDraftPacket.mockReset();
     mockDearMeOutputHandoffService.reviewOutput.mockReset();
@@ -885,6 +1061,44 @@ describe("DearMe brand blueprint routes", () => {
     );
   });
 
+  it("records feedback handling as Chief of Staff learning and support work", async () => {
+    mockIssueService.create.mockResolvedValue({
+      id: "issue-chief-feedback",
+      identifier: "PET-24",
+      title: "DearMe: Handle feedback - First report felt generic",
+      assigneeAgentId: "agent-chief-1",
+    });
+
+    const res = await request(await createApp())
+      .post("/api/dearme/companies/company-1/chief-of-staff/messages")
+      .send({
+        intent: "handle_feedback",
+        message: "First report felt generic. Prepare a recovery note and make the next cycle sharper.",
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual(expect.objectContaining({
+      companyId: "company-1",
+      status: "queued",
+      issueId: "issue-chief-feedback",
+      issueIdentifier: "PET-24",
+      title: "DearMe: Handle feedback - First report felt generic",
+      nextStep: "Chief of Staff has the feedback brief and will turn it into Voice & Memory learning, recovery work, and next-cycle changes before any public move.",
+    }));
+    expect(mockIssueService.create).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        title: expect.stringContaining("Handle feedback"),
+        status: "todo",
+        assigneeAgentId: "agent-chief-1",
+      }),
+    );
+    const description = mockIssueService.create.mock.calls[0][1].description;
+    expect(description).toContain("Feedback learning:");
+    expect(description).toContain("capture Voice & Memory learnings");
+    expect(description).toContain("recovery or follow-up move");
+  });
+
   it("saves a Chief of Staff brief before the team member exists", async () => {
     mockAgentService.list.mockResolvedValue([]);
     mockIssueService.create.mockResolvedValue({
@@ -925,7 +1139,7 @@ describe("DearMe brand blueprint routes", () => {
       });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toBe("Add a paid beta credit purchase to unlock the private team cycle.");
+    expect(res.body.error).toBe("Add a paid beta credit purchase to unlock the brand team cycle.");
     expect(mockIssueService.create).not.toHaveBeenCalled();
     expect(mockAgentService.list).not.toHaveBeenCalled();
     expect(mockQueueIssueAssignmentWakeup).not.toHaveBeenCalled();
@@ -1836,6 +2050,35 @@ describe("DearMe brand blueprint routes", () => {
     expect(mockDearMePaidBetaAccessService.getAccess).toHaveBeenCalledWith("company-1");
   });
 
+  it("returns paid beta cohort health for explicitly accessible companies", async () => {
+    const res = await request(await createApp({ companyIds: ["company-1", "company-2"] }))
+      .post("/api/dearme/paid-beta/cohort")
+      .send({ companyIds: ["company-1", "company-2", "company-1"] });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      state: "operable",
+      accountCount: 1,
+      activeAccountCount: 1,
+      label: "Cohort operable",
+    });
+    expect(mockDearMePaidBetaAccessService.getCohort).toHaveBeenCalledWith([
+      "company-1",
+      "company-2",
+    ]);
+  });
+
+  it("rejects paid beta cohort health when any requested company is outside the caller scope", async () => {
+    const res = await request(await createApp({ companyIds: ["company-1"] }))
+      .post("/api/dearme/paid-beta/cohort")
+      .send({ companyIds: ["company-1", "company-2"] });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe("This DearMe profile is not available to your account.");
+    expectDearMeRouteErrorBodySafe(res.body);
+    expect(mockDearMePaidBetaAccessService.getCohort).not.toHaveBeenCalled();
+  });
+
   it("records a manual paid beta payment and logs the finance event", async () => {
     mockDearMePaidBetaAccessService.recordPayment.mockResolvedValue({
       event: {
@@ -1901,6 +2144,152 @@ describe("DearMe brand blueprint routes", () => {
     expect(res.body.error).toBe("This DearMe action needs an owner account.");
     expectDearMeRouteErrorBodySafe(res.body);
     expect(mockDearMePaidBetaAccessService.recordPayment).not.toHaveBeenCalled();
+  });
+
+  it("records a signed Stripe checkout webhook into paid beta access", async () => {
+    const previousSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    process.env.STRIPE_WEBHOOK_SECRET = "whsec_dearme_test_secret";
+    mockDearMePaidBetaAccessService.recordHostedPaymentReceipts.mockResolvedValue({
+      acceptedReceipts: [{
+        id: "evt-dearme-paid",
+        companyId: "company-1",
+        provider: "hosted_checkout",
+        kind: "checkout_paid",
+        amountCents: 25_000,
+        currency: "USD",
+        externalInvoiceId: "in_dearme_paid",
+        signatureVerified: true,
+        idempotencyKey: "cs_dearme_paid",
+        occurredAt: "2026-01-14T11:20:00.000Z",
+      }],
+      rejectedReceipts: [],
+      duplicateSuppressedCount: 0,
+      existingDuplicateSuppressedCount: 0,
+      recordedEvents: [{
+        id: "finance-event-stripe-1",
+        amountCents: 25_000,
+        currency: "USD",
+      }],
+      access: makePaidBetaStatus("active"),
+    });
+
+    try {
+      const rawPayload = JSON.stringify(makeStripeCheckoutCompletedPayload());
+      const res = await request(await createApp())
+        .post("/api/dearme/payments/stripe/webhook")
+        .set("content-type", "application/json")
+        .set("stripe-signature", signStripePayload(rawPayload, process.env.STRIPE_WEBHOOK_SECRET))
+        .send(rawPayload);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        received: true,
+        status: "recorded",
+        provider: "stripe",
+        companyId: "company-1",
+        acceptedReceiptCount: 1,
+        recordedEventCount: 1,
+        access: { status: "active" },
+      });
+      expect(mockDearMePaidBetaAccessService.recordHostedPaymentReceipts).toHaveBeenCalledWith(
+        "company-1",
+        [expect.objectContaining({
+          companyId: "company-1",
+          provider: "hosted_checkout",
+          kind: "checkout_paid",
+          amountCents: 25_000,
+          currency: "USD",
+          externalInvoiceId: "in_dearme_paid",
+          signatureVerified: true,
+          idempotencyKey: "cs_dearme_paid",
+        })],
+      );
+      expect(mockLogActivity).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          companyId: "company-1",
+          actorType: "system",
+          actorId: "stripe-webhook",
+          action: "dearme.stripe_payment_webhook_recorded",
+          entityType: "finance_event",
+          entityId: "finance-event-stripe-1",
+          details: expect.objectContaining({
+            providerEventId: "evt-dearme-paid",
+            checkoutSessionId: "cs_dearme_paid",
+            amountCents: 25_000,
+            currency: "USD",
+            status: "active",
+            netPaidCents: 25_000,
+          }),
+        }),
+      );
+    } finally {
+      if (previousSecret === undefined) {
+        delete process.env.STRIPE_WEBHOOK_SECRET;
+      } else {
+        process.env.STRIPE_WEBHOOK_SECRET = previousSecret;
+      }
+    }
+  });
+
+  it("rejects unsigned Stripe checkout webhooks before paid access is recorded", async () => {
+    const previousSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    process.env.STRIPE_WEBHOOK_SECRET = "whsec_dearme_test_secret";
+
+    try {
+      const rawPayload = JSON.stringify(makeStripeCheckoutCompletedPayload());
+      const res = await request(await createApp())
+        .post("/api/dearme/payments/stripe/webhook")
+        .set("content-type", "application/json")
+        .set("stripe-signature", "t=1768389600,v1=bad")
+        .send(rawPayload);
+
+      expect(res.status).toBe(401);
+      expect(res.body.error).toBe("Invalid DearMe payment webhook signature.");
+      expect(mockDearMePaidBetaAccessService.recordHostedPaymentReceipts).not.toHaveBeenCalled();
+      expect(mockLogActivity).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ action: "dearme.stripe_payment_webhook_recorded" }),
+      );
+    } finally {
+      if (previousSecret === undefined) {
+        delete process.env.STRIPE_WEBHOOK_SECRET;
+      } else {
+        process.env.STRIPE_WEBHOOK_SECRET = previousSecret;
+      }
+    }
+  });
+
+  it("acknowledges signed unpaid Stripe checkout webhooks without unlocking access", async () => {
+    const previousSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    process.env.STRIPE_WEBHOOK_SECRET = "whsec_dearme_test_secret";
+
+    try {
+      const rawPayload = JSON.stringify(makeStripeCheckoutCompletedPayload({
+        payment_status: "unpaid",
+      }));
+      const res = await request(await createApp())
+        .post("/api/dearme/payments/stripe/webhook")
+        .set("content-type", "application/json")
+        .set("stripe-signature", signStripePayload(rawPayload, process.env.STRIPE_WEBHOOK_SECRET))
+        .send(rawPayload);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        received: true,
+        status: "ignored",
+        reason: "checkout_did_not_unlock_paid_access",
+        acceptedProviderEventCount: 0,
+        rejectedProviderEventCount: 1,
+      });
+      expect(mockDearMePaidBetaAccessService.recordHostedPaymentReceipts).not.toHaveBeenCalled();
+    } finally {
+      if (previousSecret === undefined) {
+        delete process.env.STRIPE_WEBHOOK_SECRET;
+      } else {
+        process.env.STRIPE_WEBHOOK_SECRET = previousSecret;
+      }
+    }
   });
 
   it("returns a read-only preview for a caller with company access", async () => {
@@ -2087,6 +2476,14 @@ describe("DearMe brand blueprint routes", () => {
         entityId: "issue-first-cycle-1",
         details: expect.objectContaining({
           artifactOrder,
+          ahaTargetSeconds: 300,
+          ahaWindow: "3-5min",
+          starterDraftCount: preparedPreview.starterPosts.length,
+          opportunityCount: preparedPreview.opportunityShortlist.length,
+          valueReportCount: preparedPreview.valueReport.items.length,
+          opportunityRoiReportCount: preparedPreview.opportunityRoiReport.items.length,
+          firstOpportunityTarget: preparedPreview.opportunityShortlist[0]?.target,
+          nextStep: "Review Work Ready or open the proof page; public moves still wait for the launch call.",
         }),
       }),
     );
@@ -2232,7 +2629,7 @@ describe("DearMe brand blueprint routes", () => {
       });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toBe("Add a paid beta credit purchase to unlock the private team cycle.");
+    expect(res.body.error).toBe("Add a paid beta credit purchase to unlock the brand team cycle.");
     expect(mockDearMeBrandBlueprintService.createApplyRequest).not.toHaveBeenCalled();
     expect(mockLogActivity).not.toHaveBeenCalledWith(
       expect.anything(),
