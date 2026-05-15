@@ -3171,6 +3171,24 @@ function FirstCyclePanel({
         </div>
       </div>
 
+      {isPending ? (
+        <section
+          aria-label="First-cycle preview loading"
+          className="mt-5 rounded-md border border-border bg-muted/20 p-4"
+          data-testid="dearme-first-cycle-preview-skeleton"
+        >
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <RefreshCw className="h-4 w-4 animate-spin" />
+            Preparing first-cycle preview
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((item) => (
+              <div key={item} className="h-28 animate-pulse rounded-md border border-border bg-background/70" />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {privateWorkStarted && preview ? (
         <section
           aria-label="First cycle start receipt"
@@ -3250,6 +3268,33 @@ function FirstCyclePanel({
         isPending={isPending}
       />
     </DearMePanel>
+  );
+}
+
+function TeamWorkbenchLoadingSkeleton() {
+  return (
+    <section
+      className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]"
+      aria-label="DearMe brand workroom"
+      data-testid="dearme-workbench-loading-skeleton"
+    >
+      <DearMePanel aria-label="Workroom loading">
+        <div className="h-4 w-32 animate-pulse rounded-full bg-muted" />
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {[0, 1, 2, 3].map((item) => (
+            <div key={item} className="h-28 animate-pulse rounded-md border border-border bg-muted/40" />
+          ))}
+        </div>
+      </DearMePanel>
+      <DearMePanel aria-label="Decisions loading" data-testid="dearme-decisions-loading-skeleton">
+        <div className="h-4 w-36 animate-pulse rounded-full bg-muted" />
+        <div className="mt-4 space-y-3">
+          {[0, 1, 2].map((item) => (
+            <div key={item} className="h-20 animate-pulse rounded-md border border-border bg-muted/40" />
+          ))}
+        </div>
+      </DearMePanel>
+    </section>
   );
 }
 
@@ -10810,12 +10855,7 @@ function TeamWorkbenchPanel({
   const workbench = workbenchQuery.data ?? null;
 
   if (workbenchQuery.isLoading) {
-    return (
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]" aria-label="DearMe brand workroom">
-        <div className="h-72 animate-pulse rounded-lg border border-border bg-muted/40" />
-        <div className="h-72 animate-pulse rounded-lg border border-border bg-muted/40" />
-      </section>
-    );
+    return <TeamWorkbenchLoadingSkeleton />;
   }
 
   if (workbenchQuery.isError || !workbench) {
