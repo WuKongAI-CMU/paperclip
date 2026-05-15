@@ -26,6 +26,14 @@ export {
 } from "./runtime-files/server.js";
 
 export {
+  createWorkbenchServer,
+  WORKBENCH_TOOLS,
+  WORKBENCH_TOOL_DESCRIPTORS,
+  __testHelpers,
+  type DearMeWorkbenchServerConfig,
+} from "./workbench/server.js";
+
+export {
   DEARME_RUNTIME_DENY_BASH_PATTERNS,
   findBashDenyMatch,
 } from "./runtime-files/denyPatterns.js";

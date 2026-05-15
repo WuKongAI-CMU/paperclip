@@ -10,14 +10,17 @@ import {
   DEARME_RUNTIME_DENY_BASH_PATTERNS,
   RUNTIME_FILES_TOOL_DESCRIPTORS,
   VOICE_TOOL_DESCRIPTORS,
+  WORKBENCH_TOOL_DESCRIPTORS,
   catalogEntryByKey,
   createRuntimeFilesServer,
   createVoiceServer,
+  createWorkbenchServer,
   findBashDenyMatch,
   mcpAllowPatterns,
 } from "./index.js";
 import { __testDispatch } from "./runtime-files/server.js";
 import { __testHelpers } from "./voice/server.js";
+import { __testHelpers as workbenchTestHelpers } from "./workbench/server.js";
 import { DEARME_DENY_BASH_PATTERNS } from "../../dearme-openclaw/src/lockdown/settings-template.js";
 
 // silence un-used util import for the linter
@@ -240,6 +243,79 @@ describe("DearMe voice MCP", () => {
 
   it("createVoiceServer returns a Server-like object", () => {
     const server = createVoiceServer({ apiKey: "dm_sk_test" });
+    expect(typeof (server as { setRequestHandler: unknown }).setRequestHandler).toBe(
+      "function",
+    );
+  });
+});
+
+describe("DearMe workbench MCP", () => {
+  it("descriptors expose the three workbench tools", () => {
+    const names = WORKBENCH_TOOL_DESCRIPTORS.map((t) => t.name);
+    expect(names).toEqual([
+      "workbench.list_work_ready",
+      "workbench.list_decisions",
+      "workbench.read_output",
+    ]);
+  });
+
+  it("workbench.list_work_ready fails closed when no API key is configured", async () => {
+    const config = workbenchTestHelpers.resolveConfig({
+      apiKey: "",
+      proxyUrl: "https://api.dearme.app",
+      fetchImpl: async () => new Response("{}"),
+    });
+    const result = await workbenchTestHelpers.dispatchListWorkReady({}, config);
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("not configured");
+  });
+
+  it("workbench.list_work_ready GETs /v1/workbench/work-ready with bearer auth", async () => {
+    let captured: { url: string; init: RequestInit } | undefined;
+    const fakeFetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      captured = { url: String(url), init: init ?? {} };
+      return new Response(
+        JSON.stringify({ items: [{ id: "ready-1", title: "Launch post" }] }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }) as typeof fetch;
+
+    const config = workbenchTestHelpers.resolveConfig({
+      apiKey: "dm_sk_test",
+      proxyUrl: "https://api.dearme.app",
+      fetchImpl: fakeFetch,
+    });
+    const result = await workbenchTestHelpers.dispatchListWorkReady(
+      { companyId: "company-1", limit: 5 },
+      config,
+    );
+    expect(result.isError).toBeUndefined();
+    const url = new URL(captured!.url);
+    expect(`${url.origin}${url.pathname}`).toBe(
+      "https://api.dearme.app/v1/workbench/work-ready",
+    );
+    expect(url.searchParams.get("companyId")).toBe("company-1");
+    expect(url.searchParams.get("limit")).toBe("5");
+    expect(
+      (captured!.init.headers as Record<string, string>).authorization,
+    ).toBe("Bearer dm_sk_test");
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.items[0].id).toBe("ready-1");
+  });
+
+  it("workbench.read_output requires outputId", async () => {
+    const config = workbenchTestHelpers.resolveConfig({
+      apiKey: "dm_sk_test",
+      proxyUrl: "https://api.dearme.app",
+      fetchImpl: async () => new Response("{}"),
+    });
+    const result = await workbenchTestHelpers.dispatchReadOutput({}, config);
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("outputId");
+  });
+
+  it("createWorkbenchServer returns a Server-like object", () => {
+    const server = createWorkbenchServer({ apiKey: "dm_sk_test" });
     expect(typeof (server as { setRequestHandler: unknown }).setRequestHandler).toBe(
       "function",
     );
