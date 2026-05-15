@@ -44,6 +44,7 @@ import {
   dearMeStripeCheckoutService,
   DearMeStripeCheckoutError,
 } from "../services/dearme-stripe-checkout.js";
+import { handleInboundWebhook as handleDearMeSupportInboundWebhook } from "../services/dearme-support.js";
 import {
   getDearMeSseBus,
   type DearMeSseEvent,
@@ -1261,6 +1262,19 @@ export function dearmeRoutes(
         recordedEventCount: result.recordedEvents.length,
         access: result.access,
       });
+    },
+  );
+
+  router.post(
+    "/support/webhook",
+    async (req, res) => {
+      const rawBody = (req as { rawBody?: Buffer }).rawBody ?? req.body;
+      handleDearMeSupportInboundWebhook(
+        rawBody,
+        req.header("plain-signature") ?? req.header("x-plain-signature"),
+      );
+
+      res.status(200).json({ received: true });
     },
   );
 
