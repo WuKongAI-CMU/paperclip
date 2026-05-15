@@ -26,6 +26,14 @@ export {
 } from "./runtime-files/server.js";
 
 export {
+  createWebSearchServer,
+  WEB_SEARCH_TOOLS,
+  WEB_SEARCH_TOOL_DESCRIPTORS,
+  __testHelpers,
+  type DearMeWebSearchServerConfig,
+} from "./web-search/server.js";
+
+export {
   DEARME_RUNTIME_DENY_BASH_PATTERNS,
   findBashDenyMatch,
 } from "./runtime-files/denyPatterns.js";
