@@ -250,7 +250,7 @@ export function DearMeWorkbenchCard({
   return (
     <article
       className={cn(
-        "rounded-md border px-3 py-3",
+        "min-w-0 rounded-md border px-3 py-3",
         tone === "empty" ? "border-dashed border-border" : "border-border",
         focused ? "border-primary/50 bg-primary/5 ring-2 ring-primary/70 ring-offset-2 ring-offset-background" : undefined,
         className,
@@ -260,17 +260,17 @@ export function DearMeWorkbenchCard({
       data-dearme-card-focused={focused ? "true" : undefined}
       data-dearme-surface={surface}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           {eyebrow ? <p className="text-xs font-medium text-muted-foreground">{eyebrow}</p> : null}
           <p className={cn("text-sm font-medium", eyebrow ? "mt-1" : undefined)}>{title}</p>
           {description ? <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">{description}</p> : null}
         </div>
-        {badge ? <div className="shrink-0">{badge}</div> : null}
+        {badge ? <div className="min-w-0 sm:shrink-0">{badge}</div> : null}
       </div>
       {children ? <div className="mt-3">{children}</div> : null}
       {footer || action ? (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-4 flex min-w-0 flex-wrap items-center justify-between gap-3">
           {footer ? <div className="text-xs text-muted-foreground">{footer}</div> : <span />}
           {action ? <div className="flex shrink-0 justify-end">{action}</div> : null}
         </div>

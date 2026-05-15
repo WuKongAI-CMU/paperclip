@@ -3224,7 +3224,7 @@ function FirstCyclePanel({
               <Badge variant="default">Work started</Badge>
               <Badge variant="outline">Launch call gated</Badge>
               <Badge variant="outline">Target: 5 minutes</Badge>
-              <Button type="button" size="sm" variant="outline" onClick={onOpenWorkReady}>
+              <Button type="button" size="sm" variant="outline" className="min-h-11" onClick={onOpenWorkReady}>
                 <FileText className="h-4 w-4" />
                 Review Work Ready
                 <ArrowRight className="h-4 w-4" />
@@ -3234,12 +3234,13 @@ function FirstCyclePanel({
                 size="sm"
                 variant="outline"
                 aria-label={`Download ${DEARME_FIRST_CYCLE_START_RECEIPT_FILENAME}`}
+                className="min-h-11"
                 onClick={downloadFirstCycleStartReceipt}
               >
                 <Download className="h-4 w-4" />
                 Download receipt
               </Button>
-              <Button type="button" size="sm" onClick={() => onOpenPreview(preview.sitePreview.handle)}>
+              <Button type="button" size="sm" className="min-h-11" onClick={() => onOpenPreview(preview.sitePreview.handle)}>
                 <ExternalLink className="h-4 w-4" />
                 Open proof page
                 <ArrowRight className="h-4 w-4" />
@@ -3269,7 +3270,7 @@ function FirstCyclePanel({
           ) : null}
           <Textarea
             aria-label="First cycle start receipt note"
-            className="mt-4 min-h-40 resize-none bg-background/85 font-mono text-xs leading-relaxed"
+            className="mt-4 min-h-40 min-w-0 max-w-full resize-none bg-background/85 font-mono text-xs leading-relaxed [field-sizing:fixed]"
             readOnly
             value={firstCycleStartReceiptText}
           />
@@ -3449,7 +3450,7 @@ function DearMePublicFirstRunLanding({
               />
               <Button
                 type="submit"
-                className="h-auto min-h-10 w-full min-w-0 whitespace-normal sm:w-auto sm:max-w-xs"
+                className="h-auto min-h-11 w-full min-w-0 whitespace-normal sm:w-auto sm:max-w-xs"
                 disabled={isPending}
               >
                 {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -3478,7 +3479,7 @@ function DearMePublicFirstRunLanding({
             <Button
               type="button"
               variant="outline"
-              className="h-auto min-h-10 w-full min-w-0 whitespace-normal sm:w-auto sm:max-w-sm"
+              className="h-auto min-h-11 w-full min-w-0 whitespace-normal sm:w-auto sm:max-w-sm"
               onClick={onWatchLive}
             >
               <Telescope className="h-4 w-4" />
@@ -3518,7 +3519,7 @@ function DearMePublicFirstRunLanding({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-auto min-h-9 w-full min-w-0 whitespace-normal bg-background/80 sm:w-auto"
+                className="h-auto min-h-11 w-full min-w-0 whitespace-normal bg-background/80 sm:w-auto"
                 onClick={onOpenLaunchProof}
               >
                 Review launch details
@@ -7221,12 +7222,12 @@ function TeamOperatingPolicyPanel({
           <Badge variant={emptyWeekRecoveryVariant}>{emptyWeekRecoveryStatus}</Badge>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-4 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4">
           {emptyWeekRecoveryItems.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.key} className="rounded-md border border-border bg-background/80 p-3">
-                <div className="flex items-center justify-between gap-3">
+              <div key={item.key} className="min-w-0 rounded-md border border-border bg-background/80 p-3">
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-2">
                     <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
@@ -7447,12 +7448,12 @@ function TeamOperatingPolicyPanel({
           <Badge variant={autonomyContractVariant}>{autonomyContractStatus}</Badge>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-4 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4">
           {autonomyContractItems.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.key} className="rounded-md border border-border bg-background/85 p-3">
-                <div className="flex items-center justify-between gap-3">
+              <div key={item.key} className="min-w-0 rounded-md border border-border bg-background/85 p-3">
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-2">
                     <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
@@ -7467,7 +7468,7 @@ function TeamOperatingPolicyPanel({
 
         <Textarea
           aria-label="Autonomy contract note"
-          className="mt-4 min-h-40 resize-none bg-background/85 font-mono text-xs leading-relaxed"
+          className="mt-4 min-h-40 min-w-0 max-w-full resize-none bg-background/85 font-mono text-xs leading-relaxed [field-sizing:fixed]"
           readOnly
           value={autonomyContractText}
         />
@@ -7715,7 +7716,7 @@ function WorkReadyPanel({
           title="Nothing is ready for review yet"
           description="The active lanes below show what is moving. Add stronger Voice & Memory if the team needs better source material before preparing reviewable work."
           actions={
-            <Button type="button" size="sm" variant="outline" onClick={onOpenVoiceMemory}>
+            <Button type="button" size="sm" variant="outline" className="min-h-11" onClick={onOpenVoiceMemory}>
               <Sparkles className="h-4 w-4" />
               Open Voice & Memory
             </Button>
@@ -8930,12 +8931,12 @@ function OperatingLoopPanel({
           </Badge>
         </div>
 
-        <div className="mt-4 grid gap-3 lg:grid-cols-3">
+        <div className="mt-4 grid min-w-0 gap-3 lg:grid-cols-3">
           {autonomousNextMoveItems.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.key} className="flex min-h-full flex-col rounded-md border border-border bg-muted/20 p-3">
-                <div className="flex items-center justify-between gap-3">
+              <div key={item.key} className="flex min-h-full min-w-0 flex-col rounded-md border border-border bg-muted/20 p-3">
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-2">
                     <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                     <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
@@ -8947,7 +8948,7 @@ function OperatingLoopPanel({
                   type="button"
                   size="sm"
                   variant="outline"
-                  className="mt-3 h-auto min-h-9 w-full min-w-0 whitespace-normal"
+                  className="mt-3 h-auto min-h-11 w-full min-w-0 whitespace-normal"
                   onClick={item.onAction}
                 >
                   {item.actionLabel}
@@ -9042,6 +9043,7 @@ function OperatingLoopPanel({
               type="button"
               size="sm"
               variant="outline"
+              className="min-h-11"
               aria-label={`Download ${DEARME_FEEDBACK_LEARNING_RECEIPT_FILENAME}`}
               onClick={downloadFeedbackLearningReceipt}
             >
@@ -9051,12 +9053,12 @@ function OperatingLoopPanel({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-4 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4">
           {feedbackLearningItems.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.key} className="rounded-md border border-border bg-background/85 p-3">
-                <div className="flex items-center justify-between gap-3">
+              <div key={item.key} className="min-w-0 rounded-md border border-border bg-background/85 p-3">
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-2">
                     <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                     <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
@@ -12283,12 +12285,12 @@ function PaidBetaAccessPanel({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="mt-4 grid min-w-0 gap-3 md:grid-cols-3">
           {paymentPathItems.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.key} className="rounded-md border border-border bg-muted/20 px-3 py-3">
-                <div className="flex items-center justify-between gap-3">
+              <div key={item.key} className="min-w-0 rounded-md border border-border bg-muted/20 px-3 py-3">
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-2">
                     <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <p className="truncate text-sm font-medium text-foreground">{item.label}</p>

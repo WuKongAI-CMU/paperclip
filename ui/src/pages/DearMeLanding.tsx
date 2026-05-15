@@ -61,7 +61,7 @@ export function DearMeLanding() {
             <a href="/about" className="text-sm text-muted-foreground hover:text-foreground">About</a>
             <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
             <a href="/faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</a>
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline" size="sm" className="min-h-11">
               <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
                 Request invite
                 <Mail className="h-4 w-4" />
@@ -104,7 +104,7 @@ export function DearMeLanding() {
                   {error}
                 </p>
               ) : null}
-              <Button type="submit" size="lg" className="w-full sm:w-auto">
+              <Button type="submit" size="lg" className="min-h-11 w-full sm:w-auto">
                 Start my first cycle
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -148,7 +148,7 @@ export function DearMeLanding() {
             <a href="/pricing" className="hover:text-foreground">Pricing</a>
             <a href="/faq" className="hover:text-foreground">FAQ</a>
             <a href="/legal/terms" className="hover:text-foreground">Terms</a><a href="/legal/privacy" className="hover:text-foreground">Privacy</a><a href="/legal/acceptable-use" className="hover:text-foreground">Acceptable Use</a>
-            <Button asChild variant="secondary" size="sm">
+            <Button asChild variant="secondary" size="sm" className="min-h-11">
               <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
                 Request invite
                 <Mail className="h-4 w-4" />
