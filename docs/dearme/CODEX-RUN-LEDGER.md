@@ -7,3 +7,4 @@
 2026-05-15 05:10  DM-SECURITY-HEADERS  5f1bc1bb  PR #6  P0  Helmet security headers merged; CI green; CSP, HSTS, and X-Frame-Options covered by tests.
 2026-05-15 05:31  DM-CORS-PROD  7f25bd3d  PR #7  P0  Production CORS policy merged; CI green; DearMe domains, Vercel previews, and dev wildcard covered by tests.
 2026-05-15 05:52  DM-SESSION-COOKIE-HARDEN  85ca60da  PR #8  P0  Session cookie hardening merged; CI green; Better Auth secure, httpOnly, and SameSite=Lax attributes covered by tests.
+2026-05-15 06:13  DM-STRIPE-IDEMPOTENCY-STRESS  d27d552f  PR #9  P0  Stripe webhook idempotency stress merged; CI green; concurrent duplicate, out-of-order invoice, and stale signature replay tests covered.
