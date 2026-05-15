@@ -43,10 +43,14 @@ export function deriveAuthCookiePrefix(instanceId = resolvePaperclipInstanceId()
   return `paperclip-${scopedInstanceId}`;
 }
 
-export function buildBetterAuthAdvancedOptions(input: { disableSecureCookies: boolean }) {
+export function buildBetterAuthAdvancedOptions(input: { secureCookies: boolean }) {
   return {
     cookiePrefix: deriveAuthCookiePrefix(),
-    ...(input.disableSecureCookies ? { useSecureCookies: false } : {}),
+    useSecureCookies: input.secureCookies,
+    defaultCookieAttributes: {
+      httpOnly: true,
+      sameSite: "lax" as const,
+    },
   };
 }
 
@@ -149,7 +153,7 @@ export function createBetterAuthInstance(db: Db, config: Config, trustedOrigins:
     );
   }
   const publicUrl = process.env.PAPERCLIP_PUBLIC_URL ?? baseUrl;
-  const isHttpOnly = publicUrl ? publicUrl.startsWith("http://") : false;
+  const usesInsecureHttp = publicUrl ? publicUrl.startsWith("http://") : false;
   const socialProviders = buildBetterAuthSocialProvidersFromEnv(process.env, {
     logGoogleOAuthDisabled: true,
   });
@@ -173,7 +177,7 @@ export function createBetterAuthInstance(db: Db, config: Config, trustedOrigins:
       disableSignUp: config.authDisableSignUp,
     },
     ...(socialProviders ? { socialProviders } : {}),
-    advanced: buildBetterAuthAdvancedOptions({ disableSecureCookies: isHttpOnly }),
+    advanced: buildBetterAuthAdvancedOptions({ secureCookies: !usesInsecureHttp }),
   };
 
   return betterAuth(authConfig);
