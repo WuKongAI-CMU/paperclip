@@ -21,3 +21,4 @@
 2026-05-15 09:40  DM-PROD-SMOKE  173b54c0  PR #20  P1  Deploy preview prod-smoke script merged; CI green; landing, health, readiness, sample checkout, and voice scoring checks run when preview URL and API key are configured.
 2026-05-15 11:11  DM-MOBILE-QA  c88c822c  PR #21  P1  Mobile QA Playwright coverage merged; CI green; landing, onboarding, first-cycle receipt, and workbench checked at iPhone SE, iPhone 14, and iPad widths for horizontal overflow and 44px CTAs.
 2026-05-15 12:05  DM-BUNDLE-AUDIT  84898f78  PR #22  P1  UI bundle audit merged; CI green; build reports initial gzip size and gates at 200 kB, with route/provider startup split reducing initial DearMe UI payload to 173.7 kB gzip.
+2026-05-15 12:43  DM-LCP-AUDIT  484166a7  PR #23  P1  Lighthouse landing audit merged; CI green; /landing now gates LCP under 2.5s, CLS under 0.1, and scripted INP under 200ms from a built local preview.
