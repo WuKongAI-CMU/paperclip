@@ -8,6 +8,7 @@ import type { StorageService } from "./storage/types.js";
 import { httpLogger, errorHandler } from "./middleware/index.js";
 import { actorMiddleware } from "./middleware/auth.js";
 import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
+import { dearMeCors } from "./middleware/dearme-cors.js";
 import { installDearMeRateLimits } from "./middleware/dearme-rate-limit.js";
 import { securityHeaders } from "./middleware/security-headers.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
@@ -151,6 +152,9 @@ export async function createApp(
 ) {
   const app = express();
   app.set("trust proxy", 1);
+  app.use(dearMeCors({
+    production: opts.deploymentMode === "authenticated" && opts.deploymentExposure === "public",
+  }));
   app.use(securityHeaders({ viteDev: opts.uiMode === "vite-dev" }));
 
   app.use(express.json({
