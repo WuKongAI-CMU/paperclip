@@ -1,0 +1,48 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "deny": [
+      "Bash(rm:-rf /*)",
+      "Bash(rm:-rf /)",
+      "Bash(sudo:*)",
+      "Bash(git push:*)",
+      "Bash(git remote add:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(*curl*api.github.com*)",
+      "Bash(*curl*api.openai.com*)",
+      "Bash(*curl*api.anthropic.com*)",
+      "Bash(*curl*bedrock-runtime.*amazonaws.com*)",
+      "Bash(*wget*api.openai.com*)",
+      "Bash(*wget*api.anthropic.com*)",
+      "Bash(*wget*bedrock-runtime.*amazonaws.com*)",
+      "Bash(npm publish:*)",
+      "Bash(yarn publish:*)",
+      "Bash(pip install:*)"
+    ],
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "TodoWrite",
+      "NotebookEdit",
+      "mcp__dearme_voice__*",
+      "mcp__dearme_workbench__*",
+      "mcp__dearme_memory__*",
+      "mcp__dearme_research__*"
+    ]
+  },
+  "sandbox": {
+    "enabled": true
+  },
+  "env": {
+    "DEARME_PROXY_URL": "https://api.dearme.app",
+    "DEARME_USER_HANDLE": "anonymous"
+  },
+  "_dearme": {
+    "lockdown_version": 1,
+    "generated_at": "2026-05-15T03:21:09.028Z",
+    "purpose": "DearMe OpenClaw lockdown — DO NOT EDIT. Regenerated per user."
+  }
+}
