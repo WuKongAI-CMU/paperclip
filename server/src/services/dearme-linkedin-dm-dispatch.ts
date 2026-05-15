@@ -1,5 +1,9 @@
 import { resolveDearMeChannelCredential } from "./dearme-channel-credential.js";
 import type { ChannelDispatch } from "./dearme-outbound-tool-wrapper.js";
+import type {
+  DearMeLinkedInThrottleService,
+  DearMeLinkedInThrottleState,
+} from "./dearme-linkedin-throttle.js";
 
 const LINKEDIN_DM_USER_AGENT = "DearMe/0.1";
 const LINKEDIN_DM_BODY_LIMIT = 1000;
@@ -30,6 +34,7 @@ export interface DearMeLinkedInDmDispatchConfig {
   fetch?: FetchLike;
   now?: () => Date;
   resolveCredential?: (encryptedCredential: string) => Promise<string>;
+  throttle?: DearMeLinkedInThrottleService;
 }
 
 type DearMeLinkedInProvider = "linkedin_partner" | "hootsuite";
@@ -78,6 +83,17 @@ function textLength(value: string) {
 
 function error(message: string): Awaited<ReturnType<ChannelDispatch>> {
   return { kind: "errored", error: message };
+}
+
+function throttleError(state: DearMeLinkedInThrottleState): Awaited<ReturnType<ChannelDispatch>> {
+  return {
+    kind: "errored",
+    error: [
+      "LinkedIn outreach rate limit reached for today.",
+      `Daily cap: ${state.dmsSentToday}/${state.dailyCap}.`,
+      `Weekly cap: ${state.dmsSentThisWeek}/${state.weeklyCap}.`,
+    ].join(" "),
+  };
 }
 
 function authError(reason: string): Awaited<ReturnType<ChannelDispatch>> {
@@ -234,6 +250,7 @@ export function createDearMeLinkedInDmDispatch(
     config.fetch ?? ((url, init) => fetch(url, init as RequestInit));
   const now = config.now ?? (() => new Date());
   const resolveCredential = config.resolveCredential ?? resolveDearMeLinkedInDmCredential;
+  const throttle = config.throttle;
 
   return async (input) => {
     if (input.toolName !== "send_linkedin_dm") {
@@ -245,6 +262,11 @@ export function createDearMeLinkedInDmDispatch(
 
     const messagesUrl = normalizeMessagesUrl(config.messagesUrl);
     if (!messagesUrl.ok) return error(messagesUrl.error);
+
+    if (throttle) {
+      const throttleState = await throttle.getThrottleState(input.dispatchContext.companyId);
+      if (throttleState.status !== "ok") return throttleError(throttleState);
+    }
 
     let plaintextCredential: string;
     try {
@@ -291,6 +313,8 @@ export function createDearMeLinkedInDmDispatch(
     if (!conversationUrn || !messageUrn) {
       return error("linkedin-dm-returned-incomplete-data");
     }
+
+    await throttle?.recordDispatch(input.dispatchContext.companyId);
 
     return {
       kind: "delivered",

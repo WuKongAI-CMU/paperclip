@@ -59,6 +59,11 @@ export {
   type DearMeCostCapKind,
   type NewDearMeCostCap,
 } from "./dearme-cost-caps.js";
+export {
+  dearmeLinkedinThrottle,
+  type DearMeLinkedinThrottle,
+  type NewDearMeLinkedinThrottle,
+} from "./dearme-linkedin-throttle.js";
 export { issueWorkProducts } from "./issue_work_products.js";
 export { labels } from "./labels.js";
 export { issueLabels } from "./issue_labels.js";
