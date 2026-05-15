@@ -4,7 +4,7 @@ import { ArrowRight, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { capture } from "@/lib/analytics";
-import { useNavigate } from "@/lib/router";
+import { useNavigate } from "react-router-dom";
 import {
   DearMeEvidenceGrid,
   DearMeFocusSurface,

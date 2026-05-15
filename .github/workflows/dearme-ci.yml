@@ -48,6 +48,9 @@ jobs:
       - name: Guard DearMe Bedrock SDK ban
         run: pnpm dearme:bedrock-guard
 
+      - name: Test DearMe Lighthouse audit
+        run: pnpm test:dearme-lcp-audit
+
       - name: Typecheck packages
         shell: bash
         run: |
@@ -225,3 +228,50 @@ jobs:
         with:
           name: dearme-prod-smoke-output
           path: dearme-prod-smoke.json
+
+  lcp-audit:
+    name: DearMe Lighthouse landing audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build DearMe UI
+        run: pnpm --filter @paperclipai/ui build
+
+      - name: Run Lighthouse landing audit
+        run: pnpm dearme:lcp-audit -- --output dearme-lcp-audit.json
+
+      - name: Upload Lighthouse output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dearme-lcp-audit-output
+          path: dearme-lcp-audit.json

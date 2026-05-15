@@ -7,12 +7,6 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DearMeLanding } from "./DearMeLanding";
 
-vi.mock("@/context/CompanyContext", () => ({
-  useCompany: () => ({
-    selectedCompany: null,
-  }),
-}));
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
