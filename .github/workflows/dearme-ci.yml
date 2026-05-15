@@ -45,6 +45,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Guard DearMe Bedrock SDK ban
+        run: pnpm dearme:bedrock-guard
+
       - name: Typecheck packages
         shell: bash
         run: |

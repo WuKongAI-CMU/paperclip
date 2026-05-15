@@ -35,6 +35,7 @@
     "release:rollback": "./scripts/rollback-latest.sh",
     "release:bootstrap-package": "node scripts/bootstrap-npm-package.mjs",
     "check:tokens": "node scripts/check-forbidden-tokens.mjs",
+    "dearme:bedrock-guard": "node scripts/check-dearme-bedrock-guard.mjs",
     "dearme:worktrees": "node scripts/dearme-worktree-status.mjs",
     "test:dearme-worktrees": "node --test scripts/dearme-worktree-status.test.mjs",
     "dearme:provider-smoke": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-provider-smoke.ts",
