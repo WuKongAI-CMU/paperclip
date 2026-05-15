@@ -1,10 +1,14 @@
+# Summary
+
+-
+
 ## Thinking Path
 
 <!--
   Required. Trace your reasoning from the top of the project down to this
   specific change. Start with what Paperclip is, then narrow through the
   subsystem, the problem, and why this PR exists. Use blockquote style.
-  Aim for 5–8 steps. See CONTRIBUTING.md for full examples.
+  Aim for 5-8 steps. See CONTRIBUTING.md for full examples.
 -->
 
 > - Paperclip orchestrates AI agents for zero-human companies
@@ -29,6 +33,21 @@
 
 -
 
+## Tests / Typecheck
+
+- [ ] Ran the relevant typecheck and test commands, or explained why they were not run.
+
+## Doctrine Compliance
+
+- [ ] No Bedrock or LLM SDK was added.
+- [ ] No substrate, adapter, provider, Paperclip, or raw control-plane language was introduced into customer-facing surfaces.
+- [ ] Database migrations, if any, are additive only.
+- [ ] No new packages were added.
+
+## Relevant Docs
+
+- [ ] Linked or referenced the relevant docs, such as `docs/AGENT_RUN_COMPANY_OPERATING_CONTRACT.md`, `docs/dearme/README.md`, or issue-specific planning docs.
+
 ## Risks
 
 <!--
@@ -38,19 +57,19 @@
 
 -
 
-> For core feature work, check [`ROADMAP.md`](ROADMAP.md) first and discuss it in `#dev` before opening the PR. Feature PRs that overlap with planned core work may need to be redirected — check the roadmap first. See `CONTRIBUTING.md`.
+> For core feature work, check [`ROADMAP.md`](ROADMAP.md) first and discuss it in `#dev` before opening the PR. Feature PRs that overlap with planned core work may need to be redirected - check the roadmap first. See `CONTRIBUTING.md`.
 
 ## Model Used
 
 <!--
   Required. Specify which AI model was used to produce or assist with
-  this change. Be as descriptive as possible — include:
-    • Provider and model name (e.g., Claude, GPT, Gemini, Codex)
-    • Exact model ID or version (e.g., claude-opus-4-6, gpt-4-turbo-2024-04-09)
-    • Context window size if relevant (e.g., 1M context)
-    • Reasoning/thinking mode if applicable (e.g., extended thinking, chain-of-thought)
-    • Any other relevant capability details (e.g., tool use, code execution)
-  If no AI model was used, write "None — human-authored".
+  this change. Be as descriptive as possible - include:
+    * Provider and model name (e.g., Claude, GPT, Gemini, Codex)
+    * Exact model ID or version (e.g., claude-opus-4-6, gpt-4-turbo-2024-04-09)
+    * Context window size if relevant (e.g., 1M context)
+    * Reasoning/thinking mode if applicable (e.g., extended thinking, chain-of-thought)
+    * Any other relevant capability details (e.g., tool use, code execution)
+  If no AI model was used, write "None - human-authored".
 -->
 
 -
