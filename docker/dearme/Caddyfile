@@ -1,0 +1,9 @@
+{
+	auto_https disable_redirects
+}
+
+dearme.local {
+	tls internal
+
+	reverse_proxy dearme-server:3000
+}

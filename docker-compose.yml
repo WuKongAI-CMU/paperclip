@@ -1,0 +1,86 @@
+services:
+  dearme-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: dearme
+      POSTGRES_PASSWORD: dearme
+      POSTGRES_DB: dearme
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dearme -d dearme"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - dearme-postgres-data:/var/lib/postgresql/data
+
+  dearme-migrate:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    image: dearme-server:local
+    depends_on:
+      dearme-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://dearme:dearme@dearme-postgres:5432/dearme
+    command:
+      - node
+      - -e
+      - |
+        const db = await import("@paperclipai/db");
+        const url = process.env.DATABASE_URL;
+        if (!url) throw new Error("DATABASE_URL is required");
+        const before = await db.inspectMigrations(url);
+        if (before.status !== "upToDate") await db.applyPendingMigrations(url);
+        const after = await db.inspectMigrations(url);
+        if (after.status !== "upToDate") throw new Error("Migrations incomplete: " + after.pendingMigrations.join(", "));
+        console.log("DearMe migrations ready");
+    restart: "no"
+
+  dearme-server:
+    image: dearme-server:local
+    depends_on:
+      dearme-postgres:
+        condition: service_healthy
+      dearme-migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://dearme:dearme@dearme-postgres:5432/dearme
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-dearme-local-prod-simulation-secret}
+      HOST: 0.0.0.0
+      PORT: "3000"
+      SERVE_UI: "true"
+      PAPERCLIP_HOME: /paperclip
+      PAPERCLIP_PUBLIC_URL: https://dearme.local
+      PAPERCLIP_DEPLOYMENT_MODE: authenticated
+      PAPERCLIP_DEPLOYMENT_EXPOSURE: private
+      PAPERCLIP_MIGRATION_PROMPT: never
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    volumes:
+      - dearme-server-data:/paperclip
+
+  dearme-caddy:
+    image: caddy:2-alpine
+    depends_on:
+      dearme-server:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/dearme/Caddyfile:/etc/caddy/Caddyfile:ro
+      - dearme-caddy-data:/data
+      - dearme-caddy-config:/config
+
+volumes:
+  dearme-postgres-data:
+  dearme-server-data:
+  dearme-caddy-data:
+  dearme-caddy-config:
