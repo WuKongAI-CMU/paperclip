@@ -139,6 +139,7 @@ export function DearMeLanding() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <span>$X/month private beta — invite request only.</span>
+            <a href="/legal/terms" className="hover:text-foreground">Terms</a><a href="/legal/privacy" className="hover:text-foreground">Privacy</a><a href="/legal/acceptable-use" className="hover:text-foreground">Acceptable Use</a>
             <Button asChild variant="secondary" size="sm">
               <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
                 Request invite

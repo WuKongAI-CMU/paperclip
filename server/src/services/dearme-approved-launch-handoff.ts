@@ -32,6 +32,7 @@ import {
   type DearMeMetaCampaignDispatchConfig,
 } from "./dearme-meta-campaign-dispatch.js";
 import { createDearMeSendEmailDispatch } from "./dearme-send-email-dispatch.js";
+import { dearMeEmailSuppressService } from "./dearme-email-suppress.js";
 import { createDearMeXPostDispatch } from "./dearme-x-post-dispatch.js";
 import { dearMeApprovalResolverService } from "./dearme-approval-resolver.js";
 import { dearMeChannelConnectionsService } from "./dearme-channel-connections.js";
@@ -208,7 +209,10 @@ export function defaultDearMeApprovedLaunchHandoffService(
   const defaultMetaCampaignDispatch = createDearMeMetaCampaignDispatch(
     dearMeMetaCampaignDispatchConfig ?? {},
   );
-  const defaultSendEmailDispatch = createDearMeSendEmailDispatch();
+  const emailSuppress = dearMeEmailSuppressService(db);
+  const defaultSendEmailDispatch = createDearMeSendEmailDispatch({
+    isSuppressed: emailSuppress.isSuppressed,
+  });
   const defaultXPostDispatch = createDearMeXPostDispatch();
   const voiceGate = dearMeVoiceGateService({
     profileStore: options.voiceProfileStore ?? createDbDearMeVoiceProfileStore(db),

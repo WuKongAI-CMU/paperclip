@@ -78,6 +78,13 @@ export {
   type DearMePausedBy,
   type NewDearMePause,
 } from "./dearme-pauses.js";
+export {
+  dearmeEmailSuppress,
+  DEARME_EMAIL_SUPPRESS_REASONS,
+  type DearMeEmailSuppress,
+  type DearMeEmailSuppressReason,
+  type NewDearMeEmailSuppress,
+} from "./dearme-email-suppress.js";
 export { issueWorkProducts } from "./issue_work_products.js";
 export { labels } from "./labels.js";
 export { issueLabels } from "./issue_labels.js";

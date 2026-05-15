@@ -7,6 +7,9 @@ import { Dashboard } from "./pages/Dashboard";
 import { DashboardLive } from "./pages/DashboardLive";
 import { DearMeLanding } from "./pages/DearMeLanding";
 import { DearMeOnboarding } from "./pages/DearMeOnboarding";
+import { Terms } from "./pages/legal/Terms";
+import { Privacy } from "./pages/legal/Privacy";
+import { AcceptableUse } from "./pages/legal/AcceptableUse";
 import { Companies } from "./pages/Companies";
 import { Agents } from "./pages/Agents";
 import { AgentDetail } from "./pages/AgentDetail";
@@ -269,6 +272,9 @@ export function App() {
         <Route path="cli-auth/:id" element={<CliAuthPage />} />
         <Route path="invite/:token" element={<InviteLandingPage />} />
         <Route path="landing" element={<DearMeLanding />} />
+        <Route path="legal/terms" element={<Terms />} />
+        <Route path="legal/privacy" element={<Privacy />} />
+        <Route path="legal/acceptable-use" element={<AcceptableUse />} />
         <Route path="tests/perf/long-thread" element={<IssueChatLongThreadPerf />} />
 
         <Route element={<CloudAccessGate publicRootElement={<DearMeLanding />} />}>

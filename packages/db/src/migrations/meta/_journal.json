@@ -582,6 +582,13 @@
       "when": 1779062400000,
       "tag": "0082_dearme_pauses",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1779148800000,
+      "tag": "0083_dearme_email_suppress",
+      "breakpoints": true
     }
   ]
 }
