@@ -348,6 +348,9 @@ Plus governance:
 - **`LITTLEBIRD-COMPETITOR-AUDIT.md`** — read-only competitor calibration;
   records why no code absorption is possible/appropriate and what UX
   patterns DearMe already covers.
+- **`SCALE-LAUNCH-AND-REVENUE-ARCHITECTURE.md`** — canonical capability
+  matrix mapping every scale/revenue need to *reuse (donor or third-party)*
+  or *bounded build*. ~15 net-new `dm-*` tickets, mostly thin R2 wrappers.
 
 ### Reference / research (read on demand, not by default)
 
