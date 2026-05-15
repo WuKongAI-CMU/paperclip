@@ -81,6 +81,7 @@ import {
   downloadDearMeOwnerProofHandoffReceipt,
   downloadDearMeReceipt,
 } from "../lib/dearme-receipt-download";
+import { capture } from "../lib/analytics";
 import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
 import {
@@ -12573,6 +12574,7 @@ export function DearMeOnboarding() {
       setActionError(null);
       writeDearMeFirstCyclePreview(nextPreview);
       if (selectedCompanyId && input.startPrivateWork) {
+        capture("first_cycle_started");
         queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(selectedCompanyId) });
         queryClient.invalidateQueries({ queryKey: queryKeys.dearme.outputs(selectedCompanyId) });
         queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(selectedCompanyId) });
