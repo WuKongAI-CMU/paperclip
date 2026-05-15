@@ -16,3 +16,4 @@
 2026-05-15 08:02  DM-PRICING-PAGE  9287215e  PR #15  P0  Pricing page merged; CI green; /pricing shows the $29/mo Beta plan, three-day trial, and invite-only request-access CTA.
 2026-05-15 08:18  DM-ABOUT-FAQ  1459813f  PR #16  P0  About and FAQ pages merged; CI green; /about tells the founder story and /faq covers 12 beta, legal, voice-gate, cost-cap, and cancellation answers.
 2026-05-15 08:40  DM-VOICE-SAMPLE-UI  fa620bc4  PR #17  P0  Voice sample UI merged; CI green; first-cycle Voice & Memory captures 1-10 writing samples or a source link as voice_sample memory updates with tests.
+2026-05-15 09:04  DM-ONBOARDING-BUGBASH  5ea4a245  PR #18  P0  Onboarding bugbash merged; CI green; headless Playwright covers landing-to-first-cycle flow with console, 4xx/5xx, and customer-language leak guards.
