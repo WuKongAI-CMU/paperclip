@@ -42,6 +42,8 @@
     "test:dearme-worktrees": "node --test scripts/dearme-worktree-status.test.mjs",
     "dearme:provider-smoke": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-provider-smoke.ts",
     "test:dearme-provider-smoke": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-provider-smoke.test.ts",
+    "dearme:prod-smoke": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-prod-smoke.ts",
+    "test:dearme-prod-smoke": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-prod-smoke.test.ts",
     "dearme:prod-ready": "tsx scripts/dearme-prod-ready.ts",
     "dearme:next-proof": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-next-proof.ts",
     "test:dearme-next-proof": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-next-proof.test.ts",

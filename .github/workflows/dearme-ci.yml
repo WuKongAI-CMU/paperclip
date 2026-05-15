@@ -169,3 +169,59 @@ jobs:
         with:
           name: dearme-prod-ready-output
           path: dearme-prod-ready.json
+
+  prod-smoke-preview:
+    name: DearMe prod smoke preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run deploy preview smoke when configured
+        shell: bash
+        env:
+          DEARME_PROD_SMOKE_URL: ${{ vars.DEARME_PROD_SMOKE_URL }}
+          DEARME_PROD_SMOKE_API_KEY: ${{ secrets.DEARME_PROD_SMOKE_API_KEY }}
+          DEARME_PROD_SMOKE_VOICE_FINGERPRINT_ID: ${{ vars.DEARME_PROD_SMOKE_VOICE_FINGERPRINT_ID }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DEARME_PROD_SMOKE_URL:-}" ] || [ -z "${DEARME_PROD_SMOKE_API_KEY:-}" ]; then
+            printf '%s\n' '{"skipped":true,"reason":"DEARME_PROD_SMOKE_URL and DEARME_PROD_SMOKE_API_KEY are not configured"}' | tee dearme-prod-smoke.json
+            exit 0
+          fi
+
+          pnpm dearme:prod-smoke -- --json | tee dearme-prod-smoke.json
+
+      - name: Upload prod smoke output
+        uses: actions/upload-artifact@v4
+        with:
+          name: dearme-prod-smoke-output
+          path: dearme-prod-smoke.json
