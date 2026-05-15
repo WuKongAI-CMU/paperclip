@@ -45,6 +45,7 @@ import {
   DearMeStripeCheckoutError,
 } from "../services/dearme-stripe-checkout.js";
 import { handleInboundWebhook as handleDearMeSupportInboundWebhook } from "../services/dearme-support.js";
+import { dearMePublicFeedService } from "../services/dearme-public-feed.js";
 import {
   getDearMeSseBus,
   type DearMeSseEvent,
@@ -120,6 +121,9 @@ const dearMeGdprExportQuerySchema = z.object({
 const dearMeGdprDeleteRequestSchema = z.object({
   companyId: z.string().trim().min(1),
   confirmation: z.literal("DELETE-MY-DATA"),
+});
+const dearMePublicFeedOptRequestSchema = z.object({
+  companyId: z.string().trim().uuid(),
 });
 const CHIEF_OF_STAFF_INTENT_LABELS: Record<DearMeChiefOfStaffMessageIntent, string> = {
   plan_next: "Plan next moves",
@@ -368,6 +372,7 @@ export function dearmeRoutes(
   });
   const paidBetaAccess = dearmePaidBetaAccessService(db);
   const stripeCheckout = dearMeStripeCheckoutService(db, { paidBetaAccess });
+  const publicFeed = dearMePublicFeedService(db);
   const workbench = dearmeWorkbenchService(db, {
     voiceProfileStore: options.voiceProfileStore,
     voiceSemanticScorer: options.voiceSemanticScorer,
@@ -554,6 +559,34 @@ export function dearmeRoutes(
       assertCompanyAccess(req, companyId);
       assertBoard(req);
       res.status(200).json(await gdpr.deleteCompanyData(companyId));
+    },
+  );
+
+  router.get(
+    "/public-feed",
+    async (req, res) => {
+      const limit = typeof req.query.limit === "string" ? Number(req.query.limit) : undefined;
+      const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+      res.setHeader("Cache-Control", "public, max-age=60");
+      res.json(await publicFeed.listRecentItems({ limit, cursor }));
+    },
+  );
+
+  router.post(
+    "/public-feed/opt-in",
+    validate(dearMePublicFeedOptRequestSchema),
+    async (req, res) => {
+      assertCompanyAccess(req, req.body.companyId);
+      res.status(200).json(await publicFeed.optIn(req.body.companyId));
+    },
+  );
+
+  router.post(
+    "/public-feed/opt-out",
+    validate(dearMePublicFeedOptRequestSchema),
+    async (req, res) => {
+      assertCompanyAccess(req, req.body.companyId);
+      res.status(200).json(await publicFeed.optOut(req.body.companyId));
     },
   );
 

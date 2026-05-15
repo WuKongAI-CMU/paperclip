@@ -93,6 +93,16 @@ export {
   type NewDearMeReferralAttribution,
   type NewDearMeReferralCode,
 } from "./dearme-referral.js";
+export {
+  dearmePublicFeedItems,
+  dearmePublicFeedOptin,
+  DEARME_PUBLIC_FEED_ITEM_KINDS,
+  type DearMePublicFeedItem,
+  type DearMePublicFeedItemKind,
+  type DearMePublicFeedOptin,
+  type NewDearMePublicFeedItem,
+  type NewDearMePublicFeedOptin,
+} from "./dearme-public-feed.js";
 export { issueWorkProducts } from "./issue_work_products.js";
 export { labels } from "./labels.js";
 export { issueLabels } from "./issue_labels.js";

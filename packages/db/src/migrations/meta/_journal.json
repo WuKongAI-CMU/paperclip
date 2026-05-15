@@ -603,6 +603,13 @@
       "when": 1779321600000,
       "tag": "0085_dearme_gdpr_tombstone",
       "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1779408000000,
+      "tag": "0086_dearme_public_feed",
+      "breakpoints": true
     }
   ]
 }
