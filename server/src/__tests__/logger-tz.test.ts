@@ -1,20 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-/**
- * Regression test for https://github.com/paperclipai/paperclip/issues/2879
- *
- * pino-pretty's `translateTime: "HH:MM:ss"` formats all timestamps in UTC
- * regardless of the process's TZ env var. The `SYS:` prefix instructs
- * pino-pretty to use the local system timezone, so operators in non-UTC
- * zones see correct wall-clock times in their logs.
- *
- * We verify that:
- * 1. The logger module initialises pino-pretty with "SYS:HH:MM:ss".
- * 2. The pino-pretty SYS: prefix resolves to a timezone-sensitive format
- *    string — confirmed via pino-pretty's own asynchronous formatter, which
- *    applies translateTime to a known epoch under different TZ values.
- */
-
 const mockTransport = vi.hoisted(() => vi.fn(() => ({ write: vi.fn() })));
 const mockPino = vi.hoisted(() => {
   const fn = vi.fn(() => ({
@@ -27,6 +12,7 @@ const mockPino = vi.hoisted(() => {
   (fn as any).transport = mockTransport;
   return fn;
 });
+const mockPinoHttp = vi.hoisted(() => vi.fn(() => vi.fn()));
 
 // Mock fs so the module-level mkdirSync call is a no-op in tests.
 vi.mock("node:fs", async (importOriginal) => {
@@ -38,7 +24,7 @@ vi.mock("pino", () => ({
   default: mockPino,
 }));
 vi.mock("pino-http", () => ({
-  pinoHttp: vi.fn(() => vi.fn()),
+  pinoHttp: mockPinoHttp,
 }));
 vi.mock("../config-file.js", () => ({
   readConfigFile: vi.fn(() => null),
@@ -48,50 +34,68 @@ vi.mock("../home-paths.js", () => ({
   resolveDefaultLogsDir: vi.fn(() => "/tmp/paperclip-test-logs"),
 }));
 
-describe("logger translateTime respects TZ environment variable", () => {
+describe("structured logger", () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.clearAllMocks();
   });
 
-  it("configures pino-pretty with SYS:HH:MM:ss so timestamps honour the TZ env var", async () => {
+  it("uses JSON pino/file transports for stdout and server.log", async () => {
     await import("../middleware/logger.js");
+
+    expect(mockPino).toHaveBeenCalledOnce();
+    const pinoOptions = mockPino.mock.calls[0][0] as {
+      redact: { paths: string[]; censor: string };
+    };
+    expect(pinoOptions.redact.paths).toEqual(
+      expect.arrayContaining(["req.headers.authorization", "headers.cookie"]),
+    );
+    expect(pinoOptions.redact.censor).toBe("***REDACTED***");
 
     expect(mockTransport).toHaveBeenCalledOnce();
     const { targets } = mockTransport.mock.calls[0][0] as {
-      targets: Array<{ options: Record<string, unknown> }>;
+      targets: Array<{ target: string; options: Record<string, unknown> }>;
     };
+    expect(targets).toHaveLength(2);
     for (const target of targets) {
-      expect(target.options.translateTime).toBe("SYS:HH:MM:ss");
+      expect(target.target).toBe("pino/file");
+      expect(target.target).not.toBe("pino-pretty");
     }
+    expect(targets[0]?.options.destination).toBe(1);
+    expect(targets[1]?.options.destination).toBe("/tmp/paperclip-test-logs/server.log");
   });
 
-  it("SYS: prefix produces timezone-sensitive output: UTC epoch formats differently under UTC vs UTC+8", () => {
-    // Verifies the contract that SYS: relies on: formatting the same epoch
-    // with different explicit timezones (mirroring what the process TZ env
-    // var does at the OS level) must yield different results.
-    const EPOCH_MS = 946_684_800_000; // 2000-01-01 00:00:00 UTC
+  it("redacts secret tokens, passwords, authorization, and email addresses in log payloads", async () => {
+    const { LOG_REDACTION_TOKEN, redactLogValue } = await import("../middleware/logger.js");
 
-    const fmtUtc = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "UTC",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    }).format(EPOCH_MS);
+    const redacted = redactLogValue({
+      authorization: "Bearer dm_sk_live_value",
+      nested: {
+        password: "correct horse battery staple",
+        message: "email jane@example.com key re_123456789 token sk_live_abc whsec_def phc_ghi",
+      },
+    });
 
-    const fmtSgt = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Asia/Singapore", // UTC+8
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    }).format(EPOCH_MS);
+    expect(redacted).toEqual({
+      authorization: LOG_REDACTION_TOKEN,
+      nested: {
+        password: LOG_REDACTION_TOKEN,
+        message: `email ${LOG_REDACTION_TOKEN} key ${LOG_REDACTION_TOKEN} token ${LOG_REDACTION_TOKEN} ${LOG_REDACTION_TOKEN} ${LOG_REDACTION_TOKEN}`,
+      },
+    });
+  });
 
-    // UTC midnight = 00:00:00; the same instant in SGT = 08:00:00.
-    // SYS: picks up whichever of these the process TZ is set to — which is
-    // exactly what the fix enables by switching from HH:MM:ss (UTC-only).
-    expect(fmtUtc).toBe("00:00:00");
-    expect(fmtSgt).toBe("08:00:00");
-    expect(fmtUtc).not.toBe(fmtSgt);
+  it("adds a requestId to HTTP log props and honors incoming x-request-id", async () => {
+    await import("../middleware/logger.js");
+
+    expect(mockPinoHttp).toHaveBeenCalledOnce();
+    const opts = mockPinoHttp.mock.calls[0][0] as {
+      genReqId(req: { headers: Record<string, unknown> }): string;
+      customProps(req: { id: string }, res: { statusCode: number }): Record<string, unknown>;
+    };
+    const requestId = opts.genReqId({ headers: { "x-request-id": "req-test-123" } });
+
+    expect(requestId).toBe("req-test-123");
+    expect(opts.customProps({ id: requestId }, { statusCode: 200 })).toEqual({ requestId });
   });
 });
