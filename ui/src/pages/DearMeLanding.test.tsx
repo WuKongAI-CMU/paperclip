@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from "node:fs";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -37,11 +38,21 @@ function setTextareaValue(input: HTMLTextAreaElement, value: string) {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+function installIndexHead() {
+  const html = readFileSync("index.html", "utf8");
+  const headMatch = html.match(/<head>([\s\S]*?)<\/head>/);
+  if (!headMatch) {
+    throw new Error("ui/index.html is missing a <head> section");
+  }
+  document.head.innerHTML = headMatch[1];
+}
+
 describe("DearMeLanding", () => {
   let container: HTMLDivElement;
   let root: Root;
 
   beforeEach(async () => {
+    installIndexHead();
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -68,10 +79,13 @@ describe("DearMeLanding", () => {
   });
 
   afterEach(async () => {
-    await act(async () => {
-      root.unmount();
-    });
-    container.remove();
+    if (root) {
+      await act(async () => {
+        root.unmount();
+      });
+    }
+    container?.remove();
+    document.head.innerHTML = "";
     document.body.innerHTML = "";
     vi.clearAllMocks();
   });
@@ -127,5 +141,15 @@ describe("DearMeLanding", () => {
     expect(renderedText).not.toContain("OpenClaw");
     expect(renderedText).not.toContain("Symphony");
     expect(renderedText).not.toContain("dm_sk_");
+  });
+
+  it("serves canonical and Open Graph metadata from the document head", () => {
+    const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    const ogTitle = document.querySelector<HTMLMetaElement>('meta[property="og:title"]');
+    const ogDescription = document.querySelector<HTMLMetaElement>('meta[property="og:description"]');
+
+    expect(canonical?.href).toBe("https://dearme.app/");
+    expect(ogTitle?.content).toBe("DearMe — your private AI growth team");
+    expect(ogDescription?.content).toContain("DearMe is a private AI growth team for one person.");
   });
 });

@@ -1,0 +1,6 @@
+OG image placeholder for https://dearme.app/og-image.png
+
+Spec:
+- 1200x630 PNG
+- DearMe branding
+- Safe for social previews on Open Graph and Twitter summary_large_image cards
