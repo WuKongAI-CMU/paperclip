@@ -38,6 +38,7 @@ import {
 import type { VoiceGateArtifactKind } from "@paperclipai/dearme-ai-proxy";
 import type { DearMeApprovalResolverService } from "./dearme-approval-resolver.js";
 import type { DearMeChannelConnectionsService } from "./dearme-channel-connections.js";
+import { dearMeCostCapsService, type DearMeCostCapsService } from "./dearme-cost-caps.js";
 import type { DearMeSseBus } from "./dearme-sse-bus.js";
 import type { DearMeVoiceGateService } from "./dearme-voice-gate.js";
 import type { DearMeWorkLoopService } from "./dearme-work-loop.js";
@@ -85,6 +86,8 @@ export interface DearMeOutboundToolDeps {
   channelConnections: DearMeChannelConnectionsService;
   workLoop: DearMeWorkLoopService;
   sseBus: DearMeSseBus;
+  /** Per-customer outbound spend caps. Defaults to the Drizzle-backed service. */
+  costCaps?: DearMeCostCapsService;
   /** Per-channel dispatchers; missing entries -> tool returns errored. */
   channelDispatch: Partial<Record<DearMeOutboundToolName, ChannelDispatch>>;
 }
@@ -144,6 +147,12 @@ export type CallOutboundOutcome =
     }
   | { kind: "rejected"; reason: string; gate: string }
   | { kind: "errored"; error: string };
+
+const USD_MICROS = 1_000_000;
+
+function usdToMicros(usd: number) {
+  return Number.isFinite(usd) && usd > 0 ? Math.round(usd * USD_MICROS) : 0;
+}
 
 function buildChannelOAuthStartUrl(input: CallOutboundInput, channel: string) {
   const params = new URLSearchParams({
@@ -236,6 +245,7 @@ function sanitizeReauthReason(reason: string) {
 }
 
 export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
+  const costCaps = deps.costCaps ?? dearMeCostCapsService(deps.db);
   return {
     async callOutbound(input: CallOutboundInput): Promise<CallOutboundOutcome> {
       const binding = DEARME_OUTBOUND_TOOL_BINDINGS[input.toolName];
@@ -248,6 +258,23 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
         agentId: input.agentId,
         openclawSessionId: input.openclawSessionId,
       };
+
+      const costGate = await costCaps.enforceCap(input.companyId, usdToMicros(input.estimatedUsd), {
+        dailyCapMicros: usdToMicros(input.config.dailyUsdCap),
+      });
+      if (!costGate.allowed) {
+        await deps.workLoop.transition({
+          companyId: input.companyId,
+          issueId: input.issueId,
+          from: "gate",
+          to: "review",
+          role: input.toolName,
+          reason: "cost_cap_exceeded",
+          openclawSessionId: input.openclawSessionId,
+          agentId: input.agentId,
+        });
+        return { kind: "rejected", reason: "cost_cap_exceeded", gate: binding.gate };
+      }
 
       // Step 1 — voice gate (only if tool requires)
       let voiceGateScore: number | null = null;
@@ -400,6 +427,12 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
       // Step 5 — audit
       if (connection) {
         await deps.channelConnections.markUsed(connection.id);
+      }
+
+      const paidMicros = dispatchResult.paid ? usdToMicros(dispatchResult.paidUsd ?? 0) : 0;
+      if (paidMicros > 0) {
+        await costCaps.accrueCost(input.companyId, paidMicros, "daily");
+        await costCaps.accrueCost(input.companyId, paidMicros, "monthly");
       }
 
       if (

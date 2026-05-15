@@ -554,6 +554,13 @@
       "when": 1778483196743,
       "tag": "0078_simple_quicksilver",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1778803200000,
+      "tag": "0079_dearme_cost_caps",
+      "breakpoints": true
     }
   ]
 }

@@ -52,6 +52,13 @@ export {
   type DearMeVoiceProfileSnapshot,
   type NewDearMeVoiceProfile,
 } from "./dearme_voice_profiles.js";
+export {
+  dearmeCostCaps,
+  DEARME_COST_CAP_KINDS,
+  type DearMeCostCap,
+  type DearMeCostCapKind,
+  type NewDearMeCostCap,
+} from "./dearme-cost-caps.js";
 export { issueWorkProducts } from "./issue_work_products.js";
 export { labels } from "./labels.js";
 export { issueLabels } from "./issue_labels.js";
