@@ -1,0 +1,27 @@
+{
+  "name": "@paperclipai/dearme-mcp",
+  "version": "0.1.0",
+  "description": "DearMe MCP servers — exposes the 12-role tool surface (voice gate, runtime files, etc.) as in-process MCP servers consumable by OpenClaw, Claude Desktop, Claude Code, and any MCP-aware client. See docs/dearme/CLAWDBOB-ABSORPTION-PLAN.md (dm-cb-02/dm-cb-03).",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./catalog": "./src/catalog.ts",
+    "./voice": "./src/voice/server.ts",
+    "./runtime-files": "./src/runtime-files/server.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
+  }
+}

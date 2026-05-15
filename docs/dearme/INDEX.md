@@ -341,6 +341,13 @@ Plus governance:
 - **`REBRAND-AND-PROVENANCE.md`** — what's safe to port, what isn't.
 - **`AUTOMATION-RELIABILITY-COST-POLICY.md`** — current cost, approval, retry,
   and stoppability boundary for autonomous work.
+- **`CLAWDBOB-ABSORPTION-PLAN.md`** — bounded code-lift plan from the sibling
+  clawdbob product into DearMe (`dm-cb-*` tickets). dm-cb-01 (OpenClaw
+  lockdown moat), dm-cb-02 (voice MCP), dm-cb-03 (runtime-files MCP) all
+  shipped 2026-05-14.
+- **`LITTLEBIRD-COMPETITOR-AUDIT.md`** — read-only competitor calibration;
+  records why no code absorption is possible/appropriate and what UX
+  patterns DearMe already covers.
 
 ### Reference / research (read on demand, not by default)
 
