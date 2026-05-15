@@ -71,6 +71,13 @@ export {
   type DearMeLinkedinThrottle,
   type NewDearMeLinkedinThrottle,
 } from "./dearme-linkedin-throttle.js";
+export {
+  dearmePauses,
+  DEARME_PAUSED_BY_VALUES,
+  type DearMePause,
+  type DearMePausedBy,
+  type NewDearMePause,
+} from "./dearme-pauses.js";
 export { issueWorkProducts } from "./issue_work_products.js";
 export { labels } from "./labels.js";
 export { issueLabels } from "./issue_labels.js";

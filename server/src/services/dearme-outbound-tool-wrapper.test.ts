@@ -24,12 +24,16 @@ function makeDeps(overrides?: Partial<DearMeOutboundToolDeps>): {
   scoreCalls: Array<unknown>;
   workLoopCalls: Array<unknown>;
   costEventsValues: Array<unknown>;
+  pauseCalls: Array<unknown>;
+  emailCalls: Array<unknown>;
 } {
   const emitted: DearMeSseEvent[] = [];
   const resolveCalls: Array<unknown> = [];
   const scoreCalls: Array<unknown> = [];
   const workLoopCalls: Array<unknown> = [];
   const costEventsValues: Array<unknown> = [];
+  const pauseCalls: Array<unknown> = [];
+  const emailCalls: Array<unknown> = [];
 
   const dbStub = {
     insert: () => ({
@@ -120,6 +124,24 @@ function makeDeps(overrides?: Partial<DearMeOutboundToolDeps>): {
       }),
       enforceCap: async () => ({ allowed: true }),
     },
+    autoPause: {
+      isPaused: async () => false,
+      pause: async (input) => {
+        pauseCalls.push(input);
+        return {
+          companyId: input.companyId,
+          pausedAt: new Date("2026-05-14T00:00:00Z"),
+          pausedBy: input.by,
+          reason: input.reason,
+          resumedAt: null,
+        };
+      },
+      resume: async () => undefined,
+      getActivePause: async () => null,
+    },
+    sendEmail: async (input) => {
+      emailCalls.push(input);
+    },
     channelDispatch: {
       post_x: vi.fn(async () => ({
         kind: "delivered",
@@ -131,7 +153,16 @@ function makeDeps(overrides?: Partial<DearMeOutboundToolDeps>): {
     ...overrides,
   };
 
-  return { deps, emitted, resolveCalls, scoreCalls, workLoopCalls, costEventsValues };
+  return {
+    deps,
+    emitted,
+    resolveCalls,
+    scoreCalls,
+    workLoopCalls,
+    costEventsValues,
+    pauseCalls,
+    emailCalls,
+  };
 }
 
 const baseInput = {
@@ -785,6 +816,138 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
       billingType: "outbound_tool",
       model: "create_meta_campaign",
     });
+  });
+
+  it("hard-blocked dispatch triggers pause and customer email", async () => {
+    const dispatch = vi.fn(async () => ({
+      kind: "delivered" as const,
+      externalId: "should_not_run",
+      paid: false,
+    }));
+    const { deps, pauseCalls, emailCalls, workLoopCalls } = makeDeps({
+      costCaps: {
+        getCostState: async () => ({
+          spent: 0,
+          cap: 25_000_000,
+          soft: 20_000_000,
+          remaining: 25_000_000,
+          status: "ok",
+        }),
+        accrueCost: async () => ({
+          spent: 0,
+          cap: 25_000_000,
+          soft: 20_000_000,
+          remaining: 25_000_000,
+          status: "ok",
+        }),
+        enforceCap: async () => ({
+          allowed: false,
+          reason: "cost_cap_exceeded",
+          kind: "daily",
+          state: {
+            spent: 25_000_000,
+            cap: 25_000_000,
+            soft: 20_000_000,
+            remaining: 0,
+            status: "hard_blocked",
+          },
+        }),
+      },
+      channelDispatch: { post_x: dispatch as ChannelDispatch },
+    });
+    const wrapper = dearMeOutboundToolWrapper(deps);
+
+    const result = await wrapper.callOutbound({
+      ...baseInput,
+      estimatedUsd: 1,
+    });
+
+    expect(result).toEqual({
+      kind: "rejected",
+      reason: "cost_cap_exceeded",
+      gate: "publish",
+    });
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(pauseCalls).toEqual([{
+      companyId: "co_test",
+      by: "hard_cap",
+      reason: "Daily USD cap exceeded.",
+    }]);
+    expect(emailCalls).toHaveLength(1);
+    expect(emailCalls[0]).toMatchObject({
+      companyId: "co_test",
+      userId: "u_test",
+      subject: "DearMe paused work after reaching your spend cap",
+      billingUrl: "/settings/billing",
+      reason: "Daily USD cap exceeded.",
+    });
+    expect((emailCalls[0] as { body: string }).body).toContain("spend cap was reached");
+    expect((emailCalls[0] as { body: string }).body).toContain("/settings/billing");
+    expect((emailCalls[0] as { body: string }).body).not.toMatch(/Bedrock|OpenClaw|Paperclip|tool wrapper/i);
+    expect(workLoopCalls).toHaveLength(1);
+    expect(workLoopCalls[0]).toMatchObject({
+      from: "gate",
+      to: "review",
+      reason: "cost_cap_exceeded",
+    });
+  });
+
+  it("blocks subsequent dispatch when customer is paused by hard cap", async () => {
+    const dispatch = vi.fn(async () => ({
+      kind: "delivered" as const,
+      externalId: "should_not_run",
+      paid: false,
+    }));
+    const enforceCap = vi.fn(async () => ({ allowed: true as const }));
+    const { deps, pauseCalls, emailCalls, scoreCalls, resolveCalls } = makeDeps({
+      autoPause: {
+        isPaused: async () => true,
+        pause: async () => {
+          throw new Error("pause should not be called for already-paused companies");
+        },
+        resume: async () => undefined,
+        getActivePause: async () => ({
+          companyId: "co_test",
+          pausedAt: new Date("2026-05-14T00:00:00Z"),
+          pausedBy: "hard_cap",
+          reason: "Daily USD cap exceeded.",
+          resumedAt: null,
+        }),
+      },
+      costCaps: {
+        getCostState: async () => ({
+          spent: 0,
+          cap: 25_000_000,
+          soft: 20_000_000,
+          remaining: 25_000_000,
+          status: "ok",
+        }),
+        accrueCost: async () => ({
+          spent: 0,
+          cap: 25_000_000,
+          soft: 20_000_000,
+          remaining: 25_000_000,
+          status: "ok",
+        }),
+        enforceCap,
+      },
+      channelDispatch: { post_x: dispatch as ChannelDispatch },
+    });
+    const wrapper = dearMeOutboundToolWrapper(deps);
+
+    const result = await wrapper.callOutbound(baseInput);
+
+    expect(result).toEqual({
+      kind: "rejected",
+      reason: "paused_by_hard_cap",
+      gate: "publish",
+    });
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(enforceCap).not.toHaveBeenCalled();
+    expect(scoreCalls).toHaveLength(0);
+    expect(resolveCalls).toHaveLength(0);
+    expect(pauseCalls).toHaveLength(0);
+    expect(emailCalls).toHaveLength(0);
   });
 
   it("returns errored when dispatcher is missing for the tool", async () => {

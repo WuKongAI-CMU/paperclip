@@ -25,10 +25,16 @@ import {
   type WorkLoopState,
 } from "@paperclipai/dearme-agent-prompts";
 import { logger } from "../middleware/logger.js";
+import {
+  dearMeAutoPauseService,
+  type DearMeAutoPauseService,
+} from "./dearme-auto-pause.js";
 import type { DearMeSseBus } from "./dearme-sse-bus.js";
 
 export interface DearMeWorkLoopService {
   transition(input: TransitionInput): Promise<TransitionResult>;
+  /** Top-of-tick guard: paused companies should not run autonomous work. */
+  shouldSkipTick?(companyId: string): Promise<boolean>;
   /** Read-only: list every legal next state for `from`. Used by chief-of-staff. */
   legalNext(from: WorkLoopState): ReadonlyArray<WorkLoopState>;
 }
@@ -54,8 +60,15 @@ export type TransitionResult =
 export function dearMeWorkLoopService(
   db: Db,
   sseBus: DearMeSseBus,
+  options: { autoPause?: DearMeAutoPauseService } = {},
 ): DearMeWorkLoopService {
+  const autoPause = options.autoPause ?? dearMeAutoPauseService(db);
+
   return {
+    async shouldSkipTick(companyId) {
+      return autoPause.isPaused(companyId);
+    },
+
     async transition(input) {
       if (!canTransitionWorkLoop(input.from, input.to)) {
         logger.warn(
