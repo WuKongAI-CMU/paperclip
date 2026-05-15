@@ -35,7 +35,7 @@ describe("DearMe output regeneration brief", () => {
     expect(brief).toContain("DearMe regeneration brief:");
     expect(brief).toContain("The user asked for changes to Content drafts.");
     expect(brief).toContain("Make the proof more concrete and less generic.");
-    expect(brief).toContain("Proof backed content drafts");
+    expect(brief).toContain("Proof-backed content drafts");
     expect(brief).toContain("Revise the next private draft");
     expect(brief).toContain("Keep the next version private until the user reviews it.");
 
@@ -77,7 +77,8 @@ describe("DearMe output regeneration brief", () => {
     });
 
     expect(brief).toContain("Keep the proof but change the angle.");
-    expect(brief).not.toContain("Previous draft context:");
+    expect(brief).toContain("Previous draft context:");
+    expect(brief).toContain("DearMe services draft");
 
     const serialized = brief!.toLowerCase();
     for (const hiddenTerm of ["provider", "setup_payload", "paperclip", "openclaw", "symphony", "runtime"]) {

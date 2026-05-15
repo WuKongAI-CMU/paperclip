@@ -2,6 +2,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+const repoRoot = path.basename(process.cwd()) === "server"
+  ? path.resolve(process.cwd(), "..")
+  : process.cwd();
+
 const runtimeCopySources = [
   "packages/adapters/acpx-local/src/server/config-schema.ts",
   "packages/adapters/acpx-local/src/server/execute.ts",
@@ -29,7 +33,7 @@ describe("adapter runtime user-facing copy", () => {
     const sources = await Promise.all(
       runtimeCopySources.map(async (sourcePath) => ({
         sourcePath,
-        source: await fs.readFile(path.join(process.cwd(), sourcePath), "utf8"),
+        source: await fs.readFile(path.join(repoRoot, sourcePath), "utf8"),
       })),
     );
 

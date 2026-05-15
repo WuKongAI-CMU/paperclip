@@ -151,6 +151,18 @@ function makeWrapperDeps(overrides?: Partial<DearMeOutboundToolDeps>): DearMeOut
       transition: async () => ({ ok: true }) as const,
       legalNext: () => [],
     },
+    autoPause: {
+      isPaused: async () => false,
+      pause: async () => ({
+        companyId: "co_test",
+        pausedAt: new Date("2026-05-15T00:00:00.000Z"),
+        pausedBy: "hard_cap",
+        reason: "daily_cost_cap_exceeded",
+        resumedAt: null,
+      }),
+      resume: async () => undefined,
+      getActivePause: async () => null,
+    },
     sseBus: {
       emit: () => undefined,
       subscribe: () => () => undefined,

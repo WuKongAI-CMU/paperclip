@@ -134,6 +134,26 @@ jobs:
       - name: Run prod-ready template
         if: steps.prod-ready-script.outputs.exists == 'true'
         shell: bash
+        env:
+          DEARME_STRIPE_SECRET_KEY: sk_test_ci_ready
+          DEARME_STRIPE_WEBHOOK_SECRET: whsec_ci_ready
+          DEARME_STRIPE_PRICE_BETA: price_ci_ready
+          DEARME_VOICE_VOYAGE_API_KEY: voyage-ci-ready
+          DEARME_VOICE_SEMANTIC_SCORER: voyage
+          DEARME_EMAIL_RESEND_API_KEY: re_ci_ready
+          DEARME_LOOPS_API_KEY: loops-ci-ready
+          VITE_POSTHOG_KEY: phc_ci_ready
+          VITE_POSTHOG_HOST: https://us.i.posthog.com
+          DEARME_POSTHOG_KEY: phx_ci_ready
+          DEARME_GOOGLE_OAUTH_CLIENT_ID: google-ci-client-id
+          DEARME_GOOGLE_OAUTH_CLIENT_SECRET: google-ci-client-secret
+          DEARME_PLAIN_API_KEY: plain-ci-ready
+          DEARME_PLAIN_WEBHOOK_SECRET: plain-ci-webhook-ready
+          DATABASE_URL: postgresql://user:pass@example.com:5432/dearme
+          DEARME_PUBLIC_URL: https://dearme.app
+          DEARME_LINKEDIN_DM_MESSAGES_URL: https://linkedin.example.test/messages
+          DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN: urn:li:person:ci
+          DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT: "+15555550123"
         run: pnpm dearme:prod-ready -- --json | tee dearme-prod-ready.json
 
       - name: Record skipped prod-ready template

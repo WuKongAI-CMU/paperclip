@@ -2,6 +2,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+const repoRoot = path.basename(process.cwd()) === "server"
+  ? path.resolve(process.cwd(), "..")
+  : process.cwd();
+
 const skillSnapshotSources = [
   "packages/adapters/acpx-local/src/server/skills.ts",
   "packages/adapters/claude-local/src/server/skills.ts",
@@ -28,7 +32,7 @@ describe("adapter skill user-facing copy", () => {
     const sources = await Promise.all(
       skillSnapshotSources.map(async (sourcePath) => ({
         sourcePath,
-        source: await fs.readFile(path.join(process.cwd(), sourcePath), "utf8"),
+        source: await fs.readFile(path.join(repoRoot, sourcePath), "utf8"),
       })),
     );
 
