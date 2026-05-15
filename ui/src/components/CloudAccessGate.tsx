@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Navigate, Outlet, useLocation } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import { accessApi } from "@/api/access";
@@ -41,7 +42,7 @@ function NoBoardAccessPage() {
   );
 }
 
-export function CloudAccessGate() {
+export function CloudAccessGate({ publicRootElement }: { publicRootElement?: ReactNode }) {
   const location = useLocation();
   const healthQuery = useQuery({
     queryKey: queryKeys.health,
@@ -95,6 +96,10 @@ export function CloudAccessGate() {
 
   if (isAuthenticatedMode && healthQuery.data?.bootstrapStatus === "bootstrap_pending") {
     return <BootstrapPendingPage hasActiveInvite={healthQuery.data.bootstrapInviteActive} />;
+  }
+
+  if (isAuthenticatedMode && !sessionQuery.data && publicRootElement && location.pathname === "/") {
+    return <>{publicRootElement}</>;
   }
 
   if (isAuthenticatedMode && !sessionQuery.data) {
