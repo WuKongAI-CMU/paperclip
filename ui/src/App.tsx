@@ -5,6 +5,7 @@ import { OnboardingWizard } from "./components/OnboardingWizard";
 import { CloudAccessGate } from "./components/CloudAccessGate";
 import { Dashboard } from "./pages/Dashboard";
 import { DashboardLive } from "./pages/DashboardLive";
+import { DearMeLanding } from "./pages/DearMeLanding";
 import { DearMeOnboarding } from "./pages/DearMeOnboarding";
 import { Companies } from "./pages/Companies";
 import { Agents } from "./pages/Agents";
@@ -267,9 +268,10 @@ export function App() {
         <Route path="board-claim/:token" element={<BoardClaimPage />} />
         <Route path="cli-auth/:id" element={<CliAuthPage />} />
         <Route path="invite/:token" element={<InviteLandingPage />} />
+        <Route path="landing" element={<DearMeLanding />} />
         <Route path="tests/perf/long-thread" element={<IssueChatLongThreadPerf />} />
 
-        <Route element={<CloudAccessGate />}>
+        <Route element={<CloudAccessGate publicRootElement={<DearMeLanding />} />}>
           <Route index element={<CompanyRootRedirect />} />
           <Route path="onboarding" element={<OnboardingRoutePage />} />
           <Route path="instance" element={<Navigate to="/instance/settings/general" replace />} />

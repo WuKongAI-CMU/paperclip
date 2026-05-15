@@ -12485,6 +12485,23 @@ export function DearMeOnboarding() {
     });
   }, [location.hash]);
 
+  useEffect(() => {
+    const knownFor = new URLSearchParams(location.search).get("knownFor")?.trim();
+    if (!knownFor) return;
+
+    setFirstCycleIntent((current) => (current.trim() ? current : knownFor));
+    setForm((current) => {
+      if (current.positioning.trim()) return current;
+      return {
+        ...current,
+        positioning: knownFor,
+        goals: current.goals.trim()
+          ? current.goals
+          : `Become known for ${knownFor}\nTurn proof of work into consistent content`,
+      };
+    });
+  }, [location.search]);
+
   const currentSignature = useMemo(
     () => createDearMeBrandBlueprintSignature(form, selectedCompany?.name),
     [form, selectedCompany?.name],
