@@ -9,6 +9,7 @@ import {
   type DearMeHostedPaymentReceiptRecordResult,
   type DearMeStripeCheckoutCompletedEvent,
 } from "./dearme-paid-beta-access.js";
+import { sendLifecycleEvent } from "./dearme-lifecycle.js";
 
 export interface DearMeCheckoutSessionInput {
   email: string;
@@ -138,6 +139,22 @@ function checkoutSessionEmail(event: DearMeStripeCheckoutCompletedEvent) {
   const directEmail = typeof session.customer_email === "string" ? session.customer_email : "";
   const customerDetailsEmail = typeof session.customer_details?.email === "string" ? session.customer_details.email : "";
   return normalizeEmail(directEmail || customerDetailsEmail);
+}
+
+function subscriptionDeletedEmail(eventPayload: unknown) {
+  const subscription = (eventPayload as { data?: { object?: unknown } }).data?.object as {
+    customer_email?: unknown;
+    customer_details?: { email?: unknown } | null;
+    metadata?: Record<string, unknown> | null;
+  } | null | undefined;
+  const directEmail = typeof subscription?.customer_email === "string" ? subscription.customer_email : "";
+  const customerDetailsEmail = typeof subscription?.customer_details?.email === "string"
+    ? subscription.customer_details.email
+    : "";
+  const metadataEmail = typeof subscription?.metadata?.customerEmail === "string"
+    ? subscription.metadata.customerEmail
+    : "";
+  return normalizeEmail(directEmail || customerDetailsEmail || metadataEmail);
 }
 
 function formValue(value: string | number) {
@@ -287,6 +304,23 @@ export function dearMeStripeCheckoutService(
       throw new DearMeStripeCheckoutError(400, "Invalid DearMe Stripe Checkout webhook signature.");
     }
 
+    if (eventPayload && typeof eventPayload === "object" && (eventPayload as { type?: unknown }).type === "customer.subscription.deleted") {
+      const email = subscriptionDeletedEmail(eventPayload);
+      if (email) {
+        void sendLifecycleEvent({ email, eventName: "dearme_cancelled" });
+      }
+
+      return {
+        received: true,
+        status: "ignored",
+        provider: "stripe",
+        companyId: null,
+        checkoutSessionId: null,
+        recordedEventCount: 0,
+        reason: "subscription_deleted_lifecycle_event_forwarded",
+      };
+    }
+
     if (!eventPayload || typeof eventPayload !== "object" || (eventPayload as { type?: unknown }).type !== "checkout.session.completed") {
       return {
         received: true,
@@ -357,6 +391,15 @@ export function dearMeStripeCheckoutService(
 
     const result = await paidBetaAccess.recordHostedPaymentReceipts(receipt.companyId, [receipt]);
     processedCheckoutSessionIds.add(checkoutSessionId);
+    const email = checkoutSessionEmail(event);
+    if (email) {
+      const tier = event.data.object.metadata?.tier ?? event.data.object.metadata?.access ?? "paid_beta";
+      void sendLifecycleEvent({
+        email,
+        eventName: "dearme_first_payment",
+        properties: { tier },
+      });
+    }
 
     return {
       received: true,

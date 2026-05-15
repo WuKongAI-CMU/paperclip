@@ -47,6 +47,11 @@ export {
   type DearMeSendEmailDispatchConfig,
 } from "./dearme-send-email-dispatch.js";
 export {
+  sendLifecycleEvent,
+  updateContact,
+  type DearMeLifecycleResult,
+} from "./dearme-lifecycle.js";
+export {
   createDearMeXPostDispatch,
   resolveDearMeXPostCredential,
   type DearMeXPostDispatchConfig,

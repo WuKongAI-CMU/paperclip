@@ -12,6 +12,7 @@ import {
 } from "@paperclipai/db";
 import type { Config } from "../config.js";
 import { resolvePaperclipInstanceId } from "../home-paths.js";
+import { sendLifecycleEvent } from "../services/dearme-lifecycle.js";
 
 export type BetterAuthSessionUser = {
   id: string;
@@ -59,6 +60,12 @@ function headersFromNodeHeaders(rawHeaders: IncomingHttpHeaders): Headers {
 
 function headersFromExpressRequest(req: Request): Headers {
   return headersFromNodeHeaders(req.headers);
+}
+
+function signupEmailFromRequest(req: Request) {
+  if (req.method !== "POST" || !req.path.endsWith("/sign-up/email")) return null;
+  const email = (req.body as { email?: unknown } | undefined)?.email;
+  return typeof email === "string" && email.trim().length > 0 ? email.trim().toLowerCase() : null;
 }
 
 export function deriveAuthTrustedOrigins(config: Config, opts?: { listenPort?: number }): string[] {
@@ -133,6 +140,14 @@ export function createBetterAuthInstance(db: Db, config: Config, trustedOrigins:
 export function createBetterAuthHandler(auth: BetterAuthInstance): RequestHandler {
   const handler = toNodeHandler(auth);
   return (req, res, next) => {
+    const signupEmail = signupEmailFromRequest(req);
+    if (signupEmail) {
+      res.once("finish", () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          void sendLifecycleEvent({ email: signupEmail, eventName: "dearme_signup" });
+        }
+      });
+    }
     void Promise.resolve(handler(req, res)).catch(next);
   };
 }
