@@ -1,6 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { createHmac } from "node:crypto";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Db } from "@paperclipai/db";
 import {
+  createDearMeStripeClient,
   DearMeStripeCheckoutError,
   dearMeStripeCheckoutService,
   type DearMeStripeClient,
@@ -75,49 +77,62 @@ function subscriptionDeletedEvent(eventId = "evt_dearme_subscription_deleted") {
   };
 }
 
-function fakeAccessGranter(): any {
+function stripeSignatureHeader(rawBody: Buffer, secret: string, timestampSeconds: number) {
+  const signature = createHmac("sha256", secret)
+    .update(`${timestampSeconds}.`)
+    .update(rawBody)
+    .digest("hex");
+  return `t=${timestampSeconds},v1=${signature}`;
+}
+
+function fakeAccessGranter(options: { recordDelayMs?: number } = {}): any {
   return {
-    recordHostedPaymentReceipts: vi.fn(async () => ({
-      acceptedReceipts: [],
-      rejectedReceipts: [],
-      duplicateSuppressedCount: 0,
-      existingDuplicateSuppressedCount: 0,
-      recordedEvents: [{ id: "finance-event-1" }],
-      access: {
-        companyId: "company-1",
-        status: "active",
-        lifetimePaidCents: 25000,
-        refundedCents: 0,
-        netPaidCents: 25000,
-        remainingCreditCents: 25000,
-        eventCount: 1,
-        latestPaymentAt: "2026-01-01T00:00:00.000Z",
-        latestPaymentDescription: "DearMe hosted checkout paid receipt",
-        latestExternalInvoiceId: "pi_dearme_paid",
-        entitlement: {
-          state: "paid_beta_active",
-          label: "Paid beta active",
-          headline: "Paid beta access is active",
-          summary: "Paid beta access is active.",
-          canRequestBrandOsApproval: true,
-          canRunPrivateCycles: true,
-          nextActionLabel: "Keep going",
-          nextActionDescription: "Keep going.",
-        },
-        cycleGuardrail: {
-          state: "ready",
-          label: "Guardrails ready",
-          headline: "Private cycles can run within guardrails",
-          summary: "Ready.",
-          spendCents: 0,
-          budgetCents: 0,
-          utilizationPercent: 0,
+    recordHostedPaymentReceipts: vi.fn(async () => {
+      if (options.recordDelayMs) {
+        await new Promise((resolve) => setTimeout(resolve, options.recordDelayMs));
+      }
+      return {
+        acceptedReceipts: [],
+        rejectedReceipts: [],
+        duplicateSuppressedCount: 0,
+        existingDuplicateSuppressedCount: 0,
+        recordedEvents: [{ id: "finance-event-1" }],
+        access: {
+          companyId: "company-1",
+          status: "active",
+          lifetimePaidCents: 25000,
+          refundedCents: 0,
+          netPaidCents: 25000,
           remainingCreditCents: 25000,
-          decisionRequired: false,
-          decisionLabel: null,
+          eventCount: 1,
+          latestPaymentAt: "2026-01-01T00:00:00.000Z",
+          latestPaymentDescription: "DearMe hosted checkout paid receipt",
+          latestExternalInvoiceId: "pi_dearme_paid",
+          entitlement: {
+            state: "paid_beta_active",
+            label: "Paid beta active",
+            headline: "Paid beta access is active",
+            summary: "Paid beta access is active.",
+            canRequestBrandOsApproval: true,
+            canRunPrivateCycles: true,
+            nextActionLabel: "Keep going",
+            nextActionDescription: "Keep going.",
+          },
+          cycleGuardrail: {
+            state: "ready",
+            label: "Guardrails ready",
+            headline: "Private cycles can run within guardrails",
+            summary: "Ready.",
+            spendCents: 0,
+            budgetCents: 0,
+            utilizationPercent: 0,
+            remainingCreditCents: 25000,
+            decisionRequired: false,
+            decisionLabel: null,
+          },
         },
-      },
-    })),
+      };
+    }),
     recordSubscriptionCancellation: vi.fn(async () => ({
       recordedEvent: { id: "finance-event-cancelled" },
       access: {
@@ -183,6 +198,10 @@ function fakeStripeClient(event: unknown = checkoutCompletedEvent()): DearMeStri
 }
 
 describe("dearMeStripeCheckoutService", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("creates Stripe Checkout sessions with DearMe paid beta args and defaults to subscription mode", async () => {
     const stripeClient = fakeStripeClient();
     const service = dearMeStripeCheckoutService({} as Db, {
@@ -311,6 +330,29 @@ describe("dearMeStripeCheckoutService", () => {
     expect(paidBetaAccess.recordHostedPaymentReceipts).toHaveBeenCalledTimes(1);
   });
 
+  it("records one grant when 10 identical checkout webhooks arrive together", async () => {
+    const paidBetaAccess = fakeAccessGranter({ recordDelayMs: 25 });
+    const event = checkoutCompletedEvent("cs_dearme_stress");
+    const service = dearMeStripeCheckoutService({} as Db, {
+      stripeClient: fakeStripeClient(event),
+      paidBetaAccess,
+    });
+    const input = {
+      rawBody: Buffer.from(JSON.stringify(event)),
+      signatureHeader: "t=1,v1=valid",
+      webhookSecret: "whsec_test",
+    };
+
+    const results = await Promise.all(
+      Array.from({ length: 10 }, () => service.handleCheckoutWebhook(input)),
+    );
+
+    expect(results.filter((result) => result.status === "recorded")).toHaveLength(1);
+    expect(results.filter((result) => result.status === "duplicate")).toHaveLength(9);
+    expect(results.reduce((sum, result) => sum + result.recordedEventCount, 0)).toBe(1);
+    expect(paidBetaAccess.recordHostedPaymentReceipts).toHaveBeenCalledTimes(1);
+  });
+
   it("extends paid-beta access for invoice.paid renewals", async () => {
     const paidBetaAccess = fakeAccessGranter();
     const service = dearMeStripeCheckoutService({} as Db, {
@@ -367,6 +409,77 @@ describe("dearMeStripeCheckoutService", () => {
     });
 
     expect(paidBetaAccess.recordHostedPaymentReceipts).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps out-of-order invoice.paid then checkout.session.completed as separate access records", async () => {
+    const paidBetaAccess = fakeAccessGranter();
+    const invoiceEvent = invoicePaidEvent("evt_dearme_invoice_first");
+    const checkoutEvent = checkoutCompletedEvent("cs_dearme_checkout_second");
+    const stripeClient = fakeStripeClient(invoiceEvent);
+    const service = dearMeStripeCheckoutService({} as Db, {
+      stripeClient,
+      paidBetaAccess,
+    });
+
+    await expect(service.handleCheckoutWebhook({
+      rawBody: Buffer.from(JSON.stringify(invoiceEvent)),
+      signatureHeader: "t=1,v1=valid",
+      webhookSecret: "whsec_test",
+    })).resolves.toMatchObject({
+      status: "recorded",
+      stripeEventId: "evt_dearme_invoice_first",
+      recordedEventCount: 1,
+    });
+
+    vi.mocked(stripeClient.webhooks.constructEvent).mockReturnValue(checkoutEvent);
+    await expect(service.handleCheckoutWebhook({
+      rawBody: Buffer.from(JSON.stringify(checkoutEvent)),
+      signatureHeader: "t=1,v1=valid",
+      webhookSecret: "whsec_test",
+    })).resolves.toMatchObject({
+      status: "recorded",
+      checkoutSessionId: "cs_dearme_checkout_second",
+      recordedEventCount: 1,
+    });
+
+    expect(paidBetaAccess.recordHostedPaymentReceipts).toHaveBeenCalledTimes(2);
+    expect(paidBetaAccess.recordHostedPaymentReceipts).toHaveBeenNthCalledWith(
+      1,
+      "company-1",
+      [expect.objectContaining({
+        id: "evt_dearme_invoice_first",
+        idempotencyKey: "evt_dearme_invoice_first",
+        externalInvoiceId: "in_dearme_renewal",
+      })],
+      { reason: "renewal" },
+    );
+    expect(paidBetaAccess.recordHostedPaymentReceipts).toHaveBeenNthCalledWith(
+      2,
+      "company-1",
+      [expect.objectContaining({
+        id: "evt_dearme_checkout_completed",
+        idempotencyKey: "cs_dearme_checkout_second",
+        externalInvoiceId: "pi_dearme_paid",
+      })],
+    );
+  });
+
+  it("rejects Stripe webhook signature replays older than 5 minutes", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:10:01.000Z"));
+    const rawBody = Buffer.from(JSON.stringify(checkoutCompletedEvent()));
+    const service = dearMeStripeCheckoutService({} as Db, {
+      stripeClient: createDearMeStripeClient("sk_test_dearme"),
+      paidBetaAccess: fakeAccessGranter(),
+    });
+
+    await expect(service.handleCheckoutWebhook({
+      rawBody,
+      signatureHeader: stripeSignatureHeader(rawBody, "whsec_test", 1_767_225_000),
+      webhookSecret: "whsec_test",
+    })).rejects.toMatchObject({
+      status: 400,
+    });
   });
 
   it("cancels paid-beta access for customer.subscription.deleted", async () => {

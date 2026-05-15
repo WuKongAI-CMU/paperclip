@@ -401,6 +401,7 @@ export function dearMeStripeCheckoutService(
   const stripeClient = options.stripeClient ?? createDearMeStripeClient(process.env.DEARME_STRIPE_SECRET_KEY ?? "");
   const resolveCompany = options.resolveCompanyIdForEmail ?? ((email: string) => resolveCompanyIdForEmail(db, email));
   const processedStripeEventIds = new Set<string>();
+  const processingStripeEventIds = new Set<string>();
 
   async function createCheckoutSession(input: DearMeCheckoutSessionInput): Promise<DearMeCheckoutSessionResult> {
     const email = normalizeEmail(input.email);
@@ -502,7 +503,7 @@ export function dearMeStripeCheckoutService(
     const stripeEventId = typeof (eventPayload as { id?: unknown }).id === "string"
       ? (eventPayload as { id: string }).id
       : "";
-    if (stripeEventId && processedStripeEventIds.has(stripeEventId)) {
+    if (stripeEventId && (processedStripeEventIds.has(stripeEventId) || processingStripeEventIds.has(stripeEventId))) {
       const duplicateCheckoutEvent = eventType === "checkout.session.completed"
         ? parseCheckoutCompletedEvent(eventPayload)
         : null;
@@ -558,34 +559,39 @@ export function dearMeStripeCheckoutService(
       }
 
       const invoice = event.data.object;
-      const result = await paidBetaAccess.recordHostedPaymentReceipts(
-        companyId,
-        [{
-          id: event.id,
+      processingStripeEventIds.add(event.id);
+      try {
+        const result = await paidBetaAccess.recordHostedPaymentReceipts(
           companyId,
-          provider: "hosted_checkout",
-          kind: "checkout_paid",
-          amountCents: invoice.amount_paid,
-          currency: invoice.currency?.toUpperCase() ?? "USD",
-          externalInvoiceId: invoice.id,
-          signatureVerified: true,
-          idempotencyKey: event.id,
-          occurredAt: new Date(invoice.created * 1000).toISOString(),
-        }],
-        { reason: "renewal" },
-      );
-      processedStripeEventIds.add(event.id);
+          [{
+            id: event.id,
+            companyId,
+            provider: "hosted_checkout",
+            kind: "checkout_paid",
+            amountCents: invoice.amount_paid,
+            currency: invoice.currency?.toUpperCase() ?? "USD",
+            externalInvoiceId: invoice.id,
+            signatureVerified: true,
+            idempotencyKey: event.id,
+            occurredAt: new Date(invoice.created * 1000).toISOString(),
+          }],
+          { reason: "renewal" },
+        );
+        processedStripeEventIds.add(event.id);
 
-      return {
-        received: true,
-        status: result.recordedEvents.length > 0 ? "recorded" : "duplicate",
-        provider: "stripe",
-        companyId,
-        checkoutSessionId: null,
-        stripeEventId: event.id,
-        recordedEventCount: result.recordedEvents.length,
-        access: result.access,
-      };
+        return {
+          received: true,
+          status: result.recordedEvents.length > 0 ? "recorded" : "duplicate",
+          provider: "stripe",
+          companyId,
+          checkoutSessionId: null,
+          stripeEventId: event.id,
+          recordedEventCount: result.recordedEvents.length,
+          access: result.access,
+        };
+      } finally {
+        processingStripeEventIds.delete(event.id);
+      }
     }
 
     if (eventType === "customer.subscription.deleted") {
@@ -618,24 +624,29 @@ export function dearMeStripeCheckoutService(
 
       const subscription = event.data.object;
       const occurredAt = subscription.ended_at ?? subscription.canceled_at ?? subscription.created;
-      const result = await paidBetaAccess.recordSubscriptionCancellation(companyId, {
-        externalSubscriptionId: subscription.id,
-        externalCustomerId: subscription.customer ?? null,
-        idempotencyKey: event.id,
-        occurredAt: new Date(occurredAt * 1000).toISOString(),
-      });
-      processedStripeEventIds.add(event.id);
+      processingStripeEventIds.add(event.id);
+      try {
+        const result = await paidBetaAccess.recordSubscriptionCancellation(companyId, {
+          externalSubscriptionId: subscription.id,
+          externalCustomerId: subscription.customer ?? null,
+          idempotencyKey: event.id,
+          occurredAt: new Date(occurredAt * 1000).toISOString(),
+        });
+        processedStripeEventIds.add(event.id);
 
-      return {
-        received: true,
-        status: result.recordedEvent ? "recorded" : "duplicate",
-        provider: "stripe",
-        companyId,
-        checkoutSessionId: null,
-        stripeEventId: event.id,
-        recordedEventCount: result.recordedEvent ? 1 : 0,
-        access: result.access,
-      };
+        return {
+          received: true,
+          status: result.recordedEvent ? "recorded" : "duplicate",
+          provider: "stripe",
+          companyId,
+          checkoutSessionId: null,
+          stripeEventId: event.id,
+          recordedEventCount: result.recordedEvent ? 1 : 0,
+          access: result.access,
+        };
+      } finally {
+        processingStripeEventIds.delete(event.id);
+      }
     }
 
     const event = parseCheckoutCompletedEvent(eventPayload);
@@ -695,39 +706,44 @@ export function dearMeStripeCheckoutService(
       };
     }
 
-    const result = await paidBetaAccess.recordHostedPaymentReceipts(receipt.companyId, [receipt]);
-    processedStripeEventIds.add(event.id);
-    const lifecycleEmail = checkoutSessionEmail(event);
-    if (lifecycleEmail) {
-      const tier = event.data.object.metadata?.tier ?? event.data.object.metadata?.access ?? "paid_beta";
-      void sendLifecycleEvent({
-        email: lifecycleEmail,
-        eventName: "dearme_first_payment",
-        properties: { tier },
-      });
-    }
+    processingStripeEventIds.add(event.id);
     try {
-      const stripeCouponId = checkoutSessionCouponId(eventWithCompany);
-      if (stripeCouponId) {
-        await dearMeReferralService(db).markFirstPayment({
-          referredCompanyId: receipt.companyId,
-          stripeCouponId,
+      const result = await paidBetaAccess.recordHostedPaymentReceipts(receipt.companyId, [receipt]);
+      processedStripeEventIds.add(event.id);
+      const lifecycleEmail = checkoutSessionEmail(event);
+      if (lifecycleEmail) {
+        const tier = event.data.object.metadata?.tier ?? event.data.object.metadata?.access ?? "paid_beta";
+        void sendLifecycleEvent({
+          email: lifecycleEmail,
+          eventName: "dearme_first_payment",
+          properties: { tier },
         });
       }
-    } catch {
-      // Referral attribution must not block paid-beta access.
-    }
+      try {
+        const stripeCouponId = checkoutSessionCouponId(eventWithCompany);
+        if (stripeCouponId) {
+          await dearMeReferralService(db).markFirstPayment({
+            referredCompanyId: receipt.companyId,
+            stripeCouponId,
+          });
+        }
+      } catch {
+        // Referral attribution must not block paid-beta access.
+      }
 
-    return {
-      received: true,
-      status: result.recordedEvents.length > 0 ? "recorded" : "duplicate",
-      provider: "stripe",
-      companyId: receipt.companyId,
-      checkoutSessionId,
-      stripeEventId: event.id,
-      recordedEventCount: result.recordedEvents.length,
-      access: result.access,
-    };
+      return {
+        received: true,
+        status: result.recordedEvents.length > 0 ? "recorded" : "duplicate",
+        provider: "stripe",
+        companyId: receipt.companyId,
+        checkoutSessionId,
+        stripeEventId: event.id,
+        recordedEventCount: result.recordedEvents.length,
+        access: result.access,
+      };
+    } finally {
+      processingStripeEventIds.delete(event.id);
+    }
   }
 
   return {
