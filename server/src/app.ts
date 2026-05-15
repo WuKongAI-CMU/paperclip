@@ -9,6 +9,7 @@ import { httpLogger, errorHandler } from "./middleware/index.js";
 import { actorMiddleware } from "./middleware/auth.js";
 import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
 import { installDearMeRateLimits } from "./middleware/dearme-rate-limit.js";
+import { securityHeaders } from "./middleware/security-headers.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
 import { healthProbeRoutes, healthRoutes } from "./routes/health.js";
 import { dearmeRoutes } from "./routes/dearme.js";
@@ -150,6 +151,7 @@ export async function createApp(
 ) {
   const app = express();
   app.set("trust proxy", 1);
+  app.use(securityHeaders({ viteDev: opts.uiMode === "vite-dev" }));
 
   app.use(express.json({
     // Company import/export payloads can inline full portable packages.
