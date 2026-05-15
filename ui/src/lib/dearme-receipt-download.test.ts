@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DEARME_OWNER_PROOF_HANDOFF_RECEIPT_FILENAME,

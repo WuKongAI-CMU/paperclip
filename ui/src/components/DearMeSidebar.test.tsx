@@ -70,7 +70,7 @@ describe("DearMeSidebar", () => {
     });
 
     expect(container.textContent).toContain("Brand workroom");
-    expect(container.textContent).toContain("DearMe Private Proof Check 1778131117797");
+    expect(container.textContent).toContain("DearMe Proof Check 1778131117797");
     expect(container.textContent).toContain("Private proof ready");
     expect(container.textContent).toContain("Work is usable for private review.");
     expect(container.textContent).toContain("Launch calls");
