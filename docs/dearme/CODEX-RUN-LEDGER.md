@@ -13,3 +13,4 @@
 2026-05-15 07:10  DM-LOADING-STATES  d0ba9d15  PR #12  P0  Loading skeletons merged; CI green; first-cycle preview, workroom, and Decisions loading states render with stable test IDs.
 2026-05-15 07:28  DM-ERROR-PAGES  08e7f7be  PR #13  P0  Static error pages merged; CI green; /404 and /500 render DearMe-original copy with status-aware Express handling.
 2026-05-15 07:45  DM-FAVICON-OG  1b768c96  PR #14  P0  Favicon and OG image merged; CI green; DearMe SVG favicon and generated 1200x630 OG card ship from ui/public.
+2026-05-15 08:02  DM-PRICING-PAGE  9287215e  PR #15  P0  Pricing page merged; CI green; /pricing shows the $29/mo Beta plan, three-day trial, and invite-only request-access CTA.
