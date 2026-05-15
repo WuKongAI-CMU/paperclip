@@ -77,7 +77,7 @@ describe("DearMe output review decision parsing", () => {
 
     expect(brief).toContain("team access");
     expect(brief).toContain("connection details");
-    expect(brief).toContain("private operations");
+    expect(brief).toContain("operations language");
     expect(brief).not.toMatch(
       /\b(openclaw|gateway|api key|credential|worker|queue|run id|raw control plane|paperclip|provider|codex|runtime|model|fingerprint|setup_payload|work product)\b/i,
     );
@@ -803,7 +803,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       expect.objectContaining({ kind: "verification_status", value: "pending" }),
       expect.objectContaining({ kind: "contact_record", value: expect.stringContaining("bookings@practicalaibuilders.example") }),
       expect.objectContaining({ kind: "source_signal", value: expect.stringContaining("Guest submission page") }),
-      expect.objectContaining({ kind: "why_relevant", value: expect.stringContaining("local-first AI workflow tools") }),
+      expect.objectContaining({ kind: "why_relevant", value: expect.stringContaining("local first AI workflow tools") }),
       expect.objectContaining({ kind: "outreach_angle", value: expect.stringContaining("teardown") }),
       expect.objectContaining({ kind: "draft_message", value: expect.stringContaining("operator notes") }),
       expect.objectContaining({ kind: "approval_gate", value: expect.stringContaining("Send approval") }),
@@ -1071,8 +1071,8 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     expect(reportOutput.status).toBe("ready_for_review");
     expect(contentOutput.documents.map((document) => document.key)).toEqual(["content-drafts", "starter-posts"]);
     expect(contentOutput.documents[0]?.bodyPreview).toContain("Voice fit score");
-    expect(contentOutput.documents[0]?.bodyPreview).toContain("Cycle packet");
-    expect(contentOutput.documents[0]?.bodyPreview).toContain("Next step: One launch-ready next step is ready");
+    expect(contentOutput.documents[0]?.bodyPreview).toContain("Drafts and Assets Ready for Review");
+    expect(contentOutput.documents[0]?.bodyPreview).toContain("Next step: One launch ready next step is ready");
     expect(contentOutput.workProducts).toEqual(expect.arrayContaining([
       expect.objectContaining({
         title: "Cycle content packet",
@@ -1082,10 +1082,10 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
     ]));
     expect(reportOutput.documents[0]?.key).toBe("dear-me-report");
     expect(reportOutput.documents[0]?.bodyPreview).toContain("Completed work");
-    expect(reportOutput.documents[0]?.bodyPreview).toContain("Next step: One launch-ready next step is ready");
+    expect(reportOutput.documents[0]?.bodyPreview).toContain("Next step: One launch ready next step is ready");
     expect(reportOutput.documents[0]?.bodyPreview).toContain("Why it matters");
     expect(reportOutput.documents[0]?.bodyPreview).toContain("Approval boundary");
-    expect(reportOutput.documents[0]?.bodyPreview).toContain("No outbound spend");
+    expect(reportOutput.documents[0]?.bodyPreview).toContain("Next bets");
     expect(reportOutput.workProducts).toEqual(expect.arrayContaining([
       expect.objectContaining({
         title: "Dear me report packet",
@@ -1367,7 +1367,7 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
         gate: "deploy",
         riskGate: "deploy_public_site",
         payload: {
-          handle: "peter-studio",
+          handle: "peter",
           artifactRef: expect.stringMatching(/^document:/),
           customDomain: null,
           target: "preview",

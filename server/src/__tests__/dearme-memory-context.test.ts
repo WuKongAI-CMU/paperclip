@@ -83,9 +83,9 @@ describe("buildDearMeVoiceMemoryAssignmentBrief", () => {
       },
     ]);
 
-    expect(brief).toContain("Proof point: A private pass:");
-    expect(brief).toContain("DearMe services team progress private review links private access details");
-    expect(brief).toContain("Source: DearMe private action links team access.");
+    expect(brief).toContain("Proof point: DearMe connectors services work areas proof pass setup details:");
+    expect(brief).toContain("DearMe services team progress review links access details");
+    expect(brief).toContain("Source: DearMe action links team access.");
     expect(brief).not.toMatch(
       /\b(Paperclip|OpenClaw|Symphony|adapter|provider|setup_payload|model provider|workbench|issue route|execution route|API key|token|workspace|runtime)\b/i,
     );
@@ -155,7 +155,7 @@ describe("buildDearMeVoiceMemoryAssignmentBrief", () => {
 
     expect(summary).toContain("Voice sample: Operator note: Short, direct notes");
     expect(summary).toContain("Proof point: DearMe services setup details");
-    expect(summary).toContain("DearMe private pass private work areas proof should stay private");
+    expect(summary).toContain("DearMe proof pass work areas proof should stay private");
     expect(summary).not.toMatch(
       /\b(Paperclip|OpenClaw|Symphony|provider|setup_payload|runtime|workspace|issue route|token)\b/i,
     );
@@ -507,10 +507,10 @@ describeEmbeddedPostgres("DearMe memory context routine refresh", () => {
     const description = updatedDearMeRoutine.description ?? "";
 
     expect(description).toContain(
-      "Proof point: A private pass:",
+      "Proof point: DearMe connectors services work areas proof pass setup details:",
     );
-    expect(description).toContain("DearMe services team progress private review links private access details");
-    expect(description).toContain("Source: DearMe private action links team access.");
+    expect(description).toContain("DearMe services team progress review links access details");
+    expect(description).toContain("Source: DearMe action links team access.");
     expect(description).not.toMatch(
       /\b(Paperclip|OpenClaw|Symphony|adapter|provider|setup_payload|model provider|workbench|issue route|execution route|API key|token|workspace|runtime)\b/i,
     );

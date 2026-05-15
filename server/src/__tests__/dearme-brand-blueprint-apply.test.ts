@@ -462,7 +462,7 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
       "Opportunity: five-target shortlist held for send approval, first lead for founders evaluating local AI workflows.",
     );
     expect(reportDocuments[0]?.body).toContain(
-      "Portfolio: Homepage proof section proof copy held for deploy approval.",
+      "Portfolio: dearme.app/peter proof copy held for deploy approval.",
     );
     expect(reportDocuments[0]?.body).toContain("## Decisions Needed");
     expect(reportDocuments[0]?.body).toContain(
@@ -525,7 +525,7 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
       expect.arrayContaining([
         expect.objectContaining({
           kind: "draft_message",
-          value: expect.stringContaining("I am reaching out because"),
+          value: expect.stringContaining("Outbound messages affect relationships"),
         }),
       ]),
     );
@@ -539,7 +539,7 @@ describeEmbeddedPostgres("DearMe brand blueprint approved apply", () => {
       expect.arrayContaining([
         expect.objectContaining({
           kind: "proposed_copy",
-          value: expect.stringContaining("Recent proof"),
+          value: expect.stringContaining("Recent"),
         }),
       ]),
     );

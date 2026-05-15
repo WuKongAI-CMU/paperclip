@@ -434,8 +434,8 @@ describeEmbeddedPostgres("DearMe brand blueprint service", () => {
     expect(result.proofSequence[2]?.sourceLabel).toBe("Prepared from private site proof and Dear me report");
     expect(result.proofSequence[2]?.summary).toContain("Brand Site Builder staged private site copy");
     expect(result.proofSequence[2]?.summary).toContain("turn proof cards into one private site update");
-    expect(result.sitePreview.handle).toBe("peter-studio");
-    expect(result.sitePreview.route).toBe("dearme.app/peter-studio");
+    expect(result.sitePreview.handle).toBe("peter");
+    expect(result.sitePreview.route).toBe("dearme.app/peter");
     expect(JSON.stringify(result.proofSequence)).not.toContain("worker output");
   });
 
