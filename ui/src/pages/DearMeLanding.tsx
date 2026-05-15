@@ -57,12 +57,15 @@ export function DearMeLanding() {
       <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-5 sm:px-6 lg:px-8">
         <nav className="flex items-center justify-between border-b border-border pb-4" aria-label="DearMe">
           <div className="text-sm font-semibold">DearMe</div>
-          <Button asChild variant="outline" size="sm">
-            <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
-              Request invite
-              <Mail className="h-4 w-4" />
-            </a>
-          </Button>
+          <div className="flex items-center gap-3">
+            <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
+            <Button asChild variant="outline" size="sm">
+              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
+                Request invite
+                <Mail className="h-4 w-4" />
+              </a>
+            </Button>
+          </div>
         </nav>
 
         <section className="grid flex-1 gap-8 py-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)] lg:items-center lg:py-14">
@@ -138,7 +141,8 @@ export function DearMeLanding() {
             <span>Publish, send, deploy, spend are always approved by you.</span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <span>$X/month private beta — invite request only.</span>
+            <span>$29/month beta — invite request only.</span>
+            <a href="/pricing" className="hover:text-foreground">Pricing</a>
             <a href="/legal/terms" className="hover:text-foreground">Terms</a><a href="/legal/privacy" className="hover:text-foreground">Privacy</a><a href="/legal/acceptable-use" className="hover:text-foreground">Acceptable Use</a>
             <Button asChild variant="secondary" size="sm">
               <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
