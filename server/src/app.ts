@@ -9,7 +9,7 @@ import { httpLogger, errorHandler } from "./middleware/index.js";
 import { actorMiddleware } from "./middleware/auth.js";
 import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
-import { healthRoutes } from "./routes/health.js";
+import { healthProbeRoutes, healthRoutes } from "./routes/health.js";
 import { dearmeRoutes } from "./routes/dearme.js";
 import { dearmeChannelConnectionRoutes } from "./routes/dearme-channel-connections.js";
 import { dearMeAiProxyRoutes, DEARME_PROXY_BASE_PATH } from "./routes/dearme-ai-proxy.js";
@@ -172,6 +172,7 @@ export async function createApp(
       bindHost: opts.bindHost,
     }),
   );
+  app.use(healthProbeRoutes(db));
   app.use(
     actorMiddleware(db, {
       deploymentMode: opts.deploymentMode,
