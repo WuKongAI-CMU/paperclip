@@ -103,6 +103,23 @@ function makeDeps(overrides?: Partial<DearMeOutboundToolDeps>): {
       reset: () => undefined,
       listenerCount: () => 0,
     },
+    costCaps: {
+      getCostState: async () => ({
+        spent: 0,
+        cap: 25_000_000,
+        soft: 20_000_000,
+        remaining: 25_000_000,
+        status: "ok",
+      }),
+      accrueCost: async () => ({
+        spent: 0,
+        cap: 25_000_000,
+        soft: 20_000_000,
+        remaining: 25_000_000,
+        status: "ok",
+      }),
+      enforceCap: async () => ({ allowed: true }),
+    },
     channelDispatch: {
       post_x: vi.fn(async () => ({
         kind: "delivered",

@@ -117,7 +117,8 @@ describe("createDearMeMetaCampaignDispatch", () => {
       externalId: "120000000000000001",
       externalUrl:
         "https://business.facebook.com/adsmanager/manage/campaigns?act=123456789&selected_campaign_ids=120000000000000001",
-      paid: false,
+      paid: true,
+      paidUsd: 20,
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as unknown as [

@@ -367,7 +367,8 @@ export function createDearMeMetaCampaignDispatch(
       kind: "delivered",
       externalId: campaignId,
       externalUrl: buildAdsManagerUrl(parsedCredential.credential.adAccountId, campaignId),
-      paid: false,
+      paid: true,
+      paidUsd: payload.value.campaign.dailyBudgetUsd,
     };
   };
 }
