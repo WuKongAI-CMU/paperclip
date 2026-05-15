@@ -59,6 +59,14 @@ export {
   type DearMeCostCapKind,
   type NewDearMeCostCap,
 } from "./dearme-cost-caps.js";
+export {
+  dearmeReferralAttributions,
+  dearmeReferralCodes,
+  type DearMeReferralAttribution,
+  type DearMeReferralCode,
+  type NewDearMeReferralAttribution,
+  type NewDearMeReferralCode,
+} from "./dearme-referral.js";
 export { issueWorkProducts } from "./issue_work_products.js";
 export { labels } from "./labels.js";
 export { issueLabels } from "./issue_labels.js";

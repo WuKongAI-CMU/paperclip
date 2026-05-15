@@ -9,6 +9,7 @@ import {
   type DearMeHostedPaymentReceiptRecordResult,
   type DearMeStripeCheckoutCompletedEvent,
 } from "./dearme-paid-beta-access.js";
+import { dearMeReferralService } from "./dearme-referral.js";
 
 export interface DearMeCheckoutSessionInput {
   email: string;
@@ -138,6 +139,29 @@ function checkoutSessionEmail(event: DearMeStripeCheckoutCompletedEvent) {
   const directEmail = typeof session.customer_email === "string" ? session.customer_email : "";
   const customerDetailsEmail = typeof session.customer_details?.email === "string" ? session.customer_details.email : "";
   return normalizeEmail(directEmail || customerDetailsEmail);
+}
+
+function checkoutSessionCouponId(event: DearMeStripeCheckoutCompletedEvent) {
+  const session = event.data.object as DearMeStripeCheckoutCompletedEvent["data"]["object"] & {
+    discounts?: Array<{
+      coupon?: string | { id?: unknown } | null;
+      discount?: { coupon?: string | { id?: unknown } | null } | null;
+    }> | null;
+    total_details?: {
+      breakdown?: {
+        discounts?: Array<{
+          discount?: { coupon?: string | { id?: unknown } | null } | null;
+        }> | null;
+      } | null;
+    } | null;
+  };
+  const coupon =
+    session.discounts?.[0]?.coupon
+    ?? session.discounts?.[0]?.discount?.coupon
+    ?? session.total_details?.breakdown?.discounts?.[0]?.discount?.coupon;
+  if (typeof coupon === "string") return coupon.trim() || null;
+  if (coupon && typeof coupon.id === "string") return coupon.id.trim() || null;
+  return null;
 }
 
 function formValue(value: string | number) {
@@ -356,6 +380,17 @@ export function dearMeStripeCheckoutService(
     }
 
     const result = await paidBetaAccess.recordHostedPaymentReceipts(receipt.companyId, [receipt]);
+    try {
+      const stripeCouponId = checkoutSessionCouponId(eventWithCompany);
+      if (stripeCouponId) {
+        await dearMeReferralService(db).markFirstPayment({
+          referredCompanyId: receipt.companyId,
+          stripeCouponId,
+        });
+      }
+    } catch {
+      // Referral attribution must not block paid-beta access.
+    }
     processedCheckoutSessionIds.add(checkoutSessionId);
 
     return {
