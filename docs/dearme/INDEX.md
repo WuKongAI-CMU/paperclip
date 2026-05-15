@@ -354,6 +354,19 @@ Plus governance:
 - **`ENGINEER-GOAL-FIRST-PAID-CUSTOMER.md`** — handoff Goal for the
   engineer who takes DearMe from "code in tree" to "first $29 paid". 14
   days, 5 verifiable DoD items, explicit non-goals, owner unblockers.
+- **`DEPLOY-RUNBOOK.md`** — one-shot Vercel deploy path, DNS records,
+  Day-1-to-6 step-by-step, rollback, common failure modes.
+- **`PROVIDER-INTEGRATION-NOTES.md`** — per-provider signup URL, free
+  tier, gotcha, env var, code location, cost projection.
+- **`PRE-LAUNCH-CHECKLIST.md`** — operational tick-list of every infra +
+  Stripe + channels + customer-surface + compliance item before the
+  first outreach DM.
+- **`OUTREACH-TEMPLATES.md`** — 5 outreach templates (LinkedIn DM,
+  email, X, warm reply, cold-fit) plus what NOT to send and the post-
+  signup follow-up template.
+- **`.env.production.example`** (repo root) — every env var DearMe
+  needs in prod with where-to-get URLs. Validate with
+  `pnpm dearme:prod-ready`.
 
 ### Reference / research (read on demand, not by default)
 
