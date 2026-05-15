@@ -15,6 +15,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "pnpm --dir .. dearme:generate-og-image",
     "build": "tsc -b && vite build",
     "storybook": "storybook dev -p 6006 -c storybook/.storybook",
     "build-storybook": "storybook build -c storybook/.storybook -o storybook-static",

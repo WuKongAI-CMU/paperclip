@@ -35,6 +35,8 @@
     "release:rollback": "./scripts/rollback-latest.sh",
     "release:bootstrap-package": "node scripts/bootstrap-npm-package.mjs",
     "check:tokens": "node scripts/check-forbidden-tokens.mjs",
+    "dearme:generate-og-image": "node scripts/generate-dearme-og-image.mjs",
+    "test:dearme-generate-og-image": "node --test scripts/generate-dearme-og-image.test.mjs",
     "dearme:bedrock-guard": "node scripts/check-dearme-bedrock-guard.mjs",
     "dearme:worktrees": "node scripts/dearme-worktree-status.mjs",
     "test:dearme-worktrees": "node --test scripts/dearme-worktree-status.test.mjs",
@@ -99,6 +101,7 @@
     "@playwright/test": "^1.58.2",
     "cross-env": "^10.1.0",
     "esbuild": "^0.27.3",
+    "sharp": "^0.34.5",
     "tsx": "^4.22.0",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
