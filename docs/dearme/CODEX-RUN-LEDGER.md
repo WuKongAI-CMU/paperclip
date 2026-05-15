@@ -14,3 +14,4 @@
 2026-05-15 07:28  DM-ERROR-PAGES  08e7f7be  PR #13  P0  Static error pages merged; CI green; /404 and /500 render DearMe-original copy with status-aware Express handling.
 2026-05-15 07:45  DM-FAVICON-OG  1b768c96  PR #14  P0  Favicon and OG image merged; CI green; DearMe SVG favicon and generated 1200x630 OG card ship from ui/public.
 2026-05-15 08:02  DM-PRICING-PAGE  9287215e  PR #15  P0  Pricing page merged; CI green; /pricing shows the $29/mo Beta plan, three-day trial, and invite-only request-access CTA.
+2026-05-15 08:18  DM-ABOUT-FAQ  1459813f  PR #16  P0  About and FAQ pages merged; CI green; /about tells the founder story and /faq covers 12 beta, legal, voice-gate, cost-cap, and cancellation answers.
