@@ -67,15 +67,20 @@ describe("securityHeaders", () => {
 
     const prodConnectSrc = getCspDirectives(prodRes.headers["content-security-policy"])
       .get("connect-src");
-    const devConnectSrc = getCspDirectives(devRes.headers["content-security-policy"])
-      .get("connect-src");
+    const devCsp = getCspDirectives(devRes.headers["content-security-policy"]);
+    const devConnectSrc = devCsp.get("connect-src");
+    const prodScriptSrc = getCspDirectives(prodRes.headers["content-security-policy"])
+      .get("script-src");
+    const devScriptSrc = devCsp.get("script-src");
 
     expect(prodConnectSrc).not.toContain("ws://localhost:*");
+    expect(prodScriptSrc).not.toContain("'unsafe-inline'");
     expect(devConnectSrc).toEqual(expect.arrayContaining([
       "http://localhost:*",
       "http://127.0.0.1:*",
       "ws://localhost:*",
       "ws://127.0.0.1:*",
     ]));
+    expect(devScriptSrc).toContain("'unsafe-inline'");
   });
 });

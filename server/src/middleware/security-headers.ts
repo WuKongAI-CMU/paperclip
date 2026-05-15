@@ -31,6 +31,11 @@ const VITE_DEV_CONNECT_SOURCES = [
 ];
 
 export function securityHeaders(options: { viteDev?: boolean } = {}): RequestHandler {
+  const scriptSrc = [
+    "'self'",
+    ...POSTHOG_SOURCES,
+    ...(options.viteDev ? ["'unsafe-inline'"] : []),
+  ];
   const connectSrc = [
     "'self'",
     ...POSTHOG_SOURCES,
@@ -45,7 +50,7 @@ export function securityHeaders(options: { viteDev?: boolean } = {}): RequestHan
       useDefaults: true,
       directives: {
         "default-src": ["'self'"],
-        "script-src": ["'self'", ...POSTHOG_SOURCES],
+        "script-src": scriptSrc,
         "connect-src": connectSrc,
         "frame-src": ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
         "frame-ancestors": ["'none'"],
