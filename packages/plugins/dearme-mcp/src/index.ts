@@ -1,8 +1,12 @@
 /**
  * DearMe MCP — public barrel.
  *
- * See docs/dearme/CLAWDBOB-ABSORPTION-PLAN.md (dm-cb-02 + dm-cb-03) for the
- * absorption provenance from clawdbob/src/mcp/.
+ * See docs/dearme/CLAWDBOB-ABSORPTION-PLAN.md (dm-cb-02 + dm-cb-03 + dm-cb-04
+ * + dm-cb-05) for absorption provenance from clawdbob/src/mcp/.
+ *
+ * Test helpers (`__testHelpers` exports from each server module) are NOT
+ * re-exported here to avoid name collisions; tests import them directly from
+ * the relevant `./<server>/server.js` files.
  */
 
 export {
@@ -29,9 +33,15 @@ export {
   createWebSearchServer,
   WEB_SEARCH_TOOLS,
   WEB_SEARCH_TOOL_DESCRIPTORS,
-  __testHelpers,
   type DearMeWebSearchServerConfig,
 } from "./web-search/server.js";
+
+export {
+  createWorkbenchServer,
+  WORKBENCH_TOOLS,
+  WORKBENCH_TOOL_DESCRIPTORS,
+  type DearMeWorkbenchServerConfig,
+} from "./workbench/server.js";
 
 export {
   DEARME_RUNTIME_DENY_BASH_PATTERNS,
