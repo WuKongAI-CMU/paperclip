@@ -129,6 +129,7 @@ import {
   Gauge,
   LifeBuoy,
   MessageSquare,
+  Plus,
   RefreshCw,
   Send,
   ShieldCheck,
@@ -1722,6 +1723,10 @@ const VOICE_MEMORY_SOURCE_TITLE_MAX_LENGTH = 160;
 const VOICE_MEMORY_SOURCE_REFERENCE_MAX_LENGTH = 500;
 const VOICE_MEMORY_SOURCE_BODY_MIN_LENGTH = 20;
 const VOICE_MEMORY_SOURCE_BODY_MAX_LENGTH = 4_000;
+const FIRST_CYCLE_VOICE_SAMPLE_INITIAL_COUNT = 3;
+const FIRST_CYCLE_VOICE_SAMPLE_MAX_COUNT = 10;
+const FIRST_CYCLE_VOICE_SAMPLE_LINK_BODY =
+  "Source link saved for voice extraction. Review this page for phrasing, pacing, proof language, and recurring phrases before the first private cycle.";
 
 type MemorySourceGuideId =
   | "writing_sample"
@@ -1920,6 +1925,15 @@ function privateSourceLink(
     return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
   } catch {
     return null;
+  }
+}
+
+function isValidHttpSourceLink(value: string) {
+  try {
+    const parsedUrl = new URL(value);
+    return ["http:", "https:"].includes(parsedUrl.protocol);
+  } catch {
+    return false;
   }
 }
 
@@ -9564,6 +9578,11 @@ function VoiceMemoryPanel({
   const [title, setTitle] = useState("");
   const [sourceLabel, setSourceLabel] = useState("");
   const [body, setBody] = useState("");
+  const [firstCycleVoiceSamples, setFirstCycleVoiceSamples] = useState<string[]>(
+    () => Array.from({ length: FIRST_CYCLE_VOICE_SAMPLE_INITIAL_COUNT }, () => ""),
+  );
+  const [firstCycleVoiceSourceLink, setFirstCycleVoiceSourceLink] = useState("");
+  const [firstCycleVoiceError, setFirstCycleVoiceError] = useState<string | null>(null);
   const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
   const [selectedSourceReviewId, setSelectedSourceReviewId] = useState<string | null>(null);
   const [retireCandidate, setRetireCandidate] = useState<DearMeMemoryUpdateItem | null>(null);
@@ -9598,6 +9617,12 @@ function VoiceMemoryPanel({
   const feedback = memoryUpdateFeedback(result);
   const canSubmitMemorySource =
     body.trim().length > 0 && (sourceInputMode !== "link" || sourceLabel.trim().length > 0);
+  const trimmedFirstCycleVoiceSamples = firstCycleVoiceSamples
+    .map((sample) => sample.trim())
+    .filter(Boolean);
+  const trimmedFirstCycleVoiceSourceLink = firstCycleVoiceSourceLink.trim();
+  const canSubmitFirstCycleVoiceSamples =
+    trimmedFirstCycleVoiceSamples.length > 0 || trimmedFirstCycleVoiceSourceLink.length > 0;
   const recordedMemory = result?.memory ?? null;
   const recordedMemoryAlreadyLoaded = recordedMemory
     ? memory.latest.some((item) => item.id === recordedMemory.id)
@@ -9719,14 +9744,8 @@ function VoiceMemoryPanel({
         setLocalError("Add the source link DearMe should remember.");
         return;
       }
-      try {
-        const parsedUrl = new URL(trimmedSourceLabel);
-        if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-          setLocalError("Use an http or https link for source links.");
-          return;
-        }
-      } catch {
-        setLocalError("Use a valid http or https link for source links.");
+      if (!isValidHttpSourceLink(trimmedSourceLabel)) {
+        setLocalError("Use an http or https link for source links.");
         return;
       }
     }
@@ -9746,6 +9765,75 @@ function VoiceMemoryPanel({
     }
     setSelectedSourceReviewId(null);
     resetMemoryDraft();
+  }
+
+  function updateFirstCycleVoiceSample(index: number, value: string) {
+    setFirstCycleVoiceSamples((current) =>
+      current.map((sample, sampleIndex) => (sampleIndex === index ? value : sample)),
+    );
+    setFirstCycleVoiceError(null);
+  }
+
+  function addFirstCycleVoiceSampleField() {
+    setFirstCycleVoiceSamples((current) =>
+      current.length >= FIRST_CYCLE_VOICE_SAMPLE_MAX_COUNT ? current : [...current, ""],
+    );
+    setFirstCycleVoiceError(null);
+  }
+
+  function handleFirstCycleVoiceSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmedSamples = firstCycleVoiceSamples.map((sample) => sample.trim()).filter(Boolean);
+    const trimmedSourceLink = firstCycleVoiceSourceLink.trim();
+
+    if (trimmedSamples.length === 0 && !trimmedSourceLink) {
+      setFirstCycleVoiceError("Add at least one writing sample or a source link.");
+      return;
+    }
+    if (trimmedSamples.length > FIRST_CYCLE_VOICE_SAMPLE_MAX_COUNT) {
+      setFirstCycleVoiceError("Save up to 10 writing samples in one pass.");
+      return;
+    }
+    const shortSample = trimmedSamples.find((sample) => sample.length < VOICE_MEMORY_SOURCE_BODY_MIN_LENGTH);
+    if (shortSample) {
+      setFirstCycleVoiceError("Each writing sample needs at least 20 characters.");
+      return;
+    }
+    const oversizedSample = trimmedSamples.find((sample) => sample.length > VOICE_MEMORY_SOURCE_BODY_MAX_LENGTH);
+    if (oversizedSample) {
+      setFirstCycleVoiceError("Keep each writing sample under 4,000 characters for now.");
+      return;
+    }
+    if (trimmedSourceLink && trimmedSourceLink.length > VOICE_MEMORY_SOURCE_REFERENCE_MAX_LENGTH) {
+      setFirstCycleVoiceError("Keep the source link under 500 characters.");
+      return;
+    }
+    if (trimmedSourceLink && !isValidHttpSourceLink(trimmedSourceLink)) {
+      setFirstCycleVoiceError("Use a valid http or https link for voice source links.");
+      return;
+    }
+
+    setFirstCycleVoiceError(null);
+    trimmedSamples.forEach((sample, index) => {
+      onAdd({
+        kind: "voice_sample",
+        sourceInputMode: "paste",
+        title: `Writing sample ${index + 1}`,
+        body: sample,
+        sourceLabel: trimmedSourceLink || null,
+      });
+    });
+    if (trimmedSamples.length === 0 && trimmedSourceLink) {
+      onAdd({
+        kind: "voice_sample",
+        sourceInputMode: "link",
+        title: "Writing sample source link",
+        body: FIRST_CYCLE_VOICE_SAMPLE_LINK_BODY,
+        sourceLabel: trimmedSourceLink,
+      });
+    }
+    setFirstCycleVoiceSamples(Array.from({ length: FIRST_CYCLE_VOICE_SAMPLE_INITIAL_COUNT }, () => ""));
+    setFirstCycleVoiceSourceLink("");
   }
 
   function handleGuideSelect(guide: (typeof MEMORY_SOURCE_GUIDES)[number]) {
@@ -9849,6 +9937,80 @@ function VoiceMemoryPanel({
         <Metric icon={Sparkles} label="Voice" value={displayedVoiceSampleCount} />
         <Metric icon={ShieldCheck} label="Proof" value={displayedProofCount} />
       </DearMeMetricStrip>
+
+      <form
+        className="mt-5 rounded-md border border-primary/20 bg-primary/5 p-4"
+        aria-label="First-cycle voice samples"
+        onSubmit={handleFirstCycleVoiceSubmit}
+      >
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Sparkles className="h-4 w-4" />
+              First-cycle voice samples
+            </p>
+            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+              Paste 1-10 examples that sound like you, or add one source link for DearMe to fetch and extract
+              before the first private cycle.
+            </p>
+          </div>
+          <Badge variant="secondary">Min 1 / max 10</Badge>
+        </div>
+        <div className="mt-4 grid gap-3 lg:grid-cols-3">
+          {firstCycleVoiceSamples.map((sample, index) => {
+            const sampleId = `dearme-first-cycle-voice-sample-${index}`;
+            return (
+              <div key={sampleId}>
+                <FieldLabel htmlFor={sampleId} label={`Writing sample ${index + 1}`} />
+                <Textarea
+                  id={sampleId}
+                  value={sample}
+                  rows={5}
+                  placeholder="Paste a post, email, note, transcript excerpt, or draft that already sounds like you."
+                  onChange={(event) => updateFirstCycleVoiceSample(index, event.target.value)}
+                />
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div>
+            <FieldLabel htmlFor="dearme-first-cycle-voice-source-link" label="Source URL" />
+            <Input
+              id="dearme-first-cycle-voice-source-link"
+              value={firstCycleVoiceSourceLink}
+              type="url"
+              placeholder="https://example.com/post-or-profile"
+              onChange={(event) => {
+                setFirstCycleVoiceSourceLink(event.target.value);
+                setFirstCycleVoiceError(null);
+              }}
+            />
+            <p className="mt-2 text-xs text-muted-foreground">
+              Leave this blank when you paste text. If you only add a link, DearMe queues it for review and extraction.
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending || firstCycleVoiceSamples.length >= FIRST_CYCLE_VOICE_SAMPLE_MAX_COUNT}
+              onClick={addFirstCycleVoiceSampleField}
+            >
+              <Plus className="h-4 w-4" />
+              Add sample
+            </Button>
+            <Button type="submit" disabled={isPending || !canSubmitFirstCycleVoiceSamples}>
+              {isPending ? "Saving..." : "Save voice samples"}
+            </Button>
+          </div>
+        </div>
+        {firstCycleVoiceError ? (
+          <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {firstCycleVoiceError}
+          </div>
+        ) : null}
+      </form>
 
       <section className="mt-5 rounded-md border border-border bg-muted/20 p-4" aria-label="Voice & Memory receipt">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

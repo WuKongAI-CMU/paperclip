@@ -5632,6 +5632,158 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("records first-cycle writing samples as Voice & Memory samples", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const voiceSamples = surfaceByLabel(container, "First-cycle voice samples");
+    expect(voiceSamples.textContent).toContain("Paste 1-10 examples that sound like you");
+    expect(buttonByText(voiceSamples, "Save voice samples")?.disabled).toBe(true);
+
+    await act(async () => {
+      setTextareaValue(
+        voiceSamples.querySelector("#dearme-first-cycle-voice-sample-0") as HTMLTextAreaElement,
+        "I write in short, specific notes that make the next move obvious.",
+      );
+      setTextareaValue(
+        voiceSamples.querySelector("#dearme-first-cycle-voice-sample-1") as HTMLTextAreaElement,
+        "The useful proof is the part a customer would repeat without prompting.",
+      );
+      setTextareaValue(
+        voiceSamples.querySelector("#dearme-first-cycle-voice-sample-2") as HTMLTextAreaElement,
+        "Keep the sentence practical, then point at the shipped result.",
+      );
+      setInputValue(
+        voiceSamples.querySelector("#dearme-first-cycle-voice-source-link") as HTMLInputElement,
+        "https://example.com/writing-samples",
+      );
+    });
+
+    await act(async () => {
+      buttonByText(voiceSamples, "Save voice samples")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.recordMemoryUpdate).toHaveBeenCalledTimes(3);
+    expect(mockDearmeApi.recordMemoryUpdate).toHaveBeenNthCalledWith(
+      1,
+      "company-1",
+      expect.objectContaining({
+        kind: "voice_sample",
+        sourceInputMode: "paste",
+        title: "Writing sample 1",
+        body: "I write in short, specific notes that make the next move obvious.",
+        sourceLabel: "https://example.com/writing-samples",
+      }),
+    );
+    expect(mockDearmeApi.recordMemoryUpdate).toHaveBeenNthCalledWith(
+      2,
+      "company-1",
+      expect.objectContaining({
+        kind: "voice_sample",
+        sourceInputMode: "paste",
+        title: "Writing sample 2",
+        body: "The useful proof is the part a customer would repeat without prompting.",
+        sourceLabel: "https://example.com/writing-samples",
+      }),
+    );
+    expect(mockDearmeApi.recordMemoryUpdate).toHaveBeenNthCalledWith(
+      3,
+      "company-1",
+      expect.objectContaining({
+        kind: "voice_sample",
+        sourceInputMode: "paste",
+        title: "Writing sample 3",
+        body: "Keep the sentence practical, then point at the shipped result.",
+        sourceLabel: "https://example.com/writing-samples",
+      }),
+    );
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("queues a first-cycle voice source URL for extraction when no text sample is pasted", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const voiceSamples = surfaceByLabel(container, "First-cycle voice samples");
+
+    await act(async () => {
+      setInputValue(
+        voiceSamples.querySelector("#dearme-first-cycle-voice-source-link") as HTMLInputElement,
+        "ftp://example.com/writing-samples",
+      );
+    });
+
+    await act(async () => {
+      buttonByText(voiceSamples, "Save voice samples")?.click();
+    });
+
+    expect(voiceSamples.textContent).toContain("Use a valid http or https link for voice source links.");
+    expect(mockDearmeApi.recordMemoryUpdate).not.toHaveBeenCalled();
+
+    await act(async () => {
+      setInputValue(
+        voiceSamples.querySelector("#dearme-first-cycle-voice-source-link") as HTMLInputElement,
+        "https://example.com/writing-samples",
+      );
+    });
+
+    await act(async () => {
+      buttonByText(voiceSamples, "Save voice samples")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.recordMemoryUpdate).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        kind: "voice_sample",
+        sourceInputMode: "link",
+        title: "Writing sample source link",
+        body: expect.stringContaining("Source link saved for voice extraction"),
+        sourceLabel: "https://example.com/writing-samples",
+      }),
+    );
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("renders customer-safe empty states with next actions across core workroom areas", async () => {
     const emptyWorkbench = workbenchResponse();
     emptyWorkbench.workReady = [];
