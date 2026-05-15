@@ -46,6 +46,7 @@ export {
   resolveDearMeSendEmailCredential,
   type DearMeSendEmailDispatchConfig,
 } from "./dearme-send-email-dispatch.js";
+export { dearMeEmailSuppressService } from "./dearme-email-suppress.js";
 export {
   createDearMeXPostDispatch,
   resolveDearMeXPostCredential,

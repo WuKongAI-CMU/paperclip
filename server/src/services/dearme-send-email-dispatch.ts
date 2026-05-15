@@ -1,4 +1,4 @@
-import { createHash, createHmac } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { resolveDearMeChannelCredential } from "./dearme-channel-credential.js";
 import type { ChannelDispatch } from "./dearme-outbound-tool-wrapper.js";
 
@@ -11,6 +11,8 @@ const RESEND_USER_AGENT = "DearMe/0.1";
 const SES_USER_AGENT = "DearMe/0.1 aws-sigv4";
 const EMAIL_SUBJECT_LIMIT = 998;
 const EMAIL_BODY_LIMIT = 200_000;
+const DEFAULT_UNSUBSCRIBE_BASE_URL = "https://api.dearme.app/v1/email/unsubscribe";
+const UNSUBSCRIBE_TOKEN_VERSION = "v1";
 
 interface FetchResponseLike {
   ok: boolean;
@@ -30,6 +32,10 @@ type EmailProvider = "resend" | "ses";
 
 export interface DearMeSendEmailDispatchConfig {
   emailsUrl?: string;
+  unsubscribeBaseUrl?: string;
+  unsubscribeSecret?: string;
+  physicalAddress?: string;
+  isSuppressed?: (email: string) => Promise<boolean> | boolean;
   sesEndpointForRegion?: (region: string) => string;
   fetch?: FetchLike;
   now?: () => Date;
@@ -91,6 +97,10 @@ function optionalStringField(
 
 function isEmailAddress(value: string) {
   return /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(value);
+}
+
+function normalizeEmailAddress(value: string) {
+  return value.trim().toLowerCase();
 }
 
 function textLength(value: string) {
@@ -316,6 +326,86 @@ function hmacHex(key: string | Buffer, value: string) {
   return createHmac("sha256", key).update(value, "utf8").digest("hex");
 }
 
+function base64UrlEncode(value: string | Buffer) {
+  return Buffer.from(value).toString("base64url");
+}
+
+function base64UrlDecode(value: string) {
+  try {
+    return Buffer.from(value, "base64url").toString("utf8");
+  } catch {
+    return null;
+  }
+}
+
+function resolveUnsubscribeSecret(explicitSecret?: string) {
+  return (
+    explicitSecret?.trim() ||
+    process.env.DEARME_EMAIL_UNSUBSCRIBE_SECRET?.trim() ||
+    process.env.PAPERCLIP_AGENT_JWT_SECRET?.trim() ||
+    "dearme-local-unsubscribe-secret"
+  );
+}
+
+export function createDearMeUnsubscribeToken(email: string, secret?: string) {
+  const normalizedEmail = normalizeEmailAddress(email);
+  const resolvedSecret = resolveUnsubscribeSecret(secret);
+  const payload = `${UNSUBSCRIBE_TOKEN_VERSION}:${normalizedEmail}`;
+  const signature = hmacHex(resolvedSecret, payload);
+  return `${base64UrlEncode(payload)}.${signature}`;
+}
+
+export function verifyDearMeUnsubscribeToken(
+  token: string,
+  secret?: string,
+): { ok: true; email: string } | { ok: false } {
+  const [encodedPayload, signature, ...extra] = token.split(".");
+  if (!encodedPayload || !signature || extra.length > 0) return { ok: false };
+  if (!/^[a-f0-9]{64}$/.test(signature)) return { ok: false };
+
+  const payload = base64UrlDecode(encodedPayload);
+  if (!payload) return { ok: false };
+  const [version, email, ...rest] = payload.split(":");
+  if (version !== UNSUBSCRIBE_TOKEN_VERSION || rest.length > 0 || !email || !isEmailAddress(email)) {
+    return { ok: false };
+  }
+
+  const expected = hmacHex(resolveUnsubscribeSecret(secret), payload);
+  const expectedBuffer = Buffer.from(expected, "hex");
+  const signatureBuffer = Buffer.from(signature, "hex");
+  if (
+    expectedBuffer.length !== signatureBuffer.length ||
+    !timingSafeEqual(expectedBuffer, signatureBuffer)
+  ) {
+    return { ok: false };
+  }
+
+  return { ok: true, email: normalizeEmailAddress(email) };
+}
+
+function unsubscribeUrl(baseUrl: string, email: string, secret?: string) {
+  const url = new URL(baseUrl);
+  url.searchParams.set("token", createDearMeUnsubscribeToken(email, secret));
+  return url.toString();
+}
+
+function appendUnsubscribeFooter(input: {
+  body: string;
+  email: string;
+  baseUrl: string;
+  secret?: string;
+  physicalAddress: string;
+}) {
+  return [
+    input.body.trimEnd(),
+    "",
+    "---",
+    "You're receiving this because you opted into DearMe outreach.",
+    `Unsubscribe: ${unsubscribeUrl(input.baseUrl, input.email, input.secret)}`,
+    `DearMe · ${input.physicalAddress}`,
+  ].join("\n");
+}
+
 function formatAmzDate(date: Date) {
   return date.toISOString().replace(/[:-]|\.\d{3}/g, "");
 }
@@ -416,6 +506,10 @@ export function createDearMeSendEmailDispatch(
   config: DearMeSendEmailDispatchConfig = {},
 ): ChannelDispatch {
   const emailsUrl = config.emailsUrl ?? DEFAULT_RESEND_EMAILS_URL;
+  const unsubscribeBaseUrl = config.unsubscribeBaseUrl ?? DEFAULT_UNSUBSCRIBE_BASE_URL;
+  const unsubscribeSecret = config.unsubscribeSecret;
+  const physicalAddress = config.physicalAddress ?? "[physical address placeholder]";
+  const isSuppressed = config.isSuppressed ?? (async () => false);
   const sesEndpointForRegion = config.sesEndpointForRegion ?? defaultSesEndpointForRegion;
   const fetchImpl: FetchLike =
     config.fetch ?? ((url, init) => fetch(url, init as RequestInit));
@@ -429,6 +523,29 @@ export function createDearMeSendEmailDispatch(
 
     const payload = parseSendEmailPayload(input.payload);
     if (!payload.ok) return error(payload.error);
+    const normalizedRecipient = normalizeEmailAddress(payload.value.toEmail);
+
+    let recipientSuppressed = true;
+    try {
+      recipientSuppressed = await isSuppressed(normalizedRecipient);
+    } catch {
+      return error("recipient_suppression_check_failed");
+    }
+    if (recipientSuppressed) {
+      return error("recipient_suppressed");
+    }
+
+    const payloadWithFooter: SendEmailPayload = {
+      ...payload.value,
+      toEmail: normalizedRecipient,
+      body: appendUnsubscribeFooter({
+        body: payload.value.body,
+        email: normalizedRecipient,
+        baseUrl: unsubscribeBaseUrl,
+        secret: unsubscribeSecret,
+        physicalAddress,
+      }),
+    };
 
     let plaintextCredential: string;
     try {
@@ -440,7 +557,7 @@ export function createDearMeSendEmailDispatch(
     const signingDate = now();
     const parsedCredential = parseCredentialPayload(
       plaintextCredential,
-      payload.value.provider,
+      payloadWithFooter.provider,
       signingDate,
     );
     if (parsedCredential.kind !== "credential") return parsedCredential;
@@ -448,7 +565,7 @@ export function createDearMeSendEmailDispatch(
     if (parsedCredential.credential.provider === "ses") {
       const url = new URL(sesEndpointForRegion(parsedCredential.credential.region));
       const body = JSON.stringify(buildSesEmailRequest(
-        payload.value,
+        payloadWithFooter,
         parsedCredential.credential,
       ));
       let response: FetchResponseLike;
@@ -495,7 +612,7 @@ export function createDearMeSendEmailDispatch(
           "Idempotency-Key": input.dispatchContext.idempotencyKey.slice(0, 256),
           "User-Agent": RESEND_USER_AGENT,
         },
-        body: JSON.stringify(buildResendEmailRequest(payload.value, parsedCredential.credential)),
+        body: JSON.stringify(buildResendEmailRequest(payloadWithFooter, parsedCredential.credential)),
       });
     } catch {
       return error("email-send-request-failed");

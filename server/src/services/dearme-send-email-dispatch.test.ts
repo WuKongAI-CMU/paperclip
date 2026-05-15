@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { localEncryptedProvider } from "../secrets/local-encrypted-provider.js";
 import {
+  createDearMeUnsubscribeToken,
   createDearMeSendEmailDispatch,
   resolveDearMeSendEmailCredential,
 } from "./dearme-send-email-dispatch.js";
@@ -55,6 +56,18 @@ function sesCredential(overrides: Record<string, unknown> = {}) {
     expiresAt: "2026-05-11T14:00:00.000Z",
     ...overrides,
   });
+}
+
+function expectedBody(email = "lead@example.com") {
+  const token = createDearMeUnsubscribeToken(email);
+  return [
+    "Thought this would be useful.",
+    "",
+    "---",
+    "You're receiving this because you opted into DearMe outreach.",
+    `Unsubscribe: https://api.dearme.app/v1/email/unsubscribe?token=${token}`,
+    "DearMe · [physical address placeholder]",
+  ].join("\n");
 }
 
 describe("createDearMeSendEmailDispatch", () => {
@@ -126,7 +139,7 @@ describe("createDearMeSendEmailDispatch", () => {
         from: "Peter Studio <peter@dearme.app>",
         to: ["lead@example.com"],
         subject: "Quick proof packet",
-        text: "Thought this would be useful.",
+        text: expectedBody(),
       }),
     });
   });
@@ -196,12 +209,77 @@ describe("createDearMeSendEmailDispatch", () => {
           Body: {
             Text: {
               Charset: "UTF-8",
-              Data: "Thought this would be useful.",
+              Data: expectedBody(),
             },
           },
         },
       },
     });
+  });
+
+  it("refuses suppressed recipients before resolving credentials", async () => {
+    const fetchMock = vi.fn();
+    const resolveCredential = vi.fn(async () => credential());
+    const dispatch = createDearMeSendEmailDispatch({
+      fetch: fetchMock,
+      resolveCredential,
+      isSuppressed: async (email) => email === "lead@example.com",
+    });
+
+    const result = await dispatch({
+      toolName: "send_email",
+      encryptedCredential: "opaque",
+      payload: {
+        toEmail: " Lead@Example.com ",
+        fromHandle: "Peter",
+        subject: "Quick proof packet",
+        body: "Thought this would be useful.",
+      },
+      dispatchContext,
+    });
+
+    expect(result).toEqual({
+      kind: "errored",
+      error: "recipient_suppressed",
+    });
+    expect(resolveCredential).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("appends a CAN-SPAM footer to Resend plain-text bodies", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ id: "email_123" }));
+    const dispatch = createDearMeSendEmailDispatch({
+      emailsUrl: "https://resend.example.test/emails",
+      unsubscribeBaseUrl: "https://api.example.test/v1/email/unsubscribe",
+      unsubscribeSecret: "test-secret",
+      physicalAddress: "123 Market St, San Francisco, CA",
+      fetch: fetchMock,
+      now: () => new Date("2026-05-11T12:00:00.000Z"),
+      resolveCredential: async () => credential(),
+    });
+
+    const result = await dispatch({
+      toolName: "send_email",
+      encryptedCredential: "opaque",
+      payload: {
+        toEmail: "lead@example.com",
+        fromHandle: "Peter",
+        subject: "Quick proof packet",
+        body: "Thought this would be useful.\n",
+      },
+      dispatchContext,
+    });
+
+    expect(result.kind).toBe("delivered");
+    const [, fetchInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      { body: string },
+    ];
+    const body = JSON.parse(fetchInit.body) as { text: string };
+    expect(body.text).toContain("Thought this would be useful.\n\n---");
+    expect(body.text).toContain("You're receiving this because you opted into DearMe outreach.");
+    expect(body.text).toContain("Unsubscribe: https://api.example.test/v1/email/unsubscribe?token=");
+    expect(body.text).toContain("DearMe · 123 Market St, San Francisco, CA");
   });
 
   it("maps Resend auth failures back to the wrapper reauth path without exposing the key", async () => {

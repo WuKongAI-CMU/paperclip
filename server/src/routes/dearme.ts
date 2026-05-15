@@ -61,6 +61,8 @@ import {
   verifyDearMeStripeWebhookSignature,
   type DearMeStripeCheckoutCompletedEvent,
 } from "../services/dearme-paid-beta-access.js";
+import { dearMeEmailSuppressService } from "../services/dearme-email-suppress.js";
+import { verifyDearMeUnsubscribeToken } from "../services/dearme-send-email-dispatch.js";
 
 function memoryBodyPreview(body: string) {
   return body.length > 700 ? `${body.slice(0, 697)}...` : body;
@@ -361,6 +363,22 @@ export function dearmeRoutes(
   const heartbeat = heartbeatService(db);
   const sseBus = getDearMeSseBus();
   const approvalResolver = dearMeApprovalResolverService(db, sseBus);
+  const emailSuppress = dearMeEmailSuppressService(db);
+
+  router.get("/v1/email/unsubscribe", async (req, res) => {
+    const token = typeof req.query.token === "string" ? req.query.token : "";
+    const verified = verifyDearMeUnsubscribeToken(token);
+    if (!verified.ok) {
+      res.status(400).type("html").send("<!doctype html><title>Invalid unsubscribe link</title><p>Invalid unsubscribe link.</p>");
+      return;
+    }
+
+    await emailSuppress.suppress(verified.email, "unsubscribe");
+    res
+      .status(200)
+      .type("html")
+      .send("<!doctype html><title>Unsubscribed</title><p>You've been unsubscribed.</p>");
+  });
 
   async function recordDearMeOutputReview(input: {
     companyId: string;
