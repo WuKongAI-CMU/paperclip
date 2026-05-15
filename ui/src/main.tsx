@@ -15,11 +15,13 @@ import { EditorAutocompleteProvider } from "./context/EditorAutocompleteContext"
 import { ToastProvider } from "./context/ToastContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { initAnalytics } from "./lib/analytics";
 import { initPluginBridge } from "./plugins/bridge-init";
 import { PluginLauncherProvider } from "./plugins/launchers";
 import "@mdxeditor/editor/style.css";
 import "./index.css";
 
+initAnalytics();
 initPluginBridge(React, ReactDOM);
 
 if ("serviceWorker" in navigator) {

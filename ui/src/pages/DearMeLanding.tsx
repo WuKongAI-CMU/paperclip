@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, Mail, ShieldCheck, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { capture } from "@/lib/analytics";
 import { useNavigate } from "@/lib/router";
 import {
   DearMeEvidenceGrid,
@@ -34,6 +35,10 @@ export function DearMeLanding() {
   const [knownFor, setKnownFor] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    capture("landing_viewed");
+  }, []);
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const answer = knownFor.trim();
@@ -42,6 +47,7 @@ export function DearMeLanding() {
       return;
     }
 
+    capture("landing_cta_submitted", { positioning_length: answer.length });
     const search = new URLSearchParams({ knownFor: answer });
     navigate(`/dearme?${search.toString()}`);
   }
