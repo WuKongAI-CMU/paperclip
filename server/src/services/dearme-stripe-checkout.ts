@@ -9,6 +9,7 @@ import {
   type DearMeHostedPaymentReceiptRecordResult,
   type DearMeStripeCheckoutCompletedEvent,
 } from "./dearme-paid-beta-access.js";
+import { sendLifecycleEvent } from "./dearme-lifecycle.js";
 
 export interface DearMeCheckoutSessionInput {
   email: string;
@@ -230,6 +231,22 @@ function invoiceEmail(event: DearMeStripeInvoicePaidEvent) {
   return typeof email === "string" ? normalizeEmail(email) : "";
 }
 
+function subscriptionDeletedEmail(eventPayload: unknown) {
+  const subscription = (eventPayload as { data?: { object?: unknown } }).data?.object as {
+    customer_email?: unknown;
+    customer_details?: { email?: unknown } | null;
+    metadata?: Record<string, unknown> | null;
+  } | null | undefined;
+  const directEmail = typeof subscription?.customer_email === "string" ? subscription.customer_email : "";
+  const customerDetailsEmail = typeof subscription?.customer_details?.email === "string"
+    ? subscription.customer_details.email
+    : "";
+  const metadataEmail = typeof subscription?.metadata?.customerEmail === "string"
+    ? subscription.metadata.customerEmail
+    : "";
+  return normalizeEmail(directEmail || customerDetailsEmail || metadataEmail);
+}
+
 function formValue(value: string | number) {
   return typeof value === "number" ? String(value) : value;
 }
@@ -434,6 +451,14 @@ export function dearMeStripeCheckoutService(
     const eventType = eventPayload && typeof eventPayload === "object"
       ? (eventPayload as { type?: unknown }).type
       : null;
+    // Lifecycle event hook: fire cancellation lifecycle email at the boundary of
+    // handling. DM-SUBSCRIPTIONS keeps full event-routing authority below.
+    if (eventType === "customer.subscription.deleted") {
+      const lifecycleEmail = subscriptionDeletedEmail(eventPayload);
+      if (lifecycleEmail) {
+        void sendLifecycleEvent({ email: lifecycleEmail, eventName: "dearme_cancelled" });
+      }
+    }
     if (
       eventType !== "checkout.session.completed" &&
       eventType !== "invoice.paid" &&
@@ -648,6 +673,15 @@ export function dearMeStripeCheckoutService(
 
     const result = await paidBetaAccess.recordHostedPaymentReceipts(receipt.companyId, [receipt]);
     processedStripeEventIds.add(event.id);
+    const lifecycleEmail = checkoutSessionEmail(event);
+    if (lifecycleEmail) {
+      const tier = event.data.object.metadata?.tier ?? event.data.object.metadata?.access ?? "paid_beta";
+      void sendLifecycleEvent({
+        email: lifecycleEmail,
+        eventName: "dearme_first_payment",
+        properties: { tier },
+      });
+    }
 
     return {
       received: true,
