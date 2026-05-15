@@ -5569,6 +5569,135 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("renders customer-safe empty states with next actions across core workroom areas", async () => {
+    const emptyWorkbench = workbenchResponse();
+    emptyWorkbench.workReady = [];
+    emptyWorkbench.activeWork = [];
+    emptyWorkbench.decisionsNeeded = [];
+    emptyWorkbench.batchDecisions = [];
+    emptyWorkbench.memory = {
+      ...emptyWorkbench.memory,
+      summary: "Voice & Memory is ready for the first real sample.",
+      sourceCount: 0,
+      voiceSampleCount: 0,
+      proofCount: 0,
+      voiceProfile: {
+        ...emptyWorkbench.memory.voiceProfile,
+        sampleCount: 0,
+        confidence: 0,
+        guidance: "Voice Editor is ready for the first real sample.",
+        nextStep: "Add one real sample so DearMe can protect your tone before public work.",
+      },
+      sourcePlan: memorySourcePlanFixture({}),
+      sourceReviewQueue: [],
+      latest: [],
+    };
+    mockDearmeApi.getWorkbench.mockResolvedValue(emptyWorkbench);
+    mockDearmeApi.getOutputs.mockResolvedValue({ companyId: "company-1", outputs: [] });
+
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const workReady = surfaceByLabel(container, "Work ready");
+    expect(workReady.textContent).toContain("Nothing is ready for review yet");
+    expect(workReady.textContent).toContain("Open Voice & Memory");
+    expect(buttonByText(workReady, "Open Voice & Memory")).not.toBeNull();
+
+    const decisions = surfaceByLabel(container, "Decisions needed");
+    expect(decisions.textContent).toContain("No high-leverage decision is waiting right now");
+    expect(decisions.textContent).toContain("Review Work Ready");
+    expect(buttonByText(decisions, "Review Work Ready")).not.toBeNull();
+
+    const voiceMemory = surfaceByLabel(container, "Voice & Memory");
+    expect(voiceMemory.textContent).toContain("No Voice & Memory saved yet");
+    expect(voiceMemory.textContent).toContain("Add first source");
+    expect(buttonByText(voiceMemory, "Add first source")).not.toBeNull();
+
+    const brandWork = surfaceByLabel(container, "Brand work ready");
+    expect(brandWork.textContent).toContain("Brand work has not started yet");
+    expect(brandWork.textContent).toContain("Open Voice & Memory");
+    expect(buttonByText(brandWork, "Open Voice & Memory")).not.toBeNull();
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.orchestrationName,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+    ]);
+
+    await act(async () => {
+      root.unmount();
+    });
+    container.textContent = "";
+
+    mockLocation.search = "?view=opportunities";
+    const opportunitiesRoot = createRoot(container);
+    const opportunitiesQueryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      opportunitiesRoot.render(
+        <QueryClientProvider client={opportunitiesQueryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const opportunities = surfaceByLabel(container, "Opportunity work ready");
+    expect(opportunities.textContent).toContain("Opportunity scouting has not produced reviewable leads yet");
+    expect(opportunities.textContent).toContain("Open Voice & Memory");
+    expect(buttonByText(opportunities, "Open Voice & Memory")).not.toBeNull();
+
+    await act(async () => {
+      opportunitiesRoot.unmount();
+    });
+    container.textContent = "";
+
+    mockLocation.search = "?view=portfolio";
+    const portfolioRoot = createRoot(container);
+    const portfolioQueryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      portfolioRoot.render(
+        <QueryClientProvider client={portfolioQueryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const portfolio = surfaceByLabel(container, "Portfolio work ready");
+    expect(portfolio.textContent).toContain("No portfolio proof is ready yet");
+    expect(portfolio.textContent).toContain("Open Voice & Memory");
+    expect(buttonByText(portfolio, "Open Voice & Memory")).not.toBeNull();
+    expectNoHiddenProductTerms(container.textContent, [
+      HIDDEN_PRODUCT_TERMS.localKernel,
+      HIDDEN_PRODUCT_TERMS.orchestrationName,
+      HIDDEN_PRODUCT_TERMS.bridgeName,
+      HIDDEN_PRODUCT_TERMS.vendorName,
+      HIDDEN_PRODUCT_TERMS.setupRecord,
+    ]);
+
+    await act(async () => {
+      portfolioRoot.unmount();
+    });
+  });
+
   it("records guided Voice & Memory source material without exposing substrate terms", async () => {
     const root = createRoot(container);
     const queryClient = new QueryClient({
