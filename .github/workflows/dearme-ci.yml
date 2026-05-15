@@ -1,0 +1,148 @@
+name: DearMe CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - codex/dearme-*
+  push:
+    branches:
+      - main
+      - codex/dearme-*
+
+jobs:
+  typecheck-test:
+    name: Typecheck and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck packages
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          packages=(
+            "@paperclipai/db"
+            "@paperclipai/server"
+            "@paperclipai/ui"
+            "@paperclipai/dearme-openclaw"
+            "@paperclipai/dearme-mcp"
+            "@paperclipai/shared"
+          )
+
+          for package in "${packages[@]}"; do
+            pnpm --filter "$package" typecheck
+          done
+
+      - name: Test packages
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          packages=(
+            "@paperclipai/db"
+            "@paperclipai/server"
+            "@paperclipai/ui"
+            "@paperclipai/dearme-openclaw"
+            "@paperclipai/dearme-mcp"
+            "@paperclipai/shared"
+          )
+
+          for package in "${packages[@]}"; do
+            has_test_script="$(pnpm --filter "$package" exec node -e "const scripts = require(process.cwd() + '/package.json').scripts || {}; process.stdout.write(scripts.test ? 'yes' : 'no')")"
+            if [ "$has_test_script" = "yes" ]; then
+              pnpm --filter "$package" test
+            else
+              pnpm --filter "$package" exec npx vitest run
+            fi
+          done
+
+  prod-ready-template:
+    name: DearMe prod-ready template
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check prod-ready script
+        id: prod-ready-script
+        shell: bash
+        run: |
+          set -euo pipefail
+          if node -e "const scripts = require('./package.json').scripts || {}; process.exit(scripts['dearme:prod-ready'] ? 0 : 1)"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run prod-ready template
+        if: steps.prod-ready-script.outputs.exists == 'true'
+        shell: bash
+        run: pnpm dearme:prod-ready -- --json | tee dearme-prod-ready.json
+
+      - name: Record skipped prod-ready template
+        if: steps.prod-ready-script.outputs.exists != 'true'
+        shell: bash
+        run: printf '%s\n' '{"skipped":true,"reason":"dearme:prod-ready script is absent"}' | tee dearme-prod-ready.json
+
+      - name: Upload prod-ready output
+        uses: actions/upload-artifact@v4
+        with:
+          name: dearme-prod-ready-output
+          path: dearme-prod-ready.json
