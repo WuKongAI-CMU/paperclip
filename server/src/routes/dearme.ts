@@ -41,6 +41,10 @@ import {
 } from "../services/index.js";
 import { describeDearMePrivateCycleBlocker } from "../services/dearme-paid-beta-access.js";
 import {
+  dearMeStripeCheckoutService,
+  DearMeStripeCheckoutError,
+} from "../services/dearme-stripe-checkout.js";
+import {
   getDearMeSseBus,
   type DearMeSseEvent,
 } from "../services/dearme-sse-bus.js";
@@ -99,6 +103,10 @@ const FIRST_CYCLE_START_ORIGIN_KIND = "dearme_first_cycle_start";
 const DEARME_MEMORY_UPDATED_ACTION = "dearme.memory_updated";
 const DEARME_MEMORY_ARCHIVED_ACTION = "dearme.memory_archived";
 const DEARME_STRIPE_WEBHOOK_RECORDED_ACTION = "dearme.stripe_payment_webhook_recorded";
+const dearMeCheckoutStartRequestSchema = z.object({
+  email: z.string().trim().email(),
+  plan: z.literal("beta"),
+});
 const CHIEF_OF_STAFF_INTENT_LABELS: Record<DearMeChiefOfStaffMessageIntent, string> = {
   plan_next: "Plan next moves",
   draft_content: "Draft content",
@@ -149,6 +157,9 @@ function parseDearMeStripeCheckoutCompletedEvent(payload: unknown): DearMeStripe
 function normalizeDearMeRouteError(err: unknown) {
   if (err instanceof ZodError) {
     return new HttpError(400, "Validation error");
+  }
+  if (err instanceof DearMeStripeCheckoutError) {
+    return new HttpError(err.status, err.message);
   }
   if (!(err instanceof HttpError)) {
     return err;
@@ -245,6 +256,19 @@ function compactDearMeMemoryTitle(value: string) {
   return `${compact.slice(0, 157).trimEnd()}...`;
 }
 
+function configuredEnvValue(name: string) {
+  return process.env[name]?.trim() ?? "";
+}
+
+function publicRequestBaseUrl(req: { protocol: string; get(name: string): string | undefined }) {
+  const configuredPublicUrl = configuredEnvValue("PAPERCLIP_PUBLIC_URL");
+  if (configuredPublicUrl) return configuredPublicUrl.replace(/\/+$/, "");
+  const origin = req.get("origin")?.trim();
+  if (origin) return origin.replace(/\/+$/, "");
+  const host = req.get("host")?.trim();
+  return host ? `${req.protocol}://${host}` : "";
+}
+
 function dearMeReviewFeedbackMemoryTitle(outputTitle: string) {
   return compactDearMeMemoryTitle(`Review feedback for ${outputTitle}`);
 }
@@ -329,6 +353,7 @@ export function dearmeRoutes(
     voiceSemanticScorer: options.voiceSemanticScorer,
   });
   const paidBetaAccess = dearmePaidBetaAccessService(db);
+  const stripeCheckout = dearMeStripeCheckoutService(db, { paidBetaAccess });
   const workbench = dearmeWorkbenchService(db, {
     voiceProfileStore: options.voiceProfileStore,
     voiceSemanticScorer: options.voiceSemanticScorer,
@@ -1012,6 +1037,55 @@ export function dearmeRoutes(
       });
 
       res.status(201).json(result);
+    },
+  );
+
+  router.post(
+    "/checkout/start",
+    validate(dearMeCheckoutStartRequestSchema),
+    async (req, res) => {
+      const secretKey = configuredEnvValue("DEARME_STRIPE_SECRET_KEY");
+      const priceId = configuredEnvValue("DEARME_STRIPE_PRICE_BETA");
+      if (!secretKey || !priceId) {
+        throw new HttpError(503, "DearMe Stripe Checkout is not configured.");
+      }
+
+      const baseUrl = publicRequestBaseUrl(req);
+      if (!baseUrl) {
+        throw new HttpError(503, "DearMe Stripe Checkout return URLs are not configured.");
+      }
+
+      const result = await stripeCheckout.createCheckoutSession({
+        email: req.body.email,
+        priceId,
+        successUrl: `${baseUrl}/dearme/checkout/success`,
+        cancelUrl: `${baseUrl}/dearme/checkout/cancel`,
+      });
+
+      res.status(200).json({ checkoutUrl: result.checkoutUrl });
+    },
+  );
+
+  router.post(
+    "/checkout/webhook",
+    async (req, res) => {
+      const webhookSecret = configuredEnvValue("DEARME_STRIPE_WEBHOOK_SECRET");
+      if (!webhookSecret) {
+        throw new HttpError(503, "DearMe Stripe Checkout webhook is not configured.");
+      }
+
+      const rawBody = (req as { rawBody?: Buffer }).rawBody;
+      if (!rawBody) {
+        throw new HttpError(400, "DearMe Stripe Checkout webhook requires a raw body.");
+      }
+
+      const result = await stripeCheckout.handleCheckoutWebhook({
+        rawBody,
+        signatureHeader: req.header("stripe-signature"),
+        webhookSecret,
+      });
+
+      res.status(200).json(result);
     },
   );
 
