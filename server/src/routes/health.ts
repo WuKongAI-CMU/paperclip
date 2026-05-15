@@ -9,6 +9,162 @@ import { logger } from "../middleware/logger.js";
 import { instanceSettingsService } from "../services/instance-settings.js";
 import { serverVersion } from "../version.js";
 
+type ProbeCheckStatus = "ok" | "failed";
+
+type ProbeCheck = {
+  name: "database" | "dearme_public_url" | "database_url";
+  status: ProbeCheckStatus;
+  durationMs: number;
+  error?: string;
+};
+
+type HealthProbeRoutesOptions = {
+  checkTimeoutMs?: number;
+  now?: () => Date;
+  uptimeSeconds?: () => number;
+  version?: string;
+};
+
+const DEFAULT_CHECK_TIMEOUT_MS = 1_000;
+
+function normalizeDurationMs(startedAt: number) {
+  return Math.max(0, Math.round(performance.now() - startedAt));
+}
+
+function sanitizeProbeError(error: unknown) {
+  if (error instanceof Error && error.message === "check_timeout") return "timeout";
+  if (error instanceof Error && error.message.trim().length > 0) return "failed";
+  return "failed";
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(() => reject(new Error("check_timeout")), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+async function runProbeCheck(
+  name: ProbeCheck["name"],
+  action: () => Promise<void> | void,
+  timeoutMs: number,
+): Promise<ProbeCheck> {
+  const startedAt = performance.now();
+  try {
+    await withTimeout(Promise.resolve().then(action), timeoutMs);
+    return {
+      name,
+      status: "ok",
+      durationMs: normalizeDurationMs(startedAt),
+    };
+  } catch (error) {
+    return {
+      name,
+      status: "failed",
+      durationMs: normalizeDurationMs(startedAt),
+      error: sanitizeProbeError(error),
+    };
+  }
+}
+
+export function healthProbeRoutes(db?: Pick<Db, "execute">, opts: HealthProbeRoutesOptions = {}) {
+  const router = Router();
+  const checkTimeoutMs = opts.checkTimeoutMs ?? DEFAULT_CHECK_TIMEOUT_MS;
+  const getNow = opts.now ?? (() => new Date());
+  const getUptimeSeconds = opts.uptimeSeconds ?? (() => process.uptime());
+  const version = opts.version ?? serverVersion;
+
+  router.get("/healthz", (_req, res) => {
+    try {
+      res.status(200).json({
+        status: "ok",
+        version,
+        uptimeSeconds: Math.max(0, Math.floor(getUptimeSeconds())),
+        now: getNow().toISOString(),
+      });
+    } catch {
+      try {
+        res.status(200).json({
+          status: "ok",
+          version,
+          uptimeSeconds: 0,
+          now: new Date().toISOString(),
+        });
+      } catch {
+        res.status(200).end();
+      }
+    }
+  });
+
+  router.get("/readyz", async (_req, res) => {
+    try {
+      const checks = await Promise.all([
+        runProbeCheck(
+          "database",
+          async () => {
+            if (!db) throw new Error("database_unavailable");
+            await db.execute(sql`SELECT 1`);
+          },
+          checkTimeoutMs,
+        ),
+        runProbeCheck(
+          "dearme_public_url",
+          () => {
+            if (!process.env.DEARME_PUBLIC_URL?.trim()) throw new Error("missing_env");
+          },
+          checkTimeoutMs,
+        ),
+        runProbeCheck(
+          "database_url",
+          () => {
+            if (!process.env.DATABASE_URL?.trim()) throw new Error("missing_env");
+          },
+          checkTimeoutMs,
+        ),
+      ]);
+      const failedChecks = checks
+        .filter((check) => check.status !== "ok")
+        .map((check) => check.name);
+
+      if (failedChecks.length > 0) {
+        res.status(503).json({
+          status: "not_ready",
+          checks,
+          failedChecks,
+        });
+        return;
+      }
+
+      res.status(200).json({
+        status: "ready",
+        checks,
+      });
+    } catch {
+      res.status(503).json({
+        status: "not_ready",
+        checks: [
+          {
+            name: "database",
+            status: "failed",
+            durationMs: 0,
+            error: "failed",
+          },
+        ],
+        failedChecks: ["database"],
+      });
+    }
+  });
+
+  return router;
+}
+
 function shouldExposeFullHealthDetails(
   actorType: "none" | "board" | "agent" | null | undefined,
   deploymentMode: DeploymentMode,
