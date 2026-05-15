@@ -589,6 +589,13 @@
       "when": 1779148800000,
       "tag": "0083_dearme_email_suppress",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1779235200000,
+      "tag": "0084_dearme_referral",
+      "breakpoints": true
     }
   ]
 }
