@@ -351,6 +351,9 @@ Plus governance:
 - **`SCALE-LAUNCH-AND-REVENUE-ARCHITECTURE.md`** — canonical capability
   matrix mapping every scale/revenue need to *reuse (donor or third-party)*
   or *bounded build*. ~15 net-new `dm-*` tickets, mostly thin R2 wrappers.
+- **`ENGINEER-GOAL-FIRST-PAID-CUSTOMER.md`** — handoff Goal for the
+  engineer who takes DearMe from "code in tree" to "first $29 paid". 14
+  days, 5 verifiable DoD items, explicit non-goals, owner unblockers.
 
 ### Reference / research (read on demand, not by default)
 
