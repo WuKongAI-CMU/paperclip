@@ -53,7 +53,7 @@ import type {
   DearMeVoiceSemanticScorer,
 } from "../services/dearme-voice-gate.js";
 import { forbidden, HttpError, notFound } from "../errors.js";
-import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertAuthenticated, assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { heartbeatService } from "../services/heartbeat.js";
 import { queueIssueAssignmentWakeup } from "../services/issue-assignment-wakeup.js";
 import {
@@ -106,6 +106,9 @@ const DEARME_STRIPE_WEBHOOK_RECORDED_ACTION = "dearme.stripe_payment_webhook_rec
 const dearMeCheckoutStartRequestSchema = z.object({
   email: z.string().trim().email(),
   plan: z.literal("beta"),
+});
+const dearMeBillingPortalRequestSchema = z.object({
+  customerId: z.string().trim().min(1),
 });
 const CHIEF_OF_STAFF_INTENT_LABELS: Record<DearMeChiefOfStaffMessageIntent, string> = {
   plan_next: "Plan next moves",
@@ -1086,6 +1089,30 @@ export function dearmeRoutes(
       });
 
       res.status(200).json(result);
+    },
+  );
+
+  router.post(
+    "/billing/portal",
+    validate(dearMeBillingPortalRequestSchema),
+    async (req, res) => {
+      assertAuthenticated(req);
+      const secretKey = configuredEnvValue("DEARME_STRIPE_SECRET_KEY");
+      if (!secretKey) {
+        throw new HttpError(503, "DearMe Stripe Customer Portal is not configured.");
+      }
+
+      const baseUrl = publicRequestBaseUrl(req);
+      if (!baseUrl) {
+        throw new HttpError(503, "DearMe Stripe Customer Portal return URL is not configured.");
+      }
+
+      const result = await stripeCheckout.createPortalSession({
+        customerId: req.body.customerId,
+        returnUrl: `${baseUrl}/dearme/billing`,
+      });
+
+      res.status(200).json({ portalUrl: result.portalUrl });
     },
   );
 
