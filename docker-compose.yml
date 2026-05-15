@@ -55,6 +55,7 @@ services:
       PAPERCLIP_DEPLOYMENT_MODE: authenticated
       PAPERCLIP_DEPLOYMENT_EXPOSURE: private
       PAPERCLIP_MIGRATION_PROMPT: never
+      DEARME_AUTO_MIGRATE: "1"
     expose:
       - "3000"
     healthcheck:

@@ -130,7 +130,16 @@ export async function startServer(): Promise<StartedServer> {
   
   type EnsureMigrationsOptions = {
     autoApply?: boolean;
+    prompt?: boolean;
   };
+
+  function resolveDearMeAutoMigrate(): boolean {
+    const raw = process.env.DEARME_AUTO_MIGRATE?.trim().toLowerCase();
+    if (raw === undefined || raw === "") return true;
+    if (["1", "true", "yes", "on"].includes(raw)) return true;
+    if (["0", "false", "no", "off"].includes(raw)) return false;
+    return true;
+  }
   
   async function ensureMigrations(
     connectionString: string,
@@ -138,6 +147,7 @@ export async function startServer(): Promise<StartedServer> {
     opts?: EnsureMigrationsOptions,
   ): Promise<MigrationSummary> {
     const autoApply = opts?.autoApply === true;
+    const prompt = opts?.prompt !== false;
     let state = await inspectMigrations(connectionString);
     if (state.status === "needsMigrations" && state.reason === "pending-migrations") {
       const repair = await reconcilePendingMigrationHistory(connectionString);
@@ -156,11 +166,11 @@ export async function startServer(): Promise<StartedServer> {
         { tableCount: state.tableCount },
         `${label} has existing tables but no migration journal. Run migrations manually to sync schema.`,
       );
-      const apply = autoApply ? true : await promptApplyMigrations(state.pendingMigrations);
+      const apply = autoApply ? true : prompt ? await promptApplyMigrations(state.pendingMigrations) : false;
       if (!apply) {
         throw new Error(
           `${label} has pending migrations (${formatPendingMigrationSummary(state.pendingMigrations)}). ` +
-            "Refusing to start against a stale schema. Run pnpm db:migrate or set PAPERCLIP_MIGRATION_AUTO_APPLY=true.",
+            "Refusing to start against a stale schema. Run pnpm db:migrate or set DEARME_AUTO_MIGRATE=1.",
         );
       }
   
@@ -169,11 +179,11 @@ export async function startServer(): Promise<StartedServer> {
       return "applied (pending migrations)";
     }
   
-    const apply = autoApply ? true : await promptApplyMigrations(state.pendingMigrations);
+    const apply = autoApply ? true : prompt ? await promptApplyMigrations(state.pendingMigrations) : false;
     if (!apply) {
       throw new Error(
         `${label} has pending migrations (${formatPendingMigrationSummary(state.pendingMigrations)}). ` +
-          "Refusing to start against a stale schema. Run pnpm db:migrate or set PAPERCLIP_MIGRATION_AUTO_APPLY=true.",
+          "Refusing to start against a stale schema. Run pnpm db:migrate or set DEARME_AUTO_MIGRATE=1.",
       );
     }
   
@@ -272,7 +282,11 @@ export async function startServer(): Promise<StartedServer> {
     | { mode: "embedded-postgres"; dataDir: string; port: number };
   if (config.databaseUrl) {
     const migrationUrl = config.databaseMigrationUrl ?? config.databaseUrl;
-    migrationSummary = await ensureMigrations(migrationUrl, "PostgreSQL");
+    const autoApplyDearMeMigrations = resolveDearMeAutoMigrate();
+    migrationSummary = await ensureMigrations(migrationUrl, "PostgreSQL", {
+      autoApply: autoApplyDearMeMigrations,
+      prompt: autoApplyDearMeMigrations,
+    });
   
     db = createDb(config.databaseUrl);
     pluginMigrationDb = config.databaseMigrationUrl ? createDb(config.databaseMigrationUrl) : db;

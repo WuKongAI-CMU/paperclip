@@ -5,6 +5,7 @@ const ORIGINAL_PAPERCLIP_RUNTIME_API_URL = process.env.PAPERCLIP_RUNTIME_API_URL
 const ORIGINAL_PAPERCLIP_RUNTIME_API_CANDIDATES_JSON = process.env.PAPERCLIP_RUNTIME_API_CANDIDATES_JSON;
 const ORIGINAL_PAPERCLIP_LISTEN_HOST = process.env.PAPERCLIP_LISTEN_HOST;
 const ORIGINAL_PAPERCLIP_LISTEN_PORT = process.env.PAPERCLIP_LISTEN_PORT;
+const ORIGINAL_DEARME_AUTO_MIGRATE = process.env.DEARME_AUTO_MIGRATE;
 
 const {
   createAppMock,
@@ -15,6 +16,8 @@ const {
   feedbackExportServiceMock,
   feedbackServiceFactoryMock,
   fakeServer,
+  inspectMigrationsMock,
+  applyPendingMigrationsMock,
   loadConfigMock,
 } = vi.hoisted(() => {
   const createAppMock = vi.fn(async () => ((_: unknown, __: unknown) => {}) as never);
@@ -22,6 +25,8 @@ const {
   const createDbMock = vi.fn(() => ({}) as never);
   const detectPortMock = vi.fn(async (port: number) => port);
   const deriveAuthTrustedOriginsMock = vi.fn(() => []);
+  const inspectMigrationsMock = vi.fn(async () => ({ status: "upToDate" }));
+  const applyPendingMigrationsMock = vi.fn(async () => undefined);
   const feedbackExportServiceMock = {
     flushPendingFeedbackTraces: vi.fn(async () => ({ attempted: 0, sent: 0, failed: 0 })),
   };
@@ -46,6 +51,8 @@ const {
     feedbackExportServiceMock,
     feedbackServiceFactoryMock,
     fakeServer,
+    inspectMigrationsMock,
+    applyPendingMigrationsMock,
     loadConfigMock,
   };
 });
@@ -103,8 +110,8 @@ vi.mock("@paperclipai/db", () => ({
   createDb: createDbMock,
   ensurePostgresDatabase: vi.fn(),
   getPostgresDataDirectory: vi.fn(),
-  inspectMigrations: vi.fn(async () => ({ status: "upToDate" })),
-  applyPendingMigrations: vi.fn(),
+  inspectMigrations: inspectMigrationsMock,
+  applyPendingMigrations: applyPendingMigrationsMock,
   reconcilePendingMigrationHistory: vi.fn(async () => ({ repairedMigrations: [] })),
   formatDatabaseBackupResult: vi.fn(() => "ok"),
   runDatabaseBackup: vi.fn(),
@@ -194,13 +201,21 @@ vi.mock("../auth/better-auth.js", () => ({
 
 import { startServer } from "../index.ts";
 
+afterEach(() => {
+  if (ORIGINAL_DEARME_AUTO_MIGRATE === undefined) delete process.env.DEARME_AUTO_MIGRATE;
+  else process.env.DEARME_AUTO_MIGRATE = ORIGINAL_DEARME_AUTO_MIGRATE;
+});
+
 describe("startServer feedback export wiring", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     loadConfigMock.mockReturnValue(buildTestConfig());
     createBetterAuthInstanceMock.mockReturnValue({});
     deriveAuthTrustedOriginsMock.mockReturnValue([]);
+    inspectMigrationsMock.mockResolvedValue({ status: "upToDate" });
+    applyPendingMigrationsMock.mockResolvedValue(undefined);
     process.env.BETTER_AUTH_SECRET = "test-secret";
+    delete process.env.DEARME_AUTO_MIGRATE;
   });
 
   it("passes the feedback export service into createApp so pending traces flush in runtime", async () => {
@@ -217,13 +232,64 @@ describe("startServer feedback export wiring", () => {
   });
 });
 
+describe("startServer DearMe migration boot", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    loadConfigMock.mockReturnValue(buildTestConfig());
+    createBetterAuthInstanceMock.mockReturnValue({});
+    deriveAuthTrustedOriginsMock.mockReturnValue([]);
+    inspectMigrationsMock.mockResolvedValue({ status: "upToDate" });
+    applyPendingMigrationsMock.mockResolvedValue(undefined);
+    process.env.BETTER_AUTH_SECRET = "test-secret";
+    delete process.env.DEARME_AUTO_MIGRATE;
+  });
+
+  it("applies pending external database migrations before listening by default", async () => {
+    inspectMigrationsMock.mockResolvedValueOnce({
+      status: "needsMigrations",
+      reason: "pending-migrations",
+      pendingMigrations: ["0001_boot.sql"],
+    });
+    applyPendingMigrationsMock.mockImplementationOnce(async () => {
+      expect(fakeServer.listen).not.toHaveBeenCalled();
+    });
+
+    await startServer();
+
+    expect(inspectMigrationsMock).toHaveBeenCalledWith("postgres://paperclip:paperclip@127.0.0.1:5432/paperclip");
+    expect(applyPendingMigrationsMock).toHaveBeenCalledWith(
+      "postgres://paperclip:paperclip@127.0.0.1:5432/paperclip",
+    );
+    expect(
+      applyPendingMigrationsMock.mock.invocationCallOrder[0],
+    ).toBeLessThan(fakeServer.listen.mock.invocationCallOrder[0]);
+  });
+
+  it("fails closed before listening when DearMe auto-migration is disabled and migrations are pending", async () => {
+    process.env.DEARME_AUTO_MIGRATE = "0";
+    inspectMigrationsMock.mockResolvedValueOnce({
+      status: "needsMigrations",
+      reason: "pending-migrations",
+      pendingMigrations: ["0001_boot.sql"],
+    });
+
+    await expect(startServer()).rejects.toThrow("DEARME_AUTO_MIGRATE=1");
+
+    expect(applyPendingMigrationsMock).not.toHaveBeenCalled();
+    expect(fakeServer.listen).not.toHaveBeenCalled();
+  });
+});
+
 describe("startServer authenticated auth origin setup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     loadConfigMock.mockReturnValue(buildTestConfig());
     createBetterAuthInstanceMock.mockReturnValue({});
     deriveAuthTrustedOriginsMock.mockReturnValue([]);
+    inspectMigrationsMock.mockResolvedValue({ status: "upToDate" });
+    applyPendingMigrationsMock.mockResolvedValue(undefined);
     process.env.BETTER_AUTH_SECRET = "test-secret";
+    delete process.env.DEARME_AUTO_MIGRATE;
   });
 
   it("derives trusted origins from the detected listen port before auth initializes", async () => {
@@ -267,8 +333,11 @@ describe("startServer PAPERCLIP_API_URL handling", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     loadConfigMock.mockReturnValue(buildTestConfig());
+    inspectMigrationsMock.mockResolvedValue({ status: "upToDate" });
+    applyPendingMigrationsMock.mockResolvedValue(undefined);
     process.env.BETTER_AUTH_SECRET = "test-secret";
     delete process.env.PAPERCLIP_API_URL;
+    delete process.env.DEARME_AUTO_MIGRATE;
   });
 
   afterEach(() => {
