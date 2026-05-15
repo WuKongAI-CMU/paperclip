@@ -1,7 +1,7 @@
 # @paperclipai/dearme-mcp
 
 DearMe MCP servers — exposes the 12-role tool surface (voice gate, runtime
-files) as in-process MCP servers consumable by OpenClaw, Claude Desktop,
+files, research) as in-process MCP servers consumable by OpenClaw, Claude Desktop,
 Claude Code, and any MCP-aware client.
 
 ## Provenance
@@ -17,6 +17,10 @@ This package absorbs two slices from clawdbob's MCP layer (see
   TodoWrite/NotebookEdit. The Bash dispatcher refuses any command matching
   `DEARME_RUNTIME_DENY_BASH_PATTERNS`, which mirrors the lockdown layer in
   `dearme-openclaw`.
+- **dm-cb-04** — DearMe web-search MCP server. Proxies `web_search` and
+  `web_fetch` to DearMe's `/v1/research/*` endpoints with the same
+  `DEARME_API_KEY` / `DEARME_PROXY_URL` configuration shape as the voice
+  server.
 
 ## Servers
 
@@ -24,16 +28,21 @@ This package absorbs two slices from clawdbob's MCP layer (see
 |---|---|---|---|
 | `dearme_voice` | `createVoiceServer` | `voice.score`, `voice.profile.get` | P0 |
 | `dearme_runtime_files` | `createRuntimeFilesServer` | `Bash`, `Read`, `Edit`, `Write`, `Glob`, `Grep`, `TodoWrite`, `NotebookEdit` | P0 |
+| `dearme_research` | `createWebSearchServer` | `web_search`, `web_fetch` | P1 |
 
 The catalog is exported via `DEARME_MCP_CATALOG` from `./catalog.js`. It also
 includes future-tier entries (`dearme_workbench`, `dearme_memory`,
-`dearme_research`, `dearme_opportunities`) listed for stable allow-list
-pattern generation; their server modules ship in later slices.
+`dearme_opportunities`) listed for stable allow-list pattern generation; their
+server modules ship in later slices.
 
 ## Usage
 
 ```ts
-import { createVoiceServer, createRuntimeFilesServer } from "@paperclipai/dearme-mcp";
+import {
+  createRuntimeFilesServer,
+  createVoiceServer,
+  createWebSearchServer,
+} from "@paperclipai/dearme-mcp";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 const voice = createVoiceServer({
@@ -42,6 +51,12 @@ const voice = createVoiceServer({
   userHandle: "peter-studio",
 });
 await voice.connect(new StdioServerTransport());
+
+const research = createWebSearchServer({
+  apiKey: process.env.DEARME_API_KEY,
+  proxyUrl: "https://api.dearme.app",
+});
+await research.connect(new StdioServerTransport());
 ```
 
 ## Lockdown coupling

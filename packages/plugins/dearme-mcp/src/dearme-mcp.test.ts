@@ -10,14 +10,17 @@ import {
   DEARME_RUNTIME_DENY_BASH_PATTERNS,
   RUNTIME_FILES_TOOL_DESCRIPTORS,
   VOICE_TOOL_DESCRIPTORS,
+  WEB_SEARCH_TOOL_DESCRIPTORS,
   catalogEntryByKey,
   createRuntimeFilesServer,
   createVoiceServer,
+  createWebSearchServer,
   findBashDenyMatch,
   mcpAllowPatterns,
 } from "./index.js";
 import { __testDispatch } from "./runtime-files/server.js";
 import { __testHelpers } from "./voice/server.js";
+import { __testHelpers as webSearchTestHelpers } from "./web-search/server.js";
 import { DEARME_DENY_BASH_PATTERNS } from "../../dearme-openclaw/src/lockdown/settings-template.js";
 
 // silence un-used util import for the linter
@@ -240,6 +243,115 @@ describe("DearMe voice MCP", () => {
 
   it("createVoiceServer returns a Server-like object", () => {
     const server = createVoiceServer({ apiKey: "dm_sk_test" });
+    expect(typeof (server as { setRequestHandler: unknown }).setRequestHandler).toBe(
+      "function",
+    );
+  });
+});
+
+describe("DearMe web-search MCP", () => {
+  it("descriptors expose web_search and web_fetch", () => {
+    const names = WEB_SEARCH_TOOL_DESCRIPTORS.map((t) => t.name);
+    expect(names).toEqual(["web_search", "web_fetch"]);
+  });
+
+  it("web_search fails closed when no API key is configured", async () => {
+    const config = webSearchTestHelpers.resolveConfig({
+      apiKey: "",
+      proxyUrl: "https://api.dearme.app",
+      fetchImpl: async () => new Response("{}"),
+    });
+    const result = await webSearchTestHelpers.dispatchWebSearch(
+      { query: "DearMe research" },
+      config,
+    );
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("not configured");
+  });
+
+  it("web_search sends to /v1/research/search with bearer auth", async () => {
+    let captured: { url: string; init: RequestInit } | undefined;
+    const fakeFetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      captured = { url: String(url), init: init ?? {} };
+      return new Response(
+        JSON.stringify({ results: [{ title: "DearMe", url: "https://example.com" }] }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }) as typeof fetch;
+
+    const config = webSearchTestHelpers.resolveConfig({
+      apiKey: "dm_sk_test",
+      proxyUrl: "https://api.dearme.app",
+      fetchImpl: fakeFetch,
+    });
+    const result = await webSearchTestHelpers.dispatchWebSearch(
+      {
+        query: "DearMe personal brand team",
+        depth: "standard",
+        limit: 3,
+        includeDomains: ["example.com"],
+        excludeDomains: ["spam.example"],
+        recencyDays: 14,
+      },
+      config,
+    );
+    expect(result.isError).toBeUndefined();
+    expect(captured?.url).toBe("https://api.dearme.app/v1/research/search");
+    expect(
+      (captured!.init.headers as Record<string, string>).authorization,
+    ).toBe("Bearer dm_sk_test");
+    expect(
+      (captured!.init.headers as Record<string, string>)["content-type"],
+    ).toBe("application/json");
+    expect(JSON.parse(String(captured!.init.body))).toEqual({
+      query: "DearMe personal brand team",
+      depth: "standard",
+      limit: 3,
+      includeDomains: ["example.com"],
+      excludeDomains: ["spam.example"],
+      recencyDays: 14,
+    });
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.results[0].title).toBe("DearMe");
+  });
+
+  it("web_fetch sends to /v1/research/fetch with bearer auth", async () => {
+    let captured: { url: string; init: RequestInit } | undefined;
+    const fakeFetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      captured = { url: String(url), init: init ?? {} };
+      return new Response(
+        JSON.stringify({ url: "https://example.com/post", text: "Fetched page" }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }) as typeof fetch;
+
+    const config = webSearchTestHelpers.resolveConfig({
+      apiKey: "dm_sk_test",
+      proxyUrl: "https://api.dearme.app",
+      fetchImpl: fakeFetch,
+    });
+    const result = await webSearchTestHelpers.dispatchWebFetch(
+      {
+        url: "https://example.com/post",
+        prompt: "Extract the launch proof.",
+      },
+      config,
+    );
+    expect(result.isError).toBeUndefined();
+    expect(captured?.url).toBe("https://api.dearme.app/v1/research/fetch");
+    expect(
+      (captured!.init.headers as Record<string, string>).authorization,
+    ).toBe("Bearer dm_sk_test");
+    expect(JSON.parse(String(captured!.init.body))).toEqual({
+      url: "https://example.com/post",
+      prompt: "Extract the launch proof.",
+    });
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.text).toBe("Fetched page");
+  });
+
+  it("createWebSearchServer returns a Server-like object", () => {
+    const server = createWebSearchServer({ apiKey: "dm_sk_test" });
     expect(typeof (server as { setRequestHandler: unknown }).setRequestHandler).toBe(
       "function",
     );
