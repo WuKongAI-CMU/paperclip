@@ -52,6 +52,7 @@ export interface DearMeHostedPaymentReceiptProjection {
 
 export interface DearMeHostedPaymentReceiptProjectionOptions {
   existingFinanceEvents?: readonly FinanceEventRow[];
+  reason?: DearMeHostedPaymentReceiptRecordOptions["reason"];
 }
 
 export interface DearMeHostedPaymentReceiptRecordResult {
@@ -60,6 +61,22 @@ export interface DearMeHostedPaymentReceiptRecordResult {
   duplicateSuppressedCount: number;
   existingDuplicateSuppressedCount: number;
   recordedEvents: FinanceEventRow[];
+  access: DearMePaidBetaStatus;
+}
+
+export interface DearMeHostedPaymentReceiptRecordOptions {
+  reason?: "checkout" | "renewal";
+}
+
+export interface DearMePaidBetaCancellationInput {
+  externalSubscriptionId: string;
+  externalCustomerId?: string | null;
+  idempotencyKey: string;
+  occurredAt: string;
+}
+
+export interface DearMePaidBetaCancellationResult {
+  recordedEvent: FinanceEventRow | null;
   access: DearMePaidBetaStatus;
 }
 
@@ -406,8 +423,15 @@ export function describeDearMePrivateCycleBlocker(access: DearMePaidBetaStatus) 
   return null;
 }
 
-function toHostedCheckoutFinanceEvent(receipt: DearMeHostedPaymentReceipt): FinanceEventRow {
+function toHostedCheckoutFinanceEvent(
+  receipt: DearMeHostedPaymentReceipt,
+  options: DearMeHostedPaymentReceiptRecordOptions = {},
+): FinanceEventRow {
   const isRefund = receipt.kind === "checkout_refunded";
+  const reason = options.reason ?? "checkout";
+  const paidDescription = reason === "renewal"
+    ? "DearMe hosted checkout renewal receipt"
+    : "DearMe hosted checkout paid receipt";
   return {
     id: `dearme-payment-sync-${receipt.id}`,
     companyId: receipt.companyId,
@@ -418,7 +442,7 @@ function toHostedCheckoutFinanceEvent(receipt: DearMeHostedPaymentReceipt): Fina
     heartbeatRunId: null,
     costEventId: null,
     billingCode: "dearme_paid_beta_access",
-    description: isRefund ? "DearMe hosted checkout refund receipt" : "DearMe hosted checkout paid receipt",
+    description: isRefund ? "DearMe hosted checkout refund receipt" : paidDescription,
     eventKind: isRefund ? "credit_refund" : "credit_purchase",
     direction: isRefund ? "debit" : "credit",
     biller: DEARME_PAID_BETA_BILLER,
@@ -437,6 +461,7 @@ function toHostedCheckoutFinanceEvent(receipt: DearMeHostedPaymentReceipt): Fina
       product: "dearme",
       source: "hosted_checkout_receipt_sync",
       access: "paid_beta",
+      reason,
       receiptId: receipt.id,
       idempotencyKey: receipt.idempotencyKey,
       signatureVerified: receipt.signatureVerified,
@@ -505,7 +530,7 @@ export function projectDearMeHostedPaymentReceipts(
     rejectedReceipts,
     duplicateSuppressedCount,
     existingDuplicateSuppressedCount,
-    financeEvents: acceptedReceipts.map(toHostedCheckoutFinanceEvent),
+    financeEvents: acceptedReceipts.map((receipt) => toHostedCheckoutFinanceEvent(receipt, options)),
   };
 }
 
@@ -645,12 +670,14 @@ export function dearmePaidBetaAccessService(db: Db) {
   async function recordHostedPaymentReceipts(
     companyId: string,
     receipts: readonly DearMeHostedPaymentReceipt[],
+    options: DearMeHostedPaymentReceiptRecordOptions = {},
   ): Promise<DearMeHostedPaymentReceiptRecordResult> {
     const companyReceipts = receipts.filter((receipt) => receipt.companyId === companyId);
     const rejectedCompanyMismatchReceipts = receipts.filter((receipt) => receipt.companyId !== companyId);
     const existingEvents = await getPaidBetaEvents(companyId);
     const projection = projectDearMeHostedPaymentReceipts(companyReceipts, {
       existingFinanceEvents: existingEvents,
+      reason: options.reason,
     });
     const recordedEvents: FinanceEventRow[] = [];
 
@@ -677,6 +704,64 @@ export function dearmePaidBetaAccessService(db: Db) {
     };
   }
 
+  async function recordSubscriptionCancellation(
+    companyId: string,
+    input: DearMePaidBetaCancellationInput,
+  ): Promise<DearMePaidBetaCancellationResult> {
+    const idempotencyKey = input.idempotencyKey.trim();
+    const externalSubscriptionId = input.externalSubscriptionId.trim();
+    if (!idempotencyKey || !externalSubscriptionId) {
+      return {
+        recordedEvent: null,
+        access: await getAccess(companyId),
+      };
+    }
+
+    const existingEvents = await getPaidBetaEvents(companyId);
+    const existingCancellation = existingEvents.find((event) => (
+      event.provider === "hosted_checkout" &&
+      event.metadataJson?.source === "stripe_subscription_cancellation" &&
+      event.metadataJson.idempotencyKey === idempotencyKey
+    ));
+    if (existingCancellation) {
+      return {
+        recordedEvent: null,
+        access: await getAccess(companyId),
+      };
+    }
+
+    const currentAccess = summarizeDearMePaidBetaAccess(companyId, existingEvents);
+    const amountCents = currentAccess.netPaidCents;
+    const recordedEvent = await finance.createEvent(companyId, {
+      billingCode: "dearme_paid_beta_access",
+      description: "DearMe Stripe subscription cancelled",
+      eventKind: "credit_cancelled",
+      direction: "debit",
+      biller: DEARME_PAID_BETA_BILLER,
+      provider: "hosted_checkout",
+      amountCents,
+      currency: "USD",
+      estimated: false,
+      externalInvoiceId: externalSubscriptionId,
+      metadataJson: {
+        product: "dearme",
+        source: "stripe_subscription_cancellation",
+        access: "paid_beta",
+        externalSubscriptionId,
+        externalCustomerId: input.externalCustomerId ?? null,
+        idempotencyKey,
+      },
+      occurredAt: new Date(input.occurredAt),
+      quantity: amountCents,
+      unit: "credit_usd",
+    });
+
+    return {
+      recordedEvent,
+      access: await getAccess(companyId),
+    };
+  }
+
   async function getCohort(companyIds: string[]) {
     const uniqueCompanyIds = Array.from(new Set(companyIds.map((companyId) => companyId.trim()).filter(Boolean)));
     const accounts = await Promise.all(uniqueCompanyIds.map((companyId) => getAccess(companyId)));
@@ -688,6 +773,7 @@ export function dearmePaidBetaAccessService(db: Db) {
     getAccess,
     getCohort,
     recordHostedPaymentReceipts,
+    recordSubscriptionCancellation,
 
     recordPayment: async (companyId: string, record: DearMePaidBetaRecord) => {
       const event = await finance.createEvent(companyId, {
