@@ -42,6 +42,7 @@ export const dearmeVoiceProfiles = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => ({
     scopeFingerprintIdx: uniqueIndex("dearme_voice_profiles_scope_fingerprint_idx").on(

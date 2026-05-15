@@ -596,6 +596,13 @@
       "when": 1779235200000,
       "tag": "0084_dearme_referral",
       "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1779321600000,
+      "tag": "0085_dearme_gdpr_tombstone",
+      "breakpoints": true
     }
   ]
 }

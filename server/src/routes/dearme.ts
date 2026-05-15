@@ -63,6 +63,7 @@ import {
 } from "../services/dearme-paid-beta-access.js";
 import { dearMeEmailSuppressService } from "../services/dearme-email-suppress.js";
 import { verifyDearMeUnsubscribeToken } from "../services/dearme-send-email-dispatch.js";
+import { dearmeGdprService } from "../services/dearme-gdpr.js";
 
 function memoryBodyPreview(body: string) {
   return body.length > 700 ? `${body.slice(0, 697)}...` : body;
@@ -111,6 +112,13 @@ const dearMeCheckoutStartRequestSchema = z.object({
 });
 const dearMeBillingPortalRequestSchema = z.object({
   customerId: z.string().trim().min(1),
+});
+const dearMeGdprExportQuerySchema = z.object({
+  companyId: z.string().trim().min(1),
+});
+const dearMeGdprDeleteRequestSchema = z.object({
+  companyId: z.string().trim().min(1),
+  confirmation: z.literal("DELETE-MY-DATA"),
 });
 const CHIEF_OF_STAFF_INTENT_LABELS: Record<DearMeChiefOfStaffMessageIntent, string> = {
   plan_next: "Plan next moves",
@@ -367,6 +375,7 @@ export function dearmeRoutes(
   const sseBus = getDearMeSseBus();
   const approvalResolver = dearMeApprovalResolverService(db, sseBus);
   const emailSuppress = dearMeEmailSuppressService(db);
+  const gdpr = dearmeGdprService(db);
 
   router.get("/v1/email/unsubscribe", async (req, res) => {
     const token = typeof req.query.token === "string" ? req.query.token : "";
@@ -520,6 +529,32 @@ export function dearmeRoutes(
       createdAt: input.createdAt,
     };
   }
+
+  router.get(
+    "/gdpr/export",
+    async (req, res) => {
+      const parsed = dearMeGdprExportQuerySchema.safeParse(req.query);
+      if (!parsed.success) {
+        throw new HttpError(400, "Validation error");
+      }
+      const { companyId } = parsed.data;
+      assertCompanyAccess(req, companyId);
+      assertBoard(req);
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.status(200).json(await gdpr.exportCompanyData(companyId));
+    },
+  );
+
+  router.post(
+    "/gdpr/delete",
+    validate(dearMeGdprDeleteRequestSchema),
+    async (req, res) => {
+      const { companyId } = req.body;
+      assertCompanyAccess(req, companyId);
+      assertBoard(req);
+      res.status(200).json(await gdpr.deleteCompanyData(companyId));
+    },
+  );
 
   router.get(
     "/companies/:companyId/events",
