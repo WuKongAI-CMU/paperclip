@@ -6,6 +6,7 @@ import { CloudAccessGate } from "./components/CloudAccessGate";
 import { Dashboard } from "./pages/Dashboard";
 import { DashboardLive } from "./pages/DashboardLive";
 import { DearMeLanding } from "./pages/DearMeLanding";
+import { DearMePricing } from "./pages/DearMePricing";
 import { DearMeOnboarding } from "./pages/DearMeOnboarding";
 import { Terms } from "./pages/legal/Terms";
 import { Privacy } from "./pages/legal/Privacy";
@@ -273,6 +274,7 @@ export function App() {
         <Route path="cli-auth/:id" element={<CliAuthPage />} />
         <Route path="invite/:token" element={<InviteLandingPage />} />
         <Route path="landing" element={<DearMeLanding />} />
+        <Route path="pricing" element={<DearMePricing />} />
         <Route path="404" element={<DearMeErrorPage kind="404" />} />
         <Route path="500" element={<DearMeErrorPage kind="500" />} />
         <Route path="legal/terms" element={<Terms />} />
