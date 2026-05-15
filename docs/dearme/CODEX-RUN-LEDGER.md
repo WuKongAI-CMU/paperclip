@@ -10,3 +10,4 @@
 2026-05-15 06:13  DM-STRIPE-IDEMPOTENCY-STRESS  d27d552f  PR #9  P0  Stripe webhook idempotency stress merged; CI green; concurrent duplicate, out-of-order invoice, and stale signature replay tests covered.
 2026-05-15 06:29  DM-BEDROCK-LINT-GUARD  79f4fac2  PR #10  P0  Bedrock SDK guard merged; CI green; package manifests and real imports now fail DearMe CI.
 2026-05-15 06:52  DM-EMPTY-STATES  084464b4  PR #11  P0  Empty state CTAs merged; CI green; Work Ready, Decisions, Voice & Memory, Opportunities, and Portfolio render customer-safe empty paths with next actions.
+2026-05-15 07:10  DM-LOADING-STATES  d0ba9d15  PR #12  P0  Loading skeletons merged; CI green; first-cycle preview, workroom, and Decisions loading states render with stable test IDs.
