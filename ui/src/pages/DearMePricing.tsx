@@ -33,7 +33,7 @@ export function DearMePricing() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-5 sm:px-6 lg:px-8">
-        <nav className="flex items-center justify-between border-b border-border pb-4" aria-label="DearMe pricing">
+        <nav className="flex items-center justify-between gap-3 border-b border-border pb-4" aria-label="DearMe pricing">
           <a href="/landing" className="inline-flex items-center gap-2 text-sm font-semibold hover:text-foreground/80">
             <ArrowLeft className="h-4 w-4" />
             DearMe

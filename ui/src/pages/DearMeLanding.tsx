@@ -57,8 +57,10 @@ export function DearMeLanding() {
       <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-5 sm:px-6 lg:px-8">
         <nav className="flex items-center justify-between border-b border-border pb-4" aria-label="DearMe">
           <div className="text-sm font-semibold">DearMe</div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <a href="/about" className="text-sm text-muted-foreground hover:text-foreground">About</a>
             <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
+            <a href="/faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</a>
             <Button asChild variant="outline" size="sm">
               <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
                 Request invite
@@ -142,7 +144,9 @@ export function DearMeLanding() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <span>$29/month beta — invite request only.</span>
+            <a href="/about" className="hover:text-foreground">About</a>
             <a href="/pricing" className="hover:text-foreground">Pricing</a>
+            <a href="/faq" className="hover:text-foreground">FAQ</a>
             <a href="/legal/terms" className="hover:text-foreground">Terms</a><a href="/legal/privacy" className="hover:text-foreground">Privacy</a><a href="/legal/acceptable-use" className="hover:text-foreground">Acceptable Use</a>
             <Button asChild variant="secondary" size="sm">
               <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">

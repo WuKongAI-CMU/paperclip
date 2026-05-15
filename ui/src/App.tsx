@@ -5,6 +5,8 @@ import { OnboardingWizard } from "./components/OnboardingWizard";
 import { CloudAccessGate } from "./components/CloudAccessGate";
 import { Dashboard } from "./pages/Dashboard";
 import { DashboardLive } from "./pages/DashboardLive";
+import { DearMeAbout } from "./pages/DearMeAbout";
+import { DearMeFaq } from "./pages/DearMeFaq";
 import { DearMeLanding } from "./pages/DearMeLanding";
 import { DearMePricing } from "./pages/DearMePricing";
 import { DearMeOnboarding } from "./pages/DearMeOnboarding";
@@ -274,6 +276,8 @@ export function App() {
         <Route path="cli-auth/:id" element={<CliAuthPage />} />
         <Route path="invite/:token" element={<InviteLandingPage />} />
         <Route path="landing" element={<DearMeLanding />} />
+        <Route path="about" element={<DearMeAbout />} />
+        <Route path="faq" element={<DearMeFaq />} />
         <Route path="pricing" element={<DearMePricing />} />
         <Route path="404" element={<DearMeErrorPage kind="404" />} />
         <Route path="500" element={<DearMeErrorPage kind="500" />} />
