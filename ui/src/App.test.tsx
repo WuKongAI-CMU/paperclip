@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 
-import { act, type ReactNode } from "react";
+import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CloudAccessGate } from "./components/CloudAccessGate";
 
@@ -28,15 +29,6 @@ vi.mock("./api/auth", () => ({
 
 vi.mock("./api/access", () => ({
   accessApi: mockAccessApi,
-}));
-
-vi.mock("@/lib/router", () => ({
-  Navigate: ({ to }: { to: string }) => <div>Navigate:{to}</div>,
-  Outlet: () => <div>Outlet content</div>,
-  Route: ({ children }: { children?: ReactNode }) => <>{children}</>,
-  Routes: ({ children }: { children?: ReactNode }) => <>{children}</>,
-  useLocation: () => ({ pathname: "/instance/settings/general", search: "", hash: "" }),
-  useParams: () => ({}),
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68,6 +60,20 @@ describe("CloudAccessGate", () => {
     vi.clearAllMocks();
   });
 
+  function renderGate(root: ReturnType<typeof createRoot>, queryClient: QueryClient) {
+    root.render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/instance/settings/general"]}>
+          <Routes>
+            <Route element={<CloudAccessGate />}>
+              <Route path="*" element={<div>Outlet content</div>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+  }
+
   it("shows a no-access message for signed-in users without org access", async () => {
     mockAuthApi.getSession.mockResolvedValue({
       session: { id: "session-1", userId: "user-1" },
@@ -88,11 +94,7 @@ describe("CloudAccessGate", () => {
     });
 
     await act(async () => {
-      root.render(
-        <QueryClientProvider client={queryClient}>
-          <CloudAccessGate />
-        </QueryClientProvider>,
-      );
+      renderGate(root, queryClient);
     });
     await flushReact();
     await flushReact();
@@ -123,11 +125,7 @@ describe("CloudAccessGate", () => {
     });
 
     await act(async () => {
-      root.render(
-        <QueryClientProvider client={queryClient}>
-          <CloudAccessGate />
-        </QueryClientProvider>,
-      );
+      renderGate(root, queryClient);
     });
     await flushReact();
     await flushReact();
@@ -163,11 +161,7 @@ describe("CloudAccessGate", () => {
     });
 
     await act(async () => {
-      root.render(
-        <QueryClientProvider client={queryClient}>
-          <CloudAccessGate />
-        </QueryClientProvider>,
-      );
+      renderGate(root, queryClient);
     });
     await flushReact();
     await flushReact();

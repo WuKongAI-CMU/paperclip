@@ -1,0 +1,331 @@
+import { lazy } from "react";
+import type { ComponentType } from "react";
+import { Navigate, Route, Routes, useLocation, useParams } from "@/lib/router";
+import { Button } from "@/components/ui/button";
+import { useCompany } from "./context/CompanyContext";
+import { useDialogActions } from "./context/DialogContext";
+import { loadLastInboxTab } from "./lib/inbox";
+import { shouldRedirectCompanylessRouteToOnboarding } from "./lib/onboarding-route";
+
+function lazyNamed<T extends Record<K, ComponentType<any>>, K extends keyof T>(
+  loader: () => Promise<T>,
+  exportName: K
+) {
+  return lazy(() => loader().then((module) => ({ default: module[exportName] })));
+}
+
+const Layout = lazyNamed(() => import("./components/Layout"), "Layout");
+const Dashboard = lazyNamed(() => import("./pages/Dashboard"), "Dashboard");
+const DashboardLive = lazyNamed(() => import("./pages/DashboardLive"), "DashboardLive");
+const DearMeOnboarding = lazyNamed(() => import("./pages/DearMeOnboarding"), "DearMeOnboarding");
+const Companies = lazyNamed(() => import("./pages/Companies"), "Companies");
+const Agents = lazyNamed(() => import("./pages/Agents"), "Agents");
+const AgentDetail = lazyNamed(() => import("./pages/AgentDetail"), "AgentDetail");
+const Projects = lazyNamed(() => import("./pages/Projects"), "Projects");
+const ProjectDetail = lazyNamed(() => import("./pages/ProjectDetail"), "ProjectDetail");
+const ProjectWorkspaceDetail = lazyNamed(
+  () => import("./pages/ProjectWorkspaceDetail"),
+  "ProjectWorkspaceDetail"
+);
+const Workspaces = lazyNamed(() => import("./pages/Workspaces"), "Workspaces");
+const Issues = lazyNamed(() => import("./pages/Issues"), "Issues");
+const IssueDetail = lazyNamed(() => import("./pages/IssueDetail"), "IssueDetail");
+const IssueChatLongThreadPerf = lazyNamed(() => import("./pages/IssueChatLongThreadPerf"), "IssueChatLongThreadPerf");
+const DearMeSitePreview = lazyNamed(() => import("./pages/DearMeSitePreview"), "DearMeSitePreview");
+const Routines = lazyNamed(() => import("./pages/Routines"), "Routines");
+const RoutineDetail = lazyNamed(() => import("./pages/RoutineDetail"), "RoutineDetail");
+const UserProfile = lazyNamed(() => import("./pages/UserProfile"), "UserProfile");
+const ExecutionWorkspaceDetail = lazyNamed(
+  () => import("./pages/ExecutionWorkspaceDetail"),
+  "ExecutionWorkspaceDetail"
+);
+const Goals = lazyNamed(() => import("./pages/Goals"), "Goals");
+const GoalDetail = lazyNamed(() => import("./pages/GoalDetail"), "GoalDetail");
+const Approvals = lazyNamed(() => import("./pages/Approvals"), "Approvals");
+const ApprovalDetail = lazyNamed(() => import("./pages/ApprovalDetail"), "ApprovalDetail");
+const Costs = lazyNamed(() => import("./pages/Costs"), "Costs");
+const Activity = lazyNamed(() => import("./pages/Activity"), "Activity");
+const Inbox = lazyNamed(() => import("./pages/Inbox"), "Inbox");
+const CompanySettings = lazyNamed(() => import("./pages/CompanySettings"), "CompanySettings");
+const CompanyEnvironments = lazyNamed(() => import("./pages/CompanyEnvironments"), "CompanyEnvironments");
+const CompanyAccess = lazyNamed(() => import("./pages/CompanyAccess"), "CompanyAccess");
+const CompanyInvites = lazyNamed(() => import("./pages/CompanyInvites"), "CompanyInvites");
+const CompanySkills = lazyNamed(() => import("./pages/CompanySkills"), "CompanySkills");
+const CompanyExport = lazyNamed(() => import("./pages/CompanyExport"), "CompanyExport");
+const CompanyImport = lazyNamed(() => import("./pages/CompanyImport"), "CompanyImport");
+const DesignGuide = lazyNamed(() => import("./pages/DesignGuide"), "DesignGuide");
+const InstanceGeneralSettings = lazyNamed(
+  () => import("./pages/InstanceGeneralSettings"),
+  "InstanceGeneralSettings"
+);
+const InstanceAccess = lazyNamed(() => import("./pages/InstanceAccess"), "InstanceAccess");
+const InstanceSettings = lazyNamed(() => import("./pages/InstanceSettings"), "InstanceSettings");
+const InstanceExperimentalSettings = lazyNamed(
+  () => import("./pages/InstanceExperimentalSettings"),
+  "InstanceExperimentalSettings"
+);
+const ProfileSettings = lazyNamed(() => import("./pages/ProfileSettings"), "ProfileSettings");
+const PluginManager = lazyNamed(() => import("./pages/PluginManager"), "PluginManager");
+const PluginSettings = lazyNamed(() => import("./pages/PluginSettings"), "PluginSettings");
+const AdapterManager = lazyNamed(() => import("./pages/AdapterManager"), "AdapterManager");
+const PluginPage = lazyNamed(() => import("./pages/PluginPage"), "PluginPage");
+const OrgChart = lazyNamed(() => import("./pages/OrgChart"), "OrgChart");
+const NewAgent = lazyNamed(() => import("./pages/NewAgent"), "NewAgent");
+const JoinRequestQueue = lazyNamed(() => import("./pages/JoinRequestQueue"), "JoinRequestQueue");
+const NotFoundPage = lazyNamed(() => import("./pages/NotFound"), "NotFoundPage");
+
+function boardRoutes() {
+  return (
+    <>
+      <Route index element={<Navigate to="dashboard" replace />} />
+      <Route path="dashboard" element={<Dashboard />} />
+      <Route path="dashboard/live" element={<DashboardLive />} />
+      <Route path="dearme" element={<DearMeOnboarding />} />
+      <Route path="dearme/site-preview/:handle" element={<DearMeSitePreview />} />
+      <Route path="onboarding" element={<OnboardingRoutePage />} />
+      <Route path="companies" element={<Companies />} />
+      <Route path="company/settings" element={<CompanySettings />} />
+      <Route path="company/settings/environments" element={<CompanyEnvironments />} />
+      <Route path="company/settings/access" element={<CompanyAccess />} />
+      <Route path="company/settings/invites" element={<CompanyInvites />} />
+      <Route path="company/export/*" element={<CompanyExport />} />
+      <Route path="company/import" element={<CompanyImport />} />
+      <Route path="skills/*" element={<CompanySkills />} />
+      <Route path="settings" element={<LegacySettingsRedirect />} />
+      <Route path="settings/*" element={<LegacySettingsRedirect />} />
+      <Route path="plugins/:pluginId" element={<PluginPage />} />
+      <Route path="org" element={<OrgChart />} />
+      <Route path="agents" element={<Navigate to="/agents/all" replace />} />
+      <Route path="agents/all" element={<Agents />} />
+      <Route path="agents/active" element={<Agents />} />
+      <Route path="agents/paused" element={<Agents />} />
+      <Route path="agents/error" element={<Agents />} />
+      <Route path="agents/new" element={<NewAgent />} />
+      <Route path="agents/:agentId" element={<AgentDetail />} />
+      <Route path="agents/:agentId/:tab" element={<AgentDetail />} />
+      <Route path="agents/:agentId/runs/:runId" element={<AgentDetail />} />
+      <Route path="projects" element={<Projects />} />
+      <Route path="projects/:projectId" element={<ProjectDetail />} />
+      <Route path="projects/:projectId/overview" element={<ProjectDetail />} />
+      <Route path="projects/:projectId/issues" element={<ProjectDetail />} />
+      <Route path="projects/:projectId/issues/:filter" element={<ProjectDetail />} />
+      <Route path="projects/:projectId/workspaces/:workspaceId" element={<ProjectWorkspaceDetail />} />
+      <Route path="projects/:projectId/workspaces" element={<ProjectDetail />} />
+      <Route path="projects/:projectId/configuration" element={<ProjectDetail />} />
+      <Route path="projects/:projectId/budget" element={<ProjectDetail />} />
+      <Route path="workspaces" element={<Workspaces />} />
+      <Route path="issues" element={<Issues />} />
+      <Route path="issues/all" element={<Navigate to="/issues" replace />} />
+      <Route path="issues/active" element={<Navigate to="/issues" replace />} />
+      <Route path="issues/backlog" element={<Navigate to="/issues" replace />} />
+      <Route path="issues/done" element={<Navigate to="/issues" replace />} />
+      <Route path="issues/recent" element={<Navigate to="/issues" replace />} />
+      <Route path="issues/:issueId" element={<IssueDetail />} />
+      {import.meta.env.DEV ? (
+        <Route path="tests/perf/long-thread" element={<IssueChatLongThreadPerf />} />
+      ) : null}
+      <Route path="routines" element={<Routines />} />
+      <Route path="routines/:routineId" element={<RoutineDetail />} />
+      <Route path="execution-workspaces/:workspaceId" element={<ExecutionWorkspaceDetail />} />
+      <Route path="execution-workspaces/:workspaceId/configuration" element={<ExecutionWorkspaceDetail />} />
+      <Route path="execution-workspaces/:workspaceId/runtime-logs" element={<ExecutionWorkspaceDetail />} />
+      <Route path="execution-workspaces/:workspaceId/issues" element={<ExecutionWorkspaceDetail />} />
+      <Route path="execution-workspaces/:workspaceId/routines" element={<ExecutionWorkspaceDetail />} />
+      <Route path="goals" element={<Goals />} />
+      <Route path="goals/:goalId" element={<GoalDetail />} />
+      <Route path="approvals" element={<Navigate to="/approvals/pending" replace />} />
+      <Route path="approvals/pending" element={<Approvals />} />
+      <Route path="approvals/all" element={<Approvals />} />
+      <Route path="approvals/:approvalId" element={<ApprovalDetail />} />
+      <Route path="costs" element={<Costs />} />
+      <Route path="activity" element={<Activity />} />
+      <Route path="inbox" element={<InboxRootRedirect />} />
+      <Route path="inbox/mine" element={<Inbox />} />
+      <Route path="inbox/recent" element={<Inbox />} />
+      <Route path="inbox/unread" element={<Inbox />} />
+      <Route path="inbox/all" element={<Inbox />} />
+      <Route path="inbox/requests" element={<JoinRequestQueue />} />
+      <Route path="inbox/new" element={<Navigate to="/inbox/mine" replace />} />
+      <Route path="u/:userSlug" element={<UserProfile />} />
+      <Route path="design-guide" element={<DesignGuide />} />
+      <Route path="instance/settings/adapters" element={<AdapterManager />} />
+      <Route path=":pluginRoutePath/*" element={<PluginPage />} />
+      <Route path="*" element={<NotFoundPage scope="board" />} />
+    </>
+  );
+}
+
+function InboxRootRedirect() {
+  return <Navigate to={`/inbox/${loadLastInboxTab()}`} replace />;
+}
+
+function LegacySettingsRedirect() {
+  const location = useLocation();
+  return <Navigate to={`/instance/settings/general${location.search}${location.hash}`} replace />;
+}
+
+function OnboardingRoutePage() {
+  const { companies } = useCompany();
+  const { openOnboarding } = useDialogActions();
+  const { companyPrefix } = useParams<{ companyPrefix?: string }>();
+  const matchedCompany = companyPrefix
+    ? companies.find((company) => company.issuePrefix.toUpperCase() === companyPrefix.toUpperCase()) ?? null
+    : null;
+
+  const title = matchedCompany
+    ? `Add another agent to ${matchedCompany.name}`
+    : companies.length > 0
+      ? "Create another company"
+      : "Create your first company";
+  const description = matchedCompany
+    ? "Run onboarding again to add an agent and a starter task for this company."
+    : companies.length > 0
+      ? "Run onboarding again to create another company and seed its first agent."
+      : "Get started by creating a company and your first agent.";
+
+  return (
+    <div className="mx-auto max-w-xl py-10">
+      <div className="rounded-lg border border-border bg-card p-6">
+        <h1 className="text-xl font-semibold">{title}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+        <div className="mt-4">
+          <Button
+            onClick={() =>
+              matchedCompany
+                ? openOnboarding({ initialStep: 2, companyId: matchedCompany.id })
+                : openOnboarding()
+            }
+          >
+            {matchedCompany ? "Add Agent" : "Start Onboarding"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CompanyRootRedirect() {
+  const { companies, selectedCompany, loading } = useCompany();
+  const location = useLocation();
+
+  if (loading) {
+    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
+  }
+
+  const targetCompany = selectedCompany ?? companies[0] ?? null;
+  if (!targetCompany) {
+    if (
+      shouldRedirectCompanylessRouteToOnboarding({
+        pathname: location.pathname,
+        hasCompanies: false,
+      })
+    ) {
+      return <Navigate to="/onboarding" replace />;
+    }
+    return <NoCompaniesStartPage />;
+  }
+
+  return <Navigate to={`/${targetCompany.issuePrefix}/dashboard`} replace />;
+}
+
+function UnprefixedBoardRedirect() {
+  const location = useLocation();
+  const { companies, selectedCompany, loading } = useCompany();
+
+  if (loading) {
+    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
+  }
+
+  const targetCompany = selectedCompany ?? companies[0] ?? null;
+  if (!targetCompany) {
+    if (
+      shouldRedirectCompanylessRouteToOnboarding({
+        pathname: location.pathname,
+        hasCompanies: false,
+      })
+    ) {
+      return <Navigate to="/onboarding" replace />;
+    }
+    return <NoCompaniesStartPage />;
+  }
+
+  return (
+    <Navigate
+      to={`/${targetCompany.issuePrefix}${location.pathname}${location.search}${location.hash}`}
+      replace
+    />
+  );
+}
+
+function NoCompaniesStartPage() {
+  const { openOnboarding } = useDialogActions();
+
+  return (
+    <div className="mx-auto max-w-xl py-10">
+      <div className="rounded-lg border border-border bg-card p-6">
+        <h1 className="text-xl font-semibold">Create your first company</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Get started by creating a company.
+        </p>
+        <div className="mt-4">
+          <Button onClick={() => openOnboarding()}>New Company</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function BoardAppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<CompanyRootRedirect />} />
+      <Route path="onboarding" element={<OnboardingRoutePage />} />
+      <Route path="instance" element={<Navigate to="/instance/settings/general" replace />} />
+      <Route path="instance/settings" element={<Layout />}>
+        <Route index element={<Navigate to="general" replace />} />
+        <Route path="profile" element={<ProfileSettings />} />
+        <Route path="general" element={<InstanceGeneralSettings />} />
+        <Route path="access" element={<InstanceAccess />} />
+        <Route path="heartbeats" element={<InstanceSettings />} />
+        <Route path="experimental" element={<InstanceExperimentalSettings />} />
+        <Route path="plugins" element={<PluginManager />} />
+        <Route path="plugins/:pluginId" element={<PluginSettings />} />
+        <Route path="adapters" element={<AdapterManager />} />
+      </Route>
+      <Route path="companies" element={<UnprefixedBoardRedirect />} />
+      <Route path="dearme" element={<UnprefixedBoardRedirect />} />
+      <Route path="dearme/site-preview/:handle" element={<UnprefixedBoardRedirect />} />
+      <Route path="issues" element={<UnprefixedBoardRedirect />} />
+      <Route path="issues/:issueId" element={<UnprefixedBoardRedirect />} />
+      <Route path="routines" element={<UnprefixedBoardRedirect />} />
+      <Route path="routines/:routineId" element={<UnprefixedBoardRedirect />} />
+      <Route path="u/:userSlug" element={<UnprefixedBoardRedirect />} />
+      <Route path="skills/*" element={<UnprefixedBoardRedirect />} />
+      <Route path="settings" element={<LegacySettingsRedirect />} />
+      <Route path="settings/*" element={<LegacySettingsRedirect />} />
+      <Route path="agents" element={<UnprefixedBoardRedirect />} />
+      <Route path="agents/new" element={<UnprefixedBoardRedirect />} />
+      <Route path="agents/:agentId" element={<UnprefixedBoardRedirect />} />
+      <Route path="agents/:agentId/:tab" element={<UnprefixedBoardRedirect />} />
+      <Route path="agents/:agentId/runs/:runId" element={<UnprefixedBoardRedirect />} />
+      <Route path="projects" element={<UnprefixedBoardRedirect />} />
+      <Route path="projects/:projectId" element={<UnprefixedBoardRedirect />} />
+      <Route path="projects/:projectId/overview" element={<UnprefixedBoardRedirect />} />
+      <Route path="projects/:projectId/issues" element={<UnprefixedBoardRedirect />} />
+      <Route path="projects/:projectId/issues/:filter" element={<UnprefixedBoardRedirect />} />
+      <Route path="projects/:projectId/workspaces" element={<UnprefixedBoardRedirect />} />
+      <Route path="projects/:projectId/workspaces/:workspaceId" element={<UnprefixedBoardRedirect />} />
+      <Route path="projects/:projectId/configuration" element={<UnprefixedBoardRedirect />} />
+      <Route path="workspaces" element={<UnprefixedBoardRedirect />} />
+      <Route path="execution-workspaces/:workspaceId" element={<UnprefixedBoardRedirect />} />
+      <Route path="execution-workspaces/:workspaceId/configuration" element={<UnprefixedBoardRedirect />} />
+      <Route path="execution-workspaces/:workspaceId/runtime-logs" element={<UnprefixedBoardRedirect />} />
+      <Route path="execution-workspaces/:workspaceId/issues" element={<UnprefixedBoardRedirect />} />
+      <Route path="execution-workspaces/:workspaceId/routines" element={<UnprefixedBoardRedirect />} />
+      <Route path=":companyPrefix" element={<Layout />}>
+        {boardRoutes()}
+      </Route>
+      <Route path="*" element={<NotFoundPage scope="global" />} />
+    </Routes>
+  );
+}

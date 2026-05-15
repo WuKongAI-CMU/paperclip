@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Navigate, Outlet, useLocation } from "@/lib/router";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { accessApi } from "@/api/access";
 import { authApi } from "@/api/auth";

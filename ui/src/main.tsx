@@ -2,27 +2,25 @@ import * as React from "react";
 import { StrictMode } from "react";
 import * as ReactDOM from "react-dom";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "@/lib/router";
+import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
-import { CompanyProvider } from "./context/CompanyContext";
-import { LiveUpdatesProvider } from "./context/LiveUpdatesProvider";
-import { BreadcrumbProvider } from "./context/BreadcrumbContext";
-import { PanelProvider } from "./context/PanelContext";
-import { SidebarProvider } from "./context/SidebarContext";
-import { DialogProvider } from "./context/DialogContext";
-import { EditorAutocompleteProvider } from "./context/EditorAutocompleteContext";
 import { ToastProvider } from "./context/ToastContext";
 import { ThemeProvider } from "./context/ThemeContext";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { initAnalytics } from "./lib/analytics";
-import { initPluginBridge } from "./plugins/bridge-init";
-import { PluginLauncherProvider } from "./plugins/launchers";
-import "@mdxeditor/editor/style.css";
 import "./index.css";
 
-initAnalytics();
-initPluginBridge(React, ReactDOM);
+function runAfterStartup(callback: () => void) {
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(callback, { timeout: 2000 });
+    return;
+  }
+  setTimeout(callback, 0);
+}
+
+runAfterStartup(() => {
+  void import("./lib/analytics").then(({ initAnalytics }) => initAnalytics());
+  void import("./plugins/bridge-init").then(({ initPluginBridge }) => initPluginBridge(React, ReactDOM));
+});
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -44,27 +42,9 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <BrowserRouter>
-          <CompanyProvider>
-            <EditorAutocompleteProvider>
-              <ToastProvider>
-                <LiveUpdatesProvider>
-                  <TooltipProvider>
-                    <BreadcrumbProvider>
-                      <SidebarProvider>
-                        <PanelProvider>
-                          <PluginLauncherProvider>
-                            <DialogProvider>
-                              <App />
-                            </DialogProvider>
-                          </PluginLauncherProvider>
-                        </PanelProvider>
-                      </SidebarProvider>
-                    </BreadcrumbProvider>
-                  </TooltipProvider>
-                </LiveUpdatesProvider>
-              </ToastProvider>
-            </EditorAutocompleteProvider>
-          </CompanyProvider>
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>

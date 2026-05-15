@@ -2,10 +2,23 @@ import path from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { analyzer } from "vite-bundle-analyzer";
 import { createUiDevWatchOptions } from "./src/lib/vite-watch";
 
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    process.env.DEARME_BUNDLE_ANALYZE === "1"
+      ? analyzer({
+          analyzerMode: "static",
+          defaultSizes: "gzip",
+          fileName: "dearme-bundle-report",
+          openAnalyzer: false,
+          reportTitle: "DearMe UI Bundle",
+        })
+      : null,
+  ],
   build: {
     minify: "esbuild",
   },
