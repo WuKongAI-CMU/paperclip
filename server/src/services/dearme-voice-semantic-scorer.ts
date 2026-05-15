@@ -2,6 +2,7 @@ import type {
   DearMeVoiceSemanticScorer,
   DearMeVoiceSemanticScore,
 } from "./dearme-voice-gate.js";
+import { createVoyageScorer } from "./dearme-voice-voyage-scorer.js";
 
 const PROFILE_TOKEN_SCORER_MODES = new Set([
   "1",
@@ -20,6 +21,12 @@ const DISABLED_SCORER_MODES = new Set([
   "disabled",
 ]);
 
+const VOYAGE_SCORER_MODES = new Set([
+  "voyage",
+  "voyage-ai",
+  "voyageai",
+]);
+
 export type DearMeProfileTokenSemanticScorerConfig = {
   minAcceptedSamples?: number;
   minProfileTokens?: number;
@@ -30,6 +37,16 @@ export function resolveDearMeVoiceSemanticScorerFromEnv(
 ): DearMeVoiceSemanticScorer | null {
   const mode = env.DEARME_VOICE_SEMANTIC_SCORER?.trim().toLowerCase();
   if (!mode || DISABLED_SCORER_MODES.has(mode)) return null;
+  if (VOYAGE_SCORER_MODES.has(mode)) {
+    const apiKey = env.DEARME_VOICE_VOYAGE_API_KEY?.trim();
+    if (!apiKey) {
+      throw new Error("DEARME_VOICE_VOYAGE_API_KEY is required when DEARME_VOICE_SEMANTIC_SCORER=voyage");
+    }
+    return createVoyageScorer({
+      apiKey,
+      model: env.DEARME_VOICE_VOYAGE_MODEL,
+    });
+  }
   if (!PROFILE_TOKEN_SCORER_MODES.has(mode)) return null;
 
   return createDearMeProfileTokenSemanticScorer({
