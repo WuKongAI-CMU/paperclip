@@ -18,3 +18,4 @@
 2026-05-15 08:40  DM-VOICE-SAMPLE-UI  fa620bc4  PR #17  P0  Voice sample UI merged; CI green; first-cycle Voice & Memory captures 1-10 writing samples or a source link as voice_sample memory updates with tests.
 2026-05-15 09:04  DM-ONBOARDING-BUGBASH  5ea4a245  PR #18  P0  Onboarding bugbash merged; CI green; headless Playwright covers landing-to-first-cycle flow with console, 4xx/5xx, and customer-language leak guards.
 2026-05-15 09:20  DM-EMAIL-TEMPLATES  8d00f0bf  PR #19  P1  Resend HTML email templates merged; CI green; welcome, receipt, trial-ending, dunning, and cancellation-confirm render mobile-safe HTML/text with customer-safe copy.
+2026-05-15 09:40  DM-PROD-SMOKE  173b54c0  PR #20  P1  Deploy preview prod-smoke script merged; CI green; landing, health, readiness, sample checkout, and voice scoring checks run when preview URL and API key are configured.
