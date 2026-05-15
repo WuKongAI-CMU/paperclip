@@ -82,6 +82,7 @@ export const opportunities = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => ({
     companyStateIdx: index("opportunities_company_state_idx").on(

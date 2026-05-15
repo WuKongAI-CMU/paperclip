@@ -83,6 +83,7 @@ function makeDeps(overrides?: Partial<DearMeOutboundToolDeps>): {
           metadata: null,
           createdAt: new Date(),
           updatedAt: new Date(),
+          deletedAt: null,
         }) satisfies Awaited<ReturnType<DearMeOutboundToolDeps["channelConnections"]["getActive"]>>,
       markUsed: async () => undefined,
       markNeedsReauth: async () => undefined,
