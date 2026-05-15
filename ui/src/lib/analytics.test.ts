@@ -49,11 +49,11 @@ describe("analytics", () => {
     initAnalytics();
     capture("landing_cta_submitted", { positioning_length: 42 });
 
-    expect(posthogMock.init).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(posthogMock.init).toHaveBeenCalledOnce());
     expect(posthogMock.init).toHaveBeenCalledWith("ph_test_key", {
       api_host: "https://posthog.example",
     });
-    expect(posthogMock.capture).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledOnce());
     expect(posthogMock.capture).toHaveBeenCalledWith("landing_cta_submitted", {
       positioning_length: 42,
     });
@@ -65,7 +65,7 @@ describe("analytics", () => {
     initAnalytics();
     identify("user-123", { plan: "paid-beta" });
 
-    expect(posthogMock.identify).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(posthogMock.identify).toHaveBeenCalledOnce());
     expect(posthogMock.identify).toHaveBeenCalledWith("user-123", { plan: "paid-beta" });
   });
 });
