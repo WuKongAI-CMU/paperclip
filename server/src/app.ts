@@ -1,4 +1,9 @@
-import express, { Router, type Request as ExpressRequest } from "express";
+import express, {
+  Router,
+  type NextFunction,
+  type Request as ExpressRequest,
+  type Response as ExpressResponse,
+} from "express";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -120,6 +125,41 @@ export function shouldEnablePrivateHostnameGuard(opts: {
   );
 }
 
+export function buildDearMeErrorPageHtml(indexHtml: string, route: "/404" | "/500"): string {
+  const routeScript = `<script>window.history.replaceState(null,"",${JSON.stringify(route)});</script>`;
+  if (indexHtml.includes("</head>")) {
+    return indexHtml.replace("</head>", `${routeScript}</head>`);
+  }
+  return `${routeScript}${indexHtml}`;
+}
+
+export function shouldServeDearMeHtmlErrorPage(req: ExpressRequest): boolean {
+  if (req.path.startsWith("/api/")) return false;
+  return req.accepts(["html", "json"]) === "html";
+}
+
+export function createDearMeHtmlErrorMiddleware(
+  renderErrorPage: (req: ExpressRequest, res: ExpressResponse) => Promise<void> | void,
+) {
+  return async function dearMeHtmlErrorMiddleware(
+    err: unknown,
+    req: ExpressRequest,
+    res: ExpressResponse,
+    next: NextFunction,
+  ) {
+    if (res.headersSent || !shouldServeDearMeHtmlErrorPage(req)) {
+      next(err);
+      return;
+    }
+
+    try {
+      await renderErrorPage(req, res);
+    } catch {
+      next(err);
+    }
+  };
+}
+
 export async function createApp(
   db: Db,
   opts: {
@@ -151,6 +191,9 @@ export async function createApp(
   },
 ) {
   const app = express();
+  let renderDearMeHtmlErrorPage:
+    | ((req: ExpressRequest, res: ExpressResponse) => Promise<void> | void)
+    | null = null;
   app.set("trust proxy", 1);
   app.use(dearMeCors({
     production: opts.deploymentMode === "authenticated" && opts.deploymentExposure === "public",
@@ -368,6 +411,18 @@ export async function createApp(
     const uiDist = candidates.find((p) => fs.existsSync(path.join(p, "index.html")));
     if (uiDist) {
       const indexHtml = applyUiBranding(fs.readFileSync(path.join(uiDist, "index.html"), "utf-8"));
+      const sendErrorRoute = (
+        res: ExpressResponse,
+        status: 404 | 500,
+        route: "/404" | "/500",
+      ) => {
+        res
+          .status(status)
+          .set("Content-Type", "text/html")
+          .set("Cache-Control", "no-cache")
+          .end(buildDearMeErrorPageHtml(indexHtml, route));
+      };
+      renderDearMeHtmlErrorPage = (_req, res) => sendErrorRoute(res, 500, "/500");
       // Hashed asset files (Vite emits them under /assets/<name>.<hash>.<ext>)
       // never change once built, so they can be cached aggressively.
       app.use(
@@ -392,6 +447,8 @@ export async function createApp(
           },
         }),
       );
+      app.get("/404", (_req, res) => sendErrorRoute(res, 404, "/404"));
+      app.get("/500", (_req, res) => sendErrorRoute(res, 500, "/500"));
       // SPA fallback. Only for non-asset routes — if the browser asks for
       // /assets/something.js that doesn't exist, we must NOT serve the HTML
       // shell: the browser would try to load it as a JavaScript module, fail
@@ -438,10 +495,33 @@ export async function createApp(
       brandHtml: applyUiBranding,
     });
     const renderViteHtml = viteHtmlRenderer;
+    const sendViteErrorRoute = async (
+      res: ExpressResponse,
+      status: 404 | 500,
+      route: "/404" | "/500",
+    ) => {
+      const html = await renderViteHtml.render(route);
+      res.status(status).set({ "Content-Type": "text/html" }).end(html);
+    };
+    renderDearMeHtmlErrorPage = async (_req, res) => sendViteErrorRoute(res, 500, "/500");
 
     if (fs.existsSync(publicUiRoot)) {
       app.use(express.static(publicUiRoot, { index: false }));
     }
+    app.get("/404", async (_req, res, next) => {
+      try {
+        await sendViteErrorRoute(res, 404, "/404");
+      } catch (err) {
+        next(err);
+      }
+    });
+    app.get("/500", async (_req, res, next) => {
+      try {
+        await sendViteErrorRoute(res, 500, "/500");
+      } catch (err) {
+        next(err);
+      }
+    });
     app.get(/.*/, async (req, res, next) => {
       if (!shouldServeViteDevHtml(req)) {
         next();
@@ -457,6 +537,9 @@ export async function createApp(
     app.use(vite.middlewares);
   }
 
+  if (renderDearMeHtmlErrorPage) {
+    app.use(createDearMeHtmlErrorMiddleware(renderDearMeHtmlErrorPage));
+  }
   app.use(errorHandler);
 
   jobCoordinator.start();

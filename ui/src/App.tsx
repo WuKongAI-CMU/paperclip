@@ -57,6 +57,7 @@ import { CliAuthPage } from "./pages/CliAuth";
 import { InviteLandingPage } from "./pages/InviteLanding";
 import { JoinRequestQueue } from "./pages/JoinRequestQueue";
 import { NotFoundPage } from "./pages/NotFound";
+import { DearMeErrorPage } from "./pages/DearMeErrorPages";
 import { useCompany } from "./context/CompanyContext";
 import { useDialogActions } from "./context/DialogContext";
 import { loadLastInboxTab } from "./lib/inbox";
@@ -272,6 +273,8 @@ export function App() {
         <Route path="cli-auth/:id" element={<CliAuthPage />} />
         <Route path="invite/:token" element={<InviteLandingPage />} />
         <Route path="landing" element={<DearMeLanding />} />
+        <Route path="404" element={<DearMeErrorPage kind="404" />} />
+        <Route path="500" element={<DearMeErrorPage kind="500" />} />
         <Route path="legal/terms" element={<Terms />} />
         <Route path="legal/privacy" element={<Privacy />} />
         <Route path="legal/acceptable-use" element={<AcceptableUse />} />
