@@ -561,6 +561,13 @@
       "when": 1778803200000,
       "tag": "0079_dearme_cost_caps",
       "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1778889600000,
+      "tag": "0080_dearme_pauses",
+      "breakpoints": true
     }
   ]
 }

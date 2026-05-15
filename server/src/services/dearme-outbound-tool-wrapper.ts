@@ -29,16 +29,22 @@
  */
 
 import { createHash } from "node:crypto";
+import { eq } from "drizzle-orm";
 import type { ChannelConnectionChannel, Db } from "@paperclipai/db";
-import { costEvents } from "@paperclipai/db";
+import { authUsers, costEvents } from "@paperclipai/db";
 import {
   DEARME_OUTBOUND_TOOL_BINDINGS,
   type DearMeOutboundToolName,
 } from "@paperclipai/dearme-openclaw";
 import type { VoiceGateArtifactKind } from "@paperclipai/dearme-ai-proxy";
 import type { DearMeApprovalResolverService } from "./dearme-approval-resolver.js";
+import {
+  dearMeAutoPauseService,
+  type DearMeAutoPauseService,
+} from "./dearme-auto-pause.js";
 import type { DearMeChannelConnectionsService } from "./dearme-channel-connections.js";
 import { dearMeCostCapsService, type DearMeCostCapsService } from "./dearme-cost-caps.js";
+import { createDearMeSendEmailDispatch } from "./dearme-send-email-dispatch.js";
 import type { DearMeSseBus } from "./dearme-sse-bus.js";
 import type { DearMeVoiceGateService } from "./dearme-voice-gate.js";
 import type { DearMeWorkLoopService } from "./dearme-work-loop.js";
@@ -88,9 +94,22 @@ export interface DearMeOutboundToolDeps {
   sseBus: DearMeSseBus;
   /** Per-customer outbound spend caps. Defaults to the Drizzle-backed service. */
   costCaps?: DearMeCostCapsService;
+  /** Customer-level autonomous-loop pauses. Defaults to the Drizzle-backed service. */
+  autoPause?: DearMeAutoPauseService;
+  /** Transactional customer alert sender for hard-cap pauses. */
+  sendEmail?: DearMeAutoPauseEmailSender;
   /** Per-channel dispatchers; missing entries -> tool returns errored. */
   channelDispatch: Partial<Record<DearMeOutboundToolName, ChannelDispatch>>;
 }
+
+export type DearMeAutoPauseEmailSender = (input: {
+  companyId: string;
+  userId: string;
+  subject: string;
+  body: string;
+  billingUrl: string;
+  reason: string;
+}) => Promise<void>;
 
 export interface CallOutboundInput {
   toolName: DearMeOutboundToolName;
@@ -244,8 +263,96 @@ function sanitizeReauthReason(reason: string) {
   return "channel-auth-refresh-required";
 }
 
+function hardCapPauseReason(kind: "daily" | "monthly" | undefined) {
+  return kind === "monthly" ? "Monthly USD cap exceeded." : "Daily USD cap exceeded.";
+}
+
+function buildHardCapAlertEmail(reason: string) {
+  return {
+    subject: "DearMe paused work after reaching your spend cap",
+    body: [
+      "DearMe paused autonomous work because your configured spend cap was reached.",
+      "",
+      "No additional send, publish, deploy, or spend actions will run until you raise the cap or the cap window resets.",
+      "",
+      "You can update your cap in billing settings: /settings/billing",
+      "",
+      `Pause reason: ${reason}`,
+    ].join("\n"),
+    billingUrl: "/settings/billing",
+  };
+}
+
+function createDefaultAutoPauseEmailSender(
+  db: Db,
+  channelConnections: DearMeChannelConnectionsService,
+): DearMeAutoPauseEmailSender {
+  const sendEmail = createDearMeSendEmailDispatch();
+
+  return async (input) => {
+    const [user] = await db
+      .select({ email: authUsers.email, name: authUsers.name })
+      .from(authUsers)
+      .where(eq(authUsers.id, input.userId))
+      .limit(1);
+    if (!user?.email) {
+      logger.warn(
+        { companyId: input.companyId, userId: input.userId },
+        "dearme-outbound-tool-wrapper: hard-cap alert skipped without customer email",
+      );
+      return;
+    }
+
+    for (const provider of ["resend", "ses"] as const) {
+      const connection = await channelConnections.getActive({
+        companyId: input.companyId,
+        userId: input.userId,
+        channel: provider,
+      });
+      if (!connection) continue;
+
+      const result = await sendEmail({
+        toolName: "send_email",
+        encryptedCredential: connection.encryptedCredential,
+        payload: {
+          provider,
+          toEmail: user.email,
+          fromHandle: "DearMe",
+          subject: input.subject,
+          body: input.body,
+        },
+        dispatchContext: {
+          companyId: input.companyId,
+          userId: input.userId,
+          issueId: "dearme-auto-pause",
+          channel: provider,
+          openclawRunId: "dearme-auto-pause",
+          idempotencyKey: `dearme-auto-pause:${input.companyId}:${input.reason}`.slice(0, 256),
+          originalPayload: null,
+        },
+      });
+      if (result.kind === "delivered") {
+        await channelConnections.markUsed(connection.id);
+        return;
+      }
+      logger.warn(
+        { companyId: input.companyId, provider, result },
+        "dearme-outbound-tool-wrapper: hard-cap alert email was not delivered",
+      );
+      return;
+    }
+
+    logger.warn(
+      { companyId: input.companyId, userId: input.userId },
+      "dearme-outbound-tool-wrapper: hard-cap alert skipped without active email channel",
+    );
+  };
+}
+
 export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
   const costCaps = deps.costCaps ?? dearMeCostCapsService(deps.db);
+  const autoPause = deps.autoPause ?? dearMeAutoPauseService(deps.db);
+  const sendEmail = deps.sendEmail ?? createDefaultAutoPauseEmailSender(deps.db, deps.channelConnections);
   return {
     async callOutbound(input: CallOutboundInput): Promise<CallOutboundOutcome> {
       const binding = DEARME_OUTBOUND_TOOL_BINDINGS[input.toolName];
@@ -259,10 +366,36 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
         openclawSessionId: input.openclawSessionId,
       };
 
+      if (await autoPause.isPaused(input.companyId)) {
+        return { kind: "rejected", reason: "paused_by_hard_cap", gate: binding.gate };
+      }
+
       const costGate = await costCaps.enforceCap(input.companyId, usdToMicros(input.estimatedUsd), {
         dailyCapMicros: usdToMicros(input.config.dailyUsdCap),
       });
       if (!costGate.allowed) {
+        const reason = hardCapPauseReason(costGate.kind);
+        await autoPause.pause({
+          companyId: input.companyId,
+          by: "hard_cap",
+          reason,
+        });
+        const email = buildHardCapAlertEmail(reason);
+        try {
+          await sendEmail({
+            companyId: input.companyId,
+            userId: input.userId,
+            subject: email.subject,
+            body: email.body,
+            billingUrl: email.billingUrl,
+            reason,
+          });
+        } catch (error) {
+          logger.error(
+            { err: error, companyId: input.companyId },
+            "dearme-outbound-tool-wrapper: hard-cap pause alert failed",
+          );
+        }
         await deps.workLoop.transition({
           companyId: input.companyId,
           issueId: input.issueId,

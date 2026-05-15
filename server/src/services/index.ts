@@ -7,6 +7,10 @@ export {
 export { dearmeBrandBlueprintService } from "./dearme-brand-blueprints.js";
 export { dearMeApprovalResolverService } from "./dearme-approval-resolver.js";
 export {
+  dearMeAutoPauseService,
+  type DearMeAutoPauseService,
+} from "./dearme-auto-pause.js";
+export {
   callOutboundInputFromApprovedNextMove,
   dearMeApprovedLaunchHandoffService,
   defaultDearMeApprovedLaunchHandoffService,
