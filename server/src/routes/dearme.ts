@@ -44,6 +44,7 @@ import {
   dearMeStripeCheckoutService,
   DearMeStripeCheckoutError,
 } from "../services/dearme-stripe-checkout.js";
+import { dearMePublicFeedService } from "../services/dearme-public-feed.js";
 import {
   getDearMeSseBus,
   type DearMeSseEvent,
@@ -106,6 +107,9 @@ const DEARME_STRIPE_WEBHOOK_RECORDED_ACTION = "dearme.stripe_payment_webhook_rec
 const dearMeCheckoutStartRequestSchema = z.object({
   email: z.string().trim().email(),
   plan: z.literal("beta"),
+});
+const dearMePublicFeedOptRequestSchema = z.object({
+  companyId: z.string().trim().uuid(),
 });
 const CHIEF_OF_STAFF_INTENT_LABELS: Record<DearMeChiefOfStaffMessageIntent, string> = {
   plan_next: "Plan next moves",
@@ -354,6 +358,7 @@ export function dearmeRoutes(
   });
   const paidBetaAccess = dearmePaidBetaAccessService(db);
   const stripeCheckout = dearMeStripeCheckoutService(db, { paidBetaAccess });
+  const publicFeed = dearMePublicFeedService(db);
   const workbench = dearmeWorkbenchService(db, {
     voiceProfileStore: options.voiceProfileStore,
     voiceSemanticScorer: options.voiceSemanticScorer,
@@ -499,6 +504,34 @@ export function dearmeRoutes(
       createdAt: input.createdAt,
     };
   }
+
+  router.get(
+    "/public-feed",
+    async (req, res) => {
+      const limit = typeof req.query.limit === "string" ? Number(req.query.limit) : undefined;
+      const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+      res.setHeader("Cache-Control", "public, max-age=60");
+      res.json(await publicFeed.listRecentItems({ limit, cursor }));
+    },
+  );
+
+  router.post(
+    "/public-feed/opt-in",
+    validate(dearMePublicFeedOptRequestSchema),
+    async (req, res) => {
+      assertCompanyAccess(req, req.body.companyId);
+      res.status(200).json(await publicFeed.optIn(req.body.companyId));
+    },
+  );
+
+  router.post(
+    "/public-feed/opt-out",
+    validate(dearMePublicFeedOptRequestSchema),
+    async (req, res) => {
+      assertCompanyAccess(req, req.body.companyId);
+      res.status(200).json(await publicFeed.optOut(req.body.companyId));
+    },
+  );
 
   router.get(
     "/companies/:companyId/events",
