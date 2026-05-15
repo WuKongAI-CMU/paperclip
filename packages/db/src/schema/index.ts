@@ -59,6 +59,13 @@ export {
   type DearMeCostCapKind,
   type NewDearMeCostCap,
 } from "./dearme-cost-caps.js";
+export {
+  dearmeTierLimits,
+  DEARME_TIERS,
+  type DearMeTier,
+  type DearMeTierLimit,
+  type NewDearMeTierLimit,
+} from "./dearme-tier-limits.js";
 export { issueWorkProducts } from "./issue_work_products.js";
 export { labels } from "./labels.js";
 export { issueLabels } from "./issue_labels.js";
