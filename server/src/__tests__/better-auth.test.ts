@@ -23,22 +23,56 @@ describe("Better Auth cookie scoping", () => {
   it("uses PAPERCLIP_INSTANCE_ID for the Better Auth cookie prefix", () => {
     process.env.PAPERCLIP_INSTANCE_ID = "sat-worktree";
 
-    const advanced = buildBetterAuthAdvancedOptions({ disableSecureCookies: false });
+    const advanced = buildBetterAuthAdvancedOptions({ secureCookies: true });
 
     expect(advanced).toEqual({
       cookiePrefix: "paperclip-sat-worktree",
+      useSecureCookies: true,
+      defaultCookieAttributes: {
+        httpOnly: true,
+        sameSite: "lax",
+      },
     });
     expect(getCookies({ advanced } as BetterAuthOptions).sessionToken.name).toBe(
-      "paperclip-sat-worktree.session_token",
+      "__Secure-paperclip-sat-worktree.session_token",
     );
+  });
+
+  it("hardens production session cookie attributes", () => {
+    process.env.PAPERCLIP_INSTANCE_ID = "prod";
+
+    const cookies = getCookies({
+      advanced: buildBetterAuthAdvancedOptions({ secureCookies: true }),
+    } as BetterAuthOptions);
+
+    expect(cookies.sessionToken.attributes).toMatchObject({
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+    });
   });
 
   it("keeps local http auth cookies non-secure while preserving the scoped prefix", () => {
     process.env.PAPERCLIP_INSTANCE_ID = "pap-worktree";
 
-    expect(buildBetterAuthAdvancedOptions({ disableSecureCookies: true })).toEqual({
+    const advanced = buildBetterAuthAdvancedOptions({ secureCookies: false });
+
+    expect(advanced).toEqual({
       cookiePrefix: "paperclip-pap-worktree",
       useSecureCookies: false,
+      defaultCookieAttributes: {
+        httpOnly: true,
+        sameSite: "lax",
+      },
+    });
+    expect(getCookies({ advanced } as BetterAuthOptions).sessionToken).toMatchObject({
+      name: "paperclip-pap-worktree.session_token",
+      attributes: {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+      },
     });
   });
 
