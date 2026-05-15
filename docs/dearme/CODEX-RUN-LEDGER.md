@@ -17,3 +17,4 @@
 2026-05-15 08:18  DM-ABOUT-FAQ  1459813f  PR #16  P0  About and FAQ pages merged; CI green; /about tells the founder story and /faq covers 12 beta, legal, voice-gate, cost-cap, and cancellation answers.
 2026-05-15 08:40  DM-VOICE-SAMPLE-UI  fa620bc4  PR #17  P0  Voice sample UI merged; CI green; first-cycle Voice & Memory captures 1-10 writing samples or a source link as voice_sample memory updates with tests.
 2026-05-15 09:04  DM-ONBOARDING-BUGBASH  5ea4a245  PR #18  P0  Onboarding bugbash merged; CI green; headless Playwright covers landing-to-first-cycle flow with console, 4xx/5xx, and customer-language leak guards.
+2026-05-15 09:20  DM-EMAIL-TEMPLATES  8d00f0bf  PR #19  P1  Resend HTML email templates merged; CI green; welcome, receipt, trial-ending, dunning, and cancellation-confirm render mobile-safe HTML/text with customer-safe copy.
