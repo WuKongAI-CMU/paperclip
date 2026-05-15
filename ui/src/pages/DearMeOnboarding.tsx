@@ -529,6 +529,12 @@ function parseDearMePageView(search: string): DearMePageView {
   return DEARME_PAGE_VIEWS.has(view as DearMePageView) ? (view as DearMePageView) : "home";
 }
 
+function privateWorkKindFilterForView(view: DearMePageView): DearMeOutputItem["kind"] | null {
+  if (view === "opportunities") return "opportunity_drafts";
+  if (view === "portfolio") return "portfolio_update";
+  return null;
+}
+
 function buildDearMeDecisionRoute(params: {
   approvalId?: string;
   issueReference?: string;
@@ -7623,12 +7629,14 @@ function WorkReadyPanel({
   items,
   decisionFocus,
   onOpenWorkItem,
+  onOpenVoiceMemory,
   outputReviewState,
   onReviewOutput,
 }: {
   items: DearMeWorkbenchWorkItem[];
   decisionFocus?: DearMeDecisionFocus | null;
   onOpenWorkItem: (item: DearMeWorkbenchWorkItem, intent?: DearMeReviewEntryIntent | null) => void;
+  onOpenVoiceMemory: () => void;
   outputReviewState: DearMeOutputReviewState;
   onReviewOutput: (outputId: string, action: DearMeOutputReviewAction, decisionNote: string) => void;
 }) {
@@ -7646,7 +7654,13 @@ function WorkReadyPanel({
           className="mt-4"
           icon={FileText}
           title="Nothing is ready for review yet"
-          description="The active lanes below show what is moving."
+          description="The active lanes below show what is moving. Add stronger Voice & Memory if the team needs better source material before preparing reviewable work."
+          actions={
+            <Button type="button" size="sm" variant="outline" onClick={onOpenVoiceMemory}>
+              <Sparkles className="h-4 w-4" />
+              Open Voice & Memory
+            </Button>
+          }
         />
       ) : (
         <div className="mt-4 space-y-3">
@@ -8377,6 +8391,12 @@ function DecisionsNeededPanel({
           icon={ShieldCheck}
           title="No high-leverage decision is waiting right now"
           description="Your team will place prepared public moves here when they need your call."
+          actions={
+            <Button type="button" size="sm" variant="outline" onClick={onOpenWorkReady}>
+              <FileText className="h-4 w-4" />
+              Review Work Ready
+            </Button>
+          }
         />
       ) : null}
       {decisions.length > 0 ? (
@@ -10239,6 +10259,22 @@ function VoiceMemoryPanel({
           icon={Sparkles}
           title="No Voice & Memory saved yet"
           description="Add one writing sample, proof point, source link, correction, audience note, or offer note. DearMe will use it to protect your voice and prepare the next growth cycle."
+          actions={
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                document.getElementById(DEARME_MEMORY_FORM_ID)?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }}
+            >
+              <Sparkles className="h-4 w-4" />
+              Add first source
+            </Button>
+          }
         >
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline">Writing sample</Badge>
@@ -11005,6 +11041,7 @@ function TeamWorkbenchPanel({
           items={readyItems}
           decisionFocus={decisionFocus}
           onOpenWorkItem={openWorkItem}
+          onOpenVoiceMemory={onOpenVoiceMemory}
           outputReviewState={outputReviewState}
           onReviewOutput={onReviewOutput}
         />
@@ -12255,32 +12292,64 @@ function PrivateWorkPanel({
     ? allOutputs.filter((output) => output.kind === outputKindFilter)
     : allOutputs;
   const isOpportunityView = outputKindFilter === "opportunity_drafts";
+  const isPortfolioView = outputKindFilter === "portfolio_update";
+  const surfaceLabel = isOpportunityView
+    ? "Opportunity work ready"
+    : isPortfolioView
+      ? "Portfolio work ready"
+      : "Brand work ready";
+  const surfaceTitle = isOpportunityView
+    ? "Opportunities ready / Launch calls"
+    : isPortfolioView
+      ? "Portfolio proof ready / Launch calls"
+      : "Ready for your review";
+  const surfaceDescription = isOpportunityView
+    ? "Prepared opportunity drafts: targets, contact evidence, fit reasons, outreach angles, draft messages, and launch boundaries."
+    : isPortfolioView
+      ? "Prepared portfolio proof: page section, proof source, proposed copy, and the launch boundary before the public page changes."
+      : "Review first in Work Ready, make launch calls in Decisions, and let the brand lane keep moving between your calls.";
+  const emptyTitle = isOpportunityView
+    ? "Opportunity scouting has not produced reviewable leads yet"
+    : isPortfolioView
+      ? "No portfolio proof is ready yet"
+      : "Brand work has not started yet";
+  const emptyDescription = isOpportunityView
+    ? "Ask the Chief of Staff to scout practical openings and stage outreach behind the launch boundary."
+    : isPortfolioView
+      ? "Add a proof point or source in Voice & Memory, then ask DearMe to turn recent work into a portfolio update."
+      : "Start your brand team, or add stronger Voice & Memory so the next pass has enough proof to prepare reviewable work.";
+  const SurfaceIcon = isOpportunityView ? Telescope : FileText;
+  const EmptyIcon = isOpportunityView ? Telescope : isPortfolioView ? FileText : Workflow;
   const focusedOutput = decisionFocus
     ? outputs.find((output) => matchesOutputFocus(output, decisionFocus)) ?? null
     : null;
 
   return (
     <DearMePanel
-      id={isOpportunityView ? "dearme-opportunities-ready" : "dearme-work-ready"}
-      aria-label={isOpportunityView ? "Opportunity work ready" : "Brand work ready"}
+      id={
+        isOpportunityView
+          ? "dearme-opportunities-ready"
+          : isPortfolioView
+            ? "dearme-portfolio-ready"
+            : "dearme-work-ready"
+      }
+      aria-label={surfaceLabel}
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm font-medium">
-            {isOpportunityView ? <Telescope className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-            {isOpportunityView ? "Opportunities ready / Launch calls" : "Ready for your review"}
+            <SurfaceIcon className="h-4 w-4" />
+            {surfaceTitle}
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {isOpportunityView
-              ? "Prepared opportunity drafts: targets, contact evidence, fit reasons, outreach angles, draft messages, and launch boundaries."
-              : "Review first in Work Ready, make launch calls in Decisions, and let the brand lane keep moving between your calls."}
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{surfaceDescription}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 lg:justify-end">
           {outputs.length > 0 ? (
             <Badge variant="outline">
               {isOpportunityView
                 ? `${outputs.length} opportunity${outputs.length === 1 ? "" : "ies"}`
+                : isPortfolioView
+                  ? pluralizeCount(outputs.length, "portfolio item", "portfolio items")
                 : pluralizeCount(outputs.length, "item ready", "items ready")}
             </Badge>
           ) : null}
@@ -12314,9 +12383,15 @@ function PrivateWorkPanel({
       ) : outputs.length === 0 ? (
         <DearMeEmptyState
           className="mt-4"
-          icon={isOpportunityView ? Telescope : Workflow}
-          title={isOpportunityView ? "Opportunity scouting has not produced reviewable leads yet" : "Brand work has not started yet"}
-          description={isOpportunityView ? "Ask the Chief of Staff to scout practical openings and stage outreach behind the launch boundary." : "Start your brand team."}
+          icon={EmptyIcon}
+          title={emptyTitle}
+          description={emptyDescription}
+          actions={
+            <Button type="button" size="sm" variant="outline" onClick={onOpenVoiceMemory}>
+              <Sparkles className="h-4 w-4" />
+              Open Voice & Memory
+            </Button>
+          }
         />
       ) : (
         <>
@@ -13029,7 +13104,7 @@ export function DearMeOnboarding() {
 
       <PrivateWorkPanel
         companyId={selectedCompanyId}
-        outputKindFilter={selectedView === "opportunities" ? "opportunity_drafts" : null}
+        outputKindFilter={privateWorkKindFilterForView(selectedView)}
         decisionFocus={decisionFocus}
         onOpenOutput={handleOpenOutput}
         onOpenDecisions={handleOpenDecisionsReady}
