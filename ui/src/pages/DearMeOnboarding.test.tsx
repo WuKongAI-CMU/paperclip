@@ -1998,6 +1998,69 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("renders named skeleton loaders while the workroom and Decisions panel are loading", async () => {
+    mockDearmeApi.getWorkbench.mockReturnValue(new Promise(() => {}));
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.querySelector('[data-testid="dearme-workbench-loading-skeleton"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="dearme-decisions-loading-skeleton"]')).not.toBeNull();
+    expect(surfaceByLabel(container, "Decisions loading")).not.toBeNull();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("renders a named skeleton while the first-cycle preview is being prepared", async () => {
+    mockDearmeApi.previewFirstCycle.mockReturnValue(new Promise(() => {}));
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const intentInput = surfaceByLabel(container, "90-second first cycle").querySelector(
+      "#dearme-first-cycle-intent",
+    ) as HTMLTextAreaElement;
+    await act(async () => {
+      setTextareaValue(intentInput, "Known for shipping practical AI workflows from real customer support work.");
+    });
+
+    await act(async () => {
+      buttonByText(container, "Preview first cycle")?.click();
+    });
+    await flushReact();
+
+    expect(container.querySelector('[data-testid="dearme-first-cycle-preview-skeleton"]')).not.toBeNull();
+    expect(surfaceByLabel(container, "First-cycle preview loading").textContent).toContain(
+      "Preparing first-cycle preview",
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("uses the default route as a public first-run landing before the dense team surface", async () => {
     mockLocation.pathname = "/DEAA/dearme";
     mockLocation.search = "";
