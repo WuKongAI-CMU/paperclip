@@ -26,6 +26,7 @@ import {
   createDearMeLinkedInDmDispatch,
   type DearMeLinkedInDmDispatchConfig,
 } from "./dearme-linkedin-dm-dispatch.js";
+import { dearMeLinkedInThrottleService } from "./dearme-linkedin-throttle.js";
 import {
   createDearMeMetaCampaignDispatch,
   type DearMeMetaCampaignDispatchConfig,
@@ -199,7 +200,10 @@ export function defaultDearMeApprovedLaunchHandoffService(
     dearMeDeploySiteDispatchConfig ?? {},
   );
   const defaultLinkedInDmDispatch = dearMeLinkedInDmDispatchConfig?.messagesUrl
-    ? createDearMeLinkedInDmDispatch(dearMeLinkedInDmDispatchConfig)
+    ? createDearMeLinkedInDmDispatch({
+        ...dearMeLinkedInDmDispatchConfig,
+        throttle: dearMeLinkedInDmDispatchConfig.throttle ?? dearMeLinkedInThrottleService(db),
+      })
     : null;
   const defaultMetaCampaignDispatch = createDearMeMetaCampaignDispatch(
     dearMeMetaCampaignDispatchConfig ?? {},

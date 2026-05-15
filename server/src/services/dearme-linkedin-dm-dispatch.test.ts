@@ -4,6 +4,7 @@ import {
   createDearMeLinkedInDmDispatch,
   resolveDearMeLinkedInDmCredential,
 } from "./dearme-linkedin-dm-dispatch.js";
+import type { DearMeLinkedInThrottleService } from "./dearme-linkedin-throttle.js";
 
 function jsonResponse(body: unknown, init: { ok?: boolean; status?: number; statusText?: string } = {}) {
   return {
@@ -124,6 +125,96 @@ describe("createDearMeLinkedInDmDispatch", () => {
         },
       }),
     });
+  });
+
+  it("blocks dispatch when the LinkedIn DM daily cap is reached", async () => {
+    const fetchMock = vi.fn();
+    const resolveCredential = vi.fn(async () => credential());
+    const throttle: DearMeLinkedInThrottleService = {
+      getThrottleState: vi.fn(async () => ({
+        accountAgeDays: 30,
+        dmsSentToday: 40,
+        dmsSentThisWeek: 80,
+        dailyCap: 40,
+        weeklyCap: 200,
+        status: "daily_cap" as const,
+      })),
+      recordDispatch: vi.fn(),
+    };
+    const dispatch = createDearMeLinkedInDmDispatch({
+      messagesUrl: "https://linkedin-partner.example.test/messages",
+      fetch: fetchMock,
+      resolveCredential,
+      throttle,
+    });
+
+    const result = await dispatch({
+      toolName: "send_linkedin_dm",
+      encryptedCredential: "opaque",
+      payload: {
+        recipientUrn: "urn:li:person:lead-1",
+        body: "Peter, this private proof packet is ready when you have a minute.",
+      },
+      dispatchContext,
+    });
+
+    expect(result).toEqual({
+      kind: "errored",
+      error: "LinkedIn outreach rate limit reached for today. Daily cap: 40/40. Weekly cap: 80/200.",
+    });
+    expect(throttle.getThrottleState).toHaveBeenCalledWith("company-1");
+    expect(throttle.recordDispatch).not.toHaveBeenCalled();
+    expect(resolveCredential).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("records successful LinkedIn DM dispatches with the throttle service", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({
+      conversationUrn: "urn:li:conversation:abc",
+      messageUrn: "urn:li:message:def",
+    }));
+    const throttle: DearMeLinkedInThrottleService = {
+      getThrottleState: vi.fn(async () => ({
+        accountAgeDays: 30,
+        dmsSentToday: 3,
+        dmsSentThisWeek: 12,
+        dailyCap: 40,
+        weeklyCap: 200,
+        status: "ok" as const,
+      })),
+      recordDispatch: vi.fn(async () => ({
+        accountAgeDays: 30,
+        dmsSentToday: 4,
+        dmsSentThisWeek: 13,
+        dailyCap: 40,
+        weeklyCap: 200,
+        status: "ok" as const,
+      })),
+    };
+    const dispatch = createDearMeLinkedInDmDispatch({
+      messagesUrl: "https://linkedin-partner.example.test/messages",
+      fetch: fetchMock,
+      now: () => new Date("2026-05-11T12:00:00.000Z"),
+      resolveCredential: async () => credential(),
+      throttle,
+    });
+
+    const result = await dispatch({
+      toolName: "send_linkedin_dm",
+      encryptedCredential: "opaque",
+      payload: {
+        recipientUrn: "urn:li:person:lead-1",
+        body: "Peter, this private proof packet is ready when you have a minute.",
+      },
+      dispatchContext,
+    });
+
+    expect(result).toMatchObject({
+      kind: "delivered",
+      externalId: "urn:li:message:def",
+    });
+    expect(throttle.getThrottleState).toHaveBeenCalledWith("company-1");
+    expect(throttle.recordDispatch).toHaveBeenCalledWith("company-1");
   });
 
   it("fails closed when no partner messages endpoint is configured", async () => {

@@ -34,6 +34,14 @@ export {
   resolveDearMeLinkedInDmDispatchConfigFromEnv,
 } from "./dearme-linkedin-dm-dispatch-config.js";
 export {
+  computeCaps,
+  dearMeLinkedInThrottleService,
+  type DearMeLinkedInThrottleRepository,
+  type DearMeLinkedInThrottleService,
+  type DearMeLinkedInThrottleState,
+  type DearMeLinkedInThrottleStatus,
+} from "./dearme-linkedin-throttle.js";
+export {
   createDearMeMetaCampaignDispatch,
   resolveDearMeMetaCampaignCredential,
   type DearMeMetaCampaignDispatchConfig,
