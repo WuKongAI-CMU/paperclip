@@ -6,3 +6,4 @@
 2026-05-15 04:48  DM-RATE-LIMIT  d1ba6e72  PR #5  P0  Public checkout, sign-in, and unsubscribe rate limits merged; CI green; 429 body is customer-safe.
 2026-05-15 05:10  DM-SECURITY-HEADERS  5f1bc1bb  PR #6  P0  Helmet security headers merged; CI green; CSP, HSTS, and X-Frame-Options covered by tests.
 2026-05-15 05:31  DM-CORS-PROD  7f25bd3d  PR #7  P0  Production CORS policy merged; CI green; DearMe domains, Vercel previews, and dev wildcard covered by tests.
+2026-05-15 05:52  DM-SESSION-COOKIE-HARDEN  85ca60da  PR #8  P0  Session cookie hardening merged; CI green; Better Auth secure, httpOnly, and SameSite=Lax attributes covered by tests.
