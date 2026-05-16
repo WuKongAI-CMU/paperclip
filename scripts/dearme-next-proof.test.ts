@@ -680,6 +680,14 @@ test("DearMe next proof captures product handoff receipt facts without printing 
     assert.equal(setup.noSendCheck.checkedTargets.includes("linkedin_dm"), true);
     assert.equal(setup.noSendCheck.checkedTargets.includes("imessage_message"), true);
     assert.match(output, /local readiness only; no messages, publishes, deploys, spend, or live provider calls ran/);
+    assert.deepEqual(setup.commands.liveOrRunCommands, [
+      "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target linkedin_dm --live",
+      "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+    ]);
+    assert.match(output, /--target linkedin_dm --live/);
+    assert.match(output, /--target openclaw_messages --live/);
+    assert.doesNotMatch(output, /--target all --live/);
+    assert.doesNotMatch(output, /--target meta_campaign --live/);
     assert.doesNotMatch(output, /partner\.example\.test/);
     assert.doesNotMatch(output, /urn:li:person:lead-1/);
     assert.doesNotMatch(output, /\+15551234567/);

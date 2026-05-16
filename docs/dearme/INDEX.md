@@ -175,6 +175,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-OWNER-PROOF-FACT-LABELS** — `pnpm dearme:status` and shared owner-proof checklist text now use the same exact professional-network endpoint, professional-network smoke recipient, and iMessage/SMS smoke recipient labels as the Peter-facing live-proof handoff.
 - **DM-DAILY-PLAIN-SUMMARY** — `pnpm dearme:daily-plain-summary` now builds the required daily Codex Plain update from the run ledger and standing-loop audit, posts it only when Plain credentials plus the Peter recipient email are configured, and skips without live network otherwise.
 - **DM-NEXT-PROOF-MISSING-RECEIPT-PREVIEW** — `pnpm dearme:next-proof -- --no-write --handoff-receipt-file <launch-proof-handoff-receipt.txt>` now previews the current owner-proof gaps even before the receipt file exists, while import mode still fails closed until the receipt is present.
+- **DM-NEXT-PROOF-ALL-LIVE-LANE-GUARD** — `pnpm dearme:next-proof -- --target all` now prints target-specific guarded live commands for the public proof lanes instead of a broad `--target all --live` command that could mix owner-proof work with unrelated live lanes.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)
