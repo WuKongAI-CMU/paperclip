@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockActivityService = vi.hoisted(() => ({
   list: vi.fn(),
+  exportCompanyAuditLog: vi.fn(),
   forIssue: vi.fn(),
   runsForIssue: vi.fn(),
   issuesForRun: vi.fn(),
@@ -126,6 +127,53 @@ describe.sequential("activity routes", () => {
       entityId: undefined,
       limit: 500,
     });
+  });
+
+  it("exports company audit log rows after checking company access", async () => {
+    mockActivityService.exportCompanyAuditLog.mockResolvedValue([
+      {
+        id: "activity-1",
+        companyId: "company-1",
+        actorType: "system",
+        actorId: "system",
+        action: "test.audit",
+        entityType: "company",
+        entityId: "company-1",
+        agentId: null,
+        runId: null,
+        details: { ok: true },
+        createdAt: "2026-05-16T12:00:00.000Z",
+      },
+    ]);
+
+    const app = await createApp();
+    const res = await requestApp(app, (baseUrl) => request(baseUrl).get("/api/companies/company-1/activity/export"));
+
+    expect(res.status).toBe(200);
+    expect(mockActivityService.exportCompanyAuditLog).toHaveBeenCalledWith("company-1");
+    expect(res.body).toEqual([
+      {
+        id: "activity-1",
+        companyId: "company-1",
+        actorType: "system",
+        actorId: "system",
+        action: "test.audit",
+        entityType: "company",
+        entityId: "company-1",
+        agentId: null,
+        runId: null,
+        details: { ok: true },
+        createdAt: "2026-05-16T12:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("requires company access before exporting audit log rows", async () => {
+    const app = await createApp();
+    const res = await requestApp(app, (baseUrl) => request(baseUrl).get("/api/companies/company-2/activity/export"));
+
+    expect(res.status).toBe(403);
+    expect(mockActivityService.exportCompanyAuditLog).not.toHaveBeenCalled();
   });
 
   it("resolves alphanumeric issue identifiers before loading runs", async () => {

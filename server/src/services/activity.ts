@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, or, sql } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
 import {
   activityLog,
@@ -28,10 +28,16 @@ export interface ActivityFilters {
 
 const DEFAULT_ACTIVITY_LIMIT = 100;
 const MAX_ACTIVITY_LIMIT = 500;
+const AUDIT_LOG_EXPORT_WINDOW_DAYS = 90;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export function normalizeActivityLimit(limit: number | undefined) {
   if (!Number.isFinite(limit)) return DEFAULT_ACTIVITY_LIMIT;
   return Math.max(1, Math.min(MAX_ACTIVITY_LIMIT, Math.floor(limit ?? DEFAULT_ACTIVITY_LIMIT)));
+}
+
+function auditLogExportSince(now = new Date()) {
+  return new Date(now.getTime() - AUDIT_LOG_EXPORT_WINDOW_DAYS * MS_PER_DAY);
 }
 
 export function activityService(db: Db) {
@@ -362,6 +368,13 @@ export function activityService(db: Db) {
         .limit(limit)
         .then((rows) => rows.map((r) => r.activityLog));
     },
+
+    exportCompanyAuditLog: (companyId: string, now = new Date()) =>
+      db
+        .select()
+        .from(activityLog)
+        .where(and(eq(activityLog.companyId, companyId), gte(activityLog.createdAt, auditLogExportSince(now))))
+        .orderBy(desc(activityLog.createdAt)),
 
     forIssue: (issueId: string) =>
       db

@@ -47,6 +47,14 @@ export function activityRoutes(db: Db) {
     res.json(result);
   });
 
+  router.get("/companies/:companyId/activity/export", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertAuthenticated(req);
+    assertCompanyAccess(req, companyId);
+    const result = await svc.exportCompanyAuditLog(companyId);
+    res.json(result);
+  });
+
   router.post("/companies/:companyId/activity", validate(createActivitySchema), async (req, res) => {
     assertBoard(req);
     const companyId = req.params.companyId as string;
