@@ -58,3 +58,4 @@
 2026-05-16 11:18  DM-STATUS-CHECKOUT-SECRET-REDACTION  61f751bf  PR #57  Standing  DearMe status now marks hosted-checkout receipt/webhook-secret setup blockers as sensitive while still showing first-payment facts; CI green.
 2026-05-16 11:35  DM-DOC-FRESHNESS-STATUS-CHECKOUT-SECRET-REDACTION  1d4f3c9c  PR #58  Standing  INDEX shipped list now records the DearMe status checkout secret redaction behavior; CI green; doc-freshness loop caught up after PR #57.
 2026-05-16 11:53  DM-PAYMENT-READINESS-SECRET-REDACTION  e3d301cd  PR #59  Standing  Payment readiness output now marks hosted-checkout receipt/webhook-secret blockers as sensitive in operator and Peter-facing support views; CI green.
+2026-05-16 12:10  DM-DOC-FRESHNESS-PAYMENT-READINESS-SECRET-REDACTION  22316717  PR #60  Standing  INDEX shipped list now records the payment-readiness checkout secret redaction behavior; CI green; doc-freshness loop caught up after PR #59.
