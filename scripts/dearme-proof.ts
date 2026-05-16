@@ -1573,7 +1573,7 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
     if (commercial.hostedCheckoutFactsNeeded.length > 0) {
       lines.push("- First-payment checkout facts needed:");
       for (const fact of commercial.hostedCheckoutFactsNeeded) {
-        lines.push(`  - ${fact}`);
+        lines.push(`  - ${formatHostedCheckoutFactNeed(fact)}`);
       }
     }
     if (commercial.cannotClaimPublicLaunchUntil.length > 0) {
@@ -1672,6 +1672,13 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
     }
   }
   return lines;
+}
+
+function formatHostedCheckoutFactNeed(fact: string): string {
+  const normalized = fact.replace(/\.$/, "");
+  return normalized.includes("STRIPE_WEBHOOK_SECRET")
+    ? `${normalized} (sensitive; value hidden).`
+    : `${normalized}.`;
 }
 
 function proofTemplateSection(title: string, template: string) {
