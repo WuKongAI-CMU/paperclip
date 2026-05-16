@@ -85,6 +85,7 @@ function goalAudit(
     verdict: complete ? "Goal audit: complete." : "Goal audit: not complete.",
     promptToArtifactChecklist: [],
     items,
+    hostedCheckoutFactsNeeded: [],
     ownerProofFactsNeeded: complete
       ? []
       : [
@@ -296,7 +297,7 @@ test("DearMe release gate allows private proof while blocking public launch", ()
   assert.match(formatted, /Preview the product handoff receipt without writing: pnpm --silent dearme:next-proof -- --target all --no-write --handoff-receipt-file <launch-proof-handoff-receipt\.txt>/);
   assert.match(formatted, /If preview passes, import the product handoff receipt: pnpm --silent dearme:next-proof -- --target all --handoff-receipt-file <launch-proof-handoff-receipt\.txt>/);
   assert.match(formatted, /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
-  assert.match(formatted, /Guarded live proof:/);
+  assert.match(formatted, /Guarded live proof after facts are present and the no-send check passes:/);
   assert.match(formatted, /Product readiness needs:/);
   assert.match(formatted, /Professional-network delivery route/);
   assert.match(formatted, /Approved professional-network recipient/);

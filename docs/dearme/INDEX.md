@@ -178,6 +178,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-NEXT-PROOF-ALL-LIVE-LANE-GUARD** — `pnpm dearme:next-proof -- --target all` now prints target-specific guarded live commands for the public proof lanes instead of a broad `--target all --live` command that could mix owner-proof work with unrelated live lanes.
 - **DM-NEXT-PROOF-BLOCKED-LIVE-COMMAND-GATE** — `pnpm dearme:next-proof` now keeps blocked live commands out of the immediate next-command list and labels them as available only after blocked facts are captured and the no-send check passes.
 - **DM-STATUS-LIVE-COMMAND-GUARD** — `pnpm dearme:status` now labels live provider commands as guarded and marks blocked live commands as available only after blockers clear and the no-send check passes.
+- **DM-RELEASE-GATE-LIVE-COMMAND-GUARD** — `pnpm dearme:release-gate` now labels guarded live proof commands as available only after required facts are present and the no-send check passes.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)
