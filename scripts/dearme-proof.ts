@@ -1557,6 +1557,23 @@ function formatProductVerdict(status: DearMeProofStatus) {
   return "Product verdict: scoped proof status only; run the all-lane status before making a product-readiness claim.";
 }
 
+function formatLiveProviderFocusAction(focus: DearMeProofLiveProviderFocus) {
+  const isGuardedLiveCommand = focus.operatorCommand.includes("DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1");
+  if (!isGuardedLiveCommand) {
+    return `Run: ${focus.operatorCommand}`;
+  }
+  if (focus.ready) {
+    return `Guarded live command after the no-send check passes: ${focus.operatorCommand}`;
+  }
+  return `Guarded live command after blockers clear and the no-send check passes: ${focus.operatorCommand}`;
+}
+
+function formatLiveProviderSetupCommand(command: string) {
+  return command.includes("DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1")
+    ? `Guarded live command after blockers clear and the no-send check passes: ${command}`
+    : command;
+}
+
 export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
   const lines = ["DearMe product proof status"];
   const checklist = status.ownerProofChecklist;
@@ -1602,7 +1619,7 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
         ? "ready"
         : `blocked on ${focus.blockedTargets.map((item) => item.target).join(", ")}`;
       lines.push(
-        `- ${focus.label}: ${state}.${formatCapabilityBlockers(focus.missingCapabilities)} ${focus.reason} Run: ${focus.operatorCommand}`,
+        `- ${focus.label}: ${state}.${formatCapabilityBlockers(focus.missingCapabilities)} ${focus.reason} ${formatLiveProviderFocusAction(focus)}`,
       );
     }
   }
@@ -1668,7 +1685,7 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
     lines.push("");
     lines.push("Next live provider proof setup:");
     for (const command of status.commands.liveProviderSetup) {
-      lines.push(`- ${command}`);
+      lines.push(`- ${formatLiveProviderSetupCommand(command)}`);
     }
   }
   return lines;
