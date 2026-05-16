@@ -1563,14 +1563,14 @@ function formatLiveProviderFocusAction(focus: DearMeProofLiveProviderFocus) {
     return `Run: ${focus.operatorCommand}`;
   }
   if (focus.ready) {
-    return `Guarded live command after the no-send check passes: ${focus.operatorCommand}`;
+    return `Guarded live command after the no-send check passes and explicit live confirmation is set: ${focus.operatorCommand}`;
   }
-  return `Guarded live command after owner facts are present and the no-send check passes: ${focus.operatorCommand}`;
+  return `Guarded live command after owner facts are present, the no-send check passes, and explicit live confirmation is set: ${focus.operatorCommand}`;
 }
 
 function formatLiveProviderSetupCommand(command: string) {
   return command.includes("DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1")
-    ? `Guarded live command after owner facts are present and the no-send check passes: ${command}`
+    ? `Guarded live command after owner facts are present, the no-send check passes, and explicit live confirmation is set: ${command}`
     : command;
 }
 
