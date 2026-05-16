@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "kind": "posthog-dashboard-config",
+  "name": "DearMe weekly cohort retention",
+  "description": "Weekly paid-cohort retention dashboard for first-50-to-500 operations. Measures whether activated users return after receiving useful private work.",
+  "owner": "dearme-ops",
+  "posthog": {
+    "projectEnvVar": "POSTHOG_PROJECT_ID",
+    "personalApiKeyEnvVar": "POSTHOG_PERSONAL_API_KEY",
+    "regionEnvVar": "POSTHOG_REGION",
+    "dashboardApiPath": "/api/projects/{project_id}/dashboards/",
+    "insightApiPath": "/api/projects/{project_id}/insights/"
+  },
+  "sourceEvents": [
+    {
+      "event": "first_cycle_started",
+      "role": "cohort_start",
+      "requiredProperties": ["company_id", "user_id", "paid_beta_status"]
+    },
+    {
+      "event": "dearme_useful_work_viewed",
+      "role": "return_signal",
+      "requiredProperties": ["company_id", "user_id", "work_type"]
+    },
+    {
+      "event": "dearme_first_payment",
+      "role": "paid_filter",
+      "requiredProperties": ["company_id", "user_id", "plan"]
+    }
+  ],
+  "globalFilters": {
+    "dateFrom": "-90d",
+    "properties": [
+      {
+        "key": "paid_beta_status",
+        "operator": "exact",
+        "value": "active",
+        "type": "event"
+      }
+    ]
+  },
+  "insights": [
+    {
+      "key": "d1_retention",
+      "name": "D1 retention",
+      "description": "Share of activated paid-beta users who return within one day to view useful private work.",
+      "target": ">=35%",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "RetentionQuery",
+          "retentionType": "retention_first_time",
+          "dateRange": {
+            "date_from": "-90d"
+          },
+          "period": "Day",
+          "totalIntervals": 2,
+          "targetEntity": {
+            "kind": "EventsNode",
+            "event": "first_cycle_started",
+            "name": "first_cycle_started"
+          },
+          "returningEntity": {
+            "kind": "EventsNode",
+            "event": "dearme_useful_work_viewed",
+            "name": "dearme_useful_work_viewed"
+          },
+          "properties": [
+            {
+              "key": "paid_beta_status",
+              "operator": "exact",
+              "value": "active",
+              "type": "event"
+            }
+          ]
+        }
+      },
+      "layout": {
+        "sm": { "x": 0, "y": 0, "w": 4, "h": 5 },
+        "xs": { "x": 0, "y": 0, "w": 1, "h": 5 }
+      }
+    },
+    {
+      "key": "d7_retention",
+      "name": "D7 retention",
+      "description": "Share of activated paid-beta users who return on or before day seven to view useful private work.",
+      "target": ">=25%",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "RetentionQuery",
+          "retentionType": "retention_first_time",
+          "dateRange": {
+            "date_from": "-90d"
+          },
+          "period": "Day",
+          "totalIntervals": 8,
+          "targetEntity": {
+            "kind": "EventsNode",
+            "event": "first_cycle_started",
+            "name": "first_cycle_started"
+          },
+          "returningEntity": {
+            "kind": "EventsNode",
+            "event": "dearme_useful_work_viewed",
+            "name": "dearme_useful_work_viewed"
+          },
+          "properties": [
+            {
+              "key": "paid_beta_status",
+              "operator": "exact",
+              "value": "active",
+              "type": "event"
+            }
+          ]
+        }
+      },
+      "layout": {
+        "sm": { "x": 4, "y": 0, "w": 4, "h": 5 },
+        "xs": { "x": 0, "y": 5, "w": 1, "h": 5 }
+      }
+    },
+    {
+      "key": "d28_retention",
+      "name": "D28 retention",
+      "description": "Share of activated paid-beta users who return on or before day 28 to view useful private work.",
+      "target": ">=15%",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "RetentionQuery",
+          "retentionType": "retention_first_time",
+          "dateRange": {
+            "date_from": "-180d"
+          },
+          "period": "Day",
+          "totalIntervals": 29,
+          "targetEntity": {
+            "kind": "EventsNode",
+            "event": "first_cycle_started",
+            "name": "first_cycle_started"
+          },
+          "returningEntity": {
+            "kind": "EventsNode",
+            "event": "dearme_useful_work_viewed",
+            "name": "dearme_useful_work_viewed"
+          },
+          "properties": [
+            {
+              "key": "paid_beta_status",
+              "operator": "exact",
+              "value": "active",
+              "type": "event"
+            }
+          ]
+        }
+      },
+      "layout": {
+        "sm": { "x": 8, "y": 0, "w": 4, "h": 5 },
+        "xs": { "x": 0, "y": 10, "w": 1, "h": 5 }
+      }
+    }
+  ],
+  "reviewCadence": {
+    "frequency": "weekly",
+    "owner": "dearme-ops",
+    "minimumCohortSize": 10,
+    "decisionRule": "Do not make acquisition or onboarding decisions from this dashboard until the relevant interval has at least 10 activated paid-beta users."
+  }
+}
