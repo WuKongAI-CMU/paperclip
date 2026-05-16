@@ -831,10 +831,11 @@ export function formatDearMeNextProofHumanHelp(
 }
 
 export async function loadDearMeNextProofFactCaptures(args: DearMeNextProofArgs, cwd: string) {
-  const receiptCaptures = args.handoffReceiptFile
-    ? parseDearMeOwnerProofHandoffReceipt(
-      await readFile(resolve(cwd, args.handoffReceiptFile), "utf8"),
-    )
+  const receiptPath = args.handoffReceiptFile
+    ? resolve(cwd, args.handoffReceiptFile)
+    : null;
+  const receiptCaptures = receiptPath && (!args.noWrite || await envFileExists(receiptPath))
+    ? parseDearMeOwnerProofHandoffReceipt(await readFile(receiptPath, "utf8"))
     : [];
   return mergeFactCaptures([...receiptCaptures, ...args.factCaptures]);
 }
@@ -853,7 +854,9 @@ targets are still needed and how to capture non-secret values locally.
 Optional fact-capture flags and --handoff-receipt-file write non-secret launch
 facts into the local env file and never print captured values. With --no-write,
 those facts are used only for the local no-send check and the env file is not
-changed.
+changed. A missing --handoff-receipt-file is allowed only with --no-write, so
+the preview command can show the current owner-proof gaps before Peter fills the
+receipt.
 
 Targets use the same aliases as dearme:provider-smoke, including openclaw,
 linkedin, meta, telegram, imessage, production, and all.
