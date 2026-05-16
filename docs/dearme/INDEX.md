@@ -159,6 +159,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-GOAL-AUDIT-OWNER-HANDOFF** — `pnpm dearme:goal-audit` now surfaces the exact reserved owner facts, item-specific capture setup, no-send check, and guarded live-proof commands when public launch is blocked on external proof facts.
 - **DM-BACKLOG-LEDGER-AUDIT** — `pnpm dearme:backlog-audit -- --check` now verifies every P0/P1/P2 item in `CODEX-HANDOFF-TOKEN.md` has a `CODEX-RUN-LEDGER.md` entry, while keeping standing-loop work visible as ongoing.
 - **DM-DEPENDENCY-LOOP-AUDIT** — `pnpm dearme:dependency-loop-audit -- --check` now separates autonomous patch and stable-minor dependency bumps from review-required major, prerelease, non-semver, and 0.x minor updates.
+- **DM-STANDING-LOOP-AUDIT** — `pnpm dearme:standing-loop-audit -- --check` now combines backlog, dependency, and goal evidence into one next-action state that distinguishes code-owned work from Peter-owned live-proof blockers.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)
