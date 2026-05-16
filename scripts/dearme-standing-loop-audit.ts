@@ -50,7 +50,17 @@ const DEFAULT_HANDOFF_PATH = "docs/dearme/CODEX-HANDOFF-TOKEN.md";
 const DEFAULT_LEDGER_PATH = "docs/dearme/CODEX-RUN-LEDGER.md";
 
 function ownerBlocked(goal: DearMeGoalAudit): boolean {
-  return !goal.complete && (goal.nextAction.ownerFacts?.length ?? 0) > 0;
+  return !goal.complete && (
+    goal.ownerProofFactsNeeded.length > 0 ||
+    (goal.nextAction.ownerFacts?.length ?? 0) > 0
+  );
+}
+
+function ownerFactsForStandingLoop(goal: DearMeGoalAudit): string[] | undefined {
+  if (goal.ownerProofFactsNeeded.length > 0) {
+    return goal.ownerProofFactsNeeded;
+  }
+  return goal.nextAction.ownerFacts;
 }
 
 export function summarizeDearMeStandingLoopAudit(
@@ -114,7 +124,7 @@ export function summarizeDearMeStandingLoopAudit(
         label: goal.nextAction.label,
         reason: goal.nextAction.reason,
         command: goal.nextAction.command,
-        ownerFacts: goal.nextAction.ownerFacts,
+        ownerFacts: ownerFactsForStandingLoop(goal),
       },
     };
   }

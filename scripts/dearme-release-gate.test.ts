@@ -85,6 +85,13 @@ function goalAudit(
     verdict: complete ? "Goal audit: complete." : "Goal audit: not complete.",
     promptToArtifactChecklist: [],
     items,
+    ownerProofFactsNeeded: complete
+      ? []
+      : [
+        "LinkedIn partner messages endpoint: provide DEARME_LINKEDIN_DM_MESSAGES_URL",
+        "LinkedIn approved smoke recipient: provide DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
+        "iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+      ],
     nextAction: complete
       ? {
         label: "Mark the active goal complete",
