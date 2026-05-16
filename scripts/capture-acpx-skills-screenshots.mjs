@@ -2,10 +2,9 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { chromium } from "playwright";
 
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const playwrightPkgRoot = path.join(repoRoot, "node_modules/.pnpm/playwright@1.58.2/node_modules/playwright");
-const { chromium } = await import(path.join(playwrightPkgRoot, "index.mjs"));
 
 const baseUrl = process.env.STORYBOOK_BASE_URL ?? "http://127.0.0.1:6007";
 const outDir = process.env.OUT_DIR ?? path.join(repoRoot, "screenshots/pap-2999");
