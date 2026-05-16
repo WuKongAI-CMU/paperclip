@@ -10,6 +10,7 @@ import {
   type Db,
 } from "@paperclipai/db";
 import {
+  createDearMeReferralStripeClient,
   dearMeReferralService,
   referralCouponDescriptor,
   type DearMeReferralStripeClient,
@@ -62,6 +63,40 @@ describe("referralCouponDescriptor", () => {
         ownerCompanyId: "co_owner",
       },
     });
+  });
+});
+
+describe("createDearMeReferralStripeClient", () => {
+  it("creates a Stripe coupon request from the referral descriptor without live network", async () => {
+    const fetchMock = vi.fn(async () => new Response(
+      JSON.stringify({ id: "coupon_ref_peter" }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    ));
+    const client = createDearMeReferralStripeClient("sk_test_referral", fetchMock as typeof fetch);
+
+    const result = await client.coupons.create(referralCouponDescriptor({
+      code: "peter-fa3k",
+      ownerCompanyId: "company-1",
+    }));
+
+    expect(result).toEqual({ id: "coupon_ref_peter" });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.stripe.com/v1/coupons",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer sk_test_referral",
+          "Content-Type": "application/x-www-form-urlencoded",
+        }),
+      }),
+    );
+    const calls = (fetchMock as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls;
+    const body = calls[0]?.[1].body as URLSearchParams;
+    expect(body.get("percent_off")).toBe("20");
+    expect(body.get("duration")).toBe("forever");
+    expect(body.get("metadata[product]")).toBe("dearme");
+    expect(body.get("metadata[referralCode]")).toBe("peter-fa3k");
+    expect(body.get("metadata[ownerCompanyId]")).toBe("company-1");
   });
 });
 
@@ -119,6 +154,24 @@ describeEmbeddedPostgres("dearMeReferralService", () => {
       disabled: false,
     });
     await expect(service.lookupCode("missing")).resolves.toBeNull();
+  });
+
+  it("getActiveCode returns the current active code without creating a coupon", async () => {
+    const ownerCompanyId = await seedCompany(db, "Owner");
+    const service = dearMeReferralService(db, {
+      stripeClient: stripeClient("coupon_active"),
+      randomSuffix: () => "act1",
+    });
+
+    await expect(service.getActiveCode(ownerCompanyId)).resolves.toBeNull();
+    await service.mintCode(ownerCompanyId, { slugBase: "Owner" });
+
+    await expect(service.getActiveCode(ownerCompanyId)).resolves.toMatchObject({
+      code: "owner-act1",
+      ownerCompanyId,
+      stripeCouponId: "coupon_active",
+      disabledAt: null,
+    });
   });
 
   it("recordAttribution is idempotent on code and referredEmail", async () => {

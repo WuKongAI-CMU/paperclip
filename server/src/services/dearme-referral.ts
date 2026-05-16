@@ -72,6 +72,51 @@ export function referralCouponDescriptor(input: {
   };
 }
 
+export function createDearMeReferralStripeClient(
+  secretKey: string,
+  fetchImpl: typeof fetch = fetch,
+): DearMeReferralStripeClient {
+  const trimmedSecretKey = secretKey.trim();
+  if (!trimmedSecretKey) {
+    throw new Error("DearMe referral Stripe secret key is required.");
+  }
+
+  return {
+    coupons: {
+      async create(params) {
+        const body = new URLSearchParams();
+        body.set("percent_off", String(params.percent_off));
+        body.set("duration", params.duration);
+        body.set("name", params.name);
+        for (const [key, value] of Object.entries(params.metadata)) {
+          body.set(`metadata[${key}]`, value);
+        }
+
+        const response = await fetchImpl("https://api.stripe.com/v1/coupons", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${trimmedSecretKey}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body,
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) {
+          const message = typeof (payload as { error?: { message?: unknown } } | null)?.error?.message === "string"
+            ? (payload as { error: { message: string } }).error.message
+            : "DearMe referral coupon creation failed.";
+          throw new Error(message);
+        }
+        const id = (payload as { id?: unknown } | null)?.id;
+        if (typeof id !== "string" || id.trim().length === 0) {
+          throw new Error("DearMe referral coupon response did not include an id.");
+        }
+        return { id };
+      },
+    },
+  };
+}
+
 function normalizeCode(code: string) {
   return code.trim().toLowerCase();
 }
@@ -153,6 +198,18 @@ export function dearMeReferralService(
     }
 
     throw new Error("Failed to generate a unique DearMe referral code.");
+  }
+
+  async function getActiveCode(ownerCompanyId: string): Promise<DearMeReferralCode | null> {
+    const [row] = await db
+      .select()
+      .from(dearmeReferralCodes)
+      .where(and(
+        eq(dearmeReferralCodes.ownerCompanyId, ownerCompanyId),
+        isNull(dearmeReferralCodes.disabledAt),
+      ))
+      .limit(1);
+    return row ?? null;
   }
 
   async function lookupCode(code: string): Promise<DearMeReferralLookupResult | null> {
@@ -247,6 +304,7 @@ export function dearMeReferralService(
   }
 
   return {
+    getActiveCode,
     getOwnerRewards,
     lookupCode,
     markFirstPayment,

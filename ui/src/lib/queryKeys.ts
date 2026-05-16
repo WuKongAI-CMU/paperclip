@@ -108,6 +108,7 @@ export const queryKeys = {
     workbench: (companyId: string) => ["dearme", companyId, "workbench"] as const,
     outputs: (companyId: string) => ["dearme", companyId, "outputs"] as const,
     paidBetaAccess: (companyId: string) => ["dearme", companyId, "paid-beta-access"] as const,
+    referralCode: (companyId: string) => ["dearme", companyId, "referral-code"] as const,
     paidBetaCohorts: ["dearme", "paid-beta-cohort"] as const,
     paidBetaCohort: (companyIds: string | string[]) => [
       "dearme",

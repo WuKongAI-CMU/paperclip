@@ -18,6 +18,7 @@ const Layout = lazyNamed(() => import("./components/Layout"), "Layout");
 const Dashboard = lazyNamed(() => import("./pages/Dashboard"), "Dashboard");
 const DashboardLive = lazyNamed(() => import("./pages/DashboardLive"), "DashboardLive");
 const DearMeOnboarding = lazyNamed(() => import("./pages/DearMeOnboarding"), "DearMeOnboarding");
+const DearMeReferral = lazyNamed(() => import("./pages/DearMeReferral"), "DearMeReferral");
 const Companies = lazyNamed(() => import("./pages/Companies"), "Companies");
 const Agents = lazyNamed(() => import("./pages/Agents"), "Agents");
 const AgentDetail = lazyNamed(() => import("./pages/AgentDetail"), "AgentDetail");
@@ -81,6 +82,7 @@ function boardRoutes() {
       <Route path="dashboard" element={<Dashboard />} />
       <Route path="dashboard/live" element={<DashboardLive />} />
       <Route path="dearme" element={<DearMeOnboarding />} />
+      <Route path="dearme/refer" element={<DearMeReferral />} />
       <Route path="dearme/site-preview/:handle" element={<DearMeSitePreview />} />
       <Route path="onboarding" element={<OnboardingRoutePage />} />
       <Route path="companies" element={<Companies />} />
@@ -294,6 +296,7 @@ export function BoardAppRoutes() {
       </Route>
       <Route path="companies" element={<UnprefixedBoardRedirect />} />
       <Route path="dearme" element={<UnprefixedBoardRedirect />} />
+      <Route path="dearme/refer" element={<UnprefixedBoardRedirect />} />
       <Route path="dearme/site-preview/:handle" element={<UnprefixedBoardRedirect />} />
       <Route path="issues" element={<UnprefixedBoardRedirect />} />
       <Route path="issues/:issueId" element={<UnprefixedBoardRedirect />} />
