@@ -97,10 +97,11 @@ Safety notes:
 ### 2026-05-14 - Self-serve checkout configuration
 
 - Needs help from: Peter
-- What they need to do: provide the real hosted payment link and signed
-  receipt/webhook configuration for DearMe self-serve checkout.
+- What they need to do: provide the real hosted payment link for the live
+  $29/month DearMe offer and signed receipt/webhook configuration for DearMe
+  self-serve checkout.
 - Why agents cannot do it: this involves real payment-provider setup, secrets,
-  pricing/account judgment, and a customer-facing checkout URL.
+  $29/month pricing/account judgment, and a customer-facing checkout URL.
 - Blocking: no for private-beta sales or paid-user operations; yes before
   self-serve checkout can be claimed publicly.
 - Estimated human time: 10-20 minutes once the payment provider offer is ready.
@@ -111,7 +112,7 @@ Safety notes:
 Needed values:
 
 - `DEARME_PAYMENT_LINK_URL`: customer-facing HTTPS hosted payment link for the
-  DearMe offer.
+  live $29/month DearMe offer.
 - `DEARME_PAYMENT_RECEIPT_SYNC_SECRET` or `STRIPE_WEBHOOK_SECRET`: receipt-sync
   or webhook signing secret, kept local/server-side.
 - `DEARME_PAYMENT_PROVIDER`: optional customer-safe provider label for the
@@ -120,7 +121,7 @@ Needed values:
 Reply template for Peter:
 
 ```text
-Payment link:
+Live $29/month payment link:
 Receipt sync configured:
 Provider label:
 ```

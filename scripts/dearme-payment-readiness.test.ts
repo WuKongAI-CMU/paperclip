@@ -29,6 +29,7 @@ test("DearMe payment readiness keeps private beta sellable without hosted checko
   ]);
   assert.match(formatted, /Sell private beta now: yes/);
   assert.match(formatted, /Claim self-serve checkout: no/);
+  assert.match(formatted, /\$29\/month DearMe offer payment link/);
   assert.match(
     formatted,
     /DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)/,
@@ -57,7 +58,7 @@ test("DearMe payment readiness marks hosted checkout ready when link and receipt
   assert.equal(readiness.receiptSyncProof.ready, true);
   assert.equal(readiness.providerContractProof.ready, true);
   assert.deepEqual(readiness.hostedCheckout.blockers, []);
-  assert.match(readiness.hostedCheckout.summary, /payment link is configured/);
+  assert.match(readiness.hostedCheckout.summary, /payment link for the \$29\/month DearMe offer/);
   assert.equal(serialized.includes("whsec_test_secret_value"), false);
   assert.equal(serialized.includes("payments.example.com"), false);
 });
@@ -155,7 +156,8 @@ test("DearMe payment readiness generates a Peter-facing checkout support request
   const markdown = formatDearMePaymentReadinessHumanHelp(readiness, { date: "2026-05-14" }).join("\n");
 
   assert.match(markdown, /^### 2026-05-14 - Self-serve checkout configuration/);
-  assert.match(markdown, /Payment link:/);
+  assert.match(markdown, /Live \$29\/month payment link:/);
+  assert.match(markdown, /live \$29\/month DearMe offer/);
   assert.match(markdown, /Receipt sync configured:/);
   assert.match(markdown, /Provider label:/);
   assert.match(markdown, /DEARME_PAYMENT_LINK_URL/);
@@ -200,7 +202,8 @@ test("DearMe human support queue stays aligned with hosted checkout readiness", 
   assert.match(help, /DEARME_PAYMENT_RECEIPT_SYNC_SECRET/);
   assert.match(help, /STRIPE_WEBHOOK_SECRET/);
   assert.match(help, /STRIPE_WEBHOOK_SECRET` is missing\s+\(sensitive; value hidden\)/);
-  assert.match(help, /Payment link:/);
+  assert.match(help, /Live \$29\/month payment link:/);
+  assert.match(help, /live \$29\/month DearMe offer/);
   assert.match(help, /Receipt sync configured:/);
   assert.match(help, /Provider label:/);
   assert.match(help, /pnpm --silent dearme:payment-readiness -- --human-help-markdown/);
