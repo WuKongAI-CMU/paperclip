@@ -58,6 +58,7 @@ function goalAudit(overrides: Partial<DearMeGoalAudit> = {}): DearMeGoalAudit {
       "LinkedIn approved smoke recipient: provide DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
       "iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
     ],
+    hostedCheckoutFactsNeeded: [],
     nextAction: {
       label: "OpenClaw shared Telegram/iMessage message proof",
       reason: "Blocked by imessage_message.",
@@ -89,6 +90,36 @@ test("treats owner-blocked goal state as clear for autonomous standing loop", ()
   assert.match(formatted, /DEARME_LINKEDIN_DM_MESSAGES_URL/);
   assert.match(formatted, /DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN/);
   assert.match(formatted, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
+});
+
+test("keeps payment setup facts visible in owner-blocked standing-loop output", () => {
+  const audit = summarizeDearMeStandingLoopAudit(
+    backlogAudit(),
+    dependencyAudit(),
+    goalAudit({
+      ownerProofFactsNeeded: [],
+      hostedCheckoutFactsNeeded: [
+        "DEARME_PAYMENT_LINK_URL is missing.",
+        "DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing (sensitive; value hidden).",
+      ],
+      nextAction: {
+        label: "Hosted checkout setup",
+        reason: "Self-serve checkout needs owner-provided payment configuration.",
+        command: "pnpm --silent dearme:payment-readiness",
+      },
+    }),
+  );
+
+  assert.equal(audit.state, "owner-blocked");
+  assert.equal(audit.checkClear, true);
+  assert.deepEqual(audit.nextAction.hostedCheckoutFacts, [
+    "DEARME_PAYMENT_LINK_URL is missing.",
+    "DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing (sensitive; value hidden).",
+  ]);
+  const formatted = formatDearMeStandingLoopAudit(audit).join("\n");
+  assert.match(formatted, /First-payment checkout facts needed/);
+  assert.match(formatted, /DEARME_PAYMENT_LINK_URL is missing/);
+  assert.match(formatted, /STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)/);
 });
 
 test("prioritizes missing backlog ledger entries before dependency or goal work", () => {

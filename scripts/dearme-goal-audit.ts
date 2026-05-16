@@ -95,6 +95,7 @@ export interface DearMeGoalAudit {
   promptToArtifactChecklist: DearMeGoalAuditPromptChecklistItem[];
   items: DearMeGoalAuditItem[];
   ownerProofFactsNeeded: string[];
+  hostedCheckoutFactsNeeded: string[];
   nextAction: DearMeGoalAuditNextAction;
 }
 
@@ -403,6 +404,13 @@ function ownerFactLine(
 ): string {
   const sensitivity = fact.sensitive ? " (sensitive; value hidden)" : "";
   return `${fact.label}: provide ${fact.provideAs}${sensitivity}`;
+}
+
+function hostedCheckoutFactLine(blocker: string): string {
+  const normalized = blocker.replace(/\.$/, "");
+  return normalized.includes("STRIPE_WEBHOOK_SECRET")
+    ? `${normalized} (sensitive; value hidden).`
+    : `${normalized}.`;
 }
 
 function liveProviderTargetsForItem(
@@ -996,6 +1004,9 @@ export function summarizeDearMeGoalAudit(
   const promptChecklist = promptToArtifactChecklist(items);
   const complete = !incompleteItem;
   const ownerProofFactsNeeded = status.ownerProofChecklist.factsNeeded.map(ownerFactLine);
+  const hostedCheckoutFactsNeeded = status.commercialReadiness
+    ? status.commercialReadiness.hostedCheckoutFactsNeeded.map(hostedCheckoutFactLine)
+    : [];
   return {
     complete,
     verdict: complete
@@ -1004,6 +1015,7 @@ export function summarizeDearMeGoalAudit(
     promptToArtifactChecklist: promptChecklist,
     items,
     ownerProofFactsNeeded,
+    hostedCheckoutFactsNeeded,
     nextAction: incompleteItem
       ? {
         label: incompleteItem.label,
@@ -1115,6 +1127,14 @@ export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {
     lines.push("");
     lines.push("Public launch owner-proof facts needed:");
     for (const fact of audit.ownerProofFactsNeeded) {
+      lines.push(`- ${fact}`);
+    }
+  }
+
+  if (audit.hostedCheckoutFactsNeeded.length > 0) {
+    lines.push("");
+    lines.push("First-payment checkout facts needed:");
+    for (const fact of audit.hostedCheckoutFactsNeeded) {
       lines.push(`- ${fact}`);
     }
   }

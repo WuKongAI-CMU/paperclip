@@ -236,6 +236,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     "live_work_receipts",
     "cycle_report_contract",
     "value_report_contract",
+    "opportunity_roi_report_contract",
     "private_outputs",
     "recurring_private_work",
     "phone_ready_private_site",
@@ -258,6 +259,10 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.equal(status.commercialReadiness.status, "sellable-private-beta");
   assert.equal(status.commercialReadiness.canSellPrivateBeta, true);
   assert.equal(status.commercialReadiness.canOperatePaidUsers, true);
+  assert.deepEqual(status.commercialReadiness.hostedCheckoutFactsNeeded, [
+    "DEARME_PAYMENT_LINK_URL is missing.",
+    "DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing.",
+  ]);
   assert.equal(
     status.commercialReadiness.detailedGateCommand,
     "pnpm --silent dearme:release-gate -- --target private-proof",

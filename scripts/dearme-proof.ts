@@ -202,6 +202,7 @@ export interface DearMeProofCommercialReadiness {
   summary: string;
   canSellPrivateBeta: boolean;
   canOperatePaidUsers: boolean;
+  hostedCheckoutFactsNeeded: string[];
   cannotClaimPublicLaunchUntil: string[];
   items: DearMeProofCommercialReadinessItem[];
   detailedGateCommand: string;
@@ -1221,6 +1222,7 @@ function buildProofCommercialReadiness(
         : "The status check now carries the commercial operating receipts, so private paid users can be served without claiming broad public launch readiness.",
     canSellPrivateBeta,
     canOperatePaidUsers,
+    hostedCheckoutFactsNeeded: paymentReadiness.hostedCheckout.blockers,
     cannotClaimPublicLaunchUntil: privateBetaUsable && status !== "public-launch-ready"
       ? publicLaunchGaps
       : [],

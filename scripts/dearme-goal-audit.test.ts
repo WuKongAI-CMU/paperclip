@@ -184,6 +184,7 @@ function readyCommercialReadiness() {
     summary: "The status check sees private value delivery and live-provider proof as ready.",
     canSellPrivateBeta: true,
     canOperatePaidUsers: true,
+    hostedCheckoutFactsNeeded: [],
     cannotClaimPublicLaunchUntil: [],
     detailedGateCommand: "pnpm --silent dearme:release-gate -- --target private-proof",
     items: [
@@ -593,6 +594,7 @@ test("DearMe goal audit routes blocked OpenClaw message proof through no-send se
   assert.deepEqual(audit.ownerProofFactsNeeded, [
     "iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
   ]);
+  assert.deepEqual(audit.hostedCheckoutFactsNeeded, []);
   assert.deepEqual(audit.nextAction.captureCommands, [
     "pnpm --silent dearme:next-proof -- --target openclaw_messages",
   ]);
@@ -644,6 +646,33 @@ test("DearMe goal audit formats the full public launch owner proof queue separat
   assert.deepEqual(audit.nextAction.ownerFacts, [
     "iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
   ]);
+});
+
+test("DearMe goal audit surfaces hosted checkout facts for the first-payment path", () => {
+  const status = readyStatus();
+  status.commercialReadiness = {
+    ...status.commercialReadiness,
+    hostedCheckoutFactsNeeded: [
+      "DEARME_PAYMENT_LINK_URL is missing.",
+      "DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing.",
+    ],
+  };
+  const audit = summarizeDearMeGoalAudit(
+    status,
+    deliveredHostRehearsalEvidence(),
+    readyHostProviderEvidence(),
+    readyOpenClawMessageRehearsalEvidence(),
+    readyPublicFirstRunLandingEvidence(),
+  );
+  const formatted = formatDearMeGoalAudit(audit).join("\n");
+
+  assert.deepEqual(audit.hostedCheckoutFactsNeeded, [
+    "DEARME_PAYMENT_LINK_URL is missing.",
+    "DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing (sensitive; value hidden).",
+  ]);
+  assert.match(formatted, /First-payment checkout facts needed:/);
+  assert.match(formatted, /DEARME_PAYMENT_LINK_URL is missing/);
+  assert.match(formatted, /STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)/);
 });
 
 test("DearMe goal audit passes only when every required proof item is ready", () => {
