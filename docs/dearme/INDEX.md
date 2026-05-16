@@ -167,6 +167,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-STATUS-HOSTED-CHECKOUT-BLOCKERS** — `pnpm dearme:status` now prints the hosted-checkout payment setup blockers next to commercial readiness, so the default operator view names the first-payment facts still needed before self-serve checkout can be claimed.
 - **DM-STATUS-CHECKOUT-SECRET-REDACTION** — `pnpm dearme:status` now marks hosted-checkout receipt/webhook-secret blockers as sensitive while keeping first-payment setup facts visible in the default operator view.
 - **DM-PAYMENT-READINESS-SECRET-REDACTION** — `pnpm dearme:payment-readiness` now marks hosted-checkout receipt/webhook-secret blockers as sensitive in operator output and Peter-facing support markdown.
+- **DM-HUMAN-HELP-PAYMENT-SECRET-REDACTION** — `docs/NEEDS_HUMAN_HELP.md` now marks hosted-checkout receipt/webhook-secret blockers as sensitive, and the payment-readiness drift test keeps the Peter-facing queue aligned.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)
