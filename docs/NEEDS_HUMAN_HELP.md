@@ -8,57 +8,52 @@ stop agent-owned work.
 
 ## Active Requests
 
-### 2026-05-14 - External live-proof recipients (updated under P0 scope-cut)
+### 2026-05-16 - External live-proof facts
 
 - Needs help from: Peter
-- What they need to do: provide the production Resend API key plus verified
-  sender domain so the `send_email` live smoke can run, and confirm X OAuth
-  client credentials for the single-channel `post_x` live smoke.
-- Why agents cannot do it: these are provider credentials and sender-domain
-  authorizations that must originate from the owner.
+- What they need to do: provide the owner-approved external proof details for
+  the launch proof lanes:
+  `DEARME_LINKEDIN_DM_MESSAGES_URL`,
+  `DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN`, and
+  `DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT`.
+- Why agents cannot do it: these details require owner approval, external
+  recipient choice, and account/provider access that agents must not invent or
+  contact without explicit launch confirmation.
 - Blocking: no for internal product work or private-beta operations; yes before
   public launch or live external receipt proof can be claimed.
-- Estimated human time: 10-20 minutes once the Resend project + verified domain
-  + X developer app are ready.
+- Estimated human time: 10-20 minutes once the partner endpoint and approved
+  smoke recipients are known.
 - Agents continue after result by: capturing the approved values, running the
   no-send provider check first, then running guarded live proof only after
   explicit live confirmation.
 
-P0 scope-cut note (2026-05-14): per
-[`dearme/P0-SCOPE-CUT-2026-05-13.md`](dearme/P0-SCOPE-CUT-2026-05-13.md), the
-prior iMessage and LinkedIn partner-API asks below are **deferred to P1**.
-LinkedIn outbound becomes copy-to-clipboard for P0; iMessage / Telegram /
-WhatsApp / Signal / SMS / Voice all defer to OpenClaw runtime revival.
+Needed values:
 
-P0 needed values:
-
-- `DEARME_RESEND_API_KEY`: production Resend API key for `send_email` dispatch.
-- `DEARME_RESEND_FROM_EMAIL`: verified sender on a domain you control.
-- `DEARME_RESEND_SMOKE_RECIPIENT`: smoke recipient inbox (your own is fine).
-- `DEARME_X_OAUTH_CLIENT_ID` / `DEARME_X_OAUTH_CLIENT_SECRET`: X developer app
-  credentials so the existing PKCE callback can complete the `post_x` smoke.
-
-Deferred to P1 (no longer P0-blocking):
-
-- `DEARME_LINKEDIN_DM_MESSAGES_URL`: LinkedIn partner messages endpoint.
-- `DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN`: LinkedIn smoke recipient.
-- `DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT`: iMessage/SMS smoke recipient.
+- `DEARME_LINKEDIN_DM_MESSAGES_URL`: approved professional-network partner
+  messages endpoint.
+- `DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN`: approved professional-network smoke
+  recipient.
+- `DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT`: approved iMessage/SMS smoke
+  recipient.
 
 Reply template for Peter:
 
 ```text
-Delivery route:
-Professional-network recipient:
-Phone-message recipient:
+Professional-network partner messages endpoint:
+Professional-network smoke recipient:
+iMessage/SMS smoke recipient:
 ```
 
 Current generated proof handoff status:
 
-- Last verified: 2026-05-14 with
-  `pnpm --silent dearme:next-proof -- --target all --no-write --json`.
+- Last verified: 2026-05-16 with
+  `pnpm --silent dearme:standing-loop-audit -- --check`,
+  `pnpm --silent dearme:status`, and `pnpm --silent dearme:goal-audit`.
 - Regenerate this request with
   `pnpm --silent dearme:next-proof -- --target all --no-write --human-help-markdown`.
-- Status: blocked until the three approved details above are provided.
+- Status: private beta is sellable and operable; public launch and live
+  provider proof remain blocked until the three approved details above are
+  provided.
 - Captured details: none in the local proof setup.
 - No-send guarantee: this handoff only prepares local proof setup; it does not
   send, publish, deploy, or spend.
@@ -79,13 +74,14 @@ pnpm --silent dearme:next-proof -- --target all --handoff-receipt-file <launch-p
 Required no-send check before any live delivery:
 
 ```bash
-pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target all
+pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check
 ```
 
-Guarded live proof command only after explicit live confirmation:
+Guarded live proof commands only after explicit live confirmation:
 
 ```bash
-DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target all --live
+DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target linkedin_dm --live
+DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live
 ```
 
 Safety notes:
@@ -131,7 +127,7 @@ Provider label:
 
 Current generated payment readiness:
 
-- Last verified: 2026-05-14 with
+- Last verified: 2026-05-16 with
   `pnpm --silent dearme:payment-readiness`.
 - Regenerate this request with
   `pnpm --silent dearme:payment-readiness -- --human-help-markdown`.
