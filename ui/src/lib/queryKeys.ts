@@ -110,6 +110,7 @@ export const queryKeys = {
     paidBetaAccess: (companyId: string) => ["dearme", companyId, "paid-beta-access"] as const,
     referralCode: (companyId: string) => ["dearme", companyId, "referral-code"] as const,
     gdprExport: (companyId: string) => ["dearme", companyId, "gdpr-export"] as const,
+    publicFeed: (limit: number = 20) => ["dearme", "public-feed", limit] as const,
     paidBetaCohorts: ["dearme", "paid-beta-cohort"] as const,
     paidBetaCohort: (companyIds: string | string[]) => [
       "dearme",

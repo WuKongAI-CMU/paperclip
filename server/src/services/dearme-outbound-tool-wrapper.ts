@@ -44,6 +44,10 @@ import {
 } from "./dearme-auto-pause.js";
 import type { DearMeChannelConnectionsService } from "./dearme-channel-connections.js";
 import { dearMeCostCapsService, type DearMeCostCapsService } from "./dearme-cost-caps.js";
+import {
+  dearMePublicFeedService,
+  type DearMePublicFeedItemInput,
+} from "./dearme-public-feed.js";
 import { createDearMeSendEmailDispatch } from "./dearme-send-email-dispatch.js";
 import type { DearMeSseBus } from "./dearme-sse-bus.js";
 import type { DearMeVoiceGateService } from "./dearme-voice-gate.js";
@@ -98,9 +102,16 @@ export interface DearMeOutboundToolDeps {
   autoPause?: DearMeAutoPauseService;
   /** Transactional customer alert sender for hard-cap pauses. */
   sendEmail?: DearMeAutoPauseEmailSender;
+  /** Optional public proof feed recorder. Defaults to the Drizzle-backed service. */
+  publicFeed?: DearMePublicFeedRecorder;
   /** Per-channel dispatchers; missing entries -> tool returns errored. */
   channelDispatch: Partial<Record<DearMeOutboundToolName, ChannelDispatch>>;
 }
+
+export type DearMePublicFeedRecorder = {
+  isOptedIn(companyId: string): Promise<boolean>;
+  recordItem(input: DearMePublicFeedItemInput): Promise<unknown>;
+};
 
 export type DearMeAutoPauseEmailSender = (input: {
   companyId: string;
@@ -283,6 +294,43 @@ function buildHardCapAlertEmail(reason: string) {
   };
 }
 
+function publicFeedSummaryFromPayload(payload: unknown, fallback: string) {
+  const record = asRecord(payload);
+  if (!record) return fallback;
+  return stringField(record, "publicFeedSummary") ??
+    stringField(record, "summary") ??
+    fallback;
+}
+
+function publicFeedItemForDelivered(input: CallOutboundInput, externalUrl: string | undefined) {
+  if (!externalUrl) return null;
+  if (input.toolName === "post_x") {
+    return {
+      companyId: input.companyId,
+      kind: "published_post" as const,
+      summary: publicFeedSummaryFromPayload(
+        input.payload,
+        "Published an approved public post from the latest private proof cycle.",
+      ),
+      linkUrl: externalUrl,
+      publishedAt: new Date(),
+    };
+  }
+  if (input.toolName === "deploy_site") {
+    return {
+      companyId: input.companyId,
+      kind: "deployed_site" as const,
+      summary: publicFeedSummaryFromPayload(
+        input.payload,
+        "Deployed an approved public proof page from the latest private work cycle.",
+      ),
+      linkUrl: externalUrl,
+      publishedAt: new Date(),
+    };
+  }
+  return null;
+}
+
 function createDefaultAutoPauseEmailSender(
   db: Db,
   channelConnections: DearMeChannelConnectionsService,
@@ -353,6 +401,7 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
   const costCaps = deps.costCaps ?? dearMeCostCapsService(deps.db);
   const autoPause = deps.autoPause ?? dearMeAutoPauseService(deps.db);
   const sendEmail = deps.sendEmail ?? createDefaultAutoPauseEmailSender(deps.db, deps.channelConnections);
+  const publicFeed = deps.publicFeed ?? dearMePublicFeedService(deps.db);
   return {
     async callOutbound(input: CallOutboundInput): Promise<CallOutboundOutcome> {
       const binding = DEARME_OUTBOUND_TOOL_BINDINGS[input.toolName];
@@ -614,6 +663,20 @@ export function dearMeOutboundToolWrapper(deps: DearMeOutboundToolDeps) {
           paid: dispatchResult.paid,
         },
       });
+
+      const publicFeedItem = publicFeedItemForDelivered(input, dispatchResult.externalUrl);
+      if (publicFeedItem) {
+        try {
+          if (await publicFeed.isOptedIn(input.companyId)) {
+            await publicFeed.recordItem(publicFeedItem);
+          }
+        } catch (error) {
+          logger.warn(
+            { err: error, companyId: input.companyId, toolName: input.toolName },
+            "dearme-outbound-tool-wrapper: public proof feed receipt skipped",
+          );
+        }
+      }
 
       // Move the work loop to audit (we just delivered + recorded)
       await deps.workLoop.transition({
