@@ -36,6 +36,10 @@ const mockDearMeWorkbenchService = vi.hoisted(() => ({
   getWorkbench: vi.fn(),
 }));
 
+const mockDearMeOpportunityReplyIngestService = vi.hoisted(() => ({
+  ingest: vi.fn(),
+}));
+
 const mockAgentService = vi.hoisted(() => ({
   list: vi.fn(),
 }));
@@ -62,6 +66,7 @@ function registerModuleMocks() {
     dearmeBrandBlueprintService: () => mockDearMeBrandBlueprintService,
     dearmeMemoryContextService: () => mockDearMeMemoryContextService,
     dearmeOutputHandoffService: () => mockDearMeOutputHandoffService,
+    dearMeOpportunityReplyIngestService: () => mockDearMeOpportunityReplyIngestService,
     dearmePaidBetaAccessService: () => mockDearMePaidBetaAccessService,
     dearmeWorkbenchService: () => mockDearMeWorkbenchService,
     issueService: () => mockIssueService,
