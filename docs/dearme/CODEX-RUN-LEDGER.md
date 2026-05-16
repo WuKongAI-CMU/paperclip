@@ -53,3 +53,4 @@
 2026-05-16 09:43  DM-DOC-FRESHNESS-GOAL-AUDIT-OWNER-PROOF-QUEUE  e0b7dc49  PR #52  Standing  INDEX shipped list now records the goal-audit public-launch owner-proof queue output; CI green; doc-freshness loop caught up after PR #51.
 2026-05-16 10:05  DM-GOAL-AUDIT-HOSTED-CHECKOUT-BLOCKERS  cea0937b  PR #53  Standing  Goal and standing-loop audits now surface hosted-checkout payment setup blockers for the first-$29 path alongside public-launch proof facts; CI green.
 2026-05-16 10:20  DM-DOC-FRESHNESS-HOSTED-CHECKOUT-BLOCKERS  26a1ed22  PR #54  Standing  INDEX shipped list now records the hosted-checkout blocker audit behavior for the first-$29 path; CI green; doc-freshness loop caught up after PR #53.
+2026-05-16 10:41  DM-STATUS-HOSTED-CHECKOUT-BLOCKERS  ad55b950  PR #55  Standing  DearMe status now prints the hosted-checkout payment setup blockers next to commercial readiness so first-payment facts are visible in the default operator view; CI green.
