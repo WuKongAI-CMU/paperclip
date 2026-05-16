@@ -336,6 +336,12 @@ function readyStatus(): DearMeProofStatus {
 }
 
 function blockedOpenClawMessageStatus(): DearMeProofStatus {
+  const imessageFact = {
+    label: "iMessage/SMS approved smoke recipient",
+    provideAs: "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+    targets: ["imessage_message" as const],
+    sensitive: false,
+  };
   const imessageRecipientBlocker = {
     lane: "provider" as const,
     target: "imessage_message",
@@ -371,6 +377,38 @@ function blockedOpenClawMessageStatus(): DearMeProofStatus {
         }
         : focus
     ),
+    liveProofHandoff: {
+      factsNeeded: [imessageFact],
+      setupCommands: ["pnpm --silent dearme:next-proof -- --target openclaw_messages"],
+      handoffReceiptPreviewCommand:
+        "pnpm --silent dearme:next-proof -- --owner-handoff-receipt ./owner-proof.json --dry-run",
+      handoffReceiptCommand:
+        "pnpm --silent dearme:next-proof -- --owner-handoff-receipt ./owner-proof.json --capture",
+      checkCommand: "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
+      guardedLiveCommands: [
+        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+      ],
+      noSendGuarantee: true,
+    },
+    ownerProofChecklist: {
+      ...status.ownerProofChecklist,
+      status: "blocked",
+      headline: "Owner proof facts needed before public launch",
+      summary:
+        "Public launch stays blocked until 1 owner-approved external proof fact is captured and the no-send check passes.",
+      factsNeededCount: 1,
+      factsNeeded: [imessageFact],
+      captureCommands: ["pnpm --silent dearme:next-proof -- --target openclaw_messages"],
+      handoffReceiptPreviewCommand:
+        "pnpm --silent dearme:next-proof -- --owner-handoff-receipt ./owner-proof.json --dry-run",
+      handoffReceiptCommand:
+        "pnpm --silent dearme:next-proof -- --owner-handoff-receipt ./owner-proof.json --capture",
+      checkCommand: "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
+      guardedLiveCommands: [
+        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+      ],
+      noSendGuarantee: true,
+    },
     commands: {
       ...status.commands,
       liveProviderSetup: [
@@ -549,12 +587,32 @@ test("DearMe goal audit routes blocked OpenClaw message proof through no-send se
     audit.nextAction.command,
     "pnpm --silent dearme:next-proof -- --target openclaw_messages",
   );
+  assert.deepEqual(audit.nextAction.ownerFacts, [
+    "iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+  ]);
+  assert.deepEqual(audit.nextAction.captureCommands, [
+    "pnpm --silent dearme:next-proof -- --target openclaw_messages",
+  ]);
+  assert.equal(
+    audit.nextAction.noSendCheckCommand,
+    "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages",
+  );
+  assert.deepEqual(audit.nextAction.guardedLiveCommands, [
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+  ]);
   assert.deepEqual(openClawProof?.blockers, ["imessage_message"]);
   assert.deepEqual(openClawProof?.commands, [
     "pnpm --silent dearme:next-proof -- --target openclaw_messages",
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages",
     "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
   ]);
+  assert.match(formatted, /Owner facts needed:/);
+  assert.match(formatted, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
+  assert.match(
+    formatted,
+    /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check --target openclaw_messages/,
+  );
+  assert.match(formatted, /Guarded live proof:/);
   assert.match(formatted, /Run: pnpm --silent dearme:next-proof -- --target openclaw_messages/);
 });
 

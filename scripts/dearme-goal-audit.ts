@@ -61,6 +61,12 @@ export interface DearMeGoalAuditNextAction {
   label: string;
   reason: string;
   command?: string;
+  ownerFacts?: string[];
+  captureCommands?: string[];
+  receiptPreviewCommand?: string;
+  receiptImportCommand?: string;
+  noSendCheckCommand?: string;
+  guardedLiveCommands?: string[];
 }
 
 export type DearMeGoalAuditPromptChecklistItemKey =
@@ -381,6 +387,66 @@ function liveCommand(command: string): boolean {
 
 function preferredNextCommand(commands: readonly string[]): string | undefined {
   return commands.find((command) => !liveCommand(command)) ?? commands[0];
+}
+
+function checkCommand(command: string): boolean {
+  return command.includes("dearme:provider-smoke") && command.includes(" --check");
+}
+
+function captureCommand(command: string): boolean {
+  return command.includes("dearme:next-proof");
+}
+
+function ownerFactLine(
+  fact: DearMeProofStatus["ownerProofChecklist"]["factsNeeded"][number],
+): string {
+  const sensitivity = fact.sensitive ? " (sensitive; value hidden)" : "";
+  return `${fact.label}: provide ${fact.provideAs}${sensitivity}`;
+}
+
+function liveProviderTargetsForItem(
+  item: DearMeGoalAuditItem,
+): Set<string> | "all" | null {
+  if (item.key === "live_provider_set") return "all";
+  if (item.key === "openclaw_message_reuse") {
+    return new Set(["telegram_message", "imessage_message"]);
+  }
+  if (item.key === "production_host_live_wow") {
+    return new Set(["deploy_site_host_rehearsal", "deploy_site_production"]);
+  }
+  return null;
+}
+
+function ownerProofNextActionDetails(
+  item: DearMeGoalAuditItem,
+  status: DearMeProofStatus,
+): Partial<DearMeGoalAuditNextAction> {
+  const targetFilter = liveProviderTargetsForItem(item);
+  if (!targetFilter || status.ownerProofChecklist.factsNeededCount === 0) {
+    return {};
+  }
+
+  const facts = targetFilter === "all"
+    ? status.ownerProofChecklist.factsNeeded
+    : status.ownerProofChecklist.factsNeeded.filter((fact) =>
+      fact.targets.some((target) => targetFilter.has(target))
+    );
+  if (facts.length === 0) return {};
+
+  const captureCommands = item.commands.filter(captureCommand);
+  return {
+    ownerFacts: facts.map(ownerFactLine),
+    captureCommands: captureCommands.length > 0
+      ? captureCommands
+      : status.ownerProofChecklist.captureCommands,
+    receiptPreviewCommand:
+      status.ownerProofChecklist.handoffReceiptPreviewCommand ?? undefined,
+    receiptImportCommand:
+      status.ownerProofChecklist.handoffReceiptCommand ?? undefined,
+    noSendCheckCommand:
+      item.commands.find(checkCommand) ?? status.ownerProofChecklist.checkCommand,
+    guardedLiveCommands: item.commands.filter(liveCommand),
+  };
 }
 
 function focusCommands(
@@ -942,6 +1008,7 @@ export function summarizeDearMeGoalAudit(
           ? `Blocked by ${incompleteItem.blockers.join(", ")}.`
           : "Evidence is missing from the unified proof status.",
         command: preferredNextCommand(incompleteItem.commands),
+        ...ownerProofNextActionDetails(incompleteItem, status),
       }
       : {
         label: "Mark the active goal complete",
@@ -1044,6 +1111,33 @@ export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {
   lines.push("");
   lines.push("Next action:");
   lines.push(`- ${audit.nextAction.label}: ${audit.nextAction.reason}`);
+  if (audit.nextAction.ownerFacts?.length) {
+    lines.push("- Owner facts needed:");
+    for (const fact of audit.nextAction.ownerFacts) {
+      lines.push(`  - ${fact}`);
+    }
+  }
+  if (audit.nextAction.captureCommands?.length) {
+    lines.push("- Capture setup:");
+    for (const command of audit.nextAction.captureCommands) {
+      lines.push(`  - ${command}`);
+    }
+  }
+  if (audit.nextAction.receiptPreviewCommand) {
+    lines.push(`- Receipt preview: ${audit.nextAction.receiptPreviewCommand}`);
+  }
+  if (audit.nextAction.receiptImportCommand) {
+    lines.push(`- Receipt import: ${audit.nextAction.receiptImportCommand}`);
+  }
+  if (audit.nextAction.noSendCheckCommand) {
+    lines.push(`- No-send check: ${audit.nextAction.noSendCheckCommand}`);
+  }
+  if (audit.nextAction.guardedLiveCommands?.length) {
+    lines.push("- Guarded live proof:");
+    for (const command of audit.nextAction.guardedLiveCommands) {
+      lines.push(`  - ${command}`);
+    }
+  }
   if (audit.nextAction.command) {
     lines.push(`- Run: ${audit.nextAction.command}`);
   }
