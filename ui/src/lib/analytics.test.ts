@@ -5,6 +5,7 @@ const posthogMock = vi.hoisted(() => ({
   capture: vi.fn(),
   identify: vi.fn(),
   isFeatureEnabled: vi.fn(),
+  getFeatureFlag: vi.fn(),
 }));
 
 vi.mock("posthog-js", () => ({
@@ -38,6 +39,23 @@ describe("analytics", () => {
     expect(featureFlag("paid-beta-pricing", true)).toBe(true);
     expect(featureFlag("paid-beta-pricing")).toBe(false);
     expect(posthogMock.isFeatureEnabled).not.toHaveBeenCalled();
+  });
+
+  it("returns multivariate feature flag values after analytics initializes", async () => {
+    posthogMock.getFeatureFlag.mockReturnValue("proof-first");
+    const { initAnalytics, resolveFeatureFlagValue } = await loadAnalytics({ key: "ph_test_key" });
+
+    initAnalytics();
+
+    await expect(resolveFeatureFlagValue("dearme_landing_copy", "control")).resolves.toBe("proof-first");
+    expect(posthogMock.getFeatureFlag).toHaveBeenCalledWith("dearme_landing_copy");
+  });
+
+  it("returns the multivariate fallback when analytics is disabled", async () => {
+    const { resolveFeatureFlagValue } = await loadAnalytics();
+
+    await expect(resolveFeatureFlagValue("dearme_landing_copy", "control")).resolves.toBe("control");
+    expect(posthogMock.getFeatureFlag).not.toHaveBeenCalled();
   });
 
   it("captures through PostHog after initAnalytics initializes the client", async () => {
