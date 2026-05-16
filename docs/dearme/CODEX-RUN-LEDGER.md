@@ -57,3 +57,4 @@
 2026-05-16 10:59  DM-DOC-FRESHNESS-STATUS-CHECKOUT-BLOCKERS  4c7337e4  PR #56  Standing  INDEX shipped list now records that dearme:status surfaces hosted-checkout payment setup blockers in the default operator view; CI green; doc-freshness loop caught up after PR #55.
 2026-05-16 11:18  DM-STATUS-CHECKOUT-SECRET-REDACTION  61f751bf  PR #57  Standing  DearMe status now marks hosted-checkout receipt/webhook-secret setup blockers as sensitive while still showing first-payment facts; CI green.
 2026-05-16 11:35  DM-DOC-FRESHNESS-STATUS-CHECKOUT-SECRET-REDACTION  1d4f3c9c  PR #58  Standing  INDEX shipped list now records the DearMe status checkout secret redaction behavior; CI green; doc-freshness loop caught up after PR #57.
+2026-05-16 11:53  DM-PAYMENT-READINESS-SECRET-REDACTION  e3d301cd  PR #59  Standing  Payment readiness output now marks hosted-checkout receipt/webhook-secret blockers as sensitive in operator and Peter-facing support views; CI green.
