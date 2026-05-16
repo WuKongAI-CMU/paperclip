@@ -590,6 +590,9 @@ test("DearMe goal audit routes blocked OpenClaw message proof through no-send se
   assert.deepEqual(audit.nextAction.ownerFacts, [
     "iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
   ]);
+  assert.deepEqual(audit.ownerProofFactsNeeded, [
+    "iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+  ]);
   assert.deepEqual(audit.nextAction.captureCommands, [
     "pnpm --silent dearme:next-proof -- --target openclaw_messages",
   ]);
@@ -606,6 +609,7 @@ test("DearMe goal audit routes blocked OpenClaw message proof through no-send se
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages",
     "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
   ]);
+  assert.match(formatted, /Public launch owner-proof facts needed:/);
   assert.match(formatted, /Owner facts needed:/);
   assert.match(formatted, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
   assert.match(
@@ -614,6 +618,32 @@ test("DearMe goal audit routes blocked OpenClaw message proof through no-send se
   );
   assert.match(formatted, /Guarded live proof:/);
   assert.match(formatted, /Run: pnpm --silent dearme:next-proof -- --target openclaw_messages/);
+});
+
+test("DearMe goal audit formats the full public launch owner proof queue separately from the immediate next action", () => {
+  const audit = summarizeDearMeGoalAudit(
+    blockedOpenClawMessageStatus(),
+    deliveredHostRehearsalEvidence(),
+    readyHostProviderEvidence(),
+    readyOpenClawMessageRehearsalEvidence(),
+    readyPublicFirstRunLandingEvidence(),
+  );
+  const formatted = formatDearMeGoalAudit({
+    ...audit,
+    ownerProofFactsNeeded: [
+      "LinkedIn partner messages endpoint: provide DEARME_LINKEDIN_DM_MESSAGES_URL",
+      "LinkedIn approved smoke recipient: provide DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
+      ...audit.ownerProofFactsNeeded,
+    ],
+  }).join("\n");
+
+  assert.match(formatted, /Public launch owner-proof facts needed:/);
+  assert.match(formatted, /DEARME_LINKEDIN_DM_MESSAGES_URL/);
+  assert.match(formatted, /DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN/);
+  assert.match(formatted, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
+  assert.deepEqual(audit.nextAction.ownerFacts, [
+    "iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+  ]);
 });
 
 test("DearMe goal audit passes only when every required proof item is ready", () => {

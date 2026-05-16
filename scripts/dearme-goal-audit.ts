@@ -1111,6 +1111,14 @@ export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {
     lines.push(`- ${marker} ${item.label}: ${item.status}. ${item.evidence}${blockers}`);
   }
 
+  if (audit.ownerProofFactsNeeded.length > 0) {
+    lines.push("");
+    lines.push("Public launch owner-proof facts needed:");
+    for (const fact of audit.ownerProofFactsNeeded) {
+      lines.push(`- ${fact}`);
+    }
+  }
+
   lines.push("");
   lines.push("Next action:");
   lines.push(`- ${audit.nextAction.label}: ${audit.nextAction.reason}`);
