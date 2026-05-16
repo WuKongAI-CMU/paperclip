@@ -10,6 +10,7 @@ const PAYMENT_LINK_ENV = "DEARME_PAYMENT_LINK_URL";
 const RECEIPT_SYNC_ENV = "DEARME_PAYMENT_RECEIPT_SYNC_SECRET";
 const STRIPE_WEBHOOK_ENV = "STRIPE_WEBHOOK_SECRET";
 const PAYMENT_PROVIDER_ENV = "DEARME_PAYMENT_PROVIDER";
+const DEARME_CHECKOUT_OFFER = "$29/month DearMe offer";
 
 export interface DearMePaymentReadinessArgs {
   help: boolean;
@@ -146,8 +147,8 @@ export function inspectDearMePaymentReadiness(env: Env = process.env): DearMePay
       label: "Hosted checkout",
       ready: hostedReady,
       summary: hostedReady
-        ? `${providerLabel} is configured with a customer-facing payment link and receipt sync.`
-        : "Self-serve checkout is not claimable until the payment link and receipt sync are configured.",
+        ? `${providerLabel} is configured with a customer-facing payment link for the ${DEARME_CHECKOUT_OFFER} and receipt sync.`
+        : `Self-serve checkout is not claimable until the ${DEARME_CHECKOUT_OFFER} payment link and receipt sync are configured.`,
       blockers,
     },
     receiptSyncProof: {
@@ -164,7 +165,7 @@ export function inspectDearMePaymentReadiness(env: Env = process.env): DearMePay
     },
     nextAction: hostedReady
       ? "Run pnpm --silent dearme:paid-loop-proof -- --check, keep pnpm --silent dearme:payment-receipt-sync-proof -- --check and pnpm --silent dearme:payment-provider-contract-proof -- --check green, then run a guarded provider receipt sync smoke before broad public self-serve checkout claims."
-      : "Keep selling private beta through recorded receipts, run pnpm --silent dearme:paid-loop-proof -- --check, pnpm --silent dearme:payment-receipt-sync-proof -- --check, and pnpm --silent dearme:payment-provider-contract-proof -- --check, then configure hosted payment link plus receipt sync before claiming self-serve checkout.",
+      : `Keep selling private beta through recorded receipts, run pnpm --silent dearme:paid-loop-proof -- --check, pnpm --silent dearme:payment-receipt-sync-proof -- --check, and pnpm --silent dearme:payment-provider-contract-proof -- --check, then configure the hosted ${DEARME_CHECKOUT_OFFER} payment link plus receipt sync before claiming self-serve checkout.`,
     noExternalActionGuarantee:
       "This check does not create checkout sessions, charge cards, call payment APIs, send messages, publish, deploy, or spend.",
   };
@@ -209,7 +210,7 @@ export function formatDearMePaymentReadinessHumanHelp(
   const neededValues = readiness.hostedCheckout.ready
     ? ["- None. Keep the local payment proofs green before public checkout claims."]
     : [
-      `- \`${PAYMENT_LINK_ENV}\`: customer-facing HTTPS hosted payment link for the DearMe offer.`,
+      `- \`${PAYMENT_LINK_ENV}\`: customer-facing HTTPS hosted payment link for the live ${DEARME_CHECKOUT_OFFER}.`,
       `- \`${RECEIPT_SYNC_ENV}\` or \`${STRIPE_WEBHOOK_ENV}\`: receipt-sync or webhook signing secret, kept local/server-side.`,
       `- \`${PAYMENT_PROVIDER_ENV}\`: optional customer-safe provider label for the checkout surface.`,
     ];
@@ -218,8 +219,8 @@ export function formatDearMePaymentReadinessHumanHelp(
     `### ${date} - Self-serve checkout configuration`,
     "",
     "- Needs help from: Peter",
-    "- What they need to do: provide the real hosted payment link and signed receipt/webhook configuration for DearMe self-serve checkout.",
-    "- Why agents cannot do it: this involves real payment-provider setup, secrets, pricing/account judgment, and a customer-facing checkout URL.",
+    `- What they need to do: provide the real hosted payment link for the live ${DEARME_CHECKOUT_OFFER} and signed receipt/webhook configuration for DearMe self-serve checkout.`,
+    "- Why agents cannot do it: this involves real payment-provider setup, secrets, $29/month pricing/account judgment, and a customer-facing checkout URL.",
     "- Blocking: no for private-beta sales or paid-user operations; yes before self-serve checkout can be claimed publicly.",
     "- Estimated human time: 10-20 minutes once the payment provider offer is ready.",
     "- Agents continue after result by: checking payment readiness locally, keeping receipt-sync and provider-contract proofs green, then exposing checkout only when the product marks it ready.",
@@ -231,7 +232,7 @@ export function formatDearMePaymentReadinessHumanHelp(
     "Reply template for Peter:",
     "",
     ...markdownCodeBlock("text", [
-      "Payment link:",
+      "Live $29/month payment link:",
       "Receipt sync configured:",
       "Provider label:",
     ].join("\n")),
