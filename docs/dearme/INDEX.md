@@ -123,7 +123,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 
 ## 5. What's shipped vs. what's left
 
-### Shipped (as of 2026-05-11)
+### Shipped (as of 2026-05-16)
 - **DM-S01** — company mass-assignment vulnerability fixed + 92 shared tests green.
 - **`opportunities` schema slice** (DM-141) — Drizzle table + 8-state machine + indexes.
 - **`@paperclipai/dearme-agent-prompts`** — 12 verbatim prompts, 8 state machines (incl. work-loop + approval-gates), 2 templates, role registry **with `substrate` field**, 25 tests green.
@@ -154,6 +154,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-183BV Symphony cooperation spine** — the current branch now treats Symphony as the coordinator/worker cooperation center while keeping it backstage. Workbench stream items have a typed work-event contract (`action`, `customerSummary`, `artifactTarget`, `decisionNeed`, `traceRefs`) for customer-safe decision cards, the remaining DM-084, DM-086, DM-095, DM-097, DM-098, and DM-101 stale worktree heads are recorded as reviewed absorptions, and `pnpm dearme:worktrees -- --summary-only --skip-dirty --handoffs` gives the coordinator one view of worktree status plus latest durable Symphony handoff artifacts.
 - **DEA-20 / Chief pairing smoke** — Symphony closed the OpenClaw Chief pairing lane as no-code evidence: the current OpenClaw plugin manifest, 12 generated skills, 4 bootstrap files, required config, and outbound approval-gate bindings already prove the backstage pairing surface without adding customer-visible substrate language.
 - **DEA-21 / private site preview smoke** — the first-cycle proof package now carries a handle-safe `dearme.app/<handle>` private preview route through shared schema, server proof documents, apply/report artifacts, and onboarding UI while keeping public deploy behind the existing launch decision.
+- **DM-FOUNDER-DOGFOOD-PROOF** — approved founder dogfood post/site deliveries now write opt-in public proof receipts, `/proof` shows the founder feed with loading/empty/error states, and marketing surfaces link to the proof page without exposing hidden provider or substrate language.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)
