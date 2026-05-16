@@ -76,3 +76,4 @@
 2026-05-16 16:47  DM-STATUS-LIVE-COMMAND-GUARD  5bc273a8  PR #75  Standing  DearMe status now labels live provider commands as guarded and marks blocked live commands as available only after blockers clear and the no-send check passes; CI green.
 2026-05-16 17:05  DM-RELEASE-GATE-LIVE-COMMAND-GUARD  073eea69  PR #76  Standing  DearMe release gate now labels guarded live proof commands as available only after required facts are present and the no-send check passes; CI green.
 2026-05-16 17:33  DM-GOAL-AUDIT-LIVE-COMMAND-GUARD  7c506248  PR #77  Standing  DearMe goal audit now labels guarded live proof commands as available only after owner facts are present and the no-send check passes; CI green after rerunning an unrelated heartbeat batching timeout.
+2026-05-16 17:51  DM-PROOF-LIVE-COMMAND-GUARD  daa943f0  PR #78  Standing  DearMe proof now labels guarded live proof commands as available only after owner facts are present and the no-send check passes; CI green.
