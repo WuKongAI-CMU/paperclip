@@ -60,6 +60,7 @@ export interface DearMeNextProofSetup {
     setup: string;
     check: string;
     liveOrRun: string;
+    liveOrRunCommands: string[];
   };
 }
 
@@ -132,6 +133,10 @@ interface PrepareDearMeNextProofSetupOptions {
 }
 
 const DEFAULT_PROOF_ENV_FILE = ".dearme-proof.env";
+const DEARME_ALL_TARGET_LIVE_PROOF_COMMAND_TARGETS = [
+  "linkedin_dm",
+  "openclaw_messages",
+] as const satisfies readonly DearMeNextProofTarget[];
 type FactCaptureKey = typeof DEARME_OWNER_PROOF_FACT_SPECS[number]["provideAs"];
 const FACT_CAPTURE_KEY_BY_FLAG = new Map(
   DEARME_OWNER_PROOF_FACT_SPECS.map((spec) => [spec.captureFlag, spec.provideAs] as const),
@@ -172,6 +177,36 @@ function providerRunCommand(
   return readiness.some((item) => item.liveConfirmationRequired)
     ? `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 ${command} --live`
     : command;
+}
+
+function readinessForProviderRunCommand(
+  target: DearMeNextProofTarget,
+  readiness: readonly DearMeProviderSmokeReadiness[],
+) {
+  if (target === "openclaw_messages") {
+    return readiness.filter((item) =>
+      item.target === "telegram_message" || item.target === "imessage_message"
+    );
+  }
+  if (target === "all") return readiness;
+  return readiness.filter((item) => item.target === target);
+}
+
+function providerRunCommands(
+  target: DearMeNextProofTarget,
+  envFile: string,
+  readiness: readonly DearMeProviderSmokeReadiness[],
+) {
+  if (target === "all") {
+    return DEARME_ALL_TARGET_LIVE_PROOF_COMMAND_TARGETS.map((proofTarget) =>
+      providerRunCommand(
+        proofTarget,
+        envFile,
+        readinessForProviderRunCommand(proofTarget, readiness),
+      )
+    );
+  }
+  return [providerRunCommand(target, envFile, readiness)];
 }
 
 function nextProofEnvTemplate(target: DearMeNextProofTarget, envFile: string) {
@@ -570,10 +605,12 @@ export async function prepareDearMeNextProofSetup(
   const readiness = inspectDearMeProviderSmokeReadiness(env, target);
   const factsNeeded = dearMeProofFactsNeededFromReadiness(readiness);
   const capturedFacts = factCaptures.map(capturedFactMetadata);
+  const liveOrRunCommands = providerRunCommands(target, envFile, readiness);
   const commands = {
     setup: `pnpm --silent dearme:next-proof --${envFileFlag(envFile)}${providerTargetFlag(target)}`,
     check: providerCheckCommand(target, envFile),
-    liveOrRun: providerRunCommand(target, envFile, readiness),
+    liveOrRun: liveOrRunCommands.join("\n"),
+    liveOrRunCommands,
   };
   const noSendCheck = buildDearMeNoSendCheck(readiness, commands.check);
 
@@ -687,7 +724,9 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
   lines.push("");
   lines.push("Next commands:");
   lines.push(`- ${setup.commands.check}`);
-  lines.push(`- ${setup.commands.liveOrRun}`);
+  for (const command of setup.commands.liveOrRunCommands) {
+    lines.push(`- ${command}`);
+  }
   return lines;
 }
 
