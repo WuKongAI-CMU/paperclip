@@ -156,6 +156,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DEA-21 / private site preview smoke** — the first-cycle proof package now carries a handle-safe `dearme.app/<handle>` private preview route through shared schema, server proof documents, apply/report artifacts, and onboarding UI while keeping public deploy behind the existing launch decision.
 - **DM-FOUNDER-DOGFOOD-PROOF** — approved founder dogfood post/site deliveries now write opt-in public proof receipts, `/proof` shows the founder feed with loading/empty/error states, and marketing surfaces link to the proof page without exposing hidden provider or substrate language.
 - **DM-DEPENDENCY-BUMP-PLAYWRIGHT** — `@playwright/test` now resolves to 1.60.0, Playwright-adjacent CI stayed green, and the screenshot helper no longer depends on a version-pinned pnpm store path.
+- **DM-GOAL-AUDIT-OWNER-HANDOFF** — `pnpm dearme:goal-audit` now surfaces the exact reserved owner facts, item-specific capture setup, no-send check, and guarded live-proof commands when public launch is blocked on external proof facts.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)
