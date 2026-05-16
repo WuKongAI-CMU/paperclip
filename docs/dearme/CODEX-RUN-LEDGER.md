@@ -51,3 +51,4 @@
 2026-05-16 09:11  DM-DOC-FRESHNESS-STANDING-OWNER-PROOF-FACTS  ba9f939f  PR #50  Standing  INDEX shipped list now records the standing-loop owner proof facts audit; CI green; doc-freshness loop caught up after PR #49.
 2026-05-16 09:29  DM-GOAL-AUDIT-FULL-OWNER-PROOF-FACTS  139389cd  PR #51  Standing  Goal audit now prints the full public-launch owner-proof fact queue while keeping the immediate OpenClaw message proof next action specific; CI green.
 2026-05-16 09:43  DM-DOC-FRESHNESS-GOAL-AUDIT-OWNER-PROOF-QUEUE  e0b7dc49  PR #52  Standing  INDEX shipped list now records the goal-audit public-launch owner-proof queue output; CI green; doc-freshness loop caught up after PR #51.
+2026-05-16 10:05  DM-GOAL-AUDIT-HOSTED-CHECKOUT-BLOCKERS  cea0937b  PR #53  Standing  Goal and standing-loop audits now surface hosted-checkout payment setup blockers for the first-$29 path alongside public-launch proof facts; CI green.
