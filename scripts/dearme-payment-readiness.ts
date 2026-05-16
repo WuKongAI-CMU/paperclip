@@ -53,8 +53,39 @@ function envValue(env: Env, key: string): string {
   return env[key]?.trim() ?? "";
 }
 
+function isPlaceholderValue(value: string): boolean {
+  const normalized = value.trim().toLowerCase().replace(/[\s_-]+/g, "_");
+  if (!normalized) return false;
+  if (
+    normalized === "todo"
+    || normalized === "tbd"
+    || normalized === "changeme"
+    || normalized === "change_me"
+    || normalized === "replace_me"
+    || normalized === "placeholder"
+    || normalized === "your_value_here"
+    || normalized === "paste_value_here"
+    || normalized === "fill_me_in"
+    || normalized === "fill_in"
+    || normalized === "..."
+  ) {
+    return true;
+  }
+  return /^<[^>]+>$/.test(normalized) || normalized.startsWith("your_");
+}
+
 function hasReceiptSync(env: Env): boolean {
-  return envValue(env, RECEIPT_SYNC_ENV).length > 0 || envValue(env, STRIPE_WEBHOOK_ENV).length > 0;
+  return [envValue(env, RECEIPT_SYNC_ENV), envValue(env, STRIPE_WEBHOOK_ENV)].some(
+    (value) => value.length > 0 && !isPlaceholderValue(value),
+  );
+}
+
+function hasReceiptSyncPlaceholder(env: Env): boolean {
+  const receiptSync = envValue(env, RECEIPT_SYNC_ENV);
+  const stripeWebhook = envValue(env, STRIPE_WEBHOOK_ENV);
+  return [receiptSync, stripeWebhook].some((value) => value.length > 0)
+    && !hasReceiptSync(env)
+    && [receiptSync, stripeWebhook].some(isPlaceholderValue);
 }
 
 function isHttpsUrl(value: string): boolean {
@@ -74,12 +105,18 @@ export function inspectDearMePaymentReadiness(env: Env = process.env): DearMePay
 
   if (!paymentLink) {
     blockers.push(`${PAYMENT_LINK_ENV} is missing.`);
+  } else if (isPlaceholderValue(paymentLink)) {
+    blockers.push(`${PAYMENT_LINK_ENV} still contains a placeholder value.`);
   } else if (!isHttpsUrl(paymentLink)) {
     blockers.push(`${PAYMENT_LINK_ENV} must be an https URL.`);
   }
 
   if (!hasReceiptSync(env)) {
-    blockers.push(`${RECEIPT_SYNC_ENV} or ${STRIPE_WEBHOOK_ENV} is missing.`);
+    blockers.push(
+      hasReceiptSyncPlaceholder(env)
+        ? `${RECEIPT_SYNC_ENV} or ${STRIPE_WEBHOOK_ENV} still contains a placeholder value.`
+        : `${RECEIPT_SYNC_ENV} or ${STRIPE_WEBHOOK_ENV} is missing.`,
+    );
   }
 
   if (receiptSyncProof.status !== "ready") {
