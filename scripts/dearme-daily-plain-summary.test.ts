@@ -1,0 +1,144 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  buildDearMeDailyPlainSummary,
+  parseDearMeDailyLedgerEntries,
+  parseDearMeDailyPlainSummaryArgs,
+  runDearMeDailyPlainSummary,
+} from "./dearme-daily-plain-summary.ts";
+import type { DearMeStandingLoopAudit } from "./dearme-standing-loop-audit.ts";
+
+const ledgerMarkdown = [
+  "2026-05-15 22:10  DM-OLDER  abc12345  PR #10  Standing  Older slice shipped; CI green.",
+  "2026-05-16 14:44  DM-NEXT-PROOF-HUMAN-HELP-LIVE-LANES  1e23f6d1  PR #69  Standing  Next-proof handoff split guarded live proof commands; CI green.",
+  "2026-05-16 15:16  DM-OWNER-PROOF-FACT-LABELS  335f0bad  PR #70  Standing  Status and shared checklist text now use exact owner-proof labels; CI green.",
+].join("\n");
+
+function standingLoopAudit(): DearMeStandingLoopAudit {
+  return {
+    state: "owner-blocked",
+    checkClear: true,
+    backlog: {
+      complete: true,
+      required: { total: 37, shipped: 37, missing: [] },
+      standingOpen: [],
+      ledgerIds: ["DM-OWNER-PROOF-FACT-LABELS"],
+      nextAction: {
+        label: "Continue standing loop",
+        reason: "Every P0/P1/P2 handoff backlog item has a run-ledger entry.",
+      },
+    },
+    dependency: {
+      complete: true,
+      autonomousUpdates: [],
+      reviewRequiredUpdates: [],
+      nextAction: {
+        label: "Continue standing loop",
+        reason: "No dependency updates are currently available.",
+      },
+    },
+    goal: {
+      complete: false,
+      verdict: "not complete",
+      promptToArtifactChecklist: [],
+      items: [],
+      ownerProofFactsNeeded: [
+        "Professional-network partner messages endpoint: provide DEARME_LINKEDIN_DM_MESSAGES_URL",
+      ],
+      hostedCheckoutFactsNeeded: [
+        "DEARME_PAYMENT_LINK_URL is missing.",
+      ],
+      nextAction: {
+        label: "OpenClaw shared Telegram/iMessage message proof",
+        reason: "Blocked by imessage_message.",
+        command: "pnpm --silent dearme:next-proof -- --target openclaw_messages",
+        ownerFacts: [
+          "Professional-network partner messages endpoint: provide DEARME_LINKEDIN_DM_MESSAGES_URL",
+        ],
+      },
+    },
+    nextAction: {
+      label: "OpenClaw shared Telegram/iMessage message proof",
+      reason: "Blocked by imessage_message.",
+      command: "pnpm --silent dearme:next-proof -- --target openclaw_messages",
+      ownerFacts: [
+        "Professional-network partner messages endpoint: provide DEARME_LINKEDIN_DM_MESSAGES_URL",
+      ],
+      hostedCheckoutFacts: [
+        "DEARME_PAYMENT_LINK_URL is missing.",
+      ],
+    },
+  };
+}
+
+test("parses DearMe run-ledger entries for the daily summary", () => {
+  const entries = parseDearMeDailyLedgerEntries(ledgerMarkdown);
+  assert.equal(entries.length, 3);
+  assert.equal(entries[1]?.id, "DM-NEXT-PROOF-HUMAN-HELP-LIVE-LANES");
+  assert.equal(entries[2]?.pr, "PR #70");
+});
+
+test("builds the required daily Plain summary from ledger and standing-loop evidence", () => {
+  const summary = buildDearMeDailyPlainSummary({
+    date: "2026-05-16",
+    ledgerEntries: parseDearMeDailyLedgerEntries(ledgerMarkdown),
+    standingLoopAudit: standingLoopAudit(),
+  });
+
+  assert.equal(summary.subject, "Codex daily — 2026-05-16");
+  assert.match(summary.body, /Shipped today:/);
+  assert.match(summary.body, /DM-NEXT-PROOF-HUMAN-HELP-LIVE-LANES \(PR #69, https:\/\/github\.com\/WuKongAI-CMU\/paperclip\/pull\/69, 1e23f6d1\)/);
+  assert.match(summary.body, /DM-OWNER-PROOF-FACT-LABELS \(PR #70, https:\/\/github\.com\/WuKongAI-CMU\/paperclip\/pull\/70, 335f0bad\)/);
+  assert.match(summary.body, /Standing loop: owner-blocked/);
+  assert.match(summary.body, /DEARME_LINKEDIN_DM_MESSAGES_URL/);
+  assert.match(summary.body, /DEARME_PAYMENT_LINK_URL is missing/);
+  assert.match(summary.body, /pnpm --silent dearme:next-proof -- --target openclaw_messages/);
+});
+
+test("skips without live network when Plain is not configured", async () => {
+  let called = false;
+  const result = await runDearMeDailyPlainSummary(parseDearMeDailyPlainSummaryArgs([
+    "--date",
+    "2026-05-16",
+  ]), {
+    env: {},
+    readLedger: async () => ledgerMarkdown,
+    runStandingLoopAudit: async () => standingLoopAudit(),
+    createThread: async () => {
+      called = true;
+      return { ok: true, skipped: false, status: 200, threadId: "thread_123" };
+    },
+  });
+
+  assert.equal(called, false);
+  assert.equal(result.ok, true);
+  assert.equal(result.skipped, true);
+  assert.equal(result.reason, "dearme_plain_api_key_unset");
+});
+
+test("posts a low-severity Plain thread when configured", async () => {
+  const result = await runDearMeDailyPlainSummary(parseDearMeDailyPlainSummaryArgs([
+    "--date",
+    "2026-05-16",
+  ]), {
+    env: {
+      DEARME_PLAIN_API_KEY: "plain-key",
+      DEARME_CODEX_DAILY_PLAIN_EMAIL: "peter@example.com",
+    },
+    readLedger: async () => ledgerMarkdown,
+    runStandingLoopAudit: async () => standingLoopAudit(),
+    createThread: async (input, options) => {
+      assert.equal(options.apiKey, "plain-key");
+      assert.equal(input.email, "peter@example.com");
+      assert.equal(input.name, "Peter");
+      assert.equal(input.subject, "Codex daily — 2026-05-16");
+      assert.equal(input.severity, "low");
+      assert.match(input.body, /DM-OWNER-PROOF-FACT-LABELS/);
+      return { ok: true, skipped: false, status: 200, threadId: "thread_123" };
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.skipped, false);
+  assert.equal(result.threadId, "thread_123");
+});

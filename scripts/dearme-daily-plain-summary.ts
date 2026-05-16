@@ -1,0 +1,315 @@
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createSupportThread } from "../server/src/services/dearme-support.ts";
+import {
+  parseDearMeStandingLoopAuditArgs,
+  runDearMeStandingLoopAudit,
+  type DearMeStandingLoopAudit,
+} from "./dearme-standing-loop-audit.ts";
+
+const DEFAULT_LEDGER_PATH = "docs/dearme/CODEX-RUN-LEDGER.md";
+const DEFAULT_RECIPIENT_NAME = "Peter";
+const DEFAULT_SENDER_NAME = "Codex";
+
+export interface DearMeDailyPlainSummaryArgs {
+  help: boolean;
+  json: boolean;
+  dryRun: boolean;
+  date: string;
+  ledgerPath: string;
+  recipientEmail?: string;
+  recipientName: string;
+  senderName: string;
+}
+
+export interface DearMeDailyLedgerEntry {
+  date: string;
+  time: string;
+  id: string;
+  sha: string;
+  pr: string;
+  priority: string;
+  summary: string;
+}
+
+export type DearMeDailyPlainSummaryResult =
+  | {
+    ok: true;
+    skipped: true;
+    reason: string;
+    subject: string;
+    body: string;
+  }
+  | {
+    ok: boolean;
+    skipped: false;
+    subject: string;
+    body: string;
+    threadId?: string | null;
+    status?: number;
+  };
+
+type CreateThread = typeof createSupportThread;
+
+export interface DearMeDailyPlainSummaryOptions {
+  env?: NodeJS.ProcessEnv;
+  readLedger?: (path: string) => Promise<string>;
+  runStandingLoopAudit?: () => Promise<DearMeStandingLoopAudit>;
+  createThread?: CreateThread;
+}
+
+const LEDGER_LINE_PATTERN = /^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})\s+([A-Z0-9-]+)\s+([0-9a-f]{7,40})\s+(PR #[0-9]+|-)\s+(\S+)\s+(.+)$/;
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function configuredValue(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : null;
+}
+
+export function parseDearMeDailyLedgerEntries(ledgerMarkdown: string): DearMeDailyLedgerEntry[] {
+  return ledgerMarkdown
+    .split(/\r?\n/)
+    .map((line) => {
+      const match = LEDGER_LINE_PATTERN.exec(line.trim());
+      if (!match) return null;
+      const [, date, time, id, sha, pr, priority, summary] = match;
+      return { date, time, id, sha, pr, priority, summary };
+    })
+    .filter((entry): entry is DearMeDailyLedgerEntry => entry !== null);
+}
+
+function latestEntry(entries: DearMeDailyLedgerEntry[]) {
+  return entries[entries.length - 1] ?? null;
+}
+
+function prLink(pr: string) {
+  const match = /^PR #([0-9]+)$/.exec(pr);
+  return match ? `https://github.com/WuKongAI-CMU/paperclip/pull/${match[1]}` : null;
+}
+
+function formatShippedEntries(entries: DearMeDailyLedgerEntry[], maxEntries = 5) {
+  if (entries.length === 0) {
+    return ["- No merged DearMe slices were recorded in the run ledger for this date."];
+  }
+  const visibleEntries = entries.slice(-maxEntries);
+  const hiddenCount = entries.length - visibleEntries.length;
+  const lines = visibleEntries.map((entry) => {
+    const link = prLink(entry.pr);
+    const prText = link ? `${entry.pr}, ${link}` : entry.pr;
+    return `- ${entry.id} (${prText}, ${entry.sha.slice(0, 8)}): ${entry.summary}`;
+  });
+  if (hiddenCount > 0) {
+    lines.unshift(`- ${hiddenCount} earlier ledger entries were also recorded for this date.`);
+  }
+  return lines;
+}
+
+function firstPaymentFacts(audit: DearMeStandingLoopAudit) {
+  return audit.nextAction.hostedCheckoutFacts ?? [];
+}
+
+function ownerFacts(audit: DearMeStandingLoopAudit) {
+  return audit.nextAction.ownerFacts ?? [];
+}
+
+export function buildDearMeDailyPlainSummary(input: {
+  date: string;
+  ledgerEntries: DearMeDailyLedgerEntry[];
+  standingLoopAudit: DearMeStandingLoopAudit;
+}) {
+  const shippedToday = input.ledgerEntries.filter((entry) => entry.date === input.date);
+  const latest = latestEntry(input.ledgerEntries);
+  const subject = `Codex daily — ${input.date}`;
+  const audit = input.standingLoopAudit;
+  const ownerFactLines = ownerFacts(audit).map((fact) => `- ${fact}`);
+  const paymentFactLines = firstPaymentFacts(audit).map((fact) => `- ${fact}`);
+  const bodyLines = [
+    subject,
+    "",
+    "Shipped today:",
+    ...formatShippedEntries(shippedToday),
+    "",
+    "Current state:",
+    `- Standing loop: ${audit.state}`,
+    `- P0/P1/P2 ledger: ${audit.backlog.required.shipped}/${audit.backlog.required.total}`,
+    `- Goal complete: ${audit.goal.complete ? "yes" : "no"}`,
+    `- Next action: ${audit.nextAction.label} - ${audit.nextAction.reason}`,
+  ];
+
+  if (ownerFactLines.length > 0) {
+    bodyLines.push("", "Owner proof facts needed:", ...ownerFactLines);
+  }
+  if (paymentFactLines.length > 0) {
+    bodyLines.push("", "First-payment checkout facts needed:", ...paymentFactLines);
+  }
+  if (audit.nextAction.command) {
+    bodyLines.push("", `Next command: ${audit.nextAction.command}`);
+  }
+  if (latest) {
+    bodyLines.push("", `Latest ledger entry: ${latest.id} (${latest.pr}, ${latest.sha.slice(0, 8)}).`);
+  }
+  return { subject, body: bodyLines.join("\n") };
+}
+
+export function parseDearMeDailyPlainSummaryArgs(argv: string[]): DearMeDailyPlainSummaryArgs {
+  const args: DearMeDailyPlainSummaryArgs = {
+    help: false,
+    json: false,
+    dryRun: false,
+    date: todayIso(),
+    ledgerPath: DEFAULT_LEDGER_PATH,
+    recipientName: DEFAULT_RECIPIENT_NAME,
+    senderName: DEFAULT_SENDER_NAME,
+  };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === "--") {
+      continue;
+    } else if (arg === "--help" || arg === "-h") {
+      args.help = true;
+    } else if (arg === "--json") {
+      args.json = true;
+    } else if (arg === "--dry-run") {
+      args.dryRun = true;
+    } else if (arg === "--date") {
+      args.date = argv[index + 1] ?? "";
+      index += 1;
+    } else if (arg === "--ledger") {
+      args.ledgerPath = argv[index + 1] ?? "";
+      index += 1;
+    } else if (arg === "--recipient-email") {
+      args.recipientEmail = argv[index + 1] ?? "";
+      index += 1;
+    } else if (arg === "--recipient-name") {
+      args.recipientName = argv[index + 1] ?? "";
+      index += 1;
+    } else if (arg === "--sender-name") {
+      args.senderName = argv[index + 1] ?? "";
+      index += 1;
+    } else {
+      throw new Error(`Unknown argument: ${arg}`);
+    }
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(args.date)) {
+    throw new Error("--date must be YYYY-MM-DD.");
+  }
+  if (!args.ledgerPath) {
+    throw new Error("--ledger requires a path.");
+  }
+  if (!args.recipientName.trim()) {
+    throw new Error("--recipient-name requires a value.");
+  }
+  if (!args.senderName.trim()) {
+    throw new Error("--sender-name requires a value.");
+  }
+  return args;
+}
+
+export async function runDearMeDailyPlainSummary(
+  args: DearMeDailyPlainSummaryArgs,
+  options: DearMeDailyPlainSummaryOptions = {},
+): Promise<DearMeDailyPlainSummaryResult> {
+  const env = options.env ?? process.env;
+  const readLedger = options.readLedger ?? ((path: string) => readFile(path, "utf8"));
+  const [ledgerMarkdown, standingLoopAudit] = await Promise.all([
+    readLedger(args.ledgerPath),
+    options.runStandingLoopAudit
+      ? options.runStandingLoopAudit()
+      : runDearMeStandingLoopAudit(parseDearMeStandingLoopAuditArgs([
+        "--backlog-ledger",
+        args.ledgerPath,
+      ])),
+  ]);
+  const { subject, body } = buildDearMeDailyPlainSummary({
+    date: args.date,
+    ledgerEntries: parseDearMeDailyLedgerEntries(ledgerMarkdown),
+    standingLoopAudit,
+  });
+
+  const recipientEmail = configuredValue(args.recipientEmail)
+    ?? configuredValue(env.DEARME_CODEX_DAILY_PLAIN_EMAIL)
+    ?? configuredValue(env.DEARME_PLAIN_DAILY_EMAIL);
+  const apiKey = configuredValue(env.DEARME_PLAIN_API_KEY);
+  if (args.dryRun) {
+    return { ok: true, skipped: true, reason: "dry_run", subject, body };
+  }
+  if (!apiKey) {
+    return { ok: true, skipped: true, reason: "dearme_plain_api_key_unset", subject, body };
+  }
+  if (!recipientEmail) {
+    return { ok: true, skipped: true, reason: "dearme_codex_daily_plain_email_unset", subject, body };
+  }
+
+  const result = await (options.createThread ?? createSupportThread)({
+    email: recipientEmail,
+    name: args.recipientName,
+    subject,
+    body: `${body}\n\nSent by ${args.senderName}.`,
+    severity: "low",
+  }, {
+    apiKey,
+  });
+
+  return {
+    ok: Boolean(result.ok),
+    skipped: false,
+    subject,
+    body,
+    threadId: result.threadId,
+    status: result.status,
+  };
+}
+
+function usage(): string {
+  return [
+    "Usage: pnpm --silent dearme:daily-plain-summary [--dry-run] [--json]",
+    "",
+    "Builds the required daily Codex summary and posts it to Plain when configured.",
+    "",
+    "Options:",
+    "  --dry-run                    Print/return the summary without posting to Plain.",
+    "  --json                       Print machine-readable JSON.",
+    "  --date <YYYY-MM-DD>          Summary date. Defaults to today.",
+    "  --ledger <path>              Run ledger path.",
+    "  --recipient-email <email>    Plain customer email. Also reads DEARME_CODEX_DAILY_PLAIN_EMAIL.",
+    "  --recipient-name <name>      Plain customer name. Defaults to Peter.",
+    "  --sender-name <name>         Signature name. Defaults to Codex.",
+  ].join("\n");
+}
+
+async function main(): Promise<void> {
+  const args = parseDearMeDailyPlainSummaryArgs(process.argv.slice(2));
+  if (args.help) {
+    console.log(usage());
+    return;
+  }
+
+  const result = await runDearMeDailyPlainSummary(args);
+  if (args.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log(result.body);
+    if (result.skipped) {
+      console.log(`\nSkipped Plain send: ${result.reason}`);
+    } else {
+      console.log(`\nPlain send ${result.ok ? "succeeded" : "failed"}${result.threadId ? `: ${result.threadId}` : ""}`);
+    }
+  }
+  if (!result.ok) {
+    process.exitCode = 1;
+  }
+}
+
+const invokedPath = process.argv[1] ? resolve(process.argv[1]) : "";
+if (invokedPath === fileURLToPath(import.meta.url)) {
+  main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });
+}
