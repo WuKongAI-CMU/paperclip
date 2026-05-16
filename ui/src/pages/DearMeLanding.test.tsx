@@ -5,7 +5,14 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DearMeLanding } from "./DearMeLanding";
+import { DearMeLanding, resolveLandingCopyVariant } from "./DearMeLanding";
+
+const analyticsMock = vi.hoisted(() => ({
+  capture: vi.fn(),
+  resolveFeatureFlagValue: vi.fn(),
+}));
+
+vi.mock("@/lib/analytics", () => analyticsMock);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
@@ -41,11 +48,26 @@ function installIndexHead() {
   document.head.innerHTML = headMatch[1];
 }
 
+describe("resolveLandingCopyVariant", () => {
+  it("resolves only the three supported landing copy variants", () => {
+    expect(resolveLandingCopyVariant("control").headline).toBe("DearMe is a private AI growth team for one person.");
+    expect(resolveLandingCopyVariant("proof-first").headline).toBe(
+      "Turn scattered work into proof people can understand.",
+    );
+    expect(resolveLandingCopyVariant("opportunity-first").headline).toBe(
+      "Keep your next best opportunity from going cold.",
+    );
+    expect(resolveLandingCopyVariant("unknown").key).toBe("control");
+    expect(resolveLandingCopyVariant(true).key).toBe("control");
+  });
+});
+
 describe("DearMeLanding", () => {
   let container: HTMLDivElement;
   let root: Root;
 
   beforeEach(async () => {
+    analyticsMock.resolveFeatureFlagValue.mockResolvedValue("control");
     installIndexHead();
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -126,6 +148,17 @@ describe("DearMeLanding", () => {
     expect(container.querySelector('[data-testid="location"]')?.textContent).toBe(
       "/dearme?knownFor=Known+for+practical+AI+product+launches",
     );
+    expect(analyticsMock.capture).toHaveBeenCalledWith("landing_cta_submitted", {
+      landing_copy_variant: "control",
+      positioning_length: 39,
+    });
+  });
+
+  it("renders and tracks the selected feature-flagged landing copy variant", async () => {
+    expect(analyticsMock.resolveFeatureFlagValue).toHaveBeenCalledWith("dearme_landing_copy", "control");
+    expect(analyticsMock.capture).toHaveBeenCalledWith("landing_viewed", {
+      landing_copy_variant: "control",
+    });
   });
 
   it("does not expose hidden substrate or secret strings", () => {

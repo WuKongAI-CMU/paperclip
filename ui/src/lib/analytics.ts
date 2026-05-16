@@ -14,6 +14,10 @@ function analyticsFallback(fallback?: boolean) {
   return fallback ?? false;
 }
 
+function featureFlagValueFallback(fallback: string | boolean) {
+  return fallback;
+}
+
 function ensureAnalyticsReady() {
   const key = import.meta.env.VITE_POSTHOG_KEY;
   if (!key) return null;
@@ -62,5 +66,17 @@ export function featureFlag(name: string, fallback?: boolean) {
     return typeof value === "boolean" ? value : analyticsFallback(fallback);
   } catch {
     return analyticsFallback(fallback);
+  }
+}
+
+export async function resolveFeatureFlagValue(name: string, fallback: string | boolean): Promise<string | boolean> {
+  const posthog = await ensureAnalyticsReady();
+  if (!posthog) return featureFlagValueFallback(fallback);
+
+  try {
+    const value = posthog.getFeatureFlag(name);
+    return typeof value === "string" || typeof value === "boolean" ? value : featureFlagValueFallback(fallback);
+  } catch {
+    return featureFlagValueFallback(fallback);
   }
 }
