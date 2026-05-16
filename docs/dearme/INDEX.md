@@ -173,6 +173,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-PAYMENT-READINESS-29-OFFER-HANDOFF** — `pnpm dearme:payment-readiness` and `docs/NEEDS_HUMAN_HELP.md` now explicitly ask for the live $29/month DearMe hosted checkout link before self-serve checkout can be claimed.
 - **DM-NEXT-PROOF-HUMAN-HELP-LIVE-LANES** — `pnpm dearme:next-proof -- --human-help-markdown` now regenerates the owner-proof queue with exact external proof env names, no-send-first wording, and separate guarded live commands for professional-network and OpenClaw message proof.
 - **DM-OWNER-PROOF-FACT-LABELS** — `pnpm dearme:status` and shared owner-proof checklist text now use the same exact professional-network endpoint, professional-network smoke recipient, and iMessage/SMS smoke recipient labels as the Peter-facing live-proof handoff.
+- **DM-DAILY-PLAIN-SUMMARY** — `pnpm dearme:daily-plain-summary` now builds the required daily Codex Plain update from the run ledger and standing-loop audit, posts it only when Plain credentials plus the Peter recipient email are configured, and skips without live network otherwise.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)
