@@ -26,6 +26,7 @@ function makeDeps(overrides?: Partial<DearMeOutboundToolDeps>): {
   costEventsValues: Array<unknown>;
   pauseCalls: Array<unknown>;
   emailCalls: Array<unknown>;
+  publicFeedItems: Array<unknown>;
 } {
   const emitted: DearMeSseEvent[] = [];
   const resolveCalls: Array<unknown> = [];
@@ -34,6 +35,7 @@ function makeDeps(overrides?: Partial<DearMeOutboundToolDeps>): {
   const costEventsValues: Array<unknown> = [];
   const pauseCalls: Array<unknown> = [];
   const emailCalls: Array<unknown> = [];
+  const publicFeedItems: Array<unknown> = [];
 
   const dbStub = {
     insert: () => ({
@@ -143,6 +145,12 @@ function makeDeps(overrides?: Partial<DearMeOutboundToolDeps>): {
     sendEmail: async (input) => {
       emailCalls.push(input);
     },
+    publicFeed: {
+      isOptedIn: async () => false,
+      recordItem: async (input) => {
+        publicFeedItems.push(input);
+      },
+    },
     channelDispatch: {
       post_x: vi.fn(async () => ({
         kind: "delivered",
@@ -163,6 +171,7 @@ function makeDeps(overrides?: Partial<DearMeOutboundToolDeps>): {
     costEventsValues,
     pauseCalls,
     emailCalls,
+    publicFeedItems,
   };
 }
 
@@ -246,6 +255,46 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
       channel: "x",
       externalId: "tweet_1",
     });
+  });
+
+  it("records opted-in public proof feed items after approved public posts", async () => {
+    const publicFeedItems: Array<unknown> = [];
+    const { deps } = makeDeps({
+      publicFeed: {
+        isOptedIn: async (companyId) => companyId === "co_test",
+        recordItem: async (input) => {
+          publicFeedItems.push(input);
+        },
+      },
+    });
+    const wrapper = dearMeOutboundToolWrapper(deps);
+
+    const result = await wrapper.callOutbound({
+      ...baseInput,
+      payload: {
+        text: "A private proof packet is ready for owner-approved publishing.",
+        publicFeedSummary: "Published the first founder dogfood proof note.",
+      },
+    });
+
+    expect(result.kind).toBe("delivered");
+    expect(publicFeedItems).toHaveLength(1);
+    expect(publicFeedItems[0]).toMatchObject({
+      companyId: "co_test",
+      kind: "published_post",
+      summary: "Published the first founder dogfood proof note.",
+      linkUrl: "https://x.com/tester/status/tweet_1",
+    });
+  });
+
+  it("skips public proof feed writes when the company has not opted in", async () => {
+    const { deps, publicFeedItems } = makeDeps();
+    const wrapper = dearMeOutboundToolWrapper(deps);
+
+    const result = await wrapper.callOutbound(baseInput);
+
+    expect(result.kind).toBe("delivered");
+    expect(publicFeedItems).toHaveLength(0);
   });
 
   it("delivers a preapproved next-move handoff without opening a second gate", async () => {
@@ -759,7 +808,14 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
   });
 
   it("skips voice-gate for non-voice-gated tools (deploy_site)", async () => {
+    const publicFeedItems: Array<unknown> = [];
     const { deps, scoreCalls } = makeDeps({
+      publicFeed: {
+        isOptedIn: async () => true,
+        recordItem: async (input) => {
+          publicFeedItems.push(input);
+        },
+      },
       channelDispatch: {
         deploy_site: (async () => ({
           kind: "delivered",
@@ -786,6 +842,12 @@ describe("dearMeOutboundToolWrapper.callOutbound", () => {
     });
     expect(result.kind).toBe("delivered");
     expect(scoreCalls).toHaveLength(0);
+    expect(publicFeedItems[0]).toMatchObject({
+      companyId: "co_test",
+      kind: "deployed_site",
+      summary: "Deployed an approved public proof page from the latest private work cycle.",
+      linkUrl: "https://dearme.app/tester",
+    });
   });
 
   it("records cost_events when dispatch returns paid=true and agentId is set", async () => {

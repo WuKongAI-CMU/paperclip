@@ -99,6 +99,20 @@ describeEmbeddedPostgres("dearMePublicFeedService", () => {
     expect(rows).toHaveLength(1);
   });
 
+  it("recordItem refuses non-public language before it reaches the feed", async () => {
+    const companyId = await createCompany(db);
+    const service = dearMePublicFeedService(db);
+    await service.optIn(companyId);
+
+    await expect(service.recordItem({
+      companyId,
+      kind: "published_post",
+      summary: "Voyage private internals should stay backstage.",
+      linkUrl: "https://example.com/post",
+      publishedAt: new Date("2026-05-10T12:00:00.000Z"),
+    })).rejects.toThrow("non-public language");
+  });
+
   it("listRecentItems returns items in desc order, limited, with no substrate language exposed", async () => {
     const companyId = await createCompany(db);
     const service = dearMePublicFeedService(db);
@@ -131,7 +145,7 @@ describeEmbeddedPostgres("dearMePublicFeedService", () => {
       "https://example.com/new",
       "https://example.com/site",
     ]);
-    expect(JSON.stringify(result.items)).not.toMatch(/Paperclip|OpenClaw|Symphony|Bedrock|dm_sk_/);
+    expect(JSON.stringify(result.items)).not.toMatch(/Paperclip|OpenClaw|Symphony|Bedrock|Claude|GPT|Voyage|dm_sk_/);
   });
 
   it("opted-out company's items are not returned by listRecentItems", async () => {

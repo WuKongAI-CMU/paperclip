@@ -89,7 +89,27 @@ export interface DearMeGdprDeletionResult {
   };
 }
 
+export type DearMePublicFeedItemKind = "published_post" | "deployed_site" | "proof_card";
+
+export interface DearMePublicFeedItem {
+  id: string;
+  kind: DearMePublicFeedItemKind;
+  summary: string;
+  linkUrl: string;
+  publishedAt: string;
+}
+
+export interface DearMePublicFeedResponse {
+  items: DearMePublicFeedItem[];
+  nextCursor: string | null;
+}
+
 export const dearmeApi = {
+  getPublicFeed: (limit: number = 20, cursor?: string) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (cursor) params.set("cursor", cursor);
+    return api.get<DearMePublicFeedResponse>(`/dearme/public-feed?${params.toString()}`);
+  },
   getWorkbench: (companyId: string) =>
     api.get<DearMeWorkbenchResponse>(`/dearme/companies/${companyId}/workbench`),
   openWorkbenchEvents: (companyId: string) =>

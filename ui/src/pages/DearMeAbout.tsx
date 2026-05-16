@@ -33,6 +33,7 @@ export function DearMeAbout() {
           </a>
           <div className="flex flex-wrap items-center justify-end gap-3">
             <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
+            <a href="/proof" className="text-sm text-muted-foreground hover:text-foreground">Proof</a>
             <a href="/faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</a>
             <Button asChild variant="outline" size="sm">
               <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">

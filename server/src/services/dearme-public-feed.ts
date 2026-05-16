@@ -14,6 +14,9 @@ const FORBIDDEN_PUBLIC_FEED_TERMS = [
   "OpenClaw",
   "Symphony",
   "Bedrock",
+  "Claude",
+  "GPT",
+  "Voyage",
   "dm_sk_",
 ] as const;
 const publicFeedKindSet = new Set<string>(DEARME_PUBLIC_FEED_ITEM_KINDS);

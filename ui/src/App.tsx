@@ -20,6 +20,7 @@ const DearMeAbout = lazyNamed(() => import("./pages/DearMeAbout"), "DearMeAbout"
 const DearMeFaq = lazyNamed(() => import("./pages/DearMeFaq"), "DearMeFaq");
 const DearMeLanding = lazyNamed(() => import("./pages/DearMeLanding"), "DearMeLanding");
 const DearMePricing = lazyNamed(() => import("./pages/DearMePricing"), "DearMePricing");
+const DearMeProof = lazyNamed(() => import("./pages/DearMeProof"), "DearMeProof");
 const Terms = lazyNamed(() => import("./pages/legal/Terms"), "Terms");
 const Privacy = lazyNamed(() => import("./pages/legal/Privacy"), "Privacy");
 const AcceptableUse = lazyNamed(() => import("./pages/legal/AcceptableUse"), "AcceptableUse");
@@ -51,6 +52,7 @@ export function App() {
           <Route path="about" element={<DearMeAbout />} />
           <Route path="faq" element={<DearMeFaq />} />
           <Route path="pricing" element={<DearMePricing />} />
+          <Route path="proof" element={<DearMeProof />} />
           <Route path="404" element={<DearMeErrorPage kind="404" />} />
           <Route path="500" element={<DearMeErrorPage kind="500" />} />
           <Route path="legal/terms" element={<Terms />} />

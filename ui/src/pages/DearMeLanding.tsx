@@ -116,6 +116,7 @@ export function DearMeLanding() {
           <div className="flex flex-wrap items-center justify-end gap-3">
             <a href="/about" className="text-sm text-muted-foreground hover:text-foreground">About</a>
             <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
+            <a href="/proof" className="text-sm text-muted-foreground hover:text-foreground">Proof</a>
             <a href="/faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</a>
             <Button asChild variant="outline" size="sm" className="min-h-11">
               <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
@@ -201,6 +202,7 @@ export function DearMeLanding() {
             <span>$29/month beta — invite request only.</span>
             <a href="/about" className="hover:text-foreground">About</a>
             <a href="/pricing" className="hover:text-foreground">Pricing</a>
+            <a href="/proof" className="hover:text-foreground">Proof</a>
             <a href="/faq" className="hover:text-foreground">FAQ</a>
             <a href="/legal/terms" className="hover:text-foreground">Terms</a><a href="/legal/privacy" className="hover:text-foreground">Privacy</a><a href="/legal/acceptable-use" className="hover:text-foreground">Acceptable Use</a>
             <Button asChild variant="secondary" size="sm" className="min-h-11">

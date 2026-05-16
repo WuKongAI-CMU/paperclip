@@ -38,12 +38,15 @@ export function DearMePricing() {
             <ArrowLeft className="h-4 w-4" />
             DearMe
           </a>
-          <Button asChild variant="outline" size="sm">
-            <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20access">
-              Request access
-              <Mail className="h-4 w-4" />
-            </a>
-          </Button>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <a href="/proof" className="text-sm text-muted-foreground hover:text-foreground">Proof</a>
+            <Button asChild variant="outline" size="sm">
+              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20access">
+                Request access
+                <Mail className="h-4 w-4" />
+              </a>
+            </Button>
+          </div>
         </nav>
 
         <section className="grid flex-1 gap-6 py-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(22rem,0.7fr)] lg:items-center lg:py-14">
