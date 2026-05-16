@@ -879,7 +879,7 @@ export function formatDearMeReleaseGate(gate: DearMeReleaseGate): string[] {
   lines.push(`- No-send check: ${gate.operatorHandoff.checkCommand}`);
   if (gate.operatorHandoff.guardedLiveCommands.length > 0) {
     lines.push(gate.factsNeeded.length > 0
-      ? "- Guarded live proof after facts are present and the no-send check passes:"
+      ? "- Guarded live proof after owner facts are present and the no-send check passes:"
       : "- Guarded live proof after the no-send check passes:");
     for (const command of gate.operatorHandoff.guardedLiveCommands) {
       lines.push(`  - ${command}`);

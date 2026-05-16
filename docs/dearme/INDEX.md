@@ -180,6 +180,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-NEXT-PROOF-OWNER-FACTS-LIVE-COMMAND-LABEL** — `pnpm dearme:next-proof` now uses owner-facts wording for blocked guarded live command sections, matching the proof/status/goal-audit guard language.
 - **DM-STATUS-LIVE-COMMAND-GUARD** — `pnpm dearme:status` now labels live provider commands as guarded and marks blocked live commands as available only after blockers clear and the no-send check passes.
 - **DM-RELEASE-GATE-LIVE-COMMAND-GUARD** — `pnpm dearme:release-gate` now labels guarded live proof commands as available only after required facts are present and the no-send check passes.
+- **DM-RELEASE-GATE-OWNER-FACTS-LIVE-LABEL** — `pnpm dearme:release-gate` now uses owner-facts wording for blocked guarded live proof sections, matching the proof/status/goal-audit guard language.
 - **DM-GOAL-AUDIT-LIVE-COMMAND-GUARD** — `pnpm dearme:goal-audit` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-FOCUS-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now uses the same owner-facts-plus-no-send wording for live-focus commands and setup commands.
