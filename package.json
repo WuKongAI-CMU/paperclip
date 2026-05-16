@@ -83,6 +83,8 @@
     "test:dearme-goal-audit": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-goal-audit.test.ts",
     "dearme:backlog-audit": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-backlog-audit.ts",
     "test:dearme-backlog-audit": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-backlog-audit.test.ts",
+    "dearme:dependency-loop-audit": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-dependency-loop-audit.ts",
+    "test:dearme-dependency-loop-audit": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-dependency-loop-audit.test.ts",
     "dearme:release-gate": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-release-gate.ts",
     "test:dearme-release-gate": "node --import ./cli/node_modules/tsx/dist/loader.mjs --test scripts/dearme-release-gate.test.ts",
     "dearme:host-provider-audit": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-host-provider-audit.ts",
