@@ -1747,4 +1747,117 @@ describeEmbeddedPostgres("DearMe output handoff service", () => {
       expect(traceSerialized).not.toContain(hiddenTerm);
     }
   });
+
+  it("asks for voice calibration after three rejected voice-gated passes", async () => {
+    const companyId = await seedCompany();
+    const agentId = await seedAgent(companyId);
+    const issueId = await seedIssue({
+      companyId,
+      title: "DearMe Draft: Draft first content batch",
+      identifier: "DME-41",
+      originFingerprint: "operation-draft_content_batch",
+      status: "in_review",
+      assigneeAgentId: agentId,
+      updatedAt: new Date("2026-05-07T20:00:00.000Z"),
+    });
+    const voiceGate = evaluateDearMeVoiceGate({
+      brand: {
+        displayName: "Peter",
+        positioning: "Practical AI operator for local-first products.",
+        preferredChannels: ["x"],
+        goals: ["Build visible proof."],
+        audiences: ["founders evaluating local-first workflows"],
+        offers: [],
+        proofPoints: ["shipped a local-first product launch"],
+        voiceSamples: [
+          "Short, direct, evidence-first notes.",
+          "Show the receipt before asking for trust.",
+        ],
+        constraints: ["No public claims without review."],
+        cadence: "weekly",
+        budgetMonthlyCents: 25_000,
+        autoDraftEnabled: true,
+      },
+      artifact: {
+        kind: "content_draft",
+        channel: "x",
+        title: "Proof-backed post",
+        text: "A short proof-backed post about turning private work into public receipts.",
+        proofUsed: "shipped a local-first product launch",
+      },
+    });
+
+    await attachDocument({
+      companyId,
+      issueId,
+      key: "content-drafts",
+      title: "Content drafts",
+      body: [
+        "Channel: x",
+        "Hook: proof first.",
+        "Draft body: A short proof-backed post about turning private work into public receipts.",
+        "Proof used: shipped a local-first product launch.",
+      ].join("\n"),
+      updatedAt: new Date("2026-05-07T20:01:00.000Z"),
+    });
+    await db.insert(issueWorkProducts).values({
+      id: randomUUID(),
+      companyId,
+      issueId,
+      type: "draft",
+      provider: "dearme-cycle-output",
+      title: "Content draft batch",
+      url: null,
+      status: "ready",
+      reviewState: "changes_requested",
+      summary: "Private posts prepared for review.",
+      metadata: {
+        voiceGate,
+      },
+      updatedAt: new Date("2026-05-07T20:02:00.000Z"),
+    });
+    for (const [index, body] of [
+      [
+        "DearMe decision: regenerate this prepared work before review.",
+        "Try a stronger proof-led opening before the launch call.",
+      ],
+      [
+        "DearMe decision: requested changes before this represents me.",
+        "Make it less generic and more direct.",
+      ],
+      [
+        "DearMe decision: marked this prepared work as not useful.",
+        "This still does not sound like me.",
+      ],
+    ].entries()) {
+      await db.insert(issueComments).values({
+        id: randomUUID(),
+        companyId,
+        issueId,
+        authorUserId: randomUUID(),
+        body: body.join("\n\n"),
+        createdAt: new Date(`2026-05-07T20:0${index + 3}:00.000Z`),
+        updatedAt: new Date(`2026-05-07T20:0${index + 3}:00.000Z`),
+      });
+    }
+
+    const result = await dearmeOutputHandoffService(db).listOutputs(companyId);
+    const output = result.outputs.find((item) => item.kind === "content_drafts")!;
+
+    expect(output.reviewLoop).toEqual(expect.objectContaining({
+      state: "retry_limit_reached",
+      attemptCount: 3,
+      isRetriable: false,
+      lastAction: "not_useful",
+      voiceCalibration: expect.objectContaining({
+        active: true,
+        sampleTarget: 5,
+        title: "Voice calibration needed",
+        prompt: expect.stringContaining("Add 5 more real writing samples"),
+        clarificationPrompt: expect.stringContaining("what felt off"),
+      }),
+    }));
+    expect(output.reviewLoop.nextStep).toContain("add the samples");
+    expect(output.reviewLoop.reviewHandoff?.title).toBe("Clearer direction needed");
+  });
 });

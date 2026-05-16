@@ -667,6 +667,36 @@ function reviewLoopNextStep(state: DearMeOutputReviewLoop["state"]) {
   }
 }
 
+const DEARME_VOICE_CALIBRATION_SAMPLE_TARGET = 5;
+
+function buildVoiceCalibration(input: {
+  state: DearMeOutputReviewLoop["state"];
+  attemptCount: number;
+  hasVoiceGate: boolean;
+  lastDecision: DearMeParsedReviewDecision | null;
+}): DearMeOutputReviewLoop["voiceCalibration"] {
+  if (
+    !input.hasVoiceGate ||
+    input.state !== "retry_limit_reached" ||
+    input.attemptCount < DEARME_OUTPUT_REVIEW_LOOP_MAX_ATTEMPTS ||
+    !input.lastDecision ||
+    input.lastDecision.action === "approve"
+  ) {
+    return null;
+  }
+
+  return {
+    active: true,
+    sampleTarget: DEARME_VOICE_CALIBRATION_SAMPLE_TARGET,
+    title: "Voice calibration needed",
+    prompt: "Add 5 more real writing samples so DearMe can recalibrate before preparing another private pass.",
+    clarificationPrompt:
+      "Add one note about what felt off in the rejected drafts: tone, pacing, specificity, confidence, or audience fit.",
+    nextAction:
+      "Open Voice & Memory, add the samples, then describe what did not sound like you before the next private pass.",
+  };
+}
+
 function buildReviewHandoff(
   decision: DearMeParsedReviewDecision | null,
   state: DearMeOutputReviewLoop["state"],
@@ -712,6 +742,7 @@ function buildReviewLoop(input: {
   status: DearMeOutputStatus;
   decisions: DearMeParsedReviewDecision[];
   feedbackTrace: DearMeOutputReviewLoop["feedbackTrace"];
+  hasVoiceGate: boolean;
 }): DearMeOutputReviewLoop {
   const lastDecision = input.decisions[0] ?? null;
   const attemptCount = input.decisions.filter((decision) => decision.action !== "approve").length;
@@ -739,6 +770,13 @@ function buildReviewLoop(input: {
     state = "not_useful";
   }
 
+  const voiceCalibration = buildVoiceCalibration({
+    state,
+    attemptCount,
+    hasVoiceGate: input.hasVoiceGate,
+    lastDecision,
+  });
+
   return {
     state,
     attemptCount,
@@ -755,9 +793,12 @@ function buildReviewLoop(input: {
       ? `This private work kept moving with a default review score of ${DEARME_SILENCE_DEFAULT_REVIEW_SCORE}/10.`
       : feedbackApplied
         ? "Review this updated private work; your last feedback is reflected below before anything goes public."
-        : reviewLoopNextStep(state),
+        : voiceCalibration
+          ? voiceCalibration.nextAction
+          : reviewLoopNextStep(state),
     reviewHandoff: feedbackApplied ? null : buildReviewHandoff(lastDecision, state),
     feedbackTrace: input.feedbackTrace,
+    voiceCalibration,
   };
 }
 
@@ -1428,6 +1469,7 @@ function buildOutputItem(input: {
       status,
       decisions: reviewDecisions,
       feedbackTrace,
+      hasVoiceGate: input.workProducts.some((workProduct) => Boolean(workProduct.voiceGate)),
     }),
     details,
     sourceEvidence: buildOutputSourceEvidence({

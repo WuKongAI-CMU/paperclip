@@ -1115,6 +1115,14 @@ export const dearMeOutputReviewLoopSchema = z.object({
   nextStep: mediumTextSchema,
   reviewHandoff: dearMeOutputReviewHandoffSchema.nullable(),
   feedbackTrace: dearMeOutputFeedbackTraceSchema.nullable().default(null),
+  voiceCalibration: z.object({
+    active: z.boolean(),
+    sampleTarget: z.number().int().min(1).max(10),
+    title: shortTextSchema,
+    prompt: mediumTextSchema,
+    clarificationPrompt: mediumTextSchema,
+    nextAction: mediumTextSchema,
+  }).nullable().default(null),
 }).strict();
 
 export const dearMeOutputDetailSchema = z.object({
