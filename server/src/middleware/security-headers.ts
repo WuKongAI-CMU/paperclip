@@ -19,6 +19,11 @@ const LOOPS_SOURCES = [
   "https://*.loops.so",
 ];
 
+const SENTRY_SOURCES = [
+  "https://*.sentry.io",
+  "https://*.ingest.sentry.io",
+];
+
 const VOYAGE_SOURCES = [
   "https://api.voyageai.com",
 ];
@@ -42,6 +47,7 @@ export function securityHeaders(options: { viteDev?: boolean } = {}): RequestHan
     ...VOYAGE_SOURCES,
     ...STRIPE_SOURCES,
     ...LOOPS_SOURCES,
+    ...SENTRY_SOURCES,
     ...(options.viteDev ? VITE_DEV_CONNECT_SOURCES : []),
   ];
 

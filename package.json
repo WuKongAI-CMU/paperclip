@@ -121,6 +121,8 @@
       "embedded-postgres@18.1.0-beta.16": "patches/embedded-postgres@18.1.0-beta.16.patch"
     },
     "overrides": {
+      "@types/pg": "8.15.6",
+      "@types/pg-pool": "2.0.7",
       "rollup": ">=4.59.0"
     }
   }

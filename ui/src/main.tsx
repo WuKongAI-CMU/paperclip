@@ -7,7 +7,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
 import { ToastProvider } from "./context/ToastContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { initDearMeSentry } from "./lib/sentry";
 import "./index.css";
+
+void initDearMeSentry();
 
 function runAfterStartup(callback: () => void) {
   if ("requestIdleCallback" in window) {

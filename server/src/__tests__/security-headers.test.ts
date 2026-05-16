@@ -57,6 +57,8 @@ describe("securityHeaders", () => {
       "https://*.stripe.com",
       "https://app.loops.so",
       "https://*.loops.so",
+      "https://*.sentry.io",
+      "https://*.ingest.sentry.io",
     ]));
     expect(connectSrc).not.toContain("*");
   });

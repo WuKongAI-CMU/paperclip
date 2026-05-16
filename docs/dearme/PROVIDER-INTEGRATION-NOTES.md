@@ -93,6 +93,22 @@ For each: signup URL, dashboard URL, free tier limit, gotcha, env var, where the
 
 ---
 
+## 5a. Sentry (error monitoring)
+
+- **Signup:** https://sentry.io
+- **Free tier:** enough for launch error monitoring
+- **Gotcha:** Browser DSNs are public. Keep `SENTRY_AUTH_TOKEN` only in CI secrets for source-map upload.
+- **Env:** `DEARME_SENTRY_DSN`, `VITE_DEARME_SENTRY_DSN`, `DEARME_SENTRY_ENVIRONMENT`, `VITE_DEARME_SENTRY_ENVIRONMENT`
+- **CI vars/secrets:** `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`
+- **Code:** `server/src/sentry.ts`, `ui/src/lib/sentry.ts`, `ui/vite.config.ts`
+- **What to set up:**
+  1. Create project "DearMe Prod"
+  2. Copy the server and browser DSN into env
+  3. Create an auth token that can upload source maps
+  4. Set `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN` in GitHub Actions
+
+---
+
 ## 6. Google OAuth (self-serve signin)
 
 - **Console:** https://console.cloud.google.com/apis/credentials

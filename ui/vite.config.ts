@@ -3,7 +3,14 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { analyzer } from "vite-bundle-analyzer";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { createUiDevWatchOptions } from "./src/lib/vite-watch";
+
+const sentrySourceMapUploadEnabled = Boolean(
+  process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG &&
+    process.env.SENTRY_PROJECT,
+);
 
 export default defineConfig(({ mode }) => ({
   plugins: [
@@ -18,9 +25,24 @@ export default defineConfig(({ mode }) => ({
           reportTitle: "DearMe UI Bundle",
         })
       : null,
+    sentrySourceMapUploadEnabled
+      ? sentryVitePlugin({
+          org: process.env.SENTRY_ORG,
+          project: process.env.SENTRY_PROJECT,
+          authToken: process.env.SENTRY_AUTH_TOKEN,
+          telemetry: false,
+          release: {
+            name: process.env.DEARME_SENTRY_RELEASE ?? process.env.SENTRY_RELEASE ?? process.env.GITHUB_SHA,
+          },
+          sourcemaps: {
+            filesToDeleteAfterUpload: ["dist/**/*.map"],
+          },
+        })
+      : null,
   ],
   build: {
     minify: "esbuild",
+    sourcemap: sentrySourceMapUploadEnabled,
   },
   esbuild:
     mode === "production"
