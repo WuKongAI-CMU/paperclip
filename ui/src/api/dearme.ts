@@ -21,6 +21,7 @@ import type {
   DearMePaidBetaCohortSummary,
   DearMePaidBetaRecord,
   DearMePaidBetaStatus,
+  DearMeReferralCodeResponse,
   DearMeVoiceGateResult,
   DearMeWorkbenchResponse,
 } from "@paperclipai/shared";
@@ -115,6 +116,10 @@ export const dearmeApi = {
     ),
   getPaidBetaAccess: (companyId: string) =>
     api.get<DearMePaidBetaStatus>(`/dearme/companies/${companyId}/paid-beta/access`),
+  getReferralCode: (companyId: string) =>
+    api.get<DearMeReferralCodeResponse>(`/dearme/companies/${companyId}/referral-code`),
+  mintReferralCode: (companyId: string) =>
+    api.post<DearMeReferralCodeResponse>(`/dearme/companies/${companyId}/referral-code`, {}),
   getPaidBetaCohort: (companyIds: string[]) =>
     api.post<DearMePaidBetaCohortSummary>("/dearme/paid-beta/cohort", { companyIds }),
   previewFirstCycle: (companyId: string, data: DearMeFirstCyclePreview) =>

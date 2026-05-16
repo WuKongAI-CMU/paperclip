@@ -5,6 +5,7 @@ import {
   BriefcaseBusiness,
   CheckCircle2,
   ClipboardCheck,
+  Gift,
   Home,
   Menu,
   Mic2,
@@ -38,6 +39,7 @@ const growthItems: DearMeNavItem[] = [
   { to: "/dearme?view=opportunities", label: "Opportunities", icon: Telescope },
   { to: "/dearme?view=portfolio", label: "Portfolio", icon: BriefcaseBusiness },
   { to: "/dearme?view=reports", label: "Reports", icon: BarChart3 },
+  { to: "/dearme/refer", label: "Refer", icon: Gift },
 ];
 
 const mobileNavItems: DearMeNavItem[] = [

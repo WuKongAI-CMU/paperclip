@@ -1465,6 +1465,16 @@ export const dearMeWorkbenchResponseSchema = z.object({
   outputs: z.array(dearMeOutputItemSchema),
 }).strict();
 
+export const dearMeReferralCodeResponseSchema = z.object({
+  companyId: z.string().min(1),
+  status: z.enum(["ready", "not_minted"]),
+  code: z.string().min(1).nullable(),
+  referralUrl: z.string().url().nullable(),
+  rewardCount: z.number().int().nonnegative(),
+  disabled: z.boolean(),
+  createdAt: z.string().datetime().nullable(),
+}).strict();
+
 export type DearMeBrandBlueprintSeed = z.infer<typeof dearMeBrandBlueprintSeedSchema>;
 export type DearMeBrandBlueprintPreview = z.infer<typeof dearMeBrandBlueprintPreviewSchema>;
 export type DearMeBrandBlueprintApplyRequest = z.infer<typeof dearMeBrandBlueprintApplyRequestSchema>;
@@ -1512,6 +1522,7 @@ export type DearMePaidBetaCohortRequest = z.infer<typeof dearMePaidBetaCohortReq
 export type DearMePaidBetaCohortSummary = z.infer<typeof dearMePaidBetaCohortSummarySchema>;
 export type DearMePaidBetaRecord = z.infer<typeof dearMePaidBetaRecordSchema>;
 export type DearMePaidBetaStatus = z.infer<typeof dearMePaidBetaStatusSchema>;
+export type DearMeReferralCodeResponse = z.infer<typeof dearMeReferralCodeResponseSchema>;
 export type DearMeActionGraph = z.infer<typeof dearMeActionGraphSchema>;
 export type DearMeActionGraphEdge = z.infer<typeof dearMeActionGraphEdgeSchema>;
 export type DearMeActionGraphNode = z.infer<typeof dearMeActionGraphNodeSchema>;

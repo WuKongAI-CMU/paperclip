@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Router, type ErrorRequestHandler, type Response } from "express";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z, ZodError } from "zod";
-import { activityLog, type Db } from "@paperclipai/db";
+import { activityLog, companies, type Db } from "@paperclipai/db";
 import {
   dearMeApprovalResolveRequestSchema,
   dearMeApprovalResolveResultSchema,
@@ -20,6 +20,7 @@ import {
   dearMeOutputReviewRequestSchema,
   dearMePaidBetaCohortRequestSchema,
   dearMePaidBetaRecordSchema,
+  dearMeReferralCodeResponseSchema,
   type DearMeChiefOfStaffMessage,
   type DearMeChiefOfStaffMessageIntent,
   type DearMeMemoryUpdate,
@@ -66,6 +67,10 @@ import {
 import { dearMeEmailSuppressService } from "../services/dearme-email-suppress.js";
 import { verifyDearMeUnsubscribeToken } from "../services/dearme-send-email-dispatch.js";
 import { dearmeGdprService } from "../services/dearme-gdpr.js";
+import {
+  createDearMeReferralStripeClient,
+  dearMeReferralService,
+} from "../services/dearme-referral.js";
 
 function memoryBodyPreview(body: string) {
   return body.length > 700 ? `${body.slice(0, 697)}...` : body;
@@ -279,12 +284,42 @@ function configuredEnvValue(name: string) {
 }
 
 function publicRequestBaseUrl(req: { protocol: string; get(name: string): string | undefined }) {
-  const configuredPublicUrl = configuredEnvValue("PAPERCLIP_PUBLIC_URL");
+  const configuredPublicUrl =
+    configuredEnvValue("DEARME_PUBLIC_URL") || configuredEnvValue("PAPERCLIP_PUBLIC_URL");
   if (configuredPublicUrl) return configuredPublicUrl.replace(/\/+$/, "");
   const origin = req.get("origin")?.trim();
   if (origin) return origin.replace(/\/+$/, "");
   const host = req.get("host")?.trim();
   return host ? `${req.protocol}://${host}` : "";
+}
+
+function dearMeReferralUrl(req: { protocol: string; get(name: string): string | undefined }, code: string) {
+  const baseUrl = publicRequestBaseUrl(req);
+  return baseUrl ? `${baseUrl}/landing?ref=${encodeURIComponent(code)}` : null;
+}
+
+function dearMeReferralResponse(input: {
+  companyId: string;
+  code: {
+    code: string;
+    disabledAt?: Date | string | null;
+    disabled?: boolean;
+    createdAt?: Date | string | null;
+  } | null;
+  referralUrl: string | null;
+  rewardCount: number;
+}) {
+  return {
+    companyId: input.companyId,
+    status: input.code ? "ready" as const : "not_minted" as const,
+    code: input.code?.code ?? null,
+    referralUrl: input.referralUrl,
+    rewardCount: input.rewardCount,
+    disabled: input.code ? (input.code.disabled ?? Boolean(input.code.disabledAt)) : false,
+    createdAt: input.code?.createdAt
+      ? new Date(input.code.createdAt).toISOString()
+      : null,
+  };
 }
 
 function dearMeReviewFeedbackMemoryTitle(outputTitle: string) {
@@ -372,6 +407,12 @@ export function dearmeRoutes(
   });
   const paidBetaAccess = dearmePaidBetaAccessService(db);
   const stripeCheckout = dearMeStripeCheckoutService(db, { paidBetaAccess });
+  const referralStripeSecretKey = configuredEnvValue("DEARME_STRIPE_SECRET_KEY");
+  const referrals = dearMeReferralService(db, {
+    stripeClient: referralStripeSecretKey
+      ? createDearMeReferralStripeClient(referralStripeSecretKey)
+      : undefined,
+  });
   const publicFeed = dearMePublicFeedService(db);
   const workbench = dearmeWorkbenchService(db, {
     voiceProfileStore: options.voiceProfileStore,
@@ -1127,6 +1168,61 @@ export function dearmeRoutes(
       });
 
       res.status(201).json(result);
+    },
+  );
+
+  router.get(
+    "/companies/:companyId/referral-code",
+    async (req, res) => {
+      const companyId = req.params.companyId as string;
+      assertCompanyAccess(req, companyId);
+      assertBoard(req);
+      const access = await paidBetaAccess.getAccess(companyId);
+      if (access.status !== "active") {
+        throw forbidden("Referral codes open after paid beta access is active.");
+      }
+
+      const code = await referrals.getActiveCode(companyId);
+      const rewardCount = await referrals.getOwnerRewards(companyId);
+      res.json(dearMeReferralCodeResponseSchema.parse(dearMeReferralResponse({
+        companyId,
+        code,
+        referralUrl: code ? dearMeReferralUrl(req, code.code) : null,
+        rewardCount,
+      })));
+    },
+  );
+
+  router.post(
+    "/companies/:companyId/referral-code",
+    async (req, res) => {
+      const companyId = req.params.companyId as string;
+      assertCompanyAccess(req, companyId);
+      assertBoard(req);
+      const access = await paidBetaAccess.getAccess(companyId);
+      if (access.status !== "active") {
+        throw forbidden("Referral codes open after paid beta access is active.");
+      }
+      if (!referralStripeSecretKey) {
+        throw new HttpError(503, "Referral codes are waiting for hosted billing setup.");
+      }
+
+      const [company] = await db
+        .select({ name: companies.name })
+        .from(companies)
+        .where(eq(companies.id, companyId))
+        .limit(1);
+      const code = await referrals.mintCode(companyId, {
+        slugBase: company?.name ?? companyId,
+      });
+      const rewardCount = await referrals.getOwnerRewards(companyId);
+
+      res.status(201).json(dearMeReferralCodeResponseSchema.parse(dearMeReferralResponse({
+        companyId,
+        code,
+        referralUrl: dearMeReferralUrl(req, code.code),
+        rewardCount,
+      })));
     },
   );
 
