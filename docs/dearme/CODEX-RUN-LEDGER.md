@@ -48,3 +48,4 @@
 2026-05-16 08:22  DM-DOC-FRESHNESS-STANDING-LOOP-AUDIT  485bd640  PR #47  Standing  INDEX shipped list now records the standing loop audit; CI green; doc-freshness loop caught up after PR #46.
 2026-05-16 08:39  DM-HUMAN-HELP-PROOF-QUEUE-FRESHNESS  dfe53883  PR #48  Standing  Human-help queue now reflects the current standing/status/goal/payment audits: private beta remains sellable, public proof waits on three owner-approved facts, and hosted checkout waits on payment configuration; CI green.
 2026-05-16 08:57  DM-STANDING-LOOP-OWNER-PROOF-FACTS  c76f9908  PR #49  Standing  Standing-loop audit now carries the full owner-proof fact list from goal-audit while keeping the immediate OpenClaw message proof next action; CI green.
+2026-05-16 09:11  DM-DOC-FRESHNESS-STANDING-OWNER-PROOF-FACTS  ba9f939f  PR #50  Standing  INDEX shipped list now records the standing-loop owner proof facts audit; CI green; doc-freshness loop caught up after PR #49.
