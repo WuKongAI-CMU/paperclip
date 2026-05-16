@@ -66,6 +66,29 @@ export interface DearMePaidBetaRecordResult {
   access: DearMePaidBetaStatus;
 }
 
+export interface DearMeGdprExport {
+  company: Record<string, unknown> | null;
+  users: Record<string, unknown>[];
+  voiceProfiles: Record<string, unknown>[];
+  voiceSamples: Record<string, unknown>[];
+  paidBetaReceipts: Record<string, unknown>[];
+  opportunities: Record<string, unknown>[];
+  channelConnections: Record<string, unknown>[];
+  auditLog: Record<string, unknown>[];
+}
+
+export interface DearMeGdprDeletionResult {
+  rowsAffected: {
+    company: number;
+    users: number;
+    voiceProfiles: number;
+    voiceSamples: number;
+    opportunities: number;
+    channelConnections: number;
+    auditLog: number;
+  };
+}
+
 export const dearmeApi = {
   getWorkbench: (companyId: string) =>
     api.get<DearMeWorkbenchResponse>(`/dearme/companies/${companyId}/workbench`),
@@ -120,6 +143,12 @@ export const dearmeApi = {
     api.get<DearMeReferralCodeResponse>(`/dearme/companies/${companyId}/referral-code`),
   mintReferralCode: (companyId: string) =>
     api.post<DearMeReferralCodeResponse>(`/dearme/companies/${companyId}/referral-code`, {}),
+  exportGdprData: (companyId: string) =>
+    api.get<DearMeGdprExport>(
+      `/dearme/gdpr/export?companyId=${encodeURIComponent(companyId)}`,
+    ),
+  deleteGdprData: (companyId: string) =>
+    api.post<DearMeGdprDeletionResult>("/dearme/gdpr/delete", { companyId }),
   getPaidBetaCohort: (companyIds: string[]) =>
     api.post<DearMePaidBetaCohortSummary>("/dearme/paid-beta/cohort", { companyIds }),
   previewFirstCycle: (companyId: string, data: DearMeFirstCyclePreview) =>

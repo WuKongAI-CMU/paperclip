@@ -80,6 +80,7 @@ describe("DearMeSidebar", () => {
     expect(container.textContent).toContain("Opportunities");
     expect(container.textContent).toContain("Portfolio");
     expect(container.textContent).toContain("Reports");
+    expect(container.textContent).toContain("Danger Zone");
     expect(container.textContent).not.toContain("Issues");
     expect(container.textContent).not.toContain("Routines");
     expect(container.textContent).not.toContain("Agents");

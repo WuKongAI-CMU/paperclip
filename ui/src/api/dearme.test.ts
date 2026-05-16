@@ -166,6 +166,19 @@ describe("dearmeApi", () => {
     );
   });
 
+  it("gets and deletes privacy data through the DearMe privacy endpoints", async () => {
+    await dearmeApi.exportGdprData("company/1");
+    await dearmeApi.deleteGdprData("company/1");
+
+    expect(mockApi.get).toHaveBeenCalledWith(
+      "/dearme/gdpr/export?companyId=company%2F1",
+    );
+    expect(mockApi.post).toHaveBeenCalledWith(
+      "/dearme/gdpr/delete",
+      { companyId: "company/1" },
+    );
+  });
+
   it("posts Voice & Memory updates through the DearMe company endpoint", async () => {
     const payload = {
       kind: "voice_sample" as const,

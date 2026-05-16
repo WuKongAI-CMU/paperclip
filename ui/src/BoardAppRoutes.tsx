@@ -19,6 +19,7 @@ const Dashboard = lazyNamed(() => import("./pages/Dashboard"), "Dashboard");
 const DashboardLive = lazyNamed(() => import("./pages/DashboardLive"), "DashboardLive");
 const DearMeOnboarding = lazyNamed(() => import("./pages/DearMeOnboarding"), "DearMeOnboarding");
 const DearMeReferral = lazyNamed(() => import("./pages/DearMeReferral"), "DearMeReferral");
+const DearMeDangerSettings = lazyNamed(() => import("./pages/DearMeDangerSettings"), "DearMeDangerSettings");
 const Companies = lazyNamed(() => import("./pages/Companies"), "Companies");
 const Agents = lazyNamed(() => import("./pages/Agents"), "Agents");
 const AgentDetail = lazyNamed(() => import("./pages/AgentDetail"), "AgentDetail");
@@ -83,6 +84,7 @@ function boardRoutes() {
       <Route path="dashboard/live" element={<DashboardLive />} />
       <Route path="dearme" element={<DearMeOnboarding />} />
       <Route path="dearme/refer" element={<DearMeReferral />} />
+      <Route path="dearme/settings/danger" element={<DearMeDangerSettings />} />
       <Route path="dearme/site-preview/:handle" element={<DearMeSitePreview />} />
       <Route path="onboarding" element={<OnboardingRoutePage />} />
       <Route path="companies" element={<Companies />} />

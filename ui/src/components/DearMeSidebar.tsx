@@ -12,6 +12,7 @@ import {
   NotebookText,
   PenLine,
   Search,
+  ShieldAlert,
   Sparkles,
   Telescope,
 } from "lucide-react";
@@ -40,6 +41,7 @@ const growthItems: DearMeNavItem[] = [
   { to: "/dearme?view=portfolio", label: "Portfolio", icon: BriefcaseBusiness },
   { to: "/dearme?view=reports", label: "Reports", icon: BarChart3 },
   { to: "/dearme/refer", label: "Refer", icon: Gift },
+  { to: "/dearme/settings/danger", label: "Danger Zone", icon: ShieldAlert },
 ];
 
 const mobileNavItems: DearMeNavItem[] = [
