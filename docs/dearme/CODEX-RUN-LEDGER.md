@@ -23,3 +23,4 @@
 2026-05-15 12:05  DM-BUNDLE-AUDIT  84898f78  PR #22  P1  UI bundle audit merged; CI green; build reports initial gzip size and gates at 200 kB, with route/provider startup split reducing initial DearMe UI payload to 173.7 kB gzip.
 2026-05-15 12:43  DM-LCP-AUDIT  484166a7  PR #23  P1  Lighthouse landing audit merged; CI green; /landing now gates LCP under 2.5s, CLS under 0.1, and scripted INP under 200ms from a built local preview.
 2026-05-16 00:42  DM-SENTRY  1fabcf83  PR #24  P1  Sentry monitoring merged; CI green; server and browser error capture are env-gated, scrub PII/secrets, allow ingest in CSP, and upload source maps only when CI credentials are configured.
+2026-05-16 01:03  DM-DB-BACKUP-SCRIPT  d4255ddc  PR #25  P1  Database backup script merged; CI green; pg_dump uploads timestamped custom-format dumps to S3-compatible storage with cron docs, local no-network tests, and no secret logging.
