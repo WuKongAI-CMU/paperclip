@@ -169,6 +169,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-PAYMENT-READINESS-SECRET-REDACTION** — `pnpm dearme:payment-readiness` now marks hosted-checkout receipt/webhook-secret blockers as sensitive in operator output and Peter-facing support markdown.
 - **DM-PAYMENT-READINESS-PLACEHOLDER-GUARD** — `pnpm dearme:payment-readiness` now fails hosted checkout closed when the payment link or receipt/webhook secret is still an obvious setup placeholder, without printing placeholder values.
 - **DM-HUMAN-HELP-PAYMENT-SECRET-REDACTION** — `docs/NEEDS_HUMAN_HELP.md` now marks hosted-checkout receipt/webhook-secret blockers as sensitive, and the payment-readiness drift test keeps the Peter-facing queue aligned.
+- **DM-HUMAN-HELP-PAYMENT-PLACEHOLDER-GUARD** — `docs/NEEDS_HUMAN_HELP.md` and generated payment-readiness support markdown now state placeholder setup values keep hosted checkout blocked and are not printed.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)
