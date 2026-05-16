@@ -481,7 +481,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /Needs: shared message gateway endpoint; shared message gateway auth; Telegram smoke recipient; Telegram smoke body; iMessage smoke recipient/);
   assert.match(
     formatted,
-    /OpenClaw message smoke: blocked on telegram_message, imessage_message\..*Guarded live command after blockers clear and the no-send check passes: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
+    /OpenClaw message smoke: blocked on telegram_message, imessage_message\..*Guarded live command after owner facts are present and the no-send check passes: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
   );
   assert.doesNotMatch(
     formatted,
@@ -490,7 +490,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /Next live provider proof setup:/);
   assert.match(
     formatted,
-    /Next live provider proof setup:[\s\S]*Guarded live command after blockers clear and the no-send check passes: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
+    /Next live provider proof setup:[\s\S]*Guarded live command after owner facts are present and the no-send check passes: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
   );
   assert.match(formatted, /Owner proof checklist before public launch:/);
   assert.match(formatted, /Owner proof facts needed before public launch/);

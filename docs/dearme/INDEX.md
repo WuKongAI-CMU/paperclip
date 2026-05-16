@@ -181,6 +181,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-RELEASE-GATE-LIVE-COMMAND-GUARD** — `pnpm dearme:release-gate` now labels guarded live proof commands as available only after required facts are present and the no-send check passes.
 - **DM-GOAL-AUDIT-LIVE-COMMAND-GUARD** — `pnpm dearme:goal-audit` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
+- **DM-PROOF-FOCUS-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now uses the same owner-facts-plus-no-send wording for live-focus commands and setup commands.
 - **DM-NEXT-PROOF-HUMAN-HELP-LIVE-COMMAND-GUARD** — `pnpm dearme:next-proof -- --human-help-markdown` now labels guarded live proof commands as available only after owner facts are present, the no-send check passes, and explicit live confirmation is set.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
