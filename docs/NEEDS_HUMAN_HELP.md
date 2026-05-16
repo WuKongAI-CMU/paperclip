@@ -159,6 +159,8 @@ Safety notes:
 
 - Payment secrets must stay in local/server environment configuration, not in
   chat, docs, screenshots, or customer-facing copy.
+- Placeholder setup values are treated as blocked configuration and are not
+  printed by the readiness check.
 - Manual private-beta receipt recording remains the sellable path until hosted
   checkout is fully configured.
 - Checkout only appears in product surfaces when the payment link is HTTPS and
