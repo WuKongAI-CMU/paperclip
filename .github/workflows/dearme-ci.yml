@@ -265,6 +265,12 @@ jobs:
 
       - name: Build DearMe UI
         run: pnpm --filter @paperclipai/ui build
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          DEARME_SENTRY_RELEASE: ${{ github.sha }}
+          VITE_DEARME_SENTRY_RELEASE: ${{ github.sha }}
 
       - name: Run Lighthouse landing audit
         run: pnpm dearme:lcp-audit -- --output dearme-lcp-audit.json

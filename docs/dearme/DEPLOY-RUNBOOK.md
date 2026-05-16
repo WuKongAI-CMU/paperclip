@@ -100,8 +100,9 @@ For each provider, the steps are:
 3. **Resend** — sign up at https://resend.com, add `dearme.app` as a verified domain (drop 4 DNS records: SPF, DKIM, MX, DMARC), create API key.
 4. **Loops** — sign up at https://loops.so, create API key, pre-register the 5 event names listed in `.env.production.example`.
 5. **PostHog** — sign up at https://posthog.com, copy project key into both `VITE_POSTHOG_KEY` (browser) and `DEARME_POSTHOG_KEY` (server).
-6. **Google OAuth** — at https://console.cloud.google.com/apis/credentials, create OAuth 2.0 client, add redirect URI `https://dearme.app/api/auth/callback/google`, copy client ID + secret.
-7. **Plain** — sign up at https://plain.com, create API key, set webhook at `https://dearme.app/v1/dearme/support/webhook`.
+6. **Sentry** — sign up at https://sentry.io, copy DSNs into `DEARME_SENTRY_DSN` and `VITE_DEARME_SENTRY_DSN`, then set `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` in GitHub Actions for source maps.
+7. **Google OAuth** — at https://console.cloud.google.com/apis/credentials, create OAuth 2.0 client, add redirect URI `https://dearme.app/api/auth/callback/google`, copy client ID + secret.
+8. **Plain** — sign up at https://plain.com, create API key, set webhook at `https://dearme.app/v1/dearme/support/webhook`.
 
 Redeploy after env vars change: `vercel --prod`.
 

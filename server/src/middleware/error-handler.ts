@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { HttpError } from "../errors.js";
 import { trackErrorHandlerCrash } from "@paperclipai/shared/telemetry";
 import { getTelemetryClient } from "../telemetry.js";
+import { captureDearMeServerException } from "../sentry.js";
 
 export interface ErrorContext {
   error: { message: string; stack?: string; name?: string; details?: unknown; raw?: unknown };
@@ -48,6 +49,7 @@ export function errorHandler(
       );
       const tc = getTelemetryClient();
       if (tc) trackErrorHandlerCrash(tc, { errorCode: err.name });
+      captureDearMeServerException(err, req);
     }
     res.status(err.status).json({
       error: err.message,
@@ -73,6 +75,7 @@ export function errorHandler(
 
   const tc = getTelemetryClient();
   if (tc) trackErrorHandlerCrash(tc, { errorCode: rootError.name });
+  captureDearMeServerException(rootError, req);
 
   res.status(500).json({ error: "Internal server error" });
 }
