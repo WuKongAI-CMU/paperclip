@@ -144,7 +144,7 @@ export const DEARME_LAUNCH_PROOF_HANDOFF_STEPS = [
   },
   {
     label: "Capture live details",
-    summary: "Add the delivery route, professional-network recipient, and phone-message recipient for the guarded proof pass.",
+    summary: "Add the professional-network partner messages endpoint, professional-network smoke recipient, and iMessage/SMS smoke recipient for the guarded proof pass.",
   },
   {
     label: "Return with receipts before launch",
@@ -155,7 +155,7 @@ export const DEARME_LAUNCH_PROOF_HANDOFF_STEPS = [
 export const DEARME_OWNER_PROOF_CHECKLIST_ITEMS = [
   {
     label: "Only three facts are missing",
-    summary: "Delivery route, professional-network recipient, and phone-message recipient.",
+    summary: "Professional-network partner messages endpoint, professional-network smoke recipient, and iMessage/SMS smoke recipient.",
   },
   {
     label: "No-send check comes first",
@@ -169,15 +169,15 @@ export const DEARME_OWNER_PROOF_CHECKLIST_ITEMS = [
 
 export const DEARME_OWNER_PROOF_REPLY_TEMPLATE = [
   {
-    label: "Delivery route",
+    label: "Professional-network partner messages endpoint",
     value: "delivery-route link",
   },
   {
-    label: "Professional-network recipient",
+    label: "Professional-network smoke recipient",
     value: "selected recipient",
   },
   {
-    label: "Phone-message recipient",
+    label: "iMessage/SMS smoke recipient",
     value: "phone number or contact",
   },
 ] as const satisfies readonly DearMeOwnerProofReplyTemplateLine[];
