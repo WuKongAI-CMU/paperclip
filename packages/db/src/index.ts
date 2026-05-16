@@ -1,5 +1,7 @@
 export {
   createDb,
+  redactSqlFragment,
+  wrapSqlForSlowQueryLogging,
   getPostgresDataDirectory,
   ensurePostgresDatabase,
   inspectMigrations,
@@ -9,7 +11,10 @@ export {
   type MigrationHistoryReconcileResult,
   migratePostgresIfEmpty,
   type MigrationBootstrapResult,
+  type CreateDbOptions,
   type Db,
+  type SlowQueryLogEvent,
+  type SlowQueryLogOptions,
 } from "./client.js";
 export {
   getEmbeddedPostgresTestSupport,

@@ -18,6 +18,7 @@ import {
   reconcilePendingMigrationHistory,
   formatDatabaseBackupResult,
   runDatabaseBackup,
+  type CreateDbOptions,
   authUsers,
   companies,
   companyMemberships,
@@ -282,6 +283,13 @@ export async function startServer(): Promise<StartedServer> {
   let startupDbInfo:
     | { mode: "external-postgres"; connectionString: string }
     | { mode: "embedded-postgres"; dataDir: string; port: number };
+  const dbOptions: CreateDbOptions = {
+    slowQuery: {
+      logger: ({ durationMs, sqlFragment }: { durationMs: number; sqlFragment: string }) => {
+        logger.warn({ durationMs, sqlFragment }, "Slow database query");
+      },
+    },
+  };
   if (config.databaseUrl) {
     const migrationUrl = config.databaseMigrationUrl ?? config.databaseUrl;
     const autoApplyDearMeMigrations = resolveDearMeAutoMigrate();
@@ -290,8 +298,8 @@ export async function startServer(): Promise<StartedServer> {
       prompt: autoApplyDearMeMigrations,
     });
   
-    db = createDb(config.databaseUrl);
-    pluginMigrationDb = config.databaseMigrationUrl ? createDb(config.databaseMigrationUrl) : db;
+    db = createDb(config.databaseUrl, dbOptions);
+    pluginMigrationDb = config.databaseMigrationUrl ? createDb(config.databaseMigrationUrl, dbOptions) : db;
     logger.info("Using external PostgreSQL via DATABASE_URL/config");
     activeDatabaseConnectionString = config.databaseUrl;
     startupDbInfo = { mode: "external-postgres", connectionString: config.databaseUrl };
@@ -452,7 +460,7 @@ export async function startServer(): Promise<StartedServer> {
       autoApply: shouldAutoApplyFirstRunMigrations,
     });
   
-    db = createDb(embeddedConnectionString);
+    db = createDb(embeddedConnectionString, dbOptions);
     pluginMigrationDb = db;
     logger.info("Embedded PostgreSQL ready");
     activeDatabaseConnectionString = embeddedConnectionString;
