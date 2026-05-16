@@ -482,7 +482,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /Next live provider proof setup:/);
   assert.match(formatted, /Owner proof checklist before public launch:/);
   assert.match(formatted, /Owner proof facts needed before public launch/);
-  assert.match(formatted, /Only three facts are missing: Delivery route, professional-network recipient, and phone-message recipient\./);
+  assert.match(formatted, /Only three facts are missing: Professional-network partner messages endpoint, professional-network smoke recipient, and iMessage\/SMS smoke recipient\./);
   assert.match(formatted, /No-send check comes first: DearMe verifies the setup before anything is delivered publicly\./);
   assert.match(formatted, /Live receipt needs launch call: The guarded receipt pass stays behind the exact launch details you choose\./);
   assert.match(formatted, /Capture setup locally:/);

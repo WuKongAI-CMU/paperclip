@@ -166,6 +166,9 @@ describe("DearMe customer text", () => {
     for (const step of DEARME_LAUNCH_PROOF_HANDOFF_STEPS) {
       expect(`${step.label} ${step.summary}`).not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
     }
+    expect(DEARME_LAUNCH_PROOF_HANDOFF_STEPS[1]?.summary).toBe(
+      "Add the professional-network partner messages endpoint, professional-network smoke recipient, and iMessage/SMS smoke recipient for the guarded proof pass.",
+    );
   });
 
   it("keeps owner proof checklist items customer-safe", () => {
@@ -178,20 +181,23 @@ describe("DearMe customer text", () => {
     for (const item of DEARME_OWNER_PROOF_CHECKLIST_ITEMS) {
       expect(`${item.label} ${item.summary}`).not.toMatch(DEARME_CUSTOMER_HIDDEN_LANGUAGE_PATTERN);
     }
+    expect(DEARME_OWNER_PROOF_CHECKLIST_ITEMS[0]?.summary).toBe(
+      "Professional-network partner messages endpoint, professional-network smoke recipient, and iMessage/SMS smoke recipient.",
+    );
   });
 
   it("keeps the owner proof reply template customer-safe", () => {
     expect(DEARME_OWNER_PROOF_REPLY_TEMPLATE).toEqual([
       {
-        label: "Delivery route",
+        label: "Professional-network partner messages endpoint",
         value: "delivery-route link",
       },
       {
-        label: "Professional-network recipient",
+        label: "Professional-network smoke recipient",
         value: "selected recipient",
       },
       {
-        label: "Phone-message recipient",
+        label: "iMessage/SMS smoke recipient",
         value: "phone number or contact",
       },
     ]);
