@@ -165,6 +165,33 @@ test("DearMe next proof loads product handoff receipt files before setup", async
   }
 });
 
+test("DearMe next proof allows missing receipt files for no-write previews only", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-next-proof-missing-receipt-file-"));
+  try {
+    const noWriteArgs = parseDearMeNextProofArgs([
+      "--target=all",
+      "--no-write",
+      "--handoff-receipt-file",
+      "launch-proof-receipt.txt",
+    ]);
+
+    assert.deepEqual(await loadDearMeNextProofFactCaptures(noWriteArgs, dir), []);
+
+    const writeArgs = parseDearMeNextProofArgs([
+      "--target=all",
+      "--handoff-receipt-file",
+      "launch-proof-receipt.txt",
+    ]);
+
+    await assert.rejects(
+      () => loadDearMeNextProofFactCaptures(writeArgs, dir),
+      /ENOENT/,
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("DearMe next proof previews fact captures in no-write mode without touching env", async () => {
   const dir = await mkdtemp(join(tmpdir(), "dearme-next-proof-no-write-facts-"));
   const envPath = join(dir, ".dearme-proof.env");
