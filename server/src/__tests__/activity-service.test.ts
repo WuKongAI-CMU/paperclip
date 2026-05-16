@@ -77,7 +77,7 @@ describeEmbeddedPostgres("activity service", () => {
 
     await db.insert(companies).values({
       id: companyId,
-      name: "Paperclip",
+      name: "Acme",
       issuePrefix: `T${companyId.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
       requireBoardApprovalForNewAgents: false,
     });
@@ -115,6 +115,72 @@ describeEmbeddedPostgres("activity service", () => {
     const result = await activityService(db).list({ companyId, limit: 2 });
 
     expect(result.map((event) => event.action)).toEqual(["test.newest", "test.middle"]);
+  });
+
+  it("exports only the company's last 90 days of audit log rows", async () => {
+    const companyId = randomUUID();
+    const otherCompanyId = randomUUID();
+    const now = new Date("2026-05-16T12:00:00.000Z");
+
+    await db.insert(companies).values([
+      {
+        id: companyId,
+        name: "Acme",
+        issuePrefix: `T${companyId.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+        requireBoardApprovalForNewAgents: false,
+      },
+      {
+        id: otherCompanyId,
+        name: "Other Co",
+        issuePrefix: `T${otherCompanyId.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+        requireBoardApprovalForNewAgents: false,
+      },
+    ]);
+
+    await db.insert(activityLog).values([
+      {
+        companyId,
+        actorType: "system",
+        actorId: "system",
+        action: "test.old",
+        entityType: "company",
+        entityId: companyId,
+        createdAt: new Date("2026-02-15T11:59:59.000Z"),
+      },
+      {
+        companyId,
+        actorType: "system",
+        actorId: "system",
+        action: "test.boundary",
+        entityType: "company",
+        entityId: companyId,
+        createdAt: new Date("2026-02-15T12:00:00.000Z"),
+      },
+      {
+        companyId,
+        actorType: "system",
+        actorId: "system",
+        action: "test.recent",
+        entityType: "company",
+        entityId: companyId,
+        details: { trust: true },
+        createdAt: new Date("2026-05-16T11:00:00.000Z"),
+      },
+      {
+        companyId: otherCompanyId,
+        actorType: "system",
+        actorId: "system",
+        action: "test.other-company",
+        entityType: "company",
+        entityId: otherCompanyId,
+        createdAt: new Date("2026-05-16T11:30:00.000Z"),
+      },
+    ]);
+
+    const result = await activityService(db).exportCompanyAuditLog(companyId, now);
+
+    expect(result.map((event) => event.action)).toEqual(["test.recent", "test.boundary"]);
+    expect(result[0]?.details).toEqual({ trust: true });
   });
 
   it("returns compact usage and result summaries for issue runs", async () => {
