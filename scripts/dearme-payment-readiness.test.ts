@@ -29,6 +29,10 @@ test("DearMe payment readiness keeps private beta sellable without hosted checko
   ]);
   assert.match(formatted, /Sell private beta now: yes/);
   assert.match(formatted, /Claim self-serve checkout: no/);
+  assert.match(
+    formatted,
+    /DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)/,
+  );
   assert.match(formatted, /Receipt sync proof: ready/);
   assert.match(formatted, /Provider contract proof: ready/);
   assert.match(formatted, /raw-body webhook signature guarding/);
@@ -135,6 +139,10 @@ test("DearMe payment readiness generates a Peter-facing checkout support request
   assert.match(markdown, /DEARME_PAYMENT_LINK_URL/);
   assert.match(markdown, /DEARME_PAYMENT_RECEIPT_SYNC_SECRET/);
   assert.match(markdown, /STRIPE_WEBHOOK_SECRET/);
+  assert.match(
+    markdown,
+    /DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)/,
+  );
   assert.match(markdown, /Claim self-serve checkout: no/);
   assert.match(markdown, /pnpm --silent dearme:payment-readiness -- --print-env-template > \.dearme-payment\.env/);
   assert.match(markdown, /pnpm --silent dearme:payment-readiness -- --env-file \.dearme-payment\.env --check-hosted/);
