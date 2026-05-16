@@ -481,7 +481,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /Needs: shared message gateway endpoint; shared message gateway auth; Telegram smoke recipient; Telegram smoke body; iMessage smoke recipient/);
   assert.match(
     formatted,
-    /OpenClaw message smoke: blocked on telegram_message, imessage_message\..*Guarded live command after owner facts are present and the no-send check passes: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
+    /OpenClaw message smoke: blocked on telegram_message, imessage_message\..*Guarded live command after owner facts are present, the no-send check passes, and explicit live confirmation is set: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
   );
   assert.doesNotMatch(
     formatted,
@@ -490,7 +490,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /Next live provider proof setup:/);
   assert.match(
     formatted,
-    /Next live provider proof setup:[\s\S]*Guarded live command after owner facts are present and the no-send check passes: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
+    /Next live provider proof setup:[\s\S]*Guarded live command after owner facts are present, the no-send check passes, and explicit live confirmation is set: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
   );
   assert.match(formatted, /Owner proof checklist before public launch:/);
   assert.match(formatted, /Owner proof facts needed before public launch/);
@@ -523,6 +523,10 @@ test("DearMe proof status does not call the host blocked after production smoke 
       DEARME_DEPLOY_SITE_SMOKE_HANDLE: packet.handle,
       DEARME_DEPLOY_SITE_SMOKE_ARTIFACT_REF: packet.artifactRef,
       DEARME_DEPLOY_SITE_SMOKE_MANIFEST_REF: packet.manifestPath,
+      DEARME_META_CAMPAIGN_CREDENTIAL_JSON: JSON.stringify({
+        accessToken: "secret-token",
+        adAccountId: "act_123",
+      }),
     }));
     const formatted = formatDearMeProofStatus(status).join("\n");
     const live = status.sections.find((section) => section.key === "live_provider_proof");
@@ -534,6 +538,14 @@ test("DearMe proof status does not call the host blocked after production smoke 
     );
     assert.match(live?.description ?? "", /Production host proof is ready/);
     assert.match(formatted, /Production host smoke: ready/);
+    assert.match(
+      formatted,
+      /Meta campaign smoke: ready\..*Guarded live command after the no-send check passes and explicit live confirmation is set: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
+    );
+    assert.doesNotMatch(
+      formatted,
+      /Meta campaign smoke: ready\..*Guarded live command after the no-send check passes: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
+    );
     assert.doesNotMatch(formatted, /Requires the real production host/);
   } finally {
     await rm(dir, { force: true, recursive: true });
