@@ -365,9 +365,12 @@ function reviewLoopFixture(
     lastAction: null,
     lastDecisionAt: null,
     lastDecisionNotePreview: null,
+    defaultApprovalScore: null,
+    defaultedBySilence: false,
     nextStep,
     reviewHandoff: null,
     feedbackTrace: null,
+    voiceCalibration: null,
     ...overrides,
   };
 }
@@ -8521,6 +8524,66 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     expect(window.location.hash).toBe("#dearme-support-handoff");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("surfaces voice calibration when repeated rejected work needs more samples", async () => {
+    mockLocation.search = "?view=decisions&issue=PET-7&output=issue-1%3Aweekly_report&intent=blocked";
+    mockDearmeApi.getOutputs.mockResolvedValue(outputsResponse({
+      reviewLoop: reviewLoopFixture(
+        "retry_limit_reached",
+        "Open Voice & Memory, add the samples, then describe what did not sound like you before the next private pass.",
+        {
+          attemptCount: 3,
+          maxAttempts: 3,
+          isRetriable: false,
+          lastAction: "not_useful",
+          lastDecisionAt: "2026-05-07T14:05:00.000Z",
+          lastDecisionNotePreview: "This still does not sound like me.",
+          voiceCalibration: {
+            active: true,
+            sampleTarget: 5,
+            title: "Voice calibration needed",
+            prompt: "Add 5 more real writing samples so DearMe can recalibrate before preparing another private pass.",
+            clarificationPrompt:
+              "Add one note about what felt off in the rejected drafts: tone, pacing, specificity, confidence, or audience fit.",
+            nextAction:
+              "Open Voice & Memory, add the samples, then describe what did not sound like you before the next private pass.",
+          },
+        },
+      ),
+    }));
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const focusedWork = surfaceByLabel(container, "Focused work");
+    const stuckRecovery = surfaceByLabel(focusedWork, "Focused stuck work recovery");
+    expect(stuckRecovery.textContent).toContain("Voice calibration needed");
+    expect(stuckRecovery.textContent).toContain("Add 5 more real writing samples");
+    expect(stuckRecovery.textContent).toContain("what felt off");
+    expect(stuckRecovery.textContent).toContain("Open Voice & Memory");
+
+    await act(async () => {
+      buttonByText(stuckRecovery, "Open Voice & Memory")?.click();
+    });
+    await flushReact();
+
+    expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining("view=voice"));
+    expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining("#dearme-voice-memory"));
 
     await act(async () => {
       root.unmount();

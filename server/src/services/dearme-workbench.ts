@@ -618,6 +618,7 @@ function reviewLoopFromChiefBriefStatus(
     lastDecisionNotePreview: null,
     reviewHandoff: null,
     feedbackTrace: null,
+    voiceCalibration: null,
     nextStep,
   };
 }

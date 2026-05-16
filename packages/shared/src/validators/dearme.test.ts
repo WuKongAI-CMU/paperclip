@@ -48,6 +48,7 @@ function reviewLoop(overrides: Partial<DearMeOutputReviewLoop> = {}): DearMeOutp
     nextStep: "One launch-ready next step is ready: review the shared proof pack, then launch, request changes, or regenerate.",
     reviewHandoff: null,
     feedbackTrace: null,
+    voiceCalibration: null,
     ...overrides,
   };
 }

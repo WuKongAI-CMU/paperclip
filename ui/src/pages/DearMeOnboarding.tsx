@@ -4489,6 +4489,8 @@ function StuckWorkRecoveryCard({
 }) {
   if (!isReviewLoopStuck(loop)) return null;
 
+  const calibration = loop.voiceCalibration?.active ? loop.voiceCalibration : null;
+
   return (
     <div
       aria-label="Focused stuck work recovery"
@@ -4496,9 +4498,13 @@ function StuckWorkRecoveryCard({
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">This path is capped until direction improves.</p>
+          <p className="text-sm font-medium text-foreground">
+            {calibration ? calibration.title : "This path is capped until direction improves."}
+          </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Do not spend another blind pass. Add better Voice & Memory context, or hand support the account context before the next attempt.
+            {calibration
+              ? `${calibration.prompt} ${calibration.clarificationPrompt}`
+              : "Do not spend another blind pass. Add better Voice & Memory context, or hand support the account context before the next attempt."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
