@@ -155,6 +155,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DEA-20 / Chief pairing smoke** — Symphony closed the OpenClaw Chief pairing lane as no-code evidence: the current OpenClaw plugin manifest, 12 generated skills, 4 bootstrap files, required config, and outbound approval-gate bindings already prove the backstage pairing surface without adding customer-visible substrate language.
 - **DEA-21 / private site preview smoke** — the first-cycle proof package now carries a handle-safe `dearme.app/<handle>` private preview route through shared schema, server proof documents, apply/report artifacts, and onboarding UI while keeping public deploy behind the existing launch decision.
 - **DM-FOUNDER-DOGFOOD-PROOF** — approved founder dogfood post/site deliveries now write opt-in public proof receipts, `/proof` shows the founder feed with loading/empty/error states, and marketing surfaces link to the proof page without exposing hidden provider or substrate language.
+- **DM-DEPENDENCY-BUMP-PLAYWRIGHT** — `@playwright/test` now resolves to 1.60.0, Playwright-adjacent CI stayed green, and the screenshot helper no longer depends on a version-pinned pnpm store path.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)
