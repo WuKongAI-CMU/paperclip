@@ -138,7 +138,7 @@ export function formatDearMePaymentReadiness(readiness: DearMePaymentReadiness):
   lines.push(`- Status: ${readiness.status}`);
   lines.push(`- ${readiness.manualPaidBeta.label}: ready. ${readiness.manualPaidBeta.summary}`);
   const hostedBlockers = readiness.hostedCheckout.blockers.length > 0
-    ? ` Missing: ${readiness.hostedCheckout.blockers.join(" ")}`
+    ? ` Missing: ${readiness.hostedCheckout.blockers.map(formatHostedCheckoutBlocker).join(" ")}`
     : "";
   lines.push(
     `- ${readiness.hostedCheckout.label}: ${readiness.hostedCheckout.ready ? "ready" : "blocked"}. ${readiness.hostedCheckout.summary}${hostedBlockers}`,
@@ -167,7 +167,7 @@ export function formatDearMePaymentReadinessHumanHelp(
   const date = options.date ?? new Date().toISOString().slice(0, 10);
   const hostedStatus = readiness.hostedCheckout.ready ? "ready" : "blocked";
   const hostedBlockers = readiness.hostedCheckout.blockers.length > 0
-    ? readiness.hostedCheckout.blockers.join(" ")
+    ? readiness.hostedCheckout.blockers.map(formatHostedCheckoutBlocker).join(" ")
     : "none";
   const neededValues = readiness.hostedCheckout.ready
     ? ["- None. Keep the local payment proofs green before public checkout claims."]
@@ -231,6 +231,13 @@ export function formatDearMePaymentReadinessHumanHelp(
   ];
 
   return lines;
+}
+
+function formatHostedCheckoutBlocker(blocker: string): string {
+  const normalized = blocker.replace(/\.$/, "");
+  return normalized.includes(STRIPE_WEBHOOK_ENV)
+    ? `${normalized} (sensitive; value hidden).`
+    : `${normalized}.`;
 }
 
 export function dearMePaymentReadinessEnvTemplate(): string {
