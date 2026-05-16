@@ -164,6 +164,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-STANDING-LOOP-OWNER-PROOF-FACTS** — `pnpm dearme:standing-loop-audit -- --check` now carries the full owner-proof fact list from `dearme:goal-audit` while keeping the immediate OpenClaw message proof next action specific.
 - **DM-GOAL-AUDIT-FULL-OWNER-PROOF-FACTS** — `pnpm dearme:goal-audit -- --check` now prints the full public-launch owner-proof fact queue while keeping the immediate OpenClaw message proof next action specific.
 - **DM-GOAL-AUDIT-HOSTED-CHECKOUT-BLOCKERS** — `pnpm dearme:goal-audit -- --check` and `pnpm dearme:standing-loop-audit -- --check` now surface the hosted-checkout payment setup blockers for the first-$29 path alongside the public-launch proof facts, while keeping private-beta manual receipt sales marked operable.
+- **DM-STATUS-HOSTED-CHECKOUT-BLOCKERS** — `pnpm dearme:status` now prints the hosted-checkout payment setup blockers next to commercial readiness, so the default operator view names the first-payment facts still needed before self-serve checkout can be claimed.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)
