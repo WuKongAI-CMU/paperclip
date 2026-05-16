@@ -176,6 +176,7 @@ test("DearMe human support queue stays aligned with hosted checkout readiness", 
   assert.match(help, /DEARME_PAYMENT_LINK_URL/);
   assert.match(help, /DEARME_PAYMENT_RECEIPT_SYNC_SECRET/);
   assert.match(help, /STRIPE_WEBHOOK_SECRET/);
+  assert.match(help, /STRIPE_WEBHOOK_SECRET` is missing\s+\(sensitive; value hidden\)/);
   assert.match(help, /Payment link:/);
   assert.match(help, /Receipt sync configured:/);
   assert.match(help, /Provider label:/);

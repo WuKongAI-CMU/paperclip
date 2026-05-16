@@ -136,7 +136,8 @@ Current generated payment readiness:
 - Hosted checkout: blocked.
 - Claim self-serve checkout: no.
 - Blockers: `DEARME_PAYMENT_LINK_URL` is missing;
-  `DEARME_PAYMENT_RECEIPT_SYNC_SECRET` or `STRIPE_WEBHOOK_SECRET` is missing.
+  `DEARME_PAYMENT_RECEIPT_SYNC_SECRET` or `STRIPE_WEBHOOK_SECRET` is missing
+  (sensitive; value hidden).
 - No-spend guarantee: this handoff does not create checkout sessions, charge
   cards, call payment APIs, publish, deploy, or spend.
 
