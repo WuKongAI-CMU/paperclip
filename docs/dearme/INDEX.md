@@ -171,6 +171,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-HUMAN-HELP-PAYMENT-SECRET-REDACTION** — `docs/NEEDS_HUMAN_HELP.md` now marks hosted-checkout receipt/webhook-secret blockers as sensitive, and the payment-readiness drift test keeps the Peter-facing queue aligned.
 - **DM-HUMAN-HELP-PAYMENT-PLACEHOLDER-GUARD** — `docs/NEEDS_HUMAN_HELP.md` and generated payment-readiness support markdown now state placeholder setup values keep hosted checkout blocked and are not printed.
 - **DM-PAYMENT-READINESS-29-OFFER-HANDOFF** — `pnpm dearme:payment-readiness` and `docs/NEEDS_HUMAN_HELP.md` now explicitly ask for the live $29/month DearMe hosted checkout link before self-serve checkout can be claimed.
+- **DM-NEXT-PROOF-HUMAN-HELP-LIVE-LANES** — `pnpm dearme:next-proof -- --human-help-markdown` now regenerates the owner-proof queue with exact external proof env names, no-send-first wording, and separate guarded live commands for professional-network and OpenClaw message proof.
 - **Documentation lock** — `PRODUCT-ARCHITECTURE.md`, `TRI-SUBSTRATE-ARCHITECTURE.md` (the integration contract), `OPENCLAW-INTEGRATION-ARCHITECTURE.md`, `POLSIA-NAIVE-DEARME-CURRENT-GAP-AUDIT.md`, `REUSE-IMPLEMENTATION-LEDGER.md`, this `INDEX.md`.
 
 ### Next ticket (start here)

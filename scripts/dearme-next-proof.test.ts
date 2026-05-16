@@ -432,9 +432,9 @@ test("DearMe human support queue stays aligned with the generated owner proof ha
     for (const fact of DEARME_OWNER_PROOF_FACT_SPECS) {
       assert.match(help, new RegExp(fact.provideAs));
     }
-    for (const line of DEARME_OWNER_PROOF_REPLY_TEMPLATE) {
-      assert.match(help, new RegExp(`${line.label}:`));
-    }
+    assert.match(help, /Professional-network partner messages endpoint:/);
+    assert.match(help, /Professional-network smoke recipient:/);
+    assert.match(help, /iMessage\/SMS smoke recipient:/);
     assert.match(help, /Current generated proof handoff status:/);
     assert.match(help, /Captured details: none in the local proof setup\./);
     assert.match(help, /send, publish, deploy, or spend/);
@@ -444,8 +444,9 @@ test("DearMe human support queue stays aligned with the generated owner proof ha
     assert.match(help, new RegExp(escapeRegExp(setup.ownerHandoff.captureCommand)));
     assert.match(help, new RegExp(escapeRegExp(setup.ownerHandoff.handoffReceiptPreviewCommand)));
     assert.match(help, new RegExp(escapeRegExp(setup.ownerHandoff.handoffReceiptCommand)));
-    assert.match(help, new RegExp(escapeRegExp(setup.ownerHandoff.checkCommand)));
-    assert.match(help, new RegExp(escapeRegExp(setup.ownerHandoff.liveOrRunCommand)));
+    assert.match(help, /pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
+    assert.match(help, /--target linkedin_dm --live/);
+    assert.match(help, /--target openclaw_messages --live/);
     assert.doesNotMatch(help, /li-token|secret-token|meta-token/);
   } finally {
     await rm(dir, { recursive: true, force: true });
@@ -487,18 +488,19 @@ test("DearMe next proof generates the Peter-facing human support queue entry", a
     });
     const markdown = formatDearMeNextProofHumanHelp(setup, { date: "2026-05-14" }).join("\n");
 
-    assert.match(markdown, /^### 2026-05-14 - External live-proof recipients/);
-    assert.match(markdown, /Delivery route:/);
-    assert.match(markdown, /Professional-network recipient:/);
-    assert.match(markdown, /Phone-message recipient:/);
+    assert.match(markdown, /^### 2026-05-14 - External live-proof facts/);
+    assert.match(markdown, /Professional-network partner messages endpoint:/);
+    assert.match(markdown, /Professional-network smoke recipient:/);
+    assert.match(markdown, /iMessage\/SMS smoke recipient:/);
     for (const fact of DEARME_OWNER_PROOF_FACT_SPECS) {
       assert.match(markdown, new RegExp(fact.provideAs));
     }
-    assert.match(markdown, /Captured details: 0\/3\./);
+    assert.match(markdown, /Captured details: none in the local proof setup\./);
     assert.match(markdown, /No-send check: blocked\./);
     assert.match(markdown, new RegExp(escapeRegExp(setup.ownerHandoff.captureCommand ?? "")));
-    assert.match(markdown, new RegExp(escapeRegExp(setup.ownerHandoff.checkCommand)));
-    assert.match(markdown, new RegExp(escapeRegExp(setup.ownerHandoff.liveOrRunCommand)));
+    assert.match(markdown, /pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
+    assert.match(markdown, /--target linkedin_dm --live/);
+    assert.match(markdown, /--target openclaw_messages --live/);
     assert.match(markdown, /does not send, publish, deploy, or spend/);
     assert.doesNotMatch(markdown, /li-token|secret-token|meta-token/);
   } finally {

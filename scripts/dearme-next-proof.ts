@@ -20,7 +20,6 @@ import {
 } from "./dearme-release-gate.ts";
 import {
   DEARME_OWNER_PROOF_FACT_SPECS,
-  DEARME_OWNER_PROOF_REPLY_TEMPLATE,
   dearMeOwnerProofFactSpec,
 } from "../packages/shared/src/dearme-customer-text.ts";
 
@@ -702,26 +701,55 @@ export function formatDearMeNextProofHumanHelp(
 ): string[] {
   const date = options.date ?? new Date().toISOString().slice(0, 10);
   const facts = setup.ownerHandoff.factsToProvide;
-  const factLabel = (fact: DearMeNextProofOwnerFact) =>
-    dearMeOwnerProofFactSpec(fact.provideAs)?.label ?? fact.label;
+  const factSupportLabel = (provideAs: string) => {
+    if (provideAs === "DEARME_LINKEDIN_DM_MESSAGES_URL") {
+      return "professional-network partner messages endpoint";
+    }
+    if (provideAs === "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN") {
+      return "professional-network smoke recipient";
+    }
+    if (provideAs === "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT") {
+      return "iMessage/SMS smoke recipient";
+    }
+    const spec = dearMeOwnerProofFactSpec(provideAs);
+    return spec?.label ?? provideAs;
+  };
+  const factReplyLabel = (fact: DearMeNextProofOwnerFact) => {
+    const label = factSupportLabel(fact.provideAs);
+    if (label.startsWith("iMessage")) return label;
+    return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
+  };
+  const factNeededDescription = (fact: DearMeNextProofOwnerFact) => {
+    const label = factSupportLabel(fact.provideAs);
+    return `approved ${label}.`;
+  };
   const missingSummary = facts.length === 0
     ? "no approved live-proof details are missing"
-    : facts.map(factLabel).join(", ");
+    : `the owner-approved external proof details for the launch proof lanes: ${facts.map((fact) => `\`${fact.provideAs}\``).join(", ")}`;
   const blocking = facts.length === 0
     ? "no for internal product work, private-beta operations, or the next no-send check."
     : "no for internal product work or private-beta operations; yes before public launch or live external receipt proof can be claimed.";
   const continueAfter = facts.length === 0
     ? "running the no-send provider check, then guarded live proof only after explicit live confirmation."
     : "capturing the approved values, running the no-send provider check first, then running guarded live proof only after explicit live confirmation.";
+  const checkCommand = setup.target === "all"
+    ? `pnpm --silent dearme:provider-smoke -- --env-file ${setup.envFile} --check`
+    : setup.ownerHandoff.checkCommand;
+  const guardedLiveCommands = setup.target === "all"
+    ? [
+      `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file ${setup.envFile} --target linkedin_dm --live`,
+      `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file ${setup.envFile} --target openclaw_messages --live`,
+    ]
+    : [setup.ownerHandoff.liveOrRunCommand];
 
   const lines = [
-    `### ${date} - External live-proof recipients`,
+    `### ${date} - External live-proof facts`,
     "",
     "- Needs help from: Peter",
     `- What they need to do: provide ${missingSummary}.`,
-    "- Why agents cannot do it: these choices authorize real external delivery targets and channel details.",
+    "- Why agents cannot do it: these details require owner approval, external recipient choice, and account/provider access that agents must not invent or contact without explicit launch confirmation.",
     `- Blocking: ${blocking}`,
-    "- Estimated human time: 5-10 minutes once the desired test recipients are known.",
+    "- Estimated human time: 10-20 minutes once the partner endpoint and approved smoke recipients are known.",
     `- Agents continue after result by: ${continueAfter}`,
     "",
     "Needed values:",
@@ -732,7 +760,7 @@ export function formatDearMeNextProofHumanHelp(
     lines.push("- None. Run the no-send check before guarded live proof.");
   } else {
     for (const fact of facts) {
-      lines.push(`- \`${fact.provideAs}\`: ${factLabel(fact)}.`);
+      lines.push(`- \`${fact.provideAs}\`: ${factNeededDescription(fact)}`);
     }
   }
 
@@ -741,13 +769,24 @@ export function formatDearMeNextProofHumanHelp(
   lines.push("");
   lines.push(...markdownCodeBlock(
     "text",
-    DEARME_OWNER_PROOF_REPLY_TEMPLATE.map((line) => `${line.label}:`).join("\n"),
+    facts.length > 0
+      ? facts.map((fact) => `${factReplyLabel(fact)}:`).join("\n")
+      : DEARME_OWNER_PROOF_FACT_SPECS.map((fact) => `${factReplyLabel({
+        label: fact.label,
+        provideAs: fact.provideAs,
+        targets: [],
+        sensitive: fact.sensitive,
+        placeholder: fact.placeholder,
+        captureFlag: fact.captureFlag,
+      })}:`).join("\n"),
   ));
   lines.push("");
   lines.push("Current generated proof handoff status:");
   lines.push("");
   lines.push(`- Status: ${setup.ownerHandoff.status}.`);
-  lines.push(`- Captured details: ${setup.capturedFacts.length}/${DEARME_OWNER_PROOF_FACT_SPECS.length}.`);
+  lines.push(setup.capturedFacts.length === 0
+    ? "- Captured details: none in the local proof setup."
+    : `- Captured details: ${setup.capturedFacts.length}/${DEARME_OWNER_PROOF_FACT_SPECS.length}.`);
   lines.push(`- No-send check: ${setup.noSendCheck.status}.`);
   lines.push("- No-send guarantee: this handoff only prepares local proof setup; it does not send, publish, deploy, or spend.");
 
@@ -774,11 +813,13 @@ export function formatDearMeNextProofHumanHelp(
   lines.push("");
   lines.push("Required no-send check before any live delivery:");
   lines.push("");
-  lines.push(...markdownCodeBlock("bash", setup.ownerHandoff.checkCommand));
+  lines.push(...markdownCodeBlock("bash", checkCommand));
   lines.push("");
-  lines.push("Guarded live proof command only after explicit live confirmation:");
+  lines.push(guardedLiveCommands.length === 1
+    ? "Guarded live proof command only after explicit live confirmation:"
+    : "Guarded live proof commands only after explicit live confirmation:");
   lines.push("");
-  lines.push(...markdownCodeBlock("bash", setup.ownerHandoff.liveOrRunCommand));
+  lines.push(...markdownCodeBlock("bash", guardedLiveCommands.join("\n")));
   lines.push("");
   lines.push("Safety notes:");
   lines.push("");
