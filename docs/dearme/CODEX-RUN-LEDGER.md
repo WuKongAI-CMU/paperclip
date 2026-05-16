@@ -39,3 +39,4 @@
 2026-05-16 05:56  DM-DEPENDENCY-BUMP-PLAYWRIGHT  ef200167  PR #38  Standing  Playwright dependency bump merged; CI green; @playwright/test now resolves to 1.60.0, hardcoded screenshot helper path removed, and Playwright-adjacent checks passed.
 2026-05-16 06:10  DM-DOC-FRESHNESS-PLAYWRIGHT  ac282ac1  PR #39  Standing  INDEX shipped list now records the Playwright dependency bump; CI green; doc-freshness loop caught up after PR #38.
 2026-05-16 06:29  DM-GOAL-AUDIT-OWNER-HANDOFF  aead99a3  PR #40  Standing  Goal audit next action now surfaces owner fact handoff, item-specific capture setup, no-send check, and guarded live-proof commands when public launch is blocked on reserved proof facts; CI green.
+2026-05-16 06:45  DM-DOC-FRESHNESS-GOAL-AUDIT  903bf880  PR #41  Standing  INDEX shipped list now records the goal-audit owner handoff; CI green; doc-freshness loop caught up after PR #40.
