@@ -77,6 +77,28 @@ test("DearMe payment readiness rejects non-https payment links without leaking v
   assert.equal(formatted.includes("stripe_webhook_secret_value"), false);
 });
 
+test("DearMe payment readiness rejects placeholder checkout config without leaking values", () => {
+  const readiness = inspectDearMePaymentReadiness({
+    DEARME_PAYMENT_LINK_URL: "your_payment_link_here",
+    STRIPE_WEBHOOK_SECRET: "replace_me",
+  });
+  const formatted = formatDearMePaymentReadiness(readiness).join("\n");
+
+  assert.equal(readiness.status, "sellable-private-beta");
+  assert.equal(readiness.canClaimSelfServeCheckout, false);
+  assert.deepEqual(readiness.hostedCheckout.blockers, [
+    "DEARME_PAYMENT_LINK_URL still contains a placeholder value.",
+    "DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET still contains a placeholder value.",
+  ]);
+  assert.match(formatted, /DEARME_PAYMENT_LINK_URL still contains a placeholder value/);
+  assert.match(
+    formatted,
+    /DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET still contains a placeholder value \(sensitive; value hidden\)/,
+  );
+  assert.equal(formatted.includes("your_payment_link_here"), false);
+  assert.equal(formatted.includes("replace_me"), false);
+});
+
 test("DearMe payment readiness parses args and env files", async () => {
   const tempDir = await mkdtemp(join(tmpdir(), "dearme-payment-"));
   try {
