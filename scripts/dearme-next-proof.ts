@@ -724,6 +724,10 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
   lines.push("");
   lines.push("Next commands:");
   lines.push(`- ${setup.commands.check}`);
+  lines.push("");
+  lines.push(setup.noSendCheck.status === "blocked"
+    ? "Guarded live commands after blocked facts are captured and the no-send check passes:"
+    : "Guarded live commands after the no-send check passes:");
   for (const command of setup.commands.liveOrRunCommands) {
     lines.push(`- ${command}`);
   }

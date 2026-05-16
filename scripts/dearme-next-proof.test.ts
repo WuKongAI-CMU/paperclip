@@ -352,6 +352,14 @@ test("DearMe next proof summarizes OpenClaw lanes when only phone proof is waiti
     assert.match(output, /No-send check result:/);
     assert.match(output, /status: blocked/);
     assert.match(output, /imessage_message: waiting on iMessage\/SMS approved smoke recipient/);
+    assert.match(
+      output,
+      /Guarded live commands after blocked facts are captured and the no-send check passes:/,
+    );
+    assert.doesNotMatch(
+      output,
+      /Next commands:\n- pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check --target openclaw_messages\n- DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
+    );
     assert.doesNotMatch(output, /secret-token/);
     assert.doesNotMatch(JSON.stringify(setup.ownerHandoff), /secret-token/);
   } finally {
@@ -625,6 +633,7 @@ test("DearMe next proof captures product handoff receipt facts without printing 
   const envPath = join(dir, ".dearme-proof.env");
   try {
     await writeFile(envPath, [
+      "DEARME_DEPLOY_SITE_ALLOW_PRODUCTION=1",
       "DEARME_LINKEDIN_DM_CREDENTIAL_JSON={\"provider\":\"linkedin_partner\",\"accessToken\":\"li-token\",\"capabilities\":[\"send_dm\"]}",
       "DEARME_LINKEDIN_DM_MESSAGES_URL=",
       "DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN=",
@@ -686,6 +695,10 @@ test("DearMe next proof captures product handoff receipt facts without printing 
     ]);
     assert.match(output, /--target linkedin_dm --live/);
     assert.match(output, /--target openclaw_messages --live/);
+    assert.match(
+      output,
+      /Guarded live commands after the no-send check passes:/,
+    );
     assert.doesNotMatch(output, /--target all --live/);
     assert.doesNotMatch(output, /--target meta_campaign --live/);
     assert.doesNotMatch(output, /partner\.example\.test/);
