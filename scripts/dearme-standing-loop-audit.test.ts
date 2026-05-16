@@ -53,6 +53,11 @@ function goalAudit(overrides: Partial<DearMeGoalAudit> = {}): DearMeGoalAudit {
     verdict: "DearMe active goal completion audit",
     promptToArtifactChecklist: [],
     items: [],
+    ownerProofFactsNeeded: [
+      "LinkedIn partner messages endpoint: provide DEARME_LINKEDIN_DM_MESSAGES_URL",
+      "LinkedIn approved smoke recipient: provide DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
+      "iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+    ],
     nextAction: {
       label: "OpenClaw shared Telegram/iMessage message proof",
       reason: "Blocked by imessage_message.",
@@ -75,9 +80,15 @@ test("treats owner-blocked goal state as clear for autonomous standing loop", ()
   assert.equal(audit.state, "owner-blocked");
   assert.equal(audit.checkClear, true);
   assert.deepEqual(audit.nextAction.ownerFacts, [
+    "LinkedIn partner messages endpoint: provide DEARME_LINKEDIN_DM_MESSAGES_URL",
+    "LinkedIn approved smoke recipient: provide DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN",
     "iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
   ]);
-  assert.match(formatDearMeStandingLoopAudit(audit).join("\n"), /Owner facts needed/);
+  const formatted = formatDearMeStandingLoopAudit(audit).join("\n");
+  assert.match(formatted, /Owner facts needed/);
+  assert.match(formatted, /DEARME_LINKEDIN_DM_MESSAGES_URL/);
+  assert.match(formatted, /DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN/);
+  assert.match(formatted, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
 });
 
 test("prioritizes missing backlog ledger entries before dependency or goal work", () => {
@@ -160,6 +171,7 @@ test("surfaces code-owned goal regressions when owner facts are not the blocker"
         reason: "The first-wow proof is blocked.",
         command: "pnpm --silent dearme:aha-proof -- --check",
       },
+      ownerProofFactsNeeded: [],
     }),
   );
 

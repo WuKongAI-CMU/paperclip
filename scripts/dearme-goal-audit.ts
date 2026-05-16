@@ -94,6 +94,7 @@ export interface DearMeGoalAudit {
   verdict: string;
   promptToArtifactChecklist: DearMeGoalAuditPromptChecklistItem[];
   items: DearMeGoalAuditItem[];
+  ownerProofFactsNeeded: string[];
   nextAction: DearMeGoalAuditNextAction;
 }
 
@@ -994,6 +995,7 @@ export function summarizeDearMeGoalAudit(
   );
   const promptChecklist = promptToArtifactChecklist(items);
   const complete = !incompleteItem;
+  const ownerProofFactsNeeded = status.ownerProofChecklist.factsNeeded.map(ownerFactLine);
   return {
     complete,
     verdict: complete
@@ -1001,6 +1003,7 @@ export function summarizeDearMeGoalAudit(
       : `Goal audit: not complete. ${incompleteItem?.label ?? "A required item"} is still ${incompleteItem?.status ?? "unverified"}.`,
     promptToArtifactChecklist: promptChecklist,
     items,
+    ownerProofFactsNeeded,
     nextAction: incompleteItem
       ? {
         label: incompleteItem.label,
