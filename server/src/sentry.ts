@@ -3,18 +3,7 @@ import type { Event, NodeClient } from "@sentry/node";
 import type { Request } from "express";
 import { redactLogValue } from "./middleware/logger.js";
 
-type SentryEnv = Partial<Pick<
-  NodeJS.ProcessEnv,
-  | "DEARME_SENTRY_DSN"
-  | "SENTRY_DSN"
-  | "DEARME_SENTRY_ENABLED"
-  | "DEARME_SENTRY_ENVIRONMENT"
-  | "NODE_ENV"
-  | "DEARME_SENTRY_RELEASE"
-  | "SENTRY_RELEASE"
-  | "GITHUB_SHA"
-  | "DEARME_SENTRY_TRACES_SAMPLE_RATE"
->>;
+type SentryEnv = Record<string, string | undefined>;
 
 export type DearMeSentryServerConfig = {
   enabled: boolean;

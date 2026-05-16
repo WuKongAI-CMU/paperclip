@@ -87,6 +87,30 @@ psql $DATABASE_URL_DIRECT -c "SELECT tag FROM drizzle.__drizzle_migrations ORDER
 # Expected: 0086_dearme_public_feed
 ```
 
+### Database backups
+
+Configure `scripts/dearme-db-backup.sh` on the same runtime that has `pg_dump` and the AWS CLI installed. The script writes a custom-format dump to a timestamped local file, uploads it to S3-compatible storage, and removes the local copy by default. Logs include the target URI and local path only; they do not print the database URL or storage secret.
+
+Required env:
+
+```bash
+DATABASE_URL=postgres://...
+DEARME_DB_BACKUP_BUCKET=dearme-prod-db-backups
+DEARME_DB_BACKUP_PREFIX=prod/postgres
+DEARME_DB_BACKUP_ENDPOINT_URL=https://<account-id>.r2.cloudflarestorage.com
+DEARME_DB_BACKUP_REGION=auto
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+```
+
+Cron example:
+
+```cron
+17 * * * * cd /workspace/dearme && /usr/bin/env bash scripts/dearme-db-backup.sh >> /var/log/dearme-db-backup.log 2>&1
+```
+
+Set `DEARME_DB_BACKUP_KEEP_LOCAL=1` only for a one-off restore drill. For Backblaze B2, use `DEARME_DB_BACKUP_ENDPOINT_URL=https://s3.<region>.backblazeb2.com` and set `DEARME_DB_BACKUP_REGION` to that region.
+
 ---
 
 ## Day 3 — Provider credentials
