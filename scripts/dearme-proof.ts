@@ -1570,6 +1570,12 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
     lines.push(`- ${commercial.summary}`);
     lines.push(`- Sell private beta: ${commercial.canSellPrivateBeta ? "yes" : "no"}`);
     lines.push(`- Operate paid users: ${commercial.canOperatePaidUsers ? "yes" : "no"}`);
+    if (commercial.hostedCheckoutFactsNeeded.length > 0) {
+      lines.push("- First-payment checkout facts needed:");
+      for (const fact of commercial.hostedCheckoutFactsNeeded) {
+        lines.push(`  - ${fact}`);
+      }
+    }
     if (commercial.cannotClaimPublicLaunchUntil.length > 0) {
       lines.push("- Public launch still waits for:");
       for (const gap of commercial.cannotClaimPublicLaunchUntil) {

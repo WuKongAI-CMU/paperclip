@@ -444,6 +444,9 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /sellable-private-beta: Private beta is sellable and operable/);
   assert.match(formatted, /Sell private beta: yes/);
   assert.match(formatted, /Operate paid users: yes/);
+  assert.match(formatted, /First-payment checkout facts needed:/);
+  assert.match(formatted, /DEARME_PAYMENT_LINK_URL is missing/);
+  assert.match(formatted, /DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing/);
   assert.match(formatted, /Paid beta access: ready\. Paid-loop proof shows a recorded receipt activates access and unblocks first-cycle work/);
   assert.match(formatted, /Payment path proof: ready\. Keep selling private beta through recorded receipts/);
   assert.match(formatted, /dearme:payment-readiness/);
