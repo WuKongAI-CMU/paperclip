@@ -502,7 +502,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /If preview passes, import the product handoff receipt: pnpm --silent dearme:next-proof -- --target all --handoff-receipt-file <launch-proof-handoff-receipt\.txt>/);
   assert.match(formatted, /OpenClaw gateway URL: provide OPENCLAW_GATEWAY_URL or DEARME_USE_LOCAL_OPENCLAW_CONFIG=1/);
   assert.match(formatted, /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
-  assert.match(formatted, /Guarded live proof:/);
+  assert.match(formatted, /Guarded live proof after owner facts are present and the no-send check passes:/);
   assert.match(formatted, /--target openclaw_messages --live/);
   assert.match(formatted, /pnpm --silent dearme:proof -- --run-safe/);
   assert.doesNotMatch(formatted, /accessToken|secret-token/);
