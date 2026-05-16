@@ -33,6 +33,7 @@ export interface DearMeStandingLoopAudit {
     reason: string;
     command?: string;
     ownerFacts?: string[];
+    hostedCheckoutFacts?: string[];
   };
 }
 
@@ -52,6 +53,7 @@ const DEFAULT_LEDGER_PATH = "docs/dearme/CODEX-RUN-LEDGER.md";
 function ownerBlocked(goal: DearMeGoalAudit): boolean {
   return !goal.complete && (
     goal.ownerProofFactsNeeded.length > 0 ||
+    goal.hostedCheckoutFactsNeeded.length > 0 ||
     (goal.nextAction.ownerFacts?.length ?? 0) > 0
   );
 }
@@ -125,6 +127,7 @@ export function summarizeDearMeStandingLoopAudit(
         reason: goal.nextAction.reason,
         command: goal.nextAction.command,
         ownerFacts: ownerFactsForStandingLoop(goal),
+        hostedCheckoutFacts: goal.hostedCheckoutFactsNeeded,
       },
     };
   }
@@ -157,6 +160,12 @@ export function formatDearMeStandingLoopAudit(audit: DearMeStandingLoopAudit): s
   if (audit.nextAction.ownerFacts?.length) {
     lines.push("- Owner facts needed:");
     for (const fact of audit.nextAction.ownerFacts) {
+      lines.push(`  - ${fact}`);
+    }
+  }
+  if (audit.nextAction.hostedCheckoutFacts?.length) {
+    lines.push("- First-payment checkout facts needed:");
+    for (const fact of audit.nextAction.hostedCheckoutFacts) {
       lines.push(`  - ${fact}`);
     }
   }
