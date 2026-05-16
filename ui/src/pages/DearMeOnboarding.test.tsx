@@ -122,6 +122,8 @@ class FakeDearMeEventSource {
   static instances: FakeDearMeEventSource[] = [];
 
   readonly listeners = new Map<string, Set<EventListener>>();
+  onopen: ((event: Event) => void) | null = null;
+  onerror: ((event: Event) => void) | null = null;
   close = vi.fn();
 
   constructor() {
@@ -141,6 +143,14 @@ class FakeDearMeEventSource {
   emit(type: string, payload: unknown) {
     const event = new MessageEvent(type, { data: JSON.stringify(payload) });
     this.listeners.get(type)?.forEach((listener) => listener(event));
+  }
+
+  open() {
+    this.onopen?.(new Event("open"));
+  }
+
+  fail() {
+    this.onerror?.(new Event("error"));
   }
 }
 
@@ -6428,6 +6438,58 @@ describe("DearMeOnboarding", () => {
       root.unmount();
     });
     expect(stream?.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("reconnects the DearMe event stream after a dropped connection", async () => {
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const firstStream = FakeDearMeEventSource.instances[0];
+    expect(firstStream).toBeDefined();
+
+    await act(async () => {
+      firstStream?.fail();
+      await new Promise((resolve) => window.setTimeout(resolve, 300));
+    });
+    await flushReact();
+
+    expect(firstStream?.close).toHaveBeenCalledTimes(1);
+    expect(mockDearmeApi.openWorkbenchEvents).toHaveBeenCalledTimes(2);
+    const reconnectedStream = FakeDearMeEventSource.instances[1];
+    expect(reconnectedStream).toBeDefined();
+
+    const liveWorkbench = workbenchResponse();
+    liveWorkbench.headline = "Dear me, your team reconnected";
+    liveWorkbench.summary = "The private work stream recovered after a dropped connection.";
+
+    await act(async () => {
+      reconnectedStream?.emit("sync", {
+        type: "sync",
+        emittedAt: "2026-05-09T12:03:00.000Z",
+        scope: { companyId: "company-1" },
+        payload: { workbench: liveWorkbench },
+      });
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Dear me, your team reconnected");
+
+    await act(async () => {
+      root.unmount();
+    });
+    expect(reconnectedStream?.close).toHaveBeenCalledTimes(1);
   });
 
   it("refreshes the team workbench when execution lifecycle events arrive", async () => {

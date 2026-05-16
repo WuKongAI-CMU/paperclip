@@ -1040,6 +1040,8 @@ function isReviewLoopStuck(loop: DearMeOutputReviewLoop | null | undefined) {
 
 const REVIEW_LOOP_STUCK_DISABLED_REASON =
   "This path is capped. Add Voice & Memory context or use the support handoff before another pass.";
+const DEARME_WORKBENCH_STREAM_RECONNECT_BASE_MS = 250;
+const DEARME_WORKBENCH_STREAM_RECONNECT_MAX_MS = 5_000;
 
 function reviewLoopAttention(loop: DearMeOutputReviewLoop | null | undefined): DearMeActionCardAttention | null {
   if (!loop) return null;
@@ -10899,8 +10901,11 @@ function TeamWorkbenchPanel({
   });
   useEffect(() => {
     const workbenchKey = queryKeys.dearme.workbench(companyId);
-    const stream = dearmeApi.openWorkbenchEvents(companyId);
     let refreshTimer: number | null = null;
+    let reconnectTimer: number | null = null;
+    let reconnectAttempt = 0;
+    let isDisposed = false;
+    let stream: EventSource | null = null;
 
     const handleSync: EventListener = (event) => {
       const nextWorkbench = parseDearMeWorkbenchSyncEvent(event);
@@ -10918,21 +10923,57 @@ function TeamWorkbenchPanel({
       const pulse = parseDearMeLiveTeamPulseEvent(event);
       if (pulse) setLivePulse(pulse);
     };
+    const detachStream = (target: EventSource | null) => {
+      if (!target) return;
+      target.removeEventListener("sync", handleSync);
+      dearmeWorkbenchRefreshEventTypes.forEach((eventType) => {
+        target.removeEventListener(eventType, scheduleWorkbenchRefresh);
+        target.removeEventListener(eventType, handleLivePulse);
+      });
+      target.onopen = null;
+      target.onerror = null;
+      target.close();
+    };
+    const scheduleReconnect = () => {
+      if (isDisposed || reconnectTimer !== null) return;
+      const delay = Math.min(
+        DEARME_WORKBENCH_STREAM_RECONNECT_BASE_MS * (2 ** reconnectAttempt),
+        DEARME_WORKBENCH_STREAM_RECONNECT_MAX_MS,
+      );
+      reconnectAttempt += 1;
+      reconnectTimer = window.setTimeout(() => {
+        reconnectTimer = null;
+        openStream();
+      }, delay);
+    };
+    const handleStreamError = () => {
+      if (isDisposed) return;
+      detachStream(stream);
+      stream = null;
+      scheduleReconnect();
+    };
+    const openStream = () => {
+      if (isDisposed) return;
+      const nextStream = dearmeApi.openWorkbenchEvents(companyId);
+      stream = nextStream;
+      nextStream.onopen = () => {
+        reconnectAttempt = 0;
+      };
+      nextStream.onerror = handleStreamError;
+      nextStream.addEventListener("sync", handleSync);
+      dearmeWorkbenchRefreshEventTypes.forEach((eventType) => {
+        nextStream.addEventListener(eventType, scheduleWorkbenchRefresh);
+        nextStream.addEventListener(eventType, handleLivePulse);
+      });
+    };
 
-    stream.addEventListener("sync", handleSync);
-    dearmeWorkbenchRefreshEventTypes.forEach((eventType) => {
-      stream.addEventListener(eventType, scheduleWorkbenchRefresh);
-      stream.addEventListener(eventType, handleLivePulse);
-    });
+    openStream();
 
     return () => {
-      stream.removeEventListener("sync", handleSync);
-      dearmeWorkbenchRefreshEventTypes.forEach((eventType) => {
-        stream.removeEventListener(eventType, scheduleWorkbenchRefresh);
-        stream.removeEventListener(eventType, handleLivePulse);
-      });
+      isDisposed = true;
+      if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
       if (refreshTimer !== null) window.clearTimeout(refreshTimer);
-      stream.close();
+      detachStream(stream);
     };
   }, [companyId, queryClient]);
   const chiefOfStaffMutation = useMutation({
