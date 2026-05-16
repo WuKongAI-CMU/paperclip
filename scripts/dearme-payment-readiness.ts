@@ -264,6 +264,7 @@ export function formatDearMePaymentReadinessHumanHelp(
     "",
     "- This handoff does not create checkout sessions, charge cards, call payment APIs, publish, deploy, or spend.",
     "- Payment secrets must stay in local/server environment configuration, not in chat, docs, screenshots, or customer-facing copy.",
+    "- Placeholder setup values are treated as blocked configuration and are not printed by the readiness check.",
     "- Manual private-beta receipt recording remains the sellable path until hosted checkout is fully configured.",
   ];
 

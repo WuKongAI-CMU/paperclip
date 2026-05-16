@@ -171,6 +171,7 @@ test("DearMe payment readiness generates a Peter-facing checkout support request
   assert.match(markdown, /dearme:payment-receipt-sync-proof/);
   assert.match(markdown, /dearme:payment-provider-contract-proof/);
   assert.match(markdown, /does not create checkout sessions, charge cards, call payment APIs/);
+  assert.match(markdown, /Placeholder setup values are treated as blocked configuration/);
 });
 
 test("DearMe payment readiness support request does not leak configured payment values", () => {
@@ -207,5 +208,6 @@ test("DearMe human support queue stays aligned with hosted checkout readiness", 
   assert.match(help, /pnpm --silent dearme:payment-receipt-sync-proof -- --check/);
   assert.match(help, /pnpm --silent dearme:payment-provider-contract-proof -- --check/);
   assert.match(help, /does not create checkout sessions, charge\s+cards, call payment APIs/);
+  assert.match(help, /Placeholder setup values are treated as blocked configuration/);
   assert.doesNotMatch(help, /whsec_[A-Za-z0-9_]+/);
 });
