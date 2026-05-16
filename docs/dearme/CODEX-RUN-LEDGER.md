@@ -80,3 +80,4 @@
 2026-05-16 18:06  DM-NEXT-PROOF-HUMAN-HELP-LIVE-COMMAND-GUARD  48f091ae  PR #79  Standing  Next-proof human-help markdown now labels guarded live proof commands as available only after owner facts are present, the no-send check passes, and explicit live confirmation is set; CI green.
 2026-05-16 18:23  DM-PROOF-FOCUS-LIVE-COMMAND-GUARD  356109ce  PR #80  Standing  DearMe proof live-focus/setup commands now use the same owner-facts-plus-no-send wording for guarded live proof; CI green.
 2026-05-16 18:38  DM-NEXT-PROOF-OWNER-FACTS-LIVE-COMMAND-LABEL  322f1914  PR #81  Standing  Next-proof blocked guarded live command sections now use owner-facts-plus-no-send wording to match the rest of the live-proof guard language; CI green.
+2026-05-16 18:54  DM-RELEASE-GATE-OWNER-FACTS-LIVE-LABEL  c1fdab63  PR #82  Standing  Release gate blocked guarded live proof sections now use owner-facts-plus-no-send wording to match the rest of the live-proof guard language; CI green.
