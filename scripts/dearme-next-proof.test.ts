@@ -534,6 +534,14 @@ test("DearMe next proof generates the Peter-facing human support queue entry", a
     assert.match(markdown, /No-send check: blocked\./);
     assert.match(markdown, new RegExp(escapeRegExp(setup.ownerHandoff.captureCommand ?? "")));
     assert.match(markdown, /pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
+    assert.match(
+      markdown,
+      /Guarded live proof commands after owner facts are present, the no-send check passes, and explicit live confirmation is set:/,
+    );
+    assert.match(
+      markdown,
+      /Agents continue after result by: capturing the approved values, running the no-send provider check first, then running guarded live proof only after owner facts are present, the no-send check passes, and explicit live confirmation is set\./,
+    );
     assert.match(markdown, /--target linkedin_dm --live/);
     assert.match(markdown, /--target openclaw_messages --live/);
     assert.match(markdown, /does not send, publish, deploy, or spend/);

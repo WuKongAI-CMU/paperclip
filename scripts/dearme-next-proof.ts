@@ -773,8 +773,8 @@ export function formatDearMeNextProofHumanHelp(
     ? "no for internal product work, private-beta operations, or the next no-send check."
     : "no for internal product work or private-beta operations; yes before public launch or live external receipt proof can be claimed.";
   const continueAfter = facts.length === 0
-    ? "running the no-send provider check, then guarded live proof only after explicit live confirmation."
-    : "capturing the approved values, running the no-send provider check first, then running guarded live proof only after explicit live confirmation.";
+    ? "running the no-send provider check, then guarded live proof only after the no-send check passes and explicit live confirmation is set."
+    : "capturing the approved values, running the no-send provider check first, then running guarded live proof only after owner facts are present, the no-send check passes, and explicit live confirmation is set.";
   const checkCommand = setup.target === "all"
     ? `pnpm --silent dearme:provider-smoke -- --env-file ${setup.envFile} --check`
     : setup.ownerHandoff.checkCommand;
@@ -859,8 +859,8 @@ export function formatDearMeNextProofHumanHelp(
   lines.push(...markdownCodeBlock("bash", checkCommand));
   lines.push("");
   lines.push(guardedLiveCommands.length === 1
-    ? "Guarded live proof command only after explicit live confirmation:"
-    : "Guarded live proof commands only after explicit live confirmation:");
+    ? "Guarded live proof command after owner facts are present, the no-send check passes, and explicit live confirmation is set:"
+    : "Guarded live proof commands after owner facts are present, the no-send check passes, and explicit live confirmation is set:");
   lines.push("");
   lines.push(...markdownCodeBlock("bash", guardedLiveCommands.join("\n")));
   lines.push("");
