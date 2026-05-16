@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import { Router, type ErrorRequestHandler, type Response } from "express";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z, ZodError } from "zod";
@@ -32,6 +32,7 @@ import { validate } from "../middleware/validate.js";
 import {
   agentService,
   dearMeApprovalResolverService,
+  dearMeOpportunityReplyIngestService,
   dearmeBrandBlueprintService,
   dearmeMemoryContextService,
   dearmeOutputHandoffService,
@@ -46,6 +47,7 @@ import {
   DearMeStripeCheckoutError,
 } from "../services/dearme-stripe-checkout.js";
 import { handleInboundWebhook as handleDearMeSupportInboundWebhook } from "../services/dearme-support.js";
+import { dearMeOpportunityReplyWebhookSchema } from "../services/dearme-opportunity-reply-ingest.js";
 import { dearMePublicFeedService } from "../services/dearme-public-feed.js";
 import {
   getDearMeSseBus,
@@ -130,6 +132,13 @@ const dearMeGdprDeleteRequestSchema = z.object({
 const dearMePublicFeedOptRequestSchema = z.object({
   companyId: z.string().trim().uuid(),
 });
+
+function secureHeaderEquals(actual: string | undefined, expected: string) {
+  if (!actual) return false;
+  const actualBuffer = Buffer.from(actual);
+  const expectedBuffer = Buffer.from(expected);
+  return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
+}
 const CHIEF_OF_STAFF_INTENT_LABELS: Record<DearMeChiefOfStaffMessageIntent, string> = {
   plan_next: "Plan next moves",
   draft_content: "Draft content",
@@ -414,6 +423,7 @@ export function dearmeRoutes(
       : undefined,
   });
   const publicFeed = dearMePublicFeedService(db);
+  const opportunityReplies = dearMeOpportunityReplyIngestService(db);
   const workbench = dearmeWorkbenchService(db, {
     voiceProfileStore: options.voiceProfileStore,
     voiceSemanticScorer: options.voiceSemanticScorer,
@@ -1404,6 +1414,25 @@ export function dearmeRoutes(
       );
 
       res.status(200).json({ received: true });
+    },
+  );
+
+  router.post(
+    "/opportunity-replies/webhook",
+    async (req, res) => {
+      const webhookSecret = configuredEnvValue("DEARME_OPPORTUNITY_REPLY_WEBHOOK_SECRET");
+      if (!webhookSecret) {
+        throw new HttpError(503, "DearMe opportunity reply webhook is not configured.");
+      }
+      const providedSecret =
+        req.header("x-dearme-opportunity-reply-secret") ?? req.header("x-dearme-webhook-secret");
+      if (!secureHeaderEquals(providedSecret, webhookSecret)) {
+        throw new HttpError(401, "Invalid DearMe opportunity reply webhook secret.");
+      }
+
+      const payload = dearMeOpportunityReplyWebhookSchema.parse(req.body);
+      const result = await opportunityReplies.ingest(payload);
+      res.status(200).json({ received: true, ...result });
     },
   );
 

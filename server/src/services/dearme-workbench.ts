@@ -6,6 +6,7 @@ import {
   approvals,
   costEvents,
   issues,
+  opportunities,
   routineRuns,
   routines,
 } from "@paperclipai/db";
@@ -49,6 +50,7 @@ import {
   DEARME_NEXT_MOVE_DELIVERY_ACTIVITY,
   DEARME_PRIVATE_EXECUTION_HANDOFF_ACTIVITY,
 } from "./dearme-approval-receipts.js";
+import { DEARME_OPPORTUNITY_REPLY_RECEIVED_ACTION } from "./dearme-opportunity-reply-ingest.js";
 
 type DearMeTeamRole = DearMeWorkbenchTeamMember["role"];
 type DearMeRiskGate = DearMeWorkbenchDecision["riskGate"];
@@ -792,6 +794,9 @@ function nextActionForDecision(decision: DearMeWorkbenchDecision) {
   if (decision.kind === "approve_brand_os") {
     return "Start the private team when the first cycle and launch boundaries match how you want to be represented.";
   }
+  if (decision.outputKind === "opportunity_drafts" && !decision.outputId) {
+    return "Review the inbound reply and choose the next private follow-up. Sending a response still waits for your approval.";
+  }
   if (decisionHasCyclePacketEvidence(decision)) {
     return SHARED_LAUNCH_READY_NEXT_STEP;
   }
@@ -801,6 +806,7 @@ function nextActionForDecision(decision: DearMeWorkbenchDecision) {
 
 function sourceLabelForDecision(decision: DearMeWorkbenchDecision) {
   if (decision.approvalId) return "Launch call";
+  if (decision.outputKind === "opportunity_drafts" && !decision.outputId) return "Inbound reply";
   if (decisionHasCyclePacketEvidence(decision)) return "Private cycle packet";
   return "Prepared output";
 }
@@ -1908,6 +1914,49 @@ function decisionFromApproval(input: {
   };
 }
 
+function decisionFromOpportunityReply(input: {
+  activityId: string;
+  details: Record<string, unknown>;
+  opportunity: {
+    id: string;
+    title: string;
+    issueId: string | null;
+    state: string;
+  };
+  updatedAt: Date;
+}): DearMeWorkbenchDecision | null {
+  if (input.opportunity.state !== "replied") return null;
+
+  const replyPreview = optionalPayloadString(input.details.replyPreview);
+  const senderName = optionalPayloadString(input.details.senderName);
+  const title = senderName
+    ? `Review reply from ${senderName}`
+    : `Review reply for ${input.opportunity.title}`;
+  const summary = replyPreview
+    ? `Inbound reply captured for ${input.opportunity.title}: ${previewText(replyPreview, 360)}`
+    : `Inbound reply captured for ${input.opportunity.title}. Review it before the team prepares a follow-up.`;
+
+  return {
+    id: `opportunity-reply:${input.activityId}`,
+    kind: "review_output",
+    title: dearMeWorkbenchProjectionTitle(title, "Review opportunity reply"),
+    summary: dearMeWorkbenchProjectionText(
+      summary,
+      "An inbound opportunity reply needs review before the team prepares the next follow-up.",
+      700,
+    ),
+    riskGate: "send_email",
+    status: "needed",
+    outputKind: "opportunity_drafts",
+    outputId: null,
+    approvalId: null,
+    issueId: input.opportunity.issueId,
+    issueIdentifier: null,
+    updatedAt: toIso(input.updatedAt),
+    reviewLoop: null,
+  };
+}
+
 function batchKeyForDecision(decision: DearMeWorkbenchDecision): DearMeBatchKey {
   return decision.riskGate ?? "review";
 }
@@ -2275,6 +2324,7 @@ export function dearmeWorkbenchService(
         approvedNextMoveReceiptRows,
         memoryRows,
         chiefBriefRows,
+        opportunityReplyActivityRows,
       ] = await Promise.all([
         db
           .select({
@@ -2350,6 +2400,19 @@ export function dearmeWorkbenchService(
           ))
           .orderBy(desc(issues.updatedAt))
           .limit(12),
+        db
+          .select({
+            id: activityLog.id,
+            details: activityLog.details,
+            createdAt: activityLog.createdAt,
+          })
+          .from(activityLog)
+          .where(and(
+            eq(activityLog.companyId, companyId),
+            eq(activityLog.action, DEARME_OPPORTUNITY_REPLY_RECEIVED_ACTION),
+          ))
+          .orderBy(desc(activityLog.createdAt))
+          .limit(25),
       ]);
 
       const teamByRole = new Map<DearMeTeamRole, DearMeWorkbenchTeamMember>();
@@ -2421,6 +2484,33 @@ export function dearmeWorkbenchService(
           : Promise.resolve([{ eventCount: 0, totalCents: 0, latestAt: null }]),
       ]);
 
+      const opportunityReplyOpportunityIds = Array.from(new Set(
+        opportunityReplyActivityRows
+          .map((activity) => {
+            const details = isRecord(activity.details) ? activity.details : {};
+            return optionalPayloadString(details.opportunityId);
+          })
+          .filter((opportunityId): opportunityId is string => Boolean(opportunityId)),
+      ));
+      const opportunityReplyOpportunityRows = opportunityReplyOpportunityIds.length > 0
+        ? await db
+            .select({
+              id: opportunities.id,
+              title: opportunities.title,
+              state: opportunities.state,
+              issueId: opportunities.issueId,
+            })
+            .from(opportunities)
+            .where(and(
+              eq(opportunities.companyId, companyId),
+              inArray(opportunities.id, opportunityReplyOpportunityIds),
+              isNull(opportunities.deletedAt),
+            ))
+        : [];
+      const opportunitiesById = new Map(
+        opportunityReplyOpportunityRows.map((opportunity) => [opportunity.id, opportunity]),
+      );
+
       const outputs = outputsResponse.outputs.map(dearMeWorkbenchProjectionOutput);
       const activeOutputWork = outputs
         .filter((output) => !output.isReviewable && !["complete", "cancelled"].includes(output.status))
@@ -2460,14 +2550,30 @@ export function dearmeWorkbenchService(
         .filter((output) => !pendingNextMoveOutputIds.has(output.id))
         .filter((output) => !approvedNextMoveOutputIds.has(output.id))
         .map(decisionFromOutput);
-      const decisionsNeeded = [...approvalDecisions, ...outputDecisions]
+      const opportunityReplyDecisions = opportunityReplyActivityRows
+        .map((activity) => {
+          const details = isRecord(activity.details) ? activity.details : {};
+          const opportunityId = optionalPayloadString(details.opportunityId);
+          const opportunity = opportunityId ? opportunitiesById.get(opportunityId) : null;
+          return opportunity
+            ? decisionFromOpportunityReply({
+                activityId: activity.id,
+                details,
+                opportunity,
+                updatedAt: activity.createdAt,
+              })
+            : null;
+        })
+        .filter((decision): decision is DearMeWorkbenchDecision => Boolean(decision));
+      const decisionsNeeded = [...approvalDecisions, ...outputDecisions, ...opportunityReplyDecisions]
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
         .slice(0, 12);
       const batchDecisions = buildBatchDecisions(decisionsNeeded);
       const activityProgress = activityRows
         .filter((activity) =>
           activity.action.startsWith("dearme.") &&
-          activity.action !== DEARME_CHIEF_OF_STAFF_MESSAGE_ACTION)
+          activity.action !== DEARME_CHIEF_OF_STAFF_MESSAGE_ACTION &&
+          activity.action !== DEARME_OPPORTUNITY_REPLY_RECEIVED_ACTION)
         .map(dearmeWorkbenchProgressFromActivity);
       const spendProgress = progressFromSpendCheckpoint(spendCheckpointRows[0] ?? {
         eventCount: 0,

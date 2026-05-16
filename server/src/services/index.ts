@@ -71,6 +71,10 @@ export {
 } from "./dearme-x-post-dispatch.js";
 export { dearmeMemoryContextService } from "./dearme-memory-context.js";
 export { dearmeOutputHandoffService } from "./dearme-output-handoff.js";
+export {
+  DEARME_OPPORTUNITY_REPLY_RECEIVED_ACTION,
+  dearMeOpportunityReplyIngestService,
+} from "./dearme-opportunity-reply-ingest.js";
 export { dearmePaidBetaAccessService, summarizeDearMePaidBetaAccess } from "./dearme-paid-beta-access.js";
 export { dearmeWorkbenchService } from "./dearme-workbench.js";
 export { feedbackService } from "./feedback.js";
