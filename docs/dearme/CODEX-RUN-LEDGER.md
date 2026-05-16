@@ -25,3 +25,4 @@
 2026-05-16 00:42  DM-SENTRY  1fabcf83  PR #24  P1  Sentry monitoring merged; CI green; server and browser error capture are env-gated, scrub PII/secrets, allow ingest in CSP, and upload source maps only when CI credentials are configured.
 2026-05-16 01:03  DM-DB-BACKUP-SCRIPT  d4255ddc  PR #25  P1  Database backup script merged; CI green; pg_dump uploads timestamped custom-format dumps to S3-compatible storage with cron docs, local no-network tests, and no secret logging.
 2026-05-16 01:21  DM-AUDIT-LOG-EXPORT  ad4fbb25  PR #26  P1  Audit log export merged; CI green; per-company authenticated JSON export returns the last 90 days of activity_log rows with company access enforced and no cross-tenant rows.
+2026-05-16 01:42  DM-SLOW-QUERY-LOG  25570dd8  PR #27  P1  Slow query logging merged; CI green; shared DB wrapper logs queries over 200ms with redacted SQL fragments through the server logger and fast no-network tests.
