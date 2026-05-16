@@ -6989,9 +6989,11 @@ describe("DearMeOnboarding", () => {
     expect(decisionsSurface.textContent).toContain("Needed");
     expect(decisionsSurface.querySelector('[aria-label="Owner proof reply template"]')).not.toBeNull();
     expect(decisionsSurface.textContent).toContain("Send these launch details to unlock the proof pass.");
-    expect(decisionsSurface.textContent).toContain("Delivery route: delivery-route link");
-    expect(decisionsSurface.textContent).toContain("Professional-network recipient: selected recipient");
-    expect(decisionsSurface.textContent).toContain("Phone-message recipient: phone number or contact");
+    expect(decisionsSurface.textContent).toContain(
+      "Professional-network partner messages endpoint: delivery-route link",
+    );
+    expect(decisionsSurface.textContent).toContain("Professional-network smoke recipient: selected recipient");
+    expect(decisionsSurface.textContent).toContain("iMessage/SMS smoke recipient: phone number or contact");
     expect(decisionsSurface.textContent).toContain(
       "DearMe checks the route first; the live receipt remains behind the final launch call.",
     );
