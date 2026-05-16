@@ -1660,7 +1660,11 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
     }
     lines.push(`- No-send check: ${checklist.checkCommand}`);
     if (checklist.guardedLiveCommands.length > 0) {
-      lines.push("- Guarded live proof:");
+      lines.push(
+        checklist.factsNeededCount > 0
+          ? "- Guarded live proof after owner facts are present and the no-send check passes:"
+          : "- Guarded live proof after the no-send check passes:",
+      );
       for (const command of checklist.guardedLiveCommands) {
         lines.push(`  - ${command}`);
       }
