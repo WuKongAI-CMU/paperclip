@@ -18,7 +18,7 @@ This is the operational tail of `ENGINEER-GOAL-FIRST-PAID-CUSTOMER.md`. Each ite
 - [ ] Better Stack (or equivalent) uptime monitor pings `/readyz` every 1m
 - [ ] PostHog dashboard renders, project key is live
 - [ ] Sentry / error tracking captures a deliberate test exception
-- [ ] DB backups configured (Neon auto-backup or `pg_dump` cron)
+- [ ] DB backups configured (`pnpm dearme:db-backup` cron or provider auto-backup)
 - [ ] Logs are searchable (Vercel logs / Render logs / external sink)
 
 ## Stripe (engineer + Peter)
