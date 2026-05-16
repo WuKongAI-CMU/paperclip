@@ -297,7 +297,7 @@ test("DearMe release gate allows private proof while blocking public launch", ()
   assert.match(formatted, /Preview the product handoff receipt without writing: pnpm --silent dearme:next-proof -- --target all --no-write --handoff-receipt-file <launch-proof-handoff-receipt\.txt>/);
   assert.match(formatted, /If preview passes, import the product handoff receipt: pnpm --silent dearme:next-proof -- --target all --handoff-receipt-file <launch-proof-handoff-receipt\.txt>/);
   assert.match(formatted, /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
-  assert.match(formatted, /Guarded live proof after owner facts are present and the no-send check passes:/);
+  assert.match(formatted, /Guarded live proof after owner facts are present, the no-send check passes, and explicit live confirmation is set:/);
   assert.match(formatted, /Product readiness needs:/);
   assert.match(formatted, /Professional-network delivery route/);
   assert.match(formatted, /Approved professional-network recipient/);

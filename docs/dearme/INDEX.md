@@ -182,6 +182,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-STATUS-LIVE-CONFIRMATION-GUARD** — `pnpm dearme:status` now labels guarded live provider commands as available only after owner facts if needed, the no-send check passes, and explicit live confirmation is set, including the spend-bearing Meta campaign lane.
 - **DM-RELEASE-GATE-LIVE-COMMAND-GUARD** — `pnpm dearme:release-gate` now labels guarded live proof commands as available only after required facts are present and the no-send check passes.
 - **DM-RELEASE-GATE-OWNER-FACTS-LIVE-LABEL** — `pnpm dearme:release-gate` now uses owner-facts wording for blocked guarded live proof sections, matching the proof/status/goal-audit guard language.
+- **DM-RELEASE-GATE-LIVE-CONFIRMATION-GUARD** — `pnpm dearme:release-gate` now labels guarded live proof handoff commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.
 - **DM-GOAL-AUDIT-LIVE-COMMAND-GUARD** — `pnpm dearme:goal-audit` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-GOAL-AUDIT-LIVE-CONFIRMATION-GUARD** — `pnpm dearme:goal-audit` now labels guarded live proof commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
