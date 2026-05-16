@@ -81,3 +81,4 @@
 2026-05-16 18:23  DM-PROOF-FOCUS-LIVE-COMMAND-GUARD  356109ce  PR #80  Standing  DearMe proof live-focus/setup commands now use the same owner-facts-plus-no-send wording for guarded live proof; CI green.
 2026-05-16 18:38  DM-NEXT-PROOF-OWNER-FACTS-LIVE-COMMAND-LABEL  322f1914  PR #81  Standing  Next-proof blocked guarded live command sections now use owner-facts-plus-no-send wording to match the rest of the live-proof guard language; CI green.
 2026-05-16 18:54  DM-RELEASE-GATE-OWNER-FACTS-LIVE-LABEL  c1fdab63  PR #82  Standing  Release gate blocked guarded live proof sections now use owner-facts-plus-no-send wording to match the rest of the live-proof guard language; CI green.
+2026-05-16 19:12  DM-STATUS-LIVE-CONFIRMATION-GUARD  abc9caff  PR #83  Standing  DearMe status guarded live provider commands now require owner facts when needed, the no-send check, and explicit live confirmation before live proof commands are presented as runnable; CI green.
