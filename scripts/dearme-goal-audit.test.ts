@@ -618,7 +618,7 @@ test("DearMe goal audit routes blocked OpenClaw message proof through no-send se
     formatted,
     /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check --target openclaw_messages/,
   );
-  assert.match(formatted, /Guarded live proof:/);
+  assert.match(formatted, /Guarded live proof after owner facts are present and the no-send check passes:/);
   assert.match(formatted, /Run: pnpm --silent dearme:next-proof -- --target openclaw_messages/);
 });
 

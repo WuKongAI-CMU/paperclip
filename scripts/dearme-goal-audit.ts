@@ -1164,7 +1164,9 @@ export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {
     lines.push(`- No-send check: ${audit.nextAction.noSendCheckCommand}`);
   }
   if (audit.nextAction.guardedLiveCommands?.length) {
-    lines.push("- Guarded live proof:");
+    lines.push(audit.nextAction.ownerFacts?.length
+      ? "- Guarded live proof after owner facts are present and the no-send check passes:"
+      : "- Guarded live proof after the no-send check passes:");
     for (const command of audit.nextAction.guardedLiveCommands) {
       lines.push(`  - ${command}`);
     }
