@@ -354,7 +354,7 @@ test("DearMe next proof summarizes OpenClaw lanes when only phone proof is waiti
     assert.match(output, /imessage_message: waiting on iMessage\/SMS approved smoke recipient/);
     assert.match(
       output,
-      /Guarded live commands after blocked facts are captured and the no-send check passes:/,
+      /Guarded live commands after owner facts are present and the no-send check passes:/,
     );
     assert.doesNotMatch(
       output,
