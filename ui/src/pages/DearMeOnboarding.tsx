@@ -12276,21 +12276,35 @@ function PaidBetaAccessPanel({
           aria-label="Checkout return status"
         >
           <span>{checkoutReturnMessage}</span>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="shrink-0"
-            onClick={onRefreshAccess}
-            disabled={isRefreshingAccess}
-          >
-            {isRefreshingAccess ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            Refresh access
-          </Button>
+          {checkoutReturnStatus === "success" ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="shrink-0"
+              onClick={onRefreshAccess}
+              disabled={isRefreshingAccess}
+            >
+              {isRefreshingAccess ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Refresh access
+            </Button>
+          ) : hostedCheckoutReady ? (
+            <Button asChild size="sm" className="shrink-0">
+              <a
+                href={hostedCheckoutHref ?? undefined}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => handleOpenHostedCheckout("checkout_return_retry")}
+              >
+                <ExternalLink className="h-4 w-4" />
+                Try checkout again
+              </a>
+            </Button>
+          ) : null}
         </div>
       ) : null}
 
