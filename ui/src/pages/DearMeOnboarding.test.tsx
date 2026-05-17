@@ -5227,6 +5227,21 @@ describe("DearMeOnboarding", () => {
 
   it("keeps close kit context after a cancelled checkout return", async () => {
     mockLocation.search = "?view=brand-os&checkout_return=cancel";
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(
+      paidBetaStatus("trial", {
+        hostedCheckout: {
+          configured: true,
+          paymentLinkConfigured: true,
+          receiptSyncConfigured: true,
+          paymentUrl: "https://pay.example.com/dearme?client_reference_id=company-1",
+          providerLabel: "Hosted checkout",
+          label: "Self-serve checkout ready",
+          summary: "A hosted payment link and signed receipt sync are ready for this account.",
+          nextActionLabel: "Open hosted checkout",
+          nextActionDescription: "Send the customer through checkout; DearMe opens paid access after the signed receipt arrives.",
+        },
+      }),
+    );
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -5244,10 +5259,27 @@ describe("DearMeOnboarding", () => {
     const checkoutReturnStatus = surfaceByLabel(container, "Checkout return status");
     expect(checkoutReturnStatus.textContent).toContain("Checkout was not completed");
     expect(checkoutReturnStatus.textContent).toContain("preview and close kit");
+    expect(checkoutReturnStatus.textContent).toContain("Try checkout again");
+    expect(checkoutReturnStatus.textContent).not.toContain("Refresh access");
     expect(checkoutReturnStatus.textContent).not.toContain("checkout-session");
+    const retryLink = checkoutReturnStatus.querySelector<HTMLAnchorElement>(
+      'a[href="https://pay.example.com/dearme?client_reference_id=company-1"]',
+    );
+    expect(retryLink?.textContent).toContain("Try checkout again");
     expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_workroom_viewed", {
       status: "cancel",
       source: "direct",
+    });
+
+    await act(async () => {
+      retryLink?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_started", {
+      source: "checkout_return_retry",
+      signup_source: "direct",
+      paid_beta_active: false,
+      checkout_ready: true,
     });
 
     await act(async () => {
