@@ -291,6 +291,23 @@ function formValue(value: string | number) {
   return typeof value === "number" ? String(value) : value;
 }
 
+function appendQueryParam(url: string, key: string, value: string) {
+  const hashIndex = url.indexOf("#");
+  const base = hashIndex === -1 ? url : url.slice(0, hashIndex);
+  const hash = hashIndex === -1 ? "" : url.slice(hashIndex);
+  const separator = base.includes("?") ? "&" : "?";
+  return `${base}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}${hash}`;
+}
+
+function checkoutSuccessReturnUrl(successUrl: string) {
+  return appendQueryParam(successUrl, "session_id", "{CHECKOUT_SESSION_ID}")
+    .replace("%7BCHECKOUT_SESSION_ID%7D", "{CHECKOUT_SESSION_ID}");
+}
+
+function checkoutCancelReturnUrl(cancelUrl: string) {
+  return appendQueryParam(cancelUrl, "checkout", "cancelled");
+}
+
 function encodeStripeForm(params: DearMeStripeCheckoutSessionCreateParams) {
   const body = new URLSearchParams();
   body.set("mode", params.mode);
@@ -436,8 +453,8 @@ export function dearMeStripeCheckoutService(
       customer_email: email,
       client_reference_id: companyId,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
+      success_url: checkoutSuccessReturnUrl(successUrl),
+      cancel_url: checkoutCancelReturnUrl(cancelUrl),
       metadata: {
         product: "dearme",
         access: "paid_beta",
