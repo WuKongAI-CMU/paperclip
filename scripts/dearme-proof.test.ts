@@ -504,6 +504,10 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
   assert.match(formatted, /Guarded live proof after owner facts are present, the no-send check passes, and explicit live confirmation is set:/);
   assert.match(formatted, /--target openclaw_messages --live/);
+  assert.match(
+    formatted,
+    /Human help queue: docs\/NEEDS_HUMAN_HELP\.md has the reply templates and safe follow-up commands for these blockers\./,
+  );
   assert.match(formatted, /pnpm --silent dearme:proof -- --run-safe/);
   assert.doesNotMatch(formatted, /accessToken|secret-token/);
   assert.doesNotMatch(formatted, /\.dearme-provider-smoke\.env/);
