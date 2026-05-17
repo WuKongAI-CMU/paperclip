@@ -2035,6 +2035,13 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Known for practical launches");
     expect(container.textContent).toContain("Request private beta invite");
     expect(container.textContent).toContain("Review pricing");
+    const inviteLink = Array.from(container.querySelectorAll("a")).find((link) =>
+      link.textContent?.includes("Request private beta invite"),
+    );
+    expect(inviteLink?.getAttribute("href")).toContain("subject=DearMe%20private%20beta%20invite");
+    expect(decodeURIComponent(inviteLink?.getAttribute("href") ?? "")).toContain(
+      "My first-cycle direction:\nKnown for practical launches",
+    );
     expect(container.textContent).not.toContain("Select a company first.");
     expect(mockDearmeApi.getWorkbench).not.toHaveBeenCalled();
     expect(mockDearmeApi.getOutputs).not.toHaveBeenCalled();
