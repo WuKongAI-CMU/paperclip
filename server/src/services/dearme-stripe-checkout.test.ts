@@ -68,6 +68,7 @@ function subscriptionDeletedEvent(eventId = "evt_dearme_subscription_deleted") {
         customer: "cus_dearme_customer",
         metadata: {
           dearmeCompanyId: "company-1",
+          customerEmail: "buyer@example.com",
         },
         canceled_at: 1_768_389_600,
         ended_at: 1_768_389_600,
@@ -484,9 +485,15 @@ describe("dearMeStripeCheckoutService", () => {
 
   it("cancels paid-beta access for customer.subscription.deleted", async () => {
     const paidBetaAccess = fakeAccessGranter();
+    const sendLifecycleEvent = vi.fn(async () => ({
+      skipped: false,
+      ok: true,
+      status: 200,
+    }) as const);
     const service = dearMeStripeCheckoutService({} as Db, {
       stripeClient: fakeStripeClient(subscriptionDeletedEvent()),
       paidBetaAccess,
+      sendLifecycleEvent,
     });
 
     await expect(service.handleCheckoutWebhook({
@@ -513,14 +520,29 @@ describe("dearMeStripeCheckoutService", () => {
         occurredAt: "2026-01-14T11:20:00.000Z",
       },
     );
+    expect(sendLifecycleEvent).toHaveBeenCalledWith({
+      email: "buyer@example.com",
+      eventName: "dearme_churn_save",
+      properties: {
+        source: "stripe_subscription_deleted",
+        paidBetaStatus: "trial",
+        cancelledAt: "2026-01-14T11:20:00.000Z",
+      },
+    });
   });
 
   it("does not double-cancel the same customer.subscription.deleted Stripe event id", async () => {
     const paidBetaAccess = fakeAccessGranter();
+    const sendLifecycleEvent = vi.fn(async () => ({
+      skipped: false,
+      ok: true,
+      status: 200,
+    }) as const);
     const event = subscriptionDeletedEvent("evt_dearme_subscription_repeat");
     const service = dearMeStripeCheckoutService({} as Db, {
       stripeClient: fakeStripeClient(event),
       paidBetaAccess,
+      sendLifecycleEvent,
     });
     const input = {
       rawBody: Buffer.from(JSON.stringify(event)),
@@ -536,6 +558,7 @@ describe("dearMeStripeCheckoutService", () => {
     });
 
     expect(paidBetaAccess.recordSubscriptionCancellation).toHaveBeenCalledTimes(1);
+    expect(sendLifecycleEvent).toHaveBeenCalledTimes(1);
   });
 
   it("returns 503 when required checkout env is missing", async () => {
