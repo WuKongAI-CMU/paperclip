@@ -12231,6 +12231,11 @@ function PaidBetaAccessPanel({
     },
     onSuccess: (result) => {
       setPaymentError(null);
+      capture("manual_payment_recorded", {
+        source: signupSource ?? checkoutReturnSource,
+        paid_beta_active: result.access.status === "active",
+        payment_source: "manual",
+      });
       setExternalInvoiceId("");
       setCustomerEmail("");
       queryClient.setQueryData(queryKeys.dearme.paidBetaAccess(companyId), result.access);
