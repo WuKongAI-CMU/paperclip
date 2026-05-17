@@ -1,5 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowRight, Mail, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Mail,
+  MessageSquareText,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  UserRoundCheck,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,35 +38,53 @@ const AHA_SEQUENCE = [
   },
 ] as const;
 
+const PROOF_ARTIFACTS = [
+  {
+    icon: MessageSquareText,
+    title: "Weekly letter excerpt",
+    body: "You shipped the positioning page, but the strongest proof was the customer quote you almost left buried in notes. Next week: turn that quote into the opening post.",
+  },
+  {
+    icon: UserRoundCheck,
+    title: "Voice profile excerpt",
+    body: "Direct, specific, lightly dry. Short sentences land best. Avoid hype unless the proof is already in the sentence.",
+  },
+  {
+    icon: Target,
+    title: "Opportunity card",
+    body: "Reply to the operator who asked for onboarding examples. Send the proof page first, then offer a 15-minute teardown.",
+  },
+] as const;
+
 const LANDING_COPY_FEATURE_FLAG = "dearme_landing_copy";
 
 const LANDING_COPY_VARIANTS = [
   {
     key: "control",
     headline: "DearMe is a private AI growth team for one person.",
-    body: "Start with the one thing you want people to remember. DearMe turns it into private proof, first drafts, opportunities, and a launch call.",
+    body: "Give it the work you want to be known for. It turns your proof, voice, and relationships into a private weekly operating system: letters, drafts, opportunities, and the next launch decision.",
     question: "What do you want to be known for?",
-    placeholder: "Turning messy customer research into calm product decisions",
+    placeholder: "Helping B2B teams turn messy customer research into calm product decisions",
     submitLabel: "Start my first cycle",
-    previewSummary: "The first minutes show useful private work before any public action.",
+    previewSummary: "The first minutes show what DearMe would prepare privately before anything is sent or published.",
   },
   {
     key: "proof-first",
-    headline: "Turn scattered work into proof people can understand.",
-    body: "Give DearMe the signal you want to be known for. It prepares a private proof page, starter drafts, and the next decision without sending anything for you.",
-    question: "What proof should DearMe help you package first?",
-    placeholder: "Three customer stories that show how our product saves operators time",
+    headline: "DearMe is a private AI growth team for one person.",
+    body: "If your best proof is scattered across notes, customer calls, and half-written drafts, DearMe packages it into a private proof page, weekly letter, and next outreach move.",
+    question: "Which proof should DearMe package first?",
+    placeholder: "Three customer stories that show how our product saves operators five hours a week",
     submitLabel: "Build my proof pass",
-    previewSummary: "The first pass packages what is already true, then keeps the launch decision with you.",
+    previewSummary: "The first pass packages what is already true, then leaves the launch decision with you.",
   },
   {
     key: "opportunity-first",
-    headline: "Keep your next best opportunity from going cold.",
-    body: "DearMe turns your positioning into a private workbench: proof, outreach options, voice memory, and a launch call you can inspect before anything moves.",
+    headline: "DearMe is a private AI growth team for one person.",
+    body: "When a useful lead, partner, podcast, job, or customer thread appears, DearMe prepares the proof and words you need before the opportunity goes cold.",
     question: "Which opportunity should DearMe prepare around?",
-    placeholder: "Helping design partners understand why our new workflow matters now",
+    placeholder: "Design partners who asked whether our new workflow is ready for their team",
     submitLabel: "Prepare my next move",
-    previewSummary: "The first cycle turns a single opportunity into reviewable work and a protected launch call.",
+    previewSummary: "The first cycle turns one opportunity into reviewable work and a protected launch call.",
   },
 ] as const;
 
@@ -165,6 +191,25 @@ export function DearMeLanding() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </form>
+
+            <DearMeEvidenceGrid columns="three" className="max-w-3xl">
+              {PROOF_ARTIFACTS.map((artifact) => {
+                const Icon = artifact.icon;
+
+                return (
+                  <article
+                    key={artifact.title}
+                    className="rounded-lg border border-border bg-background p-4 shadow-sm"
+                  >
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <Icon className="h-4 w-4" />
+                      {artifact.title}
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">{artifact.body}</p>
+                  </article>
+                );
+              })}
+            </DearMeEvidenceGrid>
           </div>
 
           <DearMeFocusSurface aria-label="DearMe first-cycle preview" className="self-stretch">

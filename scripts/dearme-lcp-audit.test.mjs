@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   evaluateDearMeLcpAudit,
   formatDearMeLcpAuditSummary,
+  isRetriableLighthouseError,
   parseDearMeLcpAuditArgs,
 } from "./dearme-lcp-audit.mjs";
 
@@ -90,4 +91,10 @@ test("parses CLI flags and environment overrides", () => {
     cumulativeLayoutShift: 0.08,
     interactionToNextPaintMs: 180,
   });
+});
+
+test("classifies transient Lighthouse browser connection failures as retriable", () => {
+  assert.equal(isRetriableLighthouseError(new Error("connect ECONNREFUSED 127.0.0.1:43371")), true);
+  assert.equal(isRetriableLighthouseError(new Error("DearMe Lighthouse audit timed out after 60000ms.")), true);
+  assert.equal(isRetriableLighthouseError(new Error("LCP 3000ms exceeded threshold")), false);
 });

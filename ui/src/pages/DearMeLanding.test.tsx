@@ -51,12 +51,8 @@ function installIndexHead() {
 describe("resolveLandingCopyVariant", () => {
   it("resolves only the three supported landing copy variants", () => {
     expect(resolveLandingCopyVariant("control").headline).toBe("DearMe is a private AI growth team for one person.");
-    expect(resolveLandingCopyVariant("proof-first").headline).toBe(
-      "Turn scattered work into proof people can understand.",
-    );
-    expect(resolveLandingCopyVariant("opportunity-first").headline).toBe(
-      "Keep your next best opportunity from going cold.",
-    );
+    expect(resolveLandingCopyVariant("proof-first").question).toBe("Which proof should DearMe package first?");
+    expect(resolveLandingCopyVariant("opportunity-first").submitLabel).toBe("Prepare my next move");
     expect(resolveLandingCopyVariant("unknown").key).toBe("control");
     expect(resolveLandingCopyVariant(true).key).toBe("control");
   });
@@ -108,6 +104,18 @@ describe("DearMeLanding", () => {
 
   it("renders the hero positioning sentence", () => {
     expect(container.textContent).toContain("DearMe is a private AI growth team for one person.");
+  });
+
+  it("renders reader-first copy and three concrete proof artifacts above the fold", () => {
+    const renderedText = container.textContent ?? "";
+
+    expect(renderedText).toContain("Give it the work you want to be known for.");
+    expect(renderedText).toContain("Weekly letter excerpt");
+    expect(renderedText).toContain("Voice profile excerpt");
+    expect(renderedText).toContain("Opportunity card");
+    expect(renderedText).toContain("turn that quote into the opening post");
+    expect(renderedText).toContain("Short sentences land best");
+    expect(renderedText).toContain("offer a 15-minute teardown");
   });
 
   it("renders the single-question input", () => {
@@ -167,6 +175,10 @@ describe("DearMeLanding", () => {
     expect(renderedText).not.toContain("Paperclip");
     expect(renderedText).not.toContain("OpenClaw");
     expect(renderedText).not.toContain("Symphony");
+    expect(renderedText).not.toContain("Bedrock");
+    expect(renderedText).not.toContain("Claude");
+    expect(renderedText).not.toContain("GPT");
+    expect(renderedText).not.toContain("Voyage");
     expect(renderedText).not.toContain("dm_sk_");
   });
 
