@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { capture } from "@/lib/analytics";
 import {
   DearMeEvidenceGrid,
   DearMePageShell,
@@ -78,6 +80,15 @@ const NEXT_STEPS: Record<
 export function DearMeCheckoutReturn({ kind }: { kind: DearMeCheckoutReturnKind }) {
   const copy = RETURN_COPY[kind];
   const Icon = kind === "success" ? CheckCircle2 : XCircle;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    capture("checkout_return_viewed", {
+      status: kind,
+      has_session_marker: params.has("session_id"),
+      has_cancel_marker: params.get("checkout") === "cancelled",
+    });
+  }, [kind]);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
