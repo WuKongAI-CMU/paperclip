@@ -4,7 +4,7 @@
 
 > **P0 carve-out (adopted 2026-05-14).** OpenClaw runtime and `dearme-ai-proxy` runtime are **deferred to P1**. Architecture and code stay in tree as dormant artifacts. P0 paid beta ships **web-only**: web inbound, browser MediaRecorder for voice capture, Paperclip routines/heartbeats for cron, web-first outbound (LinkedIn copy-to-clipboard, X via OAuth, email via Resend/SMTP). The §3 diagram below describes the **P1+ target state**; in P0 the OpenClaw layer is dormant and the proxy routes are unmounted. Full rationale, per-role verdict, code touchpoints, and revival criteria in [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md).
 
-Last updated: 2026-05-17 (post DM-DEARME-CI-NODE24-ACTIONS CI runtime hardening)
+Last updated: 2026-05-17 (post DM-HUMAN-HELP-BLOCKER-FRESHNESS)
 
 ---
 
@@ -184,6 +184,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-STANDING-LOOP-DAILY-PLAIN-FACTS** — `pnpm dearme:standing-loop-audit -- --check` now surfaces missing Plain daily-summary configuration alongside owner-proof and first-payment facts.
 - **DM-DAILY-SUMMARY-PLAIN-FACTS** — `pnpm dearme:daily-plain-summary` now includes missing Plain delivery configuration in the generated daily body alongside owner-proof and first-payment facts.
 - **DM-DAILY-SUMMARY-HUMAN-HELP-QUEUE** — `pnpm dearme:daily-plain-summary` now points blocker sections at `docs/NEEDS_HUMAN_HELP.md`, where Peter has reply templates and safe follow-up commands for owner-proof, checkout, and Plain-delivery facts.
+- **DM-HUMAN-HELP-BLOCKER-FRESHNESS** — `docs/NEEDS_HUMAN_HELP.md` now carries the 2026-05-17 verified blocker state for external proof and hosted checkout: private beta remains sellable, public proof waits on three owner-approved facts, and self-serve checkout waits on the live $29/month payment link plus receipt/webhook secret.
 - **DM-NEXT-PROOF-MISSING-RECEIPT-PREVIEW** — `pnpm dearme:next-proof -- --no-write --handoff-receipt-file <launch-proof-handoff-receipt.txt>` now previews the current owner-proof gaps even before the receipt file exists, while import mode still fails closed until the receipt is present.
 - **DM-NEXT-PROOF-ALL-LIVE-LANE-GUARD** — `pnpm dearme:next-proof -- --target all` now prints target-specific guarded live commands for the public proof lanes instead of a broad `--target all --live` command that could mix owner-proof work with unrelated live lanes.
 - **DM-NEXT-PROOF-BLOCKED-LIVE-COMMAND-GATE** — `pnpm dearme:next-proof` now keeps blocked live commands out of the immediate next-command list and labels them as available only after blocked facts are captured and the no-send check passes.
