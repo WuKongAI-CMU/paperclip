@@ -90,3 +90,4 @@
 2026-05-16 20:52  DM-DAILY-PLAIN-SUMMARY-LOCAL-DAY  34ce2a26  PR #89  Standing  DearMe daily Plain summary now defaults to the local operating day so evening run-ledger entries appear in the daily update; CI green.
 2026-05-16 21:13  DM-DAILY-SUMMARY-HANDOFF-LOCAL-DAY  dcd66a4b  PR #90  Standing  DearMe handoff daily report guidance now matches the local operating day used by the shipped Plain summary command; CI green.
 2026-05-16 21:33  DM-DAILY-SUMMARY-HUMAN-HELP  23f91371  PR #91  Standing  DearMe daily Plain summary can now regenerate the Peter-facing Plain configuration request, and the human-help queue records the missing Plain API key plus recipient email; CI green.
+2026-05-16 21:53  DM-STANDING-LOOP-DAILY-PLAIN-FACTS  92a22394  PR #92  Standing  DearMe standing-loop audit now surfaces missing Plain daily-summary configuration alongside owner-proof and first-payment facts; CI green.
