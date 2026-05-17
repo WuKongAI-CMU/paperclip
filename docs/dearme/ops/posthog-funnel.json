@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "kind": "posthog-dashboard-config",
+  "name": "DearMe activation-to-payment funnel",
+  "description": "Landing-to-first-payment funnel for the private beta. Measures whether visitors reach the first useful cycle and become paying customers.",
+  "owner": "dearme-growth",
+  "posthog": {
+    "projectEnvVar": "POSTHOG_PROJECT_ID",
+    "personalApiKeyEnvVar": "POSTHOG_PERSONAL_API_KEY",
+    "regionEnvVar": "POSTHOG_REGION",
+    "dashboardApiPath": "/api/projects/{project_id}/dashboards/",
+    "insightApiPath": "/api/projects/{project_id}/insights/"
+  },
+  "globalFilters": {
+    "dateFrom": "-30d",
+    "conversionWindowDays": 14,
+    "properties": [
+      {
+        "key": "environment",
+        "operator": "is_not",
+        "value": "test",
+        "type": "event"
+      }
+    ]
+  },
+  "funnel": {
+    "key": "activation_to_payment",
+    "name": "Activation to $29 payment",
+    "target": {
+      "overallConversion": ">=2.0%",
+      "minimumVisitorsBeforeReadout": 200,
+      "decisionRule": "Do not call a landing or onboarding winner until each active top-of-funnel variant has at least 200 landing_viewed events and no step has fewer than 20 users."
+    },
+    "steps": [
+      {
+        "order": 1,
+        "event": "landing_viewed",
+        "label": "Landing viewed",
+        "role": "visitor_start",
+        "targetFromPrevious": "100%",
+        "requiredProperties": ["landing_copy_variant"]
+      },
+      {
+        "order": 2,
+        "event": "landing_cta_submitted",
+        "label": "Landing CTA submitted",
+        "role": "visitor_intent",
+        "targetFromPrevious": ">=18%",
+        "requiredProperties": ["landing_copy_variant", "positioning_length"]
+      },
+      {
+        "order": 3,
+        "event": "signup_started",
+        "label": "Signup started",
+        "role": "account_intent",
+        "targetFromPrevious": ">=75%",
+        "requiredProperties": ["entry_point"]
+      },
+      {
+        "order": 4,
+        "event": "signup_completed",
+        "label": "Signup completed",
+        "role": "account_created",
+        "targetFromPrevious": ">=80%",
+        "requiredProperties": ["user_id", "company_id"]
+      },
+      {
+        "order": 5,
+        "event": "first_cycle_started",
+        "label": "First cycle started",
+        "role": "activation_started",
+        "targetFromPrevious": ">=70%",
+        "requiredProperties": ["user_id", "company_id", "source"]
+      },
+      {
+        "order": 6,
+        "event": "first_cycle_completed",
+        "label": "First cycle completed",
+        "role": "activation_completed",
+        "targetFromPrevious": ">=60%",
+        "requiredProperties": ["user_id", "company_id", "cycle_id"]
+      },
+      {
+        "order": 7,
+        "event": "pricing_viewed",
+        "label": "Pricing viewed",
+        "role": "paid_intent",
+        "targetFromPrevious": ">=55%",
+        "requiredProperties": ["user_id", "company_id", "source"]
+      },
+      {
+        "order": 8,
+        "event": "checkout_started",
+        "label": "Checkout started",
+        "role": "checkout_intent",
+        "targetFromPrevious": ">=45%",
+        "requiredProperties": ["user_id", "company_id", "plan"]
+      },
+      {
+        "order": 9,
+        "event": "checkout_completed",
+        "label": "$29 checkout completed",
+        "role": "first_payment",
+        "targetFromPrevious": ">=70%",
+        "requiredProperties": ["user_id", "company_id", "plan", "amount_usd"]
+      }
+    ]
+  },
+  "insights": [
+    {
+      "key": "activation_to_payment_funnel",
+      "name": "Landing to first payment",
+      "description": "Primary private-beta funnel from landing view to completed $29 checkout.",
+      "target": ">=2.0% landing_viewed to checkout_completed",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "FunnelsQuery",
+          "dateRange": {
+            "date_from": "-30d"
+          },
+          "funnelWindowInterval": 14,
+          "funnelWindowIntervalUnit": "day",
+          "series": [
+            { "kind": "EventsNode", "event": "landing_viewed", "name": "landing_viewed" },
+            { "kind": "EventsNode", "event": "landing_cta_submitted", "name": "landing_cta_submitted" },
+            { "kind": "EventsNode", "event": "signup_started", "name": "signup_started" },
+            { "kind": "EventsNode", "event": "signup_completed", "name": "signup_completed" },
+            { "kind": "EventsNode", "event": "first_cycle_started", "name": "first_cycle_started" },
+            { "kind": "EventsNode", "event": "first_cycle_completed", "name": "first_cycle_completed" },
+            { "kind": "EventsNode", "event": "pricing_viewed", "name": "pricing_viewed" },
+            { "kind": "EventsNode", "event": "checkout_started", "name": "checkout_started" },
+            { "kind": "EventsNode", "event": "checkout_completed", "name": "checkout_completed" }
+          ],
+          "properties": [
+            {
+              "key": "environment",
+              "operator": "is_not",
+              "value": "test",
+              "type": "event"
+            }
+          ]
+        }
+      },
+      "layout": {
+        "sm": { "x": 0, "y": 0, "w": 12, "h": 6 },
+        "xs": { "x": 0, "y": 0, "w": 1, "h": 6 }
+      }
+    },
+    {
+      "key": "landing_variant_breakdown",
+      "name": "Landing CTA by variant",
+      "description": "Tracks which landing-copy variant moves visitors from landing_viewed to landing_cta_submitted.",
+      "target": ">=18% landing_cta_submitted per active variant",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "FunnelsQuery",
+          "dateRange": {
+            "date_from": "-30d"
+          },
+          "breakdownFilter": {
+            "breakdown": "landing_copy_variant",
+            "breakdown_type": "event"
+          },
+          "series": [
+            { "kind": "EventsNode", "event": "landing_viewed", "name": "landing_viewed" },
+            { "kind": "EventsNode", "event": "landing_cta_submitted", "name": "landing_cta_submitted" }
+          ]
+        }
+      },
+      "layout": {
+        "sm": { "x": 0, "y": 6, "w": 6, "h": 5 },
+        "xs": { "x": 0, "y": 6, "w": 1, "h": 5 }
+      }
+    },
+    {
+      "key": "first_cycle_completion",
+      "name": "First-cycle completion",
+      "description": "Measures whether new accounts finish the first private work cycle before pricing pressure.",
+      "target": ">=42% signup_completed to first_cycle_completed",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "FunnelsQuery",
+          "dateRange": {
+            "date_from": "-30d"
+          },
+          "series": [
+            { "kind": "EventsNode", "event": "signup_completed", "name": "signup_completed" },
+            { "kind": "EventsNode", "event": "first_cycle_started", "name": "first_cycle_started" },
+            { "kind": "EventsNode", "event": "first_cycle_completed", "name": "first_cycle_completed" }
+          ]
+        }
+      },
+      "layout": {
+        "sm": { "x": 6, "y": 6, "w": 6, "h": 5 },
+        "xs": { "x": 0, "y": 11, "w": 1, "h": 5 }
+      }
+    }
+  ],
+  "reviewCadence": {
+    "frequency": "twice-weekly until first 10 paid customers, then weekly",
+    "owner": "dearme-growth",
+    "primaryReadout": "Use checkout_completed and first_cycle_completed to decide whether the next PR should improve signup friction, first-cycle completion, or pricing handoff."
+  }
+}
