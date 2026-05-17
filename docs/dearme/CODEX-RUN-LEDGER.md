@@ -138,3 +138,4 @@
 2026-05-17 12:38  DM-CHECKOUT-RETURN-REFRESH-ACCESS  13420969  PR #138  Wave C  Checkout returns now include an in-panel refresh action so customers can re-check paid access after receipt sync without leaving the first-cycle workroom; CI green.
 2026-05-17 12:55  DM-CHECKOUT-CANCEL-RETRY  a8c9fd97  PR #139  Wave C  Cancelled checkout returns now show a direct hosted-checkout retry action when configured, while successful returns keep access refresh; CI green.
 2026-05-17 13:13  DM-CHECKOUT-SUCCESS-AUTO-REFRESH  2278ef7d  PR #140  Wave C  Successful checkout returns now automatically re-check paid access once after the initial access load settles, while keeping manual refresh as fallback; CI green.
+2026-05-17 13:32  DM-CHECKOUT-SUCCESS-START-CYCLE  6ac77f99  PR #141  Wave C  Successful checkout returns now move confirmed paid users straight into the first-cycle start path after paid access opens, while receipt refresh remains the syncing fallback; CI green.
