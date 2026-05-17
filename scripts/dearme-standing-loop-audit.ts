@@ -50,6 +50,7 @@ export interface DearMeStandingLoopAuditArgs {
 
 const DEFAULT_HANDOFF_PATH = "docs/dearme/CODEX-HANDOFF-TOKEN.md";
 const DEFAULT_LEDGER_PATH = "docs/dearme/CODEX-RUN-LEDGER.md";
+const HUMAN_HELP_QUEUE_PATH = "docs/NEEDS_HUMAN_HELP.md";
 const DAILY_PLAIN_API_KEY_ENV = "DEARME_PLAIN_API_KEY";
 const DAILY_PLAIN_PRIMARY_EMAIL_ENV = "DEARME_CODEX_DAILY_PLAIN_EMAIL";
 const DAILY_PLAIN_FALLBACK_EMAIL_ENV = "DEARME_PLAIN_DAILY_EMAIL";
@@ -204,10 +205,21 @@ export function formatDearMeStandingLoopAudit(audit: DearMeStandingLoopAudit): s
       lines.push(`  - ${fact}`);
     }
   }
+  if (standingLoopNeedsHumanHelpQueue(audit)) {
+    lines.push(
+      `- Human help queue: ${HUMAN_HELP_QUEUE_PATH} has the reply templates and safe follow-up commands for these blockers.`,
+    );
+  }
   if (audit.nextAction.command) {
     lines.push(`- Run: ${audit.nextAction.command}`);
   }
   return lines;
+}
+
+function standingLoopNeedsHumanHelpQueue(audit: DearMeStandingLoopAudit): boolean {
+  return Boolean(audit.nextAction.ownerFacts?.length)
+    || Boolean(audit.nextAction.hostedCheckoutFacts?.length)
+    || audit.dailyPlainSummaryFacts.length > 0;
 }
 
 export function parseDearMeStandingLoopAuditArgs(argv: string[]): DearMeStandingLoopAuditArgs {

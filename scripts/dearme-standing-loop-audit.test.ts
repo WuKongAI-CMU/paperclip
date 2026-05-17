@@ -91,6 +91,10 @@ test("treats owner-blocked goal state as clear for autonomous standing loop", ()
   assert.match(formatted, /DEARME_LINKEDIN_DM_MESSAGES_URL/);
   assert.match(formatted, /DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN/);
   assert.match(formatted, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
+  assert.match(
+    formatted,
+    /Human help queue: docs\/NEEDS_HUMAN_HELP\.md has the reply templates and safe follow-up commands for these blockers\./,
+  );
 });
 
 test("keeps payment setup facts visible in owner-blocked standing-loop output", () => {
@@ -121,6 +125,10 @@ test("keeps payment setup facts visible in owner-blocked standing-loop output", 
   assert.match(formatted, /First-payment checkout facts needed/);
   assert.match(formatted, /DEARME_PAYMENT_LINK_URL is missing/);
   assert.match(formatted, /STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)/);
+  assert.match(
+    formatted,
+    /Human help queue: docs\/NEEDS_HUMAN_HELP\.md has the reply templates and safe follow-up commands for these blockers\./,
+  );
 });
 
 test("reports missing daily Plain summary delivery configuration", () => {
@@ -150,6 +158,10 @@ test("keeps daily Plain summary facts visible in standing-loop output", () => {
   const formatted = formatDearMeStandingLoopAudit(audit).join("\n");
   assert.match(formatted, /Daily Plain summary facts needed/);
   assert.match(formatted, /DEARME_PLAIN_API_KEY is missing/);
+  assert.match(
+    formatted,
+    /Human help queue: docs\/NEEDS_HUMAN_HELP\.md has the reply templates and safe follow-up commands for these blockers\./,
+  );
 });
 
 test("prioritizes missing backlog ledger entries before dependency or goal work", () => {
@@ -220,6 +232,7 @@ test("surfaces autonomous dependency bumps after backlog is complete", () => {
   assert.equal(audit.state, "dependency-bump-needed");
   assert.equal(audit.checkClear, false);
   assert.equal(audit.nextAction.label, "Bump tsx");
+  assert.doesNotMatch(formatDearMeStandingLoopAudit(audit).join("\n"), /Human help queue:/);
 });
 
 test("surfaces code-owned goal regressions when owner facts are not the blocker", () => {
