@@ -5,64 +5,64 @@ import { DearMePageShell } from "../components/DearMeShell";
 
 const FAQ_ITEMS = [
   {
-    question: "What is DearMe?",
+    question: "What does DearMe actually do for me?",
     answer:
-      "DearMe is a private growth team for one person. It helps prepare proof, drafts, outreach, opportunities, and launch decisions from the professional context you choose to share.",
+      "DearMe turns your existing work, proof, voice, and relationships into a private weekly growth cycle: proof pages, letters, draft posts, outreach prep, and the next launch decision. It prepares the work privately before anything public happens.",
   },
   {
-    question: "Who is it for?",
+    question: "Who is the $29 beta for?",
     answer:
-      "DearMe is for founders, builders, operators, consultants, and independent experts who want their work to become easier to understand, reuse, and share without hiring a public-facing team.",
+      "It is for solo operators, consultants, founders, candidates, creators with an offer, and agency-of-one builders who already have useful work but do not have a growth team. If you need a polished public proof loop more than another writing tool, you are the target user.",
   },
   {
-    question: "What happens during the private beta?",
+    question: "What happens in the first three days?",
     answer:
-      "The beta is invite-only. You request access, we confirm fit, and the first cycle starts with the positioning answer and source material needed to prepare a private proof pack.",
+      "You answer one positioning question, then inspect the first private proof pass, voice profile, opportunity shape, and launch call preview. The trial is meant to make the value visible before the $29/month plan begins.",
   },
   {
-    question: "How much does it cost?",
+    question: "Will it post or message from my account automatically?",
     answer:
-      "The beta plan is $29 per month after a three-day free trial. Any paid plan or renewal is shown before purchase.",
+      "No. Public posts, direct messages, deploys, and paid spend require your explicit approval. DearMe can prepare the words and proof, but you decide what leaves the private workspace.",
+  },
+  {
+    question: "Is this safe to use with LinkedIn?",
+    answer:
+      "DearMe is designed around targeted, truthful, review-first outreach, not bulk automation. During beta, any LinkedIn-style outreach should stay low-volume, relationship-based, and approved by you before it is sent.",
+  },
+  {
+    question: "How do you keep it from sounding unlike me?",
+    answer:
+      "The first cycle builds from your samples and feedback, then treats voice as a review gate before drafted work is ready. If a draft drifts, it should come back for another pass instead of being treated as finished.",
+  },
+  {
+    question: "What if my work is messy or unfinished?",
+    answer:
+      "That is normal. DearMe is most useful when proof is scattered across calls, notes, drafts, customer quotes, and half-finished ideas because the first job is to package what is already true.",
+  },
+  {
+    question: "What do I need to share?",
+    answer:
+      "Start with your goal, public profile links, writing samples, proof, offers, audience notes, or customer context you want used. You should not paste secrets, private customer data, or anything you would not want used to prepare your growth work.",
+  },
+  {
+    question: "Can I take my work with me?",
+    answer:
+      "Yes. The useful outputs should be inspectable and portable: proof pages, drafts, weekly letters, opportunity notes, and review decisions. If you leave, you should not lose the work DearMe prepared for you.",
   },
   {
     question: "Can I cancel?",
     answer:
-      "Yes. You can stop using DearMe at any time, and cancellation support is available by email while the beta remains invite-only.",
+      "Yes. The beta is monthly after the trial, and cancellation support is available by email while access remains invite-only. Any paid continuation is shown before purchase.",
   },
   {
-    question: "What is the voice gate?",
+    question: "What makes this different from a blank chat box?",
     answer:
-      "The voice gate is the review point before drafted work is treated as ready. DearMe uses your samples and feedback to keep drafts closer to how you actually write and speak.",
+      "DearMe is built around a recurring private work cycle, approvals, memory, voice review, proof packaging, and opportunity prep. The point is not one clever answer; it is a weekly system that keeps turning your real work into useful public and commercial moves.",
   },
   {
-    question: "Do I approve public actions?",
+    question: "When should I not use DearMe?",
     answer:
-      "Yes. Publishing, sending, spending, deploying, and other public moves require your explicit approval. DearMe prepares the work; you decide what leaves the private workspace.",
-  },
-  {
-    question: "What data do I provide?",
-    answer:
-      "You may provide profile details, goals, links, notes, writing samples, drafts, feedback, and materials you want DearMe to use. The product also keeps account, usage, support, payment, and security records needed to operate the service.",
-  },
-  {
-    question: "Do you sell personal information?",
-    answer:
-      "No. DearMe does not sell personal information. Data is used to run the product, prepare and improve work, provide support, process payments, prevent abuse, secure the service, and meet legal obligations.",
-  },
-  {
-    question: "How long is data retained?",
-    answer:
-      "Account and workflow data is retained while your account is active and as needed for product, legal, tax, accounting, security, dispute, backup, and abuse-prevention reasons.",
-  },
-  {
-    question: "What outreach is allowed?",
-    answer:
-      "Outreach must be truthful, targeted, and based on opt-in, warm context, or a reasonable professional relationship. Bulk spam, deceptive lead generation, harassment, and platform-risky behavior are not allowed.",
-  },
-  {
-    question: "Are there cost caps?",
-    answer:
-      "The beta starts with one $29/month plan. DearMe will not start paid usage from the public pricing page while invite-only mode is active, and any future paid change is shown before purchase.",
+      "Do not use it for spam, deception, scraped lists, harassment, or claims you cannot back up. DearMe works best when the growth motion is honest, specific, and tied to proof you would stand behind.",
   },
 ] as const;
 
@@ -91,11 +91,11 @@ export function DearMeFaq() {
           <header className="max-w-3xl">
             <p className="text-sm font-medium text-muted-foreground">FAQ</p>
             <h1 className="mt-2 text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
-              Practical answers before you request beta access.
+              The questions worth asking before you trust DearMe with your growth.
             </h1>
             <p className="mt-5 text-base leading-7 text-muted-foreground sm:text-lg">
-              These answers summarize the product posture, legal terms, privacy policy, acceptable use rules, voice
-              review, cost cap, and cancellation path for the beta.
+              The beta is intentionally small: one person, one private proof loop, one $29/month plan after the
+              three-day trial, and no public action without your approval.
             </p>
           </header>
 
@@ -106,6 +106,18 @@ export function DearMeFaq() {
                 <p className="text-sm leading-7 text-muted-foreground">{item.answer}</p>
               </section>
             ))}
+          </div>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button asChild size="lg" className="min-h-11">
+              <a href="/pricing">See beta pricing</a>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="min-h-11">
+              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20question">
+                Ask a beta question
+                <Mail className="h-4 w-4" />
+              </a>
+            </Button>
           </div>
         </article>
       </DearMePageShell>
