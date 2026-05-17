@@ -120,6 +120,13 @@ export function DearMePricing() {
     });
   }
 
+  function handleAccessRequest() {
+    capture("pricing_access_requested", {
+      source: "pricing_nav",
+      plan: "beta_29",
+    });
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-5 sm:px-6 lg:px-8">
@@ -131,7 +138,10 @@ export function DearMePricing() {
           <div className="flex flex-wrap items-center justify-end gap-3">
             <a href="/proof" className="text-sm text-muted-foreground hover:text-foreground">Proof</a>
             <Button asChild variant="outline" size="sm">
-              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20access">
+              <a
+                href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20access"
+                onClick={handleAccessRequest}
+              >
                 Request access
                 <Mail className="h-4 w-4" />
               </a>
