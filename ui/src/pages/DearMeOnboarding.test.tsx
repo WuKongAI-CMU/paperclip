@@ -4627,6 +4627,11 @@ describe("DearMeOnboarding", () => {
     await act(async () => {
       buttonByText(firstCycleStartReceipt, "Review Work Ready")?.click();
     });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_work_ready_opened", {
+      source: "direct",
+      paid_beta_active: true,
+      private_work_started: true,
+    });
     expect(mockNavigate).toHaveBeenCalledWith("/dearme?view=brand-os#dearme-work-ready");
     expect(container.textContent).toContain("Ready for your launch call");
     expect(container.textContent).toContain("0-30s");
