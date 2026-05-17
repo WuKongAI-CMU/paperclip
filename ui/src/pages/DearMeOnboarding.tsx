@@ -11608,6 +11608,7 @@ function PaidBetaAccessPanel({
   const [amountDollars, setAmountDollars] = useState("250");
   const [description, setDescription] = useState("Founding beta payment");
   const [externalInvoiceId, setExternalInvoiceId] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const entitlement = status?.entitlement ?? null;
   const cycleGuardrail = status?.cycleGuardrail ?? null;
@@ -12041,6 +12042,7 @@ function PaidBetaAccessPanel({
       return dearmeApi.recordPaidBetaPayment(companyId, {
         amountCents,
         currency: "USD",
+        customerEmail: customerEmail.trim() || null,
         description,
         externalInvoiceId,
         occurredAt: new Date().toISOString(),
@@ -12049,6 +12051,7 @@ function PaidBetaAccessPanel({
     onSuccess: (result) => {
       setPaymentError(null);
       setExternalInvoiceId("");
+      setCustomerEmail("");
       queryClient.setQueryData(queryKeys.dearme.paidBetaAccess(companyId), result.access);
       queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(companyId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.dearme.paidBetaCohorts });
@@ -12501,7 +12504,7 @@ function PaidBetaAccessPanel({
         />
       </section>
 
-      <form className="mt-5 grid gap-3 lg:grid-cols-[9rem_minmax(0,1fr)_minmax(0,1fr)_auto]" onSubmit={handleRecordPayment}>
+      <form className="mt-5 grid gap-3 lg:grid-cols-[9rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]" onSubmit={handleRecordPayment}>
         <div>
           <FieldLabel htmlFor="dearme-paid-beta-amount" label="Amount" />
           <div className="flex items-center rounded-md border border-input px-3">
@@ -12531,6 +12534,16 @@ function PaidBetaAccessPanel({
             id="dearme-paid-beta-invoice"
             value={externalInvoiceId}
             onChange={(event: ChangeEvent<HTMLInputElement>) => setExternalInvoiceId(event.target.value)}
+          />
+        </div>
+        <div>
+          <FieldLabel htmlFor="dearme-paid-beta-customer-email" label="Receipt email" />
+          <Input
+            id="dearme-paid-beta-customer-email"
+            type="email"
+            inputMode="email"
+            value={customerEmail}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => setCustomerEmail(event.target.value)}
           />
         </div>
         <Button type="submit" className="self-end" disabled={recordPaymentMutation.isPending}>

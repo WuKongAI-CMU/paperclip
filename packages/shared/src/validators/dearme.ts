@@ -1007,12 +1007,14 @@ export const dearMePaidBetaCohortSummarySchema = z.object({
 export const dearMePaidBetaRecordSchema = z.object({
   amountCents: z.number().int().min(DEARME_PAID_BETA_MIN_PAYMENT_CENTS).max(100_000_000),
   currency: z.string().trim().regex(/^[A-Za-z]{3}$/).default("USD"),
+  customerEmail: z.string().trim().email().nullable().optional(),
   description: optionalText(500).nullable().optional(),
   externalInvoiceId: optionalText(200).nullable().optional(),
   occurredAt: z.string().datetime().optional(),
 }).strict().transform((value) => ({
   ...value,
   currency: value.currency.toUpperCase(),
+  customerEmail: value.customerEmail?.trim().toLowerCase() || null,
   description: value.description ?? null,
   externalInvoiceId: value.externalInvoiceId ?? null,
 }));

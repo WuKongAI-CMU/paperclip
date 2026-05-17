@@ -638,6 +638,7 @@ describe("DearMe brand blueprint contract", () => {
     expect(record).toEqual({
       amountCents: 25_000,
       currency: "USD",
+      customerEmail: null,
       description: "Founding beta payment",
       externalInvoiceId: null,
       occurredAt: "2026-05-07T14:00:00.000Z",

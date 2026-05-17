@@ -89,7 +89,11 @@ function createMemoryActivityDb(rows: Array<{ action: string; details: unknown; 
   return { select };
 }
 
-async function createApp(actorOverrides: Record<string, unknown> = {}, db: Record<string, unknown> = {}) {
+async function createApp(
+  actorOverrides: Record<string, unknown> = {},
+  db: Record<string, unknown> = {},
+  routeOptions: Record<string, unknown> = {},
+) {
   const [{ errorHandler }, { dearmeRoutes }] = await Promise.all([
     import("../middleware/index.js"),
     import("../routes/dearme.js"),
@@ -111,7 +115,7 @@ async function createApp(actorOverrides: Record<string, unknown> = {}, db: Recor
     };
     next();
   });
-  app.use("/api/dearme", dearmeRoutes(db as any));
+  app.use("/api/dearme", dearmeRoutes(db as any, routeOptions as any));
   app.use(errorHandler);
   return app;
 }
@@ -2085,6 +2089,11 @@ describe("DearMe brand blueprint routes", () => {
   });
 
   it("records a manual paid beta payment and logs the finance event", async () => {
+    const sendLifecycleEvent = vi.fn(async () => ({
+      skipped: false as const,
+      ok: true as const,
+      status: 202,
+    }));
     mockDearMePaidBetaAccessService.recordPayment.mockResolvedValue({
       event: {
         id: "finance-event-1",
@@ -2094,11 +2103,12 @@ describe("DearMe brand blueprint routes", () => {
       access: makePaidBetaStatus("active"),
     });
 
-    const res = await request(await createApp())
+    const res = await request(await createApp({}, {}, { sendLifecycleEvent }))
       .post("/api/dearme/companies/company-1/paid-beta/access-events")
       .send({
         amountCents: 25_000,
         currency: "usd",
+        customerEmail: "Buyer@Example.com",
         description: "Founding beta payment",
         externalInvoiceId: "manual-invoice-1",
         occurredAt: "2026-05-07T14:00:00.000Z",
@@ -2111,9 +2121,20 @@ describe("DearMe brand blueprint routes", () => {
       expect.objectContaining({
         amountCents: 25_000,
         currency: "USD",
+        customerEmail: "buyer@example.com",
         description: "Founding beta payment",
       }),
     );
+    expect(sendLifecycleEvent).toHaveBeenCalledWith({
+      email: "buyer@example.com",
+      eventName: "dearme_first_payment",
+      properties: {
+        source: "manual_paid_beta_access",
+        tier: "paid_beta",
+        amountCents: 25_000,
+        currency: "USD",
+      },
+    });
     expect(mockLogActivity).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -2131,6 +2152,7 @@ describe("DearMe brand blueprint routes", () => {
         }),
       }),
     );
+    expect(JSON.stringify(mockLogActivity.mock.calls.at(-1))).not.toContain("buyer@example.com");
   });
 
   it("requires board access before recording paid beta payments", async () => {
