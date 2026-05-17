@@ -39,6 +39,12 @@ function setTextareaValue(input: HTMLTextAreaElement, value: string) {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+function setInputValue(input: HTMLInputElement, value: string) {
+  const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+  valueSetter?.call(input, value);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 function installIndexHead() {
   const html = readFileSync("index.html", "utf8");
   const headMatch = html.match(/<head>([\s\S]*?)<\/head>/);
@@ -108,6 +114,7 @@ describe("DearMeLanding", () => {
     document.head.innerHTML = "";
     document.body.innerHTML = "";
     window.sessionStorage.clear();
+    vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
@@ -213,6 +220,105 @@ describe("DearMeLanding", () => {
       landing_copy_variant: "control",
       landing_hero_theme: "private_growth_team",
     });
+  });
+
+  it("opens a soft exit-intent waitlist modal and sends the Loops-backed request", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 202,
+      json: async () => ({ status: "accepted" }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await act(async () => {
+      document.dispatchEvent(new MouseEvent("mouseleave", { clientY: -1 }));
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Want a 5-minute preview emailed to you?");
+    expect(analyticsMock.capture).toHaveBeenCalledWith("landing_exit_intent_seen", {
+      landing_copy_variant: "control",
+      landing_hero_theme: "private_growth_team",
+    });
+
+    const input = container.querySelector<HTMLInputElement>("#dearme-exit-email");
+    const form = input?.closest("form");
+    expect(input).not.toBeNull();
+    expect(form).not.toBeNull();
+
+    await act(async () => {
+      setInputValue(input!, "reader@example.com");
+    });
+    await act(async () => {
+      form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    });
+    await flushReact();
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/dearme/landing-exit-waitlist", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: "reader@example.com",
+        landingCopyVariant: "control",
+        landingHeroTheme: "private_growth_team",
+      }),
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("landing_exit_waitlist_submitted", {
+      landing_copy_variant: "control",
+      landing_hero_theme: "private_growth_team",
+      source: "exit_intent",
+    });
+    expect(container.textContent).toContain("Preview requested");
+  });
+
+  it("dismisses the exit-intent modal without capturing an email", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await act(async () => {
+      document.dispatchEvent(new MouseEvent("mouseleave", { clientY: -1 }));
+    });
+    await flushReact();
+
+    const dismissButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Not now"),
+    );
+    expect(dismissButton).toBeDefined();
+
+    await act(async () => {
+      dismissButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flushReact();
+
+    expect(container.textContent).not.toContain("Want a 5-minute preview emailed to you?");
+    expect(window.sessionStorage.getItem("dearme:landing-exit-waitlist-dismissed")).toBe("1");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks invalid exit-intent emails without sending the waitlist request", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await act(async () => {
+      document.dispatchEvent(new MouseEvent("mouseleave", { clientY: -1 }));
+    });
+    await flushReact();
+
+    const input = container.querySelector<HTMLInputElement>("#dearme-exit-email");
+    const form = input?.closest("form");
+    expect(input).not.toBeNull();
+    expect(form).not.toBeNull();
+
+    await act(async () => {
+      setInputValue(input!, "not-email");
+    });
+    await act(async () => {
+      form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Enter a work email for the preview.");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("renders the before-and-after hero variant", async () => {
