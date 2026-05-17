@@ -1,6 +1,9 @@
-import { ArrowLeft, Check, Mail } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { ArrowLeft, ArrowRight, Check, Mail } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { capture } from "@/lib/analytics";
 import {
   DearMeEvidenceGrid,
   DearMePageShell,
@@ -29,7 +32,55 @@ const BETA_NOTES = [
   },
 ] as const;
 
+const PRICING_FAQS = [
+  {
+    question: "What happens during the three-day trial?",
+    answer: "You get the first private proof pass, voice profile, opportunity shape, and launch call preview before monthly billing starts.",
+  },
+  {
+    question: "Do public posts or messages go out automatically?",
+    answer: "No. Publish, send, deploy, and spend decisions stay approval-only, so every public move waits for your explicit call.",
+  },
+  {
+    question: "Can I see the product before joining?",
+    answer: "Yes. The first-cycle preview shows the proof pack, weekly letter shape, opportunity card, and private-site pass before you request access.",
+  },
+  {
+    question: "Why is the beta invite-only?",
+    answer: "The first accounts need close setup so the voice and proof loop are useful before self-serve checkout opens.",
+  },
+  {
+    question: "Can I cancel before paying?",
+    answer: "Yes. The trial is meant to make the value inspectable first, and any paid continuation is shown before purchase.",
+  },
+] as const;
+
+const WAITLIST_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function DearMePricing() {
+  const [email, setEmail] = useState("");
+  const [waitlistStatus, setWaitlistStatus] = useState<"idle" | "joined">("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  function handleWaitlistSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmedEmail = email.trim();
+
+    if (!WAITLIST_EMAIL_PATTERN.test(trimmedEmail)) {
+      setError("Enter a work email to join the private beta waitlist.");
+      setWaitlistStatus("idle");
+      return;
+    }
+
+    capture("pricing_waitlist_joined", {
+      source: "pricing",
+      plan: "beta_29",
+    });
+    setEmail(trimmedEmail);
+    setError(null);
+    setWaitlistStatus("joined");
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-5 sm:px-6 lg:px-8">
@@ -53,12 +104,23 @@ export function DearMePricing() {
           <div className="max-w-3xl space-y-5">
             <p className="text-sm font-medium text-muted-foreground">Private beta pricing</p>
             <h1 className="text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
-              One plan for getting your private brand cycle moving.
+              Try the private growth cycle before the $29 plan begins.
             </h1>
             <p className="max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-              DearMe is invite-only during beta so each account starts with a tight first cycle,
-              clear approvals, and no surprise public moves.
+              DearMe is invite-only during beta so the first proof pass, voice profile, and launch
+              decisions are clear before a paid month starts.
             </p>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild size="lg" className="min-h-11">
+                <a href="/dearme">
+                  Start the 3-day trial
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="min-h-11">
+                <a href="/landing">See the product first</a>
+              </Button>
+            </div>
           </div>
 
           <section
@@ -93,9 +155,9 @@ export function DearMePricing() {
             </ul>
 
             <Button asChild size="lg" className="mt-6 w-full">
-              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20access">
-                Request access
-                <Mail className="h-4 w-4" />
+              <a href="/dearme">
+                Start the 3-day trial
+                <ArrowRight className="h-4 w-4" />
               </a>
             </Button>
             <p className="mt-3 text-xs leading-5 text-muted-foreground">
@@ -113,6 +175,80 @@ export function DearMePricing() {
             />
           ))}
         </DearMeEvidenceGrid>
+
+        <section className="grid gap-6 border-t border-border py-8 lg:grid-cols-[minmax(0,0.75fr)_minmax(22rem,0.55fr)]">
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">Invite waitlist</p>
+            <h2 className="text-2xl font-semibold tracking-normal">Get the checkout link when your beta seat is ready.</h2>
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+              Join with your work email. We will use it only for beta access and the $29/month plan handoff.
+            </p>
+          </div>
+
+          <form className="space-y-3" onSubmit={handleWaitlistSubmit}>
+            <label htmlFor="dearme-pricing-email" className="text-sm font-medium">
+              Work email
+            </label>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Input
+                id="dearme-pricing-email"
+                name="email"
+                type="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setWaitlistStatus("idle");
+                  if (error) setError(null);
+                }}
+                placeholder="you@company.com"
+                aria-invalid={error ? "true" : undefined}
+                aria-describedby={
+                  error
+                    ? "dearme-pricing-email-error"
+                    : waitlistStatus === "joined"
+                      ? "dearme-pricing-email-success"
+                      : undefined
+                }
+                className="min-h-11 bg-background"
+              />
+              <Button type="submit" className="min-h-11 shrink-0">
+                Join waitlist
+                <Mail className="h-4 w-4" />
+              </Button>
+            </div>
+            {error ? (
+              <p id="dearme-pricing-email-error" className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            ) : null}
+            {waitlistStatus === "joined" ? (
+              <p id="dearme-pricing-email-success" className="text-sm text-muted-foreground" role="status">
+                You are on the beta waitlist. We will send the invite when your seat is ready.
+              </p>
+            ) : null}
+          </form>
+        </section>
+
+        <section className="border-t border-border py-8">
+          <div className="max-w-2xl">
+            <p className="text-sm font-medium text-muted-foreground">Pricing FAQ</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-normal">The common questions before paying.</h2>
+          </div>
+          <div className="mt-5 divide-y divide-border border-y border-border">
+            {PRICING_FAQS.map((item) => (
+              <details key={item.question} className="group py-4">
+                <summary className="cursor-pointer list-none text-base font-semibold">
+                  <span className="inline-flex w-full items-center justify-between gap-4">
+                    {item.question}
+                    <span className="text-muted-foreground group-open:hidden">+</span>
+                    <span className="hidden text-muted-foreground group-open:inline">-</span>
+                  </span>
+                </summary>
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">{item.answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
       </DearMePageShell>
     </main>
   );
