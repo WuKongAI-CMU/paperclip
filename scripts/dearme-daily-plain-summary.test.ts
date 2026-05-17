@@ -59,6 +59,7 @@ function standingLoopAudit(): DearMeStandingLoopAudit {
         ],
       },
     },
+    dailyPlainSummaryFacts: [],
     nextAction: {
       label: "OpenClaw shared Telegram/iMessage message proof",
       reason: "Blocked by imessage_message.",

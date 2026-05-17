@@ -28,6 +28,7 @@ export interface DearMeStandingLoopAudit {
   backlog: DearMeBacklogAudit;
   dependency: DearMeDependencyLoopAudit;
   goal: DearMeGoalAudit;
+  dailyPlainSummaryFacts: string[];
   nextAction: {
     label: string;
     reason: string;
@@ -49,6 +50,28 @@ export interface DearMeStandingLoopAuditArgs {
 
 const DEFAULT_HANDOFF_PATH = "docs/dearme/CODEX-HANDOFF-TOKEN.md";
 const DEFAULT_LEDGER_PATH = "docs/dearme/CODEX-RUN-LEDGER.md";
+const DAILY_PLAIN_API_KEY_ENV = "DEARME_PLAIN_API_KEY";
+const DAILY_PLAIN_PRIMARY_EMAIL_ENV = "DEARME_CODEX_DAILY_PLAIN_EMAIL";
+const DAILY_PLAIN_FALLBACK_EMAIL_ENV = "DEARME_PLAIN_DAILY_EMAIL";
+
+function configuredValue(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : null;
+}
+
+export function dailyPlainSummaryFactsNeeded(env: NodeJS.ProcessEnv = process.env): string[] {
+  const facts: string[] = [];
+  if (!configuredValue(env[DAILY_PLAIN_API_KEY_ENV])) {
+    facts.push(`${DAILY_PLAIN_API_KEY_ENV} is missing.`);
+  }
+  if (
+    !configuredValue(env[DAILY_PLAIN_PRIMARY_EMAIL_ENV])
+    && !configuredValue(env[DAILY_PLAIN_FALLBACK_EMAIL_ENV])
+  ) {
+    facts.push(`${DAILY_PLAIN_PRIMARY_EMAIL_ENV} or ${DAILY_PLAIN_FALLBACK_EMAIL_ENV} is missing.`);
+  }
+  return facts;
+}
 
 function ownerBlocked(goal: DearMeGoalAudit): boolean {
   return !goal.complete && (
@@ -69,6 +92,7 @@ export function summarizeDearMeStandingLoopAudit(
   backlog: DearMeBacklogAudit,
   dependency: DearMeDependencyLoopAudit,
   goal: DearMeGoalAudit,
+  dailyPlainSummaryFacts: string[] = [],
 ): DearMeStandingLoopAudit {
   if (!backlog.complete) {
     return {
@@ -77,6 +101,7 @@ export function summarizeDearMeStandingLoopAudit(
       backlog,
       dependency,
       goal,
+      dailyPlainSummaryFacts,
       nextAction: {
         label: backlog.nextAction.label,
         reason: backlog.nextAction.reason,
@@ -92,6 +117,7 @@ export function summarizeDearMeStandingLoopAudit(
       backlog,
       dependency,
       goal,
+      dailyPlainSummaryFacts,
       nextAction: {
         label: dependency.nextAction.label,
         reason: dependency.nextAction.reason,
@@ -107,6 +133,7 @@ export function summarizeDearMeStandingLoopAudit(
       backlog,
       dependency,
       goal,
+      dailyPlainSummaryFacts,
       nextAction: {
         label: "Goal complete",
         reason: "All DearMe goal-audit requirements are met.",
@@ -122,6 +149,7 @@ export function summarizeDearMeStandingLoopAudit(
       backlog,
       dependency,
       goal,
+      dailyPlainSummaryFacts,
       nextAction: {
         label: goal.nextAction.label,
         reason: goal.nextAction.reason,
@@ -138,6 +166,7 @@ export function summarizeDearMeStandingLoopAudit(
     backlog,
     dependency,
     goal,
+    dailyPlainSummaryFacts,
     nextAction: {
       label: goal.nextAction.label,
       reason: goal.nextAction.reason,
@@ -166,6 +195,12 @@ export function formatDearMeStandingLoopAudit(audit: DearMeStandingLoopAudit): s
   if (audit.nextAction.hostedCheckoutFacts?.length) {
     lines.push("- First-payment checkout facts needed:");
     for (const fact of audit.nextAction.hostedCheckoutFacts) {
+      lines.push(`  - ${fact}`);
+    }
+  }
+  if (audit.dailyPlainSummaryFacts.length) {
+    lines.push("- Daily Plain summary facts needed:");
+    for (const fact of audit.dailyPlainSummaryFacts) {
       lines.push(`  - ${fact}`);
     }
   }
@@ -250,7 +285,12 @@ export async function runDearMeStandingLoopAudit(
     runDearMeDependencyLoopAudit(dependencyArgs),
     buildDearMeGoalAudit(args.envFiles, process.env),
   ]);
-  return summarizeDearMeStandingLoopAudit(backlog, dependency, goal);
+  return summarizeDearMeStandingLoopAudit(
+    backlog,
+    dependency,
+    goal,
+    dailyPlainSummaryFactsNeeded(process.env),
+  );
 }
 
 function usage(): string {

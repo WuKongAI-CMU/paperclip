@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  dailyPlainSummaryFactsNeeded,
   formatDearMeStandingLoopAudit,
   parseDearMeStandingLoopAuditArgs,
   summarizeDearMeStandingLoopAudit,
@@ -120,6 +121,35 @@ test("keeps payment setup facts visible in owner-blocked standing-loop output", 
   assert.match(formatted, /First-payment checkout facts needed/);
   assert.match(formatted, /DEARME_PAYMENT_LINK_URL is missing/);
   assert.match(formatted, /STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)/);
+});
+
+test("reports missing daily Plain summary delivery configuration", () => {
+  assert.deepEqual(dailyPlainSummaryFactsNeeded({}), [
+    "DEARME_PLAIN_API_KEY is missing.",
+    "DEARME_CODEX_DAILY_PLAIN_EMAIL or DEARME_PLAIN_DAILY_EMAIL is missing.",
+  ]);
+
+  assert.deepEqual(dailyPlainSummaryFactsNeeded({
+    DEARME_PLAIN_API_KEY: "plain-key",
+    DEARME_PLAIN_DAILY_EMAIL: "peter@example.com",
+  }), []);
+});
+
+test("keeps daily Plain summary facts visible in standing-loop output", () => {
+  const audit = summarizeDearMeStandingLoopAudit(
+    backlogAudit(),
+    dependencyAudit(),
+    goalAudit(),
+    ["DEARME_PLAIN_API_KEY is missing."],
+  );
+
+  assert.equal(audit.state, "owner-blocked");
+  assert.deepEqual(audit.dailyPlainSummaryFacts, [
+    "DEARME_PLAIN_API_KEY is missing.",
+  ]);
+  const formatted = formatDearMeStandingLoopAudit(audit).join("\n");
+  assert.match(formatted, /Daily Plain summary facts needed/);
+  assert.match(formatted, /DEARME_PLAIN_API_KEY is missing/);
 });
 
 test("prioritizes missing backlog ledger entries before dependency or goal work", () => {
