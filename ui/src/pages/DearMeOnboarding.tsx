@@ -171,6 +171,7 @@ const DEARME_PAID_BETA_CUSTOMER_RECEIPT_FILENAME = "paid-beta-customer-receipt.t
 const DEARME_PAID_BETA_WELCOME_PLAN_RECEIPT_FILENAME = "paid-beta-welcome-plan-receipt.txt";
 const DEARME_PAID_BETA_CLOSE_KIT_RECEIPT_FILENAME = "paid-beta-close-kit-receipt.txt";
 const DEARME_PAID_BETA_PAYMENT_PATH_RECEIPT_FILENAME = "paid-beta-payment-path-receipt.txt";
+const DEARME_PAID_BETA_MONTHLY_OFFER_CENTS = 2_900;
 const DEARME_EMPTY_WEEK_RECOVERY_RECEIPT_FILENAME = "empty-week-recovery-receipt.txt";
 const DEARME_AUTONOMY_CONTRACT_RECEIPT_FILENAME = "autonomy-contract-receipt.txt";
 const DEARME_PAID_USER_OPERATIONS_RECEIPT_FILENAME = "paid-user-operations-receipt.txt";
@@ -3149,8 +3150,11 @@ function FirstCyclePanel({
   isPending,
   canStartPrivateWork,
   privateWorkStarted,
+  paidBetaActive,
+  paidBetaCheckoutReady,
   onOpenWorkReady,
   onOpenPreview,
+  onFocusPaidBeta,
   onIntentChange,
   onPreview,
 }: {
@@ -3159,8 +3163,11 @@ function FirstCyclePanel({
   isPending: boolean;
   canStartPrivateWork: boolean;
   privateWorkStarted: boolean;
+  paidBetaActive: boolean;
+  paidBetaCheckoutReady: boolean;
   onOpenWorkReady: () => void;
   onOpenPreview: (handle: string) => void;
+  onFocusPaidBeta: () => void;
   onIntentChange: (value: string) => void;
   onPreview: () => void;
 }) {
@@ -3333,6 +3340,46 @@ function FirstCyclePanel({
             className="mt-4 min-h-40 min-w-0 max-w-full resize-none bg-background/85 font-mono text-xs leading-relaxed [field-sizing:fixed]"
             readOnly
             value={firstCycleStartReceiptText}
+          />
+        </section>
+      ) : null}
+
+      {preview && !paidBetaActive && !privateWorkStarted ? (
+        <section
+          aria-label="First cycle paid access handoff"
+          className="mt-5 rounded-md border border-primary/30 bg-primary/5 p-4"
+        >
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <CreditCard className="h-4 w-4 text-primary" />
+                Your first cycle is ready to fund.
+              </div>
+              <p className="mt-1 max-w-3xl text-sm text-foreground/85">
+                Use this proof pack to make the first paid ask. Paid access opens the brand team,
+                Voice & Memory, weekly receipts, and the same launch-call boundary.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={paidBetaCheckoutReady ? "default" : "secondary"}>
+                {paidBetaCheckoutReady ? "Checkout ready" : `${money(DEARME_PAID_BETA_MONTHLY_OFFER_CENTS)} beta`}
+              </Badge>
+              <Button type="button" size="sm" className="min-h-11" onClick={onFocusPaidBeta}>
+                <CreditCard className="h-4 w-4" />
+                Open paid beta close kit
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <DearMeChecklist
+            className="mt-4 sm:grid-cols-3"
+            icon={CheckCircle2}
+            items={[
+              "Show the proof pack",
+              "Use the close kit",
+              "Open paid access after receipt",
+            ]}
+            aria-label="First-cycle paid ask steps"
           />
         </section>
       ) : null}
@@ -12932,6 +12979,11 @@ export function DearMeOnboarding() {
   const paidBetaEntitlement = paidBetaStatus?.entitlement ?? null;
   const canRequestPaidBetaWork = paidBetaEntitlement?.canRequestBrandOsApproval === true;
   const canStartPrivateWork = paidBetaEntitlement?.canStartPrivateWork === true;
+  const paidBetaCheckoutReady = Boolean(
+    paidBetaStatus?.status !== "active" &&
+      paidBetaStatus?.hostedCheckout?.configured &&
+      paidBetaStatus.hostedCheckout.paymentUrl,
+  );
   const paidBetaCohortCompanyIds = useMemo(
     () => normalizePaidBetaCohortCompanyIds(selectedCompanyId, companies),
     [companies, selectedCompanyId],
@@ -13285,6 +13337,13 @@ export function DearMeOnboarding() {
     if (input instanceof HTMLTextAreaElement) input.focus();
   }, []);
 
+  const handleFocusPaidBeta = useCallback(() => {
+    document.getElementById(DEARME_PAID_BETA_ACCESS_ID)?.scrollIntoView?.({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, []);
+
   if (!selectedCompanyId) {
     return <DearMeProfileRequiredHandoff knownFor={knownForIntent} />;
   }
@@ -13389,8 +13448,11 @@ export function DearMeOnboarding() {
         preview={firstCyclePreview}
         isPending={firstCycleMutation.isPending}
         canStartPrivateWork={canStartPrivateWork}
+        paidBetaActive={canRequestPaidBetaWork}
+        paidBetaCheckoutReady={paidBetaCheckoutReady}
         onOpenPreview={handleOpenFirstCyclePreview}
         onOpenWorkReady={handleOpenWorkReady}
+        onFocusPaidBeta={handleFocusPaidBeta}
         onIntentChange={(value) => {
           setActionError(null);
           setFirstCycleIntent(value);

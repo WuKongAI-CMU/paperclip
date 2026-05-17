@@ -4756,7 +4756,24 @@ describe("DearMeOnboarding", () => {
     expect(container.textContent).toContain("Ready when you choose to launch");
     expect(container.textContent).not.toContain("Ready for approval");
     expect(container.textContent).not.toContain("Sample team package");
+    const paidAccessHandoff = surfaceByLabel(container, "First cycle paid access handoff");
+    expect(paidAccessHandoff.textContent).toContain("Your first cycle is ready to fund.");
+    expect(paidAccessHandoff.textContent).toContain("$29 beta");
+    expect(paidAccessHandoff.textContent).toContain("Open paid beta close kit");
+    expect(paidAccessHandoff.textContent).toContain("Open paid access after receipt");
+    expectNoHiddenProductTerms(paidAccessHandoff.textContent, Object.values(HIDDEN_PRODUCT_TERMS));
     expect(readDearMeFirstCyclePreview("company-1", "peter-studio")).not.toBeNull();
+
+    const paidBetaAccess = surfaceByLabel(container, "Paid beta access");
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(paidBetaAccess, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    await act(async () => {
+      buttonByText(paidAccessHandoff, "Open paid beta close kit")?.click();
+    });
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
 
     await act(async () => {
       buttonByText(container, "Open proof preview")?.click();
