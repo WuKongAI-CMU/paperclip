@@ -5195,6 +5195,40 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("moves successful checkout returns into first-cycle start after paid access opens", async () => {
+    mockLocation.search = "?view=brand-os&checkout_return=success";
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const checkoutReturnStatus = surfaceByLabel(container, "Checkout return status");
+    expect(checkoutReturnStatus.textContent).toContain("Checkout confirmed");
+    expect(checkoutReturnStatus.textContent).toContain("Paid access is open");
+    expect(checkoutReturnStatus.textContent).toContain("Start first cycle now");
+    expect(checkoutReturnStatus.textContent).not.toContain("Refresh access");
+
+    await act(async () => {
+      buttonByText(checkoutReturnStatus, "Start first cycle now")?.click();
+    });
+
+    expect(document.activeElement).toBe(container.querySelector("#dearme-first-cycle-intent"));
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("records the allowlisted checkout source when returning to the workroom", async () => {
     mockLocation.search = "?view=brand-os&checkout_return=success&checkout_source=paid&knownFor=Private%20brief";
     const root = createRoot(container);
