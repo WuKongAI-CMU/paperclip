@@ -13677,6 +13677,17 @@ export function DearMeOnboarding() {
     navigate(buildDearMeSitePreviewPath(handle));
   }
 
+  function handleOpenGeneratedFirstCyclePreview(handle: string) {
+    if (firstCyclePreview?.sitePreview.handle === handle) {
+      capture("first_cycle_proof_opened", {
+        source: firstCycleAnalyticsSource,
+        paid_beta_active: canStartPrivateWork,
+        private_work_started: firstCyclePrivateWorkStarted,
+      });
+    }
+    handleOpenFirstCyclePreview(handle);
+  }
+
   function handleOpenWorkReady() {
     navigate(buildDearMeWorkReadyRoute(location.search));
   }
@@ -13855,7 +13866,7 @@ export function DearMeOnboarding() {
         paidBetaActive={canRequestPaidBetaWork}
         paidBetaCheckoutReady={paidBetaCheckoutReady}
         paidBetaCheckoutHref={paidBetaCheckoutHref}
-        onOpenPreview={handleOpenFirstCyclePreview}
+        onOpenPreview={handleOpenGeneratedFirstCyclePreview}
         onOpenWorkReady={handleOpenFirstCycleWorkReady}
         onFocusPaidBeta={handleFocusPaidBeta}
         onOpenPaidBetaCheckout={handleOpenFirstCycleCheckout}

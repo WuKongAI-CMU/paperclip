@@ -4625,6 +4625,15 @@ describe("DearMeOnboarding", () => {
     expect(firstCycleStartReceiptNote.value).toContain("Launch boundary:");
     expectNoHiddenProductTerms(firstCycleStartReceiptNote.value, Object.values(HIDDEN_PRODUCT_TERMS));
     await act(async () => {
+      buttonByText(firstCycleStartReceipt, "Open proof page")?.click();
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_proof_opened", {
+      source: "direct",
+      paid_beta_active: true,
+      private_work_started: true,
+    });
+    expect(mockNavigate).toHaveBeenCalledWith("/dearme/site-preview/peter-studio");
+    await act(async () => {
       buttonByText(firstCycleStartReceipt, "Review Work Ready")?.click();
     });
     expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_work_ready_opened", {
