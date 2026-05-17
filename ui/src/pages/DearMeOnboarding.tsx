@@ -13572,6 +13572,11 @@ export function DearMeOnboarding() {
   function handleFirstCyclePreview() {
     const positioning = firstCycleIntent.trim() || form.positioning.trim();
     if (!positioning) {
+      capture("first_cycle_submit_blocked", {
+        reason: "missing_positioning",
+        source: firstCycleAnalyticsSource,
+        paid_beta_active: canStartPrivateWork,
+      });
       setActionError("Answer what you want to become known for before starting the first cycle.");
       return;
     }

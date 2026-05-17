@@ -4693,6 +4693,50 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("records blocked first-cycle submits without sending the missing answer", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      buttonByText(container, "Preview first cycle")?.click();
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Answer what you want to become known for before starting the first cycle.");
+    expect(mockDearmeApi.previewFirstCycle).not.toHaveBeenCalled();
+    expect(mockDearmeApi.startFirstCycle).not.toHaveBeenCalled();
+    expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_submit_blocked", {
+      reason: "missing_positioning",
+      source: "direct",
+      paid_beta_active: false,
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "first_cycle_submit_blocked",
+      expect.objectContaining({
+        knownFor: expect.any(String),
+      }),
+    );
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "first_cycle_submitted",
+      expect.any(Object),
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("downloads the first cycle start receipt after private work starts", async () => {
     mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
     const root = createRoot(container);
