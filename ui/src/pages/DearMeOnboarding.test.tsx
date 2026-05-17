@@ -2054,6 +2054,39 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("keeps the landing first-cycle brief available after queryless navigation", async () => {
+    mockCompanyContext.selectedCompanyId = null;
+    mockCompanyContext.selectedCompany = null;
+    mockLocation.search = "";
+    window.sessionStorage.setItem(
+      "dearme:first-cycle-landing-brief",
+      "Known for practical launches from customer proof",
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Your first cycle brief is ready.");
+    expect(container.textContent).toContain("Known for practical launches from customer proof");
+    expect(mockDearmeApi.getWorkbench).not.toHaveBeenCalled();
+    expect(mockDearmeApi.getOutputs).not.toHaveBeenCalled();
+    expect(mockDearmeApi.getPaidBetaAccess).not.toHaveBeenCalled();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("captures profile invite requests from the first-cycle bridge without sending the landing answer to analytics", async () => {
     mockCompanyContext.selectedCompanyId = null;
     mockCompanyContext.selectedCompany = null;
@@ -5017,6 +5050,43 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
+    expect(analyticsMock.capture).toHaveBeenCalledWith("signup_entry_viewed", {
+      source: "landing",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "signup_entry_viewed",
+      expect.objectContaining({
+        knownFor: expect.any(String),
+      }),
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("restores a saved landing brief into the first-cycle form without analytics payloads", async () => {
+    mockLocation.search = "?view=brand-os";
+    window.sessionStorage.setItem(
+      "dearme:first-cycle-landing-brief",
+      "Build proof from customer research",
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const firstCycleIntent = container.querySelector("#dearme-first-cycle-intent") as HTMLTextAreaElement;
+    expect(firstCycleIntent.value).toBe("Build proof from customer research");
     expect(analyticsMock.capture).toHaveBeenCalledWith("signup_entry_viewed", {
       source: "landing",
     });
