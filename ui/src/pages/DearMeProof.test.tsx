@@ -106,6 +106,20 @@ describe("DearMeProof", () => {
 
     expect(container.textContent).toContain("No public proof is published yet.");
     expect(container.textContent).toContain("Peter can opt in from his DearMe account");
+    const pricingLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.includes("See beta pricing"));
+    expect(pricingLink?.href).toMatch(/\/pricing$/);
+    pricingLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+
+    await act(async () => {
+      pricingLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("proof_fallback_pricing_clicked", {
+      state: "empty",
+      source: "proof_feed",
+      plan: "beta_29",
+    });
   });
 
   it("renders a customer-safe error state when the feed request fails", async () => {
@@ -115,6 +129,20 @@ describe("DearMeProof", () => {
 
     expect(container.textContent).toContain("Proof feed is unavailable.");
     expect(container.textContent).toContain("the latest receipts could not load");
+    const pricingLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.includes("See beta pricing"));
+    expect(pricingLink?.href).toMatch(/\/pricing$/);
+    pricingLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+
+    await act(async () => {
+      pricingLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("proof_fallback_pricing_clicked", {
+      state: "error",
+      source: "proof_feed",
+      plan: "beta_29",
+    });
   });
 
   it("tracks proof invite clicks without customer identifiers", async () => {

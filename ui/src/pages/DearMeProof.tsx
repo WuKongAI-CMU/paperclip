@@ -102,6 +102,14 @@ export function DearMeProof() {
     });
   }
 
+  function handleFallbackPricingClick(state: "empty" | "error") {
+    capture("proof_fallback_pricing_clicked", {
+      state,
+      source: "proof_feed",
+      plan: "beta_29",
+    });
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-5 sm:px-6 lg:px-8">
@@ -186,6 +194,11 @@ export function DearMeProof() {
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   The public page is still live, but the latest receipts could not load.
                 </p>
+                <Button asChild variant="outline" size="sm" className="mt-4 min-h-11">
+                  <a href="/pricing" onClick={() => handleFallbackPricingClick("error")}>
+                    See beta pricing
+                  </a>
+                </Button>
               </DearMeFocusSurface>
             ) : null}
 
@@ -195,6 +208,11 @@ export function DearMeProof() {
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   Peter can opt in from his DearMe account after the first approved public outcome is ready.
                 </p>
+                <Button asChild variant="outline" size="sm" className="mt-4 min-h-11">
+                  <a href="/pricing" onClick={() => handleFallbackPricingClick("empty")}>
+                    See beta pricing
+                  </a>
+                </Button>
               </DearMeFocusSurface>
             ) : null}
 
