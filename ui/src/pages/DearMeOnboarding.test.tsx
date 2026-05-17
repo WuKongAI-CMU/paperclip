@@ -4902,6 +4902,37 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("tracks pricing-sourced signup entry without customer identifiers", async () => {
+    mockLocation.search = "?view=brand-os&signup_source=pricing";
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("signup_entry_viewed", {
+      source: "pricing",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "signup_entry_viewed",
+      expect.objectContaining({
+        email: expect.any(String),
+      }),
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("keeps private team start locked during trial preview", async () => {
     const root = createRoot(container);
     const queryClient = new QueryClient({
