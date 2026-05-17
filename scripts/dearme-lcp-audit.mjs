@@ -22,6 +22,27 @@ const METRIC_AUDITS = {
   interactionToNextPaintMs: "interaction-to-next-paint",
 };
 
+const LIGHTHOUSE_ATTEMPTS = 2;
+const LIGHTHOUSE_TIMEOUT_MS = 60000;
+
+function delay(ms) {
+  return new Promise((resolveTimeout) => setTimeout(resolveTimeout, ms));
+}
+
+function withTimeout(promise, timeoutMs, label) {
+  let timeout;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeout = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms.`)), timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeout));
+}
+
+export function isRetriableLighthouseError(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /ECONNREFUSED|ECONNRESET|ECONNABORTED|timed out/i.test(message);
+}
+
 function parsePositiveNumber(value, fallback, label) {
   if (value === undefined || value === "") return fallback;
   const parsed = Number(value);
@@ -191,33 +212,58 @@ function startVitePreview() {
   return child;
 }
 
-async function runLighthouse(url) {
+async function runLighthouseOnce(url) {
   const chrome = await launch({
-    chromeFlags: ["--headless=new", "--no-sandbox", "--disable-dev-shm-usage"],
+    chromeFlags: ["--headless=new", "--no-sandbox", "--disable-dev-shm-usage", "--remote-debugging-address=127.0.0.1"],
   });
 
   try {
-    const result = await lighthouse(url, {
-      port: chrome.port,
-      output: "json",
-      onlyCategories: ["performance"],
-      formFactor: "desktop",
-      screenEmulation: { disabled: true },
-      throttlingMethod: "devtools",
-      throttling: {
-        rttMs: 40,
-        throughputKbps: 10240,
-        requestLatencyMs: 0,
-        downloadThroughputKbps: 0,
-        uploadThroughputKbps: 0,
-        cpuSlowdownMultiplier: 1,
-      },
-      logLevel: "error",
-    });
+    const result = await withTimeout(
+      lighthouse(url, {
+        port: chrome.port,
+        output: "json",
+        onlyCategories: ["performance"],
+        formFactor: "desktop",
+        screenEmulation: { disabled: true },
+        throttlingMethod: "devtools",
+        throttling: {
+          rttMs: 40,
+          throughputKbps: 10240,
+          requestLatencyMs: 0,
+          downloadThroughputKbps: 0,
+          uploadThroughputKbps: 0,
+          cpuSlowdownMultiplier: 1,
+        },
+        logLevel: "error",
+      }),
+      LIGHTHOUSE_TIMEOUT_MS,
+      "DearMe Lighthouse audit",
+    );
     return result.lhr;
   } finally {
     await chrome.kill();
   }
+}
+
+async function runLighthouse(url) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= LIGHTHOUSE_ATTEMPTS; attempt += 1) {
+    try {
+      return await runLighthouseOnce(url);
+    } catch (error) {
+      lastError = error;
+      if (attempt >= LIGHTHOUSE_ATTEMPTS || !isRetriableLighthouseError(error)) {
+        throw error;
+      }
+      console.warn(
+        `DearMe Lighthouse attempt ${attempt} failed; retrying: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      await delay(1000);
+    }
+  }
+
+  throw lastError;
 }
 
 async function launchPlaywrightChromium() {
