@@ -12015,15 +12015,22 @@ function PaidBetaAccessPanel({
         "Status: ready to sell after payment",
         `Price: ${closeKitPrice}`,
         `Receipt note: ${closeKitReceiptNote}`,
+        hostedCheckoutReady ? `Checkout: ${hostedCheckoutHref}` : null,
         "What opens: first brand cycle, Voice & Memory, weekly receipt, and launch-call boundary.",
         hostedCheckoutReady
           ? "After payment: signed checkout receipt opens access automatically; use manual recording only as fallback."
           : "After payment: record access with the receipt reference, then start the first brand cycle.",
         "Not included yet: public launch proof waits for approved live delivery receipts.",
-      ].join("\n");
+      ].filter(Boolean).join("\n");
   const downloadCloseKitReceipt = useCallback(() => {
+    capture("paid_beta_close_kit_receipt_downloaded", {
+      source: signupSource ?? checkoutReturnSource,
+      signup_source: signupSource ?? "direct",
+      paid_beta_active: paidBetaActive,
+      checkout_ready: hostedCheckoutReady,
+    });
     downloadDearMeReceipt(closeKitHandoffText, DEARME_PAID_BETA_CLOSE_KIT_RECEIPT_FILENAME);
-  }, [closeKitHandoffText]);
+  }, [checkoutReturnSource, closeKitHandoffText, hostedCheckoutReady, paidBetaActive, signupSource]);
   const paymentPathItems: Array<{
     key: string;
     icon: LucideIcon;

@@ -6003,6 +6003,9 @@ describe("DearMeOnboarding", () => {
     expect((surfaceByLabel(container, "Paid beta close kit note") as HTMLTextAreaElement).value).toContain(
       "signed checkout receipt opens access automatically",
     );
+    expect((surfaceByLabel(container, "Paid beta close kit note") as HTMLTextAreaElement).value).toContain(
+      "Checkout: https://pay.example.com/dearme?client_reference_id=company-1",
+    );
 
     const paidBetaPaymentPath = surfaceByLabel(container, "Paid beta payment path receipt");
     expect(paidBetaPaymentPath.textContent).toContain("Self-serve checkout is ready for this account.");
@@ -6024,6 +6027,104 @@ describe("DearMeOnboarding", () => {
       expect(link.href).toBe("https://pay.example.com/dearme?client_reference_id=company-1");
     });
     expectNoHiddenProductTerms(container.textContent, Object.values(HIDDEN_PRODUCT_TERMS));
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("downloads the paid close kit receipt with checkout handoff attribution", async () => {
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("trial", {
+      hostedCheckout: {
+        configured: true,
+        paymentLinkConfigured: true,
+        receiptSyncConfigured: true,
+        paymentUrl: "https://pay.example.com/dearme?client_reference_id=company-1",
+        providerLabel: "Hosted checkout",
+        label: "Self-serve checkout ready",
+        summary: "A hosted payment link and signed receipt sync are ready for this account.",
+        nextActionLabel: "Open hosted checkout",
+        nextActionDescription: "Send the customer through checkout; DearMe opens paid access after the signed receipt arrives.",
+      },
+    }));
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const originalCreateObjectURL = URL.createObjectURL;
+    const originalRevokeObjectURL = URL.revokeObjectURL;
+    const createdBlobs: Blob[] = [];
+    const createObjectURL = vi.fn((blob: Blob) => {
+      createdBlobs.push(blob);
+      return "blob:dearme-paid-close-kit";
+    });
+    const revokeObjectURL = vi.fn();
+    const clickedDownloads: string[] = [];
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      clickedDownloads.push(this.download);
+    });
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectURL });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: revokeObjectURL });
+
+    try {
+      await act(async () => {
+        buttonByLabel(container, "Download paid-beta-close-kit-receipt.txt")?.click();
+      });
+
+      expect(clickedDownloads).toEqual(["paid-beta-close-kit-receipt.txt"]);
+      expect(revokeObjectURL).toHaveBeenCalledWith("blob:dearme-paid-close-kit");
+      await expect(createdBlobs[0]?.text()).resolves.toContain("DearMe private beta close kit");
+      await expect(createdBlobs[0]?.text()).resolves.toContain(
+        "Checkout: https://pay.example.com/dearme?client_reference_id=company-1",
+      );
+      await expect(createdBlobs[0]?.text()).resolves.toContain(
+        "After payment: signed checkout receipt opens access automatically",
+      );
+      expect(analyticsMock.capture).toHaveBeenCalledWith("paid_beta_close_kit_receipt_downloaded", {
+        source: "direct",
+        signup_source: "direct",
+        paid_beta_active: false,
+        checkout_ready: true,
+      });
+      expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+        "paid_beta_close_kit_receipt_downloaded",
+        expect.objectContaining({
+          receiptText: expect.any(String),
+          checkoutUrl: expect.any(String),
+          customerEmail: expect.any(String),
+        }),
+      );
+    } finally {
+      clickSpy.mockRestore();
+      if (originalCreateObjectURL) {
+        Object.defineProperty(URL, "createObjectURL", {
+          configurable: true,
+          value: originalCreateObjectURL,
+        });
+      } else {
+        Reflect.deleteProperty(URL, "createObjectURL");
+      }
+      if (originalRevokeObjectURL) {
+        Object.defineProperty(URL, "revokeObjectURL", {
+          configurable: true,
+          value: originalRevokeObjectURL,
+        });
+      } else {
+        Reflect.deleteProperty(URL, "revokeObjectURL");
+      }
+    }
 
     await act(async () => {
       root.unmount();
