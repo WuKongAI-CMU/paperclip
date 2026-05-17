@@ -76,6 +76,14 @@ export function DearMeFaq() {
     });
   }
 
+  function handlePricingClick(source: "nav" | "question") {
+    capture("static_pricing_clicked", {
+      page: "faq",
+      source,
+      plan: "beta_29",
+    });
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-4xl flex-col px-4 py-5 sm:px-6 lg:px-8">
@@ -86,7 +94,13 @@ export function DearMeFaq() {
           </a>
           <div className="flex flex-wrap items-center justify-end gap-3">
             <a href="/about" className="text-sm text-muted-foreground hover:text-foreground">About</a>
-            <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
+            <a
+              href="/pricing"
+              className="text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => handlePricingClick("nav")}
+            >
+              Pricing
+            </a>
             <Button asChild variant="outline" size="sm">
               <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite" onClick={() => handleInviteRequest("nav")}>
                 Request invite
@@ -119,7 +133,9 @@ export function DearMeFaq() {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg" className="min-h-11">
-              <a href="/pricing">See beta pricing</a>
+              <a href="/pricing" onClick={() => handlePricingClick("question")}>
+                See beta pricing
+              </a>
             </Button>
             <Button asChild variant="outline" size="lg" className="min-h-11">
               <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20question" onClick={() => handleInviteRequest("question")}>

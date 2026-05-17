@@ -102,6 +102,14 @@ export function DearMeProof() {
     });
   }
 
+  function handlePricingClick() {
+    capture("static_pricing_clicked", {
+      page: "proof",
+      source: "nav",
+      plan: "beta_29",
+    });
+  }
+
   function handleFallbackPricingClick(state: "empty" | "error") {
     capture("proof_fallback_pricing_clicked", {
       state,
@@ -120,7 +128,13 @@ export function DearMeProof() {
           </a>
           <div className="flex flex-wrap items-center justify-end gap-3">
             <a href="/about" className="text-sm text-muted-foreground hover:text-foreground">About</a>
-            <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
+            <a
+              href="/pricing"
+              className="text-sm text-muted-foreground hover:text-foreground"
+              onClick={handlePricingClick}
+            >
+              Pricing
+            </a>
             <a href="/faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</a>
             <Button asChild variant="outline" size="sm" className="min-h-11">
               <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite" onClick={handleInviteRequest}>

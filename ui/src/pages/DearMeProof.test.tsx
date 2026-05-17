@@ -170,6 +170,33 @@ describe("DearMeProof", () => {
     );
   });
 
+  it("tracks pricing clicks without customer identifiers", async () => {
+    await renderPage();
+    const pricingLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.trim() === "Pricing");
+    expect(pricingLink).toBeDefined();
+    pricingLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+
+    await act(async () => {
+      pricingLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_pricing_clicked", {
+      page: "proof",
+      source: "nav",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "static_pricing_clicked",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+        summary: expect.any(String),
+        linkUrl: expect.any(String),
+      }),
+    );
+  });
+
   it("does not expose hidden substrate or provider strings", async () => {
     await renderPage();
     const renderedText = container.textContent ?? "";

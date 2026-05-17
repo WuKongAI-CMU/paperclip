@@ -39,6 +39,14 @@ export function DearMeAbout() {
     });
   }
 
+  function handlePricingClick() {
+    capture("static_pricing_clicked", {
+      page: "about",
+      source: "nav",
+      plan: "beta_29",
+    });
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-5 sm:px-6 lg:px-8">
@@ -48,7 +56,13 @@ export function DearMeAbout() {
             DearMe
           </a>
           <div className="flex flex-wrap items-center justify-end gap-3">
-            <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
+            <a
+              href="/pricing"
+              className="text-sm text-muted-foreground hover:text-foreground"
+              onClick={handlePricingClick}
+            >
+              Pricing
+            </a>
             <a href="/proof" className="text-sm text-muted-foreground hover:text-foreground">Proof</a>
             <a href="/faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</a>
             <Button asChild variant="outline" size="sm">
