@@ -11709,6 +11709,7 @@ function PaidBetaAccessPanel({
   isError,
   error,
   checkoutReturnStatus,
+  signupSource,
   onFocusFirstCycle,
 }: {
   companyId: string;
@@ -11717,6 +11718,7 @@ function PaidBetaAccessPanel({
   isError: boolean;
   error: unknown;
   checkoutReturnStatus: DearMeCheckoutReturnStatus | null;
+  signupSource: DearMeSignupSource | null;
   onFocusFirstCycle: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -12148,10 +12150,11 @@ function PaidBetaAccessPanel({
   const handleOpenHostedCheckout = useCallback((source: string) => {
     capture("checkout_started", {
       source,
+      signup_source: signupSource ?? "direct",
       paid_beta_active: paidBetaActive,
       checkout_ready: hostedCheckoutReady,
     });
-  }, [hostedCheckoutReady, paidBetaActive]);
+  }, [hostedCheckoutReady, paidBetaActive, signupSource]);
 
   const recordPaymentMutation = useMutation({
     mutationFn: () => {
@@ -13714,6 +13717,7 @@ export function DearMeOnboarding() {
         isError={paidBetaAccessQuery.isError}
         error={paidBetaAccessQuery.error}
         checkoutReturnStatus={checkoutReturnStatus}
+        signupSource={signupSource}
         onFocusFirstCycle={handleFocusFirstCycle}
       />
 
