@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildDearMeDailyPlainSummary,
+  formatDearMeDailyLocalDate,
   parseDearMeDailyLedgerEntries,
   parseDearMeDailyPlainSummaryArgs,
   runDearMeDailyPlainSummary,
@@ -93,6 +94,17 @@ test("builds the required daily Plain summary from ledger and standing-loop evid
   assert.match(summary.body, /DEARME_LINKEDIN_DM_MESSAGES_URL/);
   assert.match(summary.body, /DEARME_PAYMENT_LINK_URL is missing/);
   assert.match(summary.body, /pnpm --silent dearme:next-proof -- --target openclaw_messages/);
+});
+
+test("defaults daily summary dates to the DearMe operating day instead of UTC", () => {
+  assert.equal(
+    formatDearMeDailyLocalDate(new Date("2026-05-17T00:32:00.000Z"), "America/New_York"),
+    "2026-05-16",
+  );
+  assert.equal(
+    formatDearMeDailyLocalDate(new Date("2026-05-17T04:32:00.000Z"), "America/New_York"),
+    "2026-05-17",
+  );
 });
 
 test("skips without live network when Plain is not configured", async () => {

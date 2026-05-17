@@ -11,6 +11,7 @@ import {
 const DEFAULT_LEDGER_PATH = "docs/dearme/CODEX-RUN-LEDGER.md";
 const DEFAULT_RECIPIENT_NAME = "Peter";
 const DEFAULT_SENDER_NAME = "Codex";
+const DEFAULT_OPERATOR_TIME_ZONE = "America/New_York";
 
 export interface DearMeDailyPlainSummaryArgs {
   help: boolean;
@@ -61,8 +62,25 @@ export interface DearMeDailyPlainSummaryOptions {
 
 const LEDGER_LINE_PATTERN = /^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})\s+([A-Z0-9-]+)\s+([0-9a-f]{7,40})\s+(PR #[0-9]+|-)\s+(\S+)\s+(.+)$/;
 
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+export function formatDearMeDailyLocalDate(
+  date = new Date(),
+  timeZone = process.env.DEARME_DAILY_SUMMARY_TIME_ZONE?.trim()
+    || process.env.TZ?.trim()
+    || DEFAULT_OPERATOR_TIME_ZONE,
+) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone,
+    year: "numeric",
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  if (!year || !month || !day) {
+    throw new Error(`Could not format DearMe daily summary date for time zone ${timeZone}.`);
+  }
+  return `${year}-${month}-${day}`;
 }
 
 function configuredValue(value: string | null | undefined) {
@@ -160,7 +178,7 @@ export function parseDearMeDailyPlainSummaryArgs(argv: string[]): DearMeDailyPla
     help: false,
     json: false,
     dryRun: false,
-    date: todayIso(),
+    date: formatDearMeDailyLocalDate(),
     ledgerPath: DEFAULT_LEDGER_PATH,
     recipientName: DEFAULT_RECIPIENT_NAME,
     senderName: DEFAULT_SENDER_NAME,
