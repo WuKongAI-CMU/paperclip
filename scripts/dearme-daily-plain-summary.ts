@@ -9,6 +9,7 @@ import {
 } from "./dearme-standing-loop-audit.ts";
 
 const DEFAULT_LEDGER_PATH = "docs/dearme/CODEX-RUN-LEDGER.md";
+const HUMAN_HELP_QUEUE_PATH = "docs/NEEDS_HUMAN_HELP.md";
 const DEFAULT_RECIPIENT_NAME = "Peter";
 const DEFAULT_SENDER_NAME = "Codex";
 const DEFAULT_OPERATOR_TIME_ZONE = "America/New_York";
@@ -139,6 +140,12 @@ function dailyPlainSummaryFacts(audit: DearMeStandingLoopAudit) {
   return audit.dailyPlainSummaryFacts;
 }
 
+function hasHumanHelpFacts(audit: DearMeStandingLoopAudit) {
+  return ownerFacts(audit).length > 0
+    || firstPaymentFacts(audit).length > 0
+    || dailyPlainSummaryFacts(audit).length > 0;
+}
+
 export function buildDearMeDailyPlainSummary(input: {
   date: string;
   ledgerEntries: DearMeDailyLedgerEntry[];
@@ -172,6 +179,12 @@ export function buildDearMeDailyPlainSummary(input: {
   }
   if (dailyPlainSummaryFactLines.length > 0) {
     bodyLines.push("", "Daily Plain summary facts needed:", ...dailyPlainSummaryFactLines);
+  }
+  if (hasHumanHelpFacts(audit)) {
+    bodyLines.push(
+      "",
+      `Human help queue: ${HUMAN_HELP_QUEUE_PATH} has the reply templates and safe follow-up commands for these blockers.`,
+    );
   }
   if (audit.nextAction.command) {
     bodyLines.push("", `Next command: ${audit.nextAction.command}`);
