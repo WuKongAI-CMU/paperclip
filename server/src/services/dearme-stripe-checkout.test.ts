@@ -228,8 +228,8 @@ describe("dearMeStripeCheckoutService", () => {
       customer_email: "buyer@example.com",
       client_reference_id: "company-1",
       line_items: [{ price: "price_dearme_beta", quantity: 1 }],
-      success_url: "https://app.example.com/dearme/checkout/success",
-      cancel_url: "https://app.example.com/dearme/checkout/cancel",
+      success_url: "https://app.example.com/dearme/checkout/success?session_id={CHECKOUT_SESSION_ID}",
+      cancel_url: "https://app.example.com/dearme/checkout/cancel?checkout=cancelled",
       metadata: {
         product: "dearme",
         access: "paid_beta",
@@ -237,6 +237,29 @@ describe("dearMeStripeCheckoutService", () => {
         customerEmail: "buyer@example.com",
       },
     });
+  });
+
+  it("preserves existing return URL query strings and fragments when adding checkout context", async () => {
+    const stripeClient = fakeStripeClient();
+    const service = dearMeStripeCheckoutService({} as Db, {
+      stripeClient,
+      paidBetaAccess: fakeAccessGranter(),
+      resolveCompanyIdForEmail: async () => "company-1",
+    });
+
+    await service.createCheckoutSession({
+      email: "buyer@example.com",
+      priceId: "price_dearme_beta",
+      successUrl: "https://app.example.com/dearme/checkout/success?source=paid#receipt",
+      cancelUrl: "https://app.example.com/dearme/checkout/cancel?source=paid#close-kit",
+    });
+
+    expect(stripeClient.checkout.sessions.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success_url: "https://app.example.com/dearme/checkout/success?source=paid&session_id={CHECKOUT_SESSION_ID}#receipt",
+        cancel_url: "https://app.example.com/dearme/checkout/cancel?source=paid&checkout=cancelled#close-kit",
+      }),
+    );
   });
 
   it("creates Stripe Customer Portal sessions with the right args", async () => {
