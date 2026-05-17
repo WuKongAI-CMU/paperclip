@@ -73,6 +73,10 @@ import {
   createDearMeReferralStripeClient,
   dearMeReferralService,
 } from "../services/dearme-referral.js";
+import {
+  sendLifecycleEvent,
+  type DearMeLifecycleResult,
+} from "../services/dearme-lifecycle.js";
 
 function memoryBodyPreview(body: string) {
   return body.length > 700 ? `${body.slice(0, 697)}...` : body;
@@ -118,6 +122,11 @@ const DEARME_STRIPE_WEBHOOK_RECORDED_ACTION = "dearme.stripe_payment_webhook_rec
 const dearMeCheckoutStartRequestSchema = z.object({
   email: z.string().trim().email(),
   plan: z.literal("beta"),
+});
+const dearMeLandingExitWaitlistRequestSchema = z.object({
+  email: z.string().trim().email().max(320),
+  landingCopyVariant: z.string().trim().min(1).max(64).optional(),
+  landingHeroTheme: z.string().trim().min(1).max(64).optional(),
 });
 const dearMeBillingPortalRequestSchema = z.object({
   customerId: z.string().trim().min(1),
@@ -400,6 +409,7 @@ export function dearmeRoutes(
   options: {
     voiceProfileStore?: DearMeVoiceProfileStore;
     voiceSemanticScorer?: DearMeVoiceSemanticScorer | null;
+    sendLifecycleEvent?: typeof sendLifecycleEvent;
   } = {},
 ) {
   const router = Router();
@@ -620,6 +630,32 @@ export function dearmeRoutes(
       const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
       res.setHeader("Cache-Control", "public, max-age=60");
       res.json(await publicFeed.listRecentItems({ limit, cursor }));
+    },
+  );
+
+  router.post(
+    "/landing-exit-waitlist",
+    validate(dearMeLandingExitWaitlistRequestSchema),
+    async (req, res) => {
+      const lifecycle = await (options.sendLifecycleEvent ?? sendLifecycleEvent)({
+        email: req.body.email,
+        eventName: "dearme_landing_exit",
+        properties: {
+          source: "landing_exit_intent",
+          landingCopyVariant: req.body.landingCopyVariant ?? null,
+          landingHeroTheme: req.body.landingHeroTheme ?? null,
+        },
+      });
+      const response: {
+        status: "accepted" | "accepted_without_lifecycle" | "lifecycle_failed";
+        lifecycle: DearMeLifecycleResult;
+      } = lifecycle.skipped
+        ? { status: "accepted_without_lifecycle", lifecycle }
+        : lifecycle.ok
+          ? { status: "accepted", lifecycle }
+          : { status: "lifecycle_failed", lifecycle };
+
+      res.status(response.status === "lifecycle_failed" ? 502 : 202).json(response);
     },
   );
 
