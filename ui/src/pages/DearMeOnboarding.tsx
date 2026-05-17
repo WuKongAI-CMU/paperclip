@@ -13171,6 +13171,7 @@ export function DearMeOnboarding() {
     action: DearMeOutputReviewAction;
   } | null>(null);
   const checkoutSuccessAccessRefreshKeyRef = useRef<string | null>(null);
+  const checkoutSuccessAccessOpenedKeyRef = useRef<string | null>(null);
   const knownForSearchIntent = useMemo(
     () => new URLSearchParams(location.search).get("knownFor")?.trim() ?? "",
     [location.search],
@@ -13299,6 +13300,18 @@ export function DearMeOnboarding() {
     refetchPaidBetaAccess,
     selectedCompanyId,
   ]);
+
+  useEffect(() => {
+    if (checkoutReturnStatus !== "success" || !selectedCompanyId) return;
+    if (paidBetaStatus?.status !== "active") return;
+    const openedKey = `${selectedCompanyId}:${checkoutReturnSource}`;
+    if (checkoutSuccessAccessOpenedKeyRef.current === openedKey) return;
+    checkoutSuccessAccessOpenedKeyRef.current = openedKey;
+    capture("checkout_return_paid_access_opened", {
+      source: checkoutReturnSource,
+      paid_beta_active: true,
+    });
+  }, [checkoutReturnSource, checkoutReturnStatus, paidBetaStatus?.status, selectedCompanyId]);
 
   const paidBetaCohortCompanyIds = useMemo(
     () => normalizePaidBetaCohortCompanyIds(selectedCompanyId, companies),

@@ -5217,6 +5217,10 @@ describe("DearMeOnboarding", () => {
     expect(checkoutReturnStatus.textContent).toContain("Paid access is open");
     expect(checkoutReturnStatus.textContent).toContain("Start first cycle now");
     expect(checkoutReturnStatus.textContent).not.toContain("Refresh access");
+    expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_paid_access_opened", {
+      source: "direct",
+      paid_beta_active: true,
+    });
 
     await act(async () => {
       buttonByText(checkoutReturnStatus, "Start first cycle now")?.click();
