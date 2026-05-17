@@ -106,6 +106,40 @@ describe("DearMeFaq", () => {
     );
   });
 
+  it("tracks pricing clicks without customer identifiers", async () => {
+    const pricingLinks = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .filter((link) => link.textContent?.includes("Pricing") || link.textContent?.includes("See beta pricing"));
+    expect(pricingLinks).toHaveLength(2);
+    pricingLinks.forEach((link) => {
+      link.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+    });
+
+    await act(async () => {
+      pricingLinks[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await act(async () => {
+      pricingLinks[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_pricing_clicked", {
+      page: "faq",
+      source: "nav",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_pricing_clicked", {
+      page: "faq",
+      source: "question",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "static_pricing_clicked",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+      }),
+    );
+  });
+
   it("handles the hard objections without promising unsafe automation", () => {
     const text = container.textContent ?? "";
 

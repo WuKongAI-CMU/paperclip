@@ -187,6 +187,16 @@ export function DearMeLanding() {
     });
   }
 
+  function handlePricingClick(source: "nav" | "footer") {
+    capture("static_pricing_clicked", {
+      page: "landing",
+      source,
+      plan: "beta_29",
+      landing_variant: variant.key,
+      landing_hero_theme: variant.theme,
+    });
+  }
+
   function dismissExitModal() {
     window.sessionStorage.setItem(LANDING_EXIT_DISMISSED_STORAGE_KEY, "1");
     setExitModalOpen(false);
@@ -253,7 +263,13 @@ export function DearMeLanding() {
           <div className="text-sm font-semibold">DearMe</div>
           <div className="flex flex-wrap items-center justify-end gap-3">
             <a href="/about" className="text-sm text-muted-foreground hover:text-foreground">About</a>
-            <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
+            <a
+              href="/pricing"
+              className="text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => handlePricingClick("nav")}
+            >
+              Pricing
+            </a>
             <a href="/proof" className="text-sm text-muted-foreground hover:text-foreground">Proof</a>
             <a href="/faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</a>
             <Button asChild variant="outline" size="sm" className="min-h-11">
@@ -361,7 +377,9 @@ export function DearMeLanding() {
           <div className="flex flex-wrap items-center gap-3">
             <span>$29/month beta — invite request only.</span>
             <a href="/about" className="hover:text-foreground">About</a>
-            <a href="/pricing" className="hover:text-foreground">Pricing</a>
+            <a href="/pricing" className="hover:text-foreground" onClick={() => handlePricingClick("footer")}>
+              Pricing
+            </a>
             <a href="/proof" className="hover:text-foreground">Proof</a>
             <a href="/faq" className="hover:text-foreground">FAQ</a>
             <a href="/legal/terms" className="hover:text-foreground">Terms</a><a href="/legal/privacy" className="hover:text-foreground">Privacy</a><a href="/legal/acceptable-use" className="hover:text-foreground">Acceptable Use</a>
