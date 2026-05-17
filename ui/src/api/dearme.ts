@@ -13,6 +13,8 @@ import type {
   DearMeMemoryArchiveResult,
   DearMeMemoryUpdate,
   DearMeMemoryUpdateResult,
+  DearMeVoiceSourceImportRequest,
+  DearMeVoiceSourceImportResult,
   DearMeOutputContinuationRequest,
   DearMeOutputsResponse,
   DearMeOutputReviewRequest,
@@ -141,6 +143,11 @@ export const dearmeApi = {
   recordMemoryUpdate: (companyId: string, data: DearMeMemoryUpdate) =>
     api.post<DearMeMemoryUpdateResult>(
       `/dearme/companies/${companyId}/memory-updates`,
+      data,
+    ),
+  importVoiceSource: (companyId: string, data: DearMeVoiceSourceImportRequest) =>
+    api.post<DearMeVoiceSourceImportResult>(
+      `/dearme/companies/${companyId}/voice-source-imports`,
       data,
     ),
   updateMemorySource: (companyId: string, memoryId: string, data: DearMeMemoryUpdate) =>

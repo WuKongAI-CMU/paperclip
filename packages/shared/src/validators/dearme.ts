@@ -550,6 +550,12 @@ export const dearMeMemoryUpdateSchema = z.object({
   sourceLabel: input.sourceLabel ?? null,
 }));
 
+export const dearMeVoiceSourceImportRequestSchema = z.object({
+  sourceUrl: z.string().trim().min(1).max(500).refine(isHttpUrl, {
+    message: "Use an http or https source link.",
+  }),
+}).strict();
+
 export const dearMeBrandBlueprintSchema = z.object({
   version: z.literal(DEARME_BRAND_BLUEPRINT_VERSION),
   brand: z.object({
@@ -1367,6 +1373,13 @@ export const dearMeMemoryUpdateResultSchema = z.object({
   growthCycles: dearMeMemoryGrowthCyclesSchema,
 }).strict();
 
+export const dearMeVoiceSourceImportResultSchema = dearMeMemoryUpdateResultSchema.extend({
+  import: z.object({
+    sourceUrl: z.string().min(1),
+    extractedCharacterCount: z.number().int().nonnegative(),
+  }).strict(),
+}).strict();
+
 export const dearMeMemoryArchiveResultSchema = z.object({
   companyId: z.string().min(1),
   status: z.literal("archived"),
@@ -1506,6 +1519,8 @@ export type DearMeMemoryUpdateItem = z.infer<typeof dearMeMemoryUpdateItemSchema
 export type DearMeMemoryUpdateKind = z.infer<typeof dearMeMemoryUpdateSchema>["kind"];
 export type DearMeMemorySourceInputMode = z.infer<typeof dearMeMemoryUpdateSchema>["sourceInputMode"];
 export type DearMeMemoryUpdateResult = z.infer<typeof dearMeMemoryUpdateResultSchema>;
+export type DearMeVoiceSourceImportRequest = z.infer<typeof dearMeVoiceSourceImportRequestSchema>;
+export type DearMeVoiceSourceImportResult = z.infer<typeof dearMeVoiceSourceImportResultSchema>;
 export type DearMeMemoryArchiveResult = z.infer<typeof dearMeMemoryArchiveResultSchema>;
 export type DearMeOutputDetail = z.infer<typeof dearMeOutputDetailSchema>;
 export type DearMeOutputDocument = z.infer<typeof dearMeOutputDocumentSchema>;
