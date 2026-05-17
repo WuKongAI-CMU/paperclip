@@ -96,3 +96,4 @@
 2026-05-16 22:56  DM-STATUS-HUMAN-HELP-QUEUE  935ea196  PR #95  Standing  DearMe status now points owner-proof and hosted-checkout blocker sections at the human-help queue for reply templates and safe follow-up commands; CI green.
 2026-05-16 23:14  DM-GOAL-AUDIT-HUMAN-HELP-QUEUE  3bbfde64  PR #96  Standing  DearMe goal audit now points owner-proof and hosted-checkout blocker sections at the human-help queue for reply templates and safe follow-up commands; CI green.
 2026-05-17 00:00  DM-STANDING-LOOP-HUMAN-HELP-QUEUE  0bd625b5  PR #98  Standing  DearMe standing-loop audit now points owner-proof, hosted-checkout, and Plain-delivery blocker sections at the human-help queue for reply templates and safe follow-up commands; CI green.
+2026-05-17 00:15  DM-TSX-PATCH-BUMP  64aa8759  PR #99  Standing  Root tsx dev dependency bumped from ^4.22.0 to ^4.22.1 and the dependency loop audit is clear for autonomous updates; CI green.
