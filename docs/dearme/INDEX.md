@@ -4,7 +4,7 @@
 
 > **P0 carve-out (adopted 2026-05-14).** OpenClaw runtime and `dearme-ai-proxy` runtime are **deferred to P1**. Architecture and code stay in tree as dormant artifacts. P0 paid beta ships **web-only**: web inbound, browser MediaRecorder for voice capture, Paperclip routines/heartbeats for cron, web-first outbound (LinkedIn copy-to-clipboard, X via OAuth, email via Resend/SMTP). The §3 diagram below describes the **P1+ target state**; in P0 the OpenClaw layer is dormant and the proxy routes are unmounted. Full rationale, per-role verdict, code touchpoints, and revival criteria in [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md).
 
-Last updated: 2026-05-12 (post DM-170F profile-token semantic scorer wiring, custom-corpus local voice proof, Voice Gate soft-reject review-loop proof, DM-172B X, DM-174 Resend/SES, DM-176B/DM-178B provider config gates, DM-177B/DM-177C/DM-177E deploy dispatch proof, DM-CH-02B OpenClaw message smoke proof, the local first-five-minute aha proof gate, the browser-visible first-five-minute progress stream, the recurring private-work proof contract, the five-draft private output packet, the phone-ready static private-site export, production host smoke fail-closed on the exported proof packet plus host-smoke manifest, unified live-provider setup exporting the proof packet first, host-smoke recurring-work detail, host-provider authorization audit, GitHub Pages production host smoke, local OpenClaw config reuse, OpenClaw message contract rehearsal, prompt-to-artifact goal audit, the private-proof/public-launch release gate, release-gate benchmark comparison, and coordinator-safe next-proof setup)
+Last updated: 2026-05-17 (post DM-ONBOARDING-FRICTION-AUDIT landing-to-first-cycle handoff hardening)
 
 ---
 
@@ -123,7 +123,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 
 ## 5. What's shipped vs. what's left
 
-### Shipped (as of 2026-05-16)
+### Shipped (as of 2026-05-17)
 - **DM-S01** — company mass-assignment vulnerability fixed + 92 shared tests green.
 - **`opportunities` schema slice** (DM-141) — Drizzle table + 8-state machine + indexes.
 - **`@paperclipai/dearme-agent-prompts`** — 12 verbatim prompts, 8 state machines (incl. work-loop + approval-gates), 2 templates, role registry **with `substrate` field**, 25 tests green.
@@ -164,6 +164,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-STANDING-LOOP-OWNER-PROOF-FACTS** — `pnpm dearme:standing-loop-audit -- --check` now carries the full owner-proof fact list from `dearme:goal-audit` while keeping the immediate OpenClaw message proof next action specific.
 - **DM-STANDING-LOOP-HUMAN-HELP-QUEUE** — `pnpm dearme:standing-loop-audit -- --check` now points owner-proof, hosted-checkout, and Plain-delivery blocker sections at `docs/NEEDS_HUMAN_HELP.md`, where Peter has reply templates and safe follow-up commands.
 - **DM-LANDING-COPY-V2** — the public landing page keeps the private growth-team anchor while adding reader-first support copy plus weekly-letter, voice-profile, and opportunity proof artifacts above the fold for stronger landing-to-signup and first-cycle intent.
+- **DM-ONBOARDING-FRICTION-AUDIT** — the landing-to-first-cycle handoff now preserves the positioning answer through submit and browser-back, lets `/dearme?knownFor=...` reach a DearMe private beta bridge even when local health checks are unavailable, and replaces generic onboarding with a first-cycle bridge toward signup and paid beta completion.
 - **DM-GOAL-AUDIT-FULL-OWNER-PROOF-FACTS** — `pnpm dearme:goal-audit -- --check` now prints the full public-launch owner-proof fact queue while keeping the immediate OpenClaw message proof next action specific.
 - **DM-GOAL-AUDIT-HOSTED-CHECKOUT-BLOCKERS** — `pnpm dearme:goal-audit -- --check` and `pnpm dearme:standing-loop-audit -- --check` now surface the hosted-checkout payment setup blockers for the first-$29 path alongside the public-launch proof facts, while keeping private-beta manual receipt sales marked operable.
 - **DM-STATUS-HOSTED-CHECKOUT-BLOCKERS** — `pnpm dearme:status` now prints the hosted-checkout payment setup blockers next to commercial readiness, so the default operator view names the first-payment facts still needed before self-serve checkout can be claimed.
