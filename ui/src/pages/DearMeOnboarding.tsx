@@ -13239,6 +13239,7 @@ export function DearMeOnboarding() {
     () => parseDearMeSignupSource(location.search, Boolean(landingBriefDraft)),
     [landingBriefDraft, location.search],
   );
+  const firstCycleAnalyticsSource = signupSource ?? checkoutReturnSource;
   const selectedView = useMemo(
     () => parseDearMePageView(location.search),
     [location.search],
@@ -13360,11 +13361,11 @@ export function DearMeOnboarding() {
       writeDearMeFirstCyclePreview(nextPreview);
       capture("first_cycle_completed", {
         mode: input.startPrivateWork ? "private_work" : "trial_preview",
-        source: signupSource ?? "direct",
+        source: firstCycleAnalyticsSource,
       });
       if (selectedCompanyId && input.startPrivateWork) {
         capture("first_cycle_started", {
-          source: signupSource ?? "direct",
+          source: firstCycleAnalyticsSource,
         });
         queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(selectedCompanyId) });
         queryClient.invalidateQueries({ queryKey: queryKeys.dearme.outputs(selectedCompanyId) });
