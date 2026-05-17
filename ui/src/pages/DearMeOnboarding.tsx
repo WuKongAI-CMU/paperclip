@@ -13583,6 +13583,11 @@ export function DearMeOnboarding() {
         ? form.goals
         : `Become known for ${positioning}\nTurn proof of work into consistent content`,
     };
+    capture("first_cycle_submitted", {
+      mode: canStartPrivateWork ? "private_work" : "trial_preview",
+      source: firstCycleAnalyticsSource,
+      paid_beta_active: canStartPrivateWork,
+    });
     firstCycleMutation.mutate({
       brand: buildDearMeBrandBlueprintSeed(nextForm, selectedCompany?.name),
       nextForm,
