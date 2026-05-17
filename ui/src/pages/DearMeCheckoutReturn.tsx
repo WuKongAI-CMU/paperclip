@@ -10,6 +10,7 @@ import {
 } from "../components/DearMeShell";
 
 export type DearMeCheckoutReturnKind = "success" | "cancel";
+type DearMeCheckoutReturnSource = "paid" | "pricing" | "landing" | "direct";
 
 const RETURN_COPY: Record<
   DearMeCheckoutReturnKind,
@@ -42,6 +43,14 @@ const RETURN_COPY: Record<
     secondaryLabel: "Review pricing",
   },
 };
+
+function parseDearMeCheckoutReturnSource(search: string): DearMeCheckoutReturnSource {
+  const source = new URLSearchParams(search).get("source");
+  if (source === "paid" || source === "pricing" || source === "landing" || source === "direct") {
+    return source;
+  }
+  return "direct";
+}
 
 const NEXT_STEPS: Record<
   DearMeCheckoutReturnKind,
@@ -85,6 +94,7 @@ export function DearMeCheckoutReturn({ kind }: { kind: DearMeCheckoutReturnKind 
     const params = new URLSearchParams(window.location.search);
     capture("checkout_return_viewed", {
       status: kind,
+      source: parseDearMeCheckoutReturnSource(window.location.search),
       has_session_marker: params.has("session_id"),
       has_cancel_marker: params.get("checkout") === "cancelled",
     });
