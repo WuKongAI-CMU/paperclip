@@ -4,7 +4,7 @@
 
 > **P0 carve-out (adopted 2026-05-14).** OpenClaw runtime and `dearme-ai-proxy` runtime are **deferred to P1**. Architecture and code stay in tree as dormant artifacts. P0 paid beta ships **web-only**: web inbound, browser MediaRecorder for voice capture, Paperclip routines/heartbeats for cron, web-first outbound (LinkedIn copy-to-clipboard, X via OAuth, email via Resend/SMTP). The §3 diagram below describes the **P1+ target state**; in P0 the OpenClaw layer is dormant and the proxy routes are unmounted. Full rationale, per-role verdict, code touchpoints, and revival criteria in [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md).
 
-Last updated: 2026-05-17 (post DM-ONBOARDING-FRICTION-AUDIT landing-to-first-cycle handoff hardening)
+Last updated: 2026-05-17 (post DM-DEARME-CI-NODE24-ACTIONS CI runtime hardening)
 
 ---
 
@@ -165,6 +165,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-STANDING-LOOP-HUMAN-HELP-QUEUE** — `pnpm dearme:standing-loop-audit -- --check` now points owner-proof, hosted-checkout, and Plain-delivery blocker sections at `docs/NEEDS_HUMAN_HELP.md`, where Peter has reply templates and safe follow-up commands.
 - **DM-LANDING-COPY-V2** — the public landing page keeps the private growth-team anchor while adding reader-first support copy plus weekly-letter, voice-profile, and opportunity proof artifacts above the fold for stronger landing-to-signup and first-cycle intent.
 - **DM-ONBOARDING-FRICTION-AUDIT** — the landing-to-first-cycle handoff now preserves the positioning answer through submit and browser-back, lets `/dearme?knownFor=...` reach a DearMe private beta bridge even when local health checks are unavailable, and replaces generic onboarding with a first-cycle bridge toward signup and paid beta completion.
+- **DM-DEARME-CI-NODE24-ACTIONS** — DearMe CI now opts GitHub JavaScript actions into the Node 24 action runtime while keeping the app test runtime on Node 22, hardening the deployment gate ahead of GitHub's Node 20 action-runtime cutoff.
 - **DM-GOAL-AUDIT-FULL-OWNER-PROOF-FACTS** — `pnpm dearme:goal-audit -- --check` now prints the full public-launch owner-proof fact queue while keeping the immediate OpenClaw message proof next action specific.
 - **DM-GOAL-AUDIT-HOSTED-CHECKOUT-BLOCKERS** — `pnpm dearme:goal-audit -- --check` and `pnpm dearme:standing-loop-audit -- --check` now surface the hosted-checkout payment setup blockers for the first-$29 path alongside the public-launch proof facts, while keeping private-beta manual receipt sales marked operable.
 - **DM-STATUS-HOSTED-CHECKOUT-BLOCKERS** — `pnpm dearme:status` now prints the hosted-checkout payment setup blockers next to commercial readiness, so the default operator view names the first-payment facts still needed before self-serve checkout can be claimed.
