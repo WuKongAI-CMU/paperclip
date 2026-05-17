@@ -9991,6 +9991,23 @@ describe("DearMeOnboarding", () => {
     expect(surfaceByLabel(container, "Paid beta payment recorded").textContent).toContain(
       "Start first cycle now",
     );
+    expect(analyticsMock.capture).toHaveBeenCalledWith("manual_payment_recorded", {
+      source: "direct",
+      paid_beta_active: true,
+      payment_source: "manual",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "manual_payment_recorded",
+      expect.objectContaining({ amountCents: expect.any(Number) }),
+    );
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "manual_payment_recorded",
+      expect.objectContaining({ externalInvoiceId: expect.any(String) }),
+    );
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "manual_payment_recorded",
+      expect.objectContaining({ email: expect.any(String) }),
+    );
 
     await act(async () => {
       buttonByText(paidBetaCustomerReceipt, "Start first cycle now")?.click();
