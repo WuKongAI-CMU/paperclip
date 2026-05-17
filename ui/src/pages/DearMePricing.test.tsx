@@ -193,9 +193,20 @@ describe("DearMePricing", () => {
     });
 
     expect(container.textContent).toContain("Email peter@dearme.app and we will add you manually.");
+    expect(analyticsMock.capture).toHaveBeenCalledWith("pricing_waitlist_failed", {
+      source: "pricing",
+      plan: "beta_29",
+      reason: "request_failed",
+    });
     expect(analyticsMock.capture).not.toHaveBeenCalledWith(
       "pricing_waitlist_joined",
       expect.anything(),
+    );
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "pricing_waitlist_failed",
+      expect.objectContaining({
+        email: expect.any(String),
+      }),
     );
   });
 
@@ -213,7 +224,17 @@ describe("DearMePricing", () => {
     });
 
     expect(container.textContent).toContain("Enter a work email to join the private beta waitlist.");
-    expect(analyticsMock.capture).not.toHaveBeenCalled();
+    expect(analyticsMock.capture).toHaveBeenCalledWith("pricing_waitlist_blocked", {
+      source: "pricing",
+      plan: "beta_29",
+      reason: "invalid_email",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "pricing_waitlist_blocked",
+      expect.objectContaining({
+        email: expect.any(String),
+      }),
+    );
   });
 
   it("renders five objection-handling FAQ items", () => {
