@@ -57,8 +57,14 @@ describe("DearMeCheckoutReturn", () => {
     expect(text).toContain("private cycle is being confirmed");
     expect(text).toContain("Receipt match");
     expect(
-      links.some((link) => link.getAttribute("href") === "/dearme#dearme-paid-beta-access"),
+      links.some(
+        (link) =>
+          link.getAttribute("href") ===
+          "/dearme?checkout_return=success#dearme-paid-beta-access",
+      ),
     ).toBe(true);
+    expect(links.some((link) => link.getAttribute("href") === "/dearme?checkout_return=success"))
+      .toBe(true);
     expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_viewed", {
       status: "success",
       has_session_marker: true,
@@ -80,7 +86,10 @@ describe("DearMeCheckoutReturn", () => {
     expect(text).toContain("Return to close kit");
     expect(text).toContain("Review the offer");
     expect(
-      links.some((link) => link.getAttribute("href") === "/dearme#dearme-paid-beta-access"),
+      links.some(
+        (link) =>
+          link.getAttribute("href") === "/dearme?checkout_return=cancel#dearme-paid-beta-access",
+      ),
     ).toBe(true);
     expect(links.some((link) => link.getAttribute("href") === "/pricing")).toBe(true);
     expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_viewed", {

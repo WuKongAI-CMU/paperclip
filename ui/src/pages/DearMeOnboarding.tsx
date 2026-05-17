@@ -589,6 +589,8 @@ interface DearMeDecisionFocus {
   intent: DearMeReviewEntryIntent | null;
 }
 
+type DearMeCheckoutReturnStatus = "success" | "cancel";
+
 type DearMeApprovalReviewAction = "approve" | "reject" | "request_revision";
 
 interface DearMeApprovalReviewState {
@@ -821,6 +823,11 @@ function parseDearMeDecisionFocus(search: string): DearMeDecisionFocus | null {
   };
   if (!focus.approvalId && !focus.issueReference && !focus.outputId) return null;
   return focus;
+}
+
+function parseDearMeCheckoutReturnStatus(search: string): DearMeCheckoutReturnStatus | null {
+  const status = new URLSearchParams(search).get("checkout_return");
+  return status === "success" || status === "cancel" ? status : null;
 }
 
 function parseDearMeReviewEntryIntent(value: string | null): DearMeReviewEntryIntent | null {
@@ -11595,6 +11602,7 @@ function PaidBetaAccessPanel({
   isLoading,
   isError,
   error,
+  checkoutReturnStatus,
   onFocusFirstCycle,
 }: {
   companyId: string;
@@ -11602,6 +11610,7 @@ function PaidBetaAccessPanel({
   isLoading: boolean;
   isError: boolean;
   error: unknown;
+  checkoutReturnStatus: DearMeCheckoutReturnStatus | null;
   onFocusFirstCycle: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -11616,6 +11625,12 @@ function PaidBetaAccessPanel({
   const hostedCheckout = status?.hostedCheckout ?? null;
   const hostedCheckoutUrl = hostedCheckout?.configured ? hostedCheckout.paymentUrl : null;
   const hostedCheckoutReady = Boolean(!paidBetaActive && hostedCheckoutUrl);
+  const checkoutReturnMessage =
+    checkoutReturnStatus === "success"
+      ? "Checkout returned. DearMe is matching the receipt to this account. If access is not open yet, keep this panel open and refresh after the signed receipt sync completes."
+      : checkoutReturnStatus === "cancel"
+        ? "Checkout was not completed. Your preview and close kit are still here when you are ready to try again."
+        : null;
   const customerReceiptRows = [
     {
       label: "Access",
@@ -12098,6 +12113,15 @@ function PaidBetaAccessPanel({
             error,
             "Paid beta status needs attention. Try again before recording a payment.",
           )}
+        </div>
+      ) : null}
+
+      {checkoutReturnMessage ? (
+        <div
+          className="mt-4 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground"
+          aria-label="Checkout return status"
+        >
+          {checkoutReturnMessage}
         </div>
       ) : null}
 
@@ -12997,6 +13021,10 @@ export function DearMeOnboarding() {
     () => parseDearMeDecisionFocus(location.search),
     [location.search],
   );
+  const checkoutReturnStatus = useMemo(
+    () => parseDearMeCheckoutReturnStatus(location.search),
+    [location.search],
+  );
   const selectedView = useMemo(
     () => parseDearMePageView(location.search),
     [location.search],
@@ -13555,6 +13583,7 @@ export function DearMeOnboarding() {
         isLoading={paidBetaAccessQuery.isLoading}
         isError={paidBetaAccessQuery.isError}
         error={paidBetaAccessQuery.error}
+        checkoutReturnStatus={checkoutReturnStatus}
         onFocusFirstCycle={handleFocusFirstCycle}
       />
 
