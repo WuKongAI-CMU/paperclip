@@ -9,7 +9,11 @@ import {
   type DearMeHostedPaymentReceiptRecordResult,
   type DearMeStripeCheckoutCompletedEvent,
 } from "./dearme-paid-beta-access.js";
-import { sendLifecycleEvent } from "./dearme-lifecycle.js";
+import {
+  sendLifecycleEvent as sendDearMeLifecycleEvent,
+  type DearMeLifecycleEventInput,
+  type DearMeLifecycleResult,
+} from "./dearme-lifecycle.js";
 import { dearMeReferralService } from "./dearme-referral.js";
 
 export interface DearMeCheckoutSessionInput {
@@ -99,6 +103,7 @@ export interface DearMeStripeCheckoutServiceOptions {
   stripeClient?: DearMeStripeClient;
   paidBetaAccess?: PaidBetaAccessGranter;
   resolveCompanyIdForEmail?: (email: string) => Promise<string | null>;
+  sendLifecycleEvent?: (input: DearMeLifecycleEventInput) => Promise<DearMeLifecycleResult>;
 }
 
 const stripeCheckoutCompletedEventSchema = z.object({
@@ -246,6 +251,17 @@ function subscriptionDeletedEmail(eventPayload: unknown) {
     ? subscription.metadata.customerEmail
     : "";
   return normalizeEmail(directEmail || customerDetailsEmail || metadataEmail);
+}
+
+async function sendLifecycleEventBestEffort(
+  sendLifecycleEvent: (input: DearMeLifecycleEventInput) => Promise<DearMeLifecycleResult>,
+  input: DearMeLifecycleEventInput,
+) {
+  try {
+    await sendLifecycleEvent(input);
+  } catch {
+    // Lifecycle email delivery must not block Stripe webhook acknowledgement.
+  }
 }
 
 function checkoutSessionCouponId(event: DearMeStripeCheckoutCompletedEvent) {
@@ -400,6 +416,7 @@ export function dearMeStripeCheckoutService(
   const paidBetaAccess = options.paidBetaAccess ?? dearmePaidBetaAccessService(db);
   const stripeClient = options.stripeClient ?? createDearMeStripeClient(process.env.DEARME_STRIPE_SECRET_KEY ?? "");
   const resolveCompany = options.resolveCompanyIdForEmail ?? ((email: string) => resolveCompanyIdForEmail(db, email));
+  const sendLifecycleEvent = options.sendLifecycleEvent ?? sendDearMeLifecycleEvent;
   const processedStripeEventIds = new Set<string>();
   const processingStripeEventIds = new Set<string>();
 
@@ -476,14 +493,6 @@ export function dearMeStripeCheckoutService(
     const eventType = eventPayload && typeof eventPayload === "object"
       ? (eventPayload as { type?: unknown }).type
       : null;
-    // Lifecycle event hook: fire cancellation lifecycle email at the boundary of
-    // handling. DM-SUBSCRIPTIONS keeps full event-routing authority below.
-    if (eventType === "customer.subscription.deleted") {
-      const lifecycleEmail = subscriptionDeletedEmail(eventPayload);
-      if (lifecycleEmail) {
-        void sendLifecycleEvent({ email: lifecycleEmail, eventName: "dearme_cancelled" });
-      }
-    }
     if (
       eventType !== "checkout.session.completed" &&
       eventType !== "invoice.paid" &&
@@ -633,6 +642,18 @@ export function dearMeStripeCheckoutService(
           occurredAt: new Date(occurredAt * 1000).toISOString(),
         });
         processedStripeEventIds.add(event.id);
+        const lifecycleEmail = subscriptionDeletedEmail(eventPayload);
+        if (lifecycleEmail && result.recordedEvent) {
+          await sendLifecycleEventBestEffort(sendLifecycleEvent, {
+            email: lifecycleEmail,
+            eventName: "dearme_churn_save",
+            properties: {
+              source: "stripe_subscription_deleted",
+              paidBetaStatus: result.access.status,
+              cancelledAt: new Date(occurredAt * 1000).toISOString(),
+            },
+          });
+        }
 
         return {
           received: true,
