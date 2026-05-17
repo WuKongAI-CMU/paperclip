@@ -234,6 +234,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-CHECKOUT-RETURN-REFRESH-ACCESS** — checkout returns now include an in-panel refresh action so customers can re-check paid access after receipt sync without leaving the first-cycle workroom.
 - **DM-CHECKOUT-CANCEL-RETRY** — cancelled checkout returns now show a direct checkout retry action when hosted checkout is configured, while successful returns keep the access-refresh path.
 - **DM-CHECKOUT-SUCCESS-AUTO-REFRESH** — successful checkout returns now automatically re-check paid access once before leaving manual refresh as a fallback.
+- **DM-CHECKOUT-SUCCESS-START-CYCLE** — successful checkout returns now move confirmed paid users straight into the first-cycle start path after paid access opens, instead of keeping them on receipt refresh.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-FOCUS-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now uses the same owner-facts-plus-no-send wording for live-focus commands and setup commands.
 - **DM-PROOF-LIVE-CONFIRMATION-CHECKLIST** — `pnpm dearme:proof` now labels owner-proof checklist live commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.

@@ -11780,7 +11780,9 @@ function PaidBetaAccessPanel({
   const hostedCheckoutReady = Boolean(!paidBetaActive && hostedCheckoutHref);
   const checkoutReturnMessage =
     checkoutReturnStatus === "success"
-      ? "Checkout returned. DearMe is matching the receipt to this account. If access is not open yet, keep this panel open and refresh after the signed receipt sync completes."
+      ? paidBetaActive
+        ? "Checkout confirmed. Paid access is open for this account; start the first brand cycle from the same workroom."
+        : "Checkout returned. DearMe is matching the receipt to this account. If access is not open yet, keep this panel open and refresh after the signed receipt sync completes."
       : checkoutReturnStatus === "cancel"
         ? "Checkout was not completed. Your preview and close kit are still here when you are ready to try again."
         : null;
@@ -12276,7 +12278,18 @@ function PaidBetaAccessPanel({
           aria-label="Checkout return status"
         >
           <span>{checkoutReturnMessage}</span>
-          {checkoutReturnStatus === "success" ? (
+          {checkoutReturnStatus === "success" && paidBetaActive ? (
+            <Button
+              type="button"
+              size="sm"
+              className="shrink-0"
+              onClick={onFocusFirstCycle}
+            >
+              <Sparkles className="h-4 w-4" />
+              Start first cycle now
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          ) : checkoutReturnStatus === "success" ? (
             <Button
               type="button"
               size="sm"
