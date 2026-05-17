@@ -4933,6 +4933,37 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("tracks landing-sourced signup entry without the landing answer", async () => {
+    mockLocation.search = "?knownFor=Build%20proof%20from%20customer%20research";
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("signup_entry_viewed", {
+      source: "landing",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "signup_entry_viewed",
+      expect.objectContaining({
+        knownFor: expect.any(String),
+      }),
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("keeps private team start locked during trial preview", async () => {
     const root = createRoot(container);
     const queryClient = new QueryClient({
