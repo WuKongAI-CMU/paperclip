@@ -15,6 +15,8 @@ import {
   dearMeMemoryArchiveResultSchema,
   dearMeMemoryUpdateResultSchema,
   dearMeMemoryUpdateSchema,
+  dearMeVoiceSourceImportRequestSchema,
+  dearMeVoiceSourceImportResultSchema,
   dearMeOutputContinuationRequestSchema,
   dearMeOutputWorkProductSchema,
   dearMeOutputReviewRequestSchema,
@@ -24,6 +26,7 @@ import {
   type DearMeChiefOfStaffMessage,
   type DearMeChiefOfStaffMessageIntent,
   type DearMeMemoryUpdate,
+  type DearMeVoiceSourceImportRequest,
   type DearMeOutputContinuationIntent,
   type DearMeOutputReviewAction,
   type DearMeOutputReviewRequest,
@@ -77,6 +80,7 @@ import {
   sendLifecycleEvent,
   type DearMeLifecycleResult,
 } from "../services/dearme-lifecycle.js";
+import { importDearMeVoiceSource } from "../services/dearme-voice-source-import.js";
 
 function memoryBodyPreview(body: string) {
   return body.length > 700 ? `${body.slice(0, 697)}...` : body;
@@ -410,6 +414,7 @@ export function dearmeRoutes(
     voiceProfileStore?: DearMeVoiceProfileStore;
     voiceSemanticScorer?: DearMeVoiceSemanticScorer | null;
     sendLifecycleEvent?: typeof sendLifecycleEvent;
+    importVoiceSource?: typeof importDearMeVoiceSource;
   } = {},
 ) {
   const router = Router();
@@ -1017,6 +1022,70 @@ export function dearmeRoutes(
         status: "recorded",
         memory: memoryUpdateResponseItem({ memoryId, update: input, createdAt }),
         growthCycles,
+      }));
+    },
+  );
+
+  router.post(
+    "/companies/:companyId/voice-source-imports",
+    validate(dearMeVoiceSourceImportRequestSchema),
+    async (req, res) => {
+      const companyId = req.params.companyId as string;
+      assertCompanyAccess(req, companyId);
+      assertBoard(req);
+      const actor = getActorInfo(req);
+      const input = req.body as DearMeVoiceSourceImportRequest;
+      const imported = await (options.importVoiceSource ?? importDearMeVoiceSource)(input.sourceUrl);
+
+      if (!imported.ok) {
+        const status = imported.reason === "invalid_source_url" ? 400 : 422;
+        throw new HttpError(
+          status,
+          imported.reason === "source_too_short"
+            ? "We could not find enough writing on that page. Paste a sample or try another public source."
+            : "We could not import that source. Paste a sample or try another public source.",
+        );
+      }
+
+      const memoryId = randomUUID();
+      const createdAt = new Date().toISOString();
+      const update: DearMeMemoryUpdate = {
+        kind: "voice_sample",
+        sourceInputMode: "paste",
+        title: "Imported writing sample",
+        body: imported.body,
+        sourceLabel: imported.sourceUrl,
+      };
+
+      await logActivity(db, {
+        companyId,
+        actorType: actor.actorType,
+        actorId: actor.actorId,
+        agentId: actor.agentId,
+        runId: actor.runId,
+        action: DEARME_MEMORY_UPDATED_ACTION,
+        entityType: "dearme_memory",
+        entityId: memoryId,
+        details: {
+          kind: update.kind,
+          sourceInputMode: update.sourceInputMode,
+          title: update.title,
+          body: update.body,
+          sourceLabel: update.sourceLabel,
+        },
+      });
+
+      const growthCycles = await refreshDearMeMemoryCycles(companyId, actor);
+
+      res.status(201).json(dearMeVoiceSourceImportResultSchema.parse({
+        companyId,
+        status: "recorded",
+        memory: memoryUpdateResponseItem({ memoryId, update, createdAt }),
+        growthCycles,
+        import: {
+          sourceUrl: imported.sourceUrl,
+          extractedCharacterCount: imported.extractedCharacterCount,
+        },
       }));
     },
   );

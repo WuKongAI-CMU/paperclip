@@ -29,6 +29,7 @@ import {
   type DearMeMemoryUpdateItem,
   type DearMeMemoryUpdateKind,
   type DearMeMemoryUpdateResult,
+  type DearMeVoiceSourceImportResult,
   type DearMeOutputContinuationIntent,
   type DearMeOutputDetail,
   type DearMeOutputItem,
@@ -1786,8 +1787,6 @@ const VOICE_MEMORY_SOURCE_BODY_MIN_LENGTH = 20;
 const VOICE_MEMORY_SOURCE_BODY_MAX_LENGTH = 4_000;
 const FIRST_CYCLE_VOICE_SAMPLE_INITIAL_COUNT = 3;
 const FIRST_CYCLE_VOICE_SAMPLE_MAX_COUNT = 10;
-const FIRST_CYCLE_VOICE_SAMPLE_LINK_BODY =
-  "Source link saved for voice extraction. Review this page for phrasing, pacing, proof language, and recurring phrases before the first private cycle.";
 
 type MemorySourceGuideId =
   | "writing_sample"
@@ -9622,8 +9621,10 @@ function VoiceMemoryPanel({
   isPending,
   error,
   result,
+  importResult,
   archiveResult,
   onAdd,
+  onImportVoiceSource,
   onUpdate,
   onArchive,
   onRestore,
@@ -9634,8 +9635,10 @@ function VoiceMemoryPanel({
   isPending: boolean;
   error: string | null;
   result: DearMeMemoryUpdateResult | null;
+  importResult: DearMeVoiceSourceImportResult | null;
   archiveResult: DearMeMemoryArchiveResult | null;
   onAdd: (input: DearMeMemoryUpdate) => void;
+  onImportVoiceSource: (sourceUrl: string) => void;
   onUpdate: (memoryId: string, input: DearMeMemoryUpdate) => void;
   onArchive: (memoryId: string) => void;
   onRestore: (memoryId: string) => void;
@@ -9692,7 +9695,7 @@ function VoiceMemoryPanel({
   const trimmedFirstCycleVoiceSourceLink = firstCycleVoiceSourceLink.trim();
   const canSubmitFirstCycleVoiceSamples =
     trimmedFirstCycleVoiceSamples.length > 0 || trimmedFirstCycleVoiceSourceLink.length > 0;
-  const recordedMemory = result?.memory ?? null;
+  const recordedMemory = importResult?.memory ?? result?.memory ?? null;
   const recordedMemoryAlreadyLoaded = recordedMemory
     ? memory.latest.some((item) => item.id === recordedMemory.id)
     : false;
@@ -9893,13 +9896,7 @@ function VoiceMemoryPanel({
       });
     });
     if (trimmedSamples.length === 0 && trimmedSourceLink) {
-      onAdd({
-        kind: "voice_sample",
-        sourceInputMode: "link",
-        title: "Writing sample source link",
-        body: FIRST_CYCLE_VOICE_SAMPLE_LINK_BODY,
-        sourceLabel: trimmedSourceLink,
-      });
+      onImportVoiceSource(trimmedSourceLink);
     }
     setFirstCycleVoiceSamples(Array.from({ length: FIRST_CYCLE_VOICE_SAMPLE_INITIAL_COUNT }, () => ""));
     setFirstCycleVoiceSourceLink("");
@@ -10056,7 +10053,7 @@ function VoiceMemoryPanel({
               }}
             />
             <p className="mt-2 text-xs text-muted-foreground">
-              Leave this blank when you paste text. If you only add a link, DearMe queues it for review and extraction.
+              Leave this blank when you paste text. If you only add a link, DearMe imports public writing from that page.
             </p>
           </div>
           <div className="flex flex-wrap justify-end gap-2">
@@ -11076,6 +11073,21 @@ function TeamWorkbenchPanel({
       );
     },
   });
+  const voiceSourceImportMutation = useMutation({
+    mutationFn: (sourceUrl: string) => dearmeApi.importVoiceSource(companyId, { sourceUrl }),
+    onSuccess: () => {
+      setMemoryError(null);
+      refreshVoiceMemoryDependentSurfaces();
+    },
+    onError: (err) => {
+      setMemoryError(
+        dearMeCustomerErrorMessage(
+          err,
+          "Voice & Memory could not import that page. Paste one sample or try another public source.",
+        ),
+      );
+    },
+  });
   const memoryUpdateMutation = useMutation({
     mutationFn: (input: { memoryId: string; update: DearMeMemoryUpdate }) =>
       dearmeApi.updateMemorySource(companyId, input.memoryId, input.update),
@@ -11377,14 +11389,17 @@ function TeamWorkbenchPanel({
             sourceReviewFocus={sourceReviewFocus}
             isPending={
               memoryMutation.isPending ||
+              voiceSourceImportMutation.isPending ||
               memoryUpdateMutation.isPending ||
               memoryArchiveMutation.isPending ||
               memoryRestoreMutation.isPending
             }
             error={memoryError}
             result={memoryRestoreMutation.data ?? memoryUpdateMutation.data ?? memoryMutation.data ?? null}
+            importResult={voiceSourceImportMutation.data ?? null}
             archiveResult={memoryArchiveMutation.data ?? null}
             onAdd={(input) => memoryMutation.mutate(input)}
+            onImportVoiceSource={(sourceUrl) => voiceSourceImportMutation.mutate(sourceUrl)}
             onUpdate={(memoryId, input) => memoryUpdateMutation.mutate({ memoryId, update: input })}
             onArchive={(memoryId) => memoryArchiveMutation.mutate(memoryId)}
             onRestore={(memoryId) => memoryRestoreMutation.mutate(memoryId)}

@@ -33,6 +33,7 @@ const mockDearmeApi = vi.hoisted(() => ({
   getPaidBetaCohort: vi.fn(),
   sendChiefOfStaffMessage: vi.fn(),
   recordMemoryUpdate: vi.fn(),
+  importVoiceSource: vi.fn(),
   updateMemorySource: vi.fn(),
   archiveMemorySource: vi.fn(),
   restoreMemorySource: vi.fn(),
@@ -1841,6 +1842,30 @@ describe("DearMeOnboarding", () => {
         updated: 1,
         unchanged: 1,
         memorySources: 3,
+      },
+    });
+    mockDearmeApi.importVoiceSource.mockResolvedValue({
+      companyId: "company-1",
+      status: "recorded",
+      memory: {
+        id: "memory-import-1",
+        kind: "voice_sample",
+        sourceInputMode: "paste",
+        title: "Imported writing sample",
+        body: "Imported public writing sample with enough phrasing to shape the first private cycle.",
+        bodyPreview: "Imported public writing sample with enough phrasing to shape the first private cycle.",
+        sourceLabel: "https://example.com/writing-samples",
+        createdAt: "2026-05-07T14:06:00.000Z",
+      },
+      growthCycles: {
+        checked: 2,
+        updated: 1,
+        unchanged: 1,
+        memorySources: 3,
+      },
+      import: {
+        sourceUrl: "https://example.com/writing-samples",
+        extractedCharacterCount: 82,
       },
     });
     mockDearmeApi.updateMemorySource.mockResolvedValue({
@@ -5737,7 +5762,7 @@ describe("DearMeOnboarding", () => {
     });
   });
 
-  it("queues a first-cycle voice source URL for extraction when no text sample is pasted", async () => {
+  it("imports a first-cycle voice source URL when no text sample is pasted", async () => {
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -5767,6 +5792,7 @@ describe("DearMeOnboarding", () => {
 
     expect(voiceSamples.textContent).toContain("Use a valid http or https link for voice source links.");
     expect(mockDearmeApi.recordMemoryUpdate).not.toHaveBeenCalled();
+    expect(mockDearmeApi.importVoiceSource).not.toHaveBeenCalled();
 
     await act(async () => {
       setInputValue(
@@ -5780,16 +5806,11 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
-    expect(mockDearmeApi.recordMemoryUpdate).toHaveBeenCalledWith(
-      "company-1",
-      expect.objectContaining({
-        kind: "voice_sample",
-        sourceInputMode: "link",
-        title: "Writing sample source link",
-        body: expect.stringContaining("Source link saved for voice extraction"),
-        sourceLabel: "https://example.com/writing-samples",
-      }),
-    );
+    expect(mockDearmeApi.recordMemoryUpdate).not.toHaveBeenCalled();
+    expect(mockDearmeApi.importVoiceSource).toHaveBeenCalledWith("company-1", {
+      sourceUrl: "https://example.com/writing-samples",
+    });
+    expect(container.textContent).toContain("Imported writing sample");
     expectNoHiddenProductTerms(container.textContent, [
       HIDDEN_PRODUCT_TERMS.localKernel,
       HIDDEN_PRODUCT_TERMS.bridgeName,
