@@ -5182,6 +5182,14 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
     expect(mockDearmeApi.getPaidBetaAccess).toHaveBeenCalledTimes(2);
+    expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_auto_refresh_started", {
+      source: "direct",
+      paid_beta_active: false,
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "checkout_return_auto_refresh_started",
+      expect.objectContaining({ sessionId: expect.any(String) }),
+    );
 
     await act(async () => {
       buttonByText(checkoutReturnStatus, "Refresh access")?.click();
@@ -5231,6 +5239,10 @@ describe("DearMeOnboarding", () => {
     expect(checkoutReturnStatus.textContent).toContain("Start first cycle now");
     expect(checkoutReturnStatus.textContent).not.toContain("Refresh access");
     expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_paid_access_opened", {
+      source: "direct",
+      paid_beta_active: true,
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_auto_refresh_started", {
       source: "direct",
       paid_beta_active: true,
     });

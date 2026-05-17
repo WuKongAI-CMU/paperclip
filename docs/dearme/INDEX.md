@@ -241,6 +241,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-MANUAL-PAYMENT-UI-ANALYTICS** — manual private-beta payment recording now emits a safe UI analytics event when paid access opens, preserving fallback first-$29 attribution without amount, receipt, or email payloads.
 - **DM-PAID-RECEIPT-FIRST-CYCLE-ANALYTICS** — paid receipt CTAs now record a safe first-cycle click before focusing the work prompt, preserving paid-to-work attribution without amount, receipt, or email payloads.
 - **DM-CHECKOUT-RETURN-REFRESH-ANALYTICS** — checkout return receipt-refresh clicks now record a safe retry event, making receipt-sync friction measurable without session, receipt, or email payloads.
+- **DM-CHECKOUT-RETURN-AUTO-REFRESH-ANALYTICS** — successful checkout returns now record the automatic access-refresh attempt separately from manual retries, preserving receipt-sync attribution without session or customer payloads.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-FOCUS-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now uses the same owner-facts-plus-no-send wording for live-focus commands and setup commands.
 - **DM-PROOF-LIVE-CONFIRMATION-CHECKLIST** — `pnpm dearme:proof` now labels owner-proof checklist live commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.

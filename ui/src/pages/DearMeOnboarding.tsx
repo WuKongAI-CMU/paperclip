@@ -13323,12 +13323,17 @@ export function DearMeOnboarding() {
     const refreshKey = `${selectedCompanyId}:${checkoutReturnSource}`;
     if (checkoutSuccessAccessRefreshKeyRef.current === refreshKey) return;
     checkoutSuccessAccessRefreshKeyRef.current = refreshKey;
+    capture("checkout_return_auto_refresh_started", {
+      source: checkoutReturnSource,
+      paid_beta_active: paidBetaStatus?.status === "active",
+    });
     void refetchPaidBetaAccess();
   }, [
     checkoutReturnSource,
     checkoutReturnStatus,
     paidBetaAccessFetched,
     paidBetaAccessFetching,
+    paidBetaStatus?.status,
     refetchPaidBetaAccess,
     selectedCompanyId,
   ]);
