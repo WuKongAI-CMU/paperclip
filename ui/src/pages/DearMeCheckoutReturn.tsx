@@ -52,6 +52,18 @@ function parseDearMeCheckoutReturnSource(search: string): DearMeCheckoutReturnSo
   return "direct";
 }
 
+function buildDearMeCheckoutReturnHref(
+  status: DearMeCheckoutReturnKind,
+  source: DearMeCheckoutReturnSource,
+  hash?: string,
+) {
+  const params = new URLSearchParams({
+    checkout_return: status,
+    checkout_source: source,
+  });
+  return `/dearme?${params.toString()}${hash ?? ""}`;
+}
+
 const NEXT_STEPS: Record<
   DearMeCheckoutReturnKind,
   readonly { title: string; description: string }[]
@@ -89,16 +101,26 @@ const NEXT_STEPS: Record<
 export function DearMeCheckoutReturn({ kind }: { kind: DearMeCheckoutReturnKind }) {
   const copy = RETURN_COPY[kind];
   const Icon = kind === "success" ? CheckCircle2 : XCircle;
+  const checkoutSource = parseDearMeCheckoutReturnSource(window.location.search);
+  const primaryHref = buildDearMeCheckoutReturnHref(
+    kind,
+    checkoutSource,
+    `#dearme-paid-beta-access`,
+  );
+  const secondaryHref =
+    kind === "success"
+      ? buildDearMeCheckoutReturnHref(kind, checkoutSource)
+      : copy.secondaryHref;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     capture("checkout_return_viewed", {
       status: kind,
-      source: parseDearMeCheckoutReturnSource(window.location.search),
+      source: checkoutSource,
       has_session_marker: params.has("session_id"),
       has_cancel_marker: params.get("checkout") === "cancelled",
     });
-  }, [kind]);
+  }, [checkoutSource, kind]);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -133,13 +155,13 @@ export function DearMeCheckoutReturn({ kind }: { kind: DearMeCheckoutReturnKind 
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild size="lg" className="min-h-11">
-                <a href={copy.primaryHref}>
+                <a href={primaryHref}>
                   {copy.primaryLabel}
                   <ArrowRight className="h-4 w-4" />
                 </a>
               </Button>
               <Button asChild variant="outline" size="lg" className="min-h-11">
-                <a href={copy.secondaryHref}>{copy.secondaryLabel}</a>
+                <a href={secondaryHref}>{copy.secondaryLabel}</a>
               </Button>
             </div>
           </div>

@@ -5041,6 +5041,42 @@ describe("DearMeOnboarding", () => {
     expect(checkoutReturnStatus.textContent).toContain("Checkout returned");
     expect(checkoutReturnStatus.textContent).toContain("matching the receipt");
     expect(checkoutReturnStatus.textContent).toContain("signed receipt sync");
+    expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_workroom_viewed", {
+      status: "success",
+      source: "direct",
+    });
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("records the allowlisted checkout source when returning to the workroom", async () => {
+    mockLocation.search = "?view=brand-os&checkout_return=success&checkout_source=paid&knownFor=Private%20brief";
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_workroom_viewed", {
+      status: "success",
+      source: "paid",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "checkout_return_workroom_viewed",
+      expect.objectContaining({
+        knownFor: expect.any(String),
+      }),
+    );
 
     await act(async () => {
       root.unmount();
@@ -5067,6 +5103,10 @@ describe("DearMeOnboarding", () => {
     expect(checkoutReturnStatus.textContent).toContain("Checkout was not completed");
     expect(checkoutReturnStatus.textContent).toContain("preview and close kit");
     expect(checkoutReturnStatus.textContent).not.toContain("checkout-session");
+    expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_workroom_viewed", {
+      status: "cancel",
+      source: "direct",
+    });
 
     await act(async () => {
       root.unmount();

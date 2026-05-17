@@ -228,6 +228,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-CHECKOUT-START-SOURCE-ANALYTICS** — hosted checkout-start analytics now carry only the safe signup source alongside checkout readiness, preserving paid-conversion attribution without customer identifiers.
 - **DM-CHECKOUT-RETURN-SOURCE-ANALYTICS** — checkout return analytics now accept only allowlisted return sources, preserving paid-return attribution while dropping arbitrary query text.
 - **DM-CHECKOUT-SESSION-RETURN-SOURCE** — server-created hosted checkout sessions now stamp success and cancel return URLs with the paid source marker, connecting checkout starts to safe paid-return attribution without adding customer data.
+- **DM-CHECKOUT-RETURN-WORKROOM-SOURCE** — checkout return CTAs now carry the allowlisted return source back into the workroom, where the return event is recorded without arbitrary query text or customer identifiers.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-FOCUS-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now uses the same owner-facts-plus-no-send wording for live-focus commands and setup commands.
 - **DM-PROOF-LIVE-CONFIRMATION-CHECKLIST** — `pnpm dearme:proof` now labels owner-proof checklist live commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.

@@ -590,6 +590,7 @@ interface DearMeDecisionFocus {
 }
 
 type DearMeCheckoutReturnStatus = "success" | "cancel";
+type DearMeCheckoutReturnSource = "paid" | "pricing" | "landing" | "direct";
 type DearMeSignupSource = "pricing" | "landing";
 
 type DearMeApprovalReviewAction = "approve" | "reject" | "request_revision";
@@ -927,6 +928,14 @@ function parseDearMeDecisionFocus(search: string): DearMeDecisionFocus | null {
 function parseDearMeCheckoutReturnStatus(search: string): DearMeCheckoutReturnStatus | null {
   const status = new URLSearchParams(search).get("checkout_return");
   return status === "success" || status === "cancel" ? status : null;
+}
+
+function parseDearMeCheckoutReturnSource(search: string): DearMeCheckoutReturnSource {
+  const source = new URLSearchParams(search).get("checkout_source");
+  if (source === "paid" || source === "pricing" || source === "landing" || source === "direct") {
+    return source;
+  }
+  return "direct";
 }
 
 function parseDearMeSignupSource(search: string, hasLandingBriefDraft = false): DearMeSignupSource | null {
@@ -13142,6 +13151,10 @@ export function DearMeOnboarding() {
     () => parseDearMeCheckoutReturnStatus(location.search),
     [location.search],
   );
+  const checkoutReturnSource = useMemo(
+    () => parseDearMeCheckoutReturnSource(location.search),
+    [location.search],
+  );
   const signupSource = useMemo(
     () => parseDearMeSignupSource(location.search, Boolean(landingBriefDraft)),
     [landingBriefDraft, location.search],
@@ -13175,6 +13188,14 @@ export function DearMeOnboarding() {
       source: signupSource,
     });
   }, [signupSource]);
+
+  useEffect(() => {
+    if (!checkoutReturnStatus) return;
+    capture("checkout_return_workroom_viewed", {
+      status: checkoutReturnStatus,
+      source: checkoutReturnSource,
+    });
+  }, [checkoutReturnSource, checkoutReturnStatus]);
 
   const paidBetaCohortCompanyIds = useMemo(
     () => normalizePaidBetaCohortCompanyIds(selectedCompanyId, companies),
