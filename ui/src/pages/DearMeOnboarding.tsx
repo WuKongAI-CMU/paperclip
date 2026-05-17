@@ -3290,6 +3290,7 @@ function FirstCyclePanel({
   paidBetaCheckoutHref,
   onOpenWorkReady,
   onOpenPreview,
+  onDownloadStartReceipt,
   onFocusPaidBeta,
   onOpenPaidBetaCheckout,
   onIntentChange,
@@ -3305,6 +3306,7 @@ function FirstCyclePanel({
   paidBetaCheckoutHref: string | null;
   onOpenWorkReady: () => void;
   onOpenPreview: (handle: string) => void;
+  onDownloadStartReceipt: () => void;
   onFocusPaidBeta: () => void;
   onOpenPaidBetaCheckout: () => void;
   onIntentChange: (value: string) => void;
@@ -3335,8 +3337,9 @@ function FirstCyclePanel({
   const downloadFirstCycleStartReceipt = useCallback(() => {
     if (!firstCycleStartReceiptText) return;
 
+    onDownloadStartReceipt();
     downloadDearMeReceipt(firstCycleStartReceiptText, DEARME_FIRST_CYCLE_START_RECEIPT_FILENAME);
-  }, [firstCycleStartReceiptText]);
+  }, [firstCycleStartReceiptText, onDownloadStartReceipt]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -13701,6 +13704,14 @@ export function DearMeOnboarding() {
     handleOpenWorkReady();
   }
 
+  function handleDownloadFirstCycleStartReceipt() {
+    capture("first_cycle_receipt_downloaded", {
+      source: firstCycleAnalyticsSource,
+      paid_beta_active: canStartPrivateWork,
+      private_work_started: firstCyclePrivateWorkStarted,
+    });
+  }
+
   function handleOpenDecisionsReady() {
     navigate(buildDearMeDecisionsReadyRoute(location.search));
   }
@@ -13868,6 +13879,7 @@ export function DearMeOnboarding() {
         paidBetaCheckoutHref={paidBetaCheckoutHref}
         onOpenPreview={handleOpenGeneratedFirstCyclePreview}
         onOpenWorkReady={handleOpenFirstCycleWorkReady}
+        onDownloadStartReceipt={handleDownloadFirstCycleStartReceipt}
         onFocusPaidBeta={handleFocusPaidBeta}
         onOpenPaidBetaCheckout={handleOpenFirstCycleCheckout}
         onIntentChange={(value) => {

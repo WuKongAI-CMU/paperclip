@@ -4809,6 +4809,17 @@ describe("DearMeOnboarding", () => {
       await expect(createdBlobs[0]?.text()).resolves.toContain("Value report: 4 receipts");
       await expect(createdBlobs[0]?.text()).resolves.toContain("ROI-ranked opportunities: 5 ranked");
       await expect(createdBlobs[0]?.text()).resolves.toContain("Next: review Work Ready");
+      expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_receipt_downloaded", {
+        source: "direct",
+        paid_beta_active: true,
+        private_work_started: true,
+      });
+      expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+        "first_cycle_receipt_downloaded",
+        expect.objectContaining({
+          receiptText: expect.any(String),
+        }),
+      );
     } finally {
       clickSpy.mockRestore();
       if (originalCreateObjectURL) {
