@@ -4850,6 +4850,58 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("shows receipt matching context after a successful checkout return", async () => {
+    mockLocation.search = "?view=brand-os&checkout_return=success";
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const checkoutReturnStatus = surfaceByLabel(container, "Checkout return status");
+    expect(checkoutReturnStatus.textContent).toContain("Checkout returned");
+    expect(checkoutReturnStatus.textContent).toContain("matching the receipt");
+    expect(checkoutReturnStatus.textContent).toContain("signed receipt sync");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps close kit context after a cancelled checkout return", async () => {
+    mockLocation.search = "?view=brand-os&checkout_return=cancel";
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const checkoutReturnStatus = surfaceByLabel(container, "Checkout return status");
+    expect(checkoutReturnStatus.textContent).toContain("Checkout was not completed");
+    expect(checkoutReturnStatus.textContent).toContain("preview and close kit");
+    expect(checkoutReturnStatus.textContent).not.toContain("checkout-session");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("keeps private team start locked during trial preview", async () => {
     const root = createRoot(container);
     const queryClient = new QueryClient({
