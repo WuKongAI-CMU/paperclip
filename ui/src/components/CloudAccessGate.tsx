@@ -42,6 +42,10 @@ function NoBoardAccessPage() {
   );
 }
 
+function isDearMeFirstCycleHandoff(pathname: string, search: string) {
+  return pathname === "/dearme" && Boolean(new URLSearchParams(search).get("knownFor")?.trim());
+}
+
 export function CloudAccessGate({ publicRootElement }: { publicRootElement?: ReactNode }) {
   const location = useLocation();
   const healthQuery = useQuery({
@@ -80,6 +84,10 @@ export function CloudAccessGate({ publicRootElement }: { publicRootElement?: Rea
     (isAuthenticatedMode && !!sessionQuery.data && boardAccessQuery.isLoading)
   ) {
     return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
+  }
+
+  if (healthQuery.error && isDearMeFirstCycleHandoff(location.pathname, location.search)) {
+    return <Outlet />;
   }
 
   if (healthQuery.error || boardAccessQuery.error) {

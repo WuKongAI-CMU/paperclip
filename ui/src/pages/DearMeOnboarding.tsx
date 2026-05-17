@@ -128,6 +128,7 @@ import {
   FileText,
   Gauge,
   LifeBuoy,
+  Mail,
   MessageSquare,
   Plus,
   RefreshCw,
@@ -624,6 +625,64 @@ function livePulseText(text: string): string {
 }
 
 const DEARME_PROFILE_REQUIRED_MESSAGE = "Choose a DearMe profile first.";
+
+function DearMeProfileRequiredHandoff({ knownFor }: { knownFor: string }) {
+  const hasLandingAnswer = Boolean(knownFor.trim());
+
+  return (
+    <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-4 py-10 sm:px-6 lg:px-8">
+      <DearMeFocusSurface aria-label="DearMe first-cycle signup handoff">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-center">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Sparkles className="h-4 w-4" />
+              First cycle
+            </div>
+            <h1 className="mt-3 text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
+              {hasLandingAnswer ? "Your first cycle brief is ready." : "Start your first DearMe cycle."}
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
+              {hasLandingAnswer
+                ? "DearMe saved the direction from the landing page. Request a private beta invite and that brief becomes the starting point for your first proof pass."
+                : "Create a private beta profile before DearMe prepares proof, voice, and opportunity work for review."}
+            </p>
+            {hasLandingAnswer ? (
+              <p className="mt-4 rounded-lg border border-border bg-background p-4 text-sm leading-6 text-foreground">
+                {knownFor}
+              </p>
+            ) : null}
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg" className="min-h-11">
+                <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
+                  Request private beta invite
+                  <Mail className="h-4 w-4" />
+                </a>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="min-h-11">
+                <a href="/pricing">
+                  Review pricing
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </Button>
+            </div>
+          </div>
+          <div className="grid gap-3">
+            <DearMeWorkbenchCard
+              eyebrow="Next"
+              title="Private proof pass"
+              description="DearMe turns one positioning answer into proof, voice, and outreach work for review."
+            />
+            <DearMeWorkbenchCard
+              eyebrow="$29/mo"
+              title="Paid beta"
+              description="A private weekly growth loop starts after invite approval and checkout."
+            />
+          </div>
+        </div>
+      </DearMeFocusSurface>
+    </DearMePageShell>
+  );
+}
 
 function dearMeCustomerErrorMessage(error: unknown, fallback: string) {
   if (!(error instanceof Error)) return fallback;
@@ -12794,6 +12853,10 @@ export function DearMeOnboarding() {
     outputId: string;
     action: DearMeOutputReviewAction;
   } | null>(null);
+  const knownForIntent = useMemo(
+    () => new URLSearchParams(location.search).get("knownFor")?.trim() ?? "",
+    [location.search],
+  );
 
   useEffect(() => {
     setBreadcrumbs([{ label: "DearMe" }, { label: "Team" }]);
@@ -12813,7 +12876,7 @@ export function DearMeOnboarding() {
   }, [location.hash]);
 
   useEffect(() => {
-    const knownFor = new URLSearchParams(location.search).get("knownFor")?.trim();
+    const knownFor = knownForIntent;
     if (!knownFor) return;
 
     setFirstCycleIntent((current) => (current.trim() ? current : knownFor));
@@ -12827,7 +12890,7 @@ export function DearMeOnboarding() {
           : `Become known for ${knownFor}\nTurn proof of work into consistent content`,
       };
     });
-  }, [location.search]);
+  }, [knownForIntent]);
 
   const currentSignature = useMemo(
     () => createDearMeBrandBlueprintSignature(form, selectedCompany?.name),
@@ -13208,7 +13271,7 @@ export function DearMeOnboarding() {
   }, []);
 
   if (!selectedCompanyId) {
-    return <p className="text-sm text-muted-foreground">{DEARME_PROFILE_REQUIRED_MESSAGE}</p>;
+    return <DearMeProfileRequiredHandoff knownFor={knownForIntent} />;
   }
 
   const requestDisabled =
