@@ -60,10 +60,15 @@ describe("DearMeCheckoutReturn", () => {
       links.some(
         (link) =>
           link.getAttribute("href") ===
-          "/dearme?checkout_return=success#dearme-paid-beta-access",
+          "/dearme?checkout_return=success&checkout_source=direct#dearme-paid-beta-access",
       ),
     ).toBe(true);
-    expect(links.some((link) => link.getAttribute("href") === "/dearme?checkout_return=success"))
+    expect(
+      links.some(
+        (link) =>
+          link.getAttribute("href") === "/dearme?checkout_return=success&checkout_source=direct",
+      ),
+    )
       .toBe(true);
     expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_viewed", {
       status: "success",
@@ -89,7 +94,8 @@ describe("DearMeCheckoutReturn", () => {
     expect(
       links.some(
         (link) =>
-          link.getAttribute("href") === "/dearme?checkout_return=cancel#dearme-paid-beta-access",
+          link.getAttribute("href") ===
+          "/dearme?checkout_return=cancel&checkout_source=direct#dearme-paid-beta-access",
       ),
     ).toBe(true);
     expect(links.some((link) => link.getAttribute("href") === "/pricing")).toBe(true);
@@ -140,6 +146,34 @@ describe("DearMeCheckoutReturn", () => {
         knownFor: expect.any(String),
       }),
     );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("carries allowlisted checkout return source back to the workroom", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/dearme/checkout/success?source=paid&session_id=checkout-session-1",
+    );
+    const { container, root } = await renderReturnPage("success");
+    const links = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"));
+
+    expect(
+      links.some(
+        (link) =>
+          link.getAttribute("href") ===
+          "/dearme?checkout_return=success&checkout_source=paid#dearme-paid-beta-access",
+      ),
+    ).toBe(true);
+    expect(
+      links.some(
+        (link) =>
+          link.getAttribute("href") === "/dearme?checkout_return=success&checkout_source=paid",
+      ),
+    ).toBe(true);
 
     await act(async () => {
       root.unmount();
