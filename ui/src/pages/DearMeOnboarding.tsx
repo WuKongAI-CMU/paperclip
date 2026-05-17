@@ -11748,8 +11748,10 @@ function PaidBetaAccessPanel({
   isLoading,
   isError,
   error,
+  isRefreshingAccess,
   checkoutReturnStatus,
   signupSource,
+  onRefreshAccess,
   onFocusFirstCycle,
 }: {
   companyId: string;
@@ -11757,8 +11759,10 @@ function PaidBetaAccessPanel({
   isLoading: boolean;
   isError: boolean;
   error: unknown;
+  isRefreshingAccess: boolean;
   checkoutReturnStatus: DearMeCheckoutReturnStatus | null;
   signupSource: DearMeSignupSource | null;
+  onRefreshAccess: () => void;
   onFocusFirstCycle: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -12268,10 +12272,25 @@ function PaidBetaAccessPanel({
 
       {checkoutReturnMessage ? (
         <div
-          className="mt-4 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground"
+          className="mt-4 flex flex-col gap-3 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"
           aria-label="Checkout return status"
         >
-          {checkoutReturnMessage}
+          <span>{checkoutReturnMessage}</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="shrink-0"
+            onClick={onRefreshAccess}
+            disabled={isRefreshingAccess}
+          >
+            {isRefreshingAccess ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            Refresh access
+          </Button>
         </div>
       ) : null}
 
@@ -13783,8 +13802,12 @@ export function DearMeOnboarding() {
         isLoading={paidBetaAccessQuery.isLoading}
         isError={paidBetaAccessQuery.isError}
         error={paidBetaAccessQuery.error}
+        isRefreshingAccess={paidBetaAccessQuery.isFetching}
         checkoutReturnStatus={checkoutReturnStatus}
         signupSource={signupSource}
+        onRefreshAccess={() => {
+          void paidBetaAccessQuery.refetch();
+        }}
         onFocusFirstCycle={handleFocusFirstCycle}
       />
 
