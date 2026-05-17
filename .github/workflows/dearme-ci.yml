@@ -10,6 +10,9 @@ on:
       - main
       - codex/dearme-*
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   typecheck-test:
     name: Typecheck and test
