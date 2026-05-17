@@ -41,6 +41,7 @@
     "dearme:bedrock-guard": "node scripts/check-dearme-bedrock-guard.mjs",
     "dearme:worktrees": "node scripts/dearme-worktree-status.mjs",
     "test:dearme-cohort-dashboard-config": "node --test scripts/dearme-cohort-dashboard-config.test.mjs",
+    "test:dearme-posthog-funnel-config": "node --test scripts/dearme-posthog-funnel-config.test.mjs",
     "test:dearme-db-backup": "node --test scripts/dearme-db-backup.test.mjs",
     "test:dearme-worktrees": "node --test scripts/dearme-worktree-status.test.mjs",
     "dearme:provider-smoke": "node cli/node_modules/tsx/dist/cli.mjs scripts/dearme-provider-smoke.ts",
