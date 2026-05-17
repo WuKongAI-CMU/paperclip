@@ -97,6 +97,8 @@ const DEARME_PROOF_CAPABILITY_LABELS = {
   unknown: "provider smoke setup",
 } as const;
 
+const HUMAN_HELP_QUEUE_PATH = "docs/NEEDS_HUMAN_HELP.md";
+
 export type DearMeProofCapabilityKey = keyof typeof DEARME_PROOF_CAPABILITY_LABELS;
 
 export interface DearMeProofCapabilityBlocker {
@@ -1574,6 +1576,11 @@ function formatLiveProviderSetupCommand(command: string) {
     : command;
 }
 
+function statusHasHumanHelpFacts(status: DearMeProofStatus) {
+  return status.commercialReadiness.hostedCheckoutFactsNeeded.length > 0
+    || status.ownerProofChecklist.factsNeededCount > 0;
+}
+
 export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
   const lines = ["DearMe product proof status"];
   const checklist = status.ownerProofChecklist;
@@ -1669,6 +1676,13 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
         lines.push(`  - ${command}`);
       }
     }
+  }
+
+  if (status.lane === "all" && statusHasHumanHelpFacts(status)) {
+    lines.push("");
+    lines.push(
+      `Human help queue: ${HUMAN_HELP_QUEUE_PATH} has the reply templates and safe follow-up commands for these blockers.`,
+    );
   }
 
   lines.push("");
