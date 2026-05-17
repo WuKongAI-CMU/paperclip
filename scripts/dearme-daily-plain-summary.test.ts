@@ -59,7 +59,10 @@ function standingLoopAudit(): DearMeStandingLoopAudit {
         ],
       },
     },
-    dailyPlainSummaryFacts: [],
+    dailyPlainSummaryFacts: [
+      "DEARME_PLAIN_API_KEY is missing.",
+      "DEARME_CODEX_DAILY_PLAIN_EMAIL or DEARME_PLAIN_DAILY_EMAIL is missing.",
+    ],
     nextAction: {
       label: "OpenClaw shared Telegram/iMessage message proof",
       reason: "Blocked by imessage_message.",
@@ -95,6 +98,9 @@ test("builds the required daily Plain summary from ledger and standing-loop evid
   assert.match(summary.body, /Standing loop: owner-blocked/);
   assert.match(summary.body, /DEARME_LINKEDIN_DM_MESSAGES_URL/);
   assert.match(summary.body, /DEARME_PAYMENT_LINK_URL is missing/);
+  assert.match(summary.body, /Daily Plain summary facts needed:/);
+  assert.match(summary.body, /DEARME_PLAIN_API_KEY is missing/);
+  assert.match(summary.body, /DEARME_CODEX_DAILY_PLAIN_EMAIL or DEARME_PLAIN_DAILY_EMAIL is missing/);
   assert.match(summary.body, /pnpm --silent dearme:next-proof -- --target openclaw_messages/);
 });
 

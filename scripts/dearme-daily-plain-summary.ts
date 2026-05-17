@@ -135,6 +135,10 @@ function ownerFacts(audit: DearMeStandingLoopAudit) {
   return audit.nextAction.ownerFacts ?? [];
 }
 
+function dailyPlainSummaryFacts(audit: DearMeStandingLoopAudit) {
+  return audit.dailyPlainSummaryFacts;
+}
+
 export function buildDearMeDailyPlainSummary(input: {
   date: string;
   ledgerEntries: DearMeDailyLedgerEntry[];
@@ -146,6 +150,7 @@ export function buildDearMeDailyPlainSummary(input: {
   const audit = input.standingLoopAudit;
   const ownerFactLines = ownerFacts(audit).map((fact) => `- ${fact}`);
   const paymentFactLines = firstPaymentFacts(audit).map((fact) => `- ${fact}`);
+  const dailyPlainSummaryFactLines = dailyPlainSummaryFacts(audit).map((fact) => `- ${fact}`);
   const bodyLines = [
     subject,
     "",
@@ -164,6 +169,9 @@ export function buildDearMeDailyPlainSummary(input: {
   }
   if (paymentFactLines.length > 0) {
     bodyLines.push("", "First-payment checkout facts needed:", ...paymentFactLines);
+  }
+  if (dailyPlainSummaryFactLines.length > 0) {
+    bodyLines.push("", "Daily Plain summary facts needed:", ...dailyPlainSummaryFactLines);
   }
   if (audit.nextAction.command) {
     bodyLines.push("", `Next command: ${audit.nextAction.command}`);
