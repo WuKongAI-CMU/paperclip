@@ -69,6 +69,11 @@ export function DearMePricing() {
     const trimmedEmail = email.trim();
 
     if (!WAITLIST_EMAIL_PATTERN.test(trimmedEmail)) {
+      capture("pricing_waitlist_blocked", {
+        source: "pricing",
+        plan: "beta_29",
+        reason: "invalid_email",
+      });
       setError("Enter a work email to join the private beta waitlist.");
       setWaitlistStatus("idle");
       return;
@@ -98,6 +103,11 @@ export function DearMePricing() {
       setEmail(trimmedEmail);
       setWaitlistStatus("joined");
     } catch {
+      capture("pricing_waitlist_failed", {
+        source: "pricing",
+        plan: "beta_29",
+        reason: "request_failed",
+      });
       setWaitlistStatus("idle");
       setError("We could not save that. Email peter@dearme.app and we will add you manually.");
     }
