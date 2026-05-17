@@ -61,10 +61,10 @@ type PricingTrialStartSource = "hero" | "plan";
 
 export function DearMePricing() {
   const [email, setEmail] = useState("");
-  const [waitlistStatus, setWaitlistStatus] = useState<"idle" | "joined">("idle");
+  const [waitlistStatus, setWaitlistStatus] = useState<"idle" | "submitting" | "joined">("idle");
   const [error, setError] = useState<string | null>(null);
 
-  function handleWaitlistSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleWaitlistSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedEmail = email.trim();
 
@@ -74,13 +74,33 @@ export function DearMePricing() {
       return;
     }
 
-    capture("pricing_waitlist_joined", {
-      source: "pricing",
-      plan: "beta_29",
-    });
-    setEmail(trimmedEmail);
+    setWaitlistStatus("submitting");
     setError(null);
-    setWaitlistStatus("joined");
+
+    try {
+      const response = await fetch("/api/dearme/pricing-waitlist", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          plan: "beta_29",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("pricing_waitlist_request_failed");
+      }
+
+      capture("pricing_waitlist_joined", {
+        source: "pricing",
+        plan: "beta_29",
+      });
+      setEmail(trimmedEmail);
+      setWaitlistStatus("joined");
+    } catch {
+      setWaitlistStatus("idle");
+      setError("We could not save that. Email peter@dearme.app and we will add you manually.");
+    }
   }
 
   function handleTrialStart(source: PricingTrialStartSource) {
@@ -220,8 +240,8 @@ export function DearMePricing() {
                 }
                 className="min-h-11 bg-background"
               />
-              <Button type="submit" className="min-h-11 shrink-0">
-                Join waitlist
+              <Button type="submit" className="min-h-11 shrink-0" disabled={waitlistStatus === "submitting"}>
+                {waitlistStatus === "submitting" ? "Joining..." : "Join waitlist"}
                 <Mail className="h-4 w-4" />
               </Button>
             </div>
