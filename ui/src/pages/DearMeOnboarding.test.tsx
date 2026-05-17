@@ -4577,6 +4577,9 @@ describe("DearMeOnboarding", () => {
       }),
     );
     expect(mockDearmeApi.previewFirstCycle).not.toHaveBeenCalled();
+    expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_started", {
+      source: "direct",
+    });
     expect(container.textContent).toContain("First-run proof sequence");
     expect(container.textContent).toContain("Live work receipts");
     expect(container.querySelector('[aria-label="First-run live work receipts"]')).not.toBeNull();
@@ -4853,6 +4856,7 @@ describe("DearMeOnboarding", () => {
     expect(mockDearmeApi.startFirstCycle).not.toHaveBeenCalled();
     expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_completed", {
       mode: "trial_preview",
+      source: "direct",
     });
     expect(container.textContent).toContain("First-run proof sequence");
     expect(container.textContent).toContain("Live work receipts");
@@ -5026,6 +5030,56 @@ describe("DearMeOnboarding", () => {
       "signup_entry_viewed",
       expect.objectContaining({
         email: expect.any(String),
+      }),
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("carries pricing source into first-cycle preview analytics without customer identifiers", async () => {
+    mockLocation.search = "?view=brand-os&signup_source=pricing";
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      setTextareaValue(
+        container.querySelector("#dearme-first-cycle-intent") as HTMLTextAreaElement,
+        "Known for building proof from customer research",
+      );
+    });
+
+    await act(async () => {
+      buttonByText(container, "Preview first cycle")?.click();
+    });
+    await flushReact();
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_completed", {
+      mode: "trial_preview",
+      source: "pricing",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "first_cycle_completed",
+      expect.objectContaining({
+        email: expect.any(String),
+      }),
+    );
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "first_cycle_completed",
+      expect.objectContaining({
+        knownFor: expect.any(String),
       }),
     );
 
