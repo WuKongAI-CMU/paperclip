@@ -40,6 +40,7 @@
     "test:dearme-generate-og-image": "node --test scripts/generate-dearme-og-image.test.mjs",
     "dearme:bedrock-guard": "node scripts/check-dearme-bedrock-guard.mjs",
     "dearme:worktrees": "node scripts/dearme-worktree-status.mjs",
+    "test:dearme-landing-hero-experiment-config": "node --test scripts/dearme-landing-hero-experiment-config.test.mjs",
     "test:dearme-cohort-dashboard-config": "node --test scripts/dearme-cohort-dashboard-config.test.mjs",
     "test:dearme-posthog-funnel-config": "node --test scripts/dearme-posthog-funnel-config.test.mjs",
     "test:dearme-db-backup": "node --test scripts/dearme-db-backup.test.mjs",

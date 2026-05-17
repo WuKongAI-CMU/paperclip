@@ -51,8 +51,16 @@ function installIndexHead() {
 describe("resolveLandingCopyVariant", () => {
   it("resolves only the three supported landing copy variants", () => {
     expect(resolveLandingCopyVariant("control").headline).toBe("DearMe is a private AI growth team for one person.");
-    expect(resolveLandingCopyVariant("proof-first").question).toBe("Which proof should DearMe package first?");
-    expect(resolveLandingCopyVariant("opportunity-first").submitLabel).toBe("Prepare my next move");
+    expect(resolveLandingCopyVariant("proof-first").headline).toBe(
+      "Before: scattered proof. After: one private growth cycle ready to review.",
+    );
+    expect(resolveLandingCopyVariant("proof-first").question).toBe(
+      "What proof should DearMe organize into a before-and-after?",
+    );
+    expect(resolveLandingCopyVariant("opportunity-first").headline).toBe(
+      "Start with your weekly letter samples, then decide what should ship.",
+    );
+    expect(resolveLandingCopyVariant("opportunity-first").submitLabel).toBe("Preview my weekly letter");
     expect(resolveLandingCopyVariant("unknown").key).toBe("control");
     expect(resolveLandingCopyVariant(true).key).toBe("control");
   });
@@ -163,6 +171,7 @@ describe("DearMeLanding", () => {
     );
     expect(analyticsMock.capture).toHaveBeenCalledWith("landing_cta_submitted", {
       landing_copy_variant: "control",
+      landing_hero_theme: "private_growth_team",
       positioning_length: 39,
     });
   });
@@ -202,6 +211,61 @@ describe("DearMeLanding", () => {
     expect(analyticsMock.resolveFeatureFlagValue).toHaveBeenCalledWith("dearme_landing_copy", "control");
     expect(analyticsMock.capture).toHaveBeenCalledWith("landing_viewed", {
       landing_copy_variant: "control",
+      landing_hero_theme: "private_growth_team",
+    });
+  });
+
+  it("renders the before-and-after hero variant", async () => {
+    analyticsMock.resolveFeatureFlagValue.mockResolvedValue("proof-first");
+
+    await act(async () => {
+      root.unmount();
+    });
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={["/"]}>
+          <Routes>
+            <Route path="/" element={<DearMeLanding />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Before: scattered proof. After: one private growth cycle ready to review.");
+    expect(container.textContent).toContain("organize into a before-and-after");
+    expect(container.textContent).toContain("Show my before and after");
+    expect(analyticsMock.capture).toHaveBeenCalledWith("landing_viewed", {
+      landing_copy_variant: "proof-first",
+      landing_hero_theme: "before_after",
+    });
+  });
+
+  it("renders the weekly-letter-samples hero variant", async () => {
+    analyticsMock.resolveFeatureFlagValue.mockResolvedValue("opportunity-first");
+
+    await act(async () => {
+      root.unmount();
+    });
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={["/"]}>
+          <Routes>
+            <Route path="/" element={<DearMeLanding />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain("Start with your weekly letter samples, then decide what should ship.");
+    expect(container.textContent).toContain("What should this week's DearMe letter be about?");
+    expect(container.textContent).toContain("Preview my weekly letter");
+    expect(analyticsMock.capture).toHaveBeenCalledWith("landing_viewed", {
+      landing_copy_variant: "opportunity-first",
+      landing_hero_theme: "weekly_letter_samples",
     });
   });
 

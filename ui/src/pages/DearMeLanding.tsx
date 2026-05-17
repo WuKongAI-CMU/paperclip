@@ -61,6 +61,7 @@ const LANDING_COPY_FEATURE_FLAG = "dearme_landing_copy";
 const LANDING_COPY_VARIANTS = [
   {
     key: "control",
+    theme: "private_growth_team",
     headline: "DearMe is a private AI growth team for one person.",
     body: "Give it the work you want to be known for. It turns your proof, voice, and relationships into a private weekly operating system: letters, drafts, opportunities, and the next launch decision.",
     question: "What do you want to be known for?",
@@ -70,21 +71,23 @@ const LANDING_COPY_VARIANTS = [
   },
   {
     key: "proof-first",
-    headline: "DearMe is a private AI growth team for one person.",
-    body: "If your best proof is scattered across notes, customer calls, and half-written drafts, DearMe packages it into a private proof page, weekly letter, and next outreach move.",
-    question: "Which proof should DearMe package first?",
-    placeholder: "Three customer stories that show how our product saves operators five hours a week",
-    submitLabel: "Build my proof pass",
-    previewSummary: "The first pass packages what is already true, then leaves the launch decision with you.",
+    theme: "before_after",
+    headline: "Before: scattered proof. After: one private growth cycle ready to review.",
+    body: "DearMe turns the proof you already have into a cleaner before-and-after: a private proof page, a weekly letter draft, and the next outreach move, all held for your approval.",
+    question: "What proof should DearMe organize into a before-and-after?",
+    placeholder: "Before: research lived across call notes. After: our customers make weekly product calls from one clear brief.",
+    submitLabel: "Show my before and after",
+    previewSummary: "The first pass shows what changes when scattered proof becomes one reviewable cycle.",
   },
   {
     key: "opportunity-first",
-    headline: "DearMe is a private AI growth team for one person.",
-    body: "When a useful lead, partner, podcast, job, or customer thread appears, DearMe prepares the proof and words you need before the opportunity goes cold.",
-    question: "Which opportunity should DearMe prepare around?",
-    placeholder: "Design partners who asked whether our new workflow is ready for their team",
-    submitLabel: "Prepare my next move",
-    previewSummary: "The first cycle turns one opportunity into reviewable work and a protected launch call.",
+    theme: "weekly_letter_samples",
+    headline: "Start with your weekly letter samples, then decide what should ship.",
+    body: "Paste what you have been meaning to say. DearMe shapes it into sample weekly letters, proof notes, and one opportunity card so you can see the work before you request a beta invite.",
+    question: "What should this week's DearMe letter be about?",
+    placeholder: "A short note on the customer proof we found this week, the draft worth finishing, and who I should follow up with next.",
+    submitLabel: "Preview my weekly letter",
+    previewSummary: "The first cycle makes the weekly letter tangible before asking you to trust the system.",
   },
 ] as const;
 
@@ -112,7 +115,10 @@ export function DearMeLanding() {
       if (!mounted) return;
       const selectedVariant = resolveLandingCopyVariant(value);
       setVariant(selectedVariant);
-      capture("landing_viewed", { landing_copy_variant: selectedVariant.key });
+      capture("landing_viewed", {
+        landing_copy_variant: selectedVariant.key,
+        landing_hero_theme: selectedVariant.theme,
+      });
     });
 
     return () => {
@@ -131,6 +137,7 @@ export function DearMeLanding() {
 
     capture("landing_cta_submitted", {
       landing_copy_variant: variant.key,
+      landing_hero_theme: variant.theme,
       positioning_length: answer.length,
     });
     window.sessionStorage.setItem(LANDING_ANSWER_STORAGE_KEY, answer);
