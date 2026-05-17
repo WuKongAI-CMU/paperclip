@@ -2010,6 +2010,7 @@ describe("DearMeOnboarding", () => {
     window.localStorage.clear();
     container.remove();
     document.body.innerHTML = "";
+    vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
@@ -2033,10 +2034,11 @@ describe("DearMeOnboarding", () => {
 
     expect(container.textContent).toContain("Your first cycle brief is ready.");
     expect(container.textContent).toContain("Known for practical launches");
-    expect(container.textContent).toContain("Request private beta invite");
+    expect(container.textContent).toContain("Request invite");
+    expect(container.textContent).toContain("Email instead");
     expect(container.textContent).toContain("Review pricing");
     const inviteLink = Array.from(container.querySelectorAll("a")).find((link) =>
-      link.textContent?.includes("Request private beta invite"),
+      link.textContent?.includes("Email instead"),
     );
     expect(inviteLink?.getAttribute("href")).toContain("subject=DearMe%20private%20beta%20invite");
     expect(decodeURIComponent(inviteLink?.getAttribute("href") ?? "")).toContain(
@@ -2046,6 +2048,65 @@ describe("DearMeOnboarding", () => {
     expect(mockDearmeApi.getWorkbench).not.toHaveBeenCalled();
     expect(mockDearmeApi.getOutputs).not.toHaveBeenCalled();
     expect(mockDearmeApi.getPaidBetaAccess).not.toHaveBeenCalled();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("captures profile invite requests from the first-cycle bridge without sending the landing answer to analytics", async () => {
+    mockCompanyContext.selectedCompanyId = null;
+    mockCompanyContext.selectedCompany = null;
+    mockLocation.search = "?knownFor=Known%20for%20practical%20launches";
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ status: "accepted" }), { status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const inviteInput = container.querySelector<HTMLInputElement>("#dearme-profile-invite-email");
+    expect(inviteInput).not.toBeNull();
+    await act(async () => {
+      setInputValue(inviteInput!, " founder@example.com ");
+      buttonByText(container, "Request invite")?.click();
+    });
+    await flushReact();
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/dearme/profile-invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: "founder@example.com",
+        source: "landing",
+        firstCycleBriefProvided: true,
+      }),
+    });
+    expect(container.textContent).toContain("Invite request saved for founder@example.com.");
+    expect(analyticsMock.capture).toHaveBeenCalledWith("private_beta_invite_requested", {
+      source: "landing",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "private_beta_invite_requested",
+      expect.objectContaining({
+        knownFor: expect.any(String),
+      }),
+    );
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "private_beta_invite_requested",
+      expect.objectContaining({
+        email: expect.any(String),
+      }),
+    );
 
     await act(async () => {
       root.unmount();

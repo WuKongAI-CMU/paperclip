@@ -103,3 +103,50 @@ describe("DearMe pricing waitlist route", () => {
     expect(sendLifecycleEvent).not.toHaveBeenCalled();
   });
 });
+
+describe("DearMe profile invite route", () => {
+  it("accepts a landing-sourced profile invite and sends the signup lifecycle event", async () => {
+    const sendLifecycleEvent = vi.fn(async () => ({
+      skipped: false as const,
+      ok: true as const,
+      status: 200,
+    }));
+    const app = createApp(sendLifecycleEvent);
+
+    const response = await request(app)
+      .post("/api/dearme/profile-invite")
+      .send({
+        email: "founder@example.com",
+        source: "landing",
+        firstCycleBriefProvided: true,
+      });
+
+    expect(response.status).toBe(202);
+    expect(response.body.status).toBe("accepted");
+    expect(sendLifecycleEvent).toHaveBeenCalledWith({
+      email: "founder@example.com",
+      eventName: "dearme_signup",
+      properties: {
+        source: "profile_invite_landing",
+        firstCycleBriefProvided: true,
+        plan: "beta_29",
+      },
+    });
+  });
+
+  it("rejects invalid profile invite emails before lifecycle delivery", async () => {
+    const sendLifecycleEvent = vi.fn();
+    const app = createApp(sendLifecycleEvent);
+
+    const response = await request(app)
+      .post("/api/dearme/profile-invite")
+      .send({
+        email: "not-an-email",
+        source: "landing",
+        firstCycleBriefProvided: true,
+      });
+
+    expect(response.status).toBe(400);
+    expect(sendLifecycleEvent).not.toHaveBeenCalled();
+  });
+});

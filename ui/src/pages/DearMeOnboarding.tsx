@@ -651,6 +651,41 @@ function DearMeProfileRequiredHandoff({ knownFor }: { knownFor: string }) {
   const landingAnswer = knownFor.trim();
   const hasLandingAnswer = Boolean(landingAnswer);
   const inviteHref = buildDearMePrivateBetaInviteHref(landingAnswer);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteStatus, setInviteStatus] = useState<"idle" | "submitting" | "requested">("idle");
+  const [inviteError, setInviteError] = useState<string | null>(null);
+
+  async function handleInviteRequest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const email = inviteEmail.trim();
+    if (!email) {
+      setInviteError("Enter an email for the invite.");
+      return;
+    }
+
+    setInviteStatus("submitting");
+    setInviteError(null);
+    try {
+      const response = await fetch("/api/dearme/profile-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          source: hasLandingAnswer ? "landing" : "direct",
+          firstCycleBriefProvided: hasLandingAnswer,
+        }),
+      });
+      if (!response.ok) throw new Error("Invite request failed.");
+      capture("private_beta_invite_requested", {
+        source: hasLandingAnswer ? "landing" : "direct",
+      });
+      setInviteEmail(email);
+      setInviteStatus("requested");
+    } catch {
+      setInviteStatus("idle");
+      setInviteError("We could not save that. Email peter@dearme.app and we will add you manually.");
+    }
+  }
 
   return (
     <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-4 py-10 sm:px-6 lg:px-8">
@@ -674,10 +709,42 @@ function DearMeProfileRequiredHandoff({ knownFor }: { knownFor: string }) {
                 {landingAnswer}
               </p>
             ) : null}
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="min-h-11">
+            {inviteStatus === "requested" ? (
+              <div className="mt-6 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm leading-6 text-foreground">
+                Invite request saved for {inviteEmail}. We will follow up with the private beta next step.
+              </div>
+            ) : (
+              <form className="mt-6 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]" onSubmit={handleInviteRequest}>
+                <label className="sr-only" htmlFor="dearme-profile-invite-email">
+                  Email for private beta invite
+                </label>
+                <Input
+                  id="dearme-profile-invite-email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  value={inviteEmail}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setInviteEmail(event.target.value);
+                    setInviteError(null);
+                  }}
+                  disabled={inviteStatus === "submitting"}
+                  className="min-h-11"
+                />
+                <Button type="submit" size="lg" className="min-h-11" disabled={inviteStatus === "submitting"}>
+                  {inviteStatus === "submitting" ? "Requesting..." : "Request invite"}
+                  <Mail className="h-4 w-4" />
+                </Button>
+                {inviteError ? (
+                  <p className="sm:col-span-2 text-sm text-destructive">{inviteError}</p>
+                ) : null}
+              </form>
+            )}
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+              <Button asChild variant="outline" size="lg" className="min-h-11">
                 <a href={inviteHref}>
-                  Request private beta invite
+                  Email instead
                   <Mail className="h-4 w-4" />
                 </a>
               </Button>

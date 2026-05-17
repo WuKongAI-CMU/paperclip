@@ -136,6 +136,11 @@ const dearMePricingWaitlistRequestSchema = z.object({
   email: z.string().trim().email().max(320),
   plan: z.literal("beta_29"),
 });
+const dearMeProfileInviteRequestSchema = z.object({
+  email: z.string().trim().email().max(320),
+  source: z.enum(["landing", "direct"]),
+  firstCycleBriefProvided: z.boolean(),
+});
 const dearMeBillingPortalRequestSchema = z.object({
   customerId: z.string().trim().min(1),
 });
@@ -678,6 +683,32 @@ export function dearmeRoutes(
         properties: {
           source: "pricing_waitlist",
           plan: req.body.plan,
+        },
+      });
+      const response: {
+        status: "accepted" | "accepted_without_lifecycle" | "lifecycle_failed";
+        lifecycle: DearMeLifecycleResult;
+      } = lifecycle.skipped
+        ? { status: "accepted_without_lifecycle", lifecycle }
+        : lifecycle.ok
+          ? { status: "accepted", lifecycle }
+          : { status: "lifecycle_failed", lifecycle };
+
+      res.status(response.status === "lifecycle_failed" ? 502 : 202).json(response);
+    },
+  );
+
+  router.post(
+    "/profile-invite",
+    validate(dearMeProfileInviteRequestSchema),
+    async (req, res) => {
+      const lifecycle = await (options.sendLifecycleEvent ?? sendLifecycleEvent)({
+        email: req.body.email,
+        eventName: "dearme_signup",
+        properties: {
+          source: req.body.source === "landing" ? "profile_invite_landing" : "profile_invite_direct",
+          firstCycleBriefProvided: req.body.firstCycleBriefProvided,
+          plan: "beta_29",
         },
       });
       const response: {
