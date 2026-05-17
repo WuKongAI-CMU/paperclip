@@ -616,6 +616,10 @@ test("DearMe goal audit routes blocked OpenClaw message proof through no-send se
   assert.match(formatted, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
   assert.match(
     formatted,
+    /Human help queue: docs\/NEEDS_HUMAN_HELP\.md has the reply templates and safe follow-up commands for these blockers\./,
+  );
+  assert.match(
+    formatted,
     /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check --target openclaw_messages/,
   );
   assert.match(
@@ -676,6 +680,10 @@ test("DearMe goal audit surfaces hosted checkout facts for the first-payment pat
   assert.match(formatted, /First-payment checkout facts needed:/);
   assert.match(formatted, /DEARME_PAYMENT_LINK_URL is missing/);
   assert.match(formatted, /STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)/);
+  assert.match(
+    formatted,
+    /Human help queue: docs\/NEEDS_HUMAN_HELP\.md has the reply templates and safe follow-up commands for these blockers\./,
+  );
 });
 
 test("DearMe goal audit passes only when every required proof item is ready", () => {
@@ -704,6 +712,7 @@ test("DearMe goal audit passes only when every required proof item is ready", ()
   assert.match(formatted, /Keep paid users receiving weekly value, retention recovery, feedback learning, and support handoff: met/);
   assert.match(formatted, /Make the product autonomous and useful without exposing too many setup concerns: met/);
   assert.match(formatted, /pnpm --silent dearme:goal-audit -- --check/);
+  assert.doesNotMatch(formatted, /Human help queue:/);
 });
 
 test("DearMe goal audit requires the paid-user retention loop before completion", () => {

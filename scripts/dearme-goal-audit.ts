@@ -27,6 +27,8 @@ import {
 
 type Env = Record<string, string | undefined>;
 
+const HUMAN_HELP_QUEUE_PATH = "docs/NEEDS_HUMAN_HELP.md";
+
 export type DearMeGoalAuditItemKey =
   | "architecture_status_spine"
   | "donor_reuse_absorption"
@@ -1139,6 +1141,13 @@ export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {
     }
   }
 
+  if (goalAuditNeedsHumanHelpQueue(audit)) {
+    lines.push("");
+    lines.push(
+      `Human help queue: ${HUMAN_HELP_QUEUE_PATH} has the reply templates and safe follow-up commands for these blockers.`,
+    );
+  }
+
   lines.push("");
   lines.push("Next action:");
   lines.push(`- ${audit.nextAction.label}: ${audit.nextAction.reason}`);
@@ -1175,6 +1184,11 @@ export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {
     lines.push(`- Run: ${audit.nextAction.command}`);
   }
   return lines;
+}
+
+function goalAuditNeedsHumanHelpQueue(audit: DearMeGoalAudit): boolean {
+  return audit.ownerProofFactsNeeded.length > 0
+    || audit.hostedCheckoutFactsNeeded.length > 0;
 }
 
 export function parseDearMeGoalAuditArgs(argv: readonly string[]): DearMeGoalAuditArgs {
