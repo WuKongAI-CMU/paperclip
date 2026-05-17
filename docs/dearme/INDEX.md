@@ -4,7 +4,7 @@
 
 > **P0 carve-out (adopted 2026-05-14).** OpenClaw runtime and `dearme-ai-proxy` runtime are **deferred to P1**. Architecture and code stay in tree as dormant artifacts. P0 paid beta ships **web-only**: web inbound, browser MediaRecorder for voice capture, Paperclip routines/heartbeats for cron, web-first outbound (LinkedIn copy-to-clipboard, X via OAuth, email via Resend/SMTP). The §3 diagram below describes the **P1+ target state**; in P0 the OpenClaw layer is dormant and the proxy routes are unmounted. Full rationale, per-role verdict, code touchpoints, and revival criteria in [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md).
 
-Last updated: 2026-05-17 (post DM-PRICING-PAGE-V2)
+Last updated: 2026-05-17 (post DM-FAQ-FROM-OBJECTIONS)
 
 ---
 
@@ -199,6 +199,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-GOAL-AUDIT-LIVE-CONFIRMATION-GUARD** — `pnpm dearme:goal-audit` now labels guarded live proof commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.
 - **DM-GOAL-AUDIT-HUMAN-HELP-QUEUE** — `pnpm dearme:goal-audit` now points owner-proof and hosted-checkout blocker sections at `docs/NEEDS_HUMAN_HELP.md`, where Peter has reply templates and safe follow-up commands.
 - **DM-PRICING-PAGE-V2** — `/pricing` now turns the $29 beta offer into a paid-conversion page with a three-day trial CTA, product-preview link, email waitlist capture that fires `pricing_waitlist_joined`, and five objection-handling FAQ items without starting checkout before the invite gate clears.
+- **DM-FAQ-FROM-OBJECTIONS** — `/faq` now handles the highest-risk beta objections in customer language: $29 fit, first-three-day value, approval-only sending, LinkedIn safety, voice drift, messy proof, data sharing, export, cancellation, and unacceptable use.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-FOCUS-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now uses the same owner-facts-plus-no-send wording for live-focus commands and setup commands.
 - **DM-PROOF-LIVE-CONFIRMATION-CHECKLIST** — `pnpm dearme:proof` now labels owner-proof checklist live commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.
