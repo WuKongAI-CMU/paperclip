@@ -4,7 +4,7 @@
 
 > **P0 carve-out (adopted 2026-05-14).** OpenClaw runtime and `dearme-ai-proxy` runtime are **deferred to P1**. Architecture and code stay in tree as dormant artifacts. P0 paid beta ships **web-only**: web inbound, browser MediaRecorder for voice capture, Paperclip routines/heartbeats for cron, web-first outbound (LinkedIn copy-to-clipboard, X via OAuth, email via Resend/SMTP). The §3 diagram below describes the **P1+ target state**; in P0 the OpenClaw layer is dormant and the proxy routes are unmounted. Full rationale, per-role verdict, code touchpoints, and revival criteria in [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md).
 
-Last updated: 2026-05-17 (post DM-FIRST-CYCLE-PAID-ASK)
+Last updated: 2026-05-17 (post DM-PAID-FUNNEL-EVENTS)
 
 ---
 
@@ -207,6 +207,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-EXIT-INTENT-WAITLIST** — `/landing` now opens a dismissible exit-intent preview request, validates work email before posting to a lifecycle endpoint, and tracks the exit funnel without storing email in analytics.
 - **DM-IMPORT-EXISTING-VOICE** — `/dearme` first-cycle Voice & Memory can import an existing public writing/profile URL into a real private voice sample through a no-live-network-tested fetch/extract service, reducing signup stalls when the user has no pasted sample ready.
 - **DM-FIRST-CYCLE-PAID-ASK** — `/dearme` now connects a generated first-cycle proof preview directly to the paid beta close kit, giving trial users a clear first-$29 ask once their proof pack is ready while keeping paid access receipt-gated.
+- **DM-PAID-FUNNEL-EVENTS** — `/dearme` now records first-cycle completion, first-cycle paid-ask opens, and hosted-checkout starts so the first-cycle-to-$29 path is measurable without calling live payment systems in tests.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-FOCUS-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now uses the same owner-facts-plus-no-send wording for live-focus commands and setup commands.
 - **DM-PROOF-LIVE-CONFIRMATION-CHECKLIST** — `pnpm dearme:proof` now labels owner-proof checklist live commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.
