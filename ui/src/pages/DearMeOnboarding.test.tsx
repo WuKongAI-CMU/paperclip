@@ -5180,13 +5180,15 @@ describe("DearMeOnboarding", () => {
       status: "success",
       source: "direct",
     });
+    await flushReact();
+    expect(mockDearmeApi.getPaidBetaAccess).toHaveBeenCalledTimes(2);
 
     await act(async () => {
       buttonByText(checkoutReturnStatus, "Refresh access")?.click();
     });
     await flushReact();
 
-    expect(mockDearmeApi.getPaidBetaAccess).toHaveBeenCalledTimes(2);
+    expect(mockDearmeApi.getPaidBetaAccess).toHaveBeenCalledTimes(3);
 
     await act(async () => {
       root.unmount();
