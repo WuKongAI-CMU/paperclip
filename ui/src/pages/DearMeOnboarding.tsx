@@ -630,6 +630,19 @@ function livePulseText(text: string): string {
 }
 
 const DEARME_PROFILE_REQUIRED_MESSAGE = "Choose a DearMe profile first.";
+const DEARME_LANDING_BRIEF_STORAGE_KEY = "dearme:first-cycle-landing-brief";
+
+function readDearMeLandingBriefDraft() {
+  if (!canUseDearMeSessionStorage()) return "";
+  return window.sessionStorage.getItem(DEARME_LANDING_BRIEF_STORAGE_KEY)?.trim() ?? "";
+}
+
+function writeDearMeLandingBriefDraft(knownFor: string) {
+  if (!canUseDearMeSessionStorage()) return;
+  const brief = knownFor.trim();
+  if (!brief) return;
+  window.sessionStorage.setItem(DEARME_LANDING_BRIEF_STORAGE_KEY, brief);
+}
 
 function buildDearMePrivateBetaInviteHref(knownFor: string): string {
   const subject = "DearMe private beta invite";
@@ -916,11 +929,11 @@ function parseDearMeCheckoutReturnStatus(search: string): DearMeCheckoutReturnSt
   return status === "success" || status === "cancel" ? status : null;
 }
 
-function parseDearMeSignupSource(search: string): DearMeSignupSource | null {
+function parseDearMeSignupSource(search: string, hasLandingBriefDraft = false): DearMeSignupSource | null {
   const params = new URLSearchParams(search);
   const source = params.get("signup_source");
   if (source === "pricing") return source;
-  return params.get("knownFor")?.trim() ? "landing" : null;
+  return params.get("knownFor")?.trim() || hasLandingBriefDraft ? "landing" : null;
 }
 
 function parseDearMeReviewEntryIntent(value: string | null): DearMeReviewEntryIntent | null {
@@ -13067,10 +13080,12 @@ export function DearMeOnboarding() {
     outputId: string;
     action: DearMeOutputReviewAction;
   } | null>(null);
-  const knownForIntent = useMemo(
+  const knownForSearchIntent = useMemo(
     () => new URLSearchParams(location.search).get("knownFor")?.trim() ?? "",
     [location.search],
   );
+  const [landingBriefDraft, setLandingBriefDraft] = useState(readDearMeLandingBriefDraft);
+  const knownForIntent = knownForSearchIntent || landingBriefDraft;
 
   useEffect(() => {
     setBreadcrumbs([{ label: "DearMe" }, { label: "Team" }]);
@@ -13088,6 +13103,12 @@ export function DearMeOnboarding() {
       block: "start",
     });
   }, [location.hash]);
+
+  useEffect(() => {
+    if (!knownForSearchIntent) return;
+    writeDearMeLandingBriefDraft(knownForSearchIntent);
+    setLandingBriefDraft(knownForSearchIntent);
+  }, [knownForSearchIntent]);
 
   useEffect(() => {
     const knownFor = knownForIntent;
@@ -13119,8 +13140,8 @@ export function DearMeOnboarding() {
     [location.search],
   );
   const signupSource = useMemo(
-    () => parseDearMeSignupSource(location.search),
-    [location.search],
+    () => parseDearMeSignupSource(location.search, Boolean(landingBriefDraft)),
+    [landingBriefDraft, location.search],
   );
   const selectedView = useMemo(
     () => parseDearMePageView(location.search),
