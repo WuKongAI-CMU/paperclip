@@ -590,7 +590,7 @@ interface DearMeDecisionFocus {
 }
 
 type DearMeCheckoutReturnStatus = "success" | "cancel";
-type DearMeSignupSource = "pricing";
+type DearMeSignupSource = "pricing" | "landing";
 
 type DearMeApprovalReviewAction = "approve" | "reject" | "request_revision";
 
@@ -832,8 +832,10 @@ function parseDearMeCheckoutReturnStatus(search: string): DearMeCheckoutReturnSt
 }
 
 function parseDearMeSignupSource(search: string): DearMeSignupSource | null {
-  const source = new URLSearchParams(search).get("signup_source");
-  return source === "pricing" ? source : null;
+  const params = new URLSearchParams(search);
+  const source = params.get("signup_source");
+  if (source === "pricing") return source;
+  return params.get("knownFor")?.trim() ? "landing" : null;
 }
 
 function parseDearMeReviewEntryIntent(value: string | null): DearMeReviewEntryIntent | null {
