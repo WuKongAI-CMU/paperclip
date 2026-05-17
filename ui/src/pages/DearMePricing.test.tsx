@@ -118,6 +118,29 @@ describe("DearMePricing", () => {
     );
   });
 
+  it("tracks product preview clicks without customer identifiers", async () => {
+    const previewLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.includes("See the product first"));
+    expect(previewLink).toBeDefined();
+    previewLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+
+    await act(async () => {
+      previewLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("pricing_product_preview_clicked", {
+      source: "hero",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "pricing_product_preview_clicked",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+      }),
+    );
+  });
+
   it("collects a waitlist email and fires the pricing event", async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
