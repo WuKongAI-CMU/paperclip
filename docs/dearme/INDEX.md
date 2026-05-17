@@ -231,6 +231,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-CHECKOUT-RETURN-WORKROOM-SOURCE** — checkout return CTAs now carry the allowlisted return source back into the workroom, where the return event is recorded without arbitrary query text or customer identifiers.
 - **DM-CHECKOUT-PREFILL-EMAIL** — hosted checkout links now use the receipt email field to prefill checkout when valid, improving payment-to-receipt matching without sending the email to analytics.
 - **DM-FIRST-CYCLE-CHECKOUT-HANDOFF** — first-cycle proof previews now show a direct hosted-checkout action when checkout is configured, reducing first-cycle-to-payment friction while keeping close-kit fallback and safe checkout-start analytics.
+- **DM-CHECKOUT-RETURN-REFRESH-ACCESS** — checkout returns now include an in-panel refresh action so customers can re-check paid access after receipt sync without leaving the first-cycle workroom.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-FOCUS-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now uses the same owner-facts-plus-no-send wording for live-focus commands and setup commands.
 - **DM-PROOF-LIVE-CONFIRMATION-CHECKLIST** — `pnpm dearme:proof` now labels owner-proof checklist live commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.

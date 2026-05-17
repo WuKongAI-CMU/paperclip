@@ -5175,10 +5175,18 @@ describe("DearMeOnboarding", () => {
     expect(checkoutReturnStatus.textContent).toContain("Checkout returned");
     expect(checkoutReturnStatus.textContent).toContain("matching the receipt");
     expect(checkoutReturnStatus.textContent).toContain("signed receipt sync");
+    expect(checkoutReturnStatus.textContent).toContain("Refresh access");
     expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_workroom_viewed", {
       status: "success",
       source: "direct",
     });
+
+    await act(async () => {
+      buttonByText(checkoutReturnStatus, "Refresh access")?.click();
+    });
+    await flushReact();
+
+    expect(mockDearmeApi.getPaidBetaAccess).toHaveBeenCalledTimes(2);
 
     await act(async () => {
       root.unmount();
