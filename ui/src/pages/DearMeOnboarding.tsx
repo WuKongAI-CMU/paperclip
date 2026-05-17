@@ -12212,6 +12212,14 @@ function PaidBetaAccessPanel({
     });
     onFocusFirstCycle();
   }, [checkoutReturnSource, onFocusFirstCycle, paidBetaActive, signupSource]);
+  const handleFocusFirstCycleFromPaidReceipt = useCallback(() => {
+    capture("paid_beta_receipt_first_cycle_cta_clicked", {
+      source: signupSource ?? checkoutReturnSource,
+      signup_source: signupSource ?? "direct",
+      paid_beta_active: paidBetaActive,
+    });
+    onFocusFirstCycle();
+  }, [checkoutReturnSource, onFocusFirstCycle, paidBetaActive, signupSource]);
 
   const recordPaymentMutation = useMutation({
     mutationFn: () => {
@@ -12472,7 +12480,7 @@ function PaidBetaAccessPanel({
               </Button>
             ) : null}
             {paidBetaActive ? (
-              <Button type="button" size="sm" onClick={onFocusFirstCycle}>
+              <Button type="button" size="sm" onClick={handleFocusFirstCycleFromPaidReceipt}>
                 <Sparkles className="h-4 w-4" />
                 Start first cycle now
                 <ArrowRight className="h-4 w-4" />

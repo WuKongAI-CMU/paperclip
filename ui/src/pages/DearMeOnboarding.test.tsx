@@ -10012,6 +10012,19 @@ describe("DearMeOnboarding", () => {
     await act(async () => {
       buttonByText(paidBetaCustomerReceipt, "Start first cycle now")?.click();
     });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("paid_beta_receipt_first_cycle_cta_clicked", {
+      source: "direct",
+      signup_source: "direct",
+      paid_beta_active: true,
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "paid_beta_receipt_first_cycle_cta_clicked",
+      expect.objectContaining({ email: expect.any(String) }),
+    );
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "paid_beta_receipt_first_cycle_cta_clicked",
+      expect.objectContaining({ externalInvoiceId: expect.any(String) }),
+    );
     expect(document.activeElement).toBe(container.querySelector("#dearme-first-cycle-intent"));
 
     await act(async () => {
