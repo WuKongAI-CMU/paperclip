@@ -1264,6 +1264,19 @@ export function dearmeRoutes(
       assertBoard(req);
       const actor = getActorInfo(req);
       const result = await paidBetaAccess.recordPayment(companyId, req.body);
+      const customerEmail = req.body.customerEmail;
+      if (customerEmail) {
+        await (options.sendLifecycleEvent ?? sendLifecycleEvent)({
+          email: customerEmail,
+          eventName: "dearme_first_payment",
+          properties: {
+            source: "manual_paid_beta_access",
+            tier: "paid_beta",
+            amountCents: result.event.amountCents,
+            currency: result.event.currency,
+          },
+        }).catch(() => undefined);
+      }
 
       await logActivity(db, {
         companyId,

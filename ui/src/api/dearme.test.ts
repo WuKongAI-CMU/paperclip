@@ -225,6 +225,7 @@ describe("dearmeApi", () => {
     const payload = {
       amountCents: 25_000,
       currency: "USD",
+      customerEmail: "buyer@example.com",
       description: "Founding beta payment",
       externalInvoiceId: "manual-invoice-1",
       occurredAt: "2026-05-07T14:00:00.000Z",
