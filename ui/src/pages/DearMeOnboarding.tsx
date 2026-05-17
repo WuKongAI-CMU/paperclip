@@ -12212,6 +12212,14 @@ function PaidBetaAccessPanel({
     });
     onFocusFirstCycle();
   }, [checkoutReturnSource, onFocusFirstCycle, paidBetaActive, signupSource]);
+  const handleRefreshAccessFromCheckoutReturn = useCallback(() => {
+    capture("checkout_return_refresh_access_clicked", {
+      source: checkoutReturnSource,
+      signup_source: signupSource ?? "direct",
+      paid_beta_active: paidBetaActive,
+    });
+    onRefreshAccess();
+  }, [checkoutReturnSource, onRefreshAccess, paidBetaActive, signupSource]);
   const handleFocusFirstCycleFromPaidReceipt = useCallback(() => {
     capture("paid_beta_receipt_first_cycle_cta_clicked", {
       source: signupSource ?? checkoutReturnSource,
@@ -12318,7 +12326,7 @@ function PaidBetaAccessPanel({
               size="sm"
               variant="outline"
               className="shrink-0"
-              onClick={onRefreshAccess}
+              onClick={handleRefreshAccessFromCheckoutReturn}
               disabled={isRefreshingAccess}
             >
               {isRefreshingAccess ? (
