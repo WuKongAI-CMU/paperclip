@@ -5021,6 +5021,72 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("prefills hosted checkout with the receipt email without sending it to analytics", async () => {
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(
+      paidBetaStatus("trial", {
+        hostedCheckout: {
+          configured: true,
+          paymentLinkConfigured: true,
+          receiptSyncConfigured: true,
+          paymentUrl: "https://pay.example.com/dearme?client_reference_id=company-1",
+          providerLabel: "Hosted checkout",
+          label: "Self-serve checkout ready",
+          summary: "A hosted payment link and signed receipt sync are ready for this account.",
+          nextActionLabel: "Open hosted checkout",
+          nextActionDescription: "Send the customer through checkout; DearMe opens paid access after the signed receipt arrives.",
+        },
+      }),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      setInputValue(
+        container.querySelector("#dearme-paid-beta-customer-email") as HTMLInputElement,
+        " buyer@example.com ",
+      );
+    });
+    await flushReact();
+
+    const closeKit = surfaceByLabel(container, "Paid beta close kit");
+    const checkoutLink = closeKit.querySelector<HTMLAnchorElement>("a");
+    expect(checkoutLink?.getAttribute("href")).toBe(
+      "https://pay.example.com/dearme?client_reference_id=company-1&prefilled_email=buyer%40example.com",
+    );
+
+    await act(async () => {
+      checkoutLink?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_started", {
+      source: "paid_beta_close_kit",
+      signup_source: "direct",
+      paid_beta_active: false,
+      checkout_ready: true,
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "checkout_started",
+      expect.objectContaining({
+        email: expect.any(String),
+      }),
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("shows receipt matching context after a successful checkout return", async () => {
     mockLocation.search = "?view=brand-os&checkout_return=success";
     const root = createRoot(container);

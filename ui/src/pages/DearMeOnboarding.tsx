@@ -945,6 +945,19 @@ function parseDearMeSignupSource(search: string, hasLandingBriefDraft = false): 
   return params.get("knownFor")?.trim() || hasLandingBriefDraft ? "landing" : null;
 }
 
+function hostedCheckoutUrlWithReceiptEmail(url: string | null, email: string): string | null {
+  if (!url) return null;
+  const receiptEmail = email.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(receiptEmail)) return url;
+  try {
+    const checkoutUrl = new URL(url);
+    checkoutUrl.searchParams.set("prefilled_email", receiptEmail);
+    return checkoutUrl.toString();
+  } catch {
+    return url;
+  }
+}
+
 function parseDearMeReviewEntryIntent(value: string | null): DearMeReviewEntryIntent | null {
   if (!value || !DEARME_REVIEW_ENTRY_INTENTS.has(value as DearMeReviewEntryIntent)) return null;
   return value as DearMeReviewEntryIntent;
@@ -11741,7 +11754,8 @@ function PaidBetaAccessPanel({
   const paidBetaActive = status?.status === "active";
   const hostedCheckout = status?.hostedCheckout ?? null;
   const hostedCheckoutUrl = hostedCheckout?.configured ? hostedCheckout.paymentUrl : null;
-  const hostedCheckoutReady = Boolean(!paidBetaActive && hostedCheckoutUrl);
+  const hostedCheckoutHref = hostedCheckoutUrlWithReceiptEmail(hostedCheckoutUrl, customerEmail);
+  const hostedCheckoutReady = Boolean(!paidBetaActive && hostedCheckoutHref);
   const checkoutReturnMessage =
     checkoutReturnStatus === "success"
       ? "Checkout returned. DearMe is matching the receipt to this account. If access is not open yet, keep this panel open and refresh after the signed receipt sync completes."
@@ -11813,7 +11827,7 @@ function PaidBetaAccessPanel({
           : "Waiting for payment"
     }`,
     ...customerReceiptRows.map((item) => `${item.label}: ${item.value}`),
-    hostedCheckoutReady && !paidBetaActive ? `Checkout: ${hostedCheckoutUrl}` : null,
+    hostedCheckoutReady && !paidBetaActive ? `Checkout: ${hostedCheckoutHref}` : null,
     `Next steps: ${customerReceiptNextSteps
       .map((item) => `${item.label} - ${item.summary}`)
       .join("; ")}`,
@@ -12368,7 +12382,7 @@ function PaidBetaAccessPanel({
             {hostedCheckoutReady ? (
               <Button asChild size="sm">
                 <a
-                  href={hostedCheckoutUrl ?? undefined}
+                  href={hostedCheckoutHref ?? undefined}
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => handleOpenHostedCheckout("paid_beta_customer_receipt")}
@@ -12510,7 +12524,7 @@ function PaidBetaAccessPanel({
             {hostedCheckoutReady ? (
               <Button asChild size="sm">
                 <a
-                  href={hostedCheckoutUrl ?? undefined}
+                  href={hostedCheckoutHref ?? undefined}
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => handleOpenHostedCheckout("paid_beta_close_kit")}
@@ -12589,7 +12603,7 @@ function PaidBetaAccessPanel({
             {hostedCheckoutReady ? (
               <Button asChild size="sm">
                 <a
-                  href={hostedCheckoutUrl ?? undefined}
+                  href={hostedCheckoutHref ?? undefined}
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => handleOpenHostedCheckout("paid_beta_payment_path")}
