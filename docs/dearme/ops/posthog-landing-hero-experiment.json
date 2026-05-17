@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "kind": "posthog-experiment-config",
+  "name": "DearMe landing hero experiment",
+  "featureFlagKey": "dearme_landing_copy",
+  "owner": "dearme-growth",
+  "goal": "increase landing-to-signup conversion",
+  "primaryMetric": {
+    "event": "landing_cta_submitted",
+    "conversionWindow": "same_session",
+    "target": ">=20% relative lift over control"
+  },
+  "exposureEvent": "landing_viewed",
+  "minimumVisitorsPerVariantBeforeWinner": 200,
+  "winnerSelection": {
+    "mode": "auto_promote_when_clear",
+    "rule": "After every variant has at least 200 landing_viewed exposures, promote the variant with the highest landing_cta_submitted / landing_viewed conversion rate if it beats control by at least 10% relative and no variant has fewer than 20 landing_cta_submitted events.",
+    "fallback": "keep_control"
+  },
+  "variants": [
+    {
+      "key": "control",
+      "trafficPercent": 34,
+      "theme": "private_growth_team",
+      "headline": "DearMe is a private AI growth team for one person."
+    },
+    {
+      "key": "proof-first",
+      "trafficPercent": 33,
+      "theme": "before_after",
+      "headline": "Before: scattered proof. After: one private growth cycle ready to review."
+    },
+    {
+      "key": "opportunity-first",
+      "trafficPercent": 33,
+      "theme": "weekly_letter_samples",
+      "headline": "Start with your weekly letter samples, then decide what should ship."
+    }
+  ],
+  "requiredEventProperties": {
+    "landing_viewed": ["landing_copy_variant", "landing_hero_theme"],
+    "landing_cta_submitted": ["landing_copy_variant", "landing_hero_theme", "positioning_length"]
+  }
+}
