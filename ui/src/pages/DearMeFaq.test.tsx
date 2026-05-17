@@ -2,8 +2,14 @@
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DearMeFaq } from "./DearMeFaq";
+
+const analyticsMock = vi.hoisted(() => ({
+  capture: vi.fn(),
+}));
+
+vi.mock("@/lib/analytics", () => analyticsMock);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
@@ -39,6 +45,7 @@ describe("DearMeFaq", () => {
     });
     container.remove();
     document.body.innerHTML = "";
+    vi.clearAllMocks();
   });
 
   it("renders 12 customer-objection FAQ items for beta conversion", () => {
@@ -63,6 +70,40 @@ describe("DearMeFaq", () => {
     expect(links.some((link) => link.href.endsWith("/pricing"))).toBe(true);
     expect(links.some((link) => link.href.startsWith("mailto:peter@dearme.app"))).toBe(true);
     expect(container.textContent).toContain("Any paid continuation is shown before purchase");
+  });
+
+  it("tracks invite and beta question clicks without customer identifiers", async () => {
+    const mailtoLinks = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .filter((link) => link.href.startsWith("mailto:peter@dearme.app"));
+    expect(mailtoLinks).toHaveLength(2);
+    mailtoLinks.forEach((link) => {
+      link.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+    });
+
+    await act(async () => {
+      mailtoLinks[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await act(async () => {
+      mailtoLinks[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_invite_requested", {
+      page: "faq",
+      source: "nav",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_invite_requested", {
+      page: "faq",
+      source: "question",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "static_invite_requested",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+      }),
+    );
   });
 
   it("handles the hard objections without promising unsafe automation", () => {

@@ -1,6 +1,7 @@
 import { ArrowLeft, Mail } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { capture } from "@/lib/analytics";
 import { DearMePageShell } from "../components/DearMeShell";
 
 const FAQ_ITEMS = [
@@ -67,6 +68,14 @@ const FAQ_ITEMS = [
 ] as const;
 
 export function DearMeFaq() {
+  function handleInviteRequest(source: "nav" | "question") {
+    capture("static_invite_requested", {
+      page: "faq",
+      source,
+      plan: "beta_29",
+    });
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-4xl flex-col px-4 py-5 sm:px-6 lg:px-8">
@@ -79,7 +88,7 @@ export function DearMeFaq() {
             <a href="/about" className="text-sm text-muted-foreground hover:text-foreground">About</a>
             <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
             <Button asChild variant="outline" size="sm">
-              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
+              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite" onClick={() => handleInviteRequest("nav")}>
                 Request invite
                 <Mail className="h-4 w-4" />
               </a>
@@ -113,7 +122,7 @@ export function DearMeFaq() {
               <a href="/pricing">See beta pricing</a>
             </Button>
             <Button asChild variant="outline" size="lg" className="min-h-11">
-              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20question">
+              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20question" onClick={() => handleInviteRequest("question")}>
                 Ask a beta question
                 <Mail className="h-4 w-4" />
               </a>
