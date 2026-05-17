@@ -40,6 +40,12 @@ const mockDearMeOpportunityReplyIngestService = vi.hoisted(() => ({
   ingest: vi.fn(),
 }));
 
+const mockDearMeStripeCheckoutService = vi.hoisted(() => ({
+  createCheckoutSession: vi.fn(),
+  createPortalSession: vi.fn(),
+  handleCheckoutWebhook: vi.fn(),
+}));
+
 const mockAgentService = vi.hoisted(() => ({
   list: vi.fn(),
 }));
@@ -77,6 +83,12 @@ function registerModuleMocks() {
   }));
   vi.doMock("../services/issue-assignment-wakeup.js", () => ({
     queueIssueAssignmentWakeup: mockQueueIssueAssignmentWakeup,
+  }));
+  vi.doMock("../services/dearme-stripe-checkout.js", () => ({
+    DearMeStripeCheckoutError: class DearMeStripeCheckoutError extends Error {
+      status = 503;
+    },
+    dearMeStripeCheckoutService: () => mockDearMeStripeCheckoutService,
   }));
 }
 
@@ -788,6 +800,14 @@ describe("DearMe brand blueprint routes", () => {
     mockDearMePaidBetaAccessService.recordPayment.mockReset();
     mockDearMePaidBetaAccessService.recordHostedPaymentReceipts.mockReset();
     mockDearMePaidBetaAccessService.getAccess.mockResolvedValue(makePaidBetaStatus("active"));
+    mockDearMeStripeCheckoutService.createCheckoutSession.mockReset();
+    mockDearMeStripeCheckoutService.createPortalSession.mockReset();
+    mockDearMeStripeCheckoutService.handleCheckoutWebhook.mockReset();
+    mockDearMeStripeCheckoutService.createCheckoutSession.mockResolvedValue({
+      checkoutUrl: "https://checkout.example.com/dearme-beta",
+      checkoutSessionId: "cs_dearme_paid",
+      companyId: "company-1",
+    });
     mockDearMePaidBetaAccessService.getCohort.mockResolvedValue({
       accountCount: 1,
       activeAccountCount: 1,
@@ -2171,6 +2191,43 @@ describe("DearMe brand blueprint routes", () => {
     expect(res.body.error).toBe("This DearMe action needs an owner account.");
     expectDearMeRouteErrorBodySafe(res.body);
     expect(mockDearMePaidBetaAccessService.recordPayment).not.toHaveBeenCalled();
+  });
+
+  it("starts hosted checkout with paid return source markers", async () => {
+    const previousSecretKey = process.env.DEARME_STRIPE_SECRET_KEY;
+    const previousPrice = process.env.DEARME_STRIPE_PRICE_BETA;
+    process.env.DEARME_STRIPE_SECRET_KEY = "sk_test_dearme_checkout";
+    process.env.DEARME_STRIPE_PRICE_BETA = "price_dearme_beta";
+
+    try {
+      const res = await request(await createApp())
+        .post("/api/dearme/checkout/start")
+        .set("origin", "https://app.example.com")
+        .send({
+          email: "buyer@example.com",
+          plan: "beta",
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ checkoutUrl: "https://checkout.example.com/dearme-beta" });
+      expect(mockDearMeStripeCheckoutService.createCheckoutSession).toHaveBeenCalledWith({
+        email: "buyer@example.com",
+        priceId: "price_dearme_beta",
+        successUrl: "https://app.example.com/dearme/checkout/success?source=paid",
+        cancelUrl: "https://app.example.com/dearme/checkout/cancel?source=paid",
+      });
+    } finally {
+      if (previousSecretKey === undefined) {
+        delete process.env.DEARME_STRIPE_SECRET_KEY;
+      } else {
+        process.env.DEARME_STRIPE_SECRET_KEY = previousSecretKey;
+      }
+      if (previousPrice === undefined) {
+        delete process.env.DEARME_STRIPE_PRICE_BETA;
+      } else {
+        process.env.DEARME_STRIPE_PRICE_BETA = previousPrice;
+      }
+    }
   });
 
   it("records a signed Stripe checkout webhook into paid beta access", async () => {
