@@ -631,8 +631,26 @@ function livePulseText(text: string): string {
 
 const DEARME_PROFILE_REQUIRED_MESSAGE = "Choose a DearMe profile first.";
 
+function buildDearMePrivateBetaInviteHref(knownFor: string): string {
+  const subject = "DearMe private beta invite";
+  const brief = knownFor.trim();
+  if (!brief) return `mailto:peter@dearme.app?subject=${encodeURIComponent(subject)}`;
+
+  const body = [
+    "Hi Peter,",
+    "",
+    "I'd like a DearMe private beta invite.",
+    "",
+    "My first-cycle direction:",
+    brief,
+  ].join("\n");
+  return `mailto:peter@dearme.app?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 function DearMeProfileRequiredHandoff({ knownFor }: { knownFor: string }) {
-  const hasLandingAnswer = Boolean(knownFor.trim());
+  const landingAnswer = knownFor.trim();
+  const hasLandingAnswer = Boolean(landingAnswer);
+  const inviteHref = buildDearMePrivateBetaInviteHref(landingAnswer);
 
   return (
     <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-4 py-10 sm:px-6 lg:px-8">
@@ -653,12 +671,12 @@ function DearMeProfileRequiredHandoff({ knownFor }: { knownFor: string }) {
             </p>
             {hasLandingAnswer ? (
               <p className="mt-4 rounded-lg border border-border bg-background p-4 text-sm leading-6 text-foreground">
-                {knownFor}
+                {landingAnswer}
               </p>
             ) : null}
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" className="min-h-11">
-                <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
+                <a href={inviteHref}>
                   Request private beta invite
                   <Mail className="h-4 w-4" />
                 </a>
