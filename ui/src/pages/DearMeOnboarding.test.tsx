@@ -4577,6 +4577,11 @@ describe("DearMeOnboarding", () => {
       }),
     );
     expect(mockDearmeApi.previewFirstCycle).not.toHaveBeenCalled();
+    expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_submitted", {
+      mode: "private_work",
+      source: "direct",
+      paid_beta_active: true,
+    });
     expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_started", {
       source: "direct",
     });
@@ -4854,6 +4859,11 @@ describe("DearMeOnboarding", () => {
       }),
     );
     expect(mockDearmeApi.startFirstCycle).not.toHaveBeenCalled();
+    expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_submitted", {
+      mode: "trial_preview",
+      source: "direct",
+      paid_beta_active: false,
+    });
     expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_completed", {
       mode: "trial_preview",
       source: "direct",
@@ -5420,6 +5430,23 @@ describe("DearMeOnboarding", () => {
       mode: "trial_preview",
       source: "pricing",
     });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_submitted", {
+      mode: "trial_preview",
+      source: "pricing",
+      paid_beta_active: false,
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "first_cycle_submitted",
+      expect.objectContaining({
+        email: expect.any(String),
+      }),
+    );
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "first_cycle_submitted",
+      expect.objectContaining({
+        knownFor: expect.any(String),
+      }),
+    );
     expect(analyticsMock.capture).not.toHaveBeenCalledWith(
       "first_cycle_completed",
       expect.objectContaining({
@@ -5486,6 +5513,11 @@ describe("DearMeOnboarding", () => {
     expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_completed", {
       mode: "private_work",
       source: "paid",
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_submitted", {
+      mode: "private_work",
+      source: "paid",
+      paid_beta_active: true,
     });
     expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_started", {
       source: "paid",
