@@ -1432,8 +1432,8 @@ export function dearmeRoutes(
       const result = await stripeCheckout.createCheckoutSession({
         email: req.body.email,
         priceId,
-        successUrl: `${baseUrl}/dearme/checkout/success`,
-        cancelUrl: `${baseUrl}/dearme/checkout/cancel`,
+        successUrl: `${baseUrl}/dearme/checkout/success?source=paid`,
+        cancelUrl: `${baseUrl}/dearme/checkout/cancel?source=paid`,
       });
 
       res.status(200).json({ checkoutUrl: result.checkoutUrl });
