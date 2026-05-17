@@ -60,10 +60,14 @@ describe("CloudAccessGate", () => {
     vi.clearAllMocks();
   });
 
-  function renderGate(root: ReturnType<typeof createRoot>, queryClient: QueryClient) {
+  function renderGate(
+    root: ReturnType<typeof createRoot>,
+    queryClient: QueryClient,
+    initialEntry = "/instance/settings/general",
+  ) {
     root.render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={["/instance/settings/general"]}>
+        <MemoryRouter initialEntries={[initialEntry]}>
           <Routes>
             <Route element={<CloudAccessGate />}>
               <Route path="*" element={<div>Outlet content</div>} />
@@ -169,6 +173,29 @@ describe("CloudAccessGate", () => {
 
     expect(container.textContent).toContain("Outlet content");
     expect(container.textContent).not.toContain("No company access");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("lets the DearMe first-cycle handoff through when local health is unavailable", async () => {
+    mockHealthApi.get.mockRejectedValue(new Error("Failed to load health (500)"));
+
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      renderGate(root, queryClient, "/dearme?knownFor=Known+for+launches");
+    });
+    await flushReact();
+    await flushReact();
+    await flushReact();
+
+    expect(container.textContent).toContain("Outlet content");
+    expect(container.textContent).not.toContain("Failed to load health");
 
     await act(async () => {
       root.unmount();

@@ -99,6 +99,7 @@ describe("DearMeLanding", () => {
     container?.remove();
     document.head.innerHTML = "";
     document.body.innerHTML = "";
+    window.sessionStorage.clear();
     vi.clearAllMocks();
   });
 
@@ -136,6 +137,7 @@ describe("DearMeLanding", () => {
     await flushReact();
 
     expect(container.textContent).toContain("Answer the question to start your first cycle.");
+    expect(document.activeElement).toBe(container.querySelector("#dearme-known-for"));
     expect(container.querySelector('[data-testid="location"]')?.textContent).toBe("/");
   });
 
@@ -156,10 +158,44 @@ describe("DearMeLanding", () => {
     expect(container.querySelector('[data-testid="location"]')?.textContent).toBe(
       "/dearme?knownFor=Known+for+practical+AI+product+launches",
     );
+    expect(window.sessionStorage.getItem("dearme:landing-known-for")).toBe(
+      "Known for practical AI product launches",
+    );
     expect(analyticsMock.capture).toHaveBeenCalledWith("landing_cta_submitted", {
       landing_copy_variant: "control",
       positioning_length: 39,
     });
+  });
+
+  it("restores the positioning answer when users return from onboarding", async () => {
+    window.sessionStorage.setItem("dearme:landing-known-for", "Known for onboarding loops");
+
+    await act(async () => {
+      root.unmount();
+    });
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={["/"]}>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <>
+                  <DearMeLanding />
+                  <LocationProbe />
+                </>
+              }
+            />
+          </Routes>
+        </MemoryRouter>,
+      );
+    });
+    await flushReact();
+
+    expect(container.querySelector<HTMLTextAreaElement>("#dearme-known-for")?.value).toBe(
+      "Known for onboarding loops",
+    );
   });
 
   it("renders and tracks the selected feature-flagged landing copy variant", async () => {

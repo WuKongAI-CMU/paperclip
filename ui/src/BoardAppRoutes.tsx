@@ -235,12 +235,18 @@ function CompanyRootRedirect() {
 function UnprefixedBoardRedirect() {
   const location = useLocation();
   const { companies, selectedCompany, loading } = useCompany();
+  const isDearMeFirstCycleHandoff =
+    location.pathname === "/dearme" && Boolean(new URLSearchParams(location.search).get("knownFor")?.trim());
 
   if (loading) {
     return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
   }
 
   const targetCompany = selectedCompany ?? companies[0] ?? null;
+  if (!targetCompany && isDearMeFirstCycleHandoff) {
+    return <DearMeOnboarding />;
+  }
+
   if (!targetCompany) {
     if (
       shouldRedirectCompanylessRouteToOnboarding({

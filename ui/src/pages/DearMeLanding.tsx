@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowRight,
   Mail,
@@ -91,6 +91,7 @@ const LANDING_COPY_VARIANTS = [
 type LandingCopyVariant = (typeof LANDING_COPY_VARIANTS)[number];
 
 const DEFAULT_LANDING_COPY_VARIANT = LANDING_COPY_VARIANTS[0];
+const LANDING_ANSWER_STORAGE_KEY = "dearme:landing-known-for";
 
 export function resolveLandingCopyVariant(value: string | boolean): LandingCopyVariant {
   if (typeof value !== "string") return DEFAULT_LANDING_COPY_VARIANT;
@@ -100,8 +101,9 @@ export function resolveLandingCopyVariant(value: string | boolean): LandingCopyV
 export function DearMeLanding() {
   const navigate = useNavigate();
   const [variant, setVariant] = useState<LandingCopyVariant>(DEFAULT_LANDING_COPY_VARIANT);
-  const [knownFor, setKnownFor] = useState("");
+  const [knownFor, setKnownFor] = useState(() => window.sessionStorage.getItem(LANDING_ANSWER_STORAGE_KEY) ?? "");
   const [error, setError] = useState<string | null>(null);
+  const knownForInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -123,6 +125,7 @@ export function DearMeLanding() {
     const answer = knownFor.trim();
     if (!answer) {
       setError("Answer the question to start your first cycle.");
+      knownForInputRef.current?.focus();
       return;
     }
 
@@ -130,6 +133,7 @@ export function DearMeLanding() {
       landing_copy_variant: variant.key,
       positioning_length: answer.length,
     });
+    window.sessionStorage.setItem(LANDING_ANSWER_STORAGE_KEY, answer);
     const search = new URLSearchParams({ knownFor: answer });
     navigate(`/dearme?${search.toString()}`);
   }
@@ -170,10 +174,13 @@ export function DearMeLanding() {
               </label>
               <Textarea
                 id="dearme-known-for"
+                ref={knownForInputRef}
                 name="knownFor"
                 value={knownFor}
                 onChange={(event) => {
-                  setKnownFor(event.target.value);
+                  const nextValue = event.target.value;
+                  setKnownFor(nextValue);
+                  window.sessionStorage.setItem(LANDING_ANSWER_STORAGE_KEY, nextValue);
                   if (error) setError(null);
                 }}
                 aria-invalid={error ? "true" : undefined}

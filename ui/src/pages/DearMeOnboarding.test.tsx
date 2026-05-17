@@ -1983,9 +1983,10 @@ describe("DearMeOnboarding", () => {
     vi.clearAllMocks();
   });
 
-  it("asks for a DearMe profile before loading the team surface", async () => {
+  it("hands off first-cycle signup before loading the team surface", async () => {
     mockCompanyContext.selectedCompanyId = null;
     mockCompanyContext.selectedCompany = null;
+    mockLocation.search = "?knownFor=Known%20for%20practical%20launches";
     const root = createRoot(container);
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -2000,7 +2001,10 @@ describe("DearMeOnboarding", () => {
     });
     await flushReact();
 
-    expect(container.textContent).toContain("Choose a DearMe profile first.");
+    expect(container.textContent).toContain("Your first cycle brief is ready.");
+    expect(container.textContent).toContain("Known for practical launches");
+    expect(container.textContent).toContain("Request private beta invite");
+    expect(container.textContent).toContain("Review pricing");
     expect(container.textContent).not.toContain("Select a company first.");
     expect(mockDearmeApi.getWorkbench).not.toHaveBeenCalled();
     expect(mockDearmeApi.getOutputs).not.toHaveBeenCalled();
