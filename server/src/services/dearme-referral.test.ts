@@ -48,13 +48,13 @@ function stripeClient(couponId = "coupon_referral_20"): DearMeReferralStripeClie
 }
 
 describe("referralCouponDescriptor", () => {
-  it("returns the Stripe 20% referral coupon shape without side effects", () => {
+  it("returns the Stripe 30% first-month referral coupon shape without side effects", () => {
     expect(referralCouponDescriptor({
       code: "peter-fa3k",
       ownerCompanyId: "co_owner",
     })).toEqual({
-      percent_off: 20,
-      duration: "forever",
+      percent_off: 30,
+      duration: "once",
       name: "DearMe referral peter-fa3k",
       metadata: {
         product: "dearme",
@@ -92,8 +92,8 @@ describe("createDearMeReferralStripeClient", () => {
     );
     const calls = (fetchMock as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls;
     const body = calls[0]?.[1].body as URLSearchParams;
-    expect(body.get("percent_off")).toBe("20");
-    expect(body.get("duration")).toBe("forever");
+    expect(body.get("percent_off")).toBe("30");
+    expect(body.get("duration")).toBe("once");
     expect(body.get("metadata[product]")).toBe("dearme");
     expect(body.get("metadata[referralCode]")).toBe("peter-fa3k");
     expect(body.get("metadata[ownerCompanyId]")).toBe("company-1");

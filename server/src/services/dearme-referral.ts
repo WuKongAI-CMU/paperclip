@@ -9,8 +9,8 @@ import {
 } from "@paperclipai/db";
 
 export type DearMeReferralCouponDescriptor = {
-  percent_off: 20;
-  duration: "forever";
+  percent_off: 30;
+  duration: "once";
   name: string;
   metadata: {
     product: "dearme";
@@ -60,8 +60,8 @@ export function referralCouponDescriptor(input: {
   ownerCompanyId: string;
 }): DearMeReferralCouponDescriptor {
   return {
-    percent_off: 20,
-    duration: "forever",
+    percent_off: 30,
+    duration: "once",
     name: `DearMe referral ${input.code}`,
     metadata: {
       product: "dearme",
