@@ -5424,6 +5424,60 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("carries checkout return source into paid first-cycle analytics without customer identifiers", async () => {
+    mockLocation.search = "?view=brand-os&checkout_return=success&checkout_source=paid";
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(paidBetaStatus("active"));
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      setTextareaValue(
+        container.querySelector("#dearme-first-cycle-intent") as HTMLTextAreaElement,
+        "Known for building proof from customer research",
+      );
+    });
+
+    await act(async () => {
+      buttonByText(container, "Start first cycle")?.click();
+    });
+    await flushReact();
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_completed", {
+      mode: "private_work",
+      source: "paid",
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_started", {
+      source: "paid",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "first_cycle_started",
+      expect.objectContaining({
+        email: expect.any(String),
+      }),
+    );
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "first_cycle_started",
+      expect.objectContaining({
+        knownFor: expect.any(String),
+      }),
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("tracks landing-sourced signup entry without the landing answer", async () => {
     mockLocation.search = "?knownFor=Build%20proof%20from%20customer%20research";
     const root = createRoot(container);
