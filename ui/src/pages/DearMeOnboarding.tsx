@@ -13220,9 +13220,12 @@ export function DearMeOnboarding() {
       writeDearMeFirstCyclePreview(nextPreview);
       capture("first_cycle_completed", {
         mode: input.startPrivateWork ? "private_work" : "trial_preview",
+        source: signupSource ?? "direct",
       });
       if (selectedCompanyId && input.startPrivateWork) {
-        capture("first_cycle_started");
+        capture("first_cycle_started", {
+          source: signupSource ?? "direct",
+        });
         queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(selectedCompanyId) });
         queryClient.invalidateQueries({ queryKey: queryKeys.dearme.outputs(selectedCompanyId) });
         queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(selectedCompanyId) });
