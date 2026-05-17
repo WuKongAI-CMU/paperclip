@@ -152,7 +152,7 @@ Write one line per finished slice to `docs/dearme/CODEX-RUN-LEDGER.md`. Format:
 2026-05-15 14:23  DM-DOCKERFILE-SERVER  ab12cd34  +3 tests  P0
 ```
 
-End-of-day summary (UTC midnight): write a single short post to a Plain support thread titled "Codex daily — YYYY-MM-DD" with:
+End-of-day summary (DearMe operating day, default America/New_York): write a single short post to a Plain support thread titled "Codex daily — YYYY-MM-DD" with:
 - Slices shipped today
 - Slices blocked (and why)
 - Open P-* reserved items still waiting on Peter
