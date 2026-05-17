@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowUpRight, Clock3, Mail, RefreshCw, ShieldCheck, Sparkles
 
 import { dearmeApi, type DearMePublicFeedItem } from "@/api/dearme";
 import { Button } from "@/components/ui/button";
+import { capture } from "@/lib/analytics";
 import { queryKeys } from "@/lib/queryKeys";
 import {
   DearMeEvidenceGrid,
@@ -93,6 +94,14 @@ export function DearMeProof() {
   });
   const items = feedQuery.data?.items ?? [];
 
+  function handleInviteRequest() {
+    capture("static_invite_requested", {
+      page: "proof",
+      source: "nav",
+      plan: "beta_29",
+    });
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-5 sm:px-6 lg:px-8">
@@ -106,7 +115,7 @@ export function DearMeProof() {
             <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</a>
             <a href="/faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</a>
             <Button asChild variant="outline" size="sm" className="min-h-11">
-              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
+              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite" onClick={handleInviteRequest}>
                 Request invite
                 <Mail className="h-4 w-4" />
               </a>

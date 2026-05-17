@@ -1,6 +1,7 @@
 import { ArrowLeft, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { capture } from "@/lib/analytics";
 import {
   DearMeEvidenceGrid,
   DearMePageShell,
@@ -30,6 +31,14 @@ const NOT_FOR = [
 ] as const;
 
 export function DearMeAbout() {
+  function handleInviteRequest() {
+    capture("static_invite_requested", {
+      page: "about",
+      source: "nav",
+      plan: "beta_29",
+    });
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-5 sm:px-6 lg:px-8">
@@ -43,7 +52,7 @@ export function DearMeAbout() {
             <a href="/proof" className="text-sm text-muted-foreground hover:text-foreground">Proof</a>
             <a href="/faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</a>
             <Button asChild variant="outline" size="sm">
-              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
+              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite" onClick={handleInviteRequest}>
                 Request invite
                 <Mail className="h-4 w-4" />
               </a>

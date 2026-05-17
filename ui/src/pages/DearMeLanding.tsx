@@ -177,6 +177,16 @@ export function DearMeLanding() {
     navigate(`/dearme?${search.toString()}`);
   }
 
+  function handleInviteRequest(source: "nav" | "footer") {
+    capture("static_invite_requested", {
+      page: "landing",
+      source,
+      plan: "beta_29",
+      landing_variant: variant.key,
+      landing_hero_theme: variant.theme,
+    });
+  }
+
   function dismissExitModal() {
     window.sessionStorage.setItem(LANDING_EXIT_DISMISSED_STORAGE_KEY, "1");
     setExitModalOpen(false);
@@ -247,7 +257,7 @@ export function DearMeLanding() {
             <a href="/proof" className="text-sm text-muted-foreground hover:text-foreground">Proof</a>
             <a href="/faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</a>
             <Button asChild variant="outline" size="sm" className="min-h-11">
-              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
+              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite" onClick={() => handleInviteRequest("nav")}>
                 Request invite
                 <Mail className="h-4 w-4" />
               </a>
@@ -356,7 +366,7 @@ export function DearMeLanding() {
             <a href="/faq" className="hover:text-foreground">FAQ</a>
             <a href="/legal/terms" className="hover:text-foreground">Terms</a><a href="/legal/privacy" className="hover:text-foreground">Privacy</a><a href="/legal/acceptable-use" className="hover:text-foreground">Acceptable Use</a>
             <Button asChild variant="secondary" size="sm" className="min-h-11">
-              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite">
+              <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite" onClick={() => handleInviteRequest("footer")}>
                 Request invite
                 <Mail className="h-4 w-4" />
               </a>

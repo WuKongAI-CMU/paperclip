@@ -2,8 +2,14 @@
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DearMeAbout } from "./DearMeAbout";
+
+const analyticsMock = vi.hoisted(() => ({
+  capture: vi.fn(),
+}));
+
+vi.mock("@/lib/analytics", () => analyticsMock);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
@@ -39,6 +45,7 @@ describe("DearMeAbout", () => {
     });
     container.remove();
     document.body.innerHTML = "";
+    vi.clearAllMocks();
   });
 
   it("renders the founder story and beta posture", () => {
@@ -72,6 +79,30 @@ describe("DearMeAbout", () => {
     expect(links.some((link) => link.href.endsWith("/pricing"))).toBe(true);
     expect(links.some((link) => link.href.endsWith("/faq"))).toBe(true);
     expect(links.some((link) => link.href.startsWith("mailto:peter@dearme.app"))).toBe(true);
+  });
+
+  it("tracks request invite clicks without customer identifiers", async () => {
+    const inviteLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.includes("Request invite"));
+    expect(inviteLink).toBeDefined();
+    inviteLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+
+    await act(async () => {
+      inviteLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_invite_requested", {
+      page: "about",
+      source: "nav",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "static_invite_requested",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+      }),
+    );
   });
 
   it("does not leak internal or vendor wording", () => {

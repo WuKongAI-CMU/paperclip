@@ -142,6 +142,44 @@ describe("DearMeLanding", () => {
     expect(container.querySelectorAll("textarea")).toHaveLength(1);
   });
 
+  it("tracks invite request clicks without customer identifiers", async () => {
+    const inviteLinks = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .filter((link) => link.textContent?.includes("Request invite"));
+    expect(inviteLinks).toHaveLength(2);
+    inviteLinks.forEach((link) => {
+      link.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+    });
+
+    await act(async () => {
+      inviteLinks[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await act(async () => {
+      inviteLinks[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_invite_requested", {
+      page: "landing",
+      source: "nav",
+      plan: "beta_29",
+      landing_variant: "control",
+      landing_hero_theme: "private_growth_team",
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_invite_requested", {
+      page: "landing",
+      source: "footer",
+      plan: "beta_29",
+      landing_variant: "control",
+      landing_hero_theme: "private_growth_team",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "static_invite_requested",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+      }),
+    );
+  });
+
   it("blocks submit with an empty input", async () => {
     const form = container.querySelector("form");
     expect(form).not.toBeNull();
