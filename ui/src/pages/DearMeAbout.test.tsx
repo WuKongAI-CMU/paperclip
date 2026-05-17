@@ -45,11 +45,25 @@ describe("DearMeAbout", () => {
     const text = container.textContent ?? "";
 
     expect(text).toContain("Founder story");
-    expect(text).toContain("Peter started DearMe");
-    expect(text).toContain("Private before public");
-    expect(text).toContain("Approvals stay human");
+    expect(text).toContain("Peter is using DearMe as customer zero");
+    expect(text).toContain("public proof");
+    expect(text).toContain("writing cadence");
+    expect(text).toContain("opportunity follow-up");
+    expect(text).toContain("Dogfood first");
+    expect(text).toContain("Owner keeps the call");
     expect(text).toContain("$29/month");
     expect(text).toContain("three-day free trial");
+  });
+
+  it("sets clear trust boundaries for the beta", () => {
+    const text = container.textContent ?? "";
+
+    expect(text).toContain("one private cycle");
+    expect(text).toContain("review step before anything leaves the room");
+    expect(text).toContain("Not for bulk outreach");
+    expect(text).toContain("Not for hands-off posting");
+    expect(text).toContain("Not for invented authority");
+    expect(text).toContain("Not for people who do not want to review public claims");
   });
 
   it("links to the public beta pages and request invite email", () => {
