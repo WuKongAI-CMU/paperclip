@@ -13681,6 +13681,15 @@ export function DearMeOnboarding() {
     navigate(buildDearMeWorkReadyRoute(location.search));
   }
 
+  function handleOpenFirstCycleWorkReady() {
+    capture("first_cycle_work_ready_opened", {
+      source: firstCycleAnalyticsSource,
+      paid_beta_active: canStartPrivateWork,
+      private_work_started: firstCyclePrivateWorkStarted,
+    });
+    handleOpenWorkReady();
+  }
+
   function handleOpenDecisionsReady() {
     navigate(buildDearMeDecisionsReadyRoute(location.search));
   }
@@ -13847,7 +13856,7 @@ export function DearMeOnboarding() {
         paidBetaCheckoutReady={paidBetaCheckoutReady}
         paidBetaCheckoutHref={paidBetaCheckoutHref}
         onOpenPreview={handleOpenFirstCyclePreview}
-        onOpenWorkReady={handleOpenWorkReady}
+        onOpenWorkReady={handleOpenFirstCycleWorkReady}
         onFocusPaidBeta={handleFocusPaidBeta}
         onOpenPaidBetaCheckout={handleOpenFirstCycleCheckout}
         onIntentChange={(value) => {
