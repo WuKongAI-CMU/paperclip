@@ -13157,6 +13157,7 @@ export function DearMeOnboarding() {
     outputId: string;
     action: DearMeOutputReviewAction;
   } | null>(null);
+  const checkoutSuccessAccessRefreshKeyRef = useRef<string | null>(null);
   const knownForSearchIntent = useMemo(
     () => new URLSearchParams(location.search).get("knownFor")?.trim() ?? "",
     [location.search],
@@ -13237,6 +13238,11 @@ export function DearMeOnboarding() {
     },
     enabled: !!selectedCompanyId,
   });
+  const {
+    isFetched: paidBetaAccessFetched,
+    isFetching: paidBetaAccessFetching,
+    refetch: refetchPaidBetaAccess,
+  } = paidBetaAccessQuery;
   const paidBetaStatus = paidBetaAccessQuery.data ?? null;
   const paidBetaEntitlement = paidBetaStatus?.entitlement ?? null;
   const canRequestPaidBetaWork = paidBetaEntitlement?.canRequestBrandOsApproval === true;
@@ -13264,6 +13270,22 @@ export function DearMeOnboarding() {
       source: checkoutReturnSource,
     });
   }, [checkoutReturnSource, checkoutReturnStatus]);
+
+  useEffect(() => {
+    if (checkoutReturnStatus !== "success" || !selectedCompanyId) return;
+    if (paidBetaAccessFetching || !paidBetaAccessFetched) return;
+    const refreshKey = `${selectedCompanyId}:${checkoutReturnSource}`;
+    if (checkoutSuccessAccessRefreshKeyRef.current === refreshKey) return;
+    checkoutSuccessAccessRefreshKeyRef.current = refreshKey;
+    void refetchPaidBetaAccess();
+  }, [
+    checkoutReturnSource,
+    checkoutReturnStatus,
+    paidBetaAccessFetched,
+    paidBetaAccessFetching,
+    refetchPaidBetaAccess,
+    selectedCompanyId,
+  ]);
 
   const paidBetaCohortCompanyIds = useMemo(
     () => normalizePaidBetaCohortCompanyIds(selectedCompanyId, companies),
