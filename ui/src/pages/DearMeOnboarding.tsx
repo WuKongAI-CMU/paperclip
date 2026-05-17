@@ -590,6 +590,7 @@ interface DearMeDecisionFocus {
 }
 
 type DearMeCheckoutReturnStatus = "success" | "cancel";
+type DearMeSignupSource = "pricing";
 
 type DearMeApprovalReviewAction = "approve" | "reject" | "request_revision";
 
@@ -828,6 +829,11 @@ function parseDearMeDecisionFocus(search: string): DearMeDecisionFocus | null {
 function parseDearMeCheckoutReturnStatus(search: string): DearMeCheckoutReturnStatus | null {
   const status = new URLSearchParams(search).get("checkout_return");
   return status === "success" || status === "cancel" ? status : null;
+}
+
+function parseDearMeSignupSource(search: string): DearMeSignupSource | null {
+  const source = new URLSearchParams(search).get("signup_source");
+  return source === "pricing" ? source : null;
 }
 
 function parseDearMeReviewEntryIntent(value: string | null): DearMeReviewEntryIntent | null {
@@ -13025,6 +13031,10 @@ export function DearMeOnboarding() {
     () => parseDearMeCheckoutReturnStatus(location.search),
     [location.search],
   );
+  const signupSource = useMemo(
+    () => parseDearMeSignupSource(location.search),
+    [location.search],
+  );
   const selectedView = useMemo(
     () => parseDearMePageView(location.search),
     [location.search],
@@ -13047,6 +13057,14 @@ export function DearMeOnboarding() {
       paidBetaStatus?.hostedCheckout?.configured &&
       paidBetaStatus.hostedCheckout.paymentUrl,
   );
+
+  useEffect(() => {
+    if (!signupSource) return;
+    capture("signup_entry_viewed", {
+      source: signupSource,
+    });
+  }, [signupSource]);
+
   const paidBetaCohortCompanyIds = useMemo(
     () => normalizePaidBetaCohortCompanyIds(selectedCompanyId, companies),
     [companies, selectedCompanyId],
