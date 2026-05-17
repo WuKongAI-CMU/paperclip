@@ -13535,12 +13535,13 @@ export function DearMeOnboarding() {
   const handleFocusPaidBeta = useCallback(() => {
     capture("first_cycle_paid_ask_opened", {
       checkout_ready: paidBetaCheckoutReady,
+      source: signupSource ?? "direct",
     });
     document.getElementById(DEARME_PAID_BETA_ACCESS_ID)?.scrollIntoView?.({
       behavior: "smooth",
       block: "start",
     });
-  }, [paidBetaCheckoutReady]);
+  }, [paidBetaCheckoutReady, signupSource]);
 
   if (!selectedCompanyId) {
     return <DearMeProfileRequiredHandoff knownFor={knownForIntent} />;

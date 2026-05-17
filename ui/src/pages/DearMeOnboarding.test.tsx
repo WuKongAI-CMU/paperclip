@@ -4889,6 +4889,7 @@ describe("DearMeOnboarding", () => {
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
     expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_paid_ask_opened", {
       checkout_ready: false,
+      source: "direct",
     });
 
     await act(async () => {
@@ -5082,6 +5083,22 @@ describe("DearMeOnboarding", () => {
         knownFor: expect.any(String),
       }),
     );
+    const paidAccessHandoff = surfaceByLabel(container, "First cycle paid access handoff");
+    const paidBetaAccess = surfaceByLabel(container, "Paid beta access");
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(paidBetaAccess, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    await act(async () => {
+      buttonByText(paidAccessHandoff, "Open paid beta close kit")?.click();
+    });
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_paid_ask_opened", {
+      checkout_ready: false,
+      source: "pricing",
+    });
 
     await act(async () => {
       root.unmount();
