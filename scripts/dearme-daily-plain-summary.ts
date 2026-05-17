@@ -17,6 +17,7 @@ export interface DearMeDailyPlainSummaryArgs {
   help: boolean;
   json: boolean;
   dryRun: boolean;
+  humanHelpMarkdown: boolean;
   date: string;
   ledgerPath: string;
   recipientEmail?: string;
@@ -173,11 +174,59 @@ export function buildDearMeDailyPlainSummary(input: {
   return { subject, body: bodyLines.join("\n") };
 }
 
+export function buildDearMeDailyPlainHumanHelpMarkdown(input: {
+  date: string;
+  apiKeyConfigured: boolean;
+  recipientEmailConfigured: boolean;
+}) {
+  const missingItems = [
+    input.apiKeyConfigured ? null : "`DEARME_PLAIN_API_KEY`",
+    input.recipientEmailConfigured ? null : "`DEARME_CODEX_DAILY_PLAIN_EMAIL` or `DEARME_PLAIN_DAILY_EMAIL`",
+  ].filter((item): item is string => item !== null);
+  const blockerText = missingItems.length > 0
+    ? missingItems.join(" and ")
+    : "no missing Plain daily summary configuration";
+  return [
+    `### ${input.date} - Daily Plain summary delivery configuration`,
+    "",
+    "- Needs help from: Peter",
+    "- What they need to do: provide the Plain API key plus the Peter recipient email for the required Codex daily support-thread summary.",
+    "- Why agents cannot do it: Plain account ownership, API-key creation, and recipient routing are Peter-owned account configuration.",
+    `- Blocking: no for product development or private-beta operations; yes for delivering the required daily Plain summary automatically. Current blocker: ${blockerText}.`,
+    "- Estimated human time: 5-10 minutes once the Plain workspace exists.",
+    "- Agents continue after result by: running `pnpm --silent dearme:daily-plain-summary -- --json` and confirming the low-severity Plain thread is created.",
+    "",
+    "Needed values:",
+    "",
+    "- `DEARME_PLAIN_API_KEY`: Plain API key for creating the daily support thread.",
+    "- `DEARME_CODEX_DAILY_PLAIN_EMAIL` or `DEARME_PLAIN_DAILY_EMAIL`: recipient email for Peter's daily summary thread.",
+    "",
+    "Reply template for Peter:",
+    "",
+    "```text",
+    "Plain daily summary API key configured:",
+    "Plain daily summary recipient email:",
+    "```",
+    "",
+    "Required local check after configuration:",
+    "",
+    "```bash",
+    "pnpm --silent dearme:daily-plain-summary -- --json",
+    "```",
+    "",
+    "Safety notes:",
+    "",
+    "- Do not paste the Plain API key into chat, docs, screenshots, or customer-facing copy.",
+    "- The summary is low severity and contains run-ledger status plus owner-blocked facts; it does not include customer data or secrets.",
+  ].join("\n");
+}
+
 export function parseDearMeDailyPlainSummaryArgs(argv: string[]): DearMeDailyPlainSummaryArgs {
   const args: DearMeDailyPlainSummaryArgs = {
     help: false,
     json: false,
     dryRun: false,
+    humanHelpMarkdown: false,
     date: formatDearMeDailyLocalDate(),
     ledgerPath: DEFAULT_LEDGER_PATH,
     recipientName: DEFAULT_RECIPIENT_NAME,
@@ -194,6 +243,8 @@ export function parseDearMeDailyPlainSummaryArgs(argv: string[]): DearMeDailyPla
       args.json = true;
     } else if (arg === "--dry-run") {
       args.dryRun = true;
+    } else if (arg === "--human-help-markdown") {
+      args.humanHelpMarkdown = true;
     } else if (arg === "--date") {
       args.date = argv[index + 1] ?? "";
       index += 1;
@@ -292,6 +343,7 @@ function usage(): string {
     "",
     "Options:",
     "  --dry-run                    Print/return the summary without posting to Plain.",
+    "  --human-help-markdown        Print the Peter-facing Plain configuration request.",
     "  --json                       Print machine-readable JSON.",
     "  --date <YYYY-MM-DD>          Summary date. Defaults to today.",
     "  --ledger <path>              Run ledger path.",
@@ -305,6 +357,18 @@ async function main(): Promise<void> {
   const args = parseDearMeDailyPlainSummaryArgs(process.argv.slice(2));
   if (args.help) {
     console.log(usage());
+    return;
+  }
+  const env = process.env;
+  if (args.humanHelpMarkdown) {
+    const recipientEmail = configuredValue(args.recipientEmail)
+      ?? configuredValue(env.DEARME_CODEX_DAILY_PLAIN_EMAIL)
+      ?? configuredValue(env.DEARME_PLAIN_DAILY_EMAIL);
+    console.log(buildDearMeDailyPlainHumanHelpMarkdown({
+      date: args.date,
+      apiKeyConfigured: Boolean(configuredValue(env.DEARME_PLAIN_API_KEY)),
+      recipientEmailConfigured: Boolean(recipientEmail),
+    }));
     return;
   }
 

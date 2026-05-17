@@ -8,6 +8,48 @@ stop agent-owned work.
 
 ## Active Requests
 
+### 2026-05-17 - Daily Plain summary delivery configuration
+
+- Needs help from: Peter
+- What they need to do: provide the Plain API key plus the Peter recipient
+  email for the required Codex daily support-thread summary.
+- Why agents cannot do it: Plain account ownership, API-key creation, and
+  recipient routing are Peter-owned account configuration.
+- Blocking: no for product development or private-beta operations; yes for
+  delivering the required daily Plain summary automatically. Current blocker:
+  `DEARME_PLAIN_API_KEY` and `DEARME_CODEX_DAILY_PLAIN_EMAIL` or
+  `DEARME_PLAIN_DAILY_EMAIL`.
+- Estimated human time: 5-10 minutes once the Plain workspace exists.
+- Agents continue after result by: running
+  `pnpm --silent dearme:daily-plain-summary -- --json` and confirming the
+  low-severity Plain thread is created.
+
+Needed values:
+
+- `DEARME_PLAIN_API_KEY`: Plain API key for creating the daily support thread.
+- `DEARME_CODEX_DAILY_PLAIN_EMAIL` or `DEARME_PLAIN_DAILY_EMAIL`: recipient
+  email for Peter's daily summary thread.
+
+Reply template for Peter:
+
+```text
+Plain daily summary API key configured:
+Plain daily summary recipient email:
+```
+
+Required local check after configuration:
+
+```bash
+pnpm --silent dearme:daily-plain-summary -- --json
+```
+
+Safety notes:
+
+- Do not paste the Plain API key into chat, docs, screenshots, or
+  customer-facing copy.
+- The summary is low severity and contains run-ledger status plus
+  owner-blocked facts; it does not include customer data or secrets.
+
 ### 2026-05-16 - External live-proof facts
 
 - Needs help from: Peter

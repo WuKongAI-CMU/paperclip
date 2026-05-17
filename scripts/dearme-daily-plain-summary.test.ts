@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildDearMeDailyPlainHumanHelpMarkdown,
   buildDearMeDailyPlainSummary,
   formatDearMeDailyLocalDate,
   parseDearMeDailyLedgerEntries,
@@ -126,6 +127,32 @@ test("skips without live network when Plain is not configured", async () => {
   assert.equal(result.ok, true);
   assert.equal(result.skipped, true);
   assert.equal(result.reason, "dearme_plain_api_key_unset");
+});
+
+test("builds Peter-facing human-help markdown for daily Plain configuration", () => {
+  const markdown = buildDearMeDailyPlainHumanHelpMarkdown({
+    date: "2026-05-16",
+    apiKeyConfigured: false,
+    recipientEmailConfigured: false,
+  });
+
+  assert.match(markdown, /Daily Plain summary delivery configuration/);
+  assert.match(markdown, /DEARME_PLAIN_API_KEY/);
+  assert.match(markdown, /DEARME_CODEX_DAILY_PLAIN_EMAIL/);
+  assert.match(markdown, /Blocking: no for product development or private-beta operations; yes for delivering the required daily Plain summary automatically/);
+  assert.match(markdown, /pnpm --silent dearme:daily-plain-summary -- --json/);
+  assert.doesNotMatch(markdown, /plain-key|peter@example\.com/);
+});
+
+test("parses daily Plain human-help markdown flag", () => {
+  const args = parseDearMeDailyPlainSummaryArgs([
+    "--date",
+    "2026-05-16",
+    "--human-help-markdown",
+  ]);
+
+  assert.equal(args.humanHelpMarkdown, true);
+  assert.equal(args.date, "2026-05-16");
 });
 
 test("posts a low-severity Plain thread when configured", async () => {
