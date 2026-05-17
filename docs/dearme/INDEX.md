@@ -226,6 +226,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-FIRST-CYCLE-SOURCE-ANALYTICS** — first-cycle preview/completion analytics now include only the safe signup source, preserving pricing/landing attribution through the first-cycle milestone without customer identifiers or brief text.
 - **DM-PAID-ASK-SOURCE-ANALYTICS** — opening the paid-beta close kit from a first-cycle preview now records only checkout readiness and signup source, tying first-cycle-to-paid intent back to pricing/landing without customer data.
 - **DM-CHECKOUT-START-SOURCE-ANALYTICS** — hosted checkout-start analytics now carry only the safe signup source alongside checkout readiness, preserving paid-conversion attribution without customer identifiers.
+- **DM-CHECKOUT-RETURN-SOURCE-ANALYTICS** — checkout return analytics now accept only allowlisted return sources, preserving paid-return attribution while dropping arbitrary query text.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-FOCUS-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now uses the same owner-facts-plus-no-send wording for live-focus commands and setup commands.
 - **DM-PROOF-LIVE-CONFIRMATION-CHECKLIST** — `pnpm dearme:proof` now labels owner-proof checklist live commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.

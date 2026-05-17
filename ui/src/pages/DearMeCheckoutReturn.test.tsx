@@ -67,6 +67,7 @@ describe("DearMeCheckoutReturn", () => {
       .toBe(true);
     expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_viewed", {
       status: "success",
+      source: "direct",
       has_session_marker: true,
       has_cancel_marker: false,
     });
@@ -94,6 +95,7 @@ describe("DearMeCheckoutReturn", () => {
     expect(links.some((link) => link.getAttribute("href") === "/pricing")).toBe(true);
     expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_viewed", {
       status: "cancel",
+      source: "direct",
       has_session_marker: false,
       has_cancel_marker: true,
     });
@@ -115,6 +117,52 @@ describe("DearMeCheckoutReturn", () => {
     await act(async () => {
       success.root.unmount();
       cancel.root.unmount();
+    });
+  });
+
+  it("records an allowlisted checkout return source without leaking arbitrary query text", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/dearme/checkout/success?source=pricing&session_id=checkout-session-1&knownFor=Private%20brief",
+    );
+    const { root } = await renderReturnPage("success");
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_viewed", {
+      status: "success",
+      source: "pricing",
+      has_session_marker: true,
+      has_cancel_marker: false,
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "checkout_return_viewed",
+      expect.objectContaining({
+        knownFor: expect.any(String),
+      }),
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("falls back to direct for unknown checkout return sources", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/dearme/checkout/cancel?source=private-note&checkout=cancelled",
+    );
+    const { root } = await renderReturnPage("cancel");
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_viewed", {
+      status: "cancel",
+      source: "direct",
+      has_session_marker: false,
+      has_cancel_marker: true,
+    });
+
+    await act(async () => {
+      root.unmount();
     });
   });
 });
