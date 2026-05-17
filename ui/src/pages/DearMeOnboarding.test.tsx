@@ -5189,6 +5189,19 @@ describe("DearMeOnboarding", () => {
     await flushReact();
 
     expect(mockDearmeApi.getPaidBetaAccess).toHaveBeenCalledTimes(3);
+    expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_refresh_access_clicked", {
+      source: "direct",
+      signup_source: "direct",
+      paid_beta_active: false,
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "checkout_return_refresh_access_clicked",
+      expect.objectContaining({ sessionId: expect.any(String) }),
+    );
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "checkout_return_refresh_access_clicked",
+      expect.objectContaining({ email: expect.any(String) }),
+    );
 
     await act(async () => {
       root.unmount();
