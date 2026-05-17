@@ -1,4 +1,4 @@
-import { ArrowLeft, Mail, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -9,17 +9,24 @@ import {
 
 const ABOUT_PRINCIPLES = [
   {
-    title: "Private before public",
-    description: "DearMe prepares proof, drafts, and opportunities where you can inspect them first.",
+    title: "Dogfood first",
+    description: "Peter is using DearMe as customer zero before asking other solo operators to trust it.",
   },
   {
-    title: "Approvals stay human",
-    description: "Public moves, sends, spending, and launches stay gated until you decide.",
+    title: "Proof over noise",
+    description: "The product is tuned around receipts, useful writing, and opportunity signals instead of volume.",
   },
   {
-    title: "Built for one person",
-    description: "The product is tuned for founders, builders, and operators who need consistency without a staff.",
+    title: "Owner keeps the call",
+    description: "Public claims, sends, spending, and launches stay gated until the person behind the work decides.",
   },
+] as const;
+
+const NOT_FOR = [
+  "bulk outreach",
+  "hands-off posting",
+  "invented authority",
+  "people who do not want to review public claims",
 ] as const;
 
 export function DearMeAbout() {
@@ -48,31 +55,40 @@ export function DearMeAbout() {
           <header className="max-w-3xl">
             <p className="text-sm font-medium text-muted-foreground">Founder story</p>
             <h1 className="mt-2 text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
-              DearMe exists because personal brand work should not require a personal media team.
+              DearMe started as Peter&apos;s answer to a founder problem he could not outsource.
             </h1>
             <p className="mt-5 text-base leading-7 text-muted-foreground sm:text-lg">
-              Peter started DearMe for the people who are already doing useful work, but keep losing the thread when
-              that work needs to become proof, outreach, a launch, or a clean public record.
+              Useful work was happening, but the public proof, writing cadence, and opportunity follow-up kept lagging
+              behind the actual work. DearMe exists to close that gap without turning the owner into a media team.
             </p>
           </header>
 
           <section className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
             <div className="space-y-5 text-base leading-8 text-muted-foreground">
               <p>
-                The first version is intentionally narrow: one person, one clear positioning answer, one private cycle
-                that turns scattered context into work you can review. DearMe should feel like a calm operator who keeps
-                your receipts organized, drafts in your voice, and brings decisions back to you before anything leaves
-                the room.
+                Peter is using DearMe as customer zero to build the public record around his own work before asking
+                design partners to trust it. The product has to turn scattered context into proof, clear writing, and
+                useful opportunity leads for him first.
               </p>
               <p>
-                That is why the beta is invite-only. The product needs to learn from real professional workflows without
-                turning trust into a growth hack. It should make your work easier to see, not pressure you into noisy
-                posting or cold outreach.
+                That is why the beta is intentionally narrow: one person, one positioning answer, one private cycle, and
+                a review step before anything leaves the room. DearMe should feel like a calm operator who keeps the
+                receipts organized and brings the next decision back to the person with their name on the work.
               </p>
               <p>
-                The promise is simple: help good work become legible, useful, and timely while the owner keeps final
-                judgment. DearMe handles preparation. You decide what is true, useful, and ready.
+                It is not for teams that want volume, fake certainty, or a fully automatic public presence. It is for
+                solo operators who are already doing meaningful work and need that work to become legible, timely, and
+                useful without losing final judgment.
               </p>
+
+              <div className="grid gap-3 pt-2 sm:grid-cols-2">
+                {NOT_FOR.map((item) => (
+                  <div key={item} className="flex items-start gap-2 text-sm leading-6 text-muted-foreground">
+                    <CheckCircle2 className="mt-1 h-4 w-4 flex-none text-foreground" />
+                    <span>Not for {item}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <aside className="border-l border-border pl-5 text-sm leading-6 text-muted-foreground">
