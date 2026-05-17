@@ -50,7 +50,7 @@ Safety notes:
 - The summary is low severity and contains run-ledger status plus
   owner-blocked facts; it does not include customer data or secrets.
 
-### 2026-05-16 - External live-proof facts
+### 2026-05-17 - External live-proof facts
 
 - Needs help from: Peter
 - What they need to do: provide the owner-approved external proof details for
@@ -67,7 +67,8 @@ Safety notes:
   smoke recipients are known.
 - Agents continue after result by: capturing the approved values, running the
   no-send provider check first, then running guarded live proof only after
-  explicit live confirmation.
+  owner facts are present, the no-send check passes, and explicit live
+  confirmation is set.
 
 Needed values:
 
@@ -88,15 +89,16 @@ iMessage/SMS smoke recipient:
 
 Current generated proof handoff status:
 
-- Last verified: 2026-05-16 with
+- Last verified: 2026-05-17 with
   `pnpm --silent dearme:standing-loop-audit -- --check`,
   `pnpm --silent dearme:status`, and `pnpm --silent dearme:goal-audit`.
 - Regenerate this request with
   `pnpm --silent dearme:next-proof -- --target all --no-write --human-help-markdown`.
-- Status: private beta is sellable and operable; public launch and live
-  provider proof remain blocked until the three approved details above are
-  provided.
+- Status: blocked. Private beta remains sellable and operable; public launch
+  and live provider proof remain blocked until the three approved details above
+  are provided.
 - Captured details: none in the local proof setup.
+- No-send check: blocked.
 - No-send guarantee: this handoff only prepares local proof setup; it does not
   send, publish, deploy, or spend.
 
@@ -119,7 +121,8 @@ Required no-send check before any live delivery:
 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check
 ```
 
-Guarded live proof commands only after explicit live confirmation:
+Guarded live proof commands after owner facts are present, the no-send check
+passes, and explicit live confirmation is set:
 
 ```bash
 DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target linkedin_dm --live
@@ -136,7 +139,7 @@ Safety notes:
 - Live external proof remains a human-confirmed step because it contacts real
   recipients.
 
-### 2026-05-14 - Self-serve checkout configuration
+### 2026-05-17 - Self-serve checkout configuration
 
 - Needs help from: Peter
 - What they need to do: provide the real hosted payment link for the live
@@ -170,7 +173,7 @@ Provider label:
 
 Current generated payment readiness:
 
-- Last verified: 2026-05-16 with
+- Last verified: 2026-05-17 with
   `pnpm --silent dearme:payment-readiness`.
 - Regenerate this request with
   `pnpm --silent dearme:payment-readiness -- --human-help-markdown`.
