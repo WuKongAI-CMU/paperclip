@@ -12023,6 +12023,13 @@ function PaidBetaAccessPanel({
   const downloadPaidBetaOperatingReceipt = useCallback(() => {
     downloadDearMeReceipt(paidBetaOperatingReceiptText, DEARME_PAID_BETA_OPERATING_RECEIPT_FILENAME);
   }, [paidBetaOperatingReceiptText]);
+  const handleOpenHostedCheckout = useCallback((source: string) => {
+    capture("checkout_started", {
+      source,
+      paid_beta_active: paidBetaActive,
+      checkout_ready: hostedCheckoutReady,
+    });
+  }, [hostedCheckoutReady, paidBetaActive]);
 
   const recordPaymentMutation = useMutation({
     mutationFn: () => {
@@ -12215,7 +12222,12 @@ function PaidBetaAccessPanel({
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             {hostedCheckoutReady ? (
               <Button asChild size="sm">
-                <a href={hostedCheckoutUrl ?? undefined} target="_blank" rel="noreferrer">
+                <a
+                  href={hostedCheckoutUrl ?? undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => handleOpenHostedCheckout("paid_beta_customer_receipt")}
+                >
                   <ExternalLink className="h-4 w-4" />
                   Open checkout
                 </a>
@@ -12352,7 +12364,12 @@ function PaidBetaAccessPanel({
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             {hostedCheckoutReady ? (
               <Button asChild size="sm">
-                <a href={hostedCheckoutUrl ?? undefined} target="_blank" rel="noreferrer">
+                <a
+                  href={hostedCheckoutUrl ?? undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => handleOpenHostedCheckout("paid_beta_close_kit")}
+                >
                   <ExternalLink className="h-4 w-4" />
                   Open checkout
                 </a>
@@ -12426,7 +12443,12 @@ function PaidBetaAccessPanel({
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             {hostedCheckoutReady ? (
               <Button asChild size="sm">
-                <a href={hostedCheckoutUrl ?? undefined} target="_blank" rel="noreferrer">
+                <a
+                  href={hostedCheckoutUrl ?? undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => handleOpenHostedCheckout("paid_beta_payment_path")}
+                >
                   <ExternalLink className="h-4 w-4" />
                   Open checkout
                 </a>
@@ -13029,6 +13051,9 @@ export function DearMeOnboarding() {
       setPreviewSignature(null);
       setActionError(null);
       writeDearMeFirstCyclePreview(nextPreview);
+      capture("first_cycle_completed", {
+        mode: input.startPrivateWork ? "private_work" : "trial_preview",
+      });
       if (selectedCompanyId && input.startPrivateWork) {
         capture("first_cycle_started");
         queryClient.invalidateQueries({ queryKey: queryKeys.dearme.workbench(selectedCompanyId) });
@@ -13338,11 +13363,14 @@ export function DearMeOnboarding() {
   }, []);
 
   const handleFocusPaidBeta = useCallback(() => {
+    capture("first_cycle_paid_ask_opened", {
+      checkout_ready: paidBetaCheckoutReady,
+    });
     document.getElementById(DEARME_PAID_BETA_ACCESS_ID)?.scrollIntoView?.({
       behavior: "smooth",
       block: "start",
     });
-  }, []);
+  }, [paidBetaCheckoutReady]);
 
   if (!selectedCompanyId) {
     return <DearMeProfileRequiredHandoff knownFor={knownForIntent} />;

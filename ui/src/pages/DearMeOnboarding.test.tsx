@@ -55,6 +55,9 @@ const mockApprovalsApi = vi.hoisted(() => ({
 const mockNavigate = vi.hoisted(() => vi.fn());
 const mockSetBreadcrumbs = vi.hoisted(() => vi.fn());
 const mockSetSelectedCompanyId = vi.hoisted(() => vi.fn());
+const analyticsMock = vi.hoisted(() => ({
+  capture: vi.fn(),
+}));
 const mockLocation = vi.hoisted(() => ({
   pathname: "/PET/dearme",
   search: "?view=brand-os",
@@ -102,6 +105,8 @@ vi.mock("@/lib/router", () => ({
   useNavigate: () => mockNavigate,
   useLocation: () => mockLocation,
 }));
+
+vi.mock("@/lib/analytics", () => analyticsMock);
 
 vi.mock("../context/CompanyContext", () => ({
   useCompany: () => ({
@@ -4745,6 +4750,9 @@ describe("DearMeOnboarding", () => {
       }),
     );
     expect(mockDearmeApi.startFirstCycle).not.toHaveBeenCalled();
+    expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_completed", {
+      mode: "trial_preview",
+    });
     expect(container.textContent).toContain("First-run proof sequence");
     expect(container.textContent).toContain("Live work receipts");
     expect(container.textContent).toContain("Finding likely audiences");
@@ -4774,12 +4782,68 @@ describe("DearMeOnboarding", () => {
       buttonByText(paidAccessHandoff, "Open paid beta close kit")?.click();
     });
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("first_cycle_paid_ask_opened", {
+      checkout_ready: false,
+    });
 
     await act(async () => {
       buttonByText(container, "Open proof preview")?.click();
     });
 
     expect(mockNavigate).toHaveBeenCalledWith("/dearme/site-preview/peter-studio");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("records hosted checkout starts from the paid beta close kit", async () => {
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(
+      paidBetaStatus("trial", {
+        hostedCheckout: {
+          configured: true,
+          paymentLinkConfigured: true,
+          receiptSyncConfigured: true,
+          paymentUrl: "https://pay.example.com/dearme?client_reference_id=company-1",
+          providerLabel: "Hosted checkout",
+          label: "Self-serve checkout ready",
+          summary: "A hosted payment link and signed receipt sync are ready for this account.",
+          nextActionLabel: "Open hosted checkout",
+          nextActionDescription: "Send the customer through checkout; DearMe opens paid access after the signed receipt arrives.",
+        },
+      }),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const closeKit = surfaceByLabel(container, "Paid beta close kit");
+    const checkoutLink = closeKit.querySelector(
+      'a[href="https://pay.example.com/dearme?client_reference_id=company-1"]',
+    );
+    expect(checkoutLink?.getAttribute("href")).toBe(
+      "https://pay.example.com/dearme?client_reference_id=company-1",
+    );
+
+    await act(async () => {
+      checkoutLink?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_started", {
+      source: "paid_beta_close_kit",
+      paid_beta_active: false,
+      checkout_ready: true,
+    });
 
     await act(async () => {
       root.unmount();
