@@ -11750,6 +11750,7 @@ function PaidBetaAccessPanel({
   error,
   isRefreshingAccess,
   checkoutReturnStatus,
+  checkoutReturnSource,
   signupSource,
   onRefreshAccess,
   onFocusFirstCycle,
@@ -11761,6 +11762,7 @@ function PaidBetaAccessPanel({
   error: unknown;
   isRefreshingAccess: boolean;
   checkoutReturnStatus: DearMeCheckoutReturnStatus | null;
+  checkoutReturnSource: DearMeCheckoutReturnSource;
   signupSource: DearMeSignupSource | null;
   onRefreshAccess: () => void;
   onFocusFirstCycle: () => void;
@@ -12202,6 +12204,14 @@ function PaidBetaAccessPanel({
       checkout_ready: hostedCheckoutReady,
     });
   }, [hostedCheckoutReady, paidBetaActive, signupSource]);
+  const handleFocusFirstCycleFromCheckoutReturn = useCallback(() => {
+    capture("checkout_return_first_cycle_cta_clicked", {
+      source: checkoutReturnSource,
+      signup_source: signupSource ?? "direct",
+      paid_beta_active: paidBetaActive,
+    });
+    onFocusFirstCycle();
+  }, [checkoutReturnSource, onFocusFirstCycle, paidBetaActive, signupSource]);
 
   const recordPaymentMutation = useMutation({
     mutationFn: () => {
@@ -12283,7 +12293,7 @@ function PaidBetaAccessPanel({
               type="button"
               size="sm"
               className="shrink-0"
-              onClick={onFocusFirstCycle}
+              onClick={handleFocusFirstCycleFromCheckoutReturn}
             >
               <Sparkles className="h-4 w-4" />
               Start first cycle now
@@ -13867,6 +13877,7 @@ export function DearMeOnboarding() {
         error={paidBetaAccessQuery.error}
         isRefreshingAccess={paidBetaAccessQuery.isFetching}
         checkoutReturnStatus={checkoutReturnStatus}
+        checkoutReturnSource={checkoutReturnSource}
         signupSource={signupSource}
         onRefreshAccess={() => {
           void paidBetaAccessQuery.refetch();

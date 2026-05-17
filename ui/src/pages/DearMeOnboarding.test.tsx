@@ -5226,6 +5226,11 @@ describe("DearMeOnboarding", () => {
       buttonByText(checkoutReturnStatus, "Start first cycle now")?.click();
     });
 
+    expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_return_first_cycle_cta_clicked", {
+      source: "direct",
+      signup_source: "direct",
+      paid_beta_active: true,
+    });
     expect(document.activeElement).toBe(container.querySelector("#dearme-first-cycle-intent"));
 
     await act(async () => {
