@@ -95,6 +95,29 @@ describe("DearMePricing", () => {
     expect(container.textContent).toContain("Until then, no payment starts from this page.");
   });
 
+  it("tracks manual beta access requests without customer identifiers", async () => {
+    const accessLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.includes("Request access"));
+    expect(accessLink).toBeDefined();
+    accessLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+
+    await act(async () => {
+      accessLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("pricing_access_requested", {
+      source: "pricing_nav",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "pricing_access_requested",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+      }),
+    );
+  });
+
   it("collects a waitlist email and fires the pricing event", async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
