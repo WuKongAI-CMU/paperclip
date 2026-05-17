@@ -4903,6 +4903,74 @@ describe("DearMeOnboarding", () => {
     });
   });
 
+  it("opens hosted checkout from the first-cycle paid handoff", async () => {
+    mockDearmeApi.getPaidBetaAccess.mockResolvedValue(
+      paidBetaStatus("trial", {
+        hostedCheckout: {
+          configured: true,
+          paymentLinkConfigured: true,
+          receiptSyncConfigured: true,
+          paymentUrl: "https://pay.example.com/dearme?client_reference_id=company-1",
+          providerLabel: "Hosted checkout",
+          label: "Self-serve checkout ready",
+          summary: "A hosted payment link and signed receipt sync are ready for this account.",
+          nextActionLabel: "Open hosted checkout",
+          nextActionDescription: "Send the customer through checkout; DearMe opens paid access after the signed receipt arrives.",
+        },
+      }),
+    );
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeOnboarding />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    await act(async () => {
+      setTextareaValue(
+        container.querySelector("#dearme-first-cycle-intent") as HTMLTextAreaElement,
+        "Known for turning private agent work into clear public proof",
+      );
+      buttonByText(container, "Preview first cycle")?.click();
+    });
+    await flushReact();
+
+    const paidAccessHandoff = surfaceByLabel(container, "First cycle paid access handoff");
+    expect(paidAccessHandoff.textContent).toContain("Checkout ready");
+    const checkoutLink = paidAccessHandoff.querySelector<HTMLAnchorElement>(
+      'a[href="https://pay.example.com/dearme?client_reference_id=company-1"]',
+    );
+    expect(checkoutLink?.textContent).toContain("Open checkout");
+
+    await act(async () => {
+      checkoutLink?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("checkout_started", {
+      source: "first_cycle_paid_access_handoff",
+      signup_source: "direct",
+      paid_beta_active: false,
+      checkout_ready: true,
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "checkout_started",
+      expect.objectContaining({
+        email: expect.any(String),
+      }),
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("records hosted checkout starts from the paid beta close kit", async () => {
     mockDearmeApi.getPaidBetaAccess.mockResolvedValue(
       paidBetaStatus("trial", {

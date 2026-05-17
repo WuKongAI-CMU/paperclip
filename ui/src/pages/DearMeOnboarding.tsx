@@ -3287,9 +3287,11 @@ function FirstCyclePanel({
   privateWorkStarted,
   paidBetaActive,
   paidBetaCheckoutReady,
+  paidBetaCheckoutHref,
   onOpenWorkReady,
   onOpenPreview,
   onFocusPaidBeta,
+  onOpenPaidBetaCheckout,
   onIntentChange,
   onPreview,
 }: {
@@ -3300,9 +3302,11 @@ function FirstCyclePanel({
   privateWorkStarted: boolean;
   paidBetaActive: boolean;
   paidBetaCheckoutReady: boolean;
+  paidBetaCheckoutHref: string | null;
   onOpenWorkReady: () => void;
   onOpenPreview: (handle: string) => void;
   onFocusPaidBeta: () => void;
+  onOpenPaidBetaCheckout: () => void;
   onIntentChange: (value: string) => void;
   onPreview: () => void;
 }) {
@@ -3499,6 +3503,20 @@ function FirstCyclePanel({
               <Badge variant={paidBetaCheckoutReady ? "default" : "secondary"}>
                 {paidBetaCheckoutReady ? "Checkout ready" : `${money(DEARME_PAID_BETA_MONTHLY_OFFER_CENTS)} beta`}
               </Badge>
+              {paidBetaCheckoutReady && paidBetaCheckoutHref ? (
+                <Button asChild size="sm" className="min-h-11">
+                  <a
+                    href={paidBetaCheckoutHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={onOpenPaidBetaCheckout}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Open checkout
+                    <ArrowRight className="h-4 w-4" />
+                  </a>
+                </Button>
+              ) : null}
               <Button type="button" size="sm" className="min-h-11" onClick={onFocusPaidBeta}>
                 <CreditCard className="h-4 w-4" />
                 Open paid beta close kit
@@ -13195,6 +13213,9 @@ export function DearMeOnboarding() {
       paidBetaStatus?.hostedCheckout?.configured &&
       paidBetaStatus.hostedCheckout.paymentUrl,
   );
+  const paidBetaCheckoutHref = paidBetaCheckoutReady
+    ? paidBetaStatus?.hostedCheckout?.paymentUrl ?? null
+    : null;
 
   useEffect(() => {
     if (!signupSource) return;
@@ -13581,6 +13602,15 @@ export function DearMeOnboarding() {
     });
   }, [paidBetaCheckoutReady, signupSource]);
 
+  const handleOpenFirstCycleCheckout = useCallback(() => {
+    capture("checkout_started", {
+      source: "first_cycle_paid_access_handoff",
+      signup_source: signupSource ?? "direct",
+      paid_beta_active: false,
+      checkout_ready: paidBetaCheckoutReady,
+    });
+  }, [paidBetaCheckoutReady, signupSource]);
+
   if (!selectedCompanyId) {
     return <DearMeProfileRequiredHandoff knownFor={knownForIntent} />;
   }
@@ -13687,9 +13717,11 @@ export function DearMeOnboarding() {
         canStartPrivateWork={canStartPrivateWork}
         paidBetaActive={canRequestPaidBetaWork}
         paidBetaCheckoutReady={paidBetaCheckoutReady}
+        paidBetaCheckoutHref={paidBetaCheckoutHref}
         onOpenPreview={handleOpenFirstCyclePreview}
         onOpenWorkReady={handleOpenWorkReady}
         onFocusPaidBeta={handleFocusPaidBeta}
+        onOpenPaidBetaCheckout={handleOpenFirstCycleCheckout}
         onIntentChange={(value) => {
           setActionError(null);
           setFirstCycleIntent(value);
