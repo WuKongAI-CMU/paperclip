@@ -59,12 +59,39 @@ describe("DearMePricing", () => {
     const links = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"));
 
     expect(links.some((link) => (
-      link.textContent?.includes("Start the 3-day trial") && link.href.endsWith("/dearme")
+      link.textContent?.includes("Start the 3-day trial") &&
+      link.href.endsWith("/dearme?signup_source=pricing")
     ))).toBe(true);
     expect(links.some((link) => (
       link.textContent?.includes("See the product first") && link.href.endsWith("/landing")
     ))).toBe(true);
     expect(container.textContent).toContain("Hosted payment opens after the invite gate lifts.");
+  });
+
+  it("tracks pricing trial starts without starting payment", async () => {
+    const trialLinks = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .filter((link) => link.textContent?.includes("Start the 3-day trial"));
+    expect(trialLinks).toHaveLength(2);
+    trialLinks.forEach((link) => {
+      link.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+    });
+
+    await act(async () => {
+      trialLinks[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await act(async () => {
+      trialLinks[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("pricing_trial_started", {
+      source: "hero",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("pricing_trial_started", {
+      source: "plan",
+      plan: "beta_29",
+    });
+    expect(container.textContent).toContain("Until then, no payment starts from this page.");
   });
 
   it("collects a waitlist email and fires the pricing event", async () => {

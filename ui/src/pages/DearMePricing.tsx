@@ -56,6 +56,8 @@ const PRICING_FAQS = [
 ] as const;
 
 const WAITLIST_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PRICING_TRIAL_HREF = "/dearme?signup_source=pricing";
+type PricingTrialStartSource = "hero" | "plan";
 
 export function DearMePricing() {
   const [email, setEmail] = useState("");
@@ -79,6 +81,13 @@ export function DearMePricing() {
     setEmail(trimmedEmail);
     setError(null);
     setWaitlistStatus("joined");
+  }
+
+  function handleTrialStart(source: PricingTrialStartSource) {
+    capture("pricing_trial_started", {
+      source,
+      plan: "beta_29",
+    });
   }
 
   return (
@@ -112,7 +121,7 @@ export function DearMePricing() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild size="lg" className="min-h-11">
-                <a href="/dearme">
+                <a href={PRICING_TRIAL_HREF} onClick={() => handleTrialStart("hero")}>
                   Start the 3-day trial
                   <ArrowRight className="h-4 w-4" />
                 </a>
@@ -155,7 +164,7 @@ export function DearMePricing() {
             </ul>
 
             <Button asChild size="lg" className="mt-6 w-full">
-              <a href="/dearme">
+              <a href={PRICING_TRIAL_HREF} onClick={() => handleTrialStart("plan")}>
                 Start the 3-day trial
                 <ArrowRight className="h-4 w-4" />
               </a>
