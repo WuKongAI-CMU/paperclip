@@ -24,6 +24,7 @@ function checkoutCompletedEvent(sessionId = "cs_dearme_paid") {
         client_reference_id: "company-1",
         payment_intent: "pi_dearme_paid",
         invoice: null,
+        customer_email: "buyer@example.com",
         metadata: {
           dearmeCompanyId: "company-1",
         },
@@ -280,9 +281,15 @@ describe("dearMeStripeCheckoutService", () => {
 
   it("records paid-beta access once for a valid checkout.session.completed webhook", async () => {
     const paidBetaAccess = fakeAccessGranter();
+    const sendLifecycleEvent = vi.fn(async () => ({
+      skipped: false,
+      ok: true,
+      status: 200,
+    }) as const);
     const service = dearMeStripeCheckoutService({} as Db, {
       stripeClient: fakeStripeClient(),
       paidBetaAccess,
+      sendLifecycleEvent,
     });
 
     await expect(service.handleCheckoutWebhook({
@@ -307,13 +314,26 @@ describe("dearMeStripeCheckoutService", () => {
         kind: "checkout_paid",
       })],
     );
+    expect(sendLifecycleEvent).toHaveBeenCalledWith({
+      email: "buyer@example.com",
+      eventName: "dearme_first_payment",
+      properties: {
+        tier: "paid_beta",
+      },
+    });
   });
 
   it("does not double-grant the same Stripe session id", async () => {
     const paidBetaAccess = fakeAccessGranter();
+    const sendLifecycleEvent = vi.fn(async () => ({
+      skipped: false,
+      ok: true,
+      status: 200,
+    }) as const);
     const service = dearMeStripeCheckoutService({} as Db, {
       stripeClient: fakeStripeClient(checkoutCompletedEvent("cs_dearme_repeat")),
       paidBetaAccess,
+      sendLifecycleEvent,
     });
     const input = {
       rawBody: Buffer.from(JSON.stringify(checkoutCompletedEvent("cs_dearme_repeat"))),
@@ -329,6 +349,73 @@ describe("dearMeStripeCheckoutService", () => {
     });
 
     expect(paidBetaAccess.recordHostedPaymentReceipts).toHaveBeenCalledTimes(1);
+    expect(sendLifecycleEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not send first-payment lifecycle email for existing checkout duplicates", async () => {
+    const paidBetaAccess = fakeAccessGranter();
+    vi.mocked(paidBetaAccess.recordHostedPaymentReceipts).mockResolvedValueOnce({
+      acceptedReceipts: [],
+      rejectedReceipts: [],
+      duplicateSuppressedCount: 0,
+      existingDuplicateSuppressedCount: 1,
+      recordedEvents: [],
+      access: {
+        companyId: "company-1",
+        status: "active",
+        lifetimePaidCents: 25000,
+        refundedCents: 0,
+        netPaidCents: 25000,
+        remainingCreditCents: 25000,
+        eventCount: 1,
+        latestPaymentAt: "2026-01-01T00:00:00.000Z",
+        latestPaymentDescription: "DearMe hosted checkout paid receipt",
+        latestExternalInvoiceId: "pi_dearme_paid",
+        entitlement: {
+          state: "paid_beta_active",
+          label: "Paid beta active",
+          headline: "Paid beta access is active",
+          summary: "Paid beta access is active.",
+          canRequestBrandOsApproval: true,
+          canRunPrivateCycles: true,
+          nextActionLabel: "Keep going",
+          nextActionDescription: "Keep going.",
+        },
+        cycleGuardrail: {
+          state: "ready",
+          label: "Guardrails ready",
+          headline: "Private cycles can run within guardrails",
+          summary: "Ready.",
+          spendCents: 0,
+          budgetCents: 0,
+          utilizationPercent: 0,
+          remainingCreditCents: 25000,
+          decisionRequired: false,
+          decisionLabel: null,
+        },
+      },
+    });
+    const sendLifecycleEvent = vi.fn(async () => ({
+      skipped: false,
+      ok: true,
+      status: 200,
+    }) as const);
+    const service = dearMeStripeCheckoutService({} as Db, {
+      stripeClient: fakeStripeClient(),
+      paidBetaAccess,
+      sendLifecycleEvent,
+    });
+
+    await expect(service.handleCheckoutWebhook({
+      rawBody: Buffer.from(JSON.stringify(checkoutCompletedEvent())),
+      signatureHeader: "t=1,v1=valid",
+      webhookSecret: "whsec_test",
+    })).resolves.toMatchObject({
+      status: "duplicate",
+      recordedEventCount: 0,
+    });
+
+    expect(sendLifecycleEvent).not.toHaveBeenCalled();
   });
 
   it("records one grant when 10 identical checkout webhooks arrive together", async () => {
@@ -356,9 +443,15 @@ describe("dearMeStripeCheckoutService", () => {
 
   it("extends paid-beta access for invoice.paid renewals", async () => {
     const paidBetaAccess = fakeAccessGranter();
+    const sendLifecycleEvent = vi.fn(async () => ({
+      skipped: false,
+      ok: true,
+      status: 200,
+    }) as const);
     const service = dearMeStripeCheckoutService({} as Db, {
       stripeClient: fakeStripeClient(invoicePaidEvent()),
       paidBetaAccess,
+      sendLifecycleEvent,
     });
 
     await expect(service.handleCheckoutWebhook({
@@ -387,14 +480,30 @@ describe("dearMeStripeCheckoutService", () => {
       })],
       { reason: "renewal" },
     );
+    expect(sendLifecycleEvent).toHaveBeenCalledWith({
+      email: "buyer@example.com",
+      eventName: "dearme_renewal_payment",
+      properties: {
+        source: "stripe_invoice_paid",
+        paidBetaStatus: "active",
+        amountCents: 25000,
+        currency: "USD",
+      },
+    });
   });
 
   it("does not double-grant the same invoice.paid Stripe event id", async () => {
     const paidBetaAccess = fakeAccessGranter();
+    const sendLifecycleEvent = vi.fn(async () => ({
+      skipped: false,
+      ok: true,
+      status: 200,
+    }) as const);
     const event = invoicePaidEvent("evt_dearme_invoice_repeat");
     const service = dearMeStripeCheckoutService({} as Db, {
       stripeClient: fakeStripeClient(event),
       paidBetaAccess,
+      sendLifecycleEvent,
     });
     const input = {
       rawBody: Buffer.from(JSON.stringify(event)),
@@ -410,6 +519,7 @@ describe("dearMeStripeCheckoutService", () => {
     });
 
     expect(paidBetaAccess.recordHostedPaymentReceipts).toHaveBeenCalledTimes(1);
+    expect(sendLifecycleEvent).toHaveBeenCalledTimes(1);
   });
 
   it("keeps out-of-order invoice.paid then checkout.session.completed as separate access records", async () => {

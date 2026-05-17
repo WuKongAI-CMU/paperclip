@@ -587,6 +587,19 @@ export function dearMeStripeCheckoutService(
           { reason: "renewal" },
         );
         processedStripeEventIds.add(event.id);
+        const lifecycleEmail = invoiceEmail(event);
+        if (lifecycleEmail && result.recordedEvents.length > 0) {
+          await sendLifecycleEventBestEffort(sendLifecycleEvent, {
+            email: lifecycleEmail,
+            eventName: "dearme_renewal_payment",
+            properties: {
+              source: "stripe_invoice_paid",
+              paidBetaStatus: result.access.status,
+              amountCents: invoice.amount_paid,
+              currency: invoice.currency?.toUpperCase() ?? "USD",
+            },
+          });
+        }
 
         return {
           received: true,
@@ -732,9 +745,9 @@ export function dearMeStripeCheckoutService(
       const result = await paidBetaAccess.recordHostedPaymentReceipts(receipt.companyId, [receipt]);
       processedStripeEventIds.add(event.id);
       const lifecycleEmail = checkoutSessionEmail(event);
-      if (lifecycleEmail) {
+      if (lifecycleEmail && result.recordedEvents.length > 0) {
         const tier = event.data.object.metadata?.tier ?? event.data.object.metadata?.access ?? "paid_beta";
-        void sendLifecycleEvent({
+        await sendLifecycleEventBestEffort(sendLifecycleEvent, {
           email: lifecycleEmail,
           eventName: "dearme_first_payment",
           properties: { tier },
