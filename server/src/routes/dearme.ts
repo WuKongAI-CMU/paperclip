@@ -132,6 +132,10 @@ const dearMeLandingExitWaitlistRequestSchema = z.object({
   landingCopyVariant: z.string().trim().min(1).max(64).optional(),
   landingHeroTheme: z.string().trim().min(1).max(64).optional(),
 });
+const dearMePricingWaitlistRequestSchema = z.object({
+  email: z.string().trim().email().max(320),
+  plan: z.literal("beta_29"),
+});
 const dearMeBillingPortalRequestSchema = z.object({
   customerId: z.string().trim().min(1),
 });
@@ -649,6 +653,31 @@ export function dearmeRoutes(
           source: "landing_exit_intent",
           landingCopyVariant: req.body.landingCopyVariant ?? null,
           landingHeroTheme: req.body.landingHeroTheme ?? null,
+        },
+      });
+      const response: {
+        status: "accepted" | "accepted_without_lifecycle" | "lifecycle_failed";
+        lifecycle: DearMeLifecycleResult;
+      } = lifecycle.skipped
+        ? { status: "accepted_without_lifecycle", lifecycle }
+        : lifecycle.ok
+          ? { status: "accepted", lifecycle }
+          : { status: "lifecycle_failed", lifecycle };
+
+      res.status(response.status === "lifecycle_failed" ? 502 : 202).json(response);
+    },
+  );
+
+  router.post(
+    "/pricing-waitlist",
+    validate(dearMePricingWaitlistRequestSchema),
+    async (req, res) => {
+      const lifecycle = await (options.sendLifecycleEvent ?? sendLifecycleEvent)({
+        email: req.body.email,
+        eventName: "dearme_signup",
+        properties: {
+          source: "pricing_waitlist",
+          plan: req.body.plan,
         },
       });
       const response: {

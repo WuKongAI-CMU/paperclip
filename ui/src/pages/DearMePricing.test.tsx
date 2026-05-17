@@ -43,6 +43,7 @@ describe("DearMePricing", () => {
     container?.remove();
     document.body.innerHTML = "";
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("renders the invite-only beta plan", () => {
@@ -95,6 +96,13 @@ describe("DearMePricing", () => {
   });
 
   it("collects a waitlist email and fires the pricing event", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 202,
+      json: async () => ({ status: "accepted" }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
     const input = container.querySelector<HTMLInputElement>("#dearme-pricing-email");
     const form = container.querySelector("form");
     expect(input).not.toBeNull();
@@ -107,11 +115,46 @@ describe("DearMePricing", () => {
       form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     });
 
+    expect(fetchMock).toHaveBeenCalledWith("/api/dearme/pricing-waitlist", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: "founder@example.com",
+        plan: "beta_29",
+      }),
+    });
     expect(container.textContent).toContain("You are on the beta waitlist.");
     expect(analyticsMock.capture).toHaveBeenCalledWith("pricing_waitlist_joined", {
       source: "pricing",
       plan: "beta_29",
     });
+  });
+
+  it("shows a manual fallback when pricing waitlist delivery fails", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      status: 502,
+      json: async () => ({ status: "lifecycle_failed" }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const input = container.querySelector<HTMLInputElement>("#dearme-pricing-email");
+    const form = container.querySelector("form");
+    expect(input).not.toBeNull();
+    expect(form).not.toBeNull();
+
+    await act(async () => {
+      setInputValue(input!, "founder@example.com");
+    });
+    await act(async () => {
+      form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    });
+
+    expect(container.textContent).toContain("Email peter@dearme.app and we will add you manually.");
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "pricing_waitlist_joined",
+      expect.anything(),
+    );
   });
 
   it("blocks invalid waitlist emails without tracking", async () => {
