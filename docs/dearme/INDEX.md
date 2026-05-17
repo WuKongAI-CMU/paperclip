@@ -246,6 +246,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-FIRST-CYCLE-BLOCKED-SUBMIT-ANALYTICS** — first-cycle submits blocked by a missing known-for sentence now emit a safe validation event, making signup-to-first-cycle form friction measurable without sending the missing answer.
 - **DM-FIRST-CYCLE-WORK-READY-ANALYTICS** — first-cycle start receipts now record a safe Work Ready open event, making started-work-to-review conversion measurable without proof text or customer identifiers.
 - **DM-FIRST-CYCLE-PROOF-OPEN-ANALYTICS** — generated first-cycle proof page opens now record safe attribution, making proof-review conversion measurable without proof text or customer identifiers.
+- **DM-FIRST-CYCLE-RECEIPT-DOWNLOAD-ANALYTICS** — first-cycle receipt downloads now record safe attribution, making offline paid-ask handoffs measurable without receipt text or customer identifiers.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-FOCUS-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now uses the same owner-facts-plus-no-send wording for live-focus commands and setup commands.
 - **DM-PROOF-LIVE-CONFIRMATION-CHECKLIST** — `pnpm dearme:proof` now labels owner-proof checklist live commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.
