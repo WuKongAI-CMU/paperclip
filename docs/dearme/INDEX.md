@@ -249,6 +249,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-FIRST-CYCLE-RECEIPT-DOWNLOAD-ANALYTICS** — first-cycle receipt downloads now record safe attribution, making offline paid-ask handoffs measurable without receipt text or customer identifiers.
 - **DM-PAID-CLOSE-KIT-RECEIPT-CHECKOUT** — paid beta close-kit receipt downloads now include configured hosted checkout handoff and safe download attribution, making offline first-payment asks measurable without receipt text, checkout URL analytics, or customer identifiers.
 - **DM-PRICING-WAITLIST-FRICTION-ANALYTICS** — pricing waitlist validation and delivery failures now record safe friction events, making pricing-to-trial signup loss measurable without email or customer identifiers.
+- **DM-LANDING-FRICTION-ANALYTICS** — landing empty-start and exit waitlist failure states now record safe friction events, making landing-to-signup loss measurable without positioning text, email, or customer identifiers.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-FOCUS-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now uses the same owner-facts-plus-no-send wording for live-focus commands and setup commands.
 - **DM-PROOF-LIVE-CONFIRMATION-CHECKLIST** — `pnpm dearme:proof` now labels owner-proof checklist live commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.

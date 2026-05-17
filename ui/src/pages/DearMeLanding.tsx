@@ -157,6 +157,11 @@ export function DearMeLanding() {
     event.preventDefault();
     const answer = knownFor.trim();
     if (!answer) {
+      capture("landing_cta_blocked", {
+        landing_copy_variant: variant.key,
+        landing_hero_theme: variant.theme,
+        reason: "missing_positioning_answer",
+      });
       setError("Answer the question to start your first cycle.");
       knownForInputRef.current?.focus();
       return;
@@ -182,6 +187,12 @@ export function DearMeLanding() {
     const trimmedEmail = exitEmail.trim();
 
     if (!WAITLIST_EMAIL_PATTERN.test(trimmedEmail)) {
+      capture("landing_exit_waitlist_blocked", {
+        landing_copy_variant: variant.key,
+        landing_hero_theme: variant.theme,
+        source: "exit_intent",
+        reason: "invalid_email",
+      });
       setExitError("Enter a work email for the preview.");
       setExitStatus("idle");
       return;
@@ -214,6 +225,12 @@ export function DearMeLanding() {
       setExitEmail(trimmedEmail);
       setExitStatus("joined");
     } catch {
+      capture("landing_exit_waitlist_failed", {
+        landing_copy_variant: variant.key,
+        landing_hero_theme: variant.theme,
+        source: "exit_intent",
+        reason: "request_failed",
+      });
       setExitStatus("idle");
       setExitError("We could not save that. Email peter@dearme.app and we will send it manually.");
     }

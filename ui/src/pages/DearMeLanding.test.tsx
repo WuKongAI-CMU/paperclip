@@ -154,6 +154,18 @@ describe("DearMeLanding", () => {
     expect(container.textContent).toContain("Answer the question to start your first cycle.");
     expect(document.activeElement).toBe(container.querySelector("#dearme-known-for"));
     expect(container.querySelector('[data-testid="location"]')?.textContent).toBe("/");
+    expect(analyticsMock.capture).toHaveBeenCalledWith("landing_cta_blocked", {
+      landing_copy_variant: "control",
+      landing_hero_theme: "private_growth_team",
+      reason: "missing_positioning_answer",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "landing_cta_blocked",
+      expect.objectContaining({
+        knownFor: expect.any(String),
+        positioning_answer: expect.any(String),
+      }),
+    );
   });
 
   it("navigates to onboarding with the positioning answer in search params", async () => {
@@ -319,6 +331,62 @@ describe("DearMeLanding", () => {
 
     expect(container.textContent).toContain("Enter a work email for the preview.");
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(analyticsMock.capture).toHaveBeenCalledWith("landing_exit_waitlist_blocked", {
+      landing_copy_variant: "control",
+      landing_hero_theme: "private_growth_team",
+      source: "exit_intent",
+      reason: "invalid_email",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "landing_exit_waitlist_blocked",
+      expect.objectContaining({
+        email: expect.any(String),
+      }),
+    );
+  });
+
+  it("tracks failed exit-intent waitlist requests without capturing the email", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: "request_failed" }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await act(async () => {
+      document.dispatchEvent(new MouseEvent("mouseleave", { clientY: -1 }));
+    });
+    await flushReact();
+
+    const input = container.querySelector<HTMLInputElement>("#dearme-exit-email");
+    const form = input?.closest("form");
+    expect(input).not.toBeNull();
+    expect(form).not.toBeNull();
+
+    await act(async () => {
+      setInputValue(input!, "reader@example.com");
+    });
+    await act(async () => {
+      form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    });
+    await flushReact();
+
+    expect(container.textContent).toContain(
+      "We could not save that. Email peter@dearme.app and we will send it manually.",
+    );
+    expect(analyticsMock.capture).toHaveBeenCalledWith("landing_exit_waitlist_failed", {
+      landing_copy_variant: "control",
+      landing_hero_theme: "private_growth_team",
+      source: "exit_intent",
+      reason: "request_failed",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith("landing_exit_waitlist_submitted", expect.any(Object));
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "landing_exit_waitlist_failed",
+      expect.objectContaining({
+        email: expect.any(String),
+      }),
+    );
   });
 
   it("renders the before-and-after hero variant", async () => {
