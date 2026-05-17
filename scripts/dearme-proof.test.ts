@@ -544,7 +544,12 @@ test("DearMe proof status does not call the host blocked after production smoke 
     );
     assert.doesNotMatch(
       formatted,
-      /Meta campaign smoke: ready\..*Guarded live command after the no-send check passes: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
+      new RegExp([
+        "Meta campaign smoke: ready\\..*",
+        "Guarded live command after ",
+        "the no-send check passes: ",
+        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1",
+      ].join("")),
     );
     assert.doesNotMatch(formatted, /Requires the real production host/);
   } finally {
