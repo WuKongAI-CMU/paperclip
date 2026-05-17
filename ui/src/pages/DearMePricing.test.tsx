@@ -124,10 +124,52 @@ describe("DearMePricing", () => {
       }),
     });
     expect(container.textContent).toContain("You are on the beta waitlist.");
+    expect(container.textContent).toContain("Start trial preview");
     expect(analyticsMock.capture).toHaveBeenCalledWith("pricing_waitlist_joined", {
       source: "pricing",
       plan: "beta_29",
     });
+  });
+
+  it("sends captured waitlist users into the trial preview without customer identifiers", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 202,
+      json: async () => ({ status: "accepted" }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const input = container.querySelector<HTMLInputElement>("#dearme-pricing-email");
+    const form = container.querySelector("form");
+    expect(input).not.toBeNull();
+    expect(form).not.toBeNull();
+
+    await act(async () => {
+      setInputValue(input!, "founder@example.com");
+    });
+    await act(async () => {
+      form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    });
+
+    const trialLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.includes("Start trial preview"));
+    expect(trialLink?.href).toMatch(/\/dearme\?signup_source=pricing$/);
+    trialLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+
+    await act(async () => {
+      trialLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("pricing_trial_started", {
+      source: "waitlist_success",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "pricing_trial_started",
+      expect.objectContaining({
+        email: expect.any(String),
+      }),
+    );
   });
 
   it("shows a manual fallback when pricing waitlist delivery fails", async () => {

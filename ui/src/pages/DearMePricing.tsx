@@ -57,7 +57,7 @@ const PRICING_FAQS = [
 
 const WAITLIST_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PRICING_TRIAL_HREF = "/dearme?signup_source=pricing";
-type PricingTrialStartSource = "hero" | "plan";
+type PricingTrialStartSource = "hero" | "plan" | "waitlist_success";
 
 export function DearMePricing() {
   const [email, setEmail] = useState("");
@@ -251,9 +251,15 @@ export function DearMePricing() {
               </p>
             ) : null}
             {waitlistStatus === "joined" ? (
-              <p id="dearme-pricing-email-success" className="text-sm text-muted-foreground" role="status">
-                You are on the beta waitlist. We will send the invite when your seat is ready.
-              </p>
+              <div id="dearme-pricing-email-success" className="space-y-3 text-sm text-muted-foreground" role="status">
+                <p>You are on the beta waitlist. You can start the trial preview now while your seat is reviewed.</p>
+                <Button asChild variant="outline" className="min-h-11">
+                  <a href={PRICING_TRIAL_HREF} onClick={() => handleTrialStart("waitlist_success")}>
+                    Start trial preview
+                    <ArrowRight className="h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
             ) : null}
           </form>
         </section>
