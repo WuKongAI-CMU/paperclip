@@ -6,6 +6,7 @@ import {
   Copy,
   Gift,
   Linkedin,
+  Mail,
   RefreshCw,
   Share2,
   ShieldCheck,
@@ -27,6 +28,19 @@ import { useCompany } from "../context/CompanyContext";
 import { queryKeys } from "../lib/queryKeys";
 
 const SHARE_TEXT = "I am using DearMe to keep my private brand work moving every week.";
+const REFERRAL_DISCOUNT = "30% off the first month";
+
+function referralEmailTemplate(referralUrl: string) {
+  return [
+    "Subject: A friend invited you to DearMe",
+    "",
+    "I thought DearMe might fit the private brand work you keep meaning to make consistent.",
+    "",
+    `This invite gives you ${REFERRAL_DISCOUNT}. DearMe turns your proof, voice, and relationship notes into a weekly private cycle: draft, opportunity, and next decision, with nothing sent or published without your approval.`,
+    "",
+    `Use this link: ${referralUrl}`,
+  ].join("\n");
+}
 
 function shareUrl(kind: "x" | "linkedin", referralUrl: string) {
   if (kind === "x") {
@@ -103,6 +117,7 @@ export function DearMeReferral() {
 
   const referral = referralQuery.data;
   const referralUrl = referral?.referralUrl ?? "";
+  const emailTemplate = useMemo(() => referralEmailTemplate(referralUrl || "your referral link"), [referralUrl]);
   const status = referralStatusText(referralQuery.error, referral);
   const canMint = Boolean(companyId) && referral?.status !== "ready" && !referralQuery.error;
   const canShare = referral?.status === "ready" && Boolean(referralUrl);
@@ -118,6 +133,13 @@ export function DearMeReferral() {
   async function handleCopy() {
     if (!referralUrl) return;
     await copyText(referralUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  }
+
+  async function handleCopyEmailTemplate() {
+    if (!canShare) return;
+    await copyText(emailTemplate);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
   }
@@ -146,7 +168,7 @@ export function DearMeReferral() {
         {[
           { label: "Code status", value: referral?.status === "ready" ? "Ready" : "Waiting" },
           { label: "Paid referrals", value: String(referral?.rewardCount ?? 0) },
-          { label: "Reward", value: "20%" },
+          { label: "Invite offer", value: "30% first month" },
         ].map((metric) => (
           <DearMeWorkbenchCard
             key={metric.label}
@@ -220,10 +242,26 @@ export function DearMeReferral() {
           </div>
           <DearMeWorkbenchCard
             title="What your referral sees"
-            description="The link opens the DearMe beta page with your code attached. The referral is applied when your invite becomes a paid account."
+            description={`The link opens the DearMe beta page with your code attached. Your invite gets ${REFERRAL_DISCOUNT} when they become a paid account.`}
           />
         </DearMePanel>
       </DearMeCockpitGrid>
+
+      <DearMePanel className="space-y-4">
+        <DearMeWorkbenchSectionHeader
+          icon={Mail}
+          eyebrow="Email invite"
+          title="Send a personal note with the first-month offer."
+          description="Use this copy as a starting point for a warm founder referral."
+        />
+        <div className="rounded-lg border border-border bg-background p-4">
+          <pre className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{emailTemplate}</pre>
+        </div>
+        <Button type="button" variant="outline" onClick={handleCopyEmailTemplate} disabled={!canShare} className="w-full sm:w-fit">
+          {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          Copy email template
+        </Button>
+      </DearMePanel>
     </DearMePageShell>
   );
 }

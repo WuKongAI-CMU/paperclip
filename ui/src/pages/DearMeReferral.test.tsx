@@ -104,6 +104,8 @@ describe("DearMeReferral", () => {
     expect(container.textContent).toContain("acme-beta");
     expect(container.textContent).toContain("Paid referrals");
     expect(container.textContent).toContain("2");
+    expect(container.textContent).toContain("Invite offer");
+    expect(container.textContent).toContain("30% first month");
     const anchors = [...container.querySelectorAll("a")].map((anchor) => anchor.href);
     expect(anchors).toContain(
       "https://twitter.com/intent/tweet?text=I+am+using+DearMe+to+keep+my+private+brand+work+moving+every+week.&url=https%3A%2F%2Fdearme.app%2Flanding%3Fref%3Dacme-beta",
@@ -134,6 +136,37 @@ describe("DearMeReferral", () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
       "https://dearme.app/landing?ref=acme-beta",
     );
+  });
+
+  it("renders and copies the 30% first-month email invite template", async () => {
+    root = createRoot(container);
+    await act(async () => {
+      root!.render(
+        <QueryClientProvider client={queryClient}>
+          <DearMeReferral />
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const renderedText = container.textContent ?? "";
+    expect(renderedText).toContain("Subject: A friend invited you to DearMe");
+    expect(renderedText).toContain("30% off the first month");
+    expect(renderedText).toContain("https://dearme.app/landing?ref=acme-beta");
+
+    const copyTemplateButton = [...container.querySelectorAll("button")]
+      .find((button) => button.textContent?.includes("Copy email template"));
+    expect(copyTemplateButton).toBeTruthy();
+    await act(async () => {
+      copyTemplateButton!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining(
+      "Subject: A friend invited you to DearMe",
+    ));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining(
+      "30% off the first month",
+    ));
   });
 
   it("mints a code when none exists yet", async () => {
