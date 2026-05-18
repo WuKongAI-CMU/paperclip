@@ -4,7 +4,7 @@
 
 > **P0 carve-out (adopted 2026-05-14).** OpenClaw runtime and `dearme-ai-proxy` runtime are **deferred to P1**. Architecture and code stay in tree as dormant artifacts. P0 paid beta ships **web-only**: web inbound, browser MediaRecorder for voice capture, Paperclip routines/heartbeats for cron, web-first outbound (LinkedIn copy-to-clipboard, X via OAuth, email via Resend/SMTP). The §3 diagram below describes the **P1+ target state**; in P0 the OpenClaw layer is dormant and the proxy routes are unmounted. Full rationale, per-role verdict, code touchpoints, and revival criteria in [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md).
 
-Last updated: 2026-05-18 (post DM-HUMAN-HELP-OPERATING-DATE)
+Last updated: 2026-05-18 (post DM-DEPENDENCY-REVIEW-HUMAN-HELP)
 
 ---
 
@@ -262,6 +262,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-DAILY-SUMMARY-LOOP-GATES** — `pnpm dearme:daily-plain-summary` now includes doc freshness plus autonomous and review-required dependency counts in the daily blocker summary, with review-required dependency names kept visible for Peter-owned review.
 - **DM-HUMAN-HELP-VERIFIED-TODAY-GUARD** — `pnpm dearme:standing-loop-audit -- --check` now fails code-owned standing-loop checks when owner-proof or hosted-checkout blocker sections in `docs/NEEDS_HUMAN_HELP.md` are not verified for the current DearMe operating day, keeping Peter's unblock queue current while live proof remains owner-blocked.
 - **DM-HUMAN-HELP-OPERATING-DATE** — Live-proof and checkout human-help handoff generators now use the DearMe America/New_York operating date shared with standing-loop freshness, preventing late-UTC blocker queue date drift.
+- **DM-DEPENDENCY-REVIEW-HUMAN-HELP** — `pnpm dearme:dependency-loop-audit -- --human-help-markdown` now prints the Peter-facing dependency review queue for review-required updates, and `docs/NEEDS_HUMAN_HELP.md` records the current esbuild, TypeScript, and Vitest review blockers without autonomous bumps.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-FOCUS-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now uses the same owner-facts-plus-no-send wording for live-focus commands and setup commands.
 - **DM-PROOF-LIVE-CONFIRMATION-CHECKLIST** — `pnpm dearme:proof` now labels owner-proof checklist live commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.
