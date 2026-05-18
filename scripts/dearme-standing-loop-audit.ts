@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -25,14 +26,28 @@ export type DearMeStandingLoopState =
   | "owner-blocked"
   | "backlog-ledger-needed"
   | "doc-freshness-needed"
+  | "human-help-queue-freshness-needed"
   | "dependency-bump-needed"
   | "autonomous-fix-needed";
+
+export interface DearMeHumanHelpQueueFreshness {
+  complete: boolean;
+  operatingDate: string;
+  staleSections: string[];
+  missingSections: string[];
+  nextAction: {
+    label: string;
+    reason: string;
+    command: string;
+  };
+}
 
 export interface DearMeStandingLoopAudit {
   state: DearMeStandingLoopState;
   checkClear: boolean;
   backlog: DearMeBacklogAudit;
   docFreshness: DearMeDocFreshnessAudit;
+  humanHelpQueueFreshness: DearMeHumanHelpQueueFreshness;
   dependency: DearMeDependencyLoopAudit;
   goal: DearMeGoalAudit;
   dailyPlainSummaryFacts: string[];
@@ -52,6 +67,7 @@ export interface DearMeStandingLoopAuditArgs {
   backlogHandoffPath: string;
   backlogLedgerPath: string;
   indexPath: string;
+  humanHelpQueuePath: string;
   dependencyOutdatedJsonPath?: string;
   envFiles: string[];
 }
@@ -98,12 +114,93 @@ function ownerFactsForStandingLoop(goal: DearMeGoalAudit): string[] | undefined 
   return goal.nextAction.ownerFacts;
 }
 
+export function dearMeOperatingDate(date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+export function inspectDearMeHumanHelpQueueFreshness(input: {
+  content: string;
+  operatingDate: string;
+  ownerProofFactsNeeded: string[];
+  hostedCheckoutFactsNeeded: string[];
+}): DearMeHumanHelpQueueFreshness {
+  const requiredSections = [
+    input.ownerProofFactsNeeded.length > 0 ? "External live-proof facts" : null,
+    input.hostedCheckoutFactsNeeded.length > 0 ? "Self-serve checkout configuration" : null,
+  ].filter((section): section is string => Boolean(section));
+  const staleSections: string[] = [];
+  const missingSections: string[] = [];
+
+  for (const section of requiredSections) {
+    const sectionPattern = new RegExp(
+      `### \\d{4}-\\d{2}-\\d{2} - ${section}[\\s\\S]*?(?=\\n### \\d{4}-\\d{2}-\\d{2} - |\\n## Request Template|$)`,
+    );
+    const sectionText = input.content.match(sectionPattern)?.[0];
+    if (!sectionText) {
+      missingSections.push(section);
+      continue;
+    }
+    const lastVerified = sectionText.match(/- Last verified: (\d{4}-\d{2}-\d{2}) with/)?.[1];
+    if (lastVerified !== input.operatingDate) {
+      staleSections.push(section);
+    }
+  }
+
+  const complete = staleSections.length === 0 && missingSections.length === 0;
+  const reasonParts = [
+    staleSections.length > 0 ? `stale sections: ${staleSections.join(", ")}` : null,
+    missingSections.length > 0 ? `missing sections: ${missingSections.join(", ")}` : null,
+  ].filter((part): part is string => Boolean(part));
+
+  return {
+    complete,
+    operatingDate: input.operatingDate,
+    staleSections,
+    missingSections,
+    nextAction: {
+      label: "Refresh docs/NEEDS_HUMAN_HELP.md",
+      reason: complete
+        ? "Human-help queue reflects today's owner-blocked proof and checkout facts."
+        : `Human-help queue is not verified for ${input.operatingDate}: ${reasonParts.join("; ")}.`,
+      command: "pnpm --silent dearme:standing-loop-audit -- --check",
+    },
+  };
+}
+
+function defaultHumanHelpQueueFreshness(): DearMeHumanHelpQueueFreshness {
+  return {
+    complete: true,
+    operatingDate: dearMeOperatingDate(),
+    staleSections: [],
+    missingSections: [],
+    nextAction: {
+      label: "Continue standing loop",
+      reason: "Human-help queue freshness was not evaluated.",
+      command: "pnpm --silent dearme:standing-loop-audit -- --check",
+    },
+  };
+}
+
+function standingLoopNeedsHumanHelpQueueFacts(goal: DearMeGoalAudit, dailyPlainSummaryFacts: string[]): boolean {
+  return goal.ownerProofFactsNeeded.length > 0
+    || goal.hostedCheckoutFactsNeeded.length > 0
+    || dailyPlainSummaryFacts.length > 0;
+}
+
 export function summarizeDearMeStandingLoopAudit(
   backlog: DearMeBacklogAudit,
   docFreshness: DearMeDocFreshnessAudit,
   dependency: DearMeDependencyLoopAudit,
   goal: DearMeGoalAudit,
   dailyPlainSummaryFacts: string[] = [],
+  humanHelpQueueFreshness: DearMeHumanHelpQueueFreshness = defaultHumanHelpQueueFreshness(),
 ): DearMeStandingLoopAudit {
   if (!backlog.complete) {
     return {
@@ -111,6 +208,7 @@ export function summarizeDearMeStandingLoopAudit(
       checkClear: false,
       backlog,
       docFreshness,
+      humanHelpQueueFreshness,
       dependency,
       goal,
       dailyPlainSummaryFacts,
@@ -128,6 +226,7 @@ export function summarizeDearMeStandingLoopAudit(
       checkClear: false,
       backlog,
       docFreshness,
+      humanHelpQueueFreshness,
       dependency,
       goal,
       dailyPlainSummaryFacts,
@@ -145,6 +244,7 @@ export function summarizeDearMeStandingLoopAudit(
       checkClear: false,
       backlog,
       docFreshness,
+      humanHelpQueueFreshness,
       dependency,
       goal,
       dailyPlainSummaryFacts,
@@ -162,6 +262,7 @@ export function summarizeDearMeStandingLoopAudit(
       checkClear: true,
       backlog,
       docFreshness,
+      humanHelpQueueFreshness,
       dependency,
       goal,
       dailyPlainSummaryFacts,
@@ -173,12 +274,31 @@ export function summarizeDearMeStandingLoopAudit(
     };
   }
 
+  if (standingLoopNeedsHumanHelpQueueFacts(goal, dailyPlainSummaryFacts) && !humanHelpQueueFreshness.complete) {
+    return {
+      state: "human-help-queue-freshness-needed",
+      checkClear: false,
+      backlog,
+      docFreshness,
+      humanHelpQueueFreshness,
+      dependency,
+      goal,
+      dailyPlainSummaryFacts,
+      nextAction: {
+        label: humanHelpQueueFreshness.nextAction.label,
+        reason: humanHelpQueueFreshness.nextAction.reason,
+        command: humanHelpQueueFreshness.nextAction.command,
+      },
+    };
+  }
+
   if (ownerBlocked(goal)) {
     return {
       state: "owner-blocked",
       checkClear: true,
       backlog,
       docFreshness,
+      humanHelpQueueFreshness,
       dependency,
       goal,
       dailyPlainSummaryFacts,
@@ -197,6 +317,7 @@ export function summarizeDearMeStandingLoopAudit(
     checkClear: false,
     backlog,
     docFreshness,
+    humanHelpQueueFreshness,
     dependency,
     goal,
     dailyPlainSummaryFacts,
@@ -214,6 +335,7 @@ export function formatDearMeStandingLoopAudit(audit: DearMeStandingLoopAudit): s
     `- Check clear: ${audit.checkClear ? "yes" : "no"}`,
     `- P0/P1/P2 ledger: ${audit.backlog.required.shipped}/${audit.backlog.required.total}`,
     `- Doc freshness: ${audit.docFreshness.complete ? "clear" : "stale"}`,
+    `- Human help queue freshness: ${audit.humanHelpQueueFreshness.complete ? "clear" : "stale"} (${audit.humanHelpQueueFreshness.operatingDate})`,
     `- Autonomous dependency updates: ${audit.dependency.autonomousUpdates.length}`,
     `- Review-required dependency updates: ${audit.dependency.reviewRequiredUpdates.length}`,
     `- Goal complete: ${audit.goal.complete ? "yes" : "no"}`,
@@ -243,6 +365,20 @@ export function formatDearMeStandingLoopAudit(audit: DearMeStandingLoopAudit): s
       `- Human help queue: ${HUMAN_HELP_QUEUE_PATH} has the reply templates and safe follow-up commands for these blockers.`,
     );
   }
+  if (!audit.humanHelpQueueFreshness.complete) {
+    if (audit.humanHelpQueueFreshness.staleSections.length) {
+      lines.push("- Stale human help queue sections:");
+      for (const section of audit.humanHelpQueueFreshness.staleSections) {
+        lines.push(`  - ${section}`);
+      }
+    }
+    if (audit.humanHelpQueueFreshness.missingSections.length) {
+      lines.push("- Missing human help queue sections:");
+      for (const section of audit.humanHelpQueueFreshness.missingSections) {
+        lines.push(`  - ${section}`);
+      }
+    }
+  }
   if (audit.nextAction.command) {
     lines.push(`- Run: ${audit.nextAction.command}`);
   }
@@ -263,6 +399,7 @@ export function parseDearMeStandingLoopAuditArgs(argv: string[]): DearMeStanding
     backlogHandoffPath: DEFAULT_HANDOFF_PATH,
     backlogLedgerPath: DEFAULT_LEDGER_PATH,
     indexPath: DEFAULT_INDEX_PATH,
+    humanHelpQueuePath: HUMAN_HELP_QUEUE_PATH,
     envFiles: [],
   };
 
@@ -285,6 +422,9 @@ export function parseDearMeStandingLoopAuditArgs(argv: string[]): DearMeStanding
     } else if (arg === "--index") {
       args.indexPath = argv[index + 1] ?? "";
       index += 1;
+    } else if (arg === "--human-help-queue") {
+      args.humanHelpQueuePath = argv[index + 1] ?? "";
+      index += 1;
     } else if (arg === "--dependency-outdated-json") {
       args.dependencyOutdatedJsonPath = argv[index + 1] ?? "";
       index += 1;
@@ -304,6 +444,9 @@ export function parseDearMeStandingLoopAuditArgs(argv: string[]): DearMeStanding
   }
   if (!args.indexPath) {
     throw new Error("--index requires a path.");
+  }
+  if (!args.humanHelpQueuePath) {
+    throw new Error("--human-help-queue requires a path.");
   }
   if (args.dependencyOutdatedJsonPath === "") {
     throw new Error("--dependency-outdated-json requires a path.");
@@ -339,18 +482,27 @@ export async function runDearMeStandingLoopAudit(
     indexPath: args.indexPath,
   };
 
-  const [backlog, docFreshness, dependency, goal] = await Promise.all([
+  const [backlog, docFreshness, dependency, goal, humanHelpQueueContent] = await Promise.all([
     runDearMeBacklogAudit(backlogArgs),
     runDearMeDocFreshnessAudit(docFreshnessArgs),
     runDearMeDependencyLoopAudit(dependencyArgs),
     buildDearMeGoalAudit(args.envFiles, process.env),
+    readFile(args.humanHelpQueuePath, "utf8"),
   ]);
+  const dailyPlainFacts = dailyPlainSummaryFactsNeeded(process.env);
+  const humanHelpQueueFreshness = inspectDearMeHumanHelpQueueFreshness({
+    content: humanHelpQueueContent,
+    operatingDate: dearMeOperatingDate(),
+    ownerProofFactsNeeded: goal.ownerProofFactsNeeded,
+    hostedCheckoutFactsNeeded: goal.hostedCheckoutFactsNeeded,
+  });
   return summarizeDearMeStandingLoopAudit(
     backlog,
     docFreshness,
     dependency,
     goal,
-    dailyPlainSummaryFactsNeeded(process.env),
+    dailyPlainFacts,
+    humanHelpQueueFreshness,
   );
 }
 
@@ -366,6 +518,7 @@ function usage(): string {
     "  --backlog-handoff <path>         Handoff token path.",
     "  --backlog-ledger <path>          Run ledger path.",
     "  --index <path>                   DearMe index path.",
+    "  --human-help-queue <path>        Human support queue path.",
     "  --dependency-outdated-json <path> Read saved pnpm outdated JSON.",
     "  --env-file <path>                Proof env file passed through to the goal audit.",
   ].join("\n");

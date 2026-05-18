@@ -89,7 +89,7 @@ iMessage/SMS smoke recipient:
 
 Current generated proof handoff status:
 
-- Last verified: 2026-05-17 with
+- Last verified: 2026-05-18 with
   `pnpm --silent dearme:standing-loop-audit -- --check`,
   `pnpm --silent dearme:status`, and `pnpm --silent dearme:goal-audit`.
 - Regenerate this request with
@@ -173,7 +173,7 @@ Provider label:
 
 Current generated payment readiness:
 
-- Last verified: 2026-05-17 with
+- Last verified: 2026-05-18 with
   `pnpm --silent dearme:payment-readiness`.
 - Regenerate this request with
   `pnpm --silent dearme:payment-readiness -- --human-help-markdown`.

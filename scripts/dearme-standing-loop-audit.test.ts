@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   dailyPlainSummaryFactsNeeded,
   formatDearMeStandingLoopAudit,
+  inspectDearMeHumanHelpQueueFreshness,
   parseDearMeStandingLoopAuditArgs,
   summarizeDearMeStandingLoopAudit,
 } from "./dearme-standing-loop-audit.ts";
@@ -189,6 +190,78 @@ test("keeps daily Plain summary facts visible in standing-loop output", () => {
   );
 });
 
+test("marks stale human help blocker queue as autonomous standing-loop work", () => {
+  const humanHelpQueueFreshness = inspectDearMeHumanHelpQueueFreshness({
+    content: [
+      "### 2026-05-17 - External live-proof facts",
+      "- Last verified: 2026-05-17 with",
+      "  `pnpm --silent dearme:standing-loop-audit -- --check`.",
+      "",
+      "### 2026-05-17 - Self-serve checkout configuration",
+      "- Last verified: 2026-05-17 with",
+      "  `pnpm --silent dearme:payment-readiness`.",
+    ].join("\n"),
+    operatingDate: "2026-05-18",
+    ownerProofFactsNeeded: ["iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT"],
+    hostedCheckoutFactsNeeded: ["DEARME_PAYMENT_LINK_URL is missing."],
+  });
+  const audit = summarizeDearMeStandingLoopAudit(
+    backlogAudit(),
+    docFreshnessAudit(),
+    dependencyAudit(),
+    goalAudit({
+      hostedCheckoutFactsNeeded: ["DEARME_PAYMENT_LINK_URL is missing."],
+    }),
+    ["DEARME_PLAIN_API_KEY is missing."],
+    humanHelpQueueFreshness,
+  );
+
+  assert.equal(humanHelpQueueFreshness.complete, false);
+  assert.deepEqual(humanHelpQueueFreshness.staleSections, [
+    "External live-proof facts",
+    "Self-serve checkout configuration",
+  ]);
+  assert.equal(audit.state, "human-help-queue-freshness-needed");
+  assert.equal(audit.checkClear, false);
+  const formatted = formatDearMeStandingLoopAudit(audit).join("\n");
+  assert.match(formatted, /Human help queue freshness: stale \(2026-05-18\)/);
+  assert.match(formatted, /Stale human help queue sections/);
+  assert.match(formatted, /External live-proof facts/);
+  assert.match(formatted, /Self-serve checkout configuration/);
+});
+
+test("allows owner-blocked standing loop when human help queue is verified today", () => {
+  const humanHelpQueueFreshness = inspectDearMeHumanHelpQueueFreshness({
+    content: [
+      "### 2026-05-17 - External live-proof facts",
+      "- Last verified: 2026-05-18 with",
+      "  `pnpm --silent dearme:standing-loop-audit -- --check`.",
+      "",
+      "### 2026-05-17 - Self-serve checkout configuration",
+      "- Last verified: 2026-05-18 with",
+      "  `pnpm --silent dearme:payment-readiness`.",
+    ].join("\n"),
+    operatingDate: "2026-05-18",
+    ownerProofFactsNeeded: ["iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT"],
+    hostedCheckoutFactsNeeded: ["DEARME_PAYMENT_LINK_URL is missing."],
+  });
+  const audit = summarizeDearMeStandingLoopAudit(
+    backlogAudit(),
+    docFreshnessAudit(),
+    dependencyAudit(),
+    goalAudit({
+      hostedCheckoutFactsNeeded: ["DEARME_PAYMENT_LINK_URL is missing."],
+    }),
+    [],
+    humanHelpQueueFreshness,
+  );
+
+  assert.equal(humanHelpQueueFreshness.complete, true);
+  assert.equal(audit.state, "owner-blocked");
+  assert.equal(audit.checkClear, true);
+  assert.match(formatDearMeStandingLoopAudit(audit).join("\n"), /Human help queue freshness: clear \(2026-05-18\)/);
+});
+
 test("prioritizes missing backlog ledger entries before dependency or goal work", () => {
   const audit = summarizeDearMeStandingLoopAudit(
     backlogAudit({
@@ -323,6 +396,8 @@ test("parses command arguments", () => {
       "ledger.md",
       "--index",
       "index.md",
+      "--human-help-queue",
+      "help.md",
       "--dependency-outdated-json",
       "outdated.json",
       "--env-file",
@@ -335,6 +410,7 @@ test("parses command arguments", () => {
       backlogHandoffPath: "handoff.md",
       backlogLedgerPath: "ledger.md",
       indexPath: "index.md",
+      humanHelpQueuePath: "help.md",
       dependencyOutdatedJsonPath: "outdated.json",
       envFiles: [".proof.env"],
     },
