@@ -163,3 +163,4 @@
 2026-05-17 23:32  DM-STATIC-PROOF-CLICK-ANALYTICS  36ae0751  PR #163  Wave C  Landing, about, and pricing proof links now record safe page/source/plan events, making trust-check handoffs measurable without URLs, positioning text, or customer identifiers; CI green.
 2026-05-18 14:12  DM-TSX-PATCH-BUMP-2  6ddf6b62  PR #164  Standing  Root tsx dev dependency bumped from ^4.22.1 to ^4.22.2 and the dependency loop audit is clear for autonomous updates; CI green.
 2026-05-18 14:32  DM-DOC-FRESHNESS-TSX-PATCH-2  b6b3a9bc  PR #165  Standing  INDEX shipped list now records the tsx 4.22.2 patch bump and updates the DearMe shipped state to 2026-05-18; CI green.
+2026-05-18 14:53  DM-INDEX-FRESHNESS-AUDIT  440e72e5  PR #166  Standing  dearme:doc-freshness-audit now verifies INDEX shipped-date and latest run-ledger slice coverage, and standing-loop audit surfaces stale docs before owner-blocked state; CI green.
