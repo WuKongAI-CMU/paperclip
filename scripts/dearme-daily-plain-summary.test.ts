@@ -30,13 +30,37 @@ function standingLoopAudit(): DearMeStandingLoopAudit {
         reason: "Every P0/P1/P2 handoff backlog item has a run-ledger entry.",
       },
     },
+    docFreshness: {
+      complete: true,
+      latestLedgerEntry: {
+        date: "2026-05-16",
+        time: "15:16",
+        id: "DM-OWNER-PROOF-FACT-LABELS",
+        sha: "335f0bad",
+        pr: "PR #70",
+        summary: "Status and shared checklist text now use exact owner-proof labels; CI green.",
+      },
+      indexShippedDate: "2026-05-16",
+      indexEntryPresent: true,
+      nextAction: {
+        label: "Continue standing loop",
+        reason: "INDEX.md records the latest non-doc-freshness run-ledger slice.",
+      },
+    },
     dependency: {
       complete: true,
       autonomousUpdates: [],
-      reviewRequiredUpdates: [],
+      reviewRequiredUpdates: [{
+        name: "typescript",
+        current: "5.9.3",
+        latest: "6.0.3",
+        kind: "major",
+        decision: "review-required",
+        reason: "Major dependency updates wait for human review.",
+      }],
       nextAction: {
         label: "Continue standing loop",
-        reason: "No dependency updates are currently available.",
+        reason: "Only review-required dependency updates are available.",
       },
     },
     goal: {
@@ -96,6 +120,10 @@ test("builds the required daily Plain summary from ledger and standing-loop evid
   assert.match(summary.body, /DM-NEXT-PROOF-HUMAN-HELP-LIVE-LANES \(PR #69, https:\/\/github\.com\/WuKongAI-CMU\/paperclip\/pull\/69, 1e23f6d1\)/);
   assert.match(summary.body, /DM-OWNER-PROOF-FACT-LABELS \(PR #70, https:\/\/github\.com\/WuKongAI-CMU\/paperclip\/pull\/70, 335f0bad\)/);
   assert.match(summary.body, /Standing loop: owner-blocked/);
+  assert.match(summary.body, /Doc freshness: clear/);
+  assert.match(summary.body, /Autonomous dependency updates: 0/);
+  assert.match(summary.body, /Review-required dependency updates: 1/);
+  assert.match(summary.body, /typescript: 5\.9\.3 -> 6\.0\.3 \(major\) - Major dependency updates wait for human review\./);
   assert.match(summary.body, /DEARME_LINKEDIN_DM_MESSAGES_URL/);
   assert.match(summary.body, /DEARME_PAYMENT_LINK_URL is missing/);
   assert.match(summary.body, /Daily Plain summary facts needed:/);

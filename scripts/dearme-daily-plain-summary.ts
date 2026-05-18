@@ -140,6 +140,12 @@ function dailyPlainSummaryFacts(audit: DearMeStandingLoopAudit) {
   return audit.dailyPlainSummaryFacts;
 }
 
+function reviewRequiredDependencyLines(audit: DearMeStandingLoopAudit) {
+  return audit.dependency.reviewRequiredUpdates.map((update) => {
+    return `- ${update.name}: ${update.current} -> ${update.latest} (${update.kind}) - ${update.reason}`;
+  });
+}
+
 function hasHumanHelpFacts(audit: DearMeStandingLoopAudit) {
   return ownerFacts(audit).length > 0
     || firstPaymentFacts(audit).length > 0
@@ -158,6 +164,7 @@ export function buildDearMeDailyPlainSummary(input: {
   const ownerFactLines = ownerFacts(audit).map((fact) => `- ${fact}`);
   const paymentFactLines = firstPaymentFacts(audit).map((fact) => `- ${fact}`);
   const dailyPlainSummaryFactLines = dailyPlainSummaryFacts(audit).map((fact) => `- ${fact}`);
+  const reviewRequiredLines = reviewRequiredDependencyLines(audit);
   const bodyLines = [
     subject,
     "",
@@ -167,6 +174,9 @@ export function buildDearMeDailyPlainSummary(input: {
     "Current state:",
     `- Standing loop: ${audit.state}`,
     `- P0/P1/P2 ledger: ${audit.backlog.required.shipped}/${audit.backlog.required.total}`,
+    `- Doc freshness: ${audit.docFreshness.complete ? "clear" : "stale"}`,
+    `- Autonomous dependency updates: ${audit.dependency.autonomousUpdates.length}`,
+    `- Review-required dependency updates: ${audit.dependency.reviewRequiredUpdates.length}`,
     `- Goal complete: ${audit.goal.complete ? "yes" : "no"}`,
     `- Next action: ${audit.nextAction.label} - ${audit.nextAction.reason}`,
   ];
@@ -179,6 +189,9 @@ export function buildDearMeDailyPlainSummary(input: {
   }
   if (dailyPlainSummaryFactLines.length > 0) {
     bodyLines.push("", "Daily Plain summary facts needed:", ...dailyPlainSummaryFactLines);
+  }
+  if (reviewRequiredLines.length > 0) {
+    bodyLines.push("", "Review-required dependency updates:", ...reviewRequiredLines);
   }
   if (hasHumanHelpFacts(audit)) {
     bodyLines.push(

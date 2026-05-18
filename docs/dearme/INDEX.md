@@ -259,6 +259,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-STATIC-PROOF-CLICK-ANALYTICS** — landing, about, and pricing proof links now record safe page/source/plan events, making trust-check handoffs measurable without URLs, positioning text, or customer identifiers.
 - **DM-TSX-PATCH-BUMP-2** — root `tsx` now resolves to 4.22.2, keeping the autonomous dependency loop clear while leaving review-required major and 0.x-minor updates for human review.
 - **DM-INDEX-FRESHNESS-AUDIT** — `pnpm dearme:doc-freshness-audit -- --check` now verifies this shipped index records the latest non-doc-freshness run-ledger slice, and the standing-loop audit surfaces stale docs before owner-blocked state.
+- **DM-DAILY-SUMMARY-LOOP-GATES** — `pnpm dearme:daily-plain-summary` now includes doc freshness plus autonomous and review-required dependency counts in the daily blocker summary, with review-required dependency names kept visible for Peter-owned review.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-FOCUS-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now uses the same owner-facts-plus-no-send wording for live-focus commands and setup commands.
 - **DM-PROOF-LIVE-CONFIRMATION-CHECKLIST** — `pnpm dearme:proof` now labels owner-proof checklist live commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.
