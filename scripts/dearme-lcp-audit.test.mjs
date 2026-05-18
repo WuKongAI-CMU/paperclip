@@ -6,6 +6,7 @@ import {
   formatDearMeLcpAuditSummary,
   isRetriableLighthouseError,
   parseDearMeLcpAuditArgs,
+  selectRepresentativeInteractionToNextPaintMs,
 } from "./dearme-lcp-audit.mjs";
 
 function lighthouseResult(overrides = {}) {
@@ -72,6 +73,16 @@ test("accepts a scripted interaction metric when Lighthouse omits INP", () => {
 
   assert.equal(report.passed, true);
   assert.equal(report.metrics.interactionToNextPaintMs, 72);
+});
+
+test("selects the median scripted interaction measurement", () => {
+  assert.equal(selectRepresentativeInteractionToNextPaintMs([232, 48, 52]), 52);
+  assert.equal(selectRepresentativeInteractionToNextPaintMs([260, 310, 241]), 260);
+});
+
+test("ignores invalid scripted interaction measurements", () => {
+  assert.equal(selectRepresentativeInteractionToNextPaintMs([Number.NaN, -1, 64, Infinity]), 64);
+  assert.equal(selectRepresentativeInteractionToNextPaintMs([Number.NaN, -1, Infinity]), null);
 });
 
 test("parses CLI flags and environment overrides", () => {

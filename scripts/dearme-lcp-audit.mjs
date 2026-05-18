@@ -24,6 +24,7 @@ const METRIC_AUDITS = {
 
 const LIGHTHOUSE_ATTEMPTS = 2;
 const LIGHTHOUSE_TIMEOUT_MS = 60000;
+const INTERACTION_ATTEMPTS = 3;
 
 function delay(ms) {
   return new Promise((resolveTimeout) => setTimeout(resolveTimeout, ms));
@@ -41,6 +42,15 @@ function withTimeout(promise, timeoutMs, label) {
 export function isRetriableLighthouseError(error) {
   const message = error instanceof Error ? error.message : String(error);
   return /ECONNREFUSED|ECONNRESET|ECONNABORTED|timed out/i.test(message);
+}
+
+export function selectRepresentativeInteractionToNextPaintMs(measurements) {
+  const values = measurements
+    .filter((value) => typeof value === "number" && Number.isFinite(value) && value >= 0)
+    .toSorted((left, right) => left - right);
+
+  if (values.length === 0) return null;
+  return values[Math.floor(values.length / 2)];
 }
 
 function parsePositiveNumber(value, fallback, label) {
@@ -274,10 +284,9 @@ async function launchPlaywrightChromium() {
   }
 }
 
-async function measureInteractionToNextPaint(url) {
-  const browser = await launchPlaywrightChromium();
+async function measureSingleInteractionToNextPaint(browser, url) {
+  const page = await browser.newPage();
   try {
-    const page = await browser.newPage();
     await page.addInitScript(() => {
       window.__dearmeEventDurations = [];
       try {
@@ -305,6 +314,31 @@ async function measureInteractionToNextPaint(url) {
       ? eventDurations.filter((value) => typeof value === "number" && Number.isFinite(value))
       : [];
     return measuredDurations.length > 0 ? Math.max(...measuredDurations) : elapsedMs;
+  } finally {
+    await page.close();
+  }
+}
+
+async function measureInteractionToNextPaint(url) {
+  const browser = await launchPlaywrightChromium();
+  try {
+    const measurements = [];
+    let lastError;
+
+    for (let attempt = 1; attempt <= INTERACTION_ATTEMPTS; attempt += 1) {
+      try {
+        measurements.push(await measureSingleInteractionToNextPaint(browser, url));
+      } catch (error) {
+        lastError = error;
+        console.warn(
+          `DearMe scripted interaction attempt ${attempt} failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
+    const selected = selectRepresentativeInteractionToNextPaintMs(measurements);
+    if (selected !== null) return selected;
+    throw lastError ?? new Error("DearMe scripted interaction did not produce an INP measurement.");
   } finally {
     await browser.close();
   }
