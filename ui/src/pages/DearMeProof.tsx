@@ -60,6 +60,13 @@ function FeedSkeleton() {
 }
 
 function FeedItemCard({ item }: { item: DearMePublicFeedItem }) {
+  function handleProofClick() {
+    capture("proof_artifact_clicked", {
+      kind: item.kind,
+      source: "proof_feed",
+    });
+  }
+
   return (
     <article className="flex min-h-44 flex-col justify-between rounded-md border border-border p-4">
       <div>
@@ -78,6 +85,7 @@ function FeedItemCard({ item }: { item: DearMePublicFeedItem }) {
         target="_blank"
         rel="noreferrer"
         className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:text-primary/80"
+        onClick={handleProofClick}
       >
         View proof
         <ArrowUpRight className="h-4 w-4" />

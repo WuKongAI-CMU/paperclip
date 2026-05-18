@@ -197,6 +197,32 @@ describe("DearMeProof", () => {
     );
   });
 
+  it("tracks proof artifact clicks without proof contents or URLs", async () => {
+    await renderPage();
+    const proofLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.includes("View proof"));
+    expect(proofLink).toBeDefined();
+    proofLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+
+    await act(async () => {
+      proofLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("proof_artifact_clicked", {
+      kind: "published_post",
+      source: "proof_feed",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "proof_artifact_clicked",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+        summary: expect.any(String),
+        linkUrl: expect.any(String),
+      }),
+    );
+  });
+
   it("does not expose hidden substrate or provider strings", async () => {
     await renderPage();
     const renderedText = container.textContent ?? "";
