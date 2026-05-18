@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   classifyDearMeDependencyUpdate,
   formatDearMeDependencyLoopAudit,
+  formatDearMeDependencyReviewHumanHelp,
   parseDearMeDependencyLoopAuditArgs,
   parseOutdatedJson,
   summarizeDearMeDependencyLoopAudit,
@@ -103,11 +105,18 @@ test("reports actionable autonomous updates first", () => {
 
 test("parses command arguments and outdated JSON", () => {
   assert.deepEqual(
-    parseDearMeDependencyLoopAuditArgs(["--check", "--json", "--outdated-json", "outdated.json"]),
+    parseDearMeDependencyLoopAuditArgs([
+      "--check",
+      "--json",
+      "--human-help-markdown",
+      "--outdated-json",
+      "outdated.json",
+    ]),
     {
       help: false,
       json: true,
       check: true,
+      humanHelpMarkdown: true,
       outdatedJsonPath: "outdated.json",
     },
   );
@@ -117,4 +126,54 @@ test("parses command arguments and outdated JSON", () => {
       latest: "4.22.1",
     },
   });
+});
+
+test("generates a Peter-facing dependency review support request", () => {
+  const audit = summarizeDearMeDependencyLoopAudit({
+    typescript: {
+      current: "5.9.3",
+      latest: "6.0.3",
+      dependencyType: "devDependencies",
+    },
+    esbuild: {
+      current: "0.27.3",
+      latest: "0.28.0",
+      dependencyType: "devDependencies",
+    },
+  });
+  const markdown = formatDearMeDependencyReviewHumanHelp(audit, { date: "2026-05-18" }).join("\n");
+
+  assert.match(markdown, /^### 2026-05-18 - Dependency review queue/);
+  assert.match(markdown, /Dependency upgrades approved:/);
+  assert.match(markdown, /Dependency upgrades defer:/);
+  assert.match(markdown, /esbuild: 0\.27\.3 -> 0\.28\.0 \(minor\)/);
+  assert.match(markdown, /typescript: 5\.9\.3 -> 6\.0\.3 \(major\)/);
+  assert.match(markdown, /Review-required updates: 2/);
+  assert.match(markdown, /pnpm --silent dearme:dependency-loop-audit -- --human-help-markdown/);
+  assert.match(markdown, /pnpm --silent typecheck/);
+  assert.match(markdown, /No credentials, live network calls, sends, deploys, or spending/);
+});
+
+test("dependency review support markdown uses the DearMe operating day", () => {
+  const audit = summarizeDearMeDependencyLoopAudit({});
+  const markdown = formatDearMeDependencyReviewHumanHelp(audit, {
+    now: new Date("2026-05-19T03:30:00.000Z"),
+  }).join("\n");
+
+  assert.match(markdown, /^### 2026-05-18 - Dependency review queue/);
+});
+
+test("DearMe human support queue includes the dependency review request", async () => {
+  const help = await readFile(
+    new URL("../docs/NEEDS_HUMAN_HELP.md", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(help, /Dependency review queue/);
+  assert.match(help, /Dependency upgrades approved:/);
+  assert.match(help, /Dependency upgrades defer:/);
+  assert.match(help, /pnpm --silent dearme:dependency-loop-audit -- --human-help-markdown/);
+  assert.match(help, /pnpm --silent dearme:dependency-loop-audit -- --check/);
+  assert.match(help, /pnpm --silent typecheck/);
+  assert.match(help, /No credentials, live network calls, sends, deploys, or spending/);
 });

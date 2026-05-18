@@ -212,6 +212,68 @@ Safety notes:
 - Checkout only appears in product surfaces when the payment link is HTTPS and
   signed receipt sync is configured.
 
+### 2026-05-18 - Dependency review queue
+
+- Needs help from: Peter
+- What they need to do: review dependency updates that the autonomous
+  dependency loop intentionally will not bump without human review.
+- Why agents cannot do it: these updates can change compiler, test runner,
+  bundler, or pre-1.0 behavior in ways that require product and engineering
+  judgment before code changes.
+- Blocking: no for private-beta sales or paid-user operations; yes before
+  these dependency updates can be merged.
+- Estimated human time: 10-20 minutes to decide whether to approve a
+  dedicated upgrade PR for each package.
+- Agents continue after result by: opening one dependency-upgrade PR per
+  approved package, running the focused tests plus typecheck, and leaving
+  unapproved packages untouched.
+
+Review-required updates:
+
+- esbuild: 0.27.3 -> 0.28.0 (minor) - 0.x minor dependency updates can be
+  breaking and wait for human review.
+- typescript: 5.9.3 -> 6.0.3 (major) - Major dependency updates wait for human
+  review.
+- vitest: 3.2.4 -> 4.1.6 (major) - Major dependency updates wait for human
+  review.
+
+Reply template for Peter:
+
+```text
+Dependency upgrades approved:
+Dependency upgrades defer:
+Notes:
+```
+
+Current generated dependency audit:
+
+- Last verified: 2026-05-18 with
+  `pnpm --silent dearme:dependency-loop-audit -- --check`.
+- Autonomous updates: 0.
+- Review-required updates: 3.
+- Next action: Continue standing loop - Only review-required dependency updates
+  are available; do not bump them autonomously.
+
+Regenerate this request with:
+
+```bash
+pnpm --silent dearme:dependency-loop-audit -- --human-help-markdown
+```
+
+Required local checks before any approved dependency PR is merged:
+
+```bash
+pnpm --silent dearme:dependency-loop-audit -- --check
+pnpm --silent typecheck
+```
+
+Safety notes:
+
+- Review-required dependencies are not bumped automatically.
+- One approved dependency slice should be shipped per PR.
+- No credentials, live network calls, sends, deploys, or spending are part of
+  this request.
+
 ## Request Template
 
 ```md
