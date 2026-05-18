@@ -56,6 +56,7 @@ export function App() {
           <Route path="about" element={<DearMeAbout />} />
           <Route path="faq" element={<DearMeFaq />} />
           <Route path="pricing" element={<DearMePricing />} />
+          <Route path="feed" element={<DearMeProof surface="feed" />} />
           <Route path="proof" element={<DearMeProof />} />
           <Route path="dearme/checkout/success" element={<DearMeCheckoutReturn kind="success" />} />
           <Route path="dearme/checkout/cancel" element={<DearMeCheckoutReturn kind="cancel" />} />

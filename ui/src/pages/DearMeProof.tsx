@@ -14,10 +14,50 @@ import {
 
 const PUBLIC_FEED_LIMIT = 12;
 
+type DearMeProofSurface = "proof" | "feed";
+
+type DearMeProofProps = {
+  surface?: DearMeProofSurface;
+};
+
 const KIND_LABELS: Record<DearMePublicFeedItem["kind"], string> = {
   published_post: "Published post",
   deployed_site: "Proof page",
   proof_card: "Proof card",
+};
+
+const SURFACE_COPY: Record<
+  DearMeProofSurface,
+  {
+    analyticsSource: string;
+    navLabel: string;
+    eyebrow: string;
+    headline: string;
+    description: string;
+    feedHeading: string;
+    feedDescription: string;
+  }
+> = {
+  proof: {
+    analyticsSource: "proof_feed",
+    navLabel: "DearMe proof",
+    eyebrow: "Public proof feed",
+    headline: "DearMe is using DearMe in public.",
+    description:
+      "This feed shows approved public outcomes from the founder's own private brand cycle. The private work stays private; only opted-in receipts appear here.",
+    feedHeading: "Recent proof",
+    feedDescription: "Approved public receipts from the live dogfood loop.",
+  },
+  feed: {
+    analyticsSource: "public_feed",
+    navLabel: "DearMe public feed",
+    eyebrow: "Public dogfood feed",
+    headline: "See DearMe in action.",
+    description:
+      "This public feed shows opted-in outcomes from Peter's own DearMe loop. Private work stays private; only approved receipts appear here.",
+    feedHeading: "Recent public outcomes",
+    feedDescription: "Approved public receipts from the founder dogfood loop.",
+  },
 };
 
 const PROOF_POINTS = [
@@ -59,11 +99,11 @@ function FeedSkeleton() {
   );
 }
 
-function FeedItemCard({ item }: { item: DearMePublicFeedItem }) {
+function FeedItemCard({ item, source }: { item: DearMePublicFeedItem; source: string }) {
   function handleProofClick() {
     capture("proof_artifact_clicked", {
       kind: item.kind,
-      source: "proof_feed",
+      source,
     });
   }
 
@@ -94,7 +134,8 @@ function FeedItemCard({ item }: { item: DearMePublicFeedItem }) {
   );
 }
 
-export function DearMeProof() {
+export function DearMeProof({ surface = "proof" }: DearMeProofProps) {
+  const copy = SURFACE_COPY[surface];
   const feedQuery = useQuery({
     queryKey: queryKeys.dearme.publicFeed(PUBLIC_FEED_LIMIT),
     queryFn: () => dearmeApi.getPublicFeed(PUBLIC_FEED_LIMIT),
@@ -104,7 +145,7 @@ export function DearMeProof() {
 
   function handleInviteRequest() {
     capture("static_invite_requested", {
-      page: "proof",
+      page: surface,
       source: "nav",
       plan: "beta_29",
     });
@@ -112,7 +153,7 @@ export function DearMeProof() {
 
   function handlePricingClick() {
     capture("static_pricing_clicked", {
-      page: "proof",
+      page: surface,
       source: "nav",
       plan: "beta_29",
     });
@@ -121,7 +162,7 @@ export function DearMeProof() {
   function handleFallbackPricingClick(state: "empty" | "error") {
     capture("proof_fallback_pricing_clicked", {
       state,
-      source: "proof_feed",
+      source: copy.analyticsSource,
       plan: "beta_29",
     });
   }
@@ -129,7 +170,7 @@ export function DearMeProof() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-5 sm:px-6 lg:px-8">
-        <nav className="flex items-center justify-between gap-3 border-b border-border pb-4" aria-label="DearMe proof">
+        <nav className="flex items-center justify-between gap-3 border-b border-border pb-4" aria-label={copy.navLabel}>
           <a href="/landing" className="inline-flex items-center gap-2 text-sm font-semibold hover:text-foreground/80">
             <ArrowLeft className="h-4 w-4" />
             DearMe
@@ -158,14 +199,13 @@ export function DearMeProof() {
             <header className="max-w-3xl">
               <p className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <Sparkles className="h-4 w-4" />
-                Public proof feed
+                {copy.eyebrow}
               </p>
               <h1 className="mt-3 text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
-                DearMe is using DearMe in public.
+                {copy.headline}
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-                This feed shows approved public outcomes from the founder's own private brand cycle.
-                The private work stays private; only opted-in receipts appear here.
+                {copy.description}
               </p>
             </header>
 
@@ -193,8 +233,8 @@ export function DearMeProof() {
           <section aria-label="Recent DearMe proof" className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-xl font-semibold">Recent proof</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Approved public receipts from the live dogfood loop.</p>
+                <h2 className="text-xl font-semibold">{copy.feedHeading}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{copy.feedDescription}</p>
               </div>
               <Button
                 type="button"
@@ -241,7 +281,7 @@ export function DearMeProof() {
             {items.length > 0 ? (
               <div className="grid gap-3 md:grid-cols-2" aria-live="polite">
                 {items.map((item) => (
-                  <FeedItemCard key={item.id} item={item} />
+                  <FeedItemCard key={item.id} item={item} source={copy.analyticsSource} />
                 ))}
               </div>
             ) : null}
