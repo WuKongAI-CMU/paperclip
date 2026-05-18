@@ -129,6 +129,30 @@ describe("DearMeAbout", () => {
     );
   });
 
+  it("tracks proof clicks without customer identifiers", async () => {
+    const proofLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.trim() === "Proof");
+    expect(proofLink).toBeDefined();
+    proofLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+
+    await act(async () => {
+      proofLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_proof_clicked", {
+      page: "about",
+      source: "nav",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "static_proof_clicked",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+      }),
+    );
+  });
+
   it("does not leak internal or vendor wording", () => {
     const text = container.textContent ?? "";
 
