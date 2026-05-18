@@ -8,6 +8,7 @@ export interface DearMeBacklogItem {
   id: string;
   title: string;
   priority: DearMeBacklogPriority;
+  checked: boolean;
   requiredForNamedBacklog: boolean;
 }
 
@@ -17,6 +18,7 @@ export interface DearMeBacklogAudit {
     total: number;
     shipped: number;
     missing: DearMeBacklogItem[];
+    shippedUnchecked: DearMeBacklogItem[];
   };
   standingOpen: DearMeBacklogItem[];
   ledgerIds: string[];
@@ -44,7 +46,7 @@ const HEADING_TO_PRIORITY: readonly [RegExp, DearMeBacklogPriority][] = [
   [/^### P2\b/, "P2"],
   [/^### Standing infinite work\b/, "Standing"],
 ];
-const ITEM_PATTERN = /^- \[[ xX]\] \*\*([^*]+)\*\*\s*(?:[-:\u2014]\s*)?(.*)$/;
+const ITEM_PATTERN = /^- \[([ xX])\] \*\*([^*]+)\*\*\s*(?:[-:\u2014]\s*)?(.*)$/;
 const LEDGER_ID_PATTERN = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\s+([A-Z0-9-]+)\b/gm;
 
 export function parseDearMeBacklogItems(handoffMarkdown: string): DearMeBacklogItem[] {
@@ -74,12 +76,13 @@ export function parseDearMeBacklogItems(handoffMarkdown: string): DearMeBacklogI
       continue;
     }
 
-    const [, rawId, title] = itemMatch;
+    const [, checkbox, rawId, title] = itemMatch;
     const id = rawId.replace(/:$/, "");
     items.push({
       id,
       title: title.trim(),
       priority,
+      checked: checkbox.toLowerCase() === "x",
       requiredForNamedBacklog: priority !== "Standing",
     });
   }
@@ -98,6 +101,7 @@ export function summarizeDearMeBacklogAudit(
   const ledgerIdSet = new Set(ledgerIds);
   const requiredItems = items.filter((item) => item.requiredForNamedBacklog);
   const missingRequired = requiredItems.filter((item) => !ledgerIdSet.has(item.id));
+  const shippedUnchecked = requiredItems.filter((item) => ledgerIdSet.has(item.id) && !item.checked);
   const standingOpen = items.filter((item) => !item.requiredForNamedBacklog && !ledgerIdSet.has(item.id));
   const complete = missingRequired.length === 0;
 
@@ -107,6 +111,7 @@ export function summarizeDearMeBacklogAudit(
       total: requiredItems.length,
       shipped: requiredItems.length - missingRequired.length,
       missing: missingRequired,
+      shippedUnchecked,
     },
     standingOpen,
     ledgerIds,
@@ -132,6 +137,17 @@ export function formatDearMeBacklogAudit(audit: DearMeBacklogAudit): string[] {
     lines.push("- Missing required ledger entries:");
     for (const item of audit.required.missing) {
       lines.push(`  - ${item.priority} ${item.id}: ${item.title}`);
+    }
+  }
+
+  if (audit.required.shippedUnchecked.length > 0) {
+    lines.push(`- Shipped items still unchecked in handoff: ${audit.required.shippedUnchecked.length}`);
+    for (const item of audit.required.shippedUnchecked.slice(0, 5)) {
+      lines.push(`  - ${item.priority} ${item.id}`);
+    }
+    const remaining = audit.required.shippedUnchecked.length - 5;
+    if (remaining > 0) {
+      lines.push(`  - ... ${remaining} more`);
     }
   }
 

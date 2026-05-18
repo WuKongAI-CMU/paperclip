@@ -324,6 +324,7 @@ export function formatDearMeStandingLoopAudit(audit: DearMeStandingLoopAudit): s
     `DearMe standing loop audit: ${audit.state}`,
     `- Check clear: ${audit.checkClear ? "yes" : "no"}`,
     `- P0/P1/P2 ledger: ${audit.backlog.required.shipped}/${audit.backlog.required.total}`,
+    `- Handoff checklist drift: ${audit.backlog.required.shippedUnchecked.length} shipped P0/P1/P2 items still unchecked`,
     `- Doc freshness: ${audit.docFreshness.complete ? "clear" : "stale"}`,
     `- Human help queue freshness: ${audit.humanHelpQueueFreshness.complete ? "clear" : "stale"} (${audit.humanHelpQueueFreshness.operatingDate})`,
     `- Autonomous dependency updates: ${audit.dependency.autonomousUpdates.length}`,
