@@ -73,12 +73,12 @@ describe("DearMeProof", () => {
     vi.clearAllMocks();
   });
 
-  async function renderPage() {
+  async function renderPage(surface?: "proof" | "feed") {
     root = createRoot(container);
     await act(async () => {
       root!.render(
         <QueryClientProvider client={queryClient}>
-          <DearMeProof />
+          <DearMeProof surface={surface} />
         </QueryClientProvider>,
       );
     });
@@ -214,6 +214,55 @@ describe("DearMeProof", () => {
     });
     expect(analyticsMock.capture).not.toHaveBeenCalledWith(
       "proof_artifact_clicked",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+        summary: expect.any(String),
+        linkUrl: expect.any(String),
+      }),
+    );
+  });
+
+  it("renders the public dogfood feed surface with feed-safe analytics", async () => {
+    await renderPage("feed");
+
+    expect(getPublicFeedMock).toHaveBeenCalledWith(12);
+    expect(container.textContent).toContain("Public dogfood feed");
+    expect(container.textContent).toContain("See DearMe in action.");
+    expect(container.textContent).toContain("Recent public outcomes");
+
+    const inviteLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.includes("Request invite"));
+    const pricingLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.trim() === "Pricing");
+    const proofLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.includes("View proof"));
+    inviteLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+    pricingLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+    proofLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+
+    await act(async () => {
+      inviteLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      pricingLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      proofLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_invite_requested", {
+      page: "feed",
+      source: "nav",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_pricing_clicked", {
+      page: "feed",
+      source: "nav",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("proof_artifact_clicked", {
+      kind: "published_post",
+      source: "public_feed",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      expect.any(String),
       expect.objectContaining({
         email: expect.any(String),
         href: expect.any(String),
