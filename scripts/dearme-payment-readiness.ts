@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { dearMeOperatingDate } from "./dearme-operating-date.ts";
 import { runDearMePaymentProviderContractProof } from "./dearme-payment-provider-contract-proof.ts";
 import { runDearMePaymentReceiptSyncProof } from "./dearme-payment-receipt-sync-proof.ts";
 
@@ -200,9 +201,9 @@ function markdownCodeBlock(language: string, value: string) {
 
 export function formatDearMePaymentReadinessHumanHelp(
   readiness: DearMePaymentReadiness,
-  options: { date?: string } = {},
+  options: { date?: string; now?: Date } = {},
 ): string[] {
-  const date = options.date ?? new Date().toISOString().slice(0, 10);
+  const date = options.date ?? dearMeOperatingDate(options.now);
   const hostedStatus = readiness.hostedCheckout.ready ? "ready" : "blocked";
   const hostedBlockers = readiness.hostedCheckout.blockers.length > 0
     ? readiness.hostedCheckout.blockers.map(formatHostedCheckoutBlocker).join(" ")

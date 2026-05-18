@@ -20,6 +20,7 @@ import {
   buildDearMeGoalAudit,
   type DearMeGoalAudit,
 } from "./dearme-goal-audit.ts";
+import { dearMeOperatingDate } from "./dearme-operating-date.ts";
 
 export type DearMeStandingLoopState =
   | "goal-complete"
@@ -112,17 +113,6 @@ function ownerFactsForStandingLoop(goal: DearMeGoalAudit): string[] | undefined 
     return goal.ownerProofFactsNeeded;
   }
   return goal.nextAction.ownerFacts;
-}
-
-export function dearMeOperatingDate(date = new Date()): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? "";
-  return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
 export function inspectDearMeHumanHelpQueueFreshness(input: {

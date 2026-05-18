@@ -551,6 +551,26 @@ test("DearMe next proof generates the Peter-facing human support queue entry", a
   }
 });
 
+test("DearMe next proof human-support markdown uses the DearMe operating day", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "dearme-next-proof-date-"));
+  try {
+    const setup = await prepareDearMeNextProofSetup({
+      cwd: dir,
+      target: "all",
+      envFile: ".dearme-proof.env",
+      noWrite: true,
+      baseEnv: { HOME: dir },
+    });
+    const markdown = formatDearMeNextProofHumanHelp(setup, {
+      now: new Date("2026-05-19T03:30:00.000Z"),
+    }).join("\n");
+
+    assert.match(markdown, /^### 2026-05-18 - External live-proof facts/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("DearMe next proof augments an existing env with missing target keys", async () => {
   const dir = await mkdtemp(join(tmpdir(), "dearme-next-proof-"));
   const envPath = join(dir, ".dearme-proof.env");

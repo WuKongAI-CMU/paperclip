@@ -22,6 +22,7 @@ import {
   DEARME_OWNER_PROOF_FACT_SPECS,
   dearMeOwnerProofFactSpec,
 } from "../packages/shared/src/dearme-customer-text.ts";
+import { dearMeOperatingDate } from "./dearme-operating-date.ts";
 
 type Env = Record<string, string | undefined>;
 export type DearMeNextProofTarget = NonNullable<
@@ -740,9 +741,9 @@ function markdownCodeBlock(language: string, value: string) {
 
 export function formatDearMeNextProofHumanHelp(
   setup: DearMeNextProofSetup,
-  options: { date?: string } = {},
+  options: { date?: string; now?: Date } = {},
 ): string[] {
-  const date = options.date ?? new Date().toISOString().slice(0, 10);
+  const date = options.date ?? dearMeOperatingDate(options.now);
   const facts = setup.ownerHandoff.factsToProvide;
   const factSupportLabel = (provideAs: string) => {
     if (provideAs === "DEARME_LINKEDIN_DM_MESSAGES_URL") {
