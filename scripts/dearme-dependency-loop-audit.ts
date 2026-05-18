@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { dearMeOperatingDate } from "./dearme-operating-date.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -44,6 +45,7 @@ export interface DearMeDependencyLoopAuditArgs {
   help: boolean;
   json: boolean;
   check: boolean;
+  humanHelpMarkdown: boolean;
   outdatedJsonPath?: string;
 }
 
@@ -148,11 +150,84 @@ export function formatDearMeDependencyLoopAudit(audit: DearMeDependencyLoopAudit
   return lines;
 }
 
+export function formatDearMeDependencyReviewHumanHelp(
+  audit: DearMeDependencyLoopAudit,
+  options: {
+    date?: string;
+    now?: Date;
+  } = {},
+): string[] {
+  const date = options.date ?? dearMeOperatingDate(options.now);
+  const reviewLines = audit.reviewRequiredUpdates.length > 0
+    ? audit.reviewRequiredUpdates.map((update) => (
+      `- ${update.name}: ${update.current} -> ${update.latest} (${update.kind}) - ${update.reason}`
+    ))
+    : ["- None right now."];
+
+  return [
+    `### ${date} - Dependency review queue`,
+    "",
+    "- Needs help from: Peter",
+    "- What they need to do: review dependency updates that the autonomous",
+    "  dependency loop intentionally will not bump without human review.",
+    "- Why agents cannot do it: these updates can change compiler, test runner,",
+    "  bundler, or pre-1.0 behavior in ways that require product and engineering",
+    "  judgment before code changes.",
+    "- Blocking: no for private-beta sales or paid-user operations; yes before",
+    "  these dependency updates can be merged.",
+    "- Estimated human time: 10-20 minutes to decide whether to approve a",
+    "  dedicated upgrade PR for each package.",
+    "- Agents continue after result by: opening one dependency-upgrade PR per",
+    "  approved package, running the focused tests plus typecheck, and leaving",
+    "  unapproved packages untouched.",
+    "",
+    "Review-required updates:",
+    "",
+    ...reviewLines,
+    "",
+    "Reply template for Peter:",
+    "",
+    "```text",
+    "Dependency upgrades approved:",
+    "Dependency upgrades defer:",
+    "Notes:",
+    "```",
+    "",
+    "Current generated dependency audit:",
+    "",
+    `- Last verified: ${date} with \`pnpm --silent dearme:dependency-loop-audit -- --check\`.`,
+    `- Autonomous updates: ${audit.autonomousUpdates.length}.`,
+    `- Review-required updates: ${audit.reviewRequiredUpdates.length}.`,
+    `- Next action: ${audit.nextAction.label} - ${audit.nextAction.reason}`,
+    "",
+    "Regenerate this request with:",
+    "",
+    "```bash",
+    "pnpm --silent dearme:dependency-loop-audit -- --human-help-markdown",
+    "```",
+    "",
+    "Required local checks before any approved dependency PR is merged:",
+    "",
+    "```bash",
+    "pnpm --silent dearme:dependency-loop-audit -- --check",
+    "pnpm --silent typecheck",
+    "```",
+    "",
+    "Safety notes:",
+    "",
+    "- Review-required dependencies are not bumped automatically.",
+    "- One approved dependency slice should be shipped per PR.",
+    "- No credentials, live network calls, sends, deploys, or spending are part",
+    "  of this request.",
+  ];
+}
+
 export function parseDearMeDependencyLoopAuditArgs(argv: string[]): DearMeDependencyLoopAuditArgs {
   const args: DearMeDependencyLoopAuditArgs = {
     help: false,
     json: false,
     check: false,
+    humanHelpMarkdown: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -165,6 +240,8 @@ export function parseDearMeDependencyLoopAuditArgs(argv: string[]): DearMeDepend
       args.json = true;
     } else if (arg === "--check") {
       args.check = true;
+    } else if (arg === "--human-help-markdown") {
+      args.humanHelpMarkdown = true;
     } else if (arg === "--outdated-json") {
       args.outdatedJsonPath = argv[index + 1] ?? "";
       index += 1;
@@ -223,6 +300,7 @@ function usage(): string {
     "Options:",
     "  --check                  Exit 1 when an autonomous patch/safe-minor update exists.",
     "  --json                   Print machine-readable JSON.",
+    "  --human-help-markdown    Print the Peter-facing dependency review queue entry.",
     "  --outdated-json <path>   Read a saved pnpm outdated JSON payload.",
   ].join("\n");
 }
@@ -235,7 +313,9 @@ async function main(): Promise<void> {
   }
 
   const audit = await runDearMeDependencyLoopAudit(args);
-  if (args.json) {
+  if (args.humanHelpMarkdown) {
+    console.log(formatDearMeDependencyReviewHumanHelp(audit).join("\n"));
+  } else if (args.json) {
     console.log(JSON.stringify(audit, null, 2));
   } else {
     console.log(formatDearMeDependencyLoopAudit(audit).join("\n"));
