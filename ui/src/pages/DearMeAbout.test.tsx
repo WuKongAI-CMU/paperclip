@@ -60,6 +60,8 @@ describe("DearMeAbout", () => {
     expect(text).toContain("Owner keeps the call");
     expect(text).toContain("$29/month");
     expect(text).toContain("three-day free trial");
+    expect(text).toContain("Customer zero proof");
+    expect(text).toContain("Before you trust it, inspect how Peter is using it.");
   });
 
   it("sets clear trust boundaries for the beta", () => {
@@ -78,6 +80,8 @@ describe("DearMeAbout", () => {
 
     expect(links.some((link) => link.href.endsWith("/pricing"))).toBe(true);
     expect(links.some((link) => link.href.endsWith("/faq"))).toBe(true);
+    expect(links.some((link) => link.textContent?.includes("See the dogfood feed") && link.href.endsWith("/feed"))).toBe(true);
+    expect(links.some((link) => link.textContent?.includes("Try the $29 beta") && link.href.endsWith("/pricing"))).toBe(true);
     expect(links.some((link) => link.href.startsWith("mailto:peter@dearme.app"))).toBe(true);
   });
 
@@ -106,18 +110,28 @@ describe("DearMeAbout", () => {
   });
 
   it("tracks pricing clicks without customer identifiers", async () => {
-    const pricingLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
-      .find((link) => link.textContent?.trim() === "Pricing");
-    expect(pricingLink).toBeDefined();
-    pricingLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+    const pricingLinks = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .filter((link) => link.textContent?.trim() === "Pricing" || link.textContent?.includes("Try the $29 beta"));
+    expect(pricingLinks).toHaveLength(2);
+    pricingLinks.forEach((link) => {
+      link.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+    });
 
     await act(async () => {
-      pricingLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      pricingLinks[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await act(async () => {
+      pricingLinks[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     });
 
     expect(analyticsMock.capture).toHaveBeenCalledWith("static_pricing_clicked", {
       page: "about",
       source: "nav",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_pricing_clicked", {
+      page: "about",
+      source: "customer_zero",
       plan: "beta_29",
     });
     expect(analyticsMock.capture).not.toHaveBeenCalledWith(
@@ -154,18 +168,28 @@ describe("DearMeAbout", () => {
   });
 
   it("tracks feed clicks without customer identifiers", async () => {
-    const feedLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
-      .find((link) => link.textContent?.trim() === "Feed");
-    expect(feedLink).toBeDefined();
-    feedLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+    const feedLinks = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .filter((link) => link.textContent?.trim() === "Feed" || link.textContent?.includes("See the dogfood feed"));
+    expect(feedLinks).toHaveLength(2);
+    feedLinks.forEach((link) => {
+      link.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+    });
 
     await act(async () => {
-      feedLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      feedLinks[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await act(async () => {
+      feedLinks[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     });
 
     expect(analyticsMock.capture).toHaveBeenCalledWith("static_feed_clicked", {
       page: "about",
       source: "nav",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_feed_clicked", {
+      page: "about",
+      source: "customer_zero",
       plan: "beta_29",
     });
     expect(analyticsMock.capture).not.toHaveBeenCalledWith(

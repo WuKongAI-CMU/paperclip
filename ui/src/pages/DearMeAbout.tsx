@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { capture } from "@/lib/analytics";
@@ -30,6 +30,12 @@ const NOT_FOR = [
   "people who do not want to review public claims",
 ] as const;
 
+const CUSTOMER_ZERO_PROOF = [
+  "The founder account feeds the public proof surface only after a receipt is approved.",
+  "The private cycle has to produce a weekly letter, an opportunity card, and a proof page before broader rollout.",
+  "Every public claim on the marketing site should be inspectable from the dogfood loop, not invented as launch copy.",
+] as const;
+
 export function DearMeAbout() {
   function handleInviteRequest() {
     capture("static_invite_requested", {
@@ -39,10 +45,10 @@ export function DearMeAbout() {
     });
   }
 
-  function handlePricingClick() {
+  function handlePricingClick(source: "nav" | "customer_zero") {
     capture("static_pricing_clicked", {
       page: "about",
-      source: "nav",
+      source,
       plan: "beta_29",
     });
   }
@@ -55,10 +61,10 @@ export function DearMeAbout() {
     });
   }
 
-  function handleFeedClick() {
+  function handleFeedClick(source: "nav" | "customer_zero") {
     capture("static_feed_clicked", {
       page: "about",
-      source: "nav",
+      source,
       plan: "beta_29",
     });
   }
@@ -75,12 +81,12 @@ export function DearMeAbout() {
             <a
               href="/pricing"
               className="text-sm text-muted-foreground hover:text-foreground"
-              onClick={handlePricingClick}
+              onClick={() => handlePricingClick("nav")}
             >
               Pricing
             </a>
             <a href="/proof" className="text-sm text-muted-foreground hover:text-foreground" onClick={handleProofClick}>Proof</a>
-            <a href="/feed" className="text-sm text-muted-foreground hover:text-foreground" onClick={handleFeedClick}>Feed</a>
+            <a href="/feed" className="text-sm text-muted-foreground hover:text-foreground" onClick={() => handleFeedClick("nav")}>Feed</a>
             <a href="/faq" className="text-sm text-muted-foreground hover:text-foreground">FAQ</a>
             <Button asChild variant="outline" size="sm">
               <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite" onClick={handleInviteRequest}>
@@ -141,6 +147,43 @@ export function DearMeAbout() {
                 so each account can begin with the right context and expectations.
               </p>
             </aside>
+          </section>
+
+          <section className="mt-10 rounded-lg border border-border bg-muted/20 p-5" aria-label="Customer zero proof">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_16rem] lg:items-start">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Customer zero proof</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-normal">
+                  Before you trust it, inspect how Peter is using it.
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  The beta starts with Peter&apos;s own account because DearMe has to make his work easier to inspect
+                  before it asks another solo operator to pay. The public feed is the running receipt trail.
+                </p>
+                <ul className="mt-4 space-y-3">
+                  {CUSTOMER_ZERO_PROOF.map((item) => (
+                    <li key={item} className="flex gap-3 text-sm leading-6 text-muted-foreground">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="flex flex-col gap-3">
+                <Button asChild className="min-h-11 justify-between">
+                  <a href="/feed" onClick={() => handleFeedClick("customer_zero")}>
+                    See the dogfood feed
+                    <ArrowRight className="h-4 w-4" />
+                  </a>
+                </Button>
+                <Button asChild variant="outline" className="min-h-11 justify-between">
+                  <a href="/pricing" onClick={() => handlePricingClick("customer_zero")}>
+                    Try the $29 beta
+                    <ArrowRight className="h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
+            </div>
           </section>
         </article>
 
