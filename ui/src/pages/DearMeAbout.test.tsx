@@ -153,6 +153,30 @@ describe("DearMeAbout", () => {
     );
   });
 
+  it("tracks feed clicks without customer identifiers", async () => {
+    const feedLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.trim() === "Feed");
+    expect(feedLink).toBeDefined();
+    feedLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+
+    await act(async () => {
+      feedLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_feed_clicked", {
+      page: "about",
+      source: "nav",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "static_feed_clicked",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+      }),
+    );
+  });
+
   it("does not leak internal or vendor wording", () => {
     const text = container.textContent ?? "";
 

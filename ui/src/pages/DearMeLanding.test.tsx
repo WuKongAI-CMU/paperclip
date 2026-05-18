@@ -258,6 +258,45 @@ describe("DearMeLanding", () => {
     );
   });
 
+  it("tracks feed clicks without customer identifiers or positioning text", async () => {
+    const feedLinks = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .filter((link) => link.textContent?.trim() === "Feed");
+    expect(feedLinks).toHaveLength(2);
+    feedLinks.forEach((link) => {
+      link.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+    });
+
+    await act(async () => {
+      feedLinks[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await act(async () => {
+      feedLinks[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_feed_clicked", {
+      page: "landing",
+      source: "nav",
+      plan: "beta_29",
+      landing_variant: "control",
+      landing_hero_theme: "private_growth_team",
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_feed_clicked", {
+      page: "landing",
+      source: "footer",
+      plan: "beta_29",
+      landing_variant: "control",
+      landing_hero_theme: "private_growth_team",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "static_feed_clicked",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+        knownFor: expect.any(String),
+      }),
+    );
+  });
+
   it("blocks submit with an empty input", async () => {
     const form = container.querySelector("form");
     expect(form).not.toBeNull();
