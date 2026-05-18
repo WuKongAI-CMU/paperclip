@@ -176,6 +176,15 @@ test("DearMe payment readiness generates a Peter-facing checkout support request
   assert.match(markdown, /Placeholder setup values are treated as blocked configuration/);
 });
 
+test("DearMe payment readiness human-support markdown uses the DearMe operating day", () => {
+  const readiness = inspectDearMePaymentReadiness({});
+  const markdown = formatDearMePaymentReadinessHumanHelp(readiness, {
+    now: new Date("2026-05-19T03:30:00.000Z"),
+  }).join("\n");
+
+  assert.match(markdown, /^### 2026-05-18 - Self-serve checkout configuration/);
+});
+
 test("DearMe payment readiness support request does not leak configured payment values", () => {
   const readiness = inspectDearMePaymentReadiness({
     DEARME_PAYMENT_LINK_URL: "https://payments.example.com/dearme-private-beta",
