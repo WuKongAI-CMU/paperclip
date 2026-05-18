@@ -84,6 +84,14 @@ export function DearMeFaq() {
     });
   }
 
+  function handleFeedClick(source: "nav" | "question") {
+    capture("static_feed_clicked", {
+      page: "faq",
+      source,
+      plan: "beta_29",
+    });
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-4xl flex-col px-4 py-5 sm:px-6 lg:px-8">
@@ -100,6 +108,13 @@ export function DearMeFaq() {
               onClick={() => handlePricingClick("nav")}
             >
               Pricing
+            </a>
+            <a
+              href="/feed"
+              className="text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => handleFeedClick("nav")}
+            >
+              Feed
             </a>
             <Button asChild variant="outline" size="sm">
               <a href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20invite" onClick={() => handleInviteRequest("nav")}>
@@ -135,6 +150,11 @@ export function DearMeFaq() {
             <Button asChild size="lg" className="min-h-11">
               <a href="/pricing" onClick={() => handlePricingClick("question")}>
                 See beta pricing
+              </a>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="min-h-11">
+              <a href="/feed" onClick={() => handleFeedClick("question")}>
+                See DearMe in action
               </a>
             </Button>
             <Button asChild variant="outline" size="lg" className="min-h-11">
