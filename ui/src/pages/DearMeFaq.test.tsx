@@ -68,6 +68,7 @@ describe("DearMeFaq", () => {
 
     expect(links.some((link) => link.href.endsWith("/about"))).toBe(true);
     expect(links.some((link) => link.href.endsWith("/pricing"))).toBe(true);
+    expect(links.some((link) => link.href.endsWith("/feed"))).toBe(true);
     expect(links.some((link) => link.href.startsWith("mailto:peter@dearme.app"))).toBe(true);
     expect(container.textContent).toContain("Any paid continuation is shown before purchase");
   });
@@ -133,6 +134,40 @@ describe("DearMeFaq", () => {
     });
     expect(analyticsMock.capture).not.toHaveBeenCalledWith(
       "static_pricing_clicked",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+      }),
+    );
+  });
+
+  it("tracks feed clicks without customer identifiers", async () => {
+    const feedLinks = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .filter((link) => link.textContent?.trim() === "Feed" || link.textContent?.trim() === "See DearMe in action");
+    expect(feedLinks).toHaveLength(2);
+    feedLinks.forEach((link) => {
+      link.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+    });
+
+    await act(async () => {
+      feedLinks[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await act(async () => {
+      feedLinks[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_feed_clicked", {
+      page: "faq",
+      source: "nav",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_feed_clicked", {
+      page: "faq",
+      source: "question",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "static_feed_clicked",
       expect.objectContaining({
         email: expect.any(String),
         href: expect.any(String),
