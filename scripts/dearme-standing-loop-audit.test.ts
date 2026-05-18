@@ -8,6 +8,7 @@ import {
 } from "./dearme-standing-loop-audit.ts";
 import type { DearMeBacklogAudit } from "./dearme-backlog-audit.ts";
 import type { DearMeDependencyLoopAudit } from "./dearme-dependency-loop-audit.ts";
+import type { DearMeDocFreshnessAudit } from "./dearme-doc-freshness-audit.ts";
 import type { DearMeGoalAudit } from "./dearme-goal-audit.ts";
 
 function backlogAudit(overrides: Partial<DearMeBacklogAudit> = {}): DearMeBacklogAudit {
@@ -48,6 +49,27 @@ function dependencyAudit(overrides: Partial<DearMeDependencyLoopAudit> = {}): De
   };
 }
 
+function docFreshnessAudit(overrides: Partial<DearMeDocFreshnessAudit> = {}): DearMeDocFreshnessAudit {
+  return {
+    complete: true,
+    latestLedgerEntry: {
+      date: "2026-05-18",
+      time: "14:12",
+      id: "DM-TSX-PATCH-BUMP-2",
+      sha: "6ddf6b62",
+      pr: "PR #164",
+      summary: "Root tsx dev dependency bumped.",
+    },
+    indexShippedDate: "2026-05-18",
+    indexEntryPresent: true,
+    nextAction: {
+      label: "Continue standing loop",
+      reason: "INDEX.md records the latest non-doc-freshness run-ledger slice.",
+    },
+    ...overrides,
+  };
+}
+
 function goalAudit(overrides: Partial<DearMeGoalAudit> = {}): DearMeGoalAudit {
   return {
     complete: false,
@@ -75,6 +97,7 @@ function goalAudit(overrides: Partial<DearMeGoalAudit> = {}): DearMeGoalAudit {
 test("treats owner-blocked goal state as clear for autonomous standing loop", () => {
   const audit = summarizeDearMeStandingLoopAudit(
     backlogAudit(),
+    docFreshnessAudit(),
     dependencyAudit(),
     goalAudit(),
   );
@@ -100,6 +123,7 @@ test("treats owner-blocked goal state as clear for autonomous standing loop", ()
 test("keeps payment setup facts visible in owner-blocked standing-loop output", () => {
   const audit = summarizeDearMeStandingLoopAudit(
     backlogAudit(),
+    docFreshnessAudit(),
     dependencyAudit(),
     goalAudit({
       ownerProofFactsNeeded: [],
@@ -146,6 +170,7 @@ test("reports missing daily Plain summary delivery configuration", () => {
 test("keeps daily Plain summary facts visible in standing-loop output", () => {
   const audit = summarizeDearMeStandingLoopAudit(
     backlogAudit(),
+    docFreshnessAudit(),
     dependencyAudit(),
     goalAudit(),
     ["DEARME_PLAIN_API_KEY is missing."],
@@ -183,6 +208,7 @@ test("prioritizes missing backlog ledger entries before dependency or goal work"
         reason: "At least one P0/P1/P2 item is missing.",
       },
     }),
+    docFreshnessAudit(),
     dependencyAudit({
       complete: false,
       autonomousUpdates: [{
@@ -202,9 +228,40 @@ test("prioritizes missing backlog ledger entries before dependency or goal work"
   assert.equal(audit.nextAction.label, "DM-MOBILE-QA");
 });
 
+test("surfaces stale INDEX coverage after backlog is complete", () => {
+  const audit = summarizeDearMeStandingLoopAudit(
+    backlogAudit(),
+    docFreshnessAudit({
+      complete: false,
+      indexEntryPresent: false,
+      nextAction: {
+        label: "Update docs/dearme/INDEX.md",
+        reason: "Record DM-TSX-PATCH-BUMP-2 and advance the shipped date.",
+      },
+    }),
+    dependencyAudit({
+      complete: false,
+      autonomousUpdates: [{
+        name: "tsx",
+        current: "4.20.0",
+        latest: "4.20.1",
+        kind: "patch",
+        decision: "autonomous",
+        reason: "Patch dependency update is eligible.",
+      }],
+    }),
+    goalAudit(),
+  );
+
+  assert.equal(audit.state, "doc-freshness-needed");
+  assert.equal(audit.checkClear, false);
+  assert.equal(audit.nextAction.command, "pnpm --silent dearme:doc-freshness-audit -- --check");
+});
+
 test("surfaces autonomous dependency bumps after backlog is complete", () => {
   const audit = summarizeDearMeStandingLoopAudit(
     backlogAudit(),
+    docFreshnessAudit(),
     dependencyAudit({
       complete: false,
       autonomousUpdates: [{
@@ -238,6 +295,7 @@ test("surfaces autonomous dependency bumps after backlog is complete", () => {
 test("surfaces code-owned goal regressions when owner facts are not the blocker", () => {
   const audit = summarizeDearMeStandingLoopAudit(
     backlogAudit(),
+    docFreshnessAudit(),
     dependencyAudit(),
     goalAudit({
       nextAction: {
@@ -263,6 +321,8 @@ test("parses command arguments", () => {
       "handoff.md",
       "--backlog-ledger",
       "ledger.md",
+      "--index",
+      "index.md",
       "--dependency-outdated-json",
       "outdated.json",
       "--env-file",
@@ -274,6 +334,7 @@ test("parses command arguments", () => {
       check: true,
       backlogHandoffPath: "handoff.md",
       backlogLedgerPath: "ledger.md",
+      indexPath: "index.md",
       dependencyOutdatedJsonPath: "outdated.json",
       envFiles: [".proof.env"],
     },

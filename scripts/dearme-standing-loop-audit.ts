@@ -11,6 +11,11 @@ import {
   type DearMeDependencyLoopAuditArgs,
 } from "./dearme-dependency-loop-audit.ts";
 import {
+  runDearMeDocFreshnessAudit,
+  type DearMeDocFreshnessAudit,
+  type DearMeDocFreshnessAuditArgs,
+} from "./dearme-doc-freshness-audit.ts";
+import {
   buildDearMeGoalAudit,
   type DearMeGoalAudit,
 } from "./dearme-goal-audit.ts";
@@ -19,6 +24,7 @@ export type DearMeStandingLoopState =
   | "goal-complete"
   | "owner-blocked"
   | "backlog-ledger-needed"
+  | "doc-freshness-needed"
   | "dependency-bump-needed"
   | "autonomous-fix-needed";
 
@@ -26,6 +32,7 @@ export interface DearMeStandingLoopAudit {
   state: DearMeStandingLoopState;
   checkClear: boolean;
   backlog: DearMeBacklogAudit;
+  docFreshness: DearMeDocFreshnessAudit;
   dependency: DearMeDependencyLoopAudit;
   goal: DearMeGoalAudit;
   dailyPlainSummaryFacts: string[];
@@ -44,12 +51,14 @@ export interface DearMeStandingLoopAuditArgs {
   check: boolean;
   backlogHandoffPath: string;
   backlogLedgerPath: string;
+  indexPath: string;
   dependencyOutdatedJsonPath?: string;
   envFiles: string[];
 }
 
 const DEFAULT_HANDOFF_PATH = "docs/dearme/CODEX-HANDOFF-TOKEN.md";
 const DEFAULT_LEDGER_PATH = "docs/dearme/CODEX-RUN-LEDGER.md";
+const DEFAULT_INDEX_PATH = "docs/dearme/INDEX.md";
 const HUMAN_HELP_QUEUE_PATH = "docs/NEEDS_HUMAN_HELP.md";
 const DAILY_PLAIN_API_KEY_ENV = "DEARME_PLAIN_API_KEY";
 const DAILY_PLAIN_PRIMARY_EMAIL_ENV = "DEARME_CODEX_DAILY_PLAIN_EMAIL";
@@ -91,6 +100,7 @@ function ownerFactsForStandingLoop(goal: DearMeGoalAudit): string[] | undefined 
 
 export function summarizeDearMeStandingLoopAudit(
   backlog: DearMeBacklogAudit,
+  docFreshness: DearMeDocFreshnessAudit,
   dependency: DearMeDependencyLoopAudit,
   goal: DearMeGoalAudit,
   dailyPlainSummaryFacts: string[] = [],
@@ -100,6 +110,7 @@ export function summarizeDearMeStandingLoopAudit(
       state: "backlog-ledger-needed",
       checkClear: false,
       backlog,
+      docFreshness,
       dependency,
       goal,
       dailyPlainSummaryFacts,
@@ -111,11 +122,29 @@ export function summarizeDearMeStandingLoopAudit(
     };
   }
 
+  if (!docFreshness.complete) {
+    return {
+      state: "doc-freshness-needed",
+      checkClear: false,
+      backlog,
+      docFreshness,
+      dependency,
+      goal,
+      dailyPlainSummaryFacts,
+      nextAction: {
+        label: docFreshness.nextAction.label,
+        reason: docFreshness.nextAction.reason,
+        command: "pnpm --silent dearme:doc-freshness-audit -- --check",
+      },
+    };
+  }
+
   if (!dependency.complete) {
     return {
       state: "dependency-bump-needed",
       checkClear: false,
       backlog,
+      docFreshness,
       dependency,
       goal,
       dailyPlainSummaryFacts,
@@ -132,6 +161,7 @@ export function summarizeDearMeStandingLoopAudit(
       state: "goal-complete",
       checkClear: true,
       backlog,
+      docFreshness,
       dependency,
       goal,
       dailyPlainSummaryFacts,
@@ -148,6 +178,7 @@ export function summarizeDearMeStandingLoopAudit(
       state: "owner-blocked",
       checkClear: true,
       backlog,
+      docFreshness,
       dependency,
       goal,
       dailyPlainSummaryFacts,
@@ -165,6 +196,7 @@ export function summarizeDearMeStandingLoopAudit(
     state: "autonomous-fix-needed",
     checkClear: false,
     backlog,
+    docFreshness,
     dependency,
     goal,
     dailyPlainSummaryFacts,
@@ -181,6 +213,7 @@ export function formatDearMeStandingLoopAudit(audit: DearMeStandingLoopAudit): s
     `DearMe standing loop audit: ${audit.state}`,
     `- Check clear: ${audit.checkClear ? "yes" : "no"}`,
     `- P0/P1/P2 ledger: ${audit.backlog.required.shipped}/${audit.backlog.required.total}`,
+    `- Doc freshness: ${audit.docFreshness.complete ? "clear" : "stale"}`,
     `- Autonomous dependency updates: ${audit.dependency.autonomousUpdates.length}`,
     `- Review-required dependency updates: ${audit.dependency.reviewRequiredUpdates.length}`,
     `- Goal complete: ${audit.goal.complete ? "yes" : "no"}`,
@@ -229,6 +262,7 @@ export function parseDearMeStandingLoopAuditArgs(argv: string[]): DearMeStanding
     check: false,
     backlogHandoffPath: DEFAULT_HANDOFF_PATH,
     backlogLedgerPath: DEFAULT_LEDGER_PATH,
+    indexPath: DEFAULT_INDEX_PATH,
     envFiles: [],
   };
 
@@ -248,6 +282,9 @@ export function parseDearMeStandingLoopAuditArgs(argv: string[]): DearMeStanding
     } else if (arg === "--backlog-ledger") {
       args.backlogLedgerPath = argv[index + 1] ?? "";
       index += 1;
+    } else if (arg === "--index") {
+      args.indexPath = argv[index + 1] ?? "";
+      index += 1;
     } else if (arg === "--dependency-outdated-json") {
       args.dependencyOutdatedJsonPath = argv[index + 1] ?? "";
       index += 1;
@@ -264,6 +301,9 @@ export function parseDearMeStandingLoopAuditArgs(argv: string[]): DearMeStanding
   }
   if (!args.backlogLedgerPath) {
     throw new Error("--backlog-ledger requires a path.");
+  }
+  if (!args.indexPath) {
+    throw new Error("--index requires a path.");
   }
   if (args.dependencyOutdatedJsonPath === "") {
     throw new Error("--dependency-outdated-json requires a path.");
@@ -291,14 +331,23 @@ export async function runDearMeStandingLoopAudit(
     check: false,
     outdatedJsonPath: args.dependencyOutdatedJsonPath,
   };
+  const docFreshnessArgs: DearMeDocFreshnessAuditArgs = {
+    help: false,
+    json: false,
+    check: false,
+    ledgerPath: args.backlogLedgerPath,
+    indexPath: args.indexPath,
+  };
 
-  const [backlog, dependency, goal] = await Promise.all([
+  const [backlog, docFreshness, dependency, goal] = await Promise.all([
     runDearMeBacklogAudit(backlogArgs),
+    runDearMeDocFreshnessAudit(docFreshnessArgs),
     runDearMeDependencyLoopAudit(dependencyArgs),
     buildDearMeGoalAudit(args.envFiles, process.env),
   ]);
   return summarizeDearMeStandingLoopAudit(
     backlog,
+    docFreshness,
     dependency,
     goal,
     dailyPlainSummaryFactsNeeded(process.env),
@@ -316,6 +365,7 @@ function usage(): string {
     "  --json                          Print machine-readable JSON.",
     "  --backlog-handoff <path>         Handoff token path.",
     "  --backlog-ledger <path>          Run ledger path.",
+    "  --index <path>                   DearMe index path.",
     "  --dependency-outdated-json <path> Read saved pnpm outdated JSON.",
     "  --env-file <path>                Proof env file passed through to the goal audit.",
   ].join("\n");
