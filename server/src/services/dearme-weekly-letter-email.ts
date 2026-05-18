@@ -91,6 +91,13 @@ export interface DearMeWeeklyLetterSendResult {
   providerMessageId?: string | null;
 }
 
+export interface DearMeWeeklyLetterQualityReport {
+  ok: boolean;
+  wordCount: number;
+  passed: Array<"voice_match" | "specificity" | "actionability" | "length">;
+  failed: Array<"voice_match" | "specificity" | "actionability" | "length">;
+}
+
 export type DearMeWeeklyLetterEmailResult =
   | { skipped: true; reason: string }
   | {
@@ -194,6 +201,48 @@ function isWeeklySendWindow(now: Date, timezone: string) {
 
 function reportPreview(body: string) {
   return dearMeCustomerSafeText(body, "Your weekly DearMe letter is ready.", 12_000);
+}
+
+function countWords(text: string) {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+export function evaluateDearMeWeeklyLetterQuality(body: string): DearMeWeeklyLetterQualityReport {
+  const safeBody = reportPreview(body);
+  const wordCount = countWords(safeBody);
+  const checks: Array<{
+    dimension: DearMeWeeklyLetterQualityReport["passed"][number];
+    passed: boolean;
+  }> = [
+    {
+      dimension: "voice_match",
+      passed:
+        !/your weekly dearme letter is ready/i.test(safeBody) &&
+        /\b(you|your|dear me|completed work|next bets|proof|voice)\b/i.test(safeBody),
+    },
+    {
+      dimension: "specificity",
+      passed:
+        /\b(proof|draft|intro|opportunity|customer|client|site|page|decision|launch|reply|receipt|cycle)\b/i.test(safeBody) &&
+        /(:|\b\d+\b|\bthis week\b|\btoday\b|\bnext\b)/i.test(safeBody),
+    },
+    {
+      dimension: "actionability",
+      passed: /\b(review|approve|decide|send|reply|launch|open|follow up|next bet|next bets|choose|revise)\b/i.test(safeBody),
+    },
+    {
+      dimension: "length",
+      passed: wordCount >= 45 && wordCount <= 260,
+    },
+  ];
+  const passed = checks.filter((check) => check.passed).map((check) => check.dimension);
+  const failed = checks.filter((check) => !check.passed).map((check) => check.dimension);
+  return {
+    ok: passed.length >= 3,
+    wordCount,
+    passed,
+    failed,
+  };
 }
 
 function htmlParagraphs(text: string) {
@@ -470,6 +519,19 @@ export async function sendDearMeWeeklyLetterEmails(
         timezone: window.timezone,
         status: "skipped",
         reason: "weekly_report_missing",
+      });
+      continue;
+    }
+
+    const quality = evaluateDearMeWeeklyLetterQuality(candidate.report.body);
+    if (!quality.ok) {
+      results.push({
+        companyId: candidate.companyId,
+        userId: candidate.userId,
+        localDate: window.localDate,
+        timezone: window.timezone,
+        status: "skipped",
+        reason: `weekly_report_quality_failed:${quality.failed.join(",")}`,
       });
       continue;
     }

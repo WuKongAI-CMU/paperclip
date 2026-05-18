@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  evaluateDearMeWeeklyLetterQuality,
   sendDearMeWeeklyLetterEmails,
   type DearMeWeeklyLetterCandidate,
   type DearMeWeeklyLetterRepository,
@@ -18,9 +19,9 @@ function makeCandidate(overrides: Partial<DearMeWeeklyLetterCandidate> = {}): De
       documentId: "doc-1",
       title: "Dear me report",
       body: [
-        "Completed work: prepared one useful proof update.",
+        "Completed work: prepared the proof page, refreshed the warm intro draft, and tightened the private site decision so your next move is easier to review.",
         "",
-        "Next bets: review the warm intro draft and the proof page.",
+        "Next bets: review the intro, choose whether to launch the proof page this week, and decide which customer reply should become the next opportunity.",
       ].join("\n"),
       updatedAt: new Date("2026-05-17T20:00:00.000Z"),
     },
@@ -60,6 +61,17 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 describe("DearMe weekly letter email", () => {
+  it("grades weekly letters on voice, specificity, actionability, and length", () => {
+    const quality = evaluateDearMeWeeklyLetterQuality(makeCandidate().report?.body ?? "");
+
+    expect(quality).toMatchObject({
+      ok: true,
+      passed: expect.arrayContaining(["voice_match", "specificity", "actionability", "length"]),
+      failed: [],
+    });
+    expect(quality.wordCount).toBeGreaterThanOrEqual(45);
+  });
+
   it("sends the weekly letter during the recipient local Sunday 18:00 window", async () => {
     const { repository, markSentCalls } = makeRepository();
     const fetchMock = vi.fn(async () => jsonResponse({ id: "email_123" }));
@@ -194,6 +206,42 @@ describe("DearMe weekly letter email", () => {
       reason: "dearme_resend_api_key_unset",
     });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("skips weekly reports that are too thin to support retention", async () => {
+    const { repository, markSentCalls } = makeRepository({
+      candidates: [
+        makeCandidate({
+          report: {
+            issueId: "issue-1",
+            documentId: "doc-1",
+            title: "Dear me report",
+            body: "Weekly update: work happened. Next steps soon.",
+            updatedAt: new Date("2026-05-17T20:00:00.000Z"),
+          },
+        }),
+      ],
+    });
+    const fetchMock = vi.fn(async () => jsonResponse({ id: "email_123" }));
+
+    const result = await sendDearMeWeeklyLetterEmails({
+      repository,
+      resendApiKey: "re_test",
+      fetch: fetchMock,
+      now: new Date("2026-05-17T22:05:00.000Z"),
+    });
+
+    expect(result).toMatchObject({
+      skipped: false,
+      ok: true,
+      dueCandidates: 1,
+      sent: 0,
+    });
+    expect((result as { results: Array<{ reason?: string }> }).results[0]?.reason).toMatch(
+      /^weekly_report_quality_failed:/,
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(markSentCalls).toHaveLength(0);
   });
 
   it("reports missing weekly reports without sending", async () => {
