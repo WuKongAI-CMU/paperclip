@@ -127,6 +127,13 @@ export function DearMePricing() {
     });
   }
 
+  function handleProductPreviewClick() {
+    capture("pricing_product_preview_clicked", {
+      source: "hero",
+      plan: "beta_29",
+    });
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <DearMePageShell className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-5 sm:px-6 lg:px-8">
@@ -167,7 +174,9 @@ export function DearMePricing() {
                 </a>
               </Button>
               <Button asChild variant="outline" size="lg" className="min-h-11">
-                <a href="/landing">See the product first</a>
+                <a href="/landing" onClick={handleProductPreviewClick}>
+                  See the product first
+                </a>
               </Button>
             </div>
           </div>

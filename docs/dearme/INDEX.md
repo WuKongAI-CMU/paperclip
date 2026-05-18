@@ -254,6 +254,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-STATIC-INVITE-MAILTO-ANALYTICS** — landing, about, FAQ, and proof invite mailto clicks now record safe intent events, making non-pricing invite handoffs measurable without email, mailto URLs, or customer identifiers.
 - **DM-PROOF-FALLBACK-PRICING-CTA** — proof feed empty/error states now offer a direct beta-pricing handoff and record safe fallback-click analytics without feed contents or customer identifiers.
 - **DM-STATIC-PRICING-CLICK-ANALYTICS** — landing, about, FAQ, and proof pricing links now record safe page/source/plan events so static-page handoffs into the $29 beta path are measurable without URLs, customer input, or proof-feed contents.
+- **DM-PRICING-PRODUCT-PREVIEW-ANALYTICS** — the pricing-page product-preview CTA now records a safe source/plan event, making pricing-to-preview re-entry measurable without URLs, email, or customer identifiers.
 - **DM-PROOF-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now labels guarded live proof commands as available only after owner facts are present and the no-send check passes.
 - **DM-PROOF-FOCUS-LIVE-COMMAND-GUARD** — `pnpm dearme:proof` now uses the same owner-facts-plus-no-send wording for live-focus commands and setup commands.
 - **DM-PROOF-LIVE-CONFIRMATION-CHECKLIST** — `pnpm dearme:proof` now labels owner-proof checklist live commands as available only after owner facts when needed, the no-send check passes, and explicit live confirmation is set.
