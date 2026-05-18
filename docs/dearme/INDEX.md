@@ -4,7 +4,7 @@
 
 > **P0 carve-out (adopted 2026-05-14).** OpenClaw runtime and `dearme-ai-proxy` runtime are **deferred to P1**. Architecture and code stay in tree as dormant artifacts. P0 paid beta ships **web-only**: web inbound, browser MediaRecorder for voice capture, Paperclip routines/heartbeats for cron, web-first outbound (LinkedIn copy-to-clipboard, X via OAuth, email via Resend/SMTP). The §3 diagram below describes the **P1+ target state**; in P0 the OpenClaw layer is dormant and the proxy routes are unmounted. Full rationale, per-role verdict, code touchpoints, and revival criteria in [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md).
 
-Last updated: 2026-05-18 (post DM-FEED-DISCOVERY-LINKS)
+Last updated: 2026-05-18 (post DM-FAQ-FEED-TRUST-LINK)
 
 ---
 
@@ -158,6 +158,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-WEEKLY-LETTER-QUALITY** — weekly-letter delivery now grades report drafts on voice continuity, specificity, actionability, and length before email send, skipping thin reports with reason codes only so renewal-critical letters do not ship as generic updates.
 - **DM-PUBLIC-DOGFOOD-FEED** — `/feed` now exposes the opted-in founder dogfood feed as a first-class public marketing surface while `/proof` remains available, with feed-specific copy and safe analytics source labels.
 - **DM-FEED-DISCOVERY-LINKS** — public landing, about, and pricing pages now link to `/feed` and capture safe feed-click analytics so founder dogfood proof is discoverable before signup without logging URLs, customer text, or identifiers.
+- **DM-FAQ-FEED-TRUST-LINK** — FAQ visitors can now open the public dogfood feed from navigation and the objection-resolution CTA, with safe feed-click analytics that omit URLs and customer identifiers.
 - **DM-DEPENDENCY-BUMP-PLAYWRIGHT** — `@playwright/test` now resolves to 1.60.0, Playwright-adjacent CI stayed green, and the screenshot helper no longer depends on a version-pinned pnpm store path.
 - **DM-GOAL-AUDIT-OWNER-HANDOFF** — `pnpm dearme:goal-audit` now surfaces the exact reserved owner facts, item-specific capture setup, no-send check, and guarded live-proof commands when public launch is blocked on external proof facts.
 - **DM-BACKLOG-LEDGER-AUDIT** — `pnpm dearme:backlog-audit -- --check` now verifies every P0/P1/P2 item in `CODEX-HANDOFF-TOKEN.md` has a `CODEX-RUN-LEDGER.md` entry, while keeping standing-loop work visible as ongoing.
