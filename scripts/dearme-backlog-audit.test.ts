@@ -17,7 +17,7 @@ const HANDOFF_FIXTURE = `# DearMe handoff
 ### P0 - must ship before any human customer signs up
 
 - [ ] **DM-DOCKERFILE-SERVER** - Build the server image.
-- [ ] **DM-RATE-LIMIT** - Protect public endpoints.
+- [x] **DM-RATE-LIMIT** - Protect public endpoints.
 
 ### P1 - pre-50-paying-customer hardening
 
@@ -40,13 +40,13 @@ const HANDOFF_FIXTURE = `# DearMe handoff
 test("parses handoff backlog items by priority", () => {
   const items = parseDearMeBacklogItems(HANDOFF_FIXTURE);
 
-  assert.deepEqual(items.map((item) => [item.priority, item.id, item.requiredForNamedBacklog]), [
-    ["P0", "DM-DOCKERFILE-SERVER", true],
-    ["P0", "DM-RATE-LIMIT", true],
-    ["P1", "DM-PROD-SMOKE", true],
-    ["P2", "DM-REFERRAL-UI", true],
-    ["Standing", "autonomous-fix-loop", false],
-    ["Standing", "dependency-bump-loop", false],
+  assert.deepEqual(items.map((item) => [item.priority, item.id, item.checked, item.requiredForNamedBacklog]), [
+    ["P0", "DM-DOCKERFILE-SERVER", false, true],
+    ["P0", "DM-RATE-LIMIT", true, true],
+    ["P1", "DM-PROD-SMOKE", false, true],
+    ["P2", "DM-REFERRAL-UI", false, true],
+    ["Standing", "autonomous-fix-loop", false, false],
+    ["Standing", "dependency-bump-loop", false, false],
   ]);
 });
 
@@ -64,12 +64,18 @@ test("summarizes required ledger coverage without requiring standing loops", () 
   assert.equal(audit.required.total, 4);
   assert.equal(audit.required.shipped, 4);
   assert.deepEqual(audit.required.missing, []);
+  assert.deepEqual(audit.required.shippedUnchecked.map((item) => item.id), [
+    "DM-DOCKERFILE-SERVER",
+    "DM-PROD-SMOKE",
+    "DM-REFERRAL-UI",
+  ]);
   assert.deepEqual(audit.standingOpen.map((item) => item.id), [
     "autonomous-fix-loop",
     "dependency-bump-loop",
   ]);
   assert.equal(audit.nextAction.label, "Continue standing loop");
   assert.match(formatted, /Required P0\/P1\/P2 shipped: 4\/4/);
+  assert.match(formatted, /Shipped items still unchecked in handoff: 3/);
   assert.match(formatted, /Standing loop items open: 2/);
 });
 

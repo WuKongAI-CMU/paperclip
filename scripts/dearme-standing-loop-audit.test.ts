@@ -19,6 +19,7 @@ function backlogAudit(overrides: Partial<DearMeBacklogAudit> = {}): DearMeBacklo
       total: 37,
       shipped: 37,
       missing: [],
+      shippedUnchecked: [],
     },
     standingOpen: [],
     ledgerIds: ["DM-FOUNDER-DOGFOOD-PROOF"],
@@ -118,6 +119,35 @@ test("treats owner-blocked goal state as clear for autonomous standing loop", ()
   assert.match(
     formatted,
     /Human help queue: docs\/NEEDS_HUMAN_HELP\.md has the reply templates and safe follow-up commands for these blockers\./,
+  );
+});
+
+test("keeps handoff checklist drift visible without blocking owner-blocked loops", () => {
+  const audit = summarizeDearMeStandingLoopAudit(
+    backlogAudit({
+      required: {
+        total: 37,
+        shipped: 37,
+        missing: [],
+        shippedUnchecked: [{
+          id: "DM-DOCKERFILE-SERVER",
+          title: "Build the server image.",
+          priority: "P0",
+          checked: false,
+          requiredForNamedBacklog: true,
+        }],
+      },
+    }),
+    docFreshnessAudit(),
+    dependencyAudit(),
+    goalAudit(),
+  );
+
+  assert.equal(audit.state, "owner-blocked");
+  assert.equal(audit.checkClear, true);
+  assert.match(
+    formatDearMeStandingLoopAudit(audit).join("\n"),
+    /Handoff checklist drift: 1 shipped P0\/P1\/P2 items still unchecked/,
   );
 });
 
@@ -273,6 +303,7 @@ test("prioritizes missing backlog ledger entries before dependency or goal work"
           id: "DM-MOBILE-QA",
           title: "mobile QA",
           priority: "P1",
+          checked: false,
           requiredForNamedBacklog: true,
         }],
       },
