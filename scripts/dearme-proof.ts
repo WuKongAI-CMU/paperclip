@@ -89,7 +89,7 @@ const DEARME_PROOF_CAPABILITY_LABELS = {
   linkedin_message_body: "LinkedIn smoke body",
   openclaw_gateway_endpoint: "shared message gateway endpoint",
   openclaw_gateway_auth: "shared message gateway auth",
-  openclaw_message_contract: "local OpenClaw message contract rehearsal",
+  openclaw_message_contract: "local shared-message contract rehearsal",
   telegram_recipient: "Telegram smoke recipient",
   telegram_message_body: "Telegram smoke body",
   imessage_recipient: "iMessage smoke recipient",
@@ -99,6 +99,26 @@ const DEARME_PROOF_CAPABILITY_LABELS = {
 } as const;
 
 const HUMAN_HELP_QUEUE_PATH = "docs/NEEDS_HUMAN_HELP.md";
+
+const DEARME_PROOF_TARGET_LABELS: Record<string, string> = {
+  deploy_site_preview: "preview host",
+  deploy_site_host_rehearsal: "host rehearsal",
+  deploy_site_production: "production host",
+  linkedin_dm: "professional-network message",
+  telegram_message: "Telegram message",
+  imessage_message: "iMessage/SMS message",
+  meta_campaign: "paid campaign",
+  profile_token_semantic: "voice profile semantic check",
+  profile_token_review_loop: "voice profile review loop",
+  integration_audit_unavailable: "integration audit unavailable",
+  not_in_current_worktrees: "not-in-current worktrees",
+  dirty_worktrees: "dirty worktrees",
+  latest_dirty_handoffs: "latest dirty handoffs",
+  latest_no_file_change_handoffs: "latest no-file-change handoffs",
+  latest_uncommitted_handoffs: "latest uncommitted handoffs",
+  openclaw_message_contract_unavailable: "shared-message contract unavailable",
+  openclaw_message_contract_rehearsal: "shared-message contract rehearsal",
+};
 
 export type DearMeProofCapabilityKey = keyof typeof DEARME_PROOF_CAPABILITY_LABELS;
 
@@ -337,10 +357,10 @@ const LIVE_PROVIDER_FOCUS_PLAN = [
   },
   {
     key: "openclaw_messages",
-    label: "OpenClaw message smoke",
+    label: "Shared Telegram/iMessage smoke",
     targets: ["telegram_message", "imessage_message"],
     reason:
-      "Naive-style substrate reuse is strongest when one OpenClaw gateway proves Telegram and iMessage together.",
+      "Shared-message proof is strongest when one gateway proves Telegram and iMessage together.",
     operatorCommand:
       `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --target openclaw_messages --live`,
   },
@@ -1487,9 +1507,17 @@ function formatCapabilityBlockers(capabilities: readonly DearMeProofCapabilityBl
   return ` Needs: ${capabilities.map((item) => item.label).join("; ")}.`;
 }
 
+function formatProofTargetLabel(target: string) {
+  return DEARME_PROOF_TARGET_LABELS[target] ?? target;
+}
+
+function formatProofTargetList(blockedTargets: readonly DearMeProofStatusBlocker[]) {
+  return blockedTargets.map((item) => formatProofTargetLabel(item.target)).join(", ");
+}
+
 function formatBlockedTargets(blockedTargets: readonly DearMeProofStatusBlocker[]) {
   if (blockedTargets.length === 0) return "";
-  const targets = blockedTargets.map((item) => item.target).join(", ");
+  const targets = formatProofTargetList(blockedTargets);
   return ` Blocked targets: ${targets}.${formatCapabilityBlockers(
     missingCapabilitiesForBlockers(blockedTargets),
   )}`;
@@ -1634,7 +1662,7 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
     for (const focus of status.liveProviderFocus) {
       const state = focus.ready
         ? "ready"
-        : `blocked on ${focus.blockedTargets.map((item) => item.target).join(", ")}`;
+        : `blocked on ${formatProofTargetList(focus.blockedTargets)}`;
       lines.push(
         `- ${focus.label}: ${state}.${formatCapabilityBlockers(focus.missingCapabilities)} ${focus.reason} ${formatLiveProviderFocusAction(focus)}`,
       );
@@ -1658,7 +1686,7 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
       lines.push(`- facts needed: ${checklist.factsNeededCount}`);
       for (const fact of checklist.factsNeeded) {
         const sensitivity = fact.sensitive ? " (sensitive; keep local)" : "";
-        lines.push(`  - ${fact.label}: provide ${fact.provideAs}${sensitivity}`);
+        lines.push(`  - ${formatProofFactLabel(fact.label)}: provide ${fact.provideAs}${sensitivity}`);
       }
     } else {
       lines.push("- facts needed: none");
@@ -1717,6 +1745,10 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
     }
   }
   return lines;
+}
+
+function formatProofFactLabel(label: string) {
+  return label === "OpenClaw gateway URL" ? "Shared message gateway URL" : label;
 }
 
 function formatHostedCheckoutFactNeed(fact: string): string {

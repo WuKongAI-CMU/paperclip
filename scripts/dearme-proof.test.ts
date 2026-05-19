@@ -352,7 +352,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     ],
   );
   assert.match(status.liveProviderFocus[0]?.reason ?? "", /Polsia-level first wow/);
-  assert.match(status.liveProviderFocus[1]?.reason ?? "", /Naive-style substrate reuse/);
+  assert.match(status.liveProviderFocus[1]?.reason ?? "", /Shared-message proof/);
   assert.equal(
     status.liveProviderFocus[1]?.operatorCommand.endsWith("--target openclaw_messages --live"),
     true,
@@ -484,18 +484,20 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /Local no-send proof: ready/);
   assert.match(formatted, /Voice semantic\/review-loop proof: blocked/);
   assert.match(formatted, /Live provider proof: blocked/);
+  assert.match(formatted, /Blocked targets: production host, professional-network message, Telegram message, iMessage\/SMS message, paid campaign/);
+  assert.doesNotMatch(formatted, /Blocked targets: [^\n]*(linkedin_dm|imessage_message|telegram_message|openclaw_messages)/);
   assert.match(formatted, /Next live proof focus:/);
-  assert.match(formatted, /Production host smoke: blocked on deploy_site_production/);
+  assert.match(formatted, /Production host smoke: blocked on production host/);
   assert.match(formatted, /Needs: enable production host smoke; public HTTPS DearMe host; exported private proof artifact; proof-page text or host-smoke manifest/);
-  assert.match(formatted, /OpenClaw message smoke: blocked on telegram_message, imessage_message/);
+  assert.match(formatted, /Shared Telegram\/iMessage smoke: blocked on Telegram message, iMessage\/SMS message/);
   assert.match(formatted, /Needs: shared message gateway endpoint; shared message gateway auth; Telegram smoke recipient; Telegram smoke body; iMessage smoke recipient/);
   assert.match(
     formatted,
-    /OpenClaw message smoke: blocked on telegram_message, imessage_message\..*Guarded live command after owner facts are present, the no-send check passes, and explicit live confirmation is set: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
+    /Shared Telegram\/iMessage smoke: blocked on Telegram message, iMessage\/SMS message\..*Guarded live command after owner facts are present, the no-send check passes, and explicit live confirmation is set: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
   );
   assert.doesNotMatch(
     formatted,
-    /OpenClaw message smoke: blocked on telegram_message, imessage_message\..* Run: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
+    /Shared Telegram\/iMessage smoke: blocked on Telegram message, iMessage\/SMS message\..* Run: DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
   );
   assert.match(formatted, /Next live provider proof setup:/);
   assert.match(
@@ -510,7 +512,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /Capture setup locally:/);
   assert.match(formatted, /Preview the product handoff receipt without writing: pnpm --silent dearme:next-proof -- --target all --no-write --handoff-receipt-file <launch-proof-handoff-receipt\.txt>/);
   assert.match(formatted, /If preview passes, import the product handoff receipt: pnpm --silent dearme:next-proof -- --target all --handoff-receipt-file <launch-proof-handoff-receipt\.txt>/);
-  assert.match(formatted, /OpenClaw gateway URL: provide OPENCLAW_GATEWAY_URL or DEARME_USE_LOCAL_OPENCLAW_CONFIG=1/);
+  assert.match(formatted, /Shared message gateway URL: provide OPENCLAW_GATEWAY_URL or DEARME_USE_LOCAL_OPENCLAW_CONFIG=1/);
   assert.match(formatted, /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
   assert.match(formatted, /Guarded live proof after owner facts are present, the no-send check passes, and explicit live confirmation is set:/);
   assert.match(formatted, /--target openclaw_messages --live/);
