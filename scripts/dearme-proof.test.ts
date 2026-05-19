@@ -450,6 +450,16 @@ test("DearMe proof status separates local proof from live provider setup", () =>
     formatted,
     /DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)/,
   );
+  assert.match(formatted, /Daily Plain summary facts needed:/);
+  assert.match(formatted, /DEARME_PLAIN_API_KEY is missing\./);
+  assert.match(
+    formatted,
+    /DEARME_CODEX_DAILY_PLAIN_EMAIL or DEARME_PLAIN_DAILY_EMAIL is missing\./,
+  );
+  assert.deepEqual(status.dailyPlainSummaryFactsNeeded, [
+    "DEARME_PLAIN_API_KEY is missing.",
+    "DEARME_CODEX_DAILY_PLAIN_EMAIL or DEARME_PLAIN_DAILY_EMAIL is missing.",
+  ]);
   assert.match(formatted, /Paid beta access: ready\. Paid-loop proof shows a recorded receipt activates access and unblocks first-cycle work/);
   assert.match(formatted, /Payment path proof: ready\. Keep selling private beta through recorded receipts/);
   assert.match(formatted, /dearme:payment-readiness/);
