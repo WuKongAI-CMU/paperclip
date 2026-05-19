@@ -156,7 +156,7 @@ const PROMPT_TO_ARTIFACT_REQUIREMENTS: readonly {
 }[] = [
   {
     key: "reuse_existing_substrates",
-    promptRequirement: "Maximize reuse of proven source systems instead of rebuilding core infrastructure",
+    promptRequirement: "Maximize reuse of proven product infrastructure instead of rebuilding core systems",
     artifactItems: [
       "donor_reuse_absorption",
       "openclaw_message_contract_rehearsal",
@@ -173,7 +173,7 @@ const PROMPT_TO_ARTIFACT_REQUIREMENTS: readonly {
   },
   {
     key: "symphony_coordination",
-    promptRequirement: "Use the coordination ledger so concurrent agents converge on the same head",
+    promptRequirement: "Use the coordination ledger so concurrent work converges on the same head",
     artifactItems: ["symphony_coordination"],
   },
   {
@@ -1003,10 +1003,10 @@ export function summarizeDearMeGoalAudit(
     architectureSpineItem(status),
     sectionItem({
       key: "donor_reuse_absorption",
-      label: "Source-system reuse and worktree absorption",
+      label: "Reusable infrastructure and worktree absorption",
       section: section(status, "integration_absorption_proof"),
       commands: [status.commands.integrationAudit],
-      evidencePrefix: "Source-system reuse evidence",
+      evidencePrefix: "Reusable infrastructure evidence",
     }),
     symphonyCoordinationItem(status),
     publicFirstRunLandingItem(publicFirstRunLanding),

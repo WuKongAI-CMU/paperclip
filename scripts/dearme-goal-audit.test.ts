@@ -493,12 +493,12 @@ test("DearMe goal audit blocks completion on live production host proof", () => 
   );
   assert.match(formatted, /DearMe active goal completion audit/);
   assert.match(formatted, /Prompt-to-artifact checklist:/);
-  assert.match(formatted, /Maximize reuse of proven source systems instead of rebuilding core infrastructure: blocked/);
+  assert.match(formatted, /Maximize reuse of proven product infrastructure instead of rebuilding core systems: blocked/);
   assert.match(formatted, /Cover the commercial user system: paid access, payment path, account health, cost guardrails, and launch boundaries: blocked/);
   assert.match(formatted, /Keep paid users receiving weekly value, retention recovery, feedback learning, and support handoff: met/);
   assert.match(formatted, /Do not mark completion from proxy proof; require real live channel\/provider evidence: blocked/);
   assert.match(formatted, /Missing: Shared Telegram\/iMessage message proof, Live provider proof set/);
-  assert.match(formatted, /\[x\] Source-system reuse and worktree absorption: met/);
+  assert.match(formatted, /\[x\] Reusable infrastructure and worktree absorption: met/);
   assert.match(formatted, /\[x\] Sellable private-beta paid access loop: met/);
   assert.match(formatted, /\[x\] Paid-user operations and guardrail loop: met/);
   assert.match(formatted, /\[x\] Weekly value and paid-retention loop: met/);
@@ -506,7 +506,22 @@ test("DearMe goal audit blocks completion on live production host proof", () => 
   assert.match(formatted, /\[ \] Phone-reachable private proof page: blocked/);
   assert.doesNotMatch(
     formatted,
-    /Naive|Paperclip|OpenClaw|Symphony|Polsia|substrate|embedding\/model|Bedrock|Claude|GPT|Voyage/,
+    /Naive|Paperclip|OpenClaw|Symphony|Polsia|substrate|source-system|source system|embedding\/model|Bedrock|Claude|GPT|Voyage/,
+  );
+  const structuredUserText = [
+    ...auditWithHostProvider.promptToArtifactChecklist.flatMap((item) => [
+      item.promptRequirement,
+      item.evidence,
+      ...item.missing,
+    ]),
+    ...auditWithHostProvider.items.flatMap((item) => [
+      item.label,
+      item.evidence,
+    ]),
+  ].join("\n");
+  assert.doesNotMatch(
+    structuredUserText,
+    /Naive|Paperclip|OpenClaw|Symphony|Polsia|substrate|source-system|source system|embedding\/model|Bedrock|Claude|GPT|Voyage/,
   );
   assert.match(formatted, /Missing capabilities: enable production host smoke; public HTTPS DearMe host; exported private proof artifact; proof-page text or host-smoke manifest/);
   assert.match(formatted, /Run: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --target deploy_site_production/);
