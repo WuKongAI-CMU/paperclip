@@ -79,7 +79,38 @@ function standingLoopAudit(): DearMeStandingLoopAudit {
       complete: false,
       verdict: "not complete",
       promptToArtifactChecklist: [],
-      items: [],
+      items: [
+        {
+          key: "openclaw_message_reuse",
+          label: "OpenClaw shared Telegram/iMessage message proof",
+          status: "blocked",
+          requiredForGoal: true,
+          evidence: "OpenClaw message proof waits for the iMessage/SMS smoke recipient.",
+          blockers: ["imessage_message"],
+          commands: ["pnpm --silent dearme:next-proof -- --target openclaw_messages"],
+        },
+        {
+          key: "live_provider_set",
+          label: "Live provider proof set",
+          status: "blocked",
+          requiredForGoal: true,
+          evidence: "Live provider proof waits for approved professional-network and iMessage facts.",
+          blockers: ["linkedin_dm", "imessage_message"],
+          commands: ["pnpm --silent dearme:provider-smoke -- --check --target all"],
+        },
+        {
+          key: "first_payment_hosted_checkout",
+          label: "First-$29 hosted checkout path",
+          status: "blocked",
+          requiredForGoal: true,
+          evidence: "Hosted checkout remains blocked until payment setup facts are configured.",
+          blockers: [
+            "DEARME_PAYMENT_LINK_URL is missing.",
+            "DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing (sensitive; value hidden).",
+          ],
+          commands: ["pnpm --silent dearme:payment-readiness"],
+        },
+      ],
       ownerProofFactsNeeded: [
         "Professional-network partner messages endpoint: provide DEARME_LINKEDIN_DM_MESSAGES_URL",
       ],
@@ -146,6 +177,10 @@ test("builds the required daily Plain summary from ledger and standing-loop evid
   assert.match(summary.body, /Self-serve checkout claim: blocked\. Self-serve checkout is not claimable until the \$29\/month DearMe offer payment link and receipt sync are configured\./);
   assert.match(summary.body, /Keep selling private beta through recorded receipts/);
   assert.match(summary.body, /does not create checkout sessions, charge cards, call payment APIs/);
+  assert.match(summary.body, /Goal completion blockers:/);
+  assert.match(summary.body, /OpenClaw shared Telegram\/iMessage message proof: blocked \(imessage_message\)/);
+  assert.match(summary.body, /Live provider proof set: blocked \(linkedin_dm; imessage_message\)/);
+  assert.match(summary.body, /First-\$29 hosted checkout path: blocked \(DEARME_PAYMENT_LINK_URL is missing\.; DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)\.\)/);
   assert.match(summary.body, /typescript: 5\.9\.3 -> 6\.0\.3 \(major\) - Major dependency updates wait for human review\./);
   assert.match(summary.body, /DEARME_LINKEDIN_DM_MESSAGES_URL/);
   assert.match(summary.body, /DEARME_PAYMENT_LINK_URL is missing/);

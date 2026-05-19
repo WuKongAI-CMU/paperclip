@@ -7,6 +7,7 @@ import {
   runDearMeStandingLoopAudit,
   type DearMeStandingLoopAudit,
 } from "./dearme-standing-loop-audit.ts";
+import type { DearMeGoalAuditItem } from "./dearme-goal-audit.ts";
 import {
   inspectDearMePaymentReadiness,
   type DearMePaymentReadiness,
@@ -151,6 +152,17 @@ function reviewRequiredDependencyLines(audit: DearMeStandingLoopAudit) {
   });
 }
 
+function goalBlockerDetail(item: DearMeGoalAuditItem) {
+  if (item.blockers.length === 0) return "";
+  return ` (${item.blockers.join("; ")})`;
+}
+
+function goalCompletionBlockerLines(audit: DearMeStandingLoopAudit) {
+  return audit.goal.items
+    .filter((item) => item.requiredForGoal && item.status !== "met")
+    .map((item) => `- ${item.label}: ${item.status}${goalBlockerDetail(item)}`);
+}
+
 function hasHumanHelpFacts(audit: DearMeStandingLoopAudit) {
   return ownerFacts(audit).length > 0
     || firstPaymentFacts(audit).length > 0
@@ -172,6 +184,7 @@ export function buildDearMeDailyPlainSummary(input: {
   const paymentFactLines = firstPaymentFacts(audit).map((fact) => `- ${fact}`);
   const dailyPlainSummaryFactLines = dailyPlainSummaryFacts(audit).map((fact) => `- ${fact}`);
   const reviewRequiredLines = reviewRequiredDependencyLines(audit);
+  const goalBlockerLines = goalCompletionBlockerLines(audit);
   const payment = input.paymentReadiness;
   const bodyLines = [
     subject,
@@ -196,6 +209,9 @@ export function buildDearMeDailyPlainSummary(input: {
     `- Safety: ${payment.noExternalActionGuarantee}`,
   ];
 
+  if (goalBlockerLines.length > 0) {
+    bodyLines.push("", "Goal completion blockers:", ...goalBlockerLines);
+  }
   if (ownerFactLines.length > 0) {
     bodyLines.push("", "Owner proof facts needed:", ...ownerFactLines);
   }
