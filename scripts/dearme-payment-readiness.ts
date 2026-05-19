@@ -285,6 +285,8 @@ function formatHostedCheckoutBlocker(blocker: string): string {
 export function dearMePaymentReadinessEnvTemplate(): string {
   return [
     "# Optional self-serve payment path. Manual private-beta receipt recording works without these.",
+    `# ${PAYMENT_LINK_ENV} must be the customer-facing HTTPS link for the live ${DEARME_CHECKOUT_OFFER}.`,
+    "# Keep payment secrets local/server-side; do not paste them into chat, docs, or customer copy.",
     "# Keep the local receipt-sync and provider contracts green before claiming hosted checkout:",
     "# pnpm --silent dearme:payment-receipt-sync-proof -- --check",
     "# pnpm --silent dearme:payment-provider-contract-proof -- --check",

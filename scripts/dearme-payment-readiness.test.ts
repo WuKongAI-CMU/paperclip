@@ -145,6 +145,11 @@ test("DearMe payment readiness env template names only local setup variables", (
 
   assert.match(template, /DEARME_PAYMENT_LINK_URL=/);
   assert.match(template, /DEARME_PAYMENT_RECEIPT_SYNC_SECRET=/);
+  assert.match(
+    template,
+    /DEARME_PAYMENT_LINK_URL must be the customer-facing HTTPS link for the live \$29\/month DearMe offer/,
+  );
+  assert.match(template, /Keep payment secrets local\/server-side/);
   assert.match(template, /dearme:payment-receipt-sync-proof/);
   assert.match(template, /dearme:payment-provider-contract-proof/);
   assert.match(template, /Manual private-beta receipt recording works without these/);
