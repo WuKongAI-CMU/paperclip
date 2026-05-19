@@ -4,7 +4,7 @@
 
 > **P0 carve-out (adopted 2026-05-14).** OpenClaw runtime and `dearme-ai-proxy` runtime are **deferred to P1**. Architecture and code stay in tree as dormant artifacts. P0 paid beta ships **web-only**: web inbound, browser MediaRecorder for voice capture, Paperclip routines/heartbeats for cron, web-first outbound (LinkedIn copy-to-clipboard, X via OAuth, email via Resend/SMTP). The §3 diagram below describes the **P1+ target state**; in P0 the OpenClaw layer is dormant and the proxy routes are unmounted. Full rationale, per-role verdict, code touchpoints, and revival criteria in [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md).
 
-Last updated: 2026-05-19 (post DM-NEXT-PROOF-SAFE-GATEWAY-TEXT)
+Last updated: 2026-05-19 (post DM-SAFE-SHARED-MESSAGE-TARGET-ALIAS)
 
 ---
 
@@ -295,6 +295,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-STANDING-LOOP-SAFE-OWNER-FACT** — `pnpm dearme:standing-loop-audit` now renders the owner-held phone-message proof fact with a support-safe label in human-readable output while preserving exact internal fact names for audit state and guarded commands.
 - **DM-GOAL-AUDIT-SAFE-OWNER-FACT** — `pnpm dearme:goal-audit -- --check` now renders the owner-held phone-message proof fact with a support-safe label in human-readable output while preserving exact internal fact names for JSON, audit state, and guarded commands.
 - **DM-NEXT-PROOF-SAFE-GATEWAY-TEXT** — `pnpm dearme:next-proof` and `pnpm dearme:provider-smoke` now render shared-message gateway blockers and the owner-held phone-message proof fact with support-safe labels in human-readable output while preserving exact env templates, internal state, and guarded live commands.
+- **DM-SAFE-SHARED-MESSAGE-TARGET-ALIAS** — Human command guidance for shared-message proof now uses the support-safe `shared_messages` target alias across provider-smoke, next-proof, status, goal-audit, release-gate, standing-loop, rehearsal, and human-help output while preserving the legacy grouped target internally and as a backward-compatible CLI alias.
 - **DM-TSX-PATCH-BUMP-3** — root `tsx` now resolves to 4.22.3, clearing the autonomous dependency loop while leaving review-required esbuild, TypeScript, and Vitest updates for human review.
 - **DM-TSX-PATCH-BUMP-2** — root `tsx` now resolves to 4.22.2, keeping the autonomous dependency loop clear while leaving review-required major and 0.x-minor updates for human review.
 - **DM-INDEX-FRESHNESS-AUDIT** — `pnpm dearme:doc-freshness-audit -- --check` now verifies this shipped index records the latest non-doc-freshness run-ledger slice, and the standing-loop audit surfaces stale docs before owner-blocked state.
