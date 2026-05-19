@@ -4,7 +4,7 @@
 
 > **P0 carve-out (adopted 2026-05-14).** OpenClaw runtime and `dearme-ai-proxy` runtime are **deferred to P1**. Architecture and code stay in tree as dormant artifacts. P0 paid beta ships **web-only**: web inbound, browser MediaRecorder for voice capture, Paperclip routines/heartbeats for cron, web-first outbound (LinkedIn copy-to-clipboard, X via OAuth, email via Resend/SMTP). The §3 diagram below describes the **P1+ target state**; in P0 the OpenClaw layer is dormant and the proxy routes are unmounted. Full rationale, per-role verdict, code touchpoints, and revival criteria in [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md).
 
-Last updated: 2026-05-19 (post DM-DAILY-SUMMARY-SAFE-LEDGER-TEXT)
+Last updated: 2026-05-19 (post DM-RELEASE-GATE-SAFE-NARRATIVE)
 
 ---
 
@@ -289,6 +289,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-STATUS-SAFE-PROOF-NARRATIVE** — `pnpm dearme:status` now renders product verdict, integration handoff, shared-message proof, and voice-scorer narrative without source-system names while preserving exact guarded operator commands.
 - **DM-GOAL-AUDIT-SAFE-NARRATIVE** — `pnpm dearme:goal-audit` now renders prompt requirements, proof labels, verdict, evidence, and shared-message owner fact labels without source-system names while preserving stable keys and exact guarded operator commands.
 - **DM-DAILY-SUMMARY-SAFE-LEDGER-TEXT** — `pnpm dearme:daily-plain-summary` now sanitizes shipped run-ledger summaries and blocker labels before support-thread delivery, keeping source-system and provider names out of the Plain body while preserving stable internal keys and exact guarded commands.
+- **DM-RELEASE-GATE-SAFE-NARRATIVE** — `pnpm dearme:release-gate` now sanitizes proof, blocker, benchmark, and embedded goal-audit text in human-readable output, keeping backstage source-system names out of release-gate narratives while preserving internal models and guarded commands.
 - **DM-TSX-PATCH-BUMP-3** — root `tsx` now resolves to 4.22.3, clearing the autonomous dependency loop while leaving review-required esbuild, TypeScript, and Vitest updates for human review.
 - **DM-TSX-PATCH-BUMP-2** — root `tsx` now resolves to 4.22.2, keeping the autonomous dependency loop clear while leaving review-required major and 0.x-minor updates for human review.
 - **DM-INDEX-FRESHNESS-AUDIT** — `pnpm dearme:doc-freshness-audit -- --check` now verifies this shipped index records the latest non-doc-freshness run-ledger slice, and the standing-loop audit surfaces stale docs before owner-blocked state.
