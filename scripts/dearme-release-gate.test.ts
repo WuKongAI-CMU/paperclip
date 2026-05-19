@@ -293,6 +293,7 @@ test("DearMe release gate allows private proof while blocking public launch", ()
   assert.match(formatted, /Shared Telegram\/iMessage message proof: imessage_message/);
   assert.match(formatted, /Facts needed before live proof:/);
   assert.match(formatted, /LinkedIn approved smoke recipient: provide DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN/);
+  assert.match(formatted, /iMessage\/SMS approved smoke recipient: provide approved phone-message proof recipient/);
   assert.match(formatted, /Operator handoff:/);
   assert.match(formatted, /Capture approved facts locally: pnpm --silent dearme:next-proof -- --target all --linkedin-messages-url <partner-messages-url> --linkedin-recipient-urn <approved-linkedin-recipient-urn> --imessage-recipient <approved-phone-or-imessage>/);
   assert.match(formatted, /Preview the product handoff receipt without writing: pnpm --silent dearme:next-proof -- --target all --no-write --handoff-receipt-file <launch-proof-handoff-receipt\.txt>/);
@@ -324,7 +325,7 @@ test("DearMe release gate allows private proof while blocking public launch", ()
   assert.match(formatted, /source-system: matched/);
   assert.match(formatted, /first-wow benchmark: partial/);
   assert.match(formatted, /shared-message gateway: partial\. The shared message gateway contract is proven locally and Telegram setup is ready/);
-  assert.doesNotMatch(formatted, /\bOpenClaw\b|\bNaive\/Paperclip\b|\bPolsia\b|\bSymphony\b|\bsubstrate\b/);
+  assert.doesNotMatch(formatted, /\bOpenClaw\b|\bOPENCLAW\b|\bNaive\/Paperclip\b|\bPolsia\b|\bSymphony\b|\bsubstrate\b/);
   assert.match(formatted, /Supply approved live-proof details/);
   assert.match(
     formatted,

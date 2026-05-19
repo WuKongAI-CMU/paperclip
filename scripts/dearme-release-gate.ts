@@ -802,6 +802,7 @@ export function summarizeDearMeReleaseGate(
 
 function formatReleaseGateProofText(value: string): string {
   return value
+    .replace(/\bDEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT\b/g, "approved phone-message proof recipient")
     .replace(/\bOpenClaw shared Telegram\/iMessage message proof\b/g, "Shared Telegram/iMessage message proof")
     .replace(/\bOpenClaw message contract\b/g, "shared-message contract")
     .replace(/\bOpenClaw message\b/g, "shared-message")
@@ -855,7 +856,9 @@ export function formatDearMeReleaseGate(gate: DearMeReleaseGate): string[] {
     lines.push("Facts needed before live proof:");
     for (const fact of gate.factsNeeded) {
       const sensitivity = fact.sensitive ? " (sensitive; keep local)" : "";
-      lines.push(`- ${fact.label}: provide ${fact.provideAs}${sensitivity}`);
+      lines.push(
+        `- ${formatReleaseGateProofText(fact.label)}: provide ${formatReleaseGateProofText(fact.provideAs)}${sensitivity}`,
+      );
     }
   }
 
