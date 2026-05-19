@@ -785,6 +785,9 @@ export function formatDearMeNextProofHumanHelp(
       `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file ${setup.envFile} --target openclaw_messages --live`,
     ]
     : [setup.ownerHandoff.liveOrRunCommand];
+  const statusSummary = facts.length === 0
+    ? `- Status: ${setup.ownerHandoff.status}.`
+    : `- Status: ${setup.ownerHandoff.status}. Private beta remains sellable and operable; public launch and live provider proof remain blocked until the three approved details above are provided.`;
 
   const lines = [
     `### ${date} - External live-proof facts`,
@@ -827,7 +830,9 @@ export function formatDearMeNextProofHumanHelp(
   lines.push("");
   lines.push("Current generated proof handoff status:");
   lines.push("");
-  lines.push(`- Status: ${setup.ownerHandoff.status}.`);
+  lines.push(`- Last verified: ${date} with \`pnpm --silent dearme:standing-loop-audit -- --check\`, \`pnpm --silent dearme:status\`, and \`pnpm --silent dearme:goal-audit\`.`);
+  lines.push("- Regenerate this request with `pnpm --silent dearme:next-proof -- --target all --no-write --human-help-markdown`.");
+  lines.push(statusSummary);
   lines.push(setup.capturedFacts.length === 0
     ? "- Captured details: none in the local proof setup."
     : `- Captured details: ${setup.capturedFacts.length}/${DEARME_OWNER_PROOF_FACT_SPECS.length}.`);

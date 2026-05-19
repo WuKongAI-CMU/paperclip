@@ -471,6 +471,8 @@ test("DearMe human support queue stays aligned with the generated owner proof ha
     assert.match(help, /Professional-network smoke recipient:/);
     assert.match(help, /iMessage\/SMS smoke recipient:/);
     assert.match(help, /Current generated proof handoff status:/);
+    assert.match(help, /Last verified: 2026-05-19 with\s+`pnpm --silent dearme:standing-loop-audit -- --check`,\s+`pnpm --silent dearme:status`, and `pnpm --silent dearme:goal-audit`/);
+    assert.match(help, /pnpm --silent dearme:next-proof -- --target all --no-write --human-help-markdown/);
     assert.match(help, /Captured details: none in the local proof setup\./);
     assert.match(help, /send, publish, deploy, or spend/);
     assert.ok(setup.ownerHandoff.captureCommand);
@@ -530,6 +532,9 @@ test("DearMe next proof generates the Peter-facing human support queue entry", a
     for (const fact of DEARME_OWNER_PROOF_FACT_SPECS) {
       assert.match(markdown, new RegExp(fact.provideAs));
     }
+    assert.match(markdown, /Last verified: 2026-05-14 with `pnpm --silent dearme:standing-loop-audit -- --check`, `pnpm --silent dearme:status`, and `pnpm --silent dearme:goal-audit`\./);
+    assert.match(markdown, /Regenerate this request with `pnpm --silent dearme:next-proof -- --target all --no-write --human-help-markdown`\./);
+    assert.match(markdown, /Status: blocked\. Private beta remains sellable and operable; public launch and live provider proof remain blocked until the three approved details above are provided\./);
     assert.match(markdown, /Captured details: none in the local proof setup\./);
     assert.match(markdown, /No-send check: blocked\./);
     assert.match(markdown, new RegExp(escapeRegExp(setup.ownerHandoff.captureCommand ?? "")));
