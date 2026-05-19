@@ -4,7 +4,7 @@
 
 > **P0 carve-out (adopted 2026-05-14).** OpenClaw runtime and `dearme-ai-proxy` runtime are **deferred to P1**. Architecture and code stay in tree as dormant artifacts. P0 paid beta ships **web-only**: web inbound, browser MediaRecorder for voice capture, Paperclip routines/heartbeats for cron, web-first outbound (LinkedIn copy-to-clipboard, X via OAuth, email via Resend/SMTP). The §3 diagram below describes the **P1+ target state**; in P0 the OpenClaw layer is dormant and the proxy routes are unmounted. Full rationale, per-role verdict, code touchpoints, and revival criteria in [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md).
 
-Last updated: 2026-05-19 (post DM-DAILY-SUMMARY-DEPENDENCY-HELP-QUEUE)
+Last updated: 2026-05-19 (post DM-DEPENDENCY-REVIEW-FOCUSED-TEST-CHECK)
 
 ---
 
@@ -278,6 +278,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-MANUAL-FIRST-PAYMENT-29** — onboarding manual paid-beta receipts now default to the $29 beta offer and active paid-beta UI fixtures/receipts use $29, keeping the first-payment path aligned with pricing without creating live checkout sessions or logging customer identifiers.
 - **DM-PAYMENT-ENV-TEMPLATE-29-OFFER** — the generated hosted-checkout env template now names the live $29/month DearMe offer requirement and reminds operators to keep payment secrets local/server-side before self-serve checkout claims.
 - **DM-DAILY-SUMMARY-DEPENDENCY-HELP-QUEUE** — the daily Plain summary now points dependency-only review queues at `docs/NEEDS_HUMAN_HELP.md`, so Peter still has the review templates when no owner-proof, checkout, or Plain-delivery facts are missing.
+- **DM-DEPENDENCY-REVIEW-FOCUSED-TEST-CHECK** — dependency review queues now list the focused dependency-loop test alongside the audit and typecheck before any approved upgrade PR can merge.
 - **DM-TSX-PATCH-BUMP-2** — root `tsx` now resolves to 4.22.2, keeping the autonomous dependency loop clear while leaving review-required major and 0.x-minor updates for human review.
 - **DM-INDEX-FRESHNESS-AUDIT** — `pnpm dearme:doc-freshness-audit -- --check` now verifies this shipped index records the latest non-doc-freshness run-ledger slice, and the standing-loop audit surfaces stale docs before owner-blocked state.
 - **DM-DAILY-SUMMARY-LOOP-GATES** — `pnpm dearme:daily-plain-summary` now includes doc freshness plus autonomous and review-required dependency counts in the daily blocker summary, with review-required dependency names kept visible for Peter-owned review.
