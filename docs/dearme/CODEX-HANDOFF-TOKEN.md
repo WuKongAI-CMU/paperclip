@@ -49,49 +49,49 @@ Mark items DONE in `docs/dearme/CODEX-RUN-LEDGER.md` as you finish them. Pick th
 
 ### P0 — must ship before any human customer signs up
 
-- [ ] **DM-DOCKERFILE-SERVER** — Multi-stage Dockerfile for the Express server (Node 22 alpine, pnpm fetch + install, build, prune dev deps, copy `server/dist` + `ui/dist`). Binds `PORT`. Exposes 3000. Healthcheck hits `/healthz`. `docker build` succeeds locally. ~80 LoC.
-- [ ] **DM-DOCKER-COMPOSE** — `docker-compose.yml` for local prod simulation: `dearme-server`, `dearme-postgres` (16-alpine with named volume), `dearme-caddy` (reverse proxy w/ self-signed cert on `dearme.local`). Migrations run automatically on `dearme-server` boot via an init container. `docker-compose up` brings the stack live, `curl https://dearme.local/healthz` returns 200.
-- [ ] **DM-MIGRATION-BOOT** — Server entrypoint runs `drizzle-kit migrate` on startup against `DATABASE_URL` BEFORE accepting traffic. Fails closed if migration fails. Configurable with `DEARME_AUTO_MIGRATE=1` (default on).
-- [ ] **DM-STRUCTURED-LOGGING** — Pino JSON logger across server. Redact `authorization`, `password`, `dm_sk_*`, `re_*`, `sk_live_*`, `whsec_*`, `phc_*`, email PII at log level (use `pino.redact`). Every request gets a `requestId`. Tests assert redaction.
-- [ ] **DM-RATE-LIMIT** — `express-rate-limit` on public endpoints: `/v1/dearme/checkout/start` (5/min/IP), `/api/auth/signin/*` (10/min/IP), `/v1/email/unsubscribe` (30/min/IP). 429 with customer-safe body. Tests.
-- [ ] **DM-SECURITY-HEADERS** — `helmet()` with prod-grade CSP (script-src self + posthog.com, connect-src self + posthog + voyage + stripe + loops), HSTS, X-Frame-Options DENY, no `unsafe-eval`. Tests assert headers present.
-- [ ] **DM-CORS-PROD** — CORS allows only `https://dearme.app` + `https://www.dearme.app` + preview Vercel URLs in prod; `*` in dev. Tests.
-- [ ] **DM-SESSION-COOKIE-HARDEN** — better-auth session cookie: `httpOnly`, `secure` in prod, `sameSite=lax`. Tests assert.
-- [ ] **DM-STRIPE-IDEMPOTENCY-STRESS** — Add 3 new tests to `dearme-stripe-checkout.test.ts`: 10x identical webhook event in 100ms produces 1 grant. Out-of-order `invoice.paid` then `checkout.session.completed` still records access. Webhook with stripe-signature replay > 5min old → rejected.
-- [ ] **DM-BEDROCK-LINT-GUARD** — ESLint or grep-based CI step that fails if `@aws-sdk/client-bedrock` is in any `package.json` or imported anywhere. Wire into `dearme-ci.yml`.
-- [ ] **DM-EMPTY-STATES** — `Work Ready`, `Decisions Needed`, `Voice & Memory`, `Opportunities`, `Portfolio` all have customer-safe empty states with a CTA. Tests render each empty state without crashing.
-- [ ] **DM-LOADING-STATES** — Skeleton loaders on first-cycle preview, workbench, and Decisions panel. Tests render the skeleton with `data-testid` selectors.
-- [ ] **DM-ERROR-PAGES** — `/404` + `/500` static React pages with DearMe-original copy. Wire to Express error handler.
-- [ ] **DM-FAVICON-OG** — Drop a DearMe-branded SVG favicon at `ui/public/favicon.svg` + a 1200×630 OG card placeholder PNG at `ui/public/og-image.png` (use a simple `<svg>` → PNG via sharp at build time; placeholder is fine for now).
-- [ ] **DM-PRICING-PAGE** — `/pricing` static React route. ONE plan only: $29/mo Beta. Three-day free trial. "Request access" CTA in the current invite-only mode; later switches to Stripe Checkout when invite-gate lifts.
-- [ ] **DM-ABOUT-FAQ** — `/about` (founder story) + `/faq` (10-15 Q&As pulled from Terms/Privacy/AUP + voice gate + cost cap + cancellation). DearMe-original copy.
-- [ ] **DM-VOICE-SAMPLE-UI** — On first cycle, ask the user to paste 3 writing samples (text fields) or paste a URL (we fetch + extract). Each sample writes to `dearme_voice_profiles` via the existing service. Min 1, max 10. Tests.
-- [ ] **DM-ONBOARDING-BUGBASH** — Full top-to-bottom run of landing → signup → first cycle in headless playwright. Catch any console error, any 4xx/5xx, any substrate language leak. Fix what breaks.
+- [x] **DM-DOCKERFILE-SERVER** — Multi-stage Dockerfile for the Express server (Node 22 alpine, pnpm fetch + install, build, prune dev deps, copy `server/dist` + `ui/dist`). Binds `PORT`. Exposes 3000. Healthcheck hits `/healthz`. `docker build` succeeds locally. ~80 LoC.
+- [x] **DM-DOCKER-COMPOSE** — `docker-compose.yml` for local prod simulation: `dearme-server`, `dearme-postgres` (16-alpine with named volume), `dearme-caddy` (reverse proxy w/ self-signed cert on `dearme.local`). Migrations run automatically on `dearme-server` boot via an init container. `docker-compose up` brings the stack live, `curl https://dearme.local/healthz` returns 200.
+- [x] **DM-MIGRATION-BOOT** — Server entrypoint runs `drizzle-kit migrate` on startup against `DATABASE_URL` BEFORE accepting traffic. Fails closed if migration fails. Configurable with `DEARME_AUTO_MIGRATE=1` (default on).
+- [x] **DM-STRUCTURED-LOGGING** — Pino JSON logger across server. Redact `authorization`, `password`, `dm_sk_*`, `re_*`, `sk_live_*`, `whsec_*`, `phc_*`, email PII at log level (use `pino.redact`). Every request gets a `requestId`. Tests assert redaction.
+- [x] **DM-RATE-LIMIT** — `express-rate-limit` on public endpoints: `/v1/dearme/checkout/start` (5/min/IP), `/api/auth/signin/*` (10/min/IP), `/v1/email/unsubscribe` (30/min/IP). 429 with customer-safe body. Tests.
+- [x] **DM-SECURITY-HEADERS** — `helmet()` with prod-grade CSP (script-src self + posthog.com, connect-src self + posthog + voyage + stripe + loops), HSTS, X-Frame-Options DENY, no `unsafe-eval`. Tests assert headers present.
+- [x] **DM-CORS-PROD** — CORS allows only `https://dearme.app` + `https://www.dearme.app` + preview Vercel URLs in prod; `*` in dev. Tests.
+- [x] **DM-SESSION-COOKIE-HARDEN** — better-auth session cookie: `httpOnly`, `secure` in prod, `sameSite=lax`. Tests assert.
+- [x] **DM-STRIPE-IDEMPOTENCY-STRESS** — Add 3 new tests to `dearme-stripe-checkout.test.ts`: 10x identical webhook event in 100ms produces 1 grant. Out-of-order `invoice.paid` then `checkout.session.completed` still records access. Webhook with stripe-signature replay > 5min old → rejected.
+- [x] **DM-BEDROCK-LINT-GUARD** — ESLint or grep-based CI step that fails if `@aws-sdk/client-bedrock` is in any `package.json` or imported anywhere. Wire into `dearme-ci.yml`.
+- [x] **DM-EMPTY-STATES** — `Work Ready`, `Decisions Needed`, `Voice & Memory`, `Opportunities`, `Portfolio` all have customer-safe empty states with a CTA. Tests render each empty state without crashing.
+- [x] **DM-LOADING-STATES** — Skeleton loaders on first-cycle preview, workbench, and Decisions panel. Tests render the skeleton with `data-testid` selectors.
+- [x] **DM-ERROR-PAGES** — `/404` + `/500` static React pages with DearMe-original copy. Wire to Express error handler.
+- [x] **DM-FAVICON-OG** — Drop a DearMe-branded SVG favicon at `ui/public/favicon.svg` + a 1200×630 OG card placeholder PNG at `ui/public/og-image.png` (use a simple `<svg>` → PNG via sharp at build time; placeholder is fine for now).
+- [x] **DM-PRICING-PAGE** — `/pricing` static React route. ONE plan only: $29/mo Beta. Three-day free trial. "Request access" CTA in the current invite-only mode; later switches to Stripe Checkout when invite-gate lifts.
+- [x] **DM-ABOUT-FAQ** — `/about` (founder story) + `/faq` (10-15 Q&As pulled from Terms/Privacy/AUP + voice gate + cost cap + cancellation). DearMe-original copy.
+- [x] **DM-VOICE-SAMPLE-UI** — On first cycle, ask the user to paste 3 writing samples (text fields) or paste a URL (we fetch + extract). Each sample writes to `dearme_voice_profiles` via the existing service. Min 1, max 10. Tests.
+- [x] **DM-ONBOARDING-BUGBASH** — Full top-to-bottom run of landing → signup → first cycle in headless playwright. Catch any console error, any 4xx/5xx, any substrate language leak. Fix what breaks.
 
 ### P1 — pre-50-paying-customer hardening
 
-- [ ] **DM-EMAIL-TEMPLATES** — Resend HTML templates for: welcome (Day 0), receipt (post-payment), trial-ending (Day 2 of trial), dunning (failed payment), cancellation confirm. DearMe voice. Mobile-responsive.
-- [ ] **DM-PROD-SMOKE** — `pnpm dearme:prod-smoke` script that runs against `DEARME_PUBLIC_URL` and validates: landing 200 + hero text present, /healthz 200, /readyz 200, sample Stripe Checkout session creates, voice MCP server responds. Exit 1 on any failure. Wire into CI for the deploy preview URL.
-- [ ] **DM-MOBILE-QA** — Playwright runs landing + onboarding + workbench at viewport 360×640 (iPhone SE), 390×844 (iPhone 14), 768×1024 (iPad). Tests assert no horizontal scroll, all CTAs are tappable (min 44×44px).
-- [ ] **DM-BUNDLE-AUDIT** — `pnpm --filter @paperclipai/ui build` reports gzipped bundle size. Add `vite-bundle-analyzer`. Target: < 200KB initial. Fix worst offenders.
-- [ ] **DM-LCP-AUDIT** — Lighthouse CI runs against the landing page in CI. Target: LCP < 2.5s, CLS < 0.1, INP < 200ms.
-- [ ] **DM-SENTRY** — `@sentry/node` for server + `@sentry/react` for ui. Env-gated. Source maps uploaded in CI. PII scrubbed (use Sentry's `beforeSend` + the same redaction list as DM-STRUCTURED-LOGGING).
-- [ ] **DM-DB-BACKUP-SCRIPT** — `scripts/dearme-db-backup.sh` does `pg_dump` to a timestamped file in S3-compatible storage (Backblaze B2 / R2). Doc the env vars needed. Cron friendly.
-- [ ] **DM-AUDIT-LOG-EXPORT** — Add a per-company GET that returns the last 90 days of `activity_log` rows for that company. Authed + assertCompanyAccess. JSON. Useful for trust + support.
-- [ ] **DM-SLOW-QUERY-LOG** — Drizzle wrapper that logs any query > 200ms with the SQL fragment (redacted). Helps post-launch perf.
+- [x] **DM-EMAIL-TEMPLATES** — Resend HTML templates for: welcome (Day 0), receipt (post-payment), trial-ending (Day 2 of trial), dunning (failed payment), cancellation confirm. DearMe voice. Mobile-responsive.
+- [x] **DM-PROD-SMOKE** — `pnpm dearme:prod-smoke` script that runs against `DEARME_PUBLIC_URL` and validates: landing 200 + hero text present, /healthz 200, /readyz 200, sample Stripe Checkout session creates, voice MCP server responds. Exit 1 on any failure. Wire into CI for the deploy preview URL.
+- [x] **DM-MOBILE-QA** — Playwright runs landing + onboarding + workbench at viewport 360×640 (iPhone SE), 390×844 (iPhone 14), 768×1024 (iPad). Tests assert no horizontal scroll, all CTAs are tappable (min 44×44px).
+- [x] **DM-BUNDLE-AUDIT** — `pnpm --filter @paperclipai/ui build` reports gzipped bundle size. Add `vite-bundle-analyzer`. Target: < 200KB initial. Fix worst offenders.
+- [x] **DM-LCP-AUDIT** — Lighthouse CI runs against the landing page in CI. Target: LCP < 2.5s, CLS < 0.1, INP < 200ms.
+- [x] **DM-SENTRY** — `@sentry/node` for server + `@sentry/react` for ui. Env-gated. Source maps uploaded in CI. PII scrubbed (use Sentry's `beforeSend` + the same redaction list as DM-STRUCTURED-LOGGING).
+- [x] **DM-DB-BACKUP-SCRIPT** — `scripts/dearme-db-backup.sh` does `pg_dump` to a timestamped file in S3-compatible storage (Backblaze B2 / R2). Doc the env vars needed. Cron friendly.
+- [x] **DM-AUDIT-LOG-EXPORT** — Add a per-company GET that returns the last 90 days of `activity_log` rows for that company. Authed + assertCompanyAccess. JSON. Useful for trust + support.
+- [x] **DM-SLOW-QUERY-LOG** — Drizzle wrapper that logs any query > 200ms with the SQL fragment (redacted). Helps post-launch perf.
 
 ### P2 — first-50-to-500 customers
 
-- [ ] **DM-AB-LANDING-COPY** — 3 landing-page hero variants behind PostHog feature flag. Track conversion to `landing_cta_submitted`. Pick winner after 200 visitors per variant.
-- [ ] **DM-COHORT-DASHBOARD** — PostHog dashboard config (JSON file in `docs/dearme/ops/`) for the weekly cohort retention model: D1 retention, D7 retention, D28 retention.
-- [ ] **DM-REFERRAL-UI** — `/dearme/refer` page where a paid user mints + copies their referral code. Pulls from `dearme_referral_codes` (already exists). Share buttons (X, LinkedIn, copy link). Tests.
-- [ ] **DM-VOICE-CALIBRATION-LOOP** — When a user rejects 3+ Voice Gate scores in a row, auto-trigger a calibration session: ask for 5 more samples + clarify what was off. Improves voice profile.
-- [ ] **DM-WORK-STREAM-SSE-RECONNECT** — Browser reconnects to `/v1/dearme/companies/:companyId/events` with exponential backoff after WiFi blips. Tests with a faked drop.
-- [ ] **DM-CUSTOMER-DELETION-UX** — `/dearme/settings/danger` page with the GDPR-delete button + 7-day grace period. Renders the existing `dearme-gdpr` service.
-- [ ] **DM-SUPPORT-RESPONSE-SLA** — Cron checks Plain inbox: if any thread > 24h without response, send a Loops event `dearme_support_overdue` (triggers an email to Peter).
-- [ ] **DM-WEEKLY-LETTER-EMAIL** — Cron Sunday 18:00 user-local sends the weekly Dear Me letter via Resend. Pulls from existing `dearme-weekly-report` service.
-- [ ] **DM-OPPORTUNITY-REPLY-INGEST** — When the user gets a reply to an outbound DearMe outreach, capture it (LinkedIn partner webhook / email reply hook) and surface in Decisions Needed.
-- [ ] **DM-FOUNDER-DOGFOOD-PROOF** — Peter's own DearMe instance feeds the `dearme-public-feed` table on opt-in. Public marketing surface = the founder's own private brand team in action.
+- [x] **DM-AB-LANDING-COPY** — 3 landing-page hero variants behind PostHog feature flag. Track conversion to `landing_cta_submitted`. Pick winner after 200 visitors per variant.
+- [x] **DM-COHORT-DASHBOARD** — PostHog dashboard config (JSON file in `docs/dearme/ops/`) for the weekly cohort retention model: D1 retention, D7 retention, D28 retention.
+- [x] **DM-REFERRAL-UI** — `/dearme/refer` page where a paid user mints + copies their referral code. Pulls from `dearme_referral_codes` (already exists). Share buttons (X, LinkedIn, copy link). Tests.
+- [x] **DM-VOICE-CALIBRATION-LOOP** — When a user rejects 3+ Voice Gate scores in a row, auto-trigger a calibration session: ask for 5 more samples + clarify what was off. Improves voice profile.
+- [x] **DM-WORK-STREAM-SSE-RECONNECT** — Browser reconnects to `/v1/dearme/companies/:companyId/events` with exponential backoff after WiFi blips. Tests with a faked drop.
+- [x] **DM-CUSTOMER-DELETION-UX** — `/dearme/settings/danger` page with the GDPR-delete button + 7-day grace period. Renders the existing `dearme-gdpr` service.
+- [x] **DM-SUPPORT-RESPONSE-SLA** — Cron checks Plain inbox: if any thread > 24h without response, send a Loops event `dearme_support_overdue` (triggers an email to Peter).
+- [x] **DM-WEEKLY-LETTER-EMAIL** — Cron Sunday 18:00 user-local sends the weekly Dear Me letter via Resend. Pulls from existing `dearme-weekly-report` service.
+- [x] **DM-OPPORTUNITY-REPLY-INGEST** — When the user gets a reply to an outbound DearMe outreach, capture it (LinkedIn partner webhook / email reply hook) and surface in Decisions Needed.
+- [x] **DM-FOUNDER-DOGFOOD-PROOF** — Peter's own DearMe instance feeds the `dearme-public-feed` table on opt-in. Public marketing surface = the founder's own private brand team in action.
 
 ### Standing infinite work (do whenever idle)
 
