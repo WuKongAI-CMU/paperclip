@@ -629,6 +629,43 @@ export async function prepareDearMeNextProofSetup(
 }
 
 export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[] {
+  const factLabelForHuman = (label: string) => {
+    if (label === "OpenClaw gateway URL") return "Shared message gateway URL";
+    if (label === "OpenClaw gateway auth") return "Shared message gateway auth";
+    return label;
+  };
+  const factProvideAsForHuman = (provideAs: string) => {
+    if (provideAs === "OPENCLAW_GATEWAY_URL or DEARME_USE_LOCAL_OPENCLAW_CONFIG=1") {
+      return "shared message gateway URL or opted-in local shared-message config";
+    }
+    if (provideAs === "OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH") {
+      return "shared message gateway auth";
+    }
+    if (provideAs === "DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT or local Telegram smoke config") {
+      return "approved Telegram smoke recipient or opted-in local Telegram config";
+    }
+    if (provideAs === "DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT") {
+      return "approved Telegram smoke recipient";
+    }
+    if (provideAs === "DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY") {
+      return "Telegram smoke body";
+    }
+    if (provideAs === "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT") {
+      return "approved phone-message proof recipient";
+    }
+    return provideAs;
+  };
+  const textForHuman = (value: string) =>
+    value
+      .replace(/\bOpenClaw gateway URL\b/g, "Shared message gateway URL")
+      .replace(/\bOpenClaw gateway auth\b/g, "Shared message gateway auth")
+      .replace(/\bOPENCLAW_GATEWAY_URL or DEARME_USE_LOCAL_OPENCLAW_CONFIG=1\b/g, "shared message gateway URL or opted-in local shared-message config")
+      .replace(/\bOPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH\b/g, "shared message gateway auth")
+      .replace(/\bOPENCLAW_GATEWAY_URL\b/g, "shared message gateway URL")
+      .replace(/\bDEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT or local Telegram smoke config\b/g, "approved Telegram smoke recipient or opted-in local Telegram config")
+      .replace(/\bDEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT\b/g, "approved Telegram smoke recipient")
+      .replace(/\bDEARME_OPENCLAW_TELEGRAM_SMOKE_BODY\b/g, "Telegram smoke body")
+      .replace(/\bDEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT\b/g, "approved phone-message proof recipient");
   const lines = [
     "DearMe next proof setup",
     `- target: ${setup.target}`,
@@ -639,7 +676,7 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
   ];
 
   for (const item of setup.readiness) {
-    const state = item.ready ? "ready" : `blocked: ${item.missing.join(", ")}`;
+    const state = item.ready ? "ready" : `blocked: ${item.missing.map(textForHuman).join(", ")}`;
     const live = item.liveConfirmationRequired
       ? " Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1."
       : "";
@@ -651,9 +688,9 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
   for (const lane of setup.ownerHandoff.proofLanes) {
     const state = lane.status === "ready"
       ? "ready"
-      : `waiting on ${lane.waitingOn.join(", ")}`;
+      : `waiting on ${lane.waitingOn.map(textForHuman).join(", ")}`;
     const live = lane.liveGuardRequired ? " Guarded live proof required." : "";
-    lines.push(`- ${lane.target}: ${state}. ${lane.nextStep}${live}`);
+    lines.push(`- ${lane.target}: ${state}. ${textForHuman(lane.nextStep)}${live}`);
   }
 
   lines.push("");
@@ -664,7 +701,7 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
   if (setup.noSendCheck.blockedTargets.length > 0) {
     lines.push("- blocked:");
     for (const item of setup.noSendCheck.blockedTargets) {
-      lines.push(`  - ${item.target}: waiting on ${item.waitingOn.join(", ")}`);
+      lines.push(`  - ${item.target}: waiting on ${item.waitingOn.map(textForHuman).join(", ")}`);
     }
   } else {
     lines.push("- blocked: none");
@@ -679,7 +716,7 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
         ? ` for ${fact.targets.join(", ")}`
         : ` for ${fact.targets[0]}`;
       const redaction = fact.sensitive ? " (keep value local; do not paste secrets)" : "";
-      lines.push(`- ${fact.label}: provide ${fact.provideAs}${targetList}${redaction}`);
+      lines.push(`- ${factLabelForHuman(fact.label)}: provide ${factProvideAsForHuman(fact.provideAs)}${targetList}${redaction}`);
     }
   }
 
@@ -690,7 +727,7 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
       : "Captured local facts:");
     for (const fact of setup.capturedFacts) {
       const redaction = fact.sensitive ? " (value kept local)" : " (value hidden)";
-      lines.push(`- ${fact.label}: ${fact.key}${redaction}`);
+      lines.push(`- ${factLabelForHuman(fact.label)}: ${factProvideAsForHuman(fact.key)}${redaction}`);
     }
   }
 
@@ -698,7 +735,7 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
   lines.push("Owner handoff:");
   lines.push(`- status: ${setup.ownerHandoff.status}`);
   lines.push(`- ${setup.ownerHandoff.headline}.`);
-  lines.push(`- ${setup.ownerHandoff.summary}`);
+  lines.push(`- ${textForHuman(setup.ownerHandoff.summary)}`);
   if (setup.ownerHandoff.factsToProvide.length > 0) {
     lines.push("- Provide:");
     for (const fact of setup.ownerHandoff.factsToProvide) {
@@ -706,7 +743,7 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
         ? ` for ${fact.targets.join(", ")}`
         : ` for ${fact.targets[0]}`;
       const redaction = fact.sensitive ? " (keep value local; do not paste secrets)" : "";
-      lines.push(`  - ${fact.label}: ${fact.provideAs}=${fact.placeholder}${targetList}${redaction}`);
+      lines.push(`  - ${factLabelForHuman(fact.label)}: ${factProvideAsForHuman(fact.provideAs)}=${fact.placeholder}${targetList}${redaction}`);
     }
   } else {
     lines.push("- Provide: no owner facts missing.");

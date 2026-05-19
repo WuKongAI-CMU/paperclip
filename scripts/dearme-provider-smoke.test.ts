@@ -9,6 +9,7 @@ import {
   dearMeProviderSmokeEnvTemplate,
   dearMeProviderSmokeOperatorCommands,
   formatDearMeProviderSmokeReadiness,
+  formatDearMeProviderSmokeResultLines,
   inspectDearMeProviderSmokeReadiness,
   loadDearMeProviderSmokeEnv,
   parseDearMeProviderSmokeArgs,
@@ -276,13 +277,15 @@ test("provider smoke readiness formatting deduplicates shared OpenClaw blockers"
 
   assert.equal(
     lines[1],
-    "Shared missing config: OPENCLAW_GATEWAY_URL, OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH",
+    "Shared missing config: shared message gateway URL, shared message gateway auth",
   );
   assert.doesNotMatch(telegramLine ?? "", /OPENCLAW_GATEWAY_URL/);
   assert.doesNotMatch(imessageLine ?? "", /OPENCLAW_GATEWAY_TOKEN/);
   assert.match(telegramLine ?? "", /DEARME_OPENCLAW_TELEGRAM_SMOKE_RECIPIENT/);
   assert.match(telegramLine ?? "", /DEARME_OPENCLAW_TELEGRAM_SMOKE_BODY/);
-  assert.match(imessageLine ?? "", /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
+  assert.match(imessageLine ?? "", /approved phone-message proof recipient/);
+  assert.doesNotMatch(lines.join("\n"), /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
+  assert.doesNotMatch(lines.join("\n"), /OpenClaw gateway/);
   assert.doesNotMatch(imessageLine ?? "", /DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY/);
   assert.match(lines.join("\n"), /--check --target openclaw_messages/);
   assert.match(lines.join("\n"), /--target openclaw_messages --live/);
@@ -295,6 +298,25 @@ test("provider smoke readiness formatting deduplicates shared OpenClaw blockers"
   assert.match(allLines.join("\n"), /--target openclaw_messages --live/);
   assert.doesNotMatch(allLines.join("\n"), /--target telegram_message --live/);
   assert.doesNotMatch(allLines.join("\n"), /--target imessage_message --live/);
+});
+
+test("provider smoke blocked result formatting uses support-safe missing labels", () => {
+  const output = formatDearMeProviderSmokeResultLines([{
+    target: "imessage_message",
+    status: "blocked",
+    reason: "missing-live-provider-smoke-config",
+    missing: [
+      "OPENCLAW_GATEWAY_URL",
+      "OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH",
+      "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
+    ],
+  }]).join("\n");
+
+  assert.match(output, /shared message gateway URL/);
+  assert.match(output, /shared message gateway auth/);
+  assert.match(output, /approved phone-message proof recipient/);
+  assert.doesNotMatch(output, /OpenClaw/);
+  assert.doesNotMatch(output, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
 });
 
 test("provider smoke parses target aliases", () => {
