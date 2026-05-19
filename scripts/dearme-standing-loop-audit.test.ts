@@ -116,7 +116,8 @@ test("treats owner-blocked goal state as clear for autonomous standing loop", ()
   assert.match(formatted, /Owner facts needed/);
   assert.match(formatted, /DEARME_LINKEDIN_DM_MESSAGES_URL/);
   assert.match(formatted, /DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN/);
-  assert.match(formatted, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
+  assert.match(formatted, /iMessage\/SMS approved smoke recipient: provide approved phone-message proof recipient/);
+  assert.doesNotMatch(formatted, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
   assert.match(
     formatted,
     /Human help queue: docs\/NEEDS_HUMAN_HELP\.md has the reply templates and safe follow-up commands for these blockers\./,
