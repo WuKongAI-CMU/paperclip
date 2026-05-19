@@ -154,7 +154,8 @@ function reviewRequiredDependencyLines(audit: DearMeStandingLoopAudit) {
 function hasHumanHelpFacts(audit: DearMeStandingLoopAudit) {
   return ownerFacts(audit).length > 0
     || firstPaymentFacts(audit).length > 0
-    || dailyPlainSummaryFacts(audit).length > 0;
+    || dailyPlainSummaryFacts(audit).length > 0
+    || audit.dependency.reviewRequiredUpdates.length > 0;
 }
 
 export function buildDearMeDailyPlainSummary(input: {
