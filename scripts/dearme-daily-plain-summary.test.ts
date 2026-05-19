@@ -8,6 +8,7 @@ import {
   parseDearMeDailyPlainSummaryArgs,
   runDearMeDailyPlainSummary,
 } from "./dearme-daily-plain-summary.ts";
+import { inspectDearMePaymentReadiness } from "./dearme-payment-readiness.ts";
 import type { DearMeStandingLoopAudit } from "./dearme-standing-loop-audit.ts";
 
 const ledgerMarkdown = [
@@ -113,6 +114,7 @@ test("builds the required daily Plain summary from ledger and standing-loop evid
     date: "2026-05-16",
     ledgerEntries: parseDearMeDailyLedgerEntries(ledgerMarkdown),
     standingLoopAudit: standingLoopAudit(),
+    paymentReadiness: inspectDearMePaymentReadiness({}),
   });
 
   assert.equal(summary.subject, "Codex daily — 2026-05-16");
@@ -123,6 +125,11 @@ test("builds the required daily Plain summary from ledger and standing-loop evid
   assert.match(summary.body, /Doc freshness: clear/);
   assert.match(summary.body, /Autonomous dependency updates: 0/);
   assert.match(summary.body, /Review-required dependency updates: 1/);
+  assert.match(summary.body, /First-\$29 path:/);
+  assert.match(summary.body, /Private beta sales: ready now\. Manual receipt recording can unlock paid beta access/);
+  assert.match(summary.body, /Self-serve checkout claim: blocked\. Self-serve checkout is not claimable until the \$29\/month DearMe offer payment link and receipt sync are configured\./);
+  assert.match(summary.body, /Keep selling private beta through recorded receipts/);
+  assert.match(summary.body, /does not create checkout sessions, charge cards, call payment APIs/);
   assert.match(summary.body, /typescript: 5\.9\.3 -> 6\.0\.3 \(major\) - Major dependency updates wait for human review\./);
   assert.match(summary.body, /DEARME_LINKEDIN_DM_MESSAGES_URL/);
   assert.match(summary.body, /DEARME_PAYMENT_LINK_URL is missing/);
@@ -153,6 +160,7 @@ test("skips without live network when Plain is not configured", async () => {
     env: {},
     readLedger: async () => ledgerMarkdown,
     runStandingLoopAudit: async () => standingLoopAudit(),
+    inspectPaymentReadiness: () => inspectDearMePaymentReadiness({}),
     createThread: async () => {
       called = true;
       return { ok: true, skipped: false, status: 200, threadId: "thread_123" };
@@ -202,6 +210,7 @@ test("posts a low-severity Plain thread when configured", async () => {
     },
     readLedger: async () => ledgerMarkdown,
     runStandingLoopAudit: async () => standingLoopAudit(),
+    inspectPaymentReadiness: () => inspectDearMePaymentReadiness({}),
     createThread: async (input, options) => {
       assert.equal(options.apiKey, "plain-key");
       assert.equal(input.email, "peter@example.com");
