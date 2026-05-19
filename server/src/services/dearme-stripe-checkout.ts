@@ -15,6 +15,7 @@ import {
   type DearMeLifecycleResult,
 } from "./dearme-lifecycle.js";
 import { dearMeReferralService } from "./dearme-referral.js";
+import { serverCapture, type DearMeServerCaptureInput, type DearMeServerCaptureResult } from "./dearme-analytics.js";
 
 export interface DearMeCheckoutSessionInput {
   email: string;
@@ -104,6 +105,7 @@ export interface DearMeStripeCheckoutServiceOptions {
   paidBetaAccess?: PaidBetaAccessGranter;
   resolveCompanyIdForEmail?: (email: string) => Promise<string | null>;
   sendLifecycleEvent?: (input: DearMeLifecycleEventInput) => Promise<DearMeLifecycleResult>;
+  captureAnalytics?: (input: DearMeServerCaptureInput) => Promise<DearMeServerCaptureResult>;
 }
 
 const stripeCheckoutCompletedEventSchema = z.object({
@@ -261,6 +263,17 @@ async function sendLifecycleEventBestEffort(
     await sendLifecycleEvent(input);
   } catch {
     // Lifecycle email delivery must not block Stripe webhook acknowledgement.
+  }
+}
+
+async function captureAnalyticsBestEffort(
+  captureAnalytics: (input: DearMeServerCaptureInput) => Promise<DearMeServerCaptureResult>,
+  input: DearMeServerCaptureInput,
+) {
+  try {
+    await captureAnalytics(input);
+  } catch {
+    // Product analytics must not block Stripe webhook acknowledgement.
   }
 }
 
@@ -434,6 +447,7 @@ export function dearMeStripeCheckoutService(
   const stripeClient = options.stripeClient ?? createDearMeStripeClient(process.env.DEARME_STRIPE_SECRET_KEY ?? "");
   const resolveCompany = options.resolveCompanyIdForEmail ?? ((email: string) => resolveCompanyIdForEmail(db, email));
   const sendLifecycleEvent = options.sendLifecycleEvent ?? sendDearMeLifecycleEvent;
+  const captureAnalytics = options.captureAnalytics ?? serverCapture;
   const processedStripeEventIds = new Set<string>();
   const processingStripeEventIds = new Set<string>();
 
@@ -761,6 +775,21 @@ export function dearMeStripeCheckoutService(
     try {
       const result = await paidBetaAccess.recordHostedPaymentReceipts(receipt.companyId, [receipt]);
       processedStripeEventIds.add(event.id);
+      if (result.recordedEvents.length > 0) {
+        const tier = event.data.object.metadata?.tier ?? event.data.object.metadata?.access ?? "paid_beta";
+        await captureAnalyticsBestEffort(captureAnalytics, {
+          distinctId: receipt.companyId,
+          event: "checkout_completed",
+          properties: {
+            company_id: receipt.companyId,
+            plan: tier,
+            amount_usd: receipt.amountCents / 100,
+            currency: receipt.currency,
+            source: "stripe_checkout_session_completed",
+            checkout_session_id: checkoutSessionId,
+          },
+        });
+      }
       const lifecycleEmail = checkoutSessionEmail(event);
       if (lifecycleEmail && result.recordedEvents.length > 0) {
         const tier = event.data.object.metadata?.tier ?? event.data.object.metadata?.access ?? "paid_beta";
