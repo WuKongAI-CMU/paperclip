@@ -240,6 +240,8 @@ export function formatDearMePaymentReadinessHumanHelp(
     "",
     "Current generated payment readiness:",
     "",
+    `- Last verified: ${date} with \`pnpm --silent dearme:payment-readiness\`.`,
+    "- Regenerate this request with `pnpm --silent dearme:payment-readiness -- --human-help-markdown`.",
     `- Status: ${readiness.status}.`,
     `- Private beta sales: ${readiness.canSellPrivateBeta ? "ready now" : "blocked"}.`,
     `- Hosted checkout: ${hostedStatus}.`,

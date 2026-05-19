@@ -168,6 +168,8 @@ test("DearMe payment readiness generates a Peter-facing checkout support request
     /DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)/,
   );
   assert.match(markdown, /Claim self-serve checkout: no/);
+  assert.match(markdown, /Last verified: 2026-05-14 with `pnpm --silent dearme:payment-readiness`\./);
+  assert.match(markdown, /Regenerate this request with `pnpm --silent dearme:payment-readiness -- --human-help-markdown`\./);
   assert.match(markdown, /pnpm --silent dearme:payment-readiness -- --print-env-template > \.dearme-payment\.env/);
   assert.match(markdown, /pnpm --silent dearme:payment-readiness -- --env-file \.dearme-payment\.env --check-hosted/);
   assert.match(markdown, /dearme:payment-receipt-sync-proof/);
@@ -215,6 +217,7 @@ test("DearMe human support queue stays aligned with hosted checkout readiness", 
   assert.match(help, /live \$29\/month DearMe offer/);
   assert.match(help, /Receipt sync configured:/);
   assert.match(help, /Provider label:/);
+  assert.match(help, /Last verified: 2026-05-19 with\s+`pnpm --silent dearme:payment-readiness`/);
   assert.match(help, /pnpm --silent dearme:payment-readiness -- --human-help-markdown/);
   assert.match(help, /pnpm --silent dearme:payment-readiness -- --env-file \.dearme-payment\.env --check-hosted/);
   assert.match(help, /pnpm --silent dearme:payment-receipt-sync-proof -- --check/);

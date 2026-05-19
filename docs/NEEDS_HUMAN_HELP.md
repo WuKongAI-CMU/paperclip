@@ -52,7 +52,7 @@ Safety notes:
 - The summary is low severity and contains run-ledger status plus
   owner-blocked facts; it does not include customer data or secrets.
 
-### 2026-05-17 - External live-proof facts
+### 2026-05-19 - External live-proof facts
 
 - Needs help from: Peter
 - What they need to do: provide the owner-approved external proof details for
@@ -141,7 +141,7 @@ Safety notes:
 - Live external proof remains a human-confirmed step because it contacts real
   recipients.
 
-### 2026-05-17 - Self-serve checkout configuration
+### 2026-05-19 - Self-serve checkout configuration
 
 - Needs help from: Peter
 - What they need to do: provide the real hosted payment link for the live
