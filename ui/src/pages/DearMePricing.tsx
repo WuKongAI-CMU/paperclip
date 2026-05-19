@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowRight, Check, Mail } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,14 @@ export function DearMePricing() {
   const [email, setEmail] = useState("");
   const [waitlistStatus, setWaitlistStatus] = useState<"idle" | "submitting" | "joined">("idle");
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    capture("pricing_viewed", {
+      source: "pricing",
+      plan: "beta_29",
+      checkout_ready: false,
+    });
+  }, []);
 
   async function handleWaitlistSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
