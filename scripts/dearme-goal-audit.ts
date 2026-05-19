@@ -1174,7 +1174,7 @@ export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {
     lines.push("");
     lines.push("Public launch owner-proof facts needed:");
     for (const fact of audit.ownerProofFactsNeeded) {
-      lines.push(`- ${fact}`);
+      lines.push(`- ${formatGoalAuditOwnerFact(fact)}`);
     }
   }
 
@@ -1207,7 +1207,7 @@ export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {
   if (audit.nextAction.ownerFacts?.length) {
     lines.push("- Owner facts needed:");
     for (const fact of audit.nextAction.ownerFacts) {
-      lines.push(`  - ${fact}`);
+      lines.push(`  - ${formatGoalAuditOwnerFact(fact)}`);
     }
   }
   if (audit.nextAction.captureCommands?.length) {
@@ -1243,6 +1243,13 @@ function goalAuditNeedsHumanHelpQueue(audit: DearMeGoalAudit): boolean {
   return audit.ownerProofFactsNeeded.length > 0
     || audit.hostedCheckoutFactsNeeded.length > 0
     || audit.dailyPlainSummaryFactsNeeded.length > 0;
+}
+
+function formatGoalAuditOwnerFact(fact: string): string {
+  return fact.replace(
+    /\bDEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT\b/g,
+    "approved phone-message proof recipient",
+  );
 }
 
 export function parseDearMeGoalAuditArgs(argv: readonly string[]): DearMeGoalAuditArgs {
