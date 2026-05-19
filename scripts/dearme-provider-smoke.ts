@@ -556,12 +556,25 @@ function targetDescription(target: DearMeProviderSmokeTarget) {
     case "linkedin_dm":
       return "send one LinkedIn DM through the configured partner endpoint";
     case "telegram_message":
-      return "send one Telegram message through the configured OpenClaw gateway";
+      return "send one Telegram message through the configured shared message gateway";
     case "imessage_message":
-      return "send one iMessage/SMS through the configured OpenClaw gateway";
+      return "send one iMessage/SMS through the configured shared message gateway";
     case "meta_campaign":
       return "create one paused Meta campaign through the Marketing API";
   }
+}
+
+function formatProviderSmokeRequirementForHuman(requirement: string) {
+  if (requirement === "OPENCLAW_GATEWAY_URL") {
+    return "shared message gateway URL";
+  }
+  if (requirement === "OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH") {
+    return "shared message gateway auth";
+  }
+  if (requirement === "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT") {
+    return "approved phone-message proof recipient";
+  }
+  return requirement;
 }
 
 function credentialRequirement(env: Env, jsonKey: string, fileKey: string) {
@@ -1069,14 +1082,16 @@ export function formatDearMeProviderSmokeReadiness(
   const sharedMissingSet = new Set(sharedMissing);
 
   if (sharedMissing.length > 0) {
-    lines.push(`Shared missing config: ${sharedMissing.join(", ")}`);
+    lines.push(`Shared missing config: ${sharedMissing.map(formatProviderSmokeRequirementForHuman).join(", ")}`);
   }
 
   for (const item of readiness) {
     const itemMissing = item.missing.filter((requirement) =>
       !sharedMissingSet.has(requirement),
     );
-    const blocked = itemMissing.length > 0 ? itemMissing.join(", ") : "shared config above";
+    const blocked = itemMissing.length > 0
+      ? itemMissing.map(formatProviderSmokeRequirementForHuman).join(", ")
+      : "shared config above";
     const state = item.ready ? "ready" : `blocked: ${blocked}`;
     const live = item.liveConfirmationRequired
       ? " Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 to run."
@@ -1679,9 +1694,9 @@ Targets:
   deploy_site_host_rehearsal Optional loopback host smoke for the exported private site packet.
   deploy_site_production    Production host smoke; verifies the returned URL serves expected page text.
   linkedin_dm               Live partner endpoint smoke. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
-  telegram_message          Live Telegram smoke through OpenClaw gateway. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
-  imessage_message          Live iMessage/SMS smoke through OpenClaw gateway. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
-  openclaw_messages         Group: Telegram + iMessage through the shared OpenClaw gateway config.
+  telegram_message          Live Telegram smoke through the shared message gateway. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
+  imessage_message          Live iMessage/SMS smoke through the shared message gateway. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
+  openclaw_messages         Group: Telegram + iMessage through the shared message gateway config.
   meta_campaign             Live Meta Marketing API smoke. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
   all                       Run default readiness targets. Host rehearsal is opt-in.
 
@@ -1703,20 +1718,27 @@ function printReadiness(readiness: readonly DearMeProviderSmokeReadiness[], targ
   }
 }
 
-function printResults(results: readonly DearMeProviderSmokeResult[]) {
-  console.log("DearMe provider smoke result");
+export function formatDearMeProviderSmokeResultLines(results: readonly DearMeProviderSmokeResult[]) {
+  const lines = ["DearMe provider smoke result"];
   for (const result of results) {
     if (result.status === "delivered") {
       const host = typeof result.hostStatus === "number" ? ` host=${result.hostStatus}` : "";
-      console.log(
+      lines.push(
         `- ${result.target}: delivered ${result.externalId}${host}${result.externalUrl ? ` ${result.externalUrl}` : ""}`,
       );
     } else if (result.status === "blocked") {
-      console.log(`- ${result.target}: blocked ${result.reason}; missing ${result.missing.join(", ")}`);
+      lines.push(`- ${result.target}: blocked ${result.reason}; missing ${result.missing.map(formatProviderSmokeRequirementForHuman).join(", ")}`);
     } else {
       const host = typeof result.hostStatus === "number" ? ` host=${result.hostStatus}` : "";
-      console.log(`- ${result.target}: errored ${result.reason}${host}${result.externalUrl ? ` ${result.externalUrl}` : ""}`);
+      lines.push(`- ${result.target}: errored ${result.reason}${host}${result.externalUrl ? ` ${result.externalUrl}` : ""}`);
     }
+  }
+  return lines;
+}
+
+function printResults(results: readonly DearMeProviderSmokeResult[]) {
+  for (const line of formatDearMeProviderSmokeResultLines(results)) {
+    console.log(line);
   }
 }
 

@@ -226,7 +226,8 @@ test("DearMe next proof previews fact captures in no-write mode without touching
     assert.deepEqual(setup.noSendCheck.blockedTargets, []);
     assert.equal(await readFile(envPath, "utf8"), originalEnv);
     assert.match(output, /Provided local facts for this no-write check:/);
-    assert.match(output, /iMessage\/SMS approved smoke recipient: DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT \(value hidden\)/);
+    assert.match(output, /iMessage\/SMS approved smoke recipient: approved phone-message proof recipient \(value hidden\)/);
+    assert.doesNotMatch(output, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
     assert.doesNotMatch(output, /\+15551234567/);
     assert.doesNotMatch(output, /secret-token/);
   } finally {
@@ -270,9 +271,11 @@ test("DearMe next proof creates the local proof env and prints no-send readiness
     assert.match(output, /DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --target openclaw_messages --live/);
     assert.match(output, /imessage_message: blocked/);
     assert.match(output, /Facts needed before any live run:/);
-    assert.match(output, /OpenClaw gateway URL: provide OPENCLAW_GATEWAY_URL or DEARME_USE_LOCAL_OPENCLAW_CONFIG=1 for telegram_message, imessage_message/);
-    assert.match(output, /OpenClaw gateway auth: provide OPENCLAW_GATEWAY_TOKEN or OPENCLAW_WEBHOOK_AUTH for telegram_message, imessage_message \(keep value local; do not paste secrets\)/);
-    assert.match(output, /iMessage\/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT for imessage_message/);
+    assert.match(output, /Shared message gateway URL: provide shared message gateway URL or opted-in local shared-message config for telegram_message, imessage_message/);
+    assert.match(output, /Shared message gateway auth: provide shared message gateway auth for telegram_message, imessage_message \(keep value local; do not paste secrets\)/);
+    assert.match(output, /iMessage\/SMS approved smoke recipient: provide approved phone-message proof recipient for imessage_message/);
+    assert.doesNotMatch(output, /OpenClaw gateway/);
+    assert.doesNotMatch(output, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
     assert.match(output, /Owner handoff:/);
     assert.match(output, /status: blocked/);
     assert.match(output, /Owner facts needed before public launch proof/);
@@ -327,7 +330,7 @@ test("DearMe next proof summarizes OpenClaw lanes when only phone proof is waiti
       {
         target: "telegram_message",
         status: "ready",
-        description: "send one Telegram message through the configured OpenClaw gateway",
+        description: "send one Telegram message through the configured shared message gateway",
         waitingOn: [],
         liveGuardRequired: true,
         nextStep: "Run the no-send check, then the guarded live proof.",
@@ -335,7 +338,7 @@ test("DearMe next proof summarizes OpenClaw lanes when only phone proof is waiti
       {
         target: "imessage_message",
         status: "waiting",
-        description: "send one iMessage/SMS through the configured OpenClaw gateway",
+        description: "send one iMessage/SMS through the configured shared message gateway",
         waitingOn: ["iMessage/SMS approved smoke recipient"],
         liveGuardRequired: true,
         nextStep: "Provide iMessage/SMS approved smoke recipient, then run the no-send check.",
@@ -637,7 +640,8 @@ test("DearMe next proof captures local facts without printing captured values", 
     }]);
     assert.match(contents, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT="\+15551234567"/);
     assert.match(output, /Captured local facts:/);
-    assert.match(output, /iMessage\/SMS approved smoke recipient: DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT \(value hidden\)/);
+    assert.match(output, /iMessage\/SMS approved smoke recipient: approved phone-message proof recipient \(value hidden\)/);
+    assert.doesNotMatch(output, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
     assert.equal(setup.ownerHandoff.status, "ready");
     assert.equal(setup.ownerHandoff.headline, "Ready for guarded live proof");
     assert.equal(setup.ownerHandoff.captureCommand, null);
@@ -709,7 +713,8 @@ test("DearMe next proof captures product handoff receipt facts without printing 
     assert.match(output, /Captured local facts:/);
     assert.match(output, /LinkedIn partner messages endpoint: DEARME_LINKEDIN_DM_MESSAGES_URL \(value hidden\)/);
     assert.match(output, /LinkedIn approved smoke recipient: DEARME_LINKEDIN_DM_SMOKE_RECIPIENT_URN \(value hidden\)/);
-    assert.match(output, /iMessage\/SMS approved smoke recipient: DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT \(value hidden\)/);
+    assert.match(output, /iMessage\/SMS approved smoke recipient: approved phone-message proof recipient \(value hidden\)/);
+    assert.doesNotMatch(output, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
     assert.equal(
       setup.noSendCheck.blockedTargets.some((item) => item.target === "linkedin_dm"),
       false,
