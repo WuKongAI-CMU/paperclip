@@ -8,7 +8,7 @@ stop agent-owned work.
 
 ## Active Requests
 
-### 2026-05-17 - Daily Plain summary delivery configuration
+### 2026-05-19 - Daily Plain summary delivery configuration
 
 - Needs help from: Peter
 - What they need to do: provide the Plain API key plus the Peter recipient
@@ -23,6 +23,8 @@ stop agent-owned work.
 - Agents continue after result by: running
   `pnpm --silent dearme:daily-plain-summary -- --json` and confirming the
   low-severity Plain thread is created.
+- Last verified: 2026-05-19 with
+  `pnpm --silent dearme:daily-plain-summary -- --json`.
 
 Needed values:
 

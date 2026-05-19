@@ -242,6 +242,7 @@ export function buildDearMeDailyPlainHumanHelpMarkdown(input: {
     `- Blocking: no for product development or private-beta operations; yes for delivering the required daily Plain summary automatically. Current blocker: ${blockerText}.`,
     "- Estimated human time: 5-10 minutes once the Plain workspace exists.",
     "- Agents continue after result by: running `pnpm --silent dearme:daily-plain-summary -- --json` and confirming the low-severity Plain thread is created.",
+    `- Last verified: ${input.date} with \`pnpm --silent dearme:daily-plain-summary -- --json\`.`,
     "",
     "Needed values:",
     "",

@@ -120,11 +120,13 @@ export function inspectDearMeHumanHelpQueueFreshness(input: {
   operatingDate: string;
   ownerProofFactsNeeded: string[];
   hostedCheckoutFactsNeeded: string[];
+  dailyPlainSummaryFactsNeeded: string[];
   reviewRequiredDependencyUpdates: number;
 }): DearMeHumanHelpQueueFreshness {
   const requiredSections = [
     input.ownerProofFactsNeeded.length > 0 ? "External live-proof facts" : null,
     input.hostedCheckoutFactsNeeded.length > 0 ? "Self-serve checkout configuration" : null,
+    input.dailyPlainSummaryFactsNeeded.length > 0 ? "Daily Plain summary delivery configuration" : null,
     input.reviewRequiredDependencyUpdates > 0 ? "Dependency review queue" : null,
   ].filter((section): section is string => Boolean(section));
   const staleSections: string[] = [];
@@ -499,6 +501,7 @@ export async function runDearMeStandingLoopAudit(
     operatingDate: dearMeOperatingDate(),
     ownerProofFactsNeeded: goal.ownerProofFactsNeeded,
     hostedCheckoutFactsNeeded: goal.hostedCheckoutFactsNeeded,
+    dailyPlainSummaryFactsNeeded: dailyPlainFacts,
     reviewRequiredDependencyUpdates: dependency.reviewRequiredUpdates.length,
   });
   return summarizeDearMeStandingLoopAudit(
