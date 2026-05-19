@@ -178,9 +178,9 @@ test("builds the required daily Plain summary from ledger and standing-loop evid
   assert.match(summary.body, /Keep selling private beta through recorded receipts/);
   assert.match(summary.body, /does not create checkout sessions, charge cards, call payment APIs/);
   assert.match(summary.body, /Goal completion blockers:/);
-  assert.match(summary.body, /OpenClaw shared Telegram\/iMessage message proof: blocked \(imessage_message\)/);
-  assert.match(summary.body, /Live provider proof set: blocked \(linkedin_dm; imessage_message\)/);
-  assert.match(summary.body, /First-\$29 hosted checkout path: blocked \(DEARME_PAYMENT_LINK_URL is missing\.; DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)\.\)/);
+  assert.match(summary.body, /OpenClaw shared Telegram\/iMessage message proof: blocked \(blocked by imessage_message\)/);
+  assert.match(summary.body, /Live provider proof set: blocked \(blocked by linkedin_dm; imessage_message\)/);
+  assert.match(summary.body, /First-\$29 hosted checkout path: blocked \(blocked by DEARME_PAYMENT_LINK_URL is missing; DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)\)/);
   assert.match(summary.body, /typescript: 5\.9\.3 -> 6\.0\.3 \(major\) - Major dependency updates wait for human review\./);
   assert.match(summary.body, /DEARME_LINKEDIN_DM_MESSAGES_URL/);
   assert.match(summary.body, /DEARME_PAYMENT_LINK_URL is missing/);

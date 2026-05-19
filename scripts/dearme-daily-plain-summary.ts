@@ -152,9 +152,14 @@ function reviewRequiredDependencyLines(audit: DearMeStandingLoopAudit) {
   });
 }
 
+function trimTrailingSentencePeriod(value: string) {
+  return value.trim().replace(/\.$/, "");
+}
+
 function goalBlockerDetail(item: DearMeGoalAuditItem) {
   if (item.blockers.length === 0) return "";
-  return ` (${item.blockers.join("; ")})`;
+  const blockers = item.blockers.map(trimTrailingSentencePeriod).filter(Boolean);
+  return blockers.length > 0 ? ` (blocked by ${blockers.join("; ")})` : "";
 }
 
 function goalCompletionBlockerLines(audit: DearMeStandingLoopAudit) {
