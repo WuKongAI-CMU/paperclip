@@ -150,6 +150,7 @@ test("generates a Peter-facing dependency review support request", () => {
   assert.match(markdown, /typescript: 5\.9\.3 -> 6\.0\.3 \(major\)/);
   assert.match(markdown, /Review-required updates: 2/);
   assert.match(markdown, /pnpm --silent dearme:dependency-loop-audit -- --human-help-markdown/);
+  assert.match(markdown, /pnpm --silent test:dearme-dependency-loop-audit/);
   assert.match(markdown, /pnpm --silent typecheck/);
   assert.match(markdown, /No credentials, live network calls, sends, deploys, or spending/);
 });
@@ -173,6 +174,7 @@ test("DearMe human support queue includes the dependency review request", async 
   assert.match(help, /Dependency upgrades approved:/);
   assert.match(help, /Dependency upgrades defer:/);
   assert.match(help, /pnpm --silent dearme:dependency-loop-audit -- --human-help-markdown/);
+  assert.match(help, /pnpm --silent test:dearme-dependency-loop-audit/);
   assert.match(help, /pnpm --silent dearme:dependency-loop-audit -- --check/);
   assert.match(help, /pnpm --silent typecheck/);
   assert.match(help, /No credentials, live network calls, sends, deploys, or spending/);
