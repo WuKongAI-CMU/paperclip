@@ -351,7 +351,7 @@ const LIVE_PROVIDER_FOCUS_PLAN = [
     label: "Production host smoke",
     targets: ["deploy_site_production"],
     reason:
-      "Polsia-level first wow starts with a phone-reachable private proof page before live sends.",
+      "Phone-reachable first wow starts with a private proof page before live sends.",
     operatorCommand:
       `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --target deploy_site_production`,
   },
@@ -753,7 +753,7 @@ export async function inspectDearMeOpenClawMessageContractStatus(): Promise<
       targets: [...OPENCLAW_MESSAGE_CONTRACT_TARGETS],
       capturedTools: [],
       summary:
-        "DearMe could not run the shared OpenClaw Telegram and iMessage contract rehearsal locally.",
+        "DearMe could not run the shared Telegram and iMessage contract rehearsal locally.",
       unavailableReason: error instanceof Error ? error.message : String(error),
     };
   }
@@ -975,8 +975,8 @@ function integrationAuditDescription(audit: DearMeIntegrationAuditStatus) {
   }
 
   const handoffText = audit.latestHandoffs === null
-    ? "latest Symphony handoffs were not included"
-    : `latest Symphony handoffs ${audit.latestCommittedHandoffs}/${audit.latestHandoffs} committed`;
+    ? "latest coordination handoffs were not included"
+    : `latest coordination handoffs ${audit.latestCommittedHandoffs}/${audit.latestHandoffs} committed`;
   return [
     `Worktree audit shows ${audit.worktrees ?? "unknown"} tracked worktrees`,
     `${audit.reviewedAbsorbed ?? 0} reviewed absorptions`,
@@ -1077,7 +1077,7 @@ function openClawMessageContractDescription(
   contract: DearMeOpenClawMessageContractStatus,
 ) {
   if (contract.unavailableReason) {
-    return `OpenClaw contract rehearsal could not run. Run ${contract.command} before attempting the live shared-message smoke.`;
+    return `Shared-message contract rehearsal could not run. Run ${contract.command} before attempting the live shared-message smoke.`;
   }
 
   const captured = contract.capturedTools.length > 0
@@ -1091,7 +1091,7 @@ function openClawMessageContractSection(
 ): DearMeProofStatusSection {
   return {
     key: "openclaw_message_contract_proof",
-    label: "OpenClaw message contract proof",
+    label: "Shared-message contract proof",
     ready: contract.ready,
     description: openClawMessageContractDescription(contract),
     targets: contract.targets,
@@ -1435,7 +1435,7 @@ export function summarizeDearMeProofStatus(
       label: "Voice semantic/review-loop proof",
       ready: blockedTargets.length === 0,
       description:
-        "Uses the local profile-token scorer seam and soft-reject review loop until a live embedding/model scorer is plugged in.",
+        "Uses the local profile-token scorer seam and soft-reject review loop until the live semantic scorer is plugged in.",
       targets: [...targets],
       blockedTargets,
     });
@@ -1568,15 +1568,15 @@ function formatProductVerdict(status: DearMeProofStatus) {
     && !live.ready
   ) {
     if (!hasBlockedTarget(live, "deploy_site_production")) {
-      return "Product verdict: Naive/Paperclip/OpenClaw substrate proof is strong, integration absorption is clean, and the private DearMe first-wow is phone-reachable; the remaining Polsia gap is live channel/provider proof.";
+      return "Product verdict: reusable proof is strong, integration absorption is clean, and the private DearMe first-wow is phone-reachable; the remaining gap is live channel/provider proof.";
     }
-    return "Product verdict: Naive/Paperclip/OpenClaw substrate proof is strong, integration absorption is clean, and the private DearMe first-wow now includes recurring work; Polsia-style live, phone-reachable wow is still blocked on live provider proof.";
+    return "Product verdict: reusable proof is strong, integration absorption is clean, and the private DearMe first-wow now includes recurring work; live, phone-reachable proof is still blocked on live provider proof.";
   }
   if ((integration?.ready ?? true) && (aha?.ready ?? true) && local?.ready && voice?.ready && live && !live.ready) {
     if (!hasBlockedTarget(live, "deploy_site_production")) {
-      return "Product verdict: Naive/Paperclip substrate proof is strong, integration absorption is clean, and the private DearMe first-wow is phone-reachable; the remaining Polsia gap is live channel/provider proof.";
+      return "Product verdict: reusable proof is strong, integration absorption is clean, and the private DearMe first-wow is phone-reachable; the remaining gap is live channel/provider proof.";
     }
-    return "Product verdict: Naive/Paperclip substrate proof is strong, integration absorption is clean, and the private DearMe first-wow now includes recurring work; Polsia-style live, phone-reachable wow is still blocked on live provider proof.";
+    return "Product verdict: reusable proof is strong, integration absorption is clean, and the private DearMe first-wow now includes recurring work; live, phone-reachable proof is still blocked on live provider proof.";
   }
   if (aha && !aha.ready) {
     return "Product verdict: the product is not ready for a first-wow claim until the local aha proof passes.";

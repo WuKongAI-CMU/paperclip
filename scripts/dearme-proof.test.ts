@@ -28,9 +28,9 @@ function sha256(value: string) {
 function openClawMessageContractReport() {
   return parseDearMeOpenClawMessageContractStatus({
     status: "ready",
-    verdict: "OpenClaw message contract rehearsal: ready.",
+    verdict: "Shared-message contract rehearsal: ready.",
     summary:
-      "DearMe can form the shared OpenClaw Telegram and iMessage gateway contract without network access, external recipients, or provider credentials.",
+      "DearMe can form the shared Telegram and iMessage gateway contract without network access, external recipients, or provider credentials.",
     results: [
       {
         target: "telegram_message",
@@ -351,7 +351,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
       "imessage_recipient",
     ],
   );
-  assert.match(status.liveProviderFocus[0]?.reason ?? "", /Polsia-level first wow/);
+  assert.match(status.liveProviderFocus[0]?.reason ?? "", /Phone-reachable first wow/);
   assert.match(status.liveProviderFocus[1]?.reason ?? "", /Shared-message proof/);
   assert.equal(
     status.liveProviderFocus[1]?.operatorCommand.endsWith("--target openclaw_messages --live"),
@@ -611,13 +611,17 @@ test("DearMe proof status carries current integration absorption evidence", () =
   assert.deepEqual(openClaw?.targets, ["telegram_message", "imessage_message"]);
   assert.match(integration?.description ?? "", /122 tracked worktrees/);
   assert.match(integration?.description ?? "", /118 reviewed absorptions/);
-  assert.match(integration?.description ?? "", /latest Symphony handoffs 2\/2 committed/);
+  assert.match(integration?.description ?? "", /latest coordination handoffs 2\/2 committed/);
   assert.equal(status.commands.integrationAudit, "pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs");
   assert.equal(status.commands.openClawMessageRehearsal, "pnpm --silent dearme:openclaw-message-rehearsal -- --json");
   assert.equal(status.commands.linkedInDmRehearsal, "pnpm --silent dearme:linkedin-dm-rehearsal -- --json");
-  assert.match(formatted, /Product verdict: Naive\/Paperclip\/OpenClaw substrate proof is strong, integration absorption is clean/);
+  assert.match(formatted, /Product verdict: reusable proof is strong, integration absorption is clean/);
   assert.match(formatted, /Integration absorption proof: ready/);
-  assert.match(formatted, /OpenClaw message contract proof: ready/);
+  assert.match(formatted, /Shared-message contract proof: ready/);
+  assert.doesNotMatch(
+    formatted,
+    /Naive\/Paperclip|OpenClaw message contract proof|latest Symphony handoffs|embedding\/model|substrate proof|Polsia-(?:level|style)/,
+  );
   assert.match(formatted, /Live provider proof still requires the provider readiness check, explicit recipient proof, and live-send confirmation/);
   assert.match(formatted, /Captured tools: send_telegram_message, send_imessage/);
   assert.match(formatted, /pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs/);
