@@ -189,6 +189,63 @@ describe("DearMePricing", () => {
     );
   });
 
+  it("renders a pricing proof rail with feed and proof handoffs", () => {
+    const text = container.textContent ?? "";
+    const links = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"));
+
+    expect(text).toContain("Customer-zero proof");
+    expect(text).toContain("Inspect the dogfood trail before you ask for a seat.");
+    expect(links.some((link) => (
+      link.textContent?.includes("View the dogfood feed") && link.href.endsWith("/feed")
+    ))).toBe(true);
+    expect(links.some((link) => (
+      link.textContent?.includes("Open proof archive") && link.href.endsWith("/proof")
+    ))).toBe(true);
+  });
+
+  it("tracks pricing proof rail handoffs without customer identifiers", async () => {
+    const feedLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.includes("View the dogfood feed"));
+    const proofLink = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"))
+      .find((link) => link.textContent?.includes("Open proof archive"));
+    expect(feedLink).toBeDefined();
+    expect(proofLink).toBeDefined();
+    feedLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+    proofLink?.addEventListener("click", (event) => event.preventDefault(), { capture: true });
+
+    await act(async () => {
+      feedLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await act(async () => {
+      proofLink?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_feed_clicked", {
+      page: "pricing",
+      source: "proof_rail",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).toHaveBeenCalledWith("static_proof_clicked", {
+      page: "pricing",
+      source: "proof_rail",
+      plan: "beta_29",
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "static_feed_clicked",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+      }),
+    );
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "static_proof_clicked",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+      }),
+    );
+  });
+
   it("collects a waitlist email and fires the pricing event", async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,

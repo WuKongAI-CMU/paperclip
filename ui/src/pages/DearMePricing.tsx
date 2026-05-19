@@ -58,6 +58,7 @@ const PRICING_FAQS = [
 const WAITLIST_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PRICING_TRIAL_HREF = "/dearme?signup_source=pricing";
 type PricingTrialStartSource = "hero" | "plan" | "waitlist_success";
+type PricingStaticLinkSource = "nav" | "proof_rail";
 
 export function DearMePricing() {
   const [email, setEmail] = useState("");
@@ -134,18 +135,18 @@ export function DearMePricing() {
     });
   }
 
-  function handleProofClick() {
+  function handleProofClick(source: PricingStaticLinkSource) {
     capture("static_proof_clicked", {
       page: "pricing",
-      source: "nav",
+      source,
       plan: "beta_29",
     });
   }
 
-  function handleFeedClick() {
+  function handleFeedClick(source: PricingStaticLinkSource) {
     capture("static_feed_clicked", {
       page: "pricing",
-      source: "nav",
+      source,
       plan: "beta_29",
     });
   }
@@ -159,8 +160,20 @@ export function DearMePricing() {
             DearMe
           </a>
           <div className="flex flex-wrap items-center justify-end gap-3">
-            <a href="/proof" className="text-sm text-muted-foreground hover:text-foreground" onClick={handleProofClick}>Proof</a>
-            <a href="/feed" className="text-sm text-muted-foreground hover:text-foreground" onClick={handleFeedClick}>Feed</a>
+            <a
+              href="/proof"
+              className="text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => handleProofClick("nav")}
+            >
+              Proof
+            </a>
+            <a
+              href="/feed"
+              className="text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => handleFeedClick("nav")}
+            >
+              Feed
+            </a>
             <Button asChild variant="outline" size="sm">
               <a
                 href="mailto:peter@dearme.app?subject=DearMe%20private%20beta%20access"
@@ -250,6 +263,33 @@ export function DearMePricing() {
             />
           ))}
         </DearMeEvidenceGrid>
+
+        <section className="grid gap-6 border-t border-border py-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(18rem,0.55fr)] lg:items-center">
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">Customer-zero proof</p>
+            <h2 className="text-2xl font-semibold tracking-normal">
+              Inspect the dogfood trail before you ask for a seat.
+            </h2>
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+              The public feed shows opted-in founder dogfood work from the same private cycle: proof artifacts,
+              published updates, and the next decision surface without exposing customer data.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+            <Button asChild variant="outline" className="min-h-11">
+              <a href="/feed" onClick={() => handleFeedClick("proof_rail")}>
+                View the dogfood feed
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </Button>
+            <Button asChild variant="ghost" className="min-h-11">
+              <a href="/proof" onClick={() => handleProofClick("proof_rail")}>
+                Open proof archive
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </Button>
+          </div>
+        </section>
 
         <section className="grid gap-6 border-t border-border py-8 lg:grid-cols-[minmax(0,0.75fr)_minmax(22rem,0.55fr)]">
           <div className="space-y-3">
