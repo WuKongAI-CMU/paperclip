@@ -161,11 +161,11 @@ export async function runDearMeOpenClawMessageRehearsal(options: {
   return {
     status: ready ? "ready" : "blocked",
     verdict: ready
-      ? "OpenClaw message contract rehearsal: ready."
-      : "OpenClaw message contract rehearsal: blocked.",
+      ? "Shared-message contract rehearsal: ready."
+      : "Shared-message contract rehearsal: blocked.",
     summary: ready
-      ? "DearMe can form the shared OpenClaw Telegram and iMessage gateway contract without network access, external recipients, or provider credentials."
-      : "DearMe could not prove the shared OpenClaw Telegram and iMessage gateway contract locally.",
+      ? "DearMe can form the shared Telegram and iMessage gateway contract without network access, external recipients, or provider credentials."
+      : "DearMe could not prove the shared Telegram and iMessage gateway contract locally.",
     results,
     captured,
     liveProofStillRequired: true,
@@ -181,7 +181,7 @@ export function formatDearMeOpenClawMessageRehearsal(
   report: DearMeOpenClawMessageRehearsalReport,
 ): string[] {
   const lines = [
-    "DearMe OpenClaw message contract rehearsal",
+    "DearMe shared-message contract rehearsal",
     report.verdict,
     report.summary,
     "",
