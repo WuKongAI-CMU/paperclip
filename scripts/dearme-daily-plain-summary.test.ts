@@ -144,6 +144,33 @@ test("builds the required daily Plain summary from ledger and standing-loop evid
   assert.match(summary.body, /pnpm --silent dearme:next-proof -- --target openclaw_messages/);
 });
 
+test("points dependency-only daily summaries at the human help queue", () => {
+  const audit = standingLoopAudit();
+  audit.goal.ownerProofFactsNeeded = [];
+  audit.goal.hostedCheckoutFactsNeeded = [];
+  audit.goal.dailyPlainSummaryFactsNeeded = [];
+  audit.goal.nextAction.ownerFacts = [];
+  audit.dailyPlainSummaryFacts = [];
+  audit.nextAction = {
+    label: "Continue standing loop",
+    reason: "Only review-required dependency updates are available.",
+    command: "pnpm --silent dearme:dependency-loop-audit -- --check",
+  };
+
+  const summary = buildDearMeDailyPlainSummary({
+    date: "2026-05-16",
+    ledgerEntries: parseDearMeDailyLedgerEntries(ledgerMarkdown),
+    standingLoopAudit: audit,
+    paymentReadiness: inspectDearMePaymentReadiness({}),
+  });
+
+  assert.match(summary.body, /Review-required dependency updates:/);
+  assert.match(summary.body, /typescript: 5\.9\.3 -> 6\.0\.3 \(major\) - Major dependency updates wait for human review\./);
+  assert.match(summary.body, /Human help queue: docs\/NEEDS_HUMAN_HELP\.md has the reply templates and safe follow-up commands for these blockers\./);
+  assert.doesNotMatch(summary.body, /Owner proof facts needed:/);
+  assert.doesNotMatch(summary.body, /Daily Plain summary facts needed:/);
+});
+
 test("defaults daily summary dates to the DearMe operating day instead of UTC", () => {
   assert.equal(
     formatDearMeDailyLocalDate(new Date("2026-05-17T00:32:00.000Z"), "America/New_York"),
