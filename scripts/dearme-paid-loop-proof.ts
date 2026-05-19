@@ -59,7 +59,7 @@ export interface DearMePaidLoopProof {
 }
 
 const DEFAULT_COMPANY_ID = "dearme-paid-loop-smoke";
-const DEFAULT_AMOUNT_CENTS = 25_000;
+const DEFAULT_AMOUNT_CENTS = 2_900;
 const DEFAULT_CURRENCY = "USD";
 const DEFAULT_EXTERNAL_INVOICE_ID = "manual-smoke-paid-loop";
 const DEFAULT_OCCURRED_AT = "2026-05-14T12:00:00.000Z";

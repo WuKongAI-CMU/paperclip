@@ -15,8 +15,9 @@ test("DearMe paid loop proof shows receipt-backed access unlocks first-cycle wor
   assert.equal(proof.beforePayment.canStartBrandTeam, false);
   assert.match(proof.beforePayment.firstCycleBlocker ?? "", /Add a paid beta credit purchase/);
   assert.equal(proof.afterPayment.accessStatus, "active");
-  assert.equal(proof.afterPayment.netPaidCents, 25_000);
-  assert.equal(proof.afterPayment.remainingCreditCents, 25_000);
+  assert.equal(proof.afterPayment.netPaidCents, 2_900);
+  assert.equal(proof.afterPayment.remainingCreditCents, 2_900);
+  assert.match(formatted, /Receipt recorded: \$29 USD/);
   assert.equal(proof.afterPayment.latestExternalInvoiceId, "manual-smoke-paid-loop");
   assert.equal(proof.afterPayment.firstCycleBlocker, null);
   assert.equal(proof.afterPayment.canStartBrandTeam, true);
