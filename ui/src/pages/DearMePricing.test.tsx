@@ -56,6 +56,21 @@ describe("DearMePricing", () => {
     expect(container.textContent).toContain("See the product first");
   });
 
+  it("tracks pricing page views without customer identifiers", () => {
+    expect(analyticsMock.capture).toHaveBeenCalledWith("pricing_viewed", {
+      source: "pricing",
+      plan: "beta_29",
+      checkout_ready: false,
+    });
+    expect(analyticsMock.capture).not.toHaveBeenCalledWith(
+      "pricing_viewed",
+      expect.objectContaining({
+        email: expect.any(String),
+        href: expect.any(String),
+      }),
+    );
+  });
+
   it("links trial and product preview without starting payment from the page", () => {
     const links = Array.from(container.querySelectorAll<HTMLAnchorElement>("a"));
 
