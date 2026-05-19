@@ -39,6 +39,7 @@ import {
   dearMeProofFactsNeededFromReadiness,
   type DearMeProofFactNeed,
 } from "./dearme-proof-facts.ts";
+import { dailyPlainSummaryFactsNeeded } from "./dearme-daily-plain-facts.ts";
 import {
   DEARME_OWNER_PROOF_CHECKLIST_ITEMS,
   dearMeOwnerProofFactSpec,
@@ -217,6 +218,7 @@ export interface DearMeProofStatus {
   liveProofHandoff: DearMeProofLiveProofHandoff;
   ownerProofChecklist: DearMeProofOwnerChecklist;
   commercialReadiness: DearMeProofCommercialReadiness;
+  dailyPlainSummaryFactsNeeded: string[];
   commands: {
     ahaProof: string;
     integrationAudit: string;
@@ -1465,6 +1467,7 @@ export function summarizeDearMeProofStatus(
     liveProofHandoff,
     ownerProofChecklist,
     commercialReadiness: buildProofCommercialReadiness(lane, sections, liveProofHandoff, env),
+    dailyPlainSummaryFactsNeeded: lane === "all" ? dailyPlainSummaryFactsNeeded(env) : [],
     commands: {
       ahaProof: "pnpm --silent dearme:aha-proof -- --check",
       integrationAudit: INTEGRATION_AUDIT_COMMAND,
@@ -1578,7 +1581,8 @@ function formatLiveProviderSetupCommand(command: string) {
 
 function statusHasHumanHelpFacts(status: DearMeProofStatus) {
   return status.commercialReadiness.hostedCheckoutFactsNeeded.length > 0
-    || status.ownerProofChecklist.factsNeededCount > 0;
+    || status.ownerProofChecklist.factsNeededCount > 0
+    || status.dailyPlainSummaryFactsNeeded.length > 0;
 }
 
 export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
@@ -1598,6 +1602,12 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
       lines.push("- First-payment checkout facts needed:");
       for (const fact of commercial.hostedCheckoutFactsNeeded) {
         lines.push(`  - ${formatHostedCheckoutFactNeed(fact)}`);
+      }
+    }
+    if (status.dailyPlainSummaryFactsNeeded.length > 0) {
+      lines.push("- Daily Plain summary facts needed:");
+      for (const fact of status.dailyPlainSummaryFactsNeeded) {
+        lines.push(`  - ${fact}`);
       }
     }
     if (commercial.cannotClaimPublicLaunchUntil.length > 0) {
