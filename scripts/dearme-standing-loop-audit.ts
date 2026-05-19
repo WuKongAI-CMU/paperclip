@@ -328,7 +328,7 @@ export function formatDearMeStandingLoopAudit(audit: DearMeStandingLoopAudit): s
   if (audit.nextAction.ownerFacts?.length) {
     lines.push("- Owner facts needed:");
     for (const fact of audit.nextAction.ownerFacts) {
-      lines.push(`  - ${fact}`);
+      lines.push(`  - ${formatStandingLoopOwnerFact(fact)}`);
     }
   }
   if (audit.nextAction.hostedCheckoutFacts?.length) {
@@ -373,6 +373,13 @@ function standingLoopNeedsHumanHelpQueue(audit: DearMeStandingLoopAudit): boolea
     || Boolean(audit.nextAction.hostedCheckoutFacts?.length)
     || audit.dailyPlainSummaryFacts.length > 0
     || (audit.dependency.complete && audit.dependency.reviewRequiredUpdates.length > 0);
+}
+
+function formatStandingLoopOwnerFact(fact: string): string {
+  return fact.replace(
+    /\bDEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT\b/g,
+    "approved phone-message proof recipient",
+  );
 }
 
 export function parseDearMeStandingLoopAuditArgs(argv: string[]): DearMeStandingLoopAuditArgs {
