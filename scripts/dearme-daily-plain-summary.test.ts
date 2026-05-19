@@ -48,6 +48,17 @@ function standingLoopAudit(): DearMeStandingLoopAudit {
         reason: "INDEX.md records the latest non-doc-freshness run-ledger slice.",
       },
     },
+    humanHelpQueueFreshness: {
+      complete: true,
+      operatingDate: "2026-05-16",
+      staleSections: [],
+      missingSections: [],
+      nextAction: {
+        label: "Continue standing loop",
+        reason: "Human help queue is verified for the current DearMe operating day.",
+        command: "pnpm --silent dearme:standing-loop-audit -- --check",
+      },
+    },
     dependency: {
       complete: true,
       autonomousUpdates: [],
@@ -127,6 +138,7 @@ test("builds the required daily Plain summary from ledger and standing-loop evid
   assert.match(summary.body, /DM-OWNER-PROOF-FACT-LABELS \(PR #70, https:\/\/github\.com\/WuKongAI-CMU\/paperclip\/pull\/70, 335f0bad\)/);
   assert.match(summary.body, /Standing loop: owner-blocked/);
   assert.match(summary.body, /Doc freshness: clear/);
+  assert.match(summary.body, /Human help queue freshness: clear \(2026-05-16\)/);
   assert.match(summary.body, /Autonomous dependency updates: 0/);
   assert.match(summary.body, /Review-required dependency updates: 1/);
   assert.match(summary.body, /First-\$29 path:/);

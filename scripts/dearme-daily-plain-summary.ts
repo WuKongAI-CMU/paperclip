@@ -183,6 +183,7 @@ export function buildDearMeDailyPlainSummary(input: {
     `- Standing loop: ${audit.state}`,
     `- P0/P1/P2 ledger: ${audit.backlog.required.shipped}/${audit.backlog.required.total}`,
     `- Doc freshness: ${audit.docFreshness.complete ? "clear" : "stale"}`,
+    `- Human help queue freshness: ${audit.humanHelpQueueFreshness.complete ? "clear" : "stale"} (${audit.humanHelpQueueFreshness.operatingDate})`,
     `- Autonomous dependency updates: ${audit.dependency.autonomousUpdates.length}`,
     `- Review-required dependency updates: ${audit.dependency.reviewRequiredUpdates.length}`,
     `- Goal complete: ${audit.goal.complete ? "yes" : "no"}`,
