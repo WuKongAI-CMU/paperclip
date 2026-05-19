@@ -99,8 +99,8 @@ function readyOpenClawMessageRehearsalEvidence() {
   return {
     report: {
       status: "ready" as const,
-      verdict: "OpenClaw message contract rehearsal: ready.",
-      summary: "DearMe can form the shared OpenClaw Telegram and iMessage gateway contract without network access, external recipients, or provider credentials.",
+      verdict: "Shared-message contract rehearsal: ready.",
+      summary: "DearMe can form the shared Telegram and iMessage gateway contract without network access, external recipients, or provider credentials.",
       results: [
         {
           target: "telegram_message" as const,
@@ -220,7 +220,7 @@ function readyStatus(): DearMeProofStatus {
         key: "integration_absorption_proof",
         label: "Integration absorption proof",
         ready: true,
-        description: "Worktree audit shows 122 tracked worktrees and latest Symphony handoffs 28/28 committed.",
+        description: "Worktree audit shows 122 tracked worktrees and latest coordination handoffs 28/28 committed.",
         targets: ["worktree_absorption", "latest_symphony_handoffs"],
         blockedTargets: [],
       },
@@ -268,12 +268,12 @@ function readyStatus(): DearMeProofStatus {
       },
       {
         key: "openclaw_messages",
-        label: "OpenClaw message smoke",
+        label: "Shared Telegram/iMessage smoke",
         ready: true,
         targets: ["telegram_message", "imessage_message"],
         blockedTargets: [],
         missingCapabilities: [],
-        reason: "Telegram and iMessage share the OpenClaw gateway proof.",
+        reason: "Telegram and iMessage share the shared-message proof.",
         operatorCommand: "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
       },
       {
@@ -374,7 +374,7 @@ function blockedOpenClawMessageStatus(): DearMeProofStatus {
           ready: false,
           blockedTargets: [imessageRecipientBlocker],
           missingCapabilities: imessageRecipientBlocker.capabilities,
-          reason: "Telegram and iMessage share the OpenClaw gateway proof, but iMessage still needs an explicit recipient.",
+          reason: "Telegram and iMessage share the shared-message proof, but iMessage still needs an explicit recipient.",
         }
         : focus
     ),
@@ -462,7 +462,7 @@ test("DearMe goal audit blocks completion on live production host proof", () => 
 
   assert.equal(auditWithHostProvider.complete, false);
   assert.match(auditWithHostProvider.verdict, /not complete/);
-  assert.equal(auditWithHostProvider.nextAction.label, "Polsia-level phone-reachable private proof page");
+  assert.equal(auditWithHostProvider.nextAction.label, "Phone-reachable private proof page");
   assert.equal(
     auditWithHostProvider.items.find((item) => item.key === "public_first_run_landing")?.status,
     "met",
@@ -493,17 +493,21 @@ test("DearMe goal audit blocks completion on live production host proof", () => 
   );
   assert.match(formatted, /DearMe active goal completion audit/);
   assert.match(formatted, /Prompt-to-artifact checklist:/);
-  assert.match(formatted, /Maximize reuse of Polsia, Naive\/Paperclip, and OpenClaw instead of rebuilding substrate: blocked/);
+  assert.match(formatted, /Maximize reuse of proven source systems instead of rebuilding core infrastructure: blocked/);
   assert.match(formatted, /Cover the commercial user system: paid access, payment path, account health, cost guardrails, and launch boundaries: blocked/);
   assert.match(formatted, /Keep paid users receiving weekly value, retention recovery, feedback learning, and support handoff: met/);
-  assert.match(formatted, /Do not mark completion from proxy proof; require real live OpenClaw\/channel\/provider evidence: blocked/);
-  assert.match(formatted, /Missing: OpenClaw shared Telegram\/iMessage message proof, Live provider proof set/);
-  assert.match(formatted, /\[x\] Naive\/Paperclip reuse and worktree absorption: met/);
+  assert.match(formatted, /Do not mark completion from proxy proof; require real live channel\/provider evidence: blocked/);
+  assert.match(formatted, /Missing: Shared Telegram\/iMessage message proof, Live provider proof set/);
+  assert.match(formatted, /\[x\] Source-system reuse and worktree absorption: met/);
   assert.match(formatted, /\[x\] Sellable private-beta paid access loop: met/);
   assert.match(formatted, /\[x\] Paid-user operations and guardrail loop: met/);
   assert.match(formatted, /\[x\] Weekly value and paid-retention loop: met/);
   assert.match(formatted, /\[x\] Feedback learning and support handoff loop: met/);
-  assert.match(formatted, /\[ \] Polsia-level phone-reachable private proof page: blocked/);
+  assert.match(formatted, /\[ \] Phone-reachable private proof page: blocked/);
+  assert.doesNotMatch(
+    formatted,
+    /Naive|Paperclip|OpenClaw|Symphony|Polsia|substrate|embedding\/model|Bedrock|Claude|GPT|Voyage/,
+  );
   assert.match(formatted, /Missing capabilities: enable production host smoke; public HTTPS DearMe host; exported private proof artifact; proof-page text or host-smoke manifest/);
   assert.match(formatted, /Run: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --target deploy_site_production/);
   assert.equal(
@@ -516,7 +520,7 @@ test("DearMe goal audit blocks completion on live production host proof", () => 
   );
   assert.deepEqual(
     auditWithHostProvider.promptToArtifactChecklist.find((item) => item.key === "live_provider_truth")?.missing,
-    ["OpenClaw shared Telegram/iMessage message proof", "Live provider proof set"],
+    ["Shared Telegram/iMessage message proof", "Live provider proof set"],
   );
   assert.equal(
     auditWithoutHostProvider.items.find((item) => item.key === "production_host_provider_auth")?.status,
@@ -571,7 +575,7 @@ test("DearMe goal audit reports host provider authorization before production ho
   assert.match(formatted, /Run: vercel login/);
 });
 
-test("DearMe goal audit routes blocked OpenClaw message proof through no-send setup first", () => {
+test("DearMe goal audit routes blocked shared-message proof through no-send setup first", () => {
   const audit = summarizeDearMeGoalAudit(
     blockedOpenClawMessageStatus(),
     deliveredHostRehearsalEvidence(),
@@ -583,7 +587,7 @@ test("DearMe goal audit routes blocked OpenClaw message proof through no-send se
   const openClawProof = audit.items.find((item) => item.key === "openclaw_message_reuse");
 
   assert.equal(audit.complete, false);
-  assert.equal(audit.nextAction.label, "OpenClaw shared Telegram/iMessage message proof");
+  assert.equal(audit.nextAction.label, "Shared Telegram/iMessage message proof");
   assert.equal(
     audit.nextAction.command,
     "pnpm --silent dearme:next-proof -- --target openclaw_messages",
@@ -802,7 +806,7 @@ test("DearMe goal audit does not silently skip the public first-run landing proo
   );
 
   assert.equal(audit.complete, false);
-  assert.equal(audit.nextAction.label, "Polsia-style public first-run landing");
+  assert.equal(audit.nextAction.label, "Public first-run landing");
   assert.deepEqual(
     audit.items.find((item) => item.key === "public_first_run_landing")?.blockers,
     ["public_first_run_landing_not_checked"],
@@ -826,7 +830,7 @@ test("DearMe goal audit does not silently skip the host rehearsal proof", () => 
   );
 });
 
-test("DearMe goal audit does not silently skip the OpenClaw message rehearsal", () => {
+test("DearMe goal audit does not silently skip the shared-message rehearsal", () => {
   const audit = summarizeDearMeGoalAudit(
     readyStatus(),
     deliveredHostRehearsalEvidence(),
@@ -836,7 +840,7 @@ test("DearMe goal audit does not silently skip the OpenClaw message rehearsal", 
   );
 
   assert.equal(audit.complete, false);
-  assert.equal(audit.nextAction.label, "OpenClaw Telegram/iMessage contract rehearsal");
+  assert.equal(audit.nextAction.label, "Shared Telegram/iMessage contract rehearsal");
   assert.deepEqual(
     audit.items.find((item) => item.key === "openclaw_message_contract_rehearsal")?.blockers,
     ["openclaw_message_rehearsal_not_run"],
