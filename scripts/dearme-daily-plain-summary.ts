@@ -112,11 +112,6 @@ function latestEntry(entries: DearMeDailyLedgerEntry[]) {
   return entries[entries.length - 1] ?? null;
 }
 
-function prLink(pr: string) {
-  const match = /^PR #([0-9]+)$/.exec(pr);
-  return match ? `https://github.com/WuKongAI-CMU/paperclip/pull/${match[1]}` : null;
-}
-
 function formatShippedEntries(entries: DearMeDailyLedgerEntry[], maxEntries = 5) {
   if (entries.length === 0) {
     return ["- No merged DearMe slices were recorded in the run ledger for this date."];
@@ -124,9 +119,7 @@ function formatShippedEntries(entries: DearMeDailyLedgerEntry[], maxEntries = 5)
   const visibleEntries = entries.slice(-maxEntries);
   const hiddenCount = entries.length - visibleEntries.length;
   const lines = visibleEntries.map((entry) => {
-    const link = prLink(entry.pr);
-    const prText = link ? `${entry.pr}, ${link}` : entry.pr;
-    return `- ${entry.id} (${prText}, ${entry.sha.slice(0, 8)}): ${entry.summary}`;
+    return `- ${entry.id} (${entry.pr}, ${entry.sha.slice(0, 8)}): ${entry.summary}`;
   });
   if (hiddenCount > 0) {
     lines.unshift(`- ${hiddenCount} earlier ledger entries were also recorded for this date.`);
@@ -152,20 +145,44 @@ function reviewRequiredDependencyLines(audit: DearMeStandingLoopAudit) {
   });
 }
 
+function formatDailyPlainProofText(value: string) {
+  return value
+    .replace(/\bOpenClaw shared Telegram\/iMessage message proof\b/g, "Shared Telegram/iMessage message proof")
+    .replace(/\bOpenClaw message proof\b/g, "shared message proof")
+    .replace(/\blinkedin_dm\b/g, "professional-network approved endpoint and recipient")
+    .replace(/\bimessage_message\b/g, "iMessage/SMS approved smoke recipient");
+}
+
+function formatDailyPlainProofFact(fact: string) {
+  if (fact.includes("DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT")) {
+    return "iMessage/SMS approved smoke recipient: provide the approved recipient in local launch-proof config.";
+  }
+  return formatDailyPlainProofText(fact);
+}
+
+function formatDailyPlainNextCommand(command: string) {
+  if (command.includes("openclaw_messages")) {
+    return "See docs/NEEDS_HUMAN_HELP.md for the current safe no-send shared-message proof command.";
+  }
+  return command;
+}
+
 function trimTrailingSentencePeriod(value: string) {
   return value.trim().replace(/\.$/, "");
 }
 
 function goalBlockerDetail(item: DearMeGoalAuditItem) {
   if (item.blockers.length === 0) return "";
-  const blockers = item.blockers.map(trimTrailingSentencePeriod).filter(Boolean);
+  const blockers = item.blockers
+    .map((blocker) => formatDailyPlainProofText(trimTrailingSentencePeriod(blocker)))
+    .filter(Boolean);
   return blockers.length > 0 ? ` (blocked by ${blockers.join("; ")})` : "";
 }
 
 function goalCompletionBlockerLines(audit: DearMeStandingLoopAudit) {
   return audit.goal.items
     .filter((item) => item.requiredForGoal && item.status !== "met")
-    .map((item) => `- ${item.label}: ${item.status}${goalBlockerDetail(item)}`);
+    .map((item) => `- ${formatDailyPlainProofText(item.label)}: ${item.status}${goalBlockerDetail(item)}`);
 }
 
 function hasHumanHelpFacts(audit: DearMeStandingLoopAudit) {
@@ -185,7 +202,7 @@ export function buildDearMeDailyPlainSummary(input: {
   const latest = latestEntry(input.ledgerEntries);
   const subject = `Codex daily — ${input.date}`;
   const audit = input.standingLoopAudit;
-  const ownerFactLines = ownerFacts(audit).map((fact) => `- ${fact}`);
+  const ownerFactLines = ownerFacts(audit).map((fact) => `- ${formatDailyPlainProofFact(fact)}`);
   const paymentFactLines = firstPaymentFacts(audit).map((fact) => `- ${fact}`);
   const dailyPlainSummaryFactLines = dailyPlainSummaryFacts(audit).map((fact) => `- ${fact}`);
   const reviewRequiredLines = reviewRequiredDependencyLines(audit);
@@ -205,7 +222,7 @@ export function buildDearMeDailyPlainSummary(input: {
     `- Autonomous dependency updates: ${audit.dependency.autonomousUpdates.length}`,
     `- Review-required dependency updates: ${audit.dependency.reviewRequiredUpdates.length}`,
     `- Goal complete: ${audit.goal.complete ? "yes" : "no"}`,
-    `- Next action: ${audit.nextAction.label} - ${audit.nextAction.reason}`,
+    `- Next action: ${formatDailyPlainProofText(audit.nextAction.label)} - ${formatDailyPlainProofText(audit.nextAction.reason)}`,
     "",
     "First-$29 path:",
     `- Private beta sales: ${payment.canSellPrivateBeta ? "ready now" : "blocked"}. ${payment.manualPaidBeta.summary}`,
@@ -236,7 +253,7 @@ export function buildDearMeDailyPlainSummary(input: {
     );
   }
   if (audit.nextAction.command) {
-    bodyLines.push("", `Next command: ${audit.nextAction.command}`);
+    bodyLines.push("", `Next command: ${formatDailyPlainNextCommand(audit.nextAction.command)}`);
   }
   if (latest) {
     bodyLines.push("", `Latest ledger entry: ${latest.id} (${latest.pr}, ${latest.sha.slice(0, 8)}).`);

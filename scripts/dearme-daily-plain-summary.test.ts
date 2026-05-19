@@ -165,8 +165,8 @@ test("builds the required daily Plain summary from ledger and standing-loop evid
 
   assert.equal(summary.subject, "Codex daily — 2026-05-16");
   assert.match(summary.body, /Shipped today:/);
-  assert.match(summary.body, /DM-NEXT-PROOF-HUMAN-HELP-LIVE-LANES \(PR #69, https:\/\/github\.com\/WuKongAI-CMU\/paperclip\/pull\/69, 1e23f6d1\)/);
-  assert.match(summary.body, /DM-OWNER-PROOF-FACT-LABELS \(PR #70, https:\/\/github\.com\/WuKongAI-CMU\/paperclip\/pull\/70, 335f0bad\)/);
+  assert.match(summary.body, /DM-NEXT-PROOF-HUMAN-HELP-LIVE-LANES \(PR #69, 1e23f6d1\)/);
+  assert.match(summary.body, /DM-OWNER-PROOF-FACT-LABELS \(PR #70, 335f0bad\)/);
   assert.match(summary.body, /Standing loop: owner-blocked/);
   assert.match(summary.body, /Doc freshness: clear/);
   assert.match(summary.body, /Human help queue freshness: clear \(2026-05-16\)/);
@@ -178,8 +178,8 @@ test("builds the required daily Plain summary from ledger and standing-loop evid
   assert.match(summary.body, /Keep selling private beta through recorded receipts/);
   assert.match(summary.body, /does not create checkout sessions, charge cards, call payment APIs/);
   assert.match(summary.body, /Goal completion blockers:/);
-  assert.match(summary.body, /OpenClaw shared Telegram\/iMessage message proof: blocked \(blocked by imessage_message\)/);
-  assert.match(summary.body, /Live provider proof set: blocked \(blocked by linkedin_dm; imessage_message\)/);
+  assert.match(summary.body, /Shared Telegram\/iMessage message proof: blocked \(blocked by iMessage\/SMS approved smoke recipient\)/);
+  assert.match(summary.body, /Live provider proof set: blocked \(blocked by professional-network approved endpoint and recipient; iMessage\/SMS approved smoke recipient\)/);
   assert.match(summary.body, /First-\$29 hosted checkout path: blocked \(blocked by DEARME_PAYMENT_LINK_URL is missing; DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)\)/);
   assert.match(summary.body, /typescript: 5\.9\.3 -> 6\.0\.3 \(major\) - Major dependency updates wait for human review\./);
   assert.match(summary.body, /DEARME_LINKEDIN_DM_MESSAGES_URL/);
@@ -188,7 +188,11 @@ test("builds the required daily Plain summary from ledger and standing-loop evid
   assert.match(summary.body, /DEARME_PLAIN_API_KEY is missing/);
   assert.match(summary.body, /DEARME_CODEX_DAILY_PLAIN_EMAIL or DEARME_PLAIN_DAILY_EMAIL is missing/);
   assert.match(summary.body, /Human help queue: docs\/NEEDS_HUMAN_HELP\.md has the reply templates and safe follow-up commands for these blockers\./);
-  assert.match(summary.body, /pnpm --silent dearme:next-proof -- --target openclaw_messages/);
+  assert.match(summary.body, /Next command: See docs\/NEEDS_HUMAN_HELP\.md for the current safe no-send shared-message proof command\./);
+  assert.doesNotMatch(summary.body, /\bOpenClaw\b/);
+  assert.doesNotMatch(summary.body, /\bpaperclip\b/i);
+  assert.doesNotMatch(summary.body, /\bimessage_message\b/);
+  assert.doesNotMatch(summary.body, /\blinkedin_dm\b/);
 });
 
 test("points dependency-only daily summaries at the human help queue", () => {
