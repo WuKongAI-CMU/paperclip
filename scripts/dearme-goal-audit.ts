@@ -37,6 +37,7 @@ export type DearMeGoalAuditItemKey =
   | "public_first_run_landing"
   | "private_first_wow"
   | "commercial_private_beta_loop"
+  | "first_payment_hosted_checkout"
   | "paid_user_operations_loop"
   | "weekly_retention_loop"
   | "feedback_support_learning_loop"
@@ -193,6 +194,7 @@ const PROMPT_TO_ARTIFACT_REQUIREMENTS: readonly {
     promptRequirement: "Cover the commercial user system: paid access, payment path, account health, cost guardrails, and launch boundaries",
     artifactItems: [
       "commercial_private_beta_loop",
+      "first_payment_hosted_checkout",
       "paid_user_operations_loop",
     ],
   },
@@ -210,6 +212,7 @@ const PROMPT_TO_ARTIFACT_REQUIREMENTS: readonly {
     artifactItems: [
       "private_first_wow",
       "commercial_private_beta_loop",
+      "first_payment_hosted_checkout",
       "paid_user_operations_loop",
       "weekly_retention_loop",
       "feedback_support_learning_loop",
@@ -851,6 +854,36 @@ function commercialPrivateBetaLoopItem(status: DearMeProofStatus): DearMeGoalAud
   });
 }
 
+function firstPaymentHostedCheckoutItem(status: DearMeProofStatus): DearMeGoalAuditItem {
+  const commercial = status.commercialReadiness;
+  if (!commercial) {
+    return {
+      key: "first_payment_hosted_checkout",
+      label: "First-$29 hosted checkout path",
+      status: "unverified",
+      requiredForGoal: true,
+      evidence:
+        "The unified proof status did not include hosted checkout readiness for the first-payment path.",
+      blockers: ["missing_commercial_readiness"],
+      commands: [COMMERCIAL_PROOF_COMMANDS.paymentReadiness],
+    };
+  }
+
+  const blockers = commercial.hostedCheckoutFactsNeeded.map(hostedCheckoutFactLine);
+  const ready = blockers.length === 0;
+  return {
+    key: "first_payment_hosted_checkout",
+    label: "First-$29 hosted checkout path",
+    status: ready ? "met" : "blocked",
+    requiredForGoal: true,
+    evidence: ready
+      ? "Hosted checkout has the $29/month payment link and signed receipt sync facts required before claiming first-payment via dearme.app."
+      : "First-$29 via dearme.app remains blocked until the $29/month hosted payment link and signed receipt sync facts are configured.",
+    blockers,
+    commands: [COMMERCIAL_PROOF_COMMANDS.paymentReadiness],
+  };
+}
+
 function paidUserOperationsLoopItem(status: DearMeProofStatus): DearMeGoalAuditItem {
   return commercialLoopItem({
     key: "paid_user_operations_loop",
@@ -1001,6 +1034,7 @@ export function summarizeDearMeGoalAudit(
       section: liveProvider,
       commands: status.commands.liveProviderSetup,
     }),
+    firstPaymentHostedCheckoutItem(status),
   ];
 
   const incompleteItem = items.find((item) =>
