@@ -654,7 +654,7 @@ function hostProviderAuthItem(
 function openClawMessageRehearsalItem(
   evidence?: DearMeGoalAuditOpenClawMessageRehearsalEvidence,
 ): DearMeGoalAuditItem {
-  const command = "pnpm --silent dearme:openclaw-message-rehearsal -- --json";
+  const command = "pnpm --silent dearme:shared-message-rehearsal -- --json";
   if (!evidence) {
     return {
       key: "openclaw_message_contract_rehearsal",
