@@ -17,6 +17,8 @@ test("DearMe payment provider contract proof maps Stripe-shaped checkout events"
   assert.equal(proof.projection.acceptedReceiptCount, 1);
   assert.equal(proof.projection.rejectedReceiptCount, 0);
   assert.equal(proof.projection.duplicateSuppressedCount, 1);
+  assert.equal(proof.projection.paidReceiptAmountCents, 2_900);
+  assert.equal(proof.projection.activatedNetPaidCents, 2_900);
   assert.equal(proof.projection.activeAccountCount, 1);
   assert.deepEqual(
     proof.checks.map((item) => [item.key, item.ready]),
@@ -33,6 +35,8 @@ test("DearMe payment provider contract proof maps Stripe-shaped checkout events"
   assert.equal(proof.financeEvents[0]?.externalInvoiceId, "in_dearme_paid");
   assert.equal(JSON.stringify(proof).includes("whsec_"), false);
   assert.match(formatted, /DearMe payment provider contract proof/);
+  assert.match(formatted, /\$29 Stripe checkout-shaped receipt/);
+  assert.match(formatted, /\$29 net paid/);
   assert.match(formatted, /Stripe checkout completed maps to paid receipt: ready/);
   assert.match(formatted, /Unpaid or unmapped checkout does not unlock: ready/);
   assert.match(formatted, /Stripe webhook signature guard is enforced: ready/);

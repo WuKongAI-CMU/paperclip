@@ -70,6 +70,8 @@ export interface DearMePaidEventSourceProof {
   projection: {
     paidAccountCount: number;
     activeAccountCount: number;
+    paidReceiptAmountCents: number;
+    totalNetPaidCents: number;
     measuredWeekCount: number;
     visibleUsefulOutputCount: number;
     feedbackLearningCount: number;
@@ -84,6 +86,16 @@ export interface DearMePaidEventSourceProof {
 }
 
 const OCCURRED_AT = "2026-05-14T12:00:00.000Z";
+const PAID_RECEIPT_AMOUNT_CENTS = 2_900;
+
+function money(amountCents: number) {
+  const dollars = amountCents / 100;
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: Number.isInteger(dollars) ? 0 : 2,
+  }).format(dollars);
+}
 
 function financeEvent(companyId: string): FinanceEventRow {
   return {
@@ -105,9 +117,9 @@ function financeEvent(companyId: string): FinanceEventRow {
     pricingTier: null,
     region: null,
     model: null,
-    quantity: 25_000,
+    quantity: PAID_RECEIPT_AMOUNT_CENTS,
     unit: "credit_usd",
-    amountCents: 25_000,
+    amountCents: PAID_RECEIPT_AMOUNT_CENTS,
     currency: "USD",
     estimated: false,
     externalInvoiceId: `${companyId}-manual-receipt`,
@@ -399,6 +411,8 @@ export function runDearMePaidEventSourceProof(): DearMePaidEventSourceProof {
     projection: {
       paidAccountCount: paidIds.length,
       activeAccountCount: cohort.activeAccountCount,
+      paidReceiptAmountCents: PAID_RECEIPT_AMOUNT_CENTS,
+      totalNetPaidCents: cohort.netPaidCents,
       measuredWeekCount: weekCount,
       visibleUsefulOutputCount,
       feedbackLearningCount,
@@ -419,6 +433,9 @@ export function formatDearMePaidEventSourceProof(proof: DearMePaidEventSourcePro
   lines.push(`- Status: ${proof.status}`);
   lines.push(
     `- Projection: ${proof.projection.activeAccountCount} active paid accounts, ${proof.projection.measuredWeekCount} measured weeks, ${proof.projection.visibleUsefulOutputCount} weekly value events.`,
+  );
+  lines.push(
+    `- Paid receipt basis: ${money(proof.projection.paidReceiptAmountCents)} manual private-beta receipt per account; ${money(proof.projection.totalNetPaidCents)} total net paid across the local cohort.`,
   );
   lines.push(`- Sources: ${proof.projection.sourceCoverage.join(", ")}.`);
   lines.push(`- Artifacts: ${proof.projection.artifactCoverage.join(", ")}.`);

@@ -42,6 +42,8 @@ export interface DearMePaymentReceiptSyncProof {
     refundedCompanyId: string;
     activatedStatus: "trial" | "active";
     protectedStatus: "trial" | "active";
+    paidReceiptAmountCents: number;
+    refundedNetPaidCents: number;
     refundedRemainingCreditCents: number;
     duplicateSuppressedCount: number;
     existingDuplicateSuppressedCount: number;
@@ -57,6 +59,12 @@ const OCCURRED_AT = "2026-05-14T12:00:00.000Z";
 const ACTIVATED_COMPANY_ID = "dearme-checkout-activated";
 const PROTECTED_COMPANY_ID = "dearme-checkout-protected";
 const REFUNDED_COMPANY_ID = "dearme-checkout-refunded";
+const PAID_RECEIPT_AMOUNT_CENTS = 2_900;
+const PARTIAL_REFUND_AMOUNT_CENTS = 1_000;
+
+function money(amountCents: number) {
+  return `$${amountCents / 100}`;
+}
 
 function receipt(options: Omit<DearMeHostedPaymentReceipt, "provider" | "currency" | "occurredAt"> & {
   currency?: string;
@@ -85,7 +93,7 @@ function localHostedCheckoutReceipts(): DearMeHostedPaymentReceipt[] {
       id: "evt-paid-activated",
       companyId: ACTIVATED_COMPANY_ID,
       kind: "checkout_paid",
-      amountCents: 25_000,
+      amountCents: PAID_RECEIPT_AMOUNT_CENTS,
       externalInvoiceId: "hosted-invoice-activated",
       signatureVerified: true,
       idempotencyKey: "checkout-session-activated",
@@ -94,7 +102,7 @@ function localHostedCheckoutReceipts(): DearMeHostedPaymentReceipt[] {
       id: "evt-paid-activated-duplicate",
       companyId: ACTIVATED_COMPANY_ID,
       kind: "checkout_paid",
-      amountCents: 25_000,
+      amountCents: PAID_RECEIPT_AMOUNT_CENTS,
       externalInvoiceId: "hosted-invoice-activated",
       signatureVerified: true,
       idempotencyKey: "checkout-session-activated",
@@ -103,7 +111,7 @@ function localHostedCheckoutReceipts(): DearMeHostedPaymentReceipt[] {
       id: "evt-unverified",
       companyId: PROTECTED_COMPANY_ID,
       kind: "checkout_paid",
-      amountCents: 25_000,
+      amountCents: PAID_RECEIPT_AMOUNT_CENTS,
       externalInvoiceId: "hosted-invoice-unverified",
       signatureVerified: false,
       idempotencyKey: "checkout-session-unverified",
@@ -112,7 +120,7 @@ function localHostedCheckoutReceipts(): DearMeHostedPaymentReceipt[] {
       id: "evt-unpaid",
       companyId: PROTECTED_COMPANY_ID,
       kind: "checkout_unpaid",
-      amountCents: 25_000,
+      amountCents: PAID_RECEIPT_AMOUNT_CENTS,
       externalInvoiceId: "hosted-invoice-unpaid",
       signatureVerified: true,
       idempotencyKey: "checkout-session-unpaid",
@@ -121,7 +129,7 @@ function localHostedCheckoutReceipts(): DearMeHostedPaymentReceipt[] {
       id: "evt-refund-paid",
       companyId: REFUNDED_COMPANY_ID,
       kind: "checkout_paid",
-      amountCents: 25_000,
+      amountCents: PAID_RECEIPT_AMOUNT_CENTS,
       externalInvoiceId: "hosted-invoice-refunded",
       signatureVerified: true,
       idempotencyKey: "checkout-session-refunded-paid",
@@ -130,7 +138,7 @@ function localHostedCheckoutReceipts(): DearMeHostedPaymentReceipt[] {
       id: "evt-refund",
       companyId: REFUNDED_COMPANY_ID,
       kind: "checkout_refunded",
-      amountCents: 10_000,
+      amountCents: PARTIAL_REFUND_AMOUNT_CENTS,
       externalInvoiceId: "hosted-refund-refunded",
       signatureVerified: true,
       idempotencyKey: "checkout-session-refunded-refund",
@@ -150,7 +158,7 @@ export function runDearMePaymentReceiptSyncProof(): DearMePaymentReceiptSyncProo
         id: "evt-paid-activated-replayed",
         companyId: ACTIVATED_COMPANY_ID,
         kind: "checkout_paid",
-        amountCents: 25_000,
+        amountCents: PAID_RECEIPT_AMOUNT_CENTS,
         externalInvoiceId: "hosted-invoice-activated",
         signatureVerified: true,
         idempotencyKey: "checkout-session-activated",
@@ -176,7 +184,7 @@ export function runDearMePaymentReceiptSyncProof(): DearMePaymentReceiptSyncProo
       "verified_paid_receipt_creates_credit",
       "Verified paid receipt creates credit",
       activatedAccess.status === "active" &&
-        activatedAccess.netPaidCents === 25_000 &&
+        activatedAccess.netPaidCents === PAID_RECEIPT_AMOUNT_CENTS &&
         activatedAccess.latestExternalInvoiceId === "hosted-invoice-activated",
       "A verified hosted checkout receipt becomes DearMe paid beta credit with the invoice reference preserved.",
     ),
@@ -206,8 +214,8 @@ export function runDearMePaymentReceiptSyncProof(): DearMePaymentReceiptSyncProo
       "refund_receipt_reduces_paid_credit",
       "Refund receipt reduces paid credit",
       refundedAccess.status === "active" &&
-        refundedAccess.netPaidCents === 15_000 &&
-        refundedAccess.remainingCreditCents === 15_000,
+        refundedAccess.netPaidCents === PAID_RECEIPT_AMOUNT_CENTS - PARTIAL_REFUND_AMOUNT_CENTS &&
+        refundedAccess.remainingCreditCents === PAID_RECEIPT_AMOUNT_CENTS - PARTIAL_REFUND_AMOUNT_CENTS,
       "A refund receipt is projected as a debit, reducing net paid credit without deleting the payment history.",
     ),
     check(
@@ -236,6 +244,8 @@ export function runDearMePaymentReceiptSyncProof(): DearMePaymentReceiptSyncProo
       refundedCompanyId: REFUNDED_COMPANY_ID,
       activatedStatus: activatedAccess.status,
       protectedStatus: protectedAccess.status,
+      paidReceiptAmountCents: PAID_RECEIPT_AMOUNT_CENTS,
+      refundedNetPaidCents: refundedAccess.netPaidCents,
       refundedRemainingCreditCents: refundedAccess.remainingCreditCents,
       duplicateSuppressedCount: projected.duplicateSuppressedCount,
       existingDuplicateSuppressedCount: replayed.existingDuplicateSuppressedCount,
@@ -256,6 +266,9 @@ export function formatDearMePaymentReceiptSyncProof(
   lines.push(`- Status: ${proof.status}`);
   lines.push(
     `- Projection: ${proof.projection.acceptedReceiptCount} accepted receipts, ${proof.projection.rejectedReceiptCount} rejected receipts, ${proof.projection.duplicateSuppressedCount} duplicate suppressed, ${proof.projection.existingDuplicateSuppressedCount} ledger replay suppressed.`,
+  );
+  lines.push(
+    `- Paid receipt basis: ${money(proof.projection.paidReceiptAmountCents)} hosted checkout receipt; refunded account keeps ${money(proof.projection.refundedNetPaidCents)} net paid credit after partial refund.`,
   );
   lines.push(
     `- Paid access: ${proof.projection.activatedCompanyId}=${proof.projection.activatedStatus}, ${proof.projection.protectedCompanyId}=${proof.projection.protectedStatus}, refunded remaining credit ${proof.projection.refundedRemainingCreditCents} cents.`,

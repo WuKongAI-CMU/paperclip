@@ -45,6 +45,8 @@ export interface DearMePaymentProviderContractProof {
   projection: {
     activatedCompanyId: string;
     protectedCompanyId: string;
+    paidReceiptAmountCents: number;
+    activatedNetPaidCents: number;
     duplicateSuppressedCount: number;
     acceptedReceiptCount: number;
     rejectedReceiptCount: number;
@@ -56,6 +58,11 @@ export interface DearMePaymentProviderContractProof {
 
 const ACTIVATED_COMPANY_ID = "dearme-stripe-provider-activated";
 const PROTECTED_COMPANY_ID = "dearme-stripe-provider-protected";
+const PAID_RECEIPT_AMOUNT_CENTS = 2_900;
+
+function money(amountCents: number) {
+  return `$${amountCents / 100}`;
+}
 
 function stripeCheckoutCompleted(
   options: Partial<DearMeStripeCheckoutSessionObject> & {
@@ -73,7 +80,7 @@ function stripeCheckoutCompleted(
         object: "checkout.session",
         status: options.status ?? "complete",
         payment_status: options.payment_status ?? "paid",
-        amount_total: options.amount_total ?? 25_000,
+        amount_total: options.amount_total ?? PAID_RECEIPT_AMOUNT_CENTS,
         currency: options.currency ?? "usd",
         client_reference_id: options.client_reference_id === undefined
           ? ACTIVATED_COMPANY_ID
@@ -175,7 +182,7 @@ export function runDearMePaymentProviderContractProof(): DearMePaymentProviderCo
       "stripe_checkout_completed_maps_to_paid_receipt",
       "Stripe checkout completed maps to paid receipt",
       activatedAccess.status === "active" &&
-        activatedAccess.netPaidCents === 25_000 &&
+        activatedAccess.netPaidCents === PAID_RECEIPT_AMOUNT_CENTS &&
         activatedAccess.latestExternalInvoiceId === "in_dearme_paid",
       "A completed checkout session with payment_status=paid and a client reference becomes a DearMe hosted checkout paid receipt.",
     ),
@@ -224,6 +231,8 @@ export function runDearMePaymentProviderContractProof(): DearMePaymentProviderCo
     projection: {
       activatedCompanyId: ACTIVATED_COMPANY_ID,
       protectedCompanyId: PROTECTED_COMPANY_ID,
+      paidReceiptAmountCents: PAID_RECEIPT_AMOUNT_CENTS,
+      activatedNetPaidCents: activatedAccess.netPaidCents,
       duplicateSuppressedCount: projected.duplicateSuppressedCount,
       acceptedReceiptCount: projected.acceptedReceipts.length,
       rejectedReceiptCount: projected.rejectedReceipts.length,
@@ -243,6 +252,9 @@ export function formatDearMePaymentProviderContractProof(
   lines.push(`- Provider contract: ${proof.provider}`);
   lines.push(
     `- Projection: ${proof.projection.acceptedReceiptCount} accepted receipts, ${proof.projection.rejectedReceiptCount} rejected receipts, ${proof.projection.duplicateSuppressedCount} duplicate suppressed.`,
+  );
+  lines.push(
+    `- Paid receipt basis: ${money(proof.projection.paidReceiptAmountCents)} Stripe checkout-shaped receipt; ${money(proof.projection.activatedNetPaidCents)} net paid for ${proof.projection.activatedCompanyId}.`,
   );
   lines.push(
     `- Paid access: ${proof.projection.activatedCompanyId}=active, ${proof.projection.protectedCompanyId}=trial, active account count ${proof.projection.activeAccountCount}.`,
