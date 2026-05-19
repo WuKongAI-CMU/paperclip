@@ -75,6 +75,10 @@ function standingLoopAudit(): DearMeStandingLoopAudit {
       hostedCheckoutFactsNeeded: [
         "DEARME_PAYMENT_LINK_URL is missing.",
       ],
+      dailyPlainSummaryFactsNeeded: [
+        "DEARME_PLAIN_API_KEY is missing.",
+        "DEARME_CODEX_DAILY_PLAIN_EMAIL or DEARME_PLAIN_DAILY_EMAIL is missing.",
+      ],
       nextAction: {
         label: "OpenClaw shared Telegram/iMessage message proof",
         reason: "Blocked by imessage_message.",

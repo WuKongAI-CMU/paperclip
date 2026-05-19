@@ -686,6 +686,33 @@ test("DearMe goal audit surfaces hosted checkout facts for the first-payment pat
   );
 });
 
+test("DearMe goal audit surfaces Daily Plain summary delivery facts", () => {
+  const audit = summarizeDearMeGoalAudit(
+    readyStatus(),
+    deliveredHostRehearsalEvidence(),
+    readyHostProviderEvidence(),
+    readyOpenClawMessageRehearsalEvidence(),
+    readyPublicFirstRunLandingEvidence(),
+    [
+      "DEARME_PLAIN_API_KEY is missing.",
+      "DEARME_CODEX_DAILY_PLAIN_EMAIL or DEARME_PLAIN_DAILY_EMAIL is missing.",
+    ],
+  );
+  const formatted = formatDearMeGoalAudit(audit).join("\n");
+
+  assert.deepEqual(audit.dailyPlainSummaryFactsNeeded, [
+    "DEARME_PLAIN_API_KEY is missing.",
+    "DEARME_CODEX_DAILY_PLAIN_EMAIL or DEARME_PLAIN_DAILY_EMAIL is missing.",
+  ]);
+  assert.match(formatted, /Daily Plain summary facts needed:/);
+  assert.match(formatted, /DEARME_PLAIN_API_KEY is missing/);
+  assert.match(formatted, /DEARME_CODEX_DAILY_PLAIN_EMAIL or DEARME_PLAIN_DAILY_EMAIL is missing/);
+  assert.match(
+    formatted,
+    /Human help queue: docs\/NEEDS_HUMAN_HELP\.md has the reply templates and safe follow-up commands for these blockers\./,
+  );
+});
+
 test("DearMe goal audit passes only when every required proof item is ready", () => {
   const audit = summarizeDearMeGoalAudit(
     readyStatus(),
