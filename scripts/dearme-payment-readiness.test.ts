@@ -10,6 +10,7 @@ import {
   inspectDearMePaymentReadiness,
   loadDearMePaymentReadinessEnv,
   parseDearMePaymentReadinessArgs,
+  toDearMePaymentReadinessJson,
 } from "./dearme-payment-readiness.ts";
 
 test("DearMe payment readiness keeps private beta sellable without hosted checkout", () => {
@@ -41,6 +42,20 @@ test("DearMe payment readiness keeps private beta sellable without hosted checko
   assert.match(formatted, /dearme:paid-loop-proof/);
   assert.match(formatted, /dearme:payment-receipt-sync-proof/);
   assert.match(formatted, /dearme:payment-provider-contract-proof/);
+});
+
+test("DearMe payment readiness JSON labels sensitive hosted checkout blockers", () => {
+  const readiness = inspectDearMePaymentReadiness({});
+  const jsonReady = toDearMePaymentReadinessJson(readiness);
+
+  assert.deepEqual(readiness.hostedCheckout.blockers, [
+    "DEARME_PAYMENT_LINK_URL is missing.",
+    "DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing.",
+  ]);
+  assert.deepEqual(jsonReady.hostedCheckout.blockers, [
+    "DEARME_PAYMENT_LINK_URL is missing.",
+    "DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing (sensitive; value hidden).",
+  ]);
 });
 
 test("DearMe payment readiness marks hosted checkout ready when link and receipt sync exist", () => {
@@ -98,6 +113,22 @@ test("DearMe payment readiness rejects placeholder checkout config without leaki
   );
   assert.equal(formatted.includes("your_payment_link_here"), false);
   assert.equal(formatted.includes("replace_me"), false);
+});
+
+test("DearMe payment readiness JSON labels sensitive placeholder blockers", () => {
+  const readiness = inspectDearMePaymentReadiness({
+    DEARME_PAYMENT_LINK_URL: "your_payment_link_here",
+    STRIPE_WEBHOOK_SECRET: "replace_me",
+  });
+  const jsonReady = toDearMePaymentReadinessJson(readiness);
+  const serialized = JSON.stringify(jsonReady);
+
+  assert.deepEqual(jsonReady.hostedCheckout.blockers, [
+    "DEARME_PAYMENT_LINK_URL still contains a placeholder value.",
+    "DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET still contains a placeholder value (sensitive; value hidden).",
+  ]);
+  assert.equal(serialized.includes("your_payment_link_here"), false);
+  assert.equal(serialized.includes("replace_me"), false);
 });
 
 test("DearMe payment readiness parses args and env files", async () => {

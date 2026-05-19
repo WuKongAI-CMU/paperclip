@@ -275,6 +275,16 @@ export function formatDearMePaymentReadinessHumanHelp(
   return lines;
 }
 
+export function toDearMePaymentReadinessJson(readiness: DearMePaymentReadiness): DearMePaymentReadiness {
+  return {
+    ...readiness,
+    hostedCheckout: {
+      ...readiness.hostedCheckout,
+      blockers: readiness.hostedCheckout.blockers.map(formatHostedCheckoutBlocker),
+    },
+  };
+}
+
 function formatHostedCheckoutBlocker(blocker: string): string {
   const normalized = blocker.replace(/\.$/, "");
   return normalized.includes(STRIPE_WEBHOOK_ENV)
@@ -402,7 +412,7 @@ async function main() {
     const env = await loadDearMePaymentReadinessEnv(args.envFiles, process.env);
     const readiness = inspectDearMePaymentReadiness(env);
     if (args.json) {
-      console.log(JSON.stringify({ readiness }, null, 2));
+      console.log(JSON.stringify({ readiness: toDearMePaymentReadinessJson(readiness) }, null, 2));
     } else if (args.humanHelpMarkdown) {
       for (const line of formatDearMePaymentReadinessHumanHelp(readiness)) {
         console.log(line);
