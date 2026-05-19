@@ -212,7 +212,7 @@ Safety notes:
 - Checkout only appears in product surfaces when the payment link is HTTPS and
   signed receipt sync is configured.
 
-### 2026-05-18 - Dependency review queue
+### 2026-05-19 - Dependency review queue
 
 - Needs help from: Peter
 - What they need to do: review dependency updates that the autonomous
@@ -247,7 +247,7 @@ Notes:
 
 Current generated dependency audit:
 
-- Last verified: 2026-05-18 with
+- Last verified: 2026-05-19 with
   `pnpm --silent dearme:dependency-loop-audit -- --check`.
 - Autonomous updates: 0.
 - Review-required updates: 3.

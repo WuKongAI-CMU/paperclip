@@ -234,6 +234,7 @@ test("marks stale human help blocker queue as autonomous standing-loop work", ()
     operatingDate: "2026-05-18",
     ownerProofFactsNeeded: ["iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT"],
     hostedCheckoutFactsNeeded: ["DEARME_PAYMENT_LINK_URL is missing."],
+    reviewRequiredDependencyUpdates: 0,
   });
   const audit = summarizeDearMeStandingLoopAudit(
     backlogAudit(),
@@ -274,6 +275,7 @@ test("allows owner-blocked standing loop when human help queue is verified today
     operatingDate: "2026-05-18",
     ownerProofFactsNeeded: ["iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT"],
     hostedCheckoutFactsNeeded: ["DEARME_PAYMENT_LINK_URL is missing."],
+    reviewRequiredDependencyUpdates: 0,
   });
   const audit = summarizeDearMeStandingLoopAudit(
     backlogAudit(),
@@ -290,6 +292,41 @@ test("allows owner-blocked standing loop when human help queue is verified today
   assert.equal(audit.state, "owner-blocked");
   assert.equal(audit.checkClear, true);
   assert.match(formatDearMeStandingLoopAudit(audit).join("\n"), /Human help queue freshness: clear \(2026-05-18\)/);
+});
+
+test("marks stale dependency review queue as autonomous standing-loop work", () => {
+  const humanHelpQueueFreshness = inspectDearMeHumanHelpQueueFreshness({
+    content: [
+      "### 2026-05-18 - External live-proof facts",
+      "- Last verified: 2026-05-19 with",
+      "  `pnpm --silent dearme:standing-loop-audit -- --check`.",
+      "",
+      "### 2026-05-18 - Dependency review queue",
+      "- Last verified: 2026-05-18 with",
+      "  `pnpm --silent dearme:dependency-loop-audit -- --check`.",
+    ].join("\n"),
+    operatingDate: "2026-05-19",
+    ownerProofFactsNeeded: [],
+    hostedCheckoutFactsNeeded: [],
+    reviewRequiredDependencyUpdates: 1,
+  });
+  const audit = summarizeDearMeStandingLoopAudit(
+    backlogAudit(),
+    docFreshnessAudit(),
+    dependencyAudit(),
+    goalAudit({
+      ownerProofFactsNeeded: [],
+      hostedCheckoutFactsNeeded: [],
+    }),
+    [],
+    humanHelpQueueFreshness,
+  );
+
+  assert.equal(humanHelpQueueFreshness.complete, false);
+  assert.deepEqual(humanHelpQueueFreshness.staleSections, ["Dependency review queue"]);
+  assert.equal(audit.state, "human-help-queue-freshness-needed");
+  assert.equal(audit.checkClear, false);
+  assert.match(formatDearMeStandingLoopAudit(audit).join("\n"), /Dependency review queue/);
 });
 
 test("prioritizes missing backlog ledger entries before dependency or goal work", () => {
