@@ -4,7 +4,7 @@
 
 > **P0 carve-out (adopted 2026-05-14).** OpenClaw runtime and `dearme-ai-proxy` runtime are **deferred to P1**. Architecture and code stay in tree as dormant artifacts. P0 paid beta ships **web-only**: web inbound, browser MediaRecorder for voice capture, Paperclip routines/heartbeats for cron, web-first outbound (LinkedIn copy-to-clipboard, X via OAuth, email via Resend/SMTP). The §3 diagram below describes the **P1+ target state**; in P0 the OpenClaw layer is dormant and the proxy routes are unmounted. Full rationale, per-role verdict, code touchpoints, and revival criteria in [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md).
 
-Last updated: 2026-05-19 (post DM-STATUS-PLAIN-DELIVERY-FACTS)
+Last updated: 2026-05-19 (post DM-DAILY-SUMMARY-GOAL-BLOCKERS)
 
 ---
 
@@ -281,6 +281,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-DEPENDENCY-REVIEW-FOCUSED-TEST-CHECK** — dependency review queues now list the focused dependency-loop test alongside the audit and typecheck before any approved upgrade PR can merge.
 - **DM-DAILY-SUMMARY-HELP-FRESHNESS-STATUS** — the daily Plain summary now reports whether `docs/NEEDS_HUMAN_HELP.md` is fresh for the DearMe operating day, so Peter can see if the owner-unblock queue itself is stale.
 - **DM-STATUS-PLAIN-DELIVERY-FACTS** — `pnpm dearme:status` now lists missing Daily Plain delivery facts alongside owner-proof and hosted-checkout blockers, keeping the primary status command aligned with standing-loop and goal audits.
+- **DM-DAILY-SUMMARY-GOAL-BLOCKERS** — `pnpm dearme:daily-plain-summary` now enumerates every required goal-completion blocker, so the daily Plain update shows the OpenClaw message proof, live provider proof set, and first-$29 hosted checkout blockers separately instead of hiding parallel work behind one next action.
 - **DM-TSX-PATCH-BUMP-3** — root `tsx` now resolves to 4.22.3, clearing the autonomous dependency loop while leaving review-required esbuild, TypeScript, and Vitest updates for human review.
 - **DM-TSX-PATCH-BUMP-2** — root `tsx` now resolves to 4.22.2, keeping the autonomous dependency loop clear while leaving review-required major and 0.x-minor updates for human review.
 - **DM-INDEX-FRESHNESS-AUDIT** — `pnpm dearme:doc-freshness-audit -- --check` now verifies this shipped index records the latest non-doc-freshness run-ledger slice, and the standing-loop audit surfaces stale docs before owner-blocked state.
