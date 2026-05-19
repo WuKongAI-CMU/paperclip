@@ -494,7 +494,7 @@ test("DearMe goal audit blocks completion on live production host proof", () => 
   assert.match(formatted, /DearMe active goal completion audit/);
   assert.match(formatted, /Prompt-to-artifact checklist:/);
   assert.match(formatted, /Maximize reuse of Polsia, Naive\/Paperclip, and OpenClaw instead of rebuilding substrate: blocked/);
-  assert.match(formatted, /Cover the commercial user system: paid access, payment path, account health, cost guardrails, and launch boundaries: met/);
+  assert.match(formatted, /Cover the commercial user system: paid access, payment path, account health, cost guardrails, and launch boundaries: blocked/);
   assert.match(formatted, /Keep paid users receiving weekly value, retention recovery, feedback learning, and support handoff: met/);
   assert.match(formatted, /Do not mark completion from proxy proof; require real live OpenClaw\/channel\/provider evidence: blocked/);
   assert.match(formatted, /Missing: OpenClaw shared Telegram\/iMessage message proof, Live provider proof set/);
@@ -673,10 +673,27 @@ test("DearMe goal audit surfaces hosted checkout facts for the first-payment pat
   );
   const formatted = formatDearMeGoalAudit(audit).join("\n");
 
+  assert.equal(audit.complete, false);
+  assert.match(audit.verdict, /First-\$29 hosted checkout path is still blocked/);
+  assert.equal(audit.nextAction.label, "First-$29 hosted checkout path");
+  assert.equal(audit.nextAction.command, "pnpm --silent dearme:payment-readiness");
+  assert.deepEqual(
+    audit.items.find((item) => item.key === "first_payment_hosted_checkout")?.blockers,
+    [
+      "DEARME_PAYMENT_LINK_URL is missing.",
+      "DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing (sensitive; value hidden).",
+    ],
+  );
+  assert.equal(
+    audit.promptToArtifactChecklist.find((item) => item.key === "commercial_user_system")?.status,
+    "blocked",
+  );
   assert.deepEqual(audit.hostedCheckoutFactsNeeded, [
     "DEARME_PAYMENT_LINK_URL is missing.",
     "DEARME_PAYMENT_RECEIPT_SYNC_SECRET or STRIPE_WEBHOOK_SECRET is missing (sensitive; value hidden).",
   ]);
+  assert.match(formatted, /\[ \] First-\$29 hosted checkout path: blocked/);
+  assert.match(formatted, /Cover the commercial user system: paid access, payment path, account health, cost guardrails, and launch boundaries: blocked/);
   assert.match(formatted, /First-payment checkout facts needed:/);
   assert.match(formatted, /DEARME_PAYMENT_LINK_URL is missing/);
   assert.match(formatted, /STRIPE_WEBHOOK_SECRET is missing \(sensitive; value hidden\)/);
