@@ -119,7 +119,7 @@ function formatShippedEntries(entries: DearMeDailyLedgerEntry[], maxEntries = 5)
   const visibleEntries = entries.slice(-maxEntries);
   const hiddenCount = entries.length - visibleEntries.length;
   const lines = visibleEntries.map((entry) => {
-    return `- ${entry.id} (${entry.pr}, ${entry.sha.slice(0, 8)}): ${entry.summary}`;
+    return `- ${entry.id} (${entry.pr}, ${entry.sha.slice(0, 8)}): ${formatDailyPlainProofText(entry.summary)}`;
   });
   if (hiddenCount > 0) {
     lines.unshift(`- ${hiddenCount} earlier ledger entries were also recorded for this date.`);
@@ -149,6 +149,16 @@ function formatDailyPlainProofText(value: string) {
   return value
     .replace(/\bOpenClaw shared Telegram\/iMessage message proof\b/g, "Shared Telegram/iMessage message proof")
     .replace(/\bOpenClaw message proof\b/g, "shared message proof")
+    .replace(/\bOpenClaw\b/g, "shared-message gateway")
+    .replace(/\bPaperclip\b/g, "source system")
+    .replace(/\bNaive\b/g, "source system")
+    .replace(/\bSymphony\b/g, "coordination ledger")
+    .replace(/\bPolsia\b/g, "source-system")
+    .replace(/\bBedrock\b/g, "AI provider")
+    .replace(/\bClaude\b/g, "AI provider")
+    .replace(/\bGPT\b/g, "AI provider")
+    .replace(/\bVoyage\b/g, "AI provider")
+    .replace(/\bsubstrate\b/gi, "infrastructure")
     .replace(/\blinkedin_dm\b/g, "professional-network approved endpoint and recipient")
     .replace(/\bimessage_message\b/g, "iMessage/SMS approved smoke recipient");
 }
