@@ -171,7 +171,7 @@ function formatDailyPlainProofFact(fact: string) {
 }
 
 function formatDailyPlainNextCommand(command: string) {
-  if (command.includes("openclaw_messages")) {
+  if (command.includes("openclaw_messages") || command.includes("shared_messages")) {
     return "See docs/NEEDS_HUMAN_HELP.md for the current safe no-send shared-message proof command.";
   }
   return command;

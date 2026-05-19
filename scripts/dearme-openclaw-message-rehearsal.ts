@@ -54,7 +54,7 @@ const REHEARSAL_ENV: Env = {
 const REHEARSAL_COMMAND =
   "pnpm --silent dearme:openclaw-message-rehearsal -- --json";
 const LIVE_PROOF_COMMAND =
-  "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live";
+  "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);

@@ -66,9 +66,9 @@ function goalAudit(
       complete ? "met" : "blocked",
       complete ? [] : ["imessage_message"],
       complete ? [] : [
-        "pnpm --silent dearme:next-proof -- --target openclaw_messages",
-        "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages",
-        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+        "pnpm --silent dearme:next-proof -- --target shared_messages",
+        "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target shared_messages",
+        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
       ],
     ),
     item(
@@ -103,7 +103,7 @@ function goalAudit(
       : {
         label: "OpenClaw shared Telegram/iMessage message proof",
         reason: "Blocked by imessage_message.",
-        command: "pnpm --silent dearme:next-proof -- --target openclaw_messages",
+        command: "pnpm --silent dearme:next-proof -- --target shared_messages",
       },
   };
 }
@@ -178,7 +178,7 @@ test("DearMe release gate allows private proof while blocking public launch", ()
   );
   assert.equal(gate.operatorHandoff.noSendGuarantee, true);
   assert.deepEqual(gate.operatorHandoff.guardedLiveCommands, [
-    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
   ]);
   assert.doesNotMatch(
     JSON.stringify(gate.operatorHandoff),
@@ -334,7 +334,7 @@ test("DearMe release gate allows private proof while blocking public launch", ()
   assert.match(formatted, /Underlying goal audit \(debug detail\):/);
   assert.ok(
     formatted.indexOf("Supply approved live-proof details") <
-      formatted.indexOf("Run: pnpm --silent dearme:next-proof -- --target openclaw_messages"),
+      formatted.indexOf("Run: pnpm --silent dearme:next-proof -- --target shared_messages"),
   );
 });
 

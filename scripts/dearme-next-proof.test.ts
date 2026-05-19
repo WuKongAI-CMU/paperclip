@@ -240,7 +240,7 @@ test("DearMe next proof target follows the release gate next action", () => {
     nextAction: {
       label: "OpenClaw shared Telegram/iMessage message proof",
       reason: "Blocked by imessage_message.",
-      command: "pnpm --silent dearme:next-proof -- --target openclaw_messages",
+      command: "pnpm --silent dearme:next-proof -- --target shared_messages",
     },
   } as DearMeReleaseGate;
 
@@ -266,9 +266,9 @@ test("DearMe next proof creates the local proof env and prints no-send readiness
     assert.equal(setup.target, "openclaw_messages");
     assert.match(contents, /OPENCLAW_GATEWAY_URL=/);
     assert.match(contents, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=/);
-    assert.match(contents, /--env-file \.dearme-proof\.env --check --target openclaw_messages/);
-    assert.match(output, /pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check --target openclaw_messages/);
-    assert.match(output, /DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --target openclaw_messages --live/);
+    assert.match(contents, /--env-file \.dearme-proof\.env --check --target shared_messages/);
+    assert.match(output, /pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check --target shared_messages/);
+    assert.match(output, /DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --target shared_messages --live/);
     assert.match(output, /imessage_message: blocked/);
     assert.match(output, /Facts needed before any live run:/);
     assert.match(output, /Shared message gateway URL: provide shared message gateway URL or opted-in local shared-message config for telegram_message, imessage_message/);
@@ -279,8 +279,8 @@ test("DearMe next proof creates the local proof env and prints no-send readiness
     assert.match(output, /Owner handoff:/);
     assert.match(output, /status: blocked/);
     assert.match(output, /Owner facts needed before public launch proof/);
-    assert.match(output, /Capture command: pnpm --silent dearme:next-proof -- --target openclaw_messages --imessage-recipient <approved-phone-or-imessage>/);
-    assert.match(output, /Check first: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check --target openclaw_messages/);
+    assert.match(output, /Capture command: pnpm --silent dearme:next-proof -- --target shared_messages --imessage-recipient <approved-phone-or-imessage>/);
+    assert.match(output, /Check first: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check --target shared_messages/);
     assert.equal(setup.ownerHandoff.status, "blocked");
     assert.equal(setup.ownerHandoff.noSendGuarantee, true);
     assert.equal(setup.ownerHandoff.requiresLiveGuard, true);
@@ -361,7 +361,7 @@ test("DearMe next proof summarizes OpenClaw lanes when only phone proof is waiti
     );
     assert.doesNotMatch(
       output,
-      /Next commands:\n- pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check --target openclaw_messages\n- DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
+      /Next commands:\n- pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check --target shared_messages\n- DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1/,
     );
     assert.doesNotMatch(output, /secret-token/);
     assert.doesNotMatch(JSON.stringify(setup.ownerHandoff), /secret-token/);
@@ -486,7 +486,7 @@ test("DearMe human support queue stays aligned with the generated owner proof ha
     assert.match(help, new RegExp(escapeRegExp(setup.ownerHandoff.handoffReceiptCommand)));
     assert.match(help, /pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
     assert.match(help, /--target linkedin_dm --live/);
-    assert.match(help, /--target openclaw_messages --live/);
+    assert.match(help, /--target shared_messages --live/);
     assert.doesNotMatch(help, /li-token|secret-token|meta-token/);
   } finally {
     await rm(dir, { recursive: true, force: true });
@@ -551,7 +551,7 @@ test("DearMe next proof generates the Peter-facing human support queue entry", a
       /Agents continue after result by: capturing the approved values, running the no-send provider check first, then running guarded live proof only after owner facts are present, the no-send check passes, and explicit live confirmation is set\./,
     );
     assert.match(markdown, /--target linkedin_dm --live/);
-    assert.match(markdown, /--target openclaw_messages --live/);
+    assert.match(markdown, /--target shared_messages --live/);
     assert.match(markdown, /does not send, publish, deploy, or spend/);
     assert.doesNotMatch(markdown, /li-token|secret-token|meta-token/);
   } finally {
@@ -595,7 +595,7 @@ test("DearMe next proof augments an existing env with missing target keys", asyn
 
     assert.equal(augmented.envStatus, "augmented");
     assert.match(contents, /OPENCLAW_GATEWAY_URL=ws:\/\/127\.0\.0\.1:3001/);
-    assert.match(contents, /# Added by dearme:next-proof for openclaw_messages/);
+    assert.match(contents, /# Added by dearme:next-proof for shared_messages/);
     assert.match(contents, /OPENCLAW_GATEWAY_TOKEN=/);
     assert.match(contents, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT=/);
     assert.doesNotMatch(contents, /\.dearme-provider-smoke\.env/);
@@ -729,10 +729,10 @@ test("DearMe next proof captures product handoff receipt facts without printing 
     assert.match(output, /local readiness only; no messages, publishes, deploys, spend, or live provider calls ran/);
     assert.deepEqual(setup.commands.liveOrRunCommands, [
       "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target linkedin_dm --live",
-      "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+      "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
     ]);
     assert.match(output, /--target linkedin_dm --live/);
-    assert.match(output, /--target openclaw_messages --live/);
+    assert.match(output, /--target shared_messages --live/);
     assert.match(
       output,
       /Guarded live commands after the no-send check passes and explicit live confirmation is set:/,

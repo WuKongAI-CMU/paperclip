@@ -87,7 +87,7 @@ function standingLoopAudit(): DearMeStandingLoopAudit {
           requiredForGoal: true,
           evidence: "OpenClaw message proof waits for the iMessage/SMS smoke recipient.",
           blockers: ["imessage_message"],
-          commands: ["pnpm --silent dearme:next-proof -- --target openclaw_messages"],
+          commands: ["pnpm --silent dearme:next-proof -- --target shared_messages"],
         },
         {
           key: "live_provider_set",
@@ -124,7 +124,7 @@ function standingLoopAudit(): DearMeStandingLoopAudit {
       nextAction: {
         label: "OpenClaw shared Telegram/iMessage message proof",
         reason: "Blocked by imessage_message.",
-        command: "pnpm --silent dearme:next-proof -- --target openclaw_messages",
+        command: "pnpm --silent dearme:next-proof -- --target shared_messages",
         ownerFacts: [
           "Professional-network partner messages endpoint: provide DEARME_LINKEDIN_DM_MESSAGES_URL",
         ],
@@ -137,7 +137,7 @@ function standingLoopAudit(): DearMeStandingLoopAudit {
     nextAction: {
       label: "OpenClaw shared Telegram/iMessage message proof",
       reason: "Blocked by imessage_message.",
-      command: "pnpm --silent dearme:next-proof -- --target openclaw_messages",
+      command: "pnpm --silent dearme:next-proof -- --target shared_messages",
       ownerFacts: [
         "Professional-network partner messages endpoint: provide DEARME_LINKEDIN_DM_MESSAGES_URL",
       ],

@@ -70,7 +70,7 @@ function openClawMessageContractReport() {
     commands: {
       rehearsal: "pnpm --silent dearme:openclaw-message-rehearsal -- --json",
       liveProof:
-        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
     },
   });
 }
@@ -186,7 +186,7 @@ test("DearMe proof readiness can scope to one lane", () => {
   );
   assert.equal(providerCommands.some((command) => command.includes("--print-env-template")), false);
   assert.equal(
-    providerCommands.includes("pnpm --silent dearme:next-proof -- --target openclaw_messages"),
+    providerCommands.includes("pnpm --silent dearme:next-proof -- --target shared_messages"),
     true,
   );
   assert.equal(
@@ -315,14 +315,14 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.deepEqual(status.commands.liveProviderSetup, [
     "pnpm --silent dearme:next-proof -- --target deploy_site_production",
     "pnpm --silent dearme:next-proof -- --target linkedin_dm",
-    "pnpm --silent dearme:next-proof -- --target openclaw_messages",
+    "pnpm --silent dearme:next-proof -- --target shared_messages",
     "pnpm --silent dearme:next-proof -- --target meta_campaign",
     "pnpm --silent dearme:aha-proof -- --export-site dist/dearme-private-proof",
     "pnpm --silent dearme:linkedin-dm-rehearsal -- --json",
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
     "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target deploy_site_production",
     "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target linkedin_dm --live",
-    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
     "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target meta_campaign --live",
   ]);
   assert.deepEqual(status.liveProviderFocus.map((item) => item.key), [
@@ -354,7 +354,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(status.liveProviderFocus[0]?.reason ?? "", /Phone-reachable first wow/);
   assert.match(status.liveProviderFocus[1]?.reason ?? "", /Shared-message proof/);
   assert.equal(
-    status.liveProviderFocus[1]?.operatorCommand.endsWith("--target openclaw_messages --live"),
+    status.liveProviderFocus[1]?.operatorCommand.endsWith("--target shared_messages --live"),
     true,
   );
   assert.ok(
@@ -375,7 +375,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.deepEqual(status.liveProofHandoff.setupCommands, [
     "pnpm --silent dearme:next-proof -- --target deploy_site_production",
     "pnpm --silent dearme:next-proof -- --target linkedin_dm",
-    "pnpm --silent dearme:next-proof -- --target openclaw_messages",
+    "pnpm --silent dearme:next-proof -- --target shared_messages",
     "pnpm --silent dearme:next-proof -- --target meta_campaign",
   ]);
   assert.equal(
@@ -392,7 +392,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   );
   assert.deepEqual(status.liveProofHandoff.guardedLiveCommands, [
     "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target linkedin_dm --live",
-    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
     "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target meta_campaign --live",
   ]);
   assert.equal(status.liveProofHandoff.noSendGuarantee, true);
@@ -517,7 +517,7 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.doesNotMatch(formatted, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
   assert.match(formatted, /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
   assert.match(formatted, /Guarded live proof after owner facts are present, the no-send check passes, and explicit live confirmation is set:/);
-  assert.match(formatted, /--target openclaw_messages --live/);
+  assert.match(formatted, /--target shared_messages --live/);
   assert.match(
     formatted,
     /Human help queue: docs\/NEEDS_HUMAN_HELP\.md has the reply templates and safe follow-up commands for these blockers\./,
@@ -629,7 +629,7 @@ test("DearMe proof status carries current integration absorption evidence", () =
   assert.match(formatted, /pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs/);
   assert.match(formatted, /pnpm --silent dearme:openclaw-message-rehearsal -- --json/);
   assert.match(formatted, /pnpm --silent dearme:linkedin-dm-rehearsal -- --json/);
-  assert.match(formatted, /pnpm --silent dearme:next-proof -- --target openclaw_messages/);
+  assert.match(formatted, /pnpm --silent dearme:next-proof -- --target shared_messages/);
   assert.doesNotMatch(formatted, /pnpm --silent dearme:proof -- --print-env-template > \.dearme-proof\.env/);
   assert.equal(formatted.includes("integration audit could not run"), false);
 });

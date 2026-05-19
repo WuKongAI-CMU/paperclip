@@ -25,6 +25,7 @@ import {
   type DearMeProofStatusBlocker,
   type DearMeProofStatusSection,
 } from "./dearme-proof.ts";
+import { formatDearMeProviderSmokeCommandForHuman } from "./dearme-provider-smoke.ts";
 
 type Env = Record<string, string | undefined>;
 
@@ -386,7 +387,7 @@ function targetedProviderSetupCommands(
     `pnpm --silent dearme:next-proof -- --target ${target}`,
     `pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --check --target ${target}`,
     ...(liveCommand ? [liveCommand] : []),
-  ];
+  ].map(formatDearMeProviderSmokeCommandForHuman);
 }
 
 function liveCommand(command: string): boolean {
@@ -1213,7 +1214,7 @@ export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {
   if (audit.nextAction.captureCommands?.length) {
     lines.push("- Capture setup:");
     for (const command of audit.nextAction.captureCommands) {
-      lines.push(`  - ${command}`);
+      lines.push(`  - ${formatDearMeProviderSmokeCommandForHuman(command)}`);
     }
   }
   if (audit.nextAction.receiptPreviewCommand) {
@@ -1223,18 +1224,18 @@ export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {
     lines.push(`- Receipt import: ${audit.nextAction.receiptImportCommand}`);
   }
   if (audit.nextAction.noSendCheckCommand) {
-    lines.push(`- No-send check: ${audit.nextAction.noSendCheckCommand}`);
+    lines.push(`- No-send check: ${formatDearMeProviderSmokeCommandForHuman(audit.nextAction.noSendCheckCommand)}`);
   }
   if (audit.nextAction.guardedLiveCommands?.length) {
     lines.push(audit.nextAction.ownerFacts?.length
       ? "- Guarded live proof after owner facts are present, the no-send check passes, and explicit live confirmation is set:"
       : "- Guarded live proof after the no-send check passes and explicit live confirmation is set:");
     for (const command of audit.nextAction.guardedLiveCommands) {
-      lines.push(`  - ${command}`);
+      lines.push(`  - ${formatDearMeProviderSmokeCommandForHuman(command)}`);
     }
   }
   if (audit.nextAction.command) {
-    lines.push(`- Run: ${audit.nextAction.command}`);
+    lines.push(`- Run: ${formatDearMeProviderSmokeCommandForHuman(audit.nextAction.command)}`);
   }
   return lines;
 }

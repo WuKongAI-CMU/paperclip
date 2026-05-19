@@ -88,7 +88,7 @@ function goalAudit(overrides: Partial<DearMeGoalAudit> = {}): DearMeGoalAudit {
     nextAction: {
       label: "OpenClaw shared Telegram/iMessage message proof",
       reason: "Blocked by imessage_message.",
-      command: "pnpm --silent dearme:next-proof -- --target openclaw_messages",
+      command: "pnpm --silent dearme:next-proof -- --target shared_messages",
       ownerFacts: [
         "iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
       ],
