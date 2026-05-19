@@ -155,7 +155,7 @@ const PROMPT_TO_ARTIFACT_REQUIREMENTS: readonly {
 }[] = [
   {
     key: "reuse_existing_substrates",
-    promptRequirement: "Maximize reuse of Polsia, Naive/Paperclip, and OpenClaw instead of rebuilding substrate",
+    promptRequirement: "Maximize reuse of proven source systems instead of rebuilding core infrastructure",
     artifactItems: [
       "donor_reuse_absorption",
       "openclaw_message_contract_rehearsal",
@@ -172,7 +172,7 @@ const PROMPT_TO_ARTIFACT_REQUIREMENTS: readonly {
   },
   {
     key: "symphony_coordination",
-    promptRequirement: "Use Symphony as the collaboration center so concurrent agents converge on the same head",
+    promptRequirement: "Use the coordination ledger so concurrent agents converge on the same head",
     artifactItems: ["symphony_coordination"],
   },
   {
@@ -182,7 +182,7 @@ const PROMPT_TO_ARTIFACT_REQUIREMENTS: readonly {
   },
   {
     key: "polsia_style_aha",
-    promptRequirement: "Deliver a simple Polsia-style first wow that is phone-reachable and feels real",
+    promptRequirement: "Deliver a simple first wow that is phone-reachable and feels real",
     artifactItems: [
       "public_first_run_landing",
       "private_first_wow",
@@ -222,7 +222,7 @@ const PROMPT_TO_ARTIFACT_REQUIREMENTS: readonly {
   },
   {
     key: "live_provider_truth",
-    promptRequirement: "Do not mark completion from proxy proof; require real live OpenClaw/channel/provider evidence",
+    promptRequirement: "Do not mark completion from proxy proof; require real live channel/provider evidence",
     artifactItems: [
       "openclaw_message_reuse",
       "live_provider_set",
@@ -410,7 +410,13 @@ function ownerFactLine(
   fact: DearMeProofStatus["ownerProofChecklist"]["factsNeeded"][number],
 ): string {
   const sensitivity = fact.sensitive ? " (sensitive; value hidden)" : "";
-  return `${fact.label}: provide ${fact.provideAs}${sensitivity}`;
+  return `${formatOwnerFactLabel(fact.label)}: provide ${fact.provideAs}${sensitivity}`;
+}
+
+function formatOwnerFactLabel(label: string) {
+  if (label === "OpenClaw gateway URL") return "Shared message gateway URL";
+  if (label === "OpenClaw gateway auth") return "Shared message gateway auth";
+  return label;
 }
 
 function hostedCheckoutFactLine(blocker: string): string {
@@ -514,7 +520,7 @@ function combinedPrivateFirstWowItem(status: DearMeProofStatus): DearMeGoalAudit
 
   return {
     key: "private_first_wow",
-    label: "Polsia-style private first-wow without unsafe live actions",
+    label: "Private first-wow without unsafe live actions",
     status: ready ? "met" : blockers.length > 0 ? "blocked" : "unverified",
     requiredForGoal: true,
     evidence: [
@@ -651,10 +657,10 @@ function openClawMessageRehearsalItem(
   if (!evidence) {
     return {
       key: "openclaw_message_contract_rehearsal",
-      label: "OpenClaw Telegram/iMessage contract rehearsal",
+      label: "Shared Telegram/iMessage contract rehearsal",
       status: "unverified",
       requiredForGoal: true,
-      evidence: "The shared OpenClaw Telegram/iMessage contract rehearsal has not run inside this audit.",
+      evidence: "The shared Telegram/iMessage contract rehearsal has not run inside this audit.",
       blockers: ["openclaw_message_rehearsal_not_run"],
       commands: [command],
     };
@@ -662,10 +668,10 @@ function openClawMessageRehearsalItem(
   if (evidence.error) {
     return {
       key: "openclaw_message_contract_rehearsal",
-      label: "OpenClaw Telegram/iMessage contract rehearsal",
+      label: "Shared Telegram/iMessage contract rehearsal",
       status: "blocked",
       requiredForGoal: true,
-      evidence: `The OpenClaw message rehearsal failed before it could prove the local gateway contract: ${evidence.error}`,
+      evidence: `The shared-message rehearsal failed before it could prove the local gateway contract: ${evidence.error}`,
       blockers: ["openclaw_message_rehearsal_failed"],
       commands: [command],
     };
@@ -675,12 +681,12 @@ function openClawMessageRehearsalItem(
   const capturedTools = report?.captured.map((item) => item.toolName).join(", ");
   return {
     key: "openclaw_message_contract_rehearsal",
-    label: "OpenClaw Telegram/iMessage contract rehearsal",
+    label: "Shared Telegram/iMessage contract rehearsal",
     status: report?.status === "ready" ? "met" : "blocked",
     requiredForGoal: true,
     evidence: report
       ? `${report.summary} Captured tools: ${capturedTools || "none"}. Live proof still required: ${report.liveProofStillRequired}.`
-      : "The OpenClaw message rehearsal report is missing.",
+      : "The shared-message rehearsal report is missing.",
     blockers: report?.status === "ready"
       ? []
       : report?.missingCapabilities ?? ["openclaw_message_rehearsal_missing_report"],
@@ -716,7 +722,7 @@ function symphonyCoordinationItem(status: DearMeProofStatus): DearMeGoalAuditIte
 
   return {
     key: "symphony_coordination",
-    label: "Symphony/worktree coordination is absorbed, not forked",
+    label: "Coordination/worktree absorption is complete",
     status: ready ? "met" : blockers.length > 0 ? "blocked" : "unverified",
     requiredForGoal: true,
     evidence: integration
@@ -764,7 +770,7 @@ function publicFirstRunLandingItem(
   if (!evidence) {
     return {
       key: "public_first_run_landing",
-      label: "Polsia-style public first-run landing",
+      label: "Public first-run landing",
       status: "unverified",
       requiredForGoal: true,
       evidence: "The default route has not been checked for the cold-start landing before the dense workbench.",
@@ -775,7 +781,7 @@ function publicFirstRunLandingItem(
 
   return {
     key: "public_first_run_landing",
-    label: "Polsia-style public first-run landing",
+    label: "Public first-run landing",
     status: evidence.ready ? "met" : "blocked",
     requiredForGoal: true,
     evidence: evidence.error ? `${evidence.evidence} ${evidence.error}` : evidence.evidence,
@@ -996,10 +1002,10 @@ export function summarizeDearMeGoalAudit(
     architectureSpineItem(status),
     sectionItem({
       key: "donor_reuse_absorption",
-      label: "Naive/Paperclip reuse and worktree absorption",
+      label: "Source-system reuse and worktree absorption",
       section: section(status, "integration_absorption_proof"),
       commands: [status.commands.integrationAudit],
-      evidencePrefix: "Naive/Paperclip substrate evidence",
+      evidencePrefix: "Source-system reuse evidence",
     }),
     symphonyCoordinationItem(status),
     publicFirstRunLandingItem(publicFirstRunLanding),
@@ -1018,13 +1024,13 @@ export function summarizeDearMeGoalAudit(
     hostProviderAuthItem(hostProvider),
     focusItem({
       key: "production_host_live_wow",
-      label: "Polsia-level phone-reachable private proof page",
+      label: "Phone-reachable private proof page",
       focus: productionHost,
     }),
     openClawMessageRehearsalItem(openClawMessageRehearsal),
     focusItem({
       key: "openclaw_message_reuse",
-      label: "OpenClaw shared Telegram/iMessage message proof",
+      label: "Shared Telegram/iMessage message proof",
       focus: openclawMessages,
       commands: focusCommands(openclawMessages, OPENCLAW_MESSAGES_TARGET),
     }),
@@ -1049,7 +1055,7 @@ export function summarizeDearMeGoalAudit(
   return {
     complete,
     verdict: complete
-      ? "Goal audit: complete. DearMe has proven architecture, reuse, public first-run, private aha, commercial paid-user operations, Symphony absorption, OpenClaw message proof, and live provider proof."
+      ? "Goal audit: complete. DearMe has proven architecture, reuse, public first-run, private aha, commercial paid-user operations, coordination absorption, shared-message proof, and live provider proof."
       : `Goal audit: not complete. ${incompleteItem?.label ?? "A required item"} is still ${incompleteItem?.status ?? "unverified"}.`,
     promptToArtifactChecklist: promptChecklist,
     items,
