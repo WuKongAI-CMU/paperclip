@@ -4,7 +4,7 @@
 
 > **P0 carve-out (adopted 2026-05-14).** OpenClaw runtime and `dearme-ai-proxy` runtime are **deferred to P1**. Architecture and code stay in tree as dormant artifacts. P0 paid beta ships **web-only**: web inbound, browser MediaRecorder for voice capture, Paperclip routines/heartbeats for cron, web-first outbound (LinkedIn copy-to-clipboard, X via OAuth, email via Resend/SMTP). The §3 diagram below describes the **P1+ target state**; in P0 the OpenClaw layer is dormant and the proxy routes are unmounted. Full rationale, per-role verdict, code touchpoints, and revival criteria in [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md).
 
-Last updated: 2026-05-19 (post DM-CHECKOUT-COMPLETED-ANALYTICS)
+Last updated: 2026-05-19 (post DM-PRICING-VIEW-ANALYTICS)
 
 ---
 
@@ -274,6 +274,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-PROOF-ARTIFACT-CLICK-ANALYTICS** — public proof artifact clicks now record safe kind/source events, making proof-to-trust engagement measurable without proof URLs, summaries, or customer identifiers.
 - **DM-STATIC-PROOF-CLICK-ANALYTICS** — landing, about, and pricing proof links now record safe page/source/plan events, making trust-check handoffs measurable without URLs, positioning text, or customer identifiers.
 - **DM-CHECKOUT-COMPLETED-ANALYTICS** — hosted Stripe checkout receipt handling now emits safe `checkout_completed` funnel analytics after paid access is recorded, without logging customer email or blocking webhook acknowledgement.
+- **DM-PRICING-VIEW-ANALYTICS** — pricing now emits safe `pricing_viewed` funnel analytics on page render, closing the declared activation-to-payment funnel step without logging customer identifiers or starting payment.
 - **DM-TSX-PATCH-BUMP-2** — root `tsx` now resolves to 4.22.2, keeping the autonomous dependency loop clear while leaving review-required major and 0.x-minor updates for human review.
 - **DM-INDEX-FRESHNESS-AUDIT** — `pnpm dearme:doc-freshness-audit -- --check` now verifies this shipped index records the latest non-doc-freshness run-ledger slice, and the standing-loop audit surfaces stale docs before owner-blocked state.
 - **DM-DAILY-SUMMARY-LOOP-GATES** — `pnpm dearme:daily-plain-summary` now includes doc freshness plus autonomous and review-required dependency counts in the daily blocker summary, with review-required dependency names kept visible for Peter-owned review.
