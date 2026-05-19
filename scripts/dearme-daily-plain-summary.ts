@@ -7,6 +7,10 @@ import {
   runDearMeStandingLoopAudit,
   type DearMeStandingLoopAudit,
 } from "./dearme-standing-loop-audit.ts";
+import {
+  inspectDearMePaymentReadiness,
+  type DearMePaymentReadiness,
+} from "./dearme-payment-readiness.ts";
 
 const DEFAULT_LEDGER_PATH = "docs/dearme/CODEX-RUN-LEDGER.md";
 const HUMAN_HELP_QUEUE_PATH = "docs/NEEDS_HUMAN_HELP.md";
@@ -59,6 +63,7 @@ export interface DearMeDailyPlainSummaryOptions {
   env?: NodeJS.ProcessEnv;
   readLedger?: (path: string) => Promise<string>;
   runStandingLoopAudit?: () => Promise<DearMeStandingLoopAudit>;
+  inspectPaymentReadiness?: (env?: NodeJS.ProcessEnv) => DearMePaymentReadiness;
   createThread?: CreateThread;
 }
 
@@ -156,6 +161,7 @@ export function buildDearMeDailyPlainSummary(input: {
   date: string;
   ledgerEntries: DearMeDailyLedgerEntry[];
   standingLoopAudit: DearMeStandingLoopAudit;
+  paymentReadiness: DearMePaymentReadiness;
 }) {
   const shippedToday = input.ledgerEntries.filter((entry) => entry.date === input.date);
   const latest = latestEntry(input.ledgerEntries);
@@ -165,6 +171,7 @@ export function buildDearMeDailyPlainSummary(input: {
   const paymentFactLines = firstPaymentFacts(audit).map((fact) => `- ${fact}`);
   const dailyPlainSummaryFactLines = dailyPlainSummaryFacts(audit).map((fact) => `- ${fact}`);
   const reviewRequiredLines = reviewRequiredDependencyLines(audit);
+  const payment = input.paymentReadiness;
   const bodyLines = [
     subject,
     "",
@@ -179,6 +186,12 @@ export function buildDearMeDailyPlainSummary(input: {
     `- Review-required dependency updates: ${audit.dependency.reviewRequiredUpdates.length}`,
     `- Goal complete: ${audit.goal.complete ? "yes" : "no"}`,
     `- Next action: ${audit.nextAction.label} - ${audit.nextAction.reason}`,
+    "",
+    "First-$29 path:",
+    `- Private beta sales: ${payment.canSellPrivateBeta ? "ready now" : "blocked"}. ${payment.manualPaidBeta.summary}`,
+    `- Self-serve checkout claim: ${payment.canClaimSelfServeCheckout ? "ready" : "blocked"}. ${payment.hostedCheckout.summary}`,
+    `- Safe next step: ${payment.nextAction}`,
+    `- Safety: ${payment.noExternalActionGuarantee}`,
   ];
 
   if (ownerFactLines.length > 0) {
@@ -329,10 +342,12 @@ export async function runDearMeDailyPlainSummary(
         args.ledgerPath,
       ])),
   ]);
+  const paymentReadiness = (options.inspectPaymentReadiness ?? inspectDearMePaymentReadiness)(env);
   const { subject, body } = buildDearMeDailyPlainSummary({
     date: args.date,
     ledgerEntries: parseDearMeDailyLedgerEntries(ledgerMarkdown),
     standingLoopAudit,
+    paymentReadiness,
   });
 
   const recipientEmail = configuredValue(args.recipientEmail)
