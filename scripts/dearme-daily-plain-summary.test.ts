@@ -13,8 +13,8 @@ import type { DearMeStandingLoopAudit } from "./dearme-standing-loop-audit.ts";
 
 const ledgerMarkdown = [
   "2026-05-15 22:10  DM-OLDER  abc12345  PR #10  Standing  Older slice shipped; CI green.",
-  "2026-05-16 14:44  DM-NEXT-PROOF-HUMAN-HELP-LIVE-LANES  1e23f6d1  PR #69  Standing  Next-proof handoff split guarded live proof commands; CI green.",
-  "2026-05-16 15:16  DM-OWNER-PROOF-FACT-LABELS  335f0bad  PR #70  Standing  Status and shared checklist text now use exact owner-proof labels; CI green.",
+  "2026-05-16 14:44  DM-NEXT-PROOF-HUMAN-HELP-LIVE-LANES  1e23f6d1  PR #69  Standing  Next-proof handoff split guarded OpenClaw live proof commands and Paperclip substrate notes; CI green.",
+  "2026-05-16 15:16  DM-OWNER-PROOF-FACT-LABELS  335f0bad  PR #70  Standing  Symphony/Polsia/Naive labels now route through Bedrock, Claude, GPT, and Voyage-safe owner-proof text; CI green.",
 ].join("\n");
 
 function standingLoopAudit(): DearMeStandingLoopAudit {
@@ -39,7 +39,7 @@ function standingLoopAudit(): DearMeStandingLoopAudit {
         id: "DM-OWNER-PROOF-FACT-LABELS",
         sha: "335f0bad",
         pr: "PR #70",
-        summary: "Status and shared checklist text now use exact owner-proof labels; CI green.",
+        summary: "Symphony/Polsia/Naive labels now route through Bedrock, Claude, GPT, and Voyage-safe owner-proof text; CI green.",
       },
       indexShippedDate: "2026-05-16",
       indexEntryPresent: true,
@@ -167,6 +167,8 @@ test("builds the required daily Plain summary from ledger and standing-loop evid
   assert.match(summary.body, /Shipped today:/);
   assert.match(summary.body, /DM-NEXT-PROOF-HUMAN-HELP-LIVE-LANES \(PR #69, 1e23f6d1\)/);
   assert.match(summary.body, /DM-OWNER-PROOF-FACT-LABELS \(PR #70, 335f0bad\)/);
+  assert.match(summary.body, /shared-message gateway live proof commands and source system infrastructure notes/);
+  assert.match(summary.body, /coordination ledger\/source-system\/source system labels now route through AI provider, AI provider, AI provider, and AI provider-safe owner-proof text/);
   assert.match(summary.body, /Standing loop: owner-blocked/);
   assert.match(summary.body, /Doc freshness: clear/);
   assert.match(summary.body, /Human help queue freshness: clear \(2026-05-16\)/);
@@ -189,8 +191,7 @@ test("builds the required daily Plain summary from ledger and standing-loop evid
   assert.match(summary.body, /DEARME_CODEX_DAILY_PLAIN_EMAIL or DEARME_PLAIN_DAILY_EMAIL is missing/);
   assert.match(summary.body, /Human help queue: docs\/NEEDS_HUMAN_HELP\.md has the reply templates and safe follow-up commands for these blockers\./);
   assert.match(summary.body, /Next command: See docs\/NEEDS_HUMAN_HELP\.md for the current safe no-send shared-message proof command\./);
-  assert.doesNotMatch(summary.body, /\bOpenClaw\b/);
-  assert.doesNotMatch(summary.body, /\bpaperclip\b/i);
+  assert.doesNotMatch(summary.body, /\bOpenClaw\b|\bPaperclip\b|\bNaive\b|\bSymphony\b|\bPolsia\b|\bBedrock\b|\bClaude\b|\bGPT\b|\bVoyage\b|\bsubstrate\b/i);
   assert.doesNotMatch(summary.body, /\bimessage_message\b/);
   assert.doesNotMatch(summary.body, /\blinkedin_dm\b/);
 });
