@@ -287,15 +287,15 @@ test("provider smoke readiness formatting deduplicates shared OpenClaw blockers"
   assert.doesNotMatch(lines.join("\n"), /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
   assert.doesNotMatch(lines.join("\n"), /OpenClaw gateway/);
   assert.doesNotMatch(imessageLine ?? "", /DEARME_OPENCLAW_IMESSAGE_SMOKE_BODY/);
-  assert.match(lines.join("\n"), /--check --target openclaw_messages/);
-  assert.match(lines.join("\n"), /--target openclaw_messages --live/);
+  assert.match(lines.join("\n"), /--check --target shared_messages/);
+  assert.match(lines.join("\n"), /--target shared_messages --live/);
   assert.doesNotMatch(lines.join("\n"), /--target telegram_message --live/);
   assert.doesNotMatch(lines.join("\n"), /--target imessage_message --live/);
   assert.equal(
     allLines.some((line) => line.startsWith("Shared missing config:")),
     false,
   );
-  assert.match(allLines.join("\n"), /--target openclaw_messages --live/);
+  assert.match(allLines.join("\n"), /--target shared_messages --live/);
   assert.doesNotMatch(allLines.join("\n"), /--target telegram_message --live/);
   assert.doesNotMatch(allLines.join("\n"), /--target imessage_message --live/);
 });
@@ -327,6 +327,8 @@ test("provider smoke parses target aliases", () => {
   assert.equal(parseDearMeProviderSmokeArgs(["send-imessage"]).target, "imessage_message");
   assert.equal(parseDearMeProviderSmokeArgs(["--target", "openclaw"]).target, "openclaw_messages");
   assert.equal(parseDearMeProviderSmokeArgs(["gateway-messages"]).target, "openclaw_messages");
+  assert.equal(parseDearMeProviderSmokeArgs(["--target", "shared_messages"]).target, "openclaw_messages");
+  assert.equal(parseDearMeProviderSmokeArgs(["shared-message-gateway"]).target, "openclaw_messages");
   assert.equal(parseDearMeProviderSmokeArgs(["--live", "--json"]).live, true);
   assert.equal(parseDearMeProviderSmokeArgs(["--", "--check"]).check, true);
   assert.deepEqual(
@@ -466,8 +468,8 @@ test("provider smoke env template is local-only and keeps live actions disabled"
   assert.doesNotMatch(telegramTemplate, /DEARME_META_CAMPAIGN_CREDENTIAL_JSON_FILE=/);
   assert.doesNotMatch(telegramTemplate, /DEARME_DEPLOY_SITE_BASE_URL=/);
 
-  assert.match(openClawTemplate, /--check --target openclaw_messages/);
-  assert.match(openClawTemplate, /--target openclaw_messages --live/);
+  assert.match(openClawTemplate, /--check --target shared_messages/);
+  assert.match(openClawTemplate, /--target shared_messages --live/);
   assert.doesNotMatch(openClawTemplate, /--target telegram_message --live/);
   assert.doesNotMatch(openClawTemplate, /--target imessage_message --live/);
   assert.match(openClawTemplate, /OPENCLAW_GATEWAY_URL=/);
@@ -516,9 +518,9 @@ test("provider smoke operator commands give local-only setup and live guards", (
       "openclaw_messages",
     ),
     [
-      "pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw_messages > .dearme-provider-smoke.env",
-      "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check --target openclaw_messages",
-      "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target openclaw_messages --live",
+      "pnpm --silent dearme:provider-smoke -- --print-env-template --target shared_messages > .dearme-provider-smoke.env",
+      "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check --target shared_messages",
+      "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target shared_messages --live",
     ],
   );
 
@@ -534,7 +536,7 @@ test("provider smoke operator commands give local-only setup and live guards", (
       "pnpm --silent dearme:provider-smoke -- --print-env-template > .dearme-provider-smoke.env",
       "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check",
       "pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target deploy_site_production",
-      "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target openclaw_messages --live",
+      "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target shared_messages --live",
       "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --target meta_campaign --live",
     ],
   );
@@ -1159,7 +1161,7 @@ test("provider smoke sends Telegram live target with opted-in local OpenClaw def
   const configPath = join(dir, "openclaw.json");
   const credentialsDir = join(dir, "credentials");
   const defaultBody =
-    "DearMe live proof smoke: private proof packet is reachable and OpenClaw Telegram delivery is being verified.";
+    "DearMe live proof smoke: private proof packet is reachable and Telegram delivery is being verified.";
   let capturedContext: AdapterExecutionContext | null = null;
   const openClawGatewayExecute = async (ctx: AdapterExecutionContext) => {
     capturedContext = ctx;
@@ -1270,7 +1272,7 @@ test("provider smoke sends iMessage live target through injected OpenClaw gatewa
 
 test("provider smoke supplies a safe default iMessage body without printing values", async () => {
   const defaultBody =
-    "DearMe live proof smoke: private proof packet is ready and OpenClaw iMessage delivery is being verified.";
+    "DearMe live proof smoke: private proof packet is ready and iMessage delivery is being verified.";
   let capturedContext: AdapterExecutionContext | null = null;
   const openClawGatewayExecute = async (ctx: AdapterExecutionContext) => {
     capturedContext = ctx;

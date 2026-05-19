@@ -3,6 +3,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   dearMeProviderSmokeEnvTemplate,
+  dearMeProviderSmokeCommandTarget,
+  formatDearMeProviderSmokeCommandForHuman,
   inspectDearMeProviderSmokeReadiness,
   loadDearMeProviderSmokeEnv,
   parseDearMeProviderSmokeArgs,
@@ -161,7 +163,7 @@ function envFileFlag(envFile: string) {
 }
 
 function providerTargetFlag(target: DearMeNextProofTarget) {
-  return ` --target ${target}`;
+  return ` --target ${dearMeProviderSmokeCommandTarget(target)}`;
 }
 
 function providerCheckCommand(target: DearMeNextProofTarget, envFile: string) {
@@ -332,7 +334,7 @@ function augmentEnvTemplate(
 ) {
   const missing = missingTemplateAssignments(existing, template);
   if (missing.length === 0) return null;
-  return `${existing.trimEnd()}\n\n# Added by dearme:next-proof for ${target}\n${missing.join("\n")}\n`;
+  return `${existing.trimEnd()}\n\n# Added by dearme:next-proof for ${dearMeProviderSmokeCommandTarget(target)}\n${missing.join("\n")}\n`;
 }
 
 function placeholderForFact(fact: DearMeProofFactNeed) {
@@ -347,7 +349,7 @@ function captureFlagForFact(fact: DearMeProofFactNeed) {
 }
 
 function ownerHandoffTargetLabel(target: DearMeNextProofTarget) {
-  return target === "all" ? "the selected public proof lanes" : target;
+  return target === "all" ? "the selected public proof lanes" : dearMeProviderSmokeCommandTarget(target);
 }
 
 function buildDearMeProofLaneSummary(
@@ -629,6 +631,9 @@ export async function prepareDearMeNextProofSetup(
 }
 
 export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[] {
+  const commandForHuman = formatDearMeProviderSmokeCommandForHuman;
+  const targetForHuman = (target: string) =>
+    target === "openclaw_messages" ? dearMeProviderSmokeCommandTarget("openclaw_messages") : target;
   const factLabelForHuman = (label: string) => {
     if (label === "OpenClaw gateway URL") return "Shared message gateway URL";
     if (label === "OpenClaw gateway auth") return "Shared message gateway auth";
@@ -668,7 +673,7 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
       .replace(/\bDEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT\b/g, "approved phone-message proof recipient");
   const lines = [
     "DearMe next proof setup",
-    `- target: ${setup.target}`,
+    `- target: ${targetForHuman(setup.target)}`,
     `- env file: ${setup.envFile}`,
     `- env status: ${setup.envStatus}`,
     "",
@@ -696,7 +701,7 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
   lines.push("");
   lines.push("No-send check result:");
   lines.push(`- status: ${setup.noSendCheck.status}`);
-  lines.push(`- command: ${setup.noSendCheck.command}`);
+  lines.push(`- command: ${commandForHuman(setup.noSendCheck.command)}`);
   lines.push(`- checked: ${setup.noSendCheck.checkedTargets.join(", ")}`);
   if (setup.noSendCheck.blockedTargets.length > 0) {
     lines.push("- blocked:");
@@ -749,25 +754,25 @@ export function formatDearMeNextProofSetup(setup: DearMeNextProofSetup): string[
     lines.push("- Provide: no owner facts missing.");
   }
   if (setup.ownerHandoff.captureCommand) {
-    lines.push(`- Capture command: ${setup.ownerHandoff.captureCommand}`);
+    lines.push(`- Capture command: ${commandForHuman(setup.ownerHandoff.captureCommand)}`);
   }
   if (setup.ownerHandoff.handoffReceiptCommand) {
     if (setup.ownerHandoff.handoffReceiptPreviewCommand) {
-      lines.push(`- Preview receipt without writing: ${setup.ownerHandoff.handoffReceiptPreviewCommand}`);
+      lines.push(`- Preview receipt without writing: ${commandForHuman(setup.ownerHandoff.handoffReceiptPreviewCommand)}`);
     }
-    lines.push(`- If preview passes, import receipt: ${setup.ownerHandoff.handoffReceiptCommand}`);
+    lines.push(`- If preview passes, import receipt: ${commandForHuman(setup.ownerHandoff.handoffReceiptCommand)}`);
   }
-  lines.push(`- Check first: ${setup.ownerHandoff.checkCommand}`);
+  lines.push(`- Check first: ${commandForHuman(setup.ownerHandoff.checkCommand)}`);
 
   lines.push("");
   lines.push("Next commands:");
-  lines.push(`- ${setup.commands.check}`);
+  lines.push(`- ${commandForHuman(setup.commands.check)}`);
   lines.push("");
   lines.push(setup.noSendCheck.status === "blocked"
     ? "Guarded live commands after owner facts are present, the no-send check passes, and explicit live confirmation is set:"
     : "Guarded live commands after the no-send check passes and explicit live confirmation is set:");
   for (const command of setup.commands.liveOrRunCommands) {
-    lines.push(`- ${command}`);
+    lines.push(`- ${commandForHuman(command)}`);
   }
   return lines;
 }
@@ -819,9 +824,9 @@ export function formatDearMeNextProofHumanHelp(
   const guardedLiveCommands = setup.target === "all"
     ? [
       `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file ${setup.envFile} --target linkedin_dm --live`,
-      `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file ${setup.envFile} --target openclaw_messages --live`,
+      `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file ${setup.envFile} --target ${dearMeProviderSmokeCommandTarget("openclaw_messages")} --live`,
     ]
-    : [setup.ownerHandoff.liveOrRunCommand];
+    : [formatDearMeProviderSmokeCommandForHuman(setup.ownerHandoff.liveOrRunCommand)];
   const statusSummary = facts.length === 0
     ? `- Status: ${setup.ownerHandoff.status}.`
     : `- Status: ${setup.ownerHandoff.status}. Private beta remains sellable and operable; public launch and live provider proof remain blocked until the three approved details above are provided.`;
@@ -880,7 +885,7 @@ export function formatDearMeNextProofHumanHelp(
     lines.push("");
     lines.push("Capture command after Peter provides approved values:");
     lines.push("");
-    lines.push(...markdownCodeBlock("bash", setup.ownerHandoff.captureCommand));
+    lines.push(...markdownCodeBlock("bash", formatDearMeProviderSmokeCommandForHuman(setup.ownerHandoff.captureCommand)));
   }
 
   if (setup.ownerHandoff.handoffReceiptPreviewCommand && setup.ownerHandoff.handoffReceiptCommand) {
@@ -890,8 +895,8 @@ export function formatDearMeNextProofHumanHelp(
     lines.push(...markdownCodeBlock(
       "bash",
       [
-        setup.ownerHandoff.handoffReceiptPreviewCommand,
-        setup.ownerHandoff.handoffReceiptCommand,
+        formatDearMeProviderSmokeCommandForHuman(setup.ownerHandoff.handoffReceiptPreviewCommand),
+        formatDearMeProviderSmokeCommandForHuman(setup.ownerHandoff.handoffReceiptCommand),
       ].join("\n"),
     ));
   }
@@ -899,7 +904,7 @@ export function formatDearMeNextProofHumanHelp(
   lines.push("");
   lines.push("Required no-send check before any live delivery:");
   lines.push("");
-  lines.push(...markdownCodeBlock("bash", checkCommand));
+  lines.push(...markdownCodeBlock("bash", formatDearMeProviderSmokeCommandForHuman(checkCommand)));
   lines.push("");
   lines.push(guardedLiveCommands.length === 1
     ? "Guarded live proof command after owner facts are present, the no-send check passes, and explicit live confirmation is set:"

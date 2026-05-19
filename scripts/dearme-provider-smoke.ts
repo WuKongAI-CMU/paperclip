@@ -176,14 +176,26 @@ const PRIVATE_SITE_EXPORT_COMMAND =
 const PROVIDER_SMOKE_BASE_COMMAND =
   `pnpm --silent dearme:provider-smoke -- --env-file ${PROVIDER_SMOKE_ENV_FILE}`;
 const LOCAL_TELEGRAM_SMOKE_BODY =
-  "DearMe live proof smoke: private proof packet is reachable and OpenClaw Telegram delivery is being verified.";
+  "DearMe live proof smoke: private proof packet is reachable and Telegram delivery is being verified.";
 const DEFAULT_IMESSAGE_SMOKE_BODY =
-  "DearMe live proof smoke: private proof packet is ready and OpenClaw iMessage delivery is being verified.";
+  "DearMe live proof smoke: private proof packet is ready and iMessage delivery is being verified.";
 const OPENCLAW_IMESSAGE_SMOKE_SERVICE_REQUIREMENT =
   "DEARME_OPENCLAW_IMESSAGE_SMOKE_SERVICE=imessage or sms";
+const SHARED_MESSAGE_TARGET_ALIAS = "shared_messages";
+
+export function dearMeProviderSmokeCommandTarget(target: TargetArg): string {
+  return target === "openclaw_messages" ? SHARED_MESSAGE_TARGET_ALIAS : target;
+}
+
+export function formatDearMeProviderSmokeCommandForHuman(command: string): string {
+  return command.replace(
+    /(^|\s)--target openclaw_messages(?=\s|$)/g,
+    `$1--target ${SHARED_MESSAGE_TARGET_ALIAS}`,
+  );
+}
 
 function providerSmokeRunCommand(target: ProviderSmokeRunnableTarget): string {
-  const command = `${PROVIDER_SMOKE_BASE_COMMAND} --target ${target}`;
+  const command = `${PROVIDER_SMOKE_BASE_COMMAND} --target ${dearMeProviderSmokeCommandTarget(target)}`;
   return expandProviderSmokeTargets(target).some((expandedTarget) =>
     LIVE_TARGETS.has(expandedTarget),
   )
@@ -219,7 +231,7 @@ function includesTemplateTarget(targetArg: TargetArg, ...targets: DearMeProvider
 }
 
 export function dearMeProviderSmokeEnvTemplate(targetArg: TargetArg = "all"): string {
-  const targetFlag = targetArg === "all" ? "" : ` --target ${targetArg}`;
+  const targetFlag = targetArg === "all" ? "" : ` --target ${dearMeProviderSmokeCommandTarget(targetArg)}`;
   const selectedRunCommands = targetArg === "all"
     ? [`${PROVIDER_SMOKE_BASE_COMMAND} --target deploy_site_preview`]
     : [providerSmokeRunCommand(targetArg)];
@@ -296,7 +308,7 @@ OPENCLAW_GATEWAY_TOKEN=
 OPENCLAW_WEBHOOK_AUTH=
 PAPERCLIP_API_URL=
 
-# Optional local OpenClaw reuse. These do not send unless --live and
+# Optional local shared-message reuse. These do not send unless --live and
 # DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 are both set.
 DEARME_USE_LOCAL_OPENCLAW_CONFIG=0
 DEARME_OPENCLAW_USE_LOCAL_TELEGRAM_SMOKE=0
@@ -346,7 +358,7 @@ export function dearMeProviderSmokeOperatorCommands(
     : blockedTargets.length === 1
       ? blockedTargets[0]
       : null;
-  const targetFlag = scopedTarget ? ` --target ${scopedTarget}` : "";
+  const targetFlag = scopedTarget ? ` --target ${dearMeProviderSmokeCommandTarget(scopedTarget)}` : "";
   const commands = [
     `pnpm --silent dearme:provider-smoke -- --print-env-template${targetFlag} > ${PROVIDER_SMOKE_ENV_FILE}`,
     `${PROVIDER_SMOKE_BASE_COMMAND} --check${targetFlag}`,
@@ -1202,6 +1214,9 @@ function normalizeTarget(value: string): TargetArg {
     openclaw_message: "openclaw_messages",
     openclaw_messages: "openclaw_messages",
     gateway_messages: "openclaw_messages",
+    shared_messages: "openclaw_messages",
+    shared_message: "openclaw_messages",
+    shared_message_gateway: "openclaw_messages",
     meta: "meta_campaign",
     meta_ads: "meta_campaign",
     meta_campaign: "meta_campaign",
@@ -1696,14 +1711,14 @@ Targets:
   linkedin_dm               Live partner endpoint smoke. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
   telegram_message          Live Telegram smoke through the shared message gateway. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
   imessage_message          Live iMessage/SMS smoke through the shared message gateway. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
-  openclaw_messages         Group: Telegram + iMessage through the shared message gateway config.
+  shared_messages           Group: Telegram + iMessage through the shared message gateway config.
   meta_campaign             Live Meta Marketing API smoke. Requires --live and DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1.
   all                       Run default readiness targets. Host rehearsal is opt-in.
 
 Setup:
   pnpm --silent dearme:provider-smoke -- --print-env-template > .dearme-provider-smoke.env
   pnpm --silent dearme:provider-smoke -- --print-env-template --target telegram > .dearme-provider-smoke.env
-  pnpm --silent dearme:provider-smoke -- --print-env-template --target openclaw > .dearme-provider-smoke.env
+  pnpm --silent dearme:provider-smoke -- --print-env-template --target shared_messages > .dearme-provider-smoke.env
   pnpm --silent dearme:provider-smoke -- --env-file .dearme-provider-smoke.env --check
 
 Default with no target is --check. Secret JSON can be passed directly or by file:

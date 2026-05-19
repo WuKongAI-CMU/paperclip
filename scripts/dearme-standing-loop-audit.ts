@@ -20,6 +20,7 @@ import {
   buildDearMeGoalAudit,
   type DearMeGoalAudit,
 } from "./dearme-goal-audit.ts";
+import { formatDearMeProviderSmokeCommandForHuman } from "./dearme-provider-smoke.ts";
 import { dailyPlainSummaryFactsNeeded } from "./dearme-daily-plain-facts.ts";
 import { dearMeOperatingDate } from "./dearme-operating-date.ts";
 
@@ -363,7 +364,7 @@ export function formatDearMeStandingLoopAudit(audit: DearMeStandingLoopAudit): s
     }
   }
   if (audit.nextAction.command) {
-    lines.push(`- Run: ${audit.nextAction.command}`);
+    lines.push(`- Run: ${formatDearMeProviderSmokeCommandForHuman(audit.nextAction.command)}`);
   }
   return lines;
 }

@@ -40,7 +40,7 @@ test("OpenClaw message rehearsal proves the shared Telegram and iMessage contrac
   assert.equal(report.captured[1]?.paperclipWakeToolName, "send_imessage");
   assert.equal(report.liveProofStillRequired, true);
   assert.match(formatted, /Live proof still required/);
-  assert.match(formatted, /--target openclaw_messages --live/);
+  assert.match(formatted, /--target shared_messages --live/);
 });
 
 test("OpenClaw message rehearsal report does not serialize tokens or message bodies", async () => {

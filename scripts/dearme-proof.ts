@@ -3,6 +3,7 @@ import { access } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import {
   dearMeProviderSmokeEnvTemplate,
+  dearMeProviderSmokeCommandTarget,
   formatDearMeProviderSmokeReadiness,
   inspectDearMeProviderSmokeReadiness,
   loadDearMeProviderSmokeEnv,
@@ -362,7 +363,7 @@ const LIVE_PROVIDER_FOCUS_PLAN = [
     reason:
       "Shared-message proof is strongest when one gateway proves Telegram and iMessage together.",
     operatorCommand:
-      `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --target openclaw_messages --live`,
+      `DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file ${PROOF_ENV_FILE} --target ${dearMeProviderSmokeCommandTarget("openclaw_messages")} --live`,
   },
   {
     key: "linkedin_dm",
@@ -577,7 +578,7 @@ function nextProofSetupTargets(
     blockedTargetSet.has("telegram_message") ||
     blockedTargetSet.has("imessage_message")
   ) {
-    targets.push("openclaw_messages");
+    targets.push(dearMeProviderSmokeCommandTarget("openclaw_messages"));
   }
   if (blockedTargetSet.has("meta_campaign")) targets.push("meta_campaign");
   return targets;
@@ -589,6 +590,7 @@ function providerSmokeRunCommandForNextProofTarget(target: string) {
   if (
     target === "linkedin_dm" ||
     target === "openclaw_messages" ||
+    target === dearMeProviderSmokeCommandTarget("openclaw_messages") ||
     target === "telegram_message" ||
     target === "imessage_message" ||
     target === "meta_campaign"

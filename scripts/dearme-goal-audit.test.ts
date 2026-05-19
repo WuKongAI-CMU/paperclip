@@ -141,7 +141,7 @@ function readyOpenClawMessageRehearsalEvidence() {
       missingCapabilities: [],
       commands: {
         rehearsal: "pnpm --silent dearme:openclaw-message-rehearsal -- --json",
-        liveProof: "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+        liveProof: "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
       },
     },
   };
@@ -274,7 +274,7 @@ function readyStatus(): DearMeProofStatus {
         blockedTargets: [],
         missingCapabilities: [],
         reason: "Telegram and iMessage share the shared-message proof.",
-        operatorCommand: "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+        operatorCommand: "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
       },
       {
         key: "linkedin_dm",
@@ -380,14 +380,14 @@ function blockedOpenClawMessageStatus(): DearMeProofStatus {
     ),
     liveProofHandoff: {
       factsNeeded: [imessageFact],
-      setupCommands: ["pnpm --silent dearme:next-proof -- --target openclaw_messages"],
+      setupCommands: ["pnpm --silent dearme:next-proof -- --target shared_messages"],
       handoffReceiptPreviewCommand:
         "pnpm --silent dearme:next-proof -- --owner-handoff-receipt ./owner-proof.json --dry-run",
       handoffReceiptCommand:
         "pnpm --silent dearme:next-proof -- --owner-handoff-receipt ./owner-proof.json --capture",
       checkCommand: "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
       guardedLiveCommands: [
-        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
       ],
       noSendGuarantee: true,
     },
@@ -399,14 +399,14 @@ function blockedOpenClawMessageStatus(): DearMeProofStatus {
         "Public launch stays blocked until 1 owner-approved external proof fact is captured and the no-send check passes.",
       factsNeededCount: 1,
       factsNeeded: [imessageFact],
-      captureCommands: ["pnpm --silent dearme:next-proof -- --target openclaw_messages"],
+      captureCommands: ["pnpm --silent dearme:next-proof -- --target shared_messages"],
       handoffReceiptPreviewCommand:
         "pnpm --silent dearme:next-proof -- --owner-handoff-receipt ./owner-proof.json --dry-run",
       handoffReceiptCommand:
         "pnpm --silent dearme:next-proof -- --owner-handoff-receipt ./owner-proof.json --capture",
       checkCommand: "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
       guardedLiveCommands: [
-        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
       ],
       noSendGuarantee: true,
     },
@@ -415,7 +415,7 @@ function blockedOpenClawMessageStatus(): DearMeProofStatus {
       liveProviderSetup: [
         "pnpm --silent dearme:proof -- --print-env-template > .dearme-proof.env",
         "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check",
-        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+        "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
       ],
     },
   };
@@ -590,7 +590,7 @@ test("DearMe goal audit routes blocked shared-message proof through no-send setu
   assert.equal(audit.nextAction.label, "Shared Telegram/iMessage message proof");
   assert.equal(
     audit.nextAction.command,
-    "pnpm --silent dearme:next-proof -- --target openclaw_messages",
+    "pnpm --silent dearme:next-proof -- --target shared_messages",
   );
   assert.deepEqual(audit.nextAction.ownerFacts, [
     "iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
@@ -600,20 +600,20 @@ test("DearMe goal audit routes blocked shared-message proof through no-send setu
   ]);
   assert.deepEqual(audit.hostedCheckoutFactsNeeded, []);
   assert.deepEqual(audit.nextAction.captureCommands, [
-    "pnpm --silent dearme:next-proof -- --target openclaw_messages",
+    "pnpm --silent dearme:next-proof -- --target shared_messages",
   ]);
   assert.equal(
     audit.nextAction.noSendCheckCommand,
-    "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages",
+    "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target shared_messages",
   );
   assert.deepEqual(audit.nextAction.guardedLiveCommands, [
-    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
   ]);
   assert.deepEqual(openClawProof?.blockers, ["imessage_message"]);
   assert.deepEqual(openClawProof?.commands, [
-    "pnpm --silent dearme:next-proof -- --target openclaw_messages",
-    "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target openclaw_messages",
-    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target openclaw_messages --live",
+    "pnpm --silent dearme:next-proof -- --target shared_messages",
+    "pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --check --target shared_messages",
+    "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
   ]);
   assert.match(formatted, /Public launch owner-proof facts needed:/);
   assert.match(formatted, /Owner facts needed:/);
@@ -625,13 +625,13 @@ test("DearMe goal audit routes blocked shared-message proof through no-send setu
   );
   assert.match(
     formatted,
-    /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check --target openclaw_messages/,
+    /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check --target shared_messages/,
   );
   assert.match(
     formatted,
     /Guarded live proof after owner facts are present, the no-send check passes, and explicit live confirmation is set:/,
   );
-  assert.match(formatted, /Run: pnpm --silent dearme:next-proof -- --target openclaw_messages/);
+  assert.match(formatted, /Run: pnpm --silent dearme:next-proof -- --target shared_messages/);
 });
 
 test("DearMe goal audit formats the full public launch owner proof queue separately from the immediate next action", () => {
