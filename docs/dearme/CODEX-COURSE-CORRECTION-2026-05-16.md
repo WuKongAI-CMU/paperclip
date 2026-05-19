@@ -56,6 +56,8 @@ Looking at the pattern: the 7 reserved P-items (DNS / Vercel / Neon / Stripe Atl
 
 ## New backlog (replaces §3 P2 in CODEX-HANDOFF-TOKEN.md)
 
+Status sync 2026-05-19: Wave A, Wave B, and Wave C are now shipped in the run ledger. Keep this section as the historical correction that redirected the loop toward conversion and retention work, but do not treat the checked items below as open work.
+
 Every item below must, by its own DoD, move at least one of:
 - (a) increase landing → signup conversion
 - (b) increase signup → first-cycle-completed
@@ -66,37 +68,37 @@ If a PR's DoD does not name one of (a)/(b)/(c)/(d), it's the wrong PR.
 
 ### Wave A — customer-facing surface (start here)
 
-- [ ] **DM-LANDING-COPY-V2** — Re-write hero, sub-hero, "what it does", and CTA from a reader's perspective. Peter's `INDEX.md` § 1 positioning sentence stays as anchor, but the rest is fresh. Read it aloud — if it sounds like a doc, redo it. Add 3 concrete proof artifacts above the fold (sample weekly letter excerpt, sample voice profile excerpt, sample opportunity card). Lighthouse stays green. Mobile-first. PR description names which of (a)/(b) it moves.
+- [x] **DM-LANDING-COPY-V2** — Re-write hero, sub-hero, "what it does", and CTA from a reader's perspective. Peter's `INDEX.md` § 1 positioning sentence stays as anchor, but the rest is fresh. Read it aloud — if it sounds like a doc, redo it. Add 3 concrete proof artifacts above the fold (sample weekly letter excerpt, sample voice profile excerpt, sample opportunity card). Lighthouse stays green. Mobile-first. PR description names which of (a)/(b) it moves.
 
-- [ ] **DM-ONBOARDING-FRICTION-AUDIT** — Run the full landing → signup → first-cycle path 10 times in headless playwright with intentionally-realistic user input (typos, browser back button, mobile, slow network, tab-switch mid-form). List every friction point. Ship ONE PR that fixes the top 3 frictions (could be: faster preview, better empty states, clearer error messages, autofocus, copy in voice). Don't fix everything — fix the top 3 and move on.
+- [x] **DM-ONBOARDING-FRICTION-AUDIT** — Run the full landing → signup → first-cycle path 10 times in headless playwright with intentionally-realistic user input (typos, browser back button, mobile, slow network, tab-switch mid-form). List every friction point. Ship ONE PR that fixes the top 3 frictions (could be: faster preview, better empty states, clearer error messages, autofocus, copy in voice). Don't fix everything — fix the top 3 and move on.
 
-- [ ] **DM-PRICING-PAGE-V2** — `/pricing` today is bare. Add: invite waitlist signup (collects email, fires PostHog event `pricing_waitlist_joined`), FAQ accordion (5 questions from Plain inbox patterns or anticipated objections), 3-day-trial CTA, "see the product first" link back to landing. No fake testimonials. PR description names which of (a)/(b)/(c) it moves.
+- [x] **DM-PRICING-PAGE-V2** — `/pricing` today is bare. Add: invite waitlist signup (collects email, fires PostHog event `pricing_waitlist_joined`), FAQ accordion (5 questions from Plain inbox patterns or anticipated objections), 3-day-trial CTA, "see the product first" link back to landing. No fake testimonials. PR description names which of (a)/(b)/(c) it moves.
 
-- [ ] **DM-FAQ-FROM-OBJECTIONS** — Write a real FAQ page from the 10 most likely objections of the ICP (solo operator, $29/mo, AI doing outbound on their account). Don't dodge the hard ones (LinkedIn safety, voice drift, what happens if I cancel, can I export). Each answer is 2-3 sentences max. Read like a human, not a lawyer.
+- [x] **DM-FAQ-FROM-OBJECTIONS** — Write a real FAQ page from the 10 most likely objections of the ICP (solo operator, $29/mo, AI doing outbound on their account). Don't dodge the hard ones (LinkedIn safety, voice drift, what happens if I cancel, can I export). Each answer is 2-3 sentences max. Read like a human, not a lawyer.
 
-- [ ] **DM-ABOUT-FOUNDER** — `/about` page with Peter's actual story. Why DearMe exists, what problem it solved for him personally, who it's NOT for. This is the trust page. Should NOT mention Bedrock, OpenClaw, Paperclip, or any substrate.
+- [x] **DM-ABOUT-FOUNDER** — `/about` page with Peter's actual story. Why DearMe exists, what problem it solved for him personally, who it's NOT for. This is the trust page. Should NOT mention Bedrock, OpenClaw, Paperclip, or any substrate.
 
 ### Wave B — conversion infrastructure (after Wave A)
 
-- [ ] **DM-AB-LANDING-HERO** — 3 hero variants behind PostHog feature flag. Variant 1 = current. Variant 2 = "before/after" framing. Variant 3 = "your weekly letter samples" lead. Auto-pick winner after 200 visitors per variant.
+- [x] **DM-AB-LANDING-HERO** — 3 hero variants behind PostHog feature flag. Variant 1 = current. Variant 2 = "before/after" framing. Variant 3 = "your weekly letter samples" lead. Auto-pick winner after 200 visitors per variant.
 
-- [ ] **DM-ANALYTICS-FUNNEL** — PostHog dashboard JSON in `docs/dearme/ops/posthog-funnel.json`. Funnel events: `landing_viewed` → `landing_cta_submitted` → `signup_started` → `signup_completed` → `first_cycle_started` → `first_cycle_completed` → `pricing_viewed` → `checkout_started` → `checkout_completed`. Conversion target percentages baked in. PR description: target conversion at each step.
+- [x] **DM-ANALYTICS-FUNNEL** — PostHog dashboard JSON in `docs/dearme/ops/posthog-funnel.json`. Funnel events: `landing_viewed` → `landing_cta_submitted` → `signup_started` → `signup_completed` → `first_cycle_started` → `first_cycle_completed` → `pricing_viewed` → `checkout_started` → `checkout_completed`. Conversion target percentages baked in. PR description: target conversion at each step.
 
-- [ ] **DM-REFERRAL-UI** — `/dearme/refer` page where a paid user mints + copies their referral code (existing `dearme-referral` service). Share-to buttons (X, LinkedIn, copy link). Email template ("a friend invited you to DearMe — 30% off your first month"). PR description: target % of paid users who mint a code.
+- [x] **DM-REFERRAL-UI** — `/dearme/refer` page where a paid user mints + copies their referral code (existing `dearme-referral` service). Share-to buttons (X, LinkedIn, copy link). Email template ("a friend invited you to DearMe — 30% off your first month"). PR description: target % of paid users who mint a code.
 
-- [ ] **DM-EXIT-INTENT-WAITLIST** — When a landing visitor moves cursor to leave, soft modal "want a 5-minute preview emailed to you?" → captures email → Loops `dearme_landing_exit` event. No dark patterns; one-tap dismiss. PR description: target email capture rate from exits.
+- [x] **DM-EXIT-INTENT-WAITLIST** — When a landing visitor moves cursor to leave, soft modal "want a 5-minute preview emailed to you?" → captures email → Loops `dearme_landing_exit` event. No dark patterns; one-tap dismiss. PR description: target email capture rate from exits.
 
 ### Wave C — retention infrastructure (after Wave B + first 10 paid customers)
 
-- [ ] **DM-WEEKLY-LETTER-QUALITY** — Take 10 sample weekly letters from real (or peter-dogfooded) customers. Grade each on: voice match, specificity, actionability, length. Ship ONE PR that improves the worst dimension. Don't over-engineer; this is iterative.
+- [x] **DM-WEEKLY-LETTER-QUALITY** — Take 10 sample weekly letters from real (or peter-dogfooded) customers. Grade each on: voice match, specificity, actionability, length. Ship ONE PR that improves the worst dimension. Don't over-engineer; this is iterative.
 
-- [ ] **DM-PUBLIC-DOGFOOD-FEED** — When Peter opts in to `dearme-public-feed`, his account's published content (X posts, deployed sites) appears on a public `/feed` page. This becomes the "see DearMe in action" marketing surface. No customer feed appears without opt-in.
+- [x] **DM-PUBLIC-DOGFOOD-FEED** — When Peter opts in to `dearme-public-feed`, his account's published content (X posts, deployed sites) appears on a public `/feed` page. This becomes the "see DearMe in action" marketing surface. No customer feed appears without opt-in.
 
-- [ ] **DM-OPPORTUNITY-REPLY-INGEST** — When a customer's outbound DM gets a reply, capture it (LinkedIn partner webhook or email reply hook) and surface in Decisions Needed. This is the "DearMe noticed someone replied to your DM" moment — high emotional value, drives retention.
+- [x] **DM-OPPORTUNITY-REPLY-INGEST** — When a customer's outbound DM gets a reply, capture it (LinkedIn partner webhook or email reply hook) and surface in Decisions Needed. This is the "DearMe noticed someone replied to your DM" moment — high emotional value, drives retention.
 
-- [ ] **DM-CHURN-SAVE-EMAIL** — When `customer.subscription.deleted` webhook fires, Loops sends a "we'll miss you — what didn't work?" with a single reply-to-this-email CTA. Replies route to Plain. Track save rate.
+- [x] **DM-CHURN-SAVE-EMAIL** — When `customer.subscription.deleted` webhook fires, Loops sends a "we'll miss you — what didn't work?" with a single reply-to-this-email CTA. Replies route to Plain. Track save rate.
 
-- [ ] **DM-IMPORT-EXISTING-VOICE** — If a new user has a LinkedIn/Twitter/personal-blog URL, fetch their last 20 posts as voice samples on signup. Reduces time-to-first-good-output. Bedrock-free; use the existing fetch dispatcher.
+- [x] **DM-IMPORT-EXISTING-VOICE** — If a new user has a LinkedIn/Twitter/personal-blog URL, fetch their last 20 posts as voice samples on signup. Reduces time-to-first-good-output. Bedrock-free; use the existing fetch dispatcher.
 
 ---
 
