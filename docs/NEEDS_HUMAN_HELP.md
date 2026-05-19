@@ -265,6 +265,7 @@ pnpm --silent dearme:dependency-loop-audit -- --human-help-markdown
 Required local checks before any approved dependency PR is merged:
 
 ```bash
+pnpm --silent test:dearme-dependency-loop-audit
 pnpm --silent dearme:dependency-loop-audit -- --check
 pnpm --silent typecheck
 ```
