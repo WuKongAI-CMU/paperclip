@@ -68,7 +68,7 @@ function openClawMessageContractReport() {
     liveProofStillRequired: true,
     missingCapabilities: [],
     commands: {
-      rehearsal: "pnpm --silent dearme:openclaw-message-rehearsal -- --json",
+      rehearsal: "pnpm --silent dearme:shared-message-rehearsal -- --json",
       liveProof:
         "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
     },
@@ -615,7 +615,7 @@ test("DearMe proof status carries current integration absorption evidence", () =
   assert.match(integration?.description ?? "", /118 reviewed absorptions/);
   assert.match(integration?.description ?? "", /latest coordination handoffs 2\/2 committed/);
   assert.equal(status.commands.integrationAudit, "pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs");
-  assert.equal(status.commands.openClawMessageRehearsal, "pnpm --silent dearme:openclaw-message-rehearsal -- --json");
+  assert.equal(status.commands.openClawMessageRehearsal, "pnpm --silent dearme:shared-message-rehearsal -- --json");
   assert.equal(status.commands.linkedInDmRehearsal, "pnpm --silent dearme:linkedin-dm-rehearsal -- --json");
   assert.match(formatted, /Product verdict: reusable proof is strong, integration absorption is clean/);
   assert.match(formatted, /Integration absorption proof: ready/);
@@ -627,7 +627,8 @@ test("DearMe proof status carries current integration absorption evidence", () =
   assert.match(formatted, /Live provider proof still requires the provider readiness check, explicit recipient proof, and live-send confirmation/);
   assert.match(formatted, /Captured tools: send_telegram_message, send_imessage/);
   assert.match(formatted, /pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs/);
-  assert.match(formatted, /pnpm --silent dearme:openclaw-message-rehearsal -- --json/);
+  assert.match(formatted, /pnpm --silent dearme:shared-message-rehearsal -- --json/);
+  assert.doesNotMatch(formatted, /dearme:openclaw-message-rehearsal/);
   assert.match(formatted, /pnpm --silent dearme:linkedin-dm-rehearsal -- --json/);
   assert.match(formatted, /pnpm --silent dearme:next-proof -- --target shared_messages/);
   assert.doesNotMatch(formatted, /pnpm --silent dearme:proof -- --print-env-template > \.dearme-proof\.env/);

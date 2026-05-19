@@ -331,7 +331,7 @@ const PRIVATE_SITE_EXPORT_COMMAND =
 const INTEGRATION_AUDIT_COMMAND =
   "pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs";
 const OPENCLAW_MESSAGE_REHEARSAL_COMMAND =
-  "pnpm --silent dearme:openclaw-message-rehearsal -- --json";
+  "pnpm --silent dearme:shared-message-rehearsal -- --json";
 const LINKEDIN_DM_REHEARSAL_COMMAND =
   "pnpm --silent dearme:linkedin-dm-rehearsal -- --json";
 const COMMERCIAL_RELEASE_GATE_COMMAND =

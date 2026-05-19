@@ -140,7 +140,7 @@ function readyOpenClawMessageRehearsalEvidence() {
       liveProofStillRequired: true as const,
       missingCapabilities: [],
       commands: {
-        rehearsal: "pnpm --silent dearme:openclaw-message-rehearsal -- --json",
+        rehearsal: "pnpm --silent dearme:shared-message-rehearsal -- --json",
         liveProof: "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live",
       },
     },
@@ -325,7 +325,7 @@ function readyStatus(): DearMeProofStatus {
     commands: {
       ahaProof: "pnpm --silent dearme:aha-proof -- --check",
       integrationAudit: "pnpm --silent dearme:worktrees -- --summary-only --skip-dirty --handoffs",
-      openClawMessageRehearsal: "pnpm --silent dearme:openclaw-message-rehearsal -- --json",
+      openClawMessageRehearsal: "pnpm --silent dearme:shared-message-rehearsal -- --json",
       linkedInDmRehearsal: "pnpm --silent dearme:linkedin-dm-rehearsal -- --json",
       releaseGate: "pnpm --silent dearme:release-gate -- --target private-proof",
       printEnvTemplate: "pnpm --silent dearme:proof -- --print-env-template > .dearme-proof.env",

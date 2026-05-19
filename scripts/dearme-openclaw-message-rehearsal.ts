@@ -52,7 +52,7 @@ const REHEARSAL_ENV: Env = {
 };
 
 const REHEARSAL_COMMAND =
-  "pnpm --silent dearme:openclaw-message-rehearsal -- --json";
+  "pnpm --silent dearme:shared-message-rehearsal -- --json";
 const LIVE_PROOF_COMMAND =
   "DEARME_PROVIDER_SMOKE_CONFIRM_LIVE=1 pnpm --silent dearme:provider-smoke -- --env-file .dearme-proof.env --target shared_messages --live";
 
@@ -238,10 +238,10 @@ export function parseDearMeOpenClawMessageRehearsalArgs(
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm dearme:openclaw-message-rehearsal -- [--check] [--json]
+  console.log(`Usage: pnpm dearme:shared-message-rehearsal -- [--check] [--json]
 
 Runs the shared Telegram/iMessage provider-smoke path through an injected
-OpenClaw gateway executor. It does not connect to a gateway, send messages,
+shared-message gateway executor. It does not connect to a gateway, send messages,
 print credentials, spend money, deploy, or replace the required live smoke.`);
 }
 
