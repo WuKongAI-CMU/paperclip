@@ -17,7 +17,9 @@ test("DearMe payment receipt sync proof projects hosted checkout receipts into p
   assert.equal(proof.projection.existingDuplicateSuppressedCount, 1);
   assert.equal(proof.projection.activatedStatus, "active");
   assert.equal(proof.projection.protectedStatus, "trial");
-  assert.equal(proof.projection.refundedRemainingCreditCents, 15_000);
+  assert.equal(proof.projection.paidReceiptAmountCents, 2_900);
+  assert.equal(proof.projection.refundedNetPaidCents, 1_900);
+  assert.equal(proof.projection.refundedRemainingCreditCents, 1_900);
   assert.equal(proof.projection.activeAccountCount, 2);
   assert.deepEqual(
     proof.checks.map((item) => [item.key, item.ready]),
@@ -36,6 +38,8 @@ test("DearMe payment receipt sync proof projects hosted checkout receipts into p
   assert.equal(JSON.stringify(proof).includes("whsec_"), false);
   assert.match(formatted, /DearMe payment receipt sync proof/);
   assert.match(formatted, /3 accepted receipts, 2 rejected receipts, 1 duplicate suppressed, 1 ledger replay suppressed/);
+  assert.match(formatted, /\$29 hosted checkout receipt/);
+  assert.match(formatted, /\$19 net paid credit/);
   assert.match(formatted, /Unverified or unpaid receipts do not unlock: ready/);
   assert.match(formatted, /does not create checkout sessions, charge cards, call payment APIs/);
 });

@@ -13,6 +13,8 @@ test("DearMe paid event source proof maps paid receipts into retention analytics
   assert.equal(proof.status, "ready");
   assert.equal(proof.projection.paidAccountCount, 3);
   assert.equal(proof.projection.activeAccountCount, 3);
+  assert.equal(proof.projection.paidReceiptAmountCents, 2_900);
+  assert.equal(proof.projection.totalNetPaidCents, 8_700);
   assert.equal(proof.projection.measuredWeekCount, 9);
   assert.equal(proof.projection.visibleUsefulOutputCount, 29);
   assert.equal(proof.projection.feedbackLearningCount, 6);
@@ -49,6 +51,8 @@ test("DearMe paid event source proof maps paid receipts into retention analytics
   assert.ok(proof.events.every((event) => event.noExternalAction));
   assert.match(formatted, /DearMe paid event source proof/);
   assert.match(formatted, /3 active paid accounts, 9 measured weeks, 29 weekly value events/);
+  assert.match(formatted, /\$29 manual private-beta receipt per account/);
+  assert.match(formatted, /\$87 total net paid/);
   assert.match(formatted, /finance_ledger/);
   assert.match(formatted, /Launch boundary events are explicit: ready/);
   assert.match(formatted, /does not charge cards, call payment APIs, send messages/);
