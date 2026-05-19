@@ -234,6 +234,7 @@ test("marks stale human help blocker queue as autonomous standing-loop work", ()
     operatingDate: "2026-05-18",
     ownerProofFactsNeeded: ["iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT"],
     hostedCheckoutFactsNeeded: ["DEARME_PAYMENT_LINK_URL is missing."],
+    dailyPlainSummaryFactsNeeded: [],
     reviewRequiredDependencyUpdates: 0,
   });
   const audit = summarizeDearMeStandingLoopAudit(
@@ -275,6 +276,7 @@ test("allows owner-blocked standing loop when human help queue is verified today
     operatingDate: "2026-05-18",
     ownerProofFactsNeeded: ["iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT"],
     hostedCheckoutFactsNeeded: ["DEARME_PAYMENT_LINK_URL is missing."],
+    dailyPlainSummaryFactsNeeded: [],
     reviewRequiredDependencyUpdates: 0,
   });
   const audit = summarizeDearMeStandingLoopAudit(
@@ -308,6 +310,7 @@ test("marks stale dependency review queue as autonomous standing-loop work", () 
     operatingDate: "2026-05-19",
     ownerProofFactsNeeded: [],
     hostedCheckoutFactsNeeded: [],
+    dailyPlainSummaryFactsNeeded: [],
     reviewRequiredDependencyUpdates: 1,
   });
   const audit = summarizeDearMeStandingLoopAudit(
@@ -327,6 +330,44 @@ test("marks stale dependency review queue as autonomous standing-loop work", () 
   assert.equal(audit.state, "human-help-queue-freshness-needed");
   assert.equal(audit.checkClear, false);
   assert.match(formatDearMeStandingLoopAudit(audit).join("\n"), /Dependency review queue/);
+});
+
+test("marks stale Daily Plain help queue as autonomous standing-loop work", () => {
+  const humanHelpQueueFreshness = inspectDearMeHumanHelpQueueFreshness({
+    content: [
+      "### 2026-05-17 - Daily Plain summary delivery configuration",
+      "- Needs help from: Peter",
+      "- Last verified: 2026-05-17 with",
+      "  `pnpm --silent dearme:daily-plain-summary -- --json`.",
+    ].join("\n"),
+    operatingDate: "2026-05-19",
+    ownerProofFactsNeeded: [],
+    hostedCheckoutFactsNeeded: [],
+    dailyPlainSummaryFactsNeeded: ["DEARME_PLAIN_API_KEY is missing."],
+    reviewRequiredDependencyUpdates: 0,
+  });
+  const audit = summarizeDearMeStandingLoopAudit(
+    backlogAudit(),
+    docFreshnessAudit(),
+    dependencyAudit({ reviewRequiredUpdates: [] }),
+    goalAudit({
+      ownerProofFactsNeeded: [],
+      hostedCheckoutFactsNeeded: [],
+    }),
+    ["DEARME_PLAIN_API_KEY is missing."],
+    humanHelpQueueFreshness,
+  );
+
+  assert.equal(humanHelpQueueFreshness.complete, false);
+  assert.deepEqual(humanHelpQueueFreshness.staleSections, [
+    "Daily Plain summary delivery configuration",
+  ]);
+  assert.equal(audit.state, "human-help-queue-freshness-needed");
+  assert.equal(audit.checkClear, false);
+  assert.match(
+    formatDearMeStandingLoopAudit(audit).join("\n"),
+    /Daily Plain summary delivery configuration/,
+  );
 });
 
 test("prioritizes missing backlog ledger entries before dependency or goal work", () => {

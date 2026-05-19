@@ -184,6 +184,7 @@ test("builds Peter-facing human-help markdown for daily Plain configuration", ()
   assert.match(markdown, /DEARME_PLAIN_API_KEY/);
   assert.match(markdown, /DEARME_CODEX_DAILY_PLAIN_EMAIL/);
   assert.match(markdown, /Blocking: no for product development or private-beta operations; yes for delivering the required daily Plain summary automatically/);
+  assert.match(markdown, /Last verified: 2026-05-16 with `pnpm --silent dearme:daily-plain-summary -- --json`/);
   assert.match(markdown, /pnpm --silent dearme:daily-plain-summary -- --json/);
   assert.doesNotMatch(markdown, /plain-key|peter@example\.com/);
 });
