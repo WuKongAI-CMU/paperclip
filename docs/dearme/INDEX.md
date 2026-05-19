@@ -4,7 +4,7 @@
 
 > **P0 carve-out (adopted 2026-05-14).** OpenClaw runtime and `dearme-ai-proxy` runtime are **deferred to P1**. Architecture and code stay in tree as dormant artifacts. P0 paid beta ships **web-only**: web inbound, browser MediaRecorder for voice capture, Paperclip routines/heartbeats for cron, web-first outbound (LinkedIn copy-to-clipboard, X via OAuth, email via Resend/SMTP). The §3 diagram below describes the **P1+ target state**; in P0 the OpenClaw layer is dormant and the proxy routes are unmounted. Full rationale, per-role verdict, code touchpoints, and revival criteria in [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md).
 
-Last updated: 2026-05-19 (post DM-HUMAN-HELP-RECEIPT-GENERATORS)
+Last updated: 2026-05-19 (post DM-GOAL-AUDIT-PLAIN-FACTS)
 
 ---
 
@@ -177,6 +177,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-DEPENDENCY-REVIEW-QUEUE-FRESHNESS** — `pnpm dearme:standing-loop-audit -- --check` now treats stale dependency review queue entries as code-owned freshness work whenever review-required dependency updates exist, while preserving autonomous dependency bump priority.
 - **DM-DAILY-PLAIN-HELP-FRESHNESS** — `pnpm dearme:standing-loop-audit -- --check` now treats stale Daily Plain delivery support entries as code-owned freshness work whenever Plain delivery configuration is missing, and the generated support markdown carries a same-day verification receipt.
 - **DM-HUMAN-HELP-RECEIPT-GENERATORS** — the live-proof and hosted-checkout human-help generators now emit same-day verification and regeneration receipts, keeping Peter's owner-blocked queue reproducible from scripts while the current queue headings stay fresh.
+- **DM-GOAL-AUDIT-PLAIN-FACTS** — `pnpm dearme:goal-audit -- --json` now carries missing Daily Plain delivery facts from the shared Plain blocker helper, so goal completion, standing-loop, and daily-summary automation agree on Peter-owned Plain blockers without attempting a live send.
 - **DM-LANDING-COPY-V2** — the public landing page keeps the private growth-team anchor while adding reader-first support copy plus weekly-letter, voice-profile, and opportunity proof artifacts above the fold for stronger landing-to-signup and first-cycle intent.
 - **DM-ONBOARDING-FRICTION-AUDIT** — the landing-to-first-cycle handoff now preserves the positioning answer through submit and browser-back, lets `/dearme?knownFor=...` reach a DearMe private beta bridge even when local health checks are unavailable, and replaces generic onboarding with a first-cycle bridge toward signup and paid beta completion.
 - **DM-DEARME-CI-NODE24-ACTIONS** — DearMe CI now opts GitHub JavaScript actions into the Node 24 action runtime while keeping the app test runtime on Node 22, hardening the deployment gate ahead of GitHub's Node 20 action-runtime cutoff.
