@@ -800,6 +800,27 @@ export function summarizeDearMeReleaseGate(
   };
 }
 
+function formatReleaseGateProofText(value: string): string {
+  return value
+    .replace(/\bOpenClaw shared Telegram\/iMessage message proof\b/g, "Shared Telegram/iMessage message proof")
+    .replace(/\bOpenClaw message contract\b/g, "shared-message contract")
+    .replace(/\bOpenClaw message\b/g, "shared-message")
+    .replace(/\bOpenClaw live proof\b/g, "live shared-message proof")
+    .replace(/\bOpenClaw\b/g, "shared-message gateway")
+    .replace(/\bNaive\/Paperclip\b/g, "source-system")
+    .replace(/\bPaperclip\b/g, "source system")
+    .replace(/\bNaive\b/g, "source system")
+    .replace(/\bSymphony\b/g, "coordination ledger")
+    .replace(/\bPolsia-style\b/g, "first-wow-style")
+    .replace(/\bPolsia-level\b/g, "first-wow-level")
+    .replace(/\bPolsia\b/g, "first-wow benchmark")
+    .replace(/\bBedrock\b/g, "AI provider")
+    .replace(/\bClaude\b/g, "AI provider")
+    .replace(/\bGPT\b/g, "AI provider")
+    .replace(/\bVoyage\b/g, "AI provider")
+    .replace(/\bsubstrate\b/gi, "infrastructure");
+}
+
 export function formatDearMeReleaseGate(gate: DearMeReleaseGate): string[] {
   const lines = [
     "DearMe release gate",
@@ -809,15 +830,15 @@ export function formatDearMeReleaseGate(gate: DearMeReleaseGate): string[] {
         ? "Verdict: usable for private/internal proof, not ready for public launch."
         : "Verdict: not yet usable for private proof or public launch.",
     "",
-    `Private proof: ${gate.privateProof.ready ? "ready" : "blocked"}. ${gate.privateProof.verdict}`,
-    `Public launch: ${gate.publicLaunch.ready ? "ready" : "blocked"}. ${gate.publicLaunch.verdict}`,
+    `Private proof: ${gate.privateProof.ready ? "ready" : "blocked"}. ${formatReleaseGateProofText(gate.privateProof.verdict)}`,
+    `Public launch: ${gate.publicLaunch.ready ? "ready" : "blocked"}. ${formatReleaseGateProofText(gate.publicLaunch.verdict)}`,
   ];
 
   if (gate.privateProof.evidence.length > 0) {
     lines.push("");
     lines.push("Private proof evidence:");
     for (const item of gate.privateProof.evidence) {
-      lines.push(`- ${item}`);
+      lines.push(`- ${formatReleaseGateProofText(item)}`);
     }
   }
 
@@ -825,7 +846,7 @@ export function formatDearMeReleaseGate(gate: DearMeReleaseGate): string[] {
     lines.push("");
     lines.push("Public launch blockers:");
     for (const item of gate.publicLaunch.blockers) {
-      lines.push(`- ${item}`);
+      lines.push(`- ${formatReleaseGateProofText(item)}`);
     }
   }
 
@@ -888,11 +909,11 @@ export function formatDearMeReleaseGate(gate: DearMeReleaseGate): string[] {
 
   lines.push("");
   lines.push("Benchmark comparison:");
-  lines.push(`- ${gate.productComparison.verdict}`);
+  lines.push(`- ${formatReleaseGateProofText(gate.productComparison.verdict)}`);
   for (const item of gate.productComparison.items) {
-    lines.push(`- ${item.benchmark}: ${item.status}. ${item.summary}`);
+    lines.push(`- ${formatReleaseGateProofText(item.benchmark)}: ${item.status}. ${formatReleaseGateProofText(item.summary)}`);
     if (item.remainingGap) {
-      lines.push(`  Remaining gap: ${item.remainingGap}`);
+      lines.push(`  Remaining gap: ${formatReleaseGateProofText(item.remainingGap)}`);
     }
   }
 
@@ -907,7 +928,7 @@ export function formatDearMeReleaseGate(gate: DearMeReleaseGate): string[] {
 
   lines.push("");
   lines.push("Underlying goal audit (debug detail):");
-  lines.push(...formatDearMeGoalAudit(gate.audit));
+  lines.push(...formatDearMeGoalAudit(gate.audit).map(formatReleaseGateProofText));
 
   return lines;
 }
