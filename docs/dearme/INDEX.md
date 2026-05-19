@@ -123,7 +123,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 
 ## 5. What's shipped vs. what's left
 
-### Shipped (as of 2026-05-18)
+### Shipped (as of 2026-05-19)
 - **DM-S01** — company mass-assignment vulnerability fixed + 92 shared tests green.
 - **`opportunities` schema slice** (DM-141) — Drizzle table + 8-state machine + indexes.
 - **`@paperclipai/dearme-agent-prompts`** — 12 verbatim prompts, 8 state machines (incl. work-loop + approval-gates), 2 templates, role registry **with `substrate` field**, 25 tests green.
@@ -166,6 +166,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-BACKLOG-LEDGER-AUDIT** — `pnpm dearme:backlog-audit -- --check` now verifies every P0/P1/P2 item in `CODEX-HANDOFF-TOKEN.md` has a `CODEX-RUN-LEDGER.md` entry, while keeping standing-loop work visible as ongoing.
 - **DM-HANDOFF-CHECKLIST-SYNC** — `CODEX-HANDOFF-TOKEN.md` now marks the shipped P0/P1/P2 backlog items complete while keeping the standing infinite work open, so the standing-loop audit no longer reports stale shipped-item checklist drift.
 - **DM-DAILY-FIRST-PAYMENT-PATH-SUMMARY** — `pnpm dearme:daily-plain-summary` now includes the safe first-$29 path from payment readiness, showing manual private-beta sales as ready while keeping self-serve checkout blocked on owner payment facts.
+- **DM-HUMAN-HELP-QUEUE-2026-05-19** — `docs/NEEDS_HUMAN_HELP.md` now records the 2026-05-19 verification for live-proof and self-serve checkout blockers, keeping Peter's exact unblock queue fresh while private-beta manual sales remain ready.
 - **DM-DEPENDENCY-LOOP-AUDIT** — `pnpm dearme:dependency-loop-audit -- --check` now separates autonomous patch and stable-minor dependency bumps from review-required major, prerelease, non-semver, and 0.x minor updates.
 - **DM-STANDING-LOOP-AUDIT** — `pnpm dearme:standing-loop-audit -- --check` now combines backlog, dependency, and goal evidence into one next-action state that distinguishes code-owned work from Peter-owned live-proof blockers.
 - **DM-HUMAN-HELP-PROOF-QUEUE-FRESHNESS** — `docs/NEEDS_HUMAN_HELP.md` now reflects the current owner-proof queue from the standing, status, goal, and payment readiness audits: private beta is sellable, public proof waits on three approved external facts, and hosted checkout waits on payment configuration.
