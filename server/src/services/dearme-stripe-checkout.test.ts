@@ -309,10 +309,16 @@ describe("dearMeStripeCheckoutService", () => {
       ok: true,
       status: 200,
     }) as const);
+    const captureAnalytics = vi.fn(async () => ({
+      skipped: false,
+      ok: true,
+      status: 200,
+    }) as const);
     const service = dearMeStripeCheckoutService({} as Db, {
       stripeClient: fakeStripeClient(),
       paidBetaAccess,
       sendLifecycleEvent,
+      captureAnalytics,
     });
 
     await expect(service.handleCheckoutWebhook({
@@ -344,6 +350,25 @@ describe("dearMeStripeCheckoutService", () => {
         tier: "paid_beta",
       },
     });
+    expect(captureAnalytics).toHaveBeenCalledWith({
+      distinctId: "company-1",
+      event: "checkout_completed",
+      properties: {
+        company_id: "company-1",
+        plan: "paid_beta",
+        amount_usd: 250,
+        currency: "USD",
+        source: "stripe_checkout_session_completed",
+        checkout_session_id: "cs_dearme_paid",
+      },
+    });
+    expect(captureAnalytics).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        properties: expect.objectContaining({
+          email: expect.any(String),
+        }),
+      }),
+    );
   });
 
   it("does not double-grant the same Stripe session id", async () => {
