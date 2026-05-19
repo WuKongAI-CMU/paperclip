@@ -311,10 +311,10 @@ function paidBetaStatus(
   return {
     companyId: "company-1",
     status,
-    lifetimePaidCents: active ? 25_000 : 0,
+    lifetimePaidCents: active ? 2_900 : 0,
     refundedCents: 0,
-    netPaidCents: active ? 25_000 : 0,
-    remainingCreditCents: active ? 25_000 : 0,
+    netPaidCents: active ? 2_900 : 0,
+    remainingCreditCents: active ? 2_900 : 0,
     eventCount: active ? 1 : 0,
     latestPaymentAt: active ? "2026-05-07T14:00:00.000Z" : null,
     latestPaymentDescription: active ? "Founding beta payment" : null,
@@ -332,7 +332,7 @@ function paidBetaStatus(
       spendCents: 0,
       budgetCents: 25_000,
       utilizationPercent: 0,
-      remainingCreditCents: active ? 25_000 : 0,
+      remainingCreditCents: active ? 2_900 : 0,
       decisionRequired: !active,
       decisionLabel: active ? null : "Record paid beta access",
     },
@@ -351,10 +351,10 @@ function paidBetaCohortSummary(
     warningAccountCount: 0,
     hardStopAccountCount: 0,
     decisionRequiredAccountCount: 0,
-    lifetimePaidCents: 25_000,
+    lifetimePaidCents: 2_900,
     refundedCents: 0,
-    netPaidCents: 25_000,
-    remainingCreditCents: 25_000,
+    netPaidCents: 2_900,
+    remainingCreditCents: 2_900,
     cycleSpendCents: 0,
     cycleBudgetCents: 25_000,
     state: "operable",
@@ -2508,7 +2508,7 @@ describe("DearMeOnboarding", () => {
     expect(paidCohortHealthReceipt.textContent).toContain("Accounts");
     expect(paidCohortHealthReceipt.textContent).toContain("1/1 active");
     expect(paidCohortHealthReceipt.textContent).toContain("Credit");
-    expect(paidCohortHealthReceipt.textContent).toContain("$250");
+    expect(paidCohortHealthReceipt.textContent).toContain("$29");
     expect(paidCohortHealthReceipt.textContent).toContain("Guardrails");
     expect(paidCohortHealthReceipt.textContent).toContain("Clear");
     expect(paidCohortHealthReceipt.textContent).toContain("Attention");
@@ -2665,7 +2665,7 @@ describe("DearMeOnboarding", () => {
     expect(paidBetaReceipt.textContent).toContain("Paid user operating");
     expect(paidBetaReceipt.textContent).toContain("Access receipt");
     expect(paidBetaReceipt.textContent).toContain("manual-invoice-1");
-    expect(paidBetaReceipt.textContent).toContain("$250 net paid access is recorded for this account.");
+    expect(paidBetaReceipt.textContent).toContain("$29 net paid access is recorded for this account.");
     expect(paidBetaReceipt.textContent).toContain("Brand work");
     expect(paidBetaReceipt.textContent).toContain("Unlocked");
     expect(paidBetaReceipt.textContent).toContain("Support boundary");
@@ -2696,7 +2696,7 @@ describe("DearMeOnboarding", () => {
     expect(paidBetaCustomerReceipt.textContent).toContain("Access");
     expect(paidBetaCustomerReceipt.textContent).toContain("Open");
     expect(paidBetaCustomerReceipt.textContent).toContain("Paid");
-    expect(paidBetaCustomerReceipt.textContent).toContain("$250");
+    expect(paidBetaCustomerReceipt.textContent).toContain("$29");
     expect(paidBetaCustomerReceipt.textContent).toContain("Remaining credit");
     expect(paidBetaCustomerReceipt.textContent).toContain("Receipt note");
     expect(paidBetaCustomerReceipt.textContent).toContain("Founding beta payment");
@@ -2755,7 +2755,7 @@ describe("DearMeOnboarding", () => {
     expect(paidBetaCloseKitNote.value).toContain("DearMe paid beta start kit");
     expect(paidBetaCloseKitNote.value).toContain("Account: paid beta open");
     expect(paidBetaCloseKitNote.value).toContain("Receipt: manual-invoice-1");
-    expect(paidBetaCloseKitNote.value).toContain("Paid: $250");
+    expect(paidBetaCloseKitNote.value).toContain("Paid: $29");
     expect(paidBetaCloseKitNote.value).toContain("Receipt note: Founding beta payment");
     expect(paidBetaCloseKitNote.value).toContain(
       "Boundary: public posts, outreach, page changes, and spend wait for the launch call.",
@@ -2780,7 +2780,7 @@ describe("DearMeOnboarding", () => {
     expect(paidBetaPaymentPathNote.value).toContain("DearMe payment path receipt");
     expect(paidBetaPaymentPathNote.value).toContain("Mode: paid beta access recorded");
     expect(paidBetaPaymentPathNote.value).toContain("Receipt: manual-invoice-1");
-    expect(paidBetaPaymentPathNote.value).toContain("Paid: $250");
+    expect(paidBetaPaymentPathNote.value).toContain("Paid: $29");
     expect(paidBetaPaymentPathNote.value).toContain("Activation: paid access is open for this account.");
     expect(paidBetaPaymentPathNote.value).toContain("Upgrade path: hosted checkout setup can replace manual recording");
     expectNoHiddenProductTerms(
@@ -5871,12 +5871,12 @@ describe("DearMeOnboarding", () => {
     expect(paidBetaCloseKit.textContent).toContain("Close the sale");
     expect(paidBetaCloseKit.textContent).toContain("Open the account");
     expect(paidBetaCloseKit.textContent).toContain("Keep launch boundary");
-    expect(paidBetaCloseKit.textContent).toContain("Private beta can be sold at $250");
+    expect(paidBetaCloseKit.textContent).toContain("Private beta can be sold at $29");
     const paidBetaCloseKitNote = surfaceByLabel(container, "Paid beta close kit note") as HTMLTextAreaElement;
     expect(paidBetaCloseKitNote.value).toContain("DearMe private beta close kit");
     expect(paidBetaCloseKitNote.value).toContain("Offer: personal brand growth team");
     expect(paidBetaCloseKitNote.value).toContain("Status: ready to sell after payment");
-    expect(paidBetaCloseKitNote.value).toContain("Price: $250");
+    expect(paidBetaCloseKitNote.value).toContain("Price: $29");
     expect(paidBetaCloseKitNote.value).toContain(
       "What opens: first brand cycle, Voice & Memory, weekly receipt, and launch-call boundary.",
     );
@@ -5904,7 +5904,7 @@ describe("DearMeOnboarding", () => {
     ) as HTMLTextAreaElement;
     expect(paidBetaPaymentPathNote.value).toContain("DearMe payment path receipt");
     expect(paidBetaPaymentPathNote.value).toContain("Mode: private beta manual payment");
-    expect(paidBetaPaymentPathNote.value).toContain("Target amount: $250");
+    expect(paidBetaPaymentPathNote.value).toContain("Target amount: $29");
     expect(paidBetaPaymentPathNote.value).toContain("Collect: payment reference from the current private-beta channel.");
     expect(paidBetaPaymentPathNote.value).toContain(
       "Activation: record amount, receipt note, and reference to open paid access.",

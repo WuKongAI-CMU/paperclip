@@ -11771,7 +11771,7 @@ function PaidBetaAccessPanel({
   onFocusFirstCycle: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [amountDollars, setAmountDollars] = useState("250");
+  const [amountDollars, setAmountDollars] = useState(String(DEARME_PAID_BETA_MONTHLY_OFFER_CENTS / 100));
   const [description, setDescription] = useState("Founding beta payment");
   const [externalInvoiceId, setExternalInvoiceId] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
