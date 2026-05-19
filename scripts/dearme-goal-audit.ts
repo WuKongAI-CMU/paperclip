@@ -10,6 +10,7 @@ import {
   inspectDearMeHostProviderAudit,
   type DearMeHostProviderAudit,
 } from "./dearme-host-provider-audit.ts";
+import { dailyPlainSummaryFactsNeeded } from "./dearme-daily-plain-facts.ts";
 import {
   runDearMeOpenClawMessageRehearsal,
   type DearMeOpenClawMessageRehearsalReport,
@@ -98,6 +99,7 @@ export interface DearMeGoalAudit {
   items: DearMeGoalAuditItem[];
   ownerProofFactsNeeded: string[];
   hostedCheckoutFactsNeeded: string[];
+  dailyPlainSummaryFactsNeeded: string[];
   nextAction: DearMeGoalAuditNextAction;
 }
 
@@ -952,6 +954,7 @@ export function summarizeDearMeGoalAudit(
   hostProvider?: DearMeGoalAuditHostProviderEvidence,
   openClawMessageRehearsal?: DearMeGoalAuditOpenClawMessageRehearsalEvidence,
   publicFirstRunLanding?: DearMeGoalAuditPublicFirstRunLandingEvidence,
+  dailyPlainFactsNeeded: string[] = [],
 ): DearMeGoalAudit {
   const productionHost = focus(status, "production_host");
   const openclawMessages = focus(status, "openclaw_messages");
@@ -1018,6 +1021,7 @@ export function summarizeDearMeGoalAudit(
     items,
     ownerProofFactsNeeded,
     hostedCheckoutFactsNeeded,
+    dailyPlainSummaryFactsNeeded: dailyPlainFactsNeeded,
     nextAction: incompleteItem
       ? {
         label: incompleteItem.label,
@@ -1093,6 +1097,7 @@ export async function buildDearMeGoalAudit(
     hostProvider,
     openClawMessageRehearsal,
     publicFirstRunLanding,
+    dailyPlainSummaryFactsNeeded(env),
   );
 }
 
@@ -1137,6 +1142,14 @@ export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {
     lines.push("");
     lines.push("First-payment checkout facts needed:");
     for (const fact of audit.hostedCheckoutFactsNeeded) {
+      lines.push(`- ${fact}`);
+    }
+  }
+
+  if (audit.dailyPlainSummaryFactsNeeded.length > 0) {
+    lines.push("");
+    lines.push("Daily Plain summary facts needed:");
+    for (const fact of audit.dailyPlainSummaryFactsNeeded) {
       lines.push(`- ${fact}`);
     }
   }
@@ -1188,7 +1201,8 @@ export function formatDearMeGoalAudit(audit: DearMeGoalAudit): string[] {
 
 function goalAuditNeedsHumanHelpQueue(audit: DearMeGoalAudit): boolean {
   return audit.ownerProofFactsNeeded.length > 0
-    || audit.hostedCheckoutFactsNeeded.length > 0;
+    || audit.hostedCheckoutFactsNeeded.length > 0
+    || audit.dailyPlainSummaryFactsNeeded.length > 0;
 }
 
 export function parseDearMeGoalAuditArgs(argv: readonly string[]): DearMeGoalAuditArgs {

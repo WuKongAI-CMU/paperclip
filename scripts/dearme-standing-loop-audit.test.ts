@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { dailyPlainSummaryFactsNeeded } from "./dearme-daily-plain-facts.ts";
 import {
-  dailyPlainSummaryFactsNeeded,
   formatDearMeStandingLoopAudit,
   inspectDearMeHumanHelpQueueFreshness,
   parseDearMeStandingLoopAuditArgs,
@@ -84,6 +84,7 @@ function goalAudit(overrides: Partial<DearMeGoalAudit> = {}): DearMeGoalAudit {
       "iMessage/SMS approved smoke recipient: provide DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT",
     ],
     hostedCheckoutFactsNeeded: [],
+    dailyPlainSummaryFactsNeeded: [],
     nextAction: {
       label: "OpenClaw shared Telegram/iMessage message proof",
       reason: "Blocked by imessage_message.",

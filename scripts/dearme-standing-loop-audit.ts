@@ -20,6 +20,7 @@ import {
   buildDearMeGoalAudit,
   type DearMeGoalAudit,
 } from "./dearme-goal-audit.ts";
+import { dailyPlainSummaryFactsNeeded } from "./dearme-daily-plain-facts.ts";
 import { dearMeOperatingDate } from "./dearme-operating-date.ts";
 
 export type DearMeStandingLoopState =
@@ -77,29 +78,6 @@ const DEFAULT_HANDOFF_PATH = "docs/dearme/CODEX-HANDOFF-TOKEN.md";
 const DEFAULT_LEDGER_PATH = "docs/dearme/CODEX-RUN-LEDGER.md";
 const DEFAULT_INDEX_PATH = "docs/dearme/INDEX.md";
 const HUMAN_HELP_QUEUE_PATH = "docs/NEEDS_HUMAN_HELP.md";
-const DAILY_PLAIN_API_KEY_ENV = "DEARME_PLAIN_API_KEY";
-const DAILY_PLAIN_PRIMARY_EMAIL_ENV = "DEARME_CODEX_DAILY_PLAIN_EMAIL";
-const DAILY_PLAIN_FALLBACK_EMAIL_ENV = "DEARME_PLAIN_DAILY_EMAIL";
-
-function configuredValue(value: string | null | undefined) {
-  const trimmed = value?.trim();
-  return trimmed && trimmed.length > 0 ? trimmed : null;
-}
-
-export function dailyPlainSummaryFactsNeeded(env: NodeJS.ProcessEnv = process.env): string[] {
-  const facts: string[] = [];
-  if (!configuredValue(env[DAILY_PLAIN_API_KEY_ENV])) {
-    facts.push(`${DAILY_PLAIN_API_KEY_ENV} is missing.`);
-  }
-  if (
-    !configuredValue(env[DAILY_PLAIN_PRIMARY_EMAIL_ENV])
-    && !configuredValue(env[DAILY_PLAIN_FALLBACK_EMAIL_ENV])
-  ) {
-    facts.push(`${DAILY_PLAIN_PRIMARY_EMAIL_ENV} or ${DAILY_PLAIN_FALLBACK_EMAIL_ENV} is missing.`);
-  }
-  return facts;
-}
-
 function ownerBlocked(goal: DearMeGoalAudit): boolean {
   return !goal.complete && (
     goal.ownerProofFactsNeeded.length > 0 ||

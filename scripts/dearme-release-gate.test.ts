@@ -86,6 +86,7 @@ function goalAudit(
     promptToArtifactChecklist: [],
     items,
     hostedCheckoutFactsNeeded: [],
+    dailyPlainSummaryFactsNeeded: [],
     ownerProofFactsNeeded: complete
       ? []
       : [
