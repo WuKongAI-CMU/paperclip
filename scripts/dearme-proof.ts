@@ -1686,7 +1686,9 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
       lines.push(`- facts needed: ${checklist.factsNeededCount}`);
       for (const fact of checklist.factsNeeded) {
         const sensitivity = fact.sensitive ? " (sensitive; keep local)" : "";
-        lines.push(`  - ${formatProofFactLabel(fact.label)}: provide ${fact.provideAs}${sensitivity}`);
+        lines.push(
+          `  - ${formatProofFactLabel(fact.label)}: provide ${formatProofFactProvideAs(fact.provideAs)}${sensitivity}`,
+        );
       }
     } else {
       lines.push("- facts needed: none");
@@ -1749,6 +1751,14 @@ export function formatDearMeProofStatus(status: DearMeProofStatus): string[] {
 
 function formatProofFactLabel(label: string) {
   return label === "OpenClaw gateway URL" ? "Shared message gateway URL" : label;
+}
+
+function formatProofFactProvideAs(provideAs: string) {
+  const spec = dearMeOwnerProofFactSpec(provideAs);
+  if (spec?.provideAs === "DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT") {
+    return "approved phone-message proof recipient";
+  }
+  return provideAs;
 }
 
 function formatHostedCheckoutFactNeed(fact: string): string {

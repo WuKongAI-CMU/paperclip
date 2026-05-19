@@ -513,6 +513,8 @@ test("DearMe proof status separates local proof from live provider setup", () =>
   assert.match(formatted, /Preview the product handoff receipt without writing: pnpm --silent dearme:next-proof -- --target all --no-write --handoff-receipt-file <launch-proof-handoff-receipt\.txt>/);
   assert.match(formatted, /If preview passes, import the product handoff receipt: pnpm --silent dearme:next-proof -- --target all --handoff-receipt-file <launch-proof-handoff-receipt\.txt>/);
   assert.match(formatted, /Shared message gateway URL: provide OPENCLAW_GATEWAY_URL or DEARME_USE_LOCAL_OPENCLAW_CONFIG=1/);
+  assert.match(formatted, /iMessage\/SMS approved smoke recipient: provide approved phone-message proof recipient/);
+  assert.doesNotMatch(formatted, /DEARME_OPENCLAW_IMESSAGE_SMOKE_RECIPIENT/);
   assert.match(formatted, /No-send check: pnpm --silent dearme:provider-smoke -- --env-file \.dearme-proof\.env --check/);
   assert.match(formatted, /Guarded live proof after owner facts are present, the no-send check passes, and explicit live confirmation is set:/);
   assert.match(formatted, /--target openclaw_messages --live/);
