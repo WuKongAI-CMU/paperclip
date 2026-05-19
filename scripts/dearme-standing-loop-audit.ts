@@ -120,10 +120,12 @@ export function inspectDearMeHumanHelpQueueFreshness(input: {
   operatingDate: string;
   ownerProofFactsNeeded: string[];
   hostedCheckoutFactsNeeded: string[];
+  reviewRequiredDependencyUpdates: number;
 }): DearMeHumanHelpQueueFreshness {
   const requiredSections = [
     input.ownerProofFactsNeeded.length > 0 ? "External live-proof facts" : null,
     input.hostedCheckoutFactsNeeded.length > 0 ? "Self-serve checkout configuration" : null,
+    input.reviewRequiredDependencyUpdates > 0 ? "Dependency review queue" : null,
   ].filter((section): section is string => Boolean(section));
   const staleSections: string[] = [];
   const missingSections: string[] = [];
@@ -182,6 +184,15 @@ function standingLoopNeedsHumanHelpQueueFacts(goal: DearMeGoalAudit, dailyPlainS
   return goal.ownerProofFactsNeeded.length > 0
     || goal.hostedCheckoutFactsNeeded.length > 0
     || dailyPlainSummaryFacts.length > 0;
+}
+
+function standingLoopNeedsHumanHelpQueueFreshness(
+  goal: DearMeGoalAudit,
+  dependency: DearMeDependencyLoopAudit,
+  dailyPlainSummaryFacts: string[],
+): boolean {
+  return standingLoopNeedsHumanHelpQueueFacts(goal, dailyPlainSummaryFacts)
+    || dependency.reviewRequiredUpdates.length > 0;
 }
 
 export function summarizeDearMeStandingLoopAudit(
@@ -264,7 +275,8 @@ export function summarizeDearMeStandingLoopAudit(
     };
   }
 
-  if (standingLoopNeedsHumanHelpQueueFacts(goal, dailyPlainSummaryFacts) && !humanHelpQueueFreshness.complete) {
+  if (standingLoopNeedsHumanHelpQueueFreshness(goal, dependency, dailyPlainSummaryFacts)
+    && !humanHelpQueueFreshness.complete) {
     return {
       state: "human-help-queue-freshness-needed",
       checkClear: false,
@@ -379,7 +391,8 @@ export function formatDearMeStandingLoopAudit(audit: DearMeStandingLoopAudit): s
 function standingLoopNeedsHumanHelpQueue(audit: DearMeStandingLoopAudit): boolean {
   return Boolean(audit.nextAction.ownerFacts?.length)
     || Boolean(audit.nextAction.hostedCheckoutFacts?.length)
-    || audit.dailyPlainSummaryFacts.length > 0;
+    || audit.dailyPlainSummaryFacts.length > 0
+    || (audit.dependency.complete && audit.dependency.reviewRequiredUpdates.length > 0);
 }
 
 export function parseDearMeStandingLoopAuditArgs(argv: string[]): DearMeStandingLoopAuditArgs {
@@ -486,6 +499,7 @@ export async function runDearMeStandingLoopAudit(
     operatingDate: dearMeOperatingDate(),
     ownerProofFactsNeeded: goal.ownerProofFactsNeeded,
     hostedCheckoutFactsNeeded: goal.hostedCheckoutFactsNeeded,
+    reviewRequiredDependencyUpdates: dependency.reviewRequiredUpdates.length,
   });
   return summarizeDearMeStandingLoopAudit(
     backlog,
