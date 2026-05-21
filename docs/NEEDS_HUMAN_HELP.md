@@ -8,7 +8,7 @@ stop agent-owned work.
 
 ## Active Requests
 
-### 2026-05-19 - Daily Plain summary delivery configuration
+### 2026-05-21 - Daily Plain summary delivery configuration
 
 - Needs help from: Peter
 - What they need to do: provide the Plain API key plus the Peter recipient
@@ -23,7 +23,7 @@ stop agent-owned work.
 - Agents continue after result by: running
   `pnpm --silent dearme:daily-plain-summary -- --json` and confirming the
   low-severity Plain thread is created.
-- Last verified: 2026-05-19 with
+- Last verified: 2026-05-21 with
   `pnpm --silent dearme:daily-plain-summary -- --json`.
 
 Needed values:
@@ -52,7 +52,7 @@ Safety notes:
 - The summary is low severity and contains run-ledger status plus
   owner-blocked facts; it does not include customer data or secrets.
 
-### 2026-05-19 - External live-proof facts
+### 2026-05-21 - External live-proof facts
 
 - Needs help from: Peter
 - What they need to do: provide the owner-approved external proof details for
@@ -91,7 +91,7 @@ iMessage/SMS smoke recipient:
 
 Current generated proof handoff status:
 
-- Last verified: 2026-05-19 with
+- Last verified: 2026-05-21 with
   `pnpm --silent dearme:standing-loop-audit -- --check`,
   `pnpm --silent dearme:status`, and `pnpm --silent dearme:goal-audit`.
 - Regenerate this request with
@@ -141,7 +141,7 @@ Safety notes:
 - Live external proof remains a human-confirmed step because it contacts real
   recipients.
 
-### 2026-05-19 - Self-serve checkout configuration
+### 2026-05-21 - Self-serve checkout configuration
 
 - Needs help from: Peter
 - What they need to do: provide the real hosted payment link for the live
@@ -175,7 +175,7 @@ Provider label:
 
 Current generated payment readiness:
 
-- Last verified: 2026-05-19 with
+- Last verified: 2026-05-21 with
   `pnpm --silent dearme:payment-readiness`.
 - Regenerate this request with
   `pnpm --silent dearme:payment-readiness -- --human-help-markdown`.
@@ -214,7 +214,7 @@ Safety notes:
 - Checkout only appears in product surfaces when the payment link is HTTPS and
   signed receipt sync is configured.
 
-### 2026-05-19 - Dependency review queue
+### 2026-05-21 - Dependency review queue
 
 - Needs help from: Peter
 - What they need to do: review dependency updates that the autonomous
@@ -236,7 +236,7 @@ Review-required updates:
   breaking and wait for human review.
 - typescript: 5.9.3 -> 6.0.3 (major) - Major dependency updates wait for human
   review.
-- vitest: 3.2.4 -> 4.1.6 (major) - Major dependency updates wait for human
+- vitest: 3.2.4 -> 4.1.7 (major) - Major dependency updates wait for human
   review.
 
 Reply template for Peter:
@@ -249,7 +249,7 @@ Notes:
 
 Current generated dependency audit:
 
-- Last verified: 2026-05-19 with
+- Last verified: 2026-05-21 with
   `pnpm --silent dearme:dependency-loop-audit -- --check`.
 - Autonomous updates: 0.
 - Review-required updates: 3.

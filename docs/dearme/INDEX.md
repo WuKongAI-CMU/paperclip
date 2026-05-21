@@ -4,7 +4,7 @@
 
 > **P0 carve-out (adopted 2026-05-14).** OpenClaw runtime and `dearme-ai-proxy` runtime are **deferred to P1**. Architecture and code stay in tree as dormant artifacts. P0 paid beta ships **web-only**: web inbound, browser MediaRecorder for voice capture, Paperclip routines/heartbeats for cron, web-first outbound (LinkedIn copy-to-clipboard, X via OAuth, email via Resend/SMTP). The §3 diagram below describes the **P1+ target state**; in P0 the OpenClaw layer is dormant and the proxy routes are unmounted. Full rationale, per-role verdict, code touchpoints, and revival criteria in [`P0-SCOPE-CUT-2026-05-13.md`](P0-SCOPE-CUT-2026-05-13.md).
 
-Last updated: 2026-05-19 (post DM-GOAL-AUDIT-SAFE-CHECKLIST)
+Last updated: 2026-05-21 (post DM-GOAL-AUDIT-PUBLIC-FIRST-RUN-MARKERS)
 
 ---
 
@@ -123,7 +123,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 
 ## 5. What's shipped vs. what's left
 
-### Shipped (as of 2026-05-19)
+### Shipped (as of 2026-05-21)
 - **DM-S01** — company mass-assignment vulnerability fixed + 92 shared tests green.
 - **`opportunities` schema slice** (DM-141) — Drizzle table + 8-state machine + indexes.
 - **`@paperclipai/dearme-agent-prompts`** — 12 verbatim prompts, 8 state machines (incl. work-loop + approval-gates), 2 templates, role registry **with `substrate` field**, 25 tests green.
@@ -298,6 +298,7 @@ These four rules make the rest of the docs internally consistent. If any older d
 - **DM-SAFE-SHARED-MESSAGE-TARGET-ALIAS** — Human command guidance for shared-message proof now uses the support-safe `shared_messages` target alias across provider-smoke, next-proof, status, goal-audit, release-gate, standing-loop, rehearsal, and human-help output while preserving the legacy grouped target internally and as a backward-compatible CLI alias.
 - **DM-STATUS-SAFE-COMMAND-LIST** — DearMe status, goal-audit, and shared-message rehearsal guidance now point at the support-safe `dearme:shared-message-rehearsal` alias while preserving the legacy rehearsal script for compatibility.
 - **DM-GOAL-AUDIT-SAFE-CHECKLIST** — `pnpm dearme:goal-audit` now renders checklist and reusable-infrastructure evidence with support-safe wording in formatted and structured user-facing fields while preserving stable internal keys and proof commands.
+- **DM-GOAL-AUDIT-PUBLIC-FIRST-RUN-MARKERS** — `pnpm dearme:goal-audit` now accepts both current personal-brand and product-incubator first-run landing markers, keeping public first-run proof green while landing copy evolves without depending on uncommitted UI files.
 - **DM-TSX-PATCH-BUMP-3** — root `tsx` now resolves to 4.22.3, clearing the autonomous dependency loop while leaving review-required esbuild, TypeScript, and Vitest updates for human review.
 - **DM-TSX-PATCH-BUMP-2** — root `tsx` now resolves to 4.22.2, keeping the autonomous dependency loop clear while leaving review-required major and 0.x-minor updates for human review.
 - **DM-INDEX-FRESHNESS-AUDIT** — `pnpm dearme:doc-freshness-audit -- --check` now verifies this shipped index records the latest non-doc-freshness run-ledger slice, and the standing-loop audit surfaces stale docs before owner-blocked state.
