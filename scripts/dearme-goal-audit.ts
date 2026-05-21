@@ -234,92 +234,105 @@ const PROMPT_TO_ARTIFACT_REQUIREMENTS: readonly {
 const PUBLIC_FIRST_RUN_LANDING_MARKERS: readonly {
   key: string;
   file: typeof PUBLIC_FIRST_RUN_LANDING_SOURCE | typeof PUBLIC_FIRST_RUN_LANDING_TEST;
-  snippet: string;
+  snippets: readonly string[];
 }[] = [
   {
     key: "source_public_surface",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: 'aria-label="DearMe public first run"',
+    snippets: ['aria-label="DearMe public first run"'],
   },
   {
     key: "source_one_sentence_positioning",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "DearMe grows your personal brand while you work.",
+    snippets: [
+      "DearMe grows your personal brand while you work.",
+      "DEARME_INCUBATION_CONFIG.headline",
+      "DearMe grows your product portfolio while you work.",
+    ],
   },
   {
     key: "source_known_for_input",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "What do you want to be known for?",
+    snippets: [
+      "What do you want to be known for?",
+      "Which product lane should move first?",
+    ],
   },
   {
     key: "source_proof_pack_cta",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "Start my first proof pack",
+    snippets: ["Start my first proof pack"],
   },
   {
     key: "source_first_proof_pack_hook",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "Watch the team work live",
+    snippets: ["Watch the team work live"],
   },
   {
     key: "source_live_receipt_hook",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "Watch DearMe prepare brand work live",
+    snippets: [
+      "Watch DearMe prepare brand work live",
+      "Watch DearMe prepare product work live",
+    ],
   },
   {
     key: "source_live_receipt_stats",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: 'aria-label="Live proof receipts"',
+    snippets: ['aria-label="Live proof receipts"'],
   },
   {
     key: "source_live_work_trail_contract",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "SAMPLE_FIRST_CYCLE_PREVIEW.liveWorkTrail",
+    snippets: ["SAMPLE_FIRST_CYCLE_PREVIEW.liveWorkTrail"],
   },
   {
     key: "source_cycle_report_contract",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "SAMPLE_FIRST_CYCLE_PREVIEW.cycleReport",
+    snippets: ["SAMPLE_FIRST_CYCLE_PREVIEW.cycleReport"],
   },
   {
     key: "source_launch_boundary",
     file: PUBLIC_FIRST_RUN_LANDING_SOURCE,
-    snippet: "Anything public stays behind your launch call.",
+    snippets: ["Anything public stays behind your launch call."],
   },
   {
     key: "test_public_first_run_landing",
     file: PUBLIC_FIRST_RUN_LANDING_TEST,
-    snippet: "uses the default route as a public first-run landing before the dense team surface",
+    snippets: ["uses the default route as a public first-run landing before the dense team surface"],
   },
   {
     key: "test_content_view_public_first_run_landing",
     file: PUBLIC_FIRST_RUN_LANDING_TEST,
-    snippet: "keeps the content view on the public first-run landing path",
+    snippets: ["keeps the content view on the public first-run landing path"],
   },
   {
     key: "test_live_work_receipts",
     file: PUBLIC_FIRST_RUN_LANDING_TEST,
-    snippet: "First-run live work receipts",
+    snippets: ["First-run live work receipts"],
   },
   {
     key: "test_live_receipt_hook",
     file: PUBLIC_FIRST_RUN_LANDING_TEST,
-    snippet: "Watch DearMe prepare brand work live",
+    snippets: [
+      "Watch DearMe prepare brand work live",
+      "Watch DearMe prepare product work live",
+    ],
   },
   {
     key: "test_workroom_queues",
     file: PUBLIC_FIRST_RUN_LANDING_TEST,
-    snippet: "First-run workroom queues",
+    snippets: ["First-run workroom queues"],
   },
   {
     key: "test_dense_workbench_hidden_before_start",
     file: PUBLIC_FIRST_RUN_LANDING_TEST,
-    snippet: "expect(mockDearmeApi.getWorkbench).not.toHaveBeenCalled();",
+    snippets: ["expect(mockDearmeApi.getWorkbench).not.toHaveBeenCalled();"],
   },
   {
     key: "test_outputs_hidden_before_start",
     file: PUBLIC_FIRST_RUN_LANDING_TEST,
-    snippet: "expect(mockDearmeApi.getOutputs).not.toHaveBeenCalled();",
+    snippets: ["expect(mockDearmeApi.getOutputs).not.toHaveBeenCalled();"],
   },
 ];
 
@@ -745,13 +758,16 @@ export async function inspectDearMePublicFirstRunLandingEvidence(): Promise<
       [PUBLIC_FIRST_RUN_LANDING_TEST, testSource],
     ]);
     const missing = PUBLIC_FIRST_RUN_LANDING_MARKERS
-      .filter((marker) => !contentsByFile.get(marker.file)?.includes(marker.snippet))
+      .filter((marker) => {
+        const contents = contentsByFile.get(marker.file) ?? "";
+        return !marker.snippets.some((snippet) => contents.includes(snippet));
+      })
       .map((marker) => marker.key);
 
     return {
       ready: missing.length === 0,
       evidence: missing.length === 0
-        ? "Default and content routes start with one positioning sentence, a known-for input, private proof-pack CTA, live private-work receipts, a generated first-cycle report, and an approval-boundary promise; the regression test keeps dense workbench fetches behind user intent."
+        ? "Default and content routes start with one product-portfolio positioning sentence, a product-lane input, private proof-pack CTA, live private-work receipts, a generated first-cycle report, and an approval-boundary promise; the regression test keeps dense workbench fetches behind user intent."
         : `Public first-run landing proof is missing ${missing.length} required source/test marker(s): ${missing.join(", ")}.`,
       missing,
     };
