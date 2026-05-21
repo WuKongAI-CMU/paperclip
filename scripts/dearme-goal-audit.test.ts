@@ -150,7 +150,7 @@ function readyOpenClawMessageRehearsalEvidence() {
 function readyPublicFirstRunLandingEvidence() {
   return {
     ready: true,
-    evidence: "Content view starts with one positioning sentence, known-for input, proof-pack CTA, live work receipts, and approval boundary.",
+    evidence: "Content view starts with one product-portfolio positioning sentence, product-lane input, proof-pack CTA, live work receipts, and approval boundary.",
     missing: [],
   };
 }
